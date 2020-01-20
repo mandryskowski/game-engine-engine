@@ -1,0 +1,86 @@
+///PREFIX ENGINE
+materialsfile Materials.fware
+newactor CubeActor
+newcomp mesh Cube root
+load Cube.fware material BrickWall
+transform
+skip
+skip
+1 1 10
+end
+newcomp collision BCube child Cube
+cube
+true
+end
+newcomp mesh Crate
+copy Cube material Bricks
+transform
+0 0 -3
+skip
+1 0.35 0.01
+end
+newcomp collision BCrate child Crate
+cube
+false
+end
+newcomp light Lamp point
+0.05 0.05 0.05
+5 1.25 5
+0.75 0.25 0.75
+8 0 0
+transform
+0 0.45 -4.5
+end
+newcomp light Flashlight spot
+0 0 0
+1 1 0.9
+0.5 0.5 0.45
+2 12.5 17.5
+transform
+0 0 4.9
+skip
+skip
+0 0 -1
+end
+newcomp light EpicLight point
+0 0 0
+2 0 0
+1 0 0
+6 0 0
+transform
+0 -0.45 -1
+end
+newcomp light EpicLight2 point
+0 0 0
+0 2 0
+0 1 0
+6 0 0
+transform
+0 -0.45 0
+end
+newcomp light EpicLight3 point
+0 0 0
+0 0 2
+0 0 1
+6 0 0
+transform
+0 -0.45 1
+end
+
+newactor CameraActor
+newcomp camera Camera root
+1.5
+active
+transform
+0 0 2
+end
+newcomp collision BCameraSphere child Camera
+sphere
+false
+transform
+skip
+skip
+0.3 0.3 0.3
+skip
+true
+end
