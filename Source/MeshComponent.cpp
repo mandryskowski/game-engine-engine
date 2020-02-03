@@ -56,6 +56,7 @@ void MeshComponent::LoadFromFile(std::string path, std::string* materialName)
 
 void MeshComponent::Render(Shader* shader, glm::mat4 view)
 {
+	//TODO: zmienic zaleznie od shadera
 	Transform worldTransform = ComponentTransform.GetWorldTransform();
 	glm::mat4 modelMat = worldTransform.GetMatrix();
 	shader->Uniform3fv("scale", ComponentTransform.Scale);

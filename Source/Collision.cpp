@@ -125,6 +125,7 @@ CollisionType Collision::CubeSphere(BBox cube1, BSphere sphere1, std::vector<glm
 	if ((displacement == glm::vec3(0.0f)) && (bNormals.empty()))	//...moze nie byc zadnej odleglosci, jesli srodek kuli znajduje sie w kostce; wiemy, ze kula znajduje sie w srodku kostki
 		return CollisionType::CONTAIN;
 
+
 	for (unsigned int i = 0; i < bNormals.size(); i++)
 		bNormals[i] = rotMat * glm::vec4(bNormals[i], 1.0f);
 

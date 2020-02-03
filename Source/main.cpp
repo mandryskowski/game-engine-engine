@@ -18,8 +18,9 @@ public:
 int main()
 {
 	glfwInit();
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
 	GLFWwindow* programWindow = glfwCreateWindow(1920, 1080, "c00lki", nullptr, nullptr);
 
@@ -42,3 +43,11 @@ int main()
 	
 	return 0;
 }
+
+/*
+	ENGINE TEXTURE UNITS
+	0-9 free
+	10 2D shadow map array
+	11 3D shadow map array
+	12+ free
+*/

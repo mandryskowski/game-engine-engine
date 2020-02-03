@@ -1,9 +1,13 @@
 #include "LightComponent.h"
 
-LightComponent::LightComponent(std::string name, LightType type, glm::vec3 amb, glm::vec3 diff, glm::vec3 spec, glm::vec3 settings, glm::mat4 projection):
+LightComponent::LightComponent(std::string name, LightType type, unsigned int shadowNr, float far, glm::mat4 projection, glm::vec3 amb, glm::vec3 diff, glm::vec3 spec, glm::vec3 settings):
 	Component(name, Transform())
 {
 	Type = type;
+
+	ShadowMapNr = shadowNr;
+	Far = far;
+	ProjectionMat = projection;
 
 	Ambient = amb;
 	Diffuse = diff;
@@ -12,8 +16,21 @@ LightComponent::LightComponent(std::string name, LightType type, glm::vec3 amb, 
 	Attenuation = settings.x;
 	CutOff = glm::cos(glm::radians(settings.y));
 	OuterCutOff = glm::cos(glm::radians(settings.z));
+}
 
-	ProjectionMat = projection;
+LightType LightComponent::GetType()
+{
+	return Type;
+}
+
+float LightComponent::GetFar()
+{
+	return Far;
+}
+
+unsigned int LightComponent::GetShadowMapNr()
+{
+	return ShadowMapNr;
 }
 
 void LightComponent::SetAdditionalData(glm::vec3 data)
@@ -49,7 +66,13 @@ void LightComponent::UpdateUBOData(UniformBuffer* lightsUBO, size_t offset)
 	}
 	
 	lightsUBO->SubData4fv(std::vector <glm::vec3> {Ambient, Diffuse, Specular}, lightsUBO->offsetCache);
-	lightsUBO->SubData4fv(glm::vec4(Attenuation, CutOff, OuterCutOff, Type), lightsUBO->offsetCache);
+	float additionalData[3] = { Attenuation, CutOff, OuterCutOff };
+	lightsUBO->SubData(12, additionalData, lightsUBO->offsetCache);
+	lightsUBO->SubData1i(Type, lightsUBO->offsetCache);
+	lightsUBO->SubData1i(ShadowMapNr, lightsUBO->offsetCache);
+	lightsUBO->SubData1f(Far, lightsUBO->offsetCache);
+	lightsUBO->SubDataMatrix4fv(ProjectionMat * worldTransform.GetViewMatrix(), lightsUBO->offsetCache + 8);
+	lightsUBO->PadOffset();
 }
 
 glm::vec3& LightComponent::operator[](unsigned int i)

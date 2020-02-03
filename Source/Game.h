@@ -3,7 +3,6 @@
 #include "Postprocess.h"
 #include "Actor.h"
 #include "CameraComponent.h"
-#include "LightComponent.h"
 
 
 class Game

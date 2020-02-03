@@ -27,6 +27,8 @@ Game::Game(GLFWwindow *window) :
 	DebugShader.LoadShaders("debug.vs", "debug.fs");
 	DebugShader.UniformBlockBinding("Matrices", 0);
 
+	RenderEng.SetupShadowmaps(glm::uvec2(1024));
+
 	glfwSetInputMode(Window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	glfwSetCursorPos(Window, (double)Settings.WindowSize.x / 2.0, (double)Settings.WindowSize.y / 2.0);
 	glfwSetCursorPosCallback(Window, cursorPosCallback);
@@ -142,7 +144,13 @@ Component* Game::LoadComponentData(std::stringstream& filestr, Actor* currentAct
 	{
 		std::string lightType;
 		filestr >> lightType;
-		LightComponent* lightPtr = new LightComponent(name, toLightType(lightType));
+		glm::mat4 projection;
+		if (lightType == "point" || lightType == "spot")
+			projection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 5.0f);
+		else
+			projection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 1.0f, 10.0f);
+
+		LightComponent* lightPtr = new LightComponent(name, toLightType(lightType), Lights.size(), 10.0f, projection);
 		for (unsigned int vector = 0; vector < 3; vector++)
 			for (unsigned int axis = 0; axis < 3; axis++)
 				filestr >> (*lightPtr)[vector][axis];	//TODO: sprawdzic czy sie wywala
@@ -256,7 +264,7 @@ void Game::LoadMaterials(std::string path)
 
 void Game::SetupLights()
 {
-	LightsBuffer.Generate(1, sizeof(glm::vec4) * 2 + Lights.size() * sizeof(glm::vec4) * 6);
+	LightsBuffer.Generate(1, sizeof(glm::vec4) * 2 + Lights.size() * 192);
 	LightsBuffer.SubData1i(Lights.size(), 0);
 
 	UpdateLightUniforms();
@@ -322,11 +330,17 @@ void Game::Update(float deltaTime)
 	RootActor.UpdateAll(deltaTime);
 	MatricesBuffer.SubDataMatrix4fv(ActiveCamera->GetTransform()->GetWorldTransform().GetViewMatrix(), 0);
 	LightsBuffer.SubData4fv(ActiveCamera->GetTransform()->GetWorldTransform().Position, 16);
-	UpdateLightUniforms();
+	UpdateLightUniforms();		//TODO: Optimize this - it takes too much time to update every light each frame.
 }
 
 void Game::Render()
 {
+	float time1, time2;
+	time1 = glfwGetTime();
+	RenderEng.RenderShadowMaps(Lights);
+	time2 = glfwGetTime();
+	//std::cout << "Zjadlo mi " << (time2 - time1) * 1000.0f << "ms.\n";
+
 	MainFramebuffer.Bind();
 	glViewport(0, 0, Settings.WindowSize.x, Settings.WindowSize.y);
 	glEnable(GL_DEPTH_TEST);
@@ -336,7 +350,8 @@ void Game::Render()
 	
 	RenderEng.RenderScene(ActiveCamera->GetTransform()->GetWorldTransform().GetViewMatrix());
 
-	//CollisionEng.Draw(&DebugShader);		uncomment to debug collision system
+	//CollisionEng.Draw(&DebugShader);		//uncomment to debug collision system
+
 
 	GamePostprocess.Render(MainFramebuffer.GetColorBuffer(0).OpenGLBuffer, GamePostprocess.GaussianBlur(MainFramebuffer.GetColorBuffer(1).OpenGLBuffer, 10));
 

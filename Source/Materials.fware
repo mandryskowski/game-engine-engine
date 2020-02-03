@@ -14,7 +14,7 @@ wall_normal.jpg normal false
 
 BrickWall
 64
-0
+0.03
 3
 brickwall.jpg diffuse true
 brickwall_normal.jpg normal false

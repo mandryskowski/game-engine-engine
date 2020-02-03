@@ -63,6 +63,9 @@ void Postprocess::Render(unsigned int colorBuffer, unsigned int brightnessBuffer
 
 unsigned int Postprocess::GaussianBlur(unsigned int tex, int passes)
 {
+	if (passes == 0)
+		return tex;
+
 	GaussianBlurShader.Use();
 	glBindVertexArray(QuadVAO);
 	glActiveTexture(GL_TEXTURE0);
