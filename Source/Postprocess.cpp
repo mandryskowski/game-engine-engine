@@ -39,7 +39,7 @@ void Postprocess::LoadSettings(const GameSettings* settings)
 
 	//load framebuffers
 	for (int i = 0; i < 2; i++)
-		PingPongFramebuffers[i].Load(settings->WindowSize, ColorBufferData(true, true, GL_LINEAR, GL_LINEAR));
+		PingPongFramebuffers[i].Load(settings->WindowSize, ColorBufferData(true, true, GL_TEXTURE_2D, GL_LINEAR, GL_LINEAR));
 }
 
 void Postprocess::Render(unsigned int colorBuffer, unsigned int brightnessBuffer)

@@ -10,15 +10,19 @@ Game::Game(GLFWwindow *window) :
 	glfwSetWindowTitle(Window, Settings.WindowTitle.c_str());
 	if (Settings.bWindowFullscreen)
 		glfwSetWindowMonitor(Window, glfwGetPrimaryMonitor(), 0, 0, Settings.WindowSize.x, Settings.WindowSize.y, 60);
-	glfwWindowHint(GLFW_SAMPLES, Settings.AntiAliasingSamples);
-
-	if (Settings.AntiAliasingSamples > 0)
-		glEnable(GL_MULTISAMPLE);			//this is not necessary - glfw should call this function, but i'm not sure if i can count on it
 
 	if (!Settings.bVSync)
 		glfwSwapInterval(0);
 
-	MainFramebuffer.Load(Settings.WindowSize, std::vector<ColorBufferData> {ColorBufferData(), ColorBufferData(true, true, GL_LINEAR, GL_LINEAR)}, new DepthBufferData());
+	GLenum mainFBOTexType = GL_TEXTURE_2D;
+	if (Settings.AntiAliasingSamples > 0)
+	{
+		glEnable(GL_MULTISAMPLE);			//this is not necessary - it should be enabled by default, but i'm not sure if i can count on it
+		mainFBOTexType = GL_TEXTURE_2D_MULTISAMPLE;
+	}
+
+	MainFramebuffer.Load(Settings.WindowSize, std::vector<ColorBufferData> {ColorBufferData(true, true, mainFBOTexType), ColorBufferData(true, true, mainFBOTexType, GL_LINEAR, GL_LINEAR)}, new DepthBufferData(mainFBOTexType), Settings.AntiAliasingSamples);
+	BlitFramebuffer.Load(Settings.WindowSize, std::vector<ColorBufferData> {ColorBufferData(true, true), ColorBufferData(true, true, GL_TEXTURE_2D, GL_LINEAR, GL_LINEAR)});
 
 	ActiveCamera = nullptr;
 	
@@ -68,9 +72,11 @@ void Game::LoadLevel(std::string path)
 			std::string path;
 			filestr >> path;
 
-			LoadMaterials(path);
+			RenderEng.LoadMaterials(path);
 		}
 	}
+
+	RenderEng.LoadModels();
 }
 
 Component* Game::LoadComponentData(std::stringstream& filestr, Actor* currentActor)
@@ -117,7 +123,7 @@ Component* Game::LoadComponentData(std::stringstream& filestr, Actor* currentAct
 				std::cerr << "Can't find mesh " << targetName << '\n';
 				return nullptr;
 			}
-			
+
 			meshPtr = new MeshComponent(*target);
 			meshPtr->SetName(name);
 		}
@@ -140,13 +146,28 @@ Component* Game::LoadComponentData(std::stringstream& filestr, Actor* currentAct
 		AddMeshToScene(meshPtr);
 		comp = meshPtr;
 	}
+	else if (type == "model")
+	{
+		ModelComponent* modelPtr = nullptr;
+		std::string path, materialName;
+
+		filestr >> path;
+		modelPtr = new ModelComponent(name);
+		modelPtr->SetFilePath(path);
+
+		if (isNextWordEqual(filestr, "material"))
+			filestr >> materialName;
+
+		RenderEng.AddModel(modelPtr);
+		comp = modelPtr;
+	}
 	else if (type == "light")
 	{
 		std::string lightType;
 		filestr >> lightType;
 		glm::mat4 projection;
 		if (lightType == "point" || lightType == "spot")
-			projection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 5.0f);
+			projection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
 		else
 			projection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 1.0f, 10.0f);
 
@@ -228,40 +249,6 @@ Component* Game::LoadComponentData(std::stringstream& filestr, Actor* currentAct
 	return comp;
 }
 
-void Game::LoadMaterials(std::string path)
-{
-	std::ifstream file;
-	file.open(path);
-	std::stringstream filestr;
-	filestr << file.rdbuf();
-
-	if (!file.good())
-	{
-		std::cerr << "Cannot open materials file " << path << "!\n";
-		return;
-	}
-
-	while (!isNextWordEqual(filestr, "end"))
-	{
-		std::string materialName;
-		float shininess, depthScale;
-		unsigned int texCount;
-
-		filestr >> materialName >> shininess >> depthScale >> texCount;
-
-		Material* material = new Material(materialName, shininess, depthScale);
-		RenderEng.AddMaterial(material);
-
-		for (unsigned int i = 0; i < texCount; i++)
-		{
-			std::string path, shaderName, isSRGB;
-			filestr >> path >> shaderName >> isSRGB;
-
-			material->AddTexture(new Texture(path, shaderName, toBool(isSRGB)));
-		}
-	}
-}
-
 void Game::SetupLights()
 {
 	LightsBuffer.Generate(1, sizeof(glm::vec4) * 2 + Lights.size() * 192);
@@ -284,6 +271,20 @@ void Game::BindActiveCamera(CameraComponent* cam)
 	ActiveCamera = cam;
 	mouseContextCamera = cam;
 	MatricesBuffer.SubDataMatrix4fv(ActiveCamera->GetProjectionMat(), sizeof(glm::mat4));
+}
+
+void Game::AddActorToScene(Actor* actor)
+{
+	RootActor.AddChild(actor);
+}
+
+void Game::AddLightToScene(LightComponent* light)
+{
+	Lights.push_back(light);
+}
+void Game::AddMeshToScene(MeshComponent* mesh)
+{
+	RenderEng.AddMesh(mesh);
 }
 
 void Game::Run()
@@ -316,7 +317,7 @@ void Game::Run()
 
 		while (timeAccumulator >= timeStep)
 		{
-			RootActor.GetTransform()->Rotation.y += deltaTime;
+			//RootActor.GetTransform()->Rotation.y += deltaTime;
 			Update(timeStep);
 			timeAccumulator -= timeStep;
 		}
@@ -347,13 +348,16 @@ void Game::Render()
 	glClearBufferfv(GL_COLOR, 0, glm::value_ptr(glm::vec3(0.1f, 0.15f, 0.15f)));
 	glClearBufferfv(GL_COLOR, 1, glm::value_ptr(glm::vec3(0.0f)));
 	glClear(GL_DEPTH_BUFFER_BIT);
+	glDisable(GL_CULL_FACE);
 	
 	RenderEng.RenderScene(ActiveCamera->GetTransform()->GetWorldTransform().GetViewMatrix());
 
 	//CollisionEng.Draw(&DebugShader);		//uncomment to debug collision system
 
+	//if (Settings.AntiAliasingSamples > 0)
+	MainFramebuffer.BlitToFBO(BlitFramebuffer.GetFBO());
 
-	GamePostprocess.Render(MainFramebuffer.GetColorBuffer(0).OpenGLBuffer, GamePostprocess.GaussianBlur(MainFramebuffer.GetColorBuffer(1).OpenGLBuffer, 10));
+	GamePostprocess.Render(BlitFramebuffer.GetColorBuffer(0).OpenGLBuffer, GamePostprocess.GaussianBlur(BlitFramebuffer.GetColorBuffer(1).OpenGLBuffer, 10));
 
 	glfwSwapBuffers(Window);
 }
@@ -395,34 +399,4 @@ void loadTransform(std::stringstream& filestr, Transform* transform)
 
 	if (isNextWordEqual(filestr, "true"))
 		transform->bConstrain = true;
-}
-
-std::string getNextWord(std::stringstream& str)
-{
-	std::string word;
-	size_t pos = (size_t)str.tellg();
-	str >> word;
-	str.seekg(pos);
-
-	return word;
-}
-
-bool isNextWordEqual(std::stringstream& str, std::string equalTo)
-{
-	std::string word;
-	size_t pos = (size_t)str.tellg();
-	str >> word;
-
-	if (word == equalTo)
-		return true;
-
-	str.seekg(pos);	//if its not equal, go back to the previous position
-	return false;
-}
-
-bool toBool(std::string str)
-{
-	if (str == "false" || str == "0")
-		return false;
-	return true;
 }

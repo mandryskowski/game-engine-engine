@@ -65,3 +65,48 @@ void UniformBuffer::PadOffset()
 		return;
 	offsetCache = offsetCache - offsetCache % 16 + 16;	//pad to the next multiple of 16
 }
+
+std::string getNextWord(std::stringstream& str)
+{
+	std::string word;
+	size_t pos = (size_t)str.tellg();
+	str >> word;
+	str.seekg(pos);
+
+	return word;
+}
+
+bool isNextWordEqual(std::stringstream& str, std::string equalTo)
+{
+	std::string word;
+	size_t pos = (size_t)str.tellg();
+	str >> word;
+
+	if (word == equalTo)
+		return true;
+
+	str.seekg(pos);	//if its not equal, go back to the previous position
+	return false;
+}
+
+bool toBool(std::string str)
+{
+	if (str == "false" || str == "0")
+		return false;
+	return true;
+}
+
+std::string framebufferStatusToString(GLenum status)
+{
+	switch (status)
+	{
+	case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT: return "Incomplete attachment.\n";
+	case GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER: return "Incomplete draw buffer.\n";
+	case GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS: return "Incomplete layer targets.\n";
+	case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT: return "Missing attachments.\n";
+	case GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE: return "Incomplete multisample.\n";
+	case GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER: return "Incomplete read buffer.\n";
+	}
+
+	return "Error " + std::to_string(status) + " is not known by the program.\n";
+}

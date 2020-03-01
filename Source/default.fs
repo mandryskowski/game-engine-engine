@@ -6,9 +6,10 @@
 
 struct Material
 {
-	sampler2D diffuse;
-	sampler2D normal;
-	sampler2D displacement;
+	sampler2D diffuse1;
+	sampler2D specular1;
+	sampler2D normal1;
+	sampler2D depth1;
 	
 	float shininess;
 	float depthScale;
@@ -39,6 +40,7 @@ in VS_OUT
 	vec3 position;
 	vec3 normal;
 	vec2 texCoord;
+	vec3 tangentDupa;
 	
 	mat3 TBN;
 }	frag;
@@ -78,13 +80,13 @@ vec2 ParallaxOcclusion(vec2 texCoord)
 	
 	for (float depth = depthOffset; depth < 1.0; depth += depthOffset)
 	{
-		float sampleDepth = texture(material.displacement, texCoord).r;
+		float sampleDepth = texture(material.depth1, texCoord).r;
 		
 		if (depth > sampleDepth)
 		{
 			vec2 prevTexCoord = texCoord + unitOffset;
 			float prevDepth = depth - depthOffset;
-			float prevSampleDepth = texture(material.displacement, prevTexCoord).r;
+			float prevSampleDepth = texture(material.depth1, prevTexCoord).r;
 			
 			float deltaAfter = depth - sampleDepth;
 			float deltaBefore = prevSampleDepth - prevDepth;
@@ -119,12 +121,12 @@ float CalcShadow2D(Light light)
 float CalcShadow3D(Light light)
 {
 	vec3 lightToFrag = frag.position - light.position.xyz;
-	float mapDepth = texture(shadowCubeMaps, vec4(lightToFrag, light.shadowMapNr)).r * light.far;
-	if (mapDepth > light.far)
+	float mapDepth = texture(shadowCubeMaps, vec4(lightToFrag, light.shadowMapNr)).r;
+	if (mapDepth > 1.0)
 		return 0.0;
-	float actualDepth = length(lightToFrag);
+	float actualDepth = length(lightToFrag) / light.far;
 
-	return (actualDepth > mapDepth + 0.01) ? (1.0) : (0.0);
+	return (actualDepth > mapDepth + 0.02) ? (1.0) : (0.0);
 }
 
 vec3 CalcLight(Light light, vec3 diffuseColor, vec3 specularColor, vec3 normal)
@@ -176,15 +178,18 @@ vec3 CalcLight(Light light, vec3 diffuseColor, vec3 specularColor, vec3 normal)
 
 void main()
 {
-	fragColor = vec4(CalcShadow2D(lights[5]));
+	fragColor = vec4(1.0);
+	//return;
 	
 	vec2 parallaxCoord = ParallaxOcclusion(frag.texCoord);
-	vec3 diffuseColor = texture(material.diffuse, parallaxCoord).rgb;
-	vec3 specularColor = vec3(0.2);
-	vec3 normal = texture(material.normal, parallaxCoord).rgb;
+	vec3 diffuseColor = texture(material.diffuse1, parallaxCoord).rgb;
+	vec3 specularColor = texture(material.specular1, parallaxCoord).rgb;
+	vec3 normal = texture(material.normal1, parallaxCoord).rgb;
+	if (normal == vec3(0.0))
+		normal = vec3(0.5, 0.5, 1.0);
 	normal = normalize(normal * 2.0 - 1.0);
 	normal = normalize(frag.TBN * normal);
-	
+
 	fragColor = vec4(vec3(0.0), 1.0);
 	for (int i = 0; i < lightCount; i++)
 		fragColor.rgb += CalcLight(lights[i], diffuseColor, specularColor, normal);

@@ -145,6 +145,9 @@ void CameraComponent::HandleInputs(GLFWwindow* window, float deltaTime)
 	{
 		for (unsigned int xd = 0; xd < Children.size(); xd++)
 		{
+			CollisionComponent* col = dynamic_cast<CollisionComponent*>(Children[xd]);
+			if (!col)
+				continue;
 			glm::vec3 scale = Children[xd]->GetTransform()->Scale;
 			Children[xd]->SetTransform(ComponentTransform);
 			Children[xd]->GetTransform()->SetParentTransform(ComponentTransform.GetParentTransform());

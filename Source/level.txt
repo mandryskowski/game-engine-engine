@@ -8,6 +8,26 @@ skip
 skip
 1 1 10
 end
+newcomp model Nanosuit child Cube nanosuit.obj
+transform
+0 -0.5 2.5
+skip
+0.05 0.05 0.005
+end
+newcomp model Subway child Cube x3.obj
+transform
+0 0 -10
+skip
+0.4 0.4 0.04
+end
+newcomp light SubwayLight child Subway point
+0.1 0.1 0.1
+2 2 2
+1 1 1
+1 0 0
+transform
+0 1.5 5
+end
 newcomp collision BCube child Cube
 cube
 true
@@ -84,8 +104,8 @@ true
 end
 newcomp light Bekalight child Camera spot
 0 0 0
-0.5 0.5 4
-0.25 0.25 2
+2 2 2
+1 1 1
 2 12.5 45
 transform
 0.03 -0.04 0

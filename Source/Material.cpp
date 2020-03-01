@@ -5,6 +5,67 @@ std::string Material::GetName()
 	return Name;
 }
 
+void Material::LoadFromAiMaterial(aiMaterial* material, MaterialLoadingData* matLoadingData)
+{
+	//Load material's name
+	aiString name;
+	float shininess;
+	material->Get(AI_MATKEY_NAME, name);
+	material->Get(AI_MATKEY_SHININESS, shininess);
+	Name = name.C_Str();
+	Shininess = shininess;
+	std::cout << "swieconko: " << shininess << '\n';
+
+	//This vector should contain all of the texture types that the engine can process (or they will not be loaded)
+	std::vector<std::pair<aiTextureType, std::string>> materialTypes =
+	{
+		std::pair<aiTextureType, std::string>(aiTextureType_DIFFUSE, "diffuse"),
+		std::pair<aiTextureType, std::string>(aiTextureType_SPECULAR, "specular"),
+		std::pair<aiTextureType, std::string>(aiTextureType_HEIGHT, "normal"),
+		std::pair<aiTextureType, std::string>(aiTextureType_DISPLACEMENT, "depth")
+	};
+
+	//Load textures by type
+	for (unsigned int i = 0; i < materialTypes.size(); i++)
+		LoadAiTexturesOfType(material, materialTypes[i].first, materialTypes[i].second, matLoadingData);
+}
+
+void Material::LoadAiTexturesOfType(aiMaterial* material, aiTextureType type, std::string shaderName, MaterialLoadingData* matLoadingData)
+{
+	std::vector <Texture*>* prevLoadedTextures = &matLoadingData->LoadedTextures;
+	bool sRGB = false;
+	if (type == aiTextureType_DIFFUSE)
+		sRGB = true;
+
+	for (unsigned int i = 0; i < material->GetTextureCount(type); i++)	//for each texture of this type (there can be more than one)
+	{
+		aiString path;
+		std::string pathStr;
+		aiTextureMapping texMapping;	//TODO: maybe use this later?
+
+		material->GetTexture(type, i, &path, &texMapping);
+		pathStr = path.C_Str();
+
+		bool bWasLoadedPreviously = false;
+		for (unsigned int j = 0; j < prevLoadedTextures->size(); j++)	//check if the texture was loaded in the past (saves a lot of time)
+		{
+			if ((*prevLoadedTextures)[j]->Path == pathStr)
+			{
+				Textures.push_back((*prevLoadedTextures)[j]);
+				bWasLoadedPreviously = true;
+				break;
+			}
+		}
+
+		if (bWasLoadedPreviously)	//skip the costly loading if we already loaded this file
+			continue;
+
+		Texture* tex = new Texture(pathStr, shaderName + std::to_string(i + 1), sRGB);	//create a new Texture and pass the file path, the shader name (for example diffuse1, diffuse2, ...) and the sRGB info
+		Textures.push_back(tex);
+		prevLoadedTextures->push_back(tex);
+	}
+}
+
 void Material::UpdateUBOData(Shader* shader, unsigned int emptyTexture)
 {
 	shader->Uniform1f("material.shininess", Shininess);

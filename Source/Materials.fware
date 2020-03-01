@@ -2,31 +2,31 @@ Marble
 64
 0
 2
-marble.png diffuse true
-marble_normal.png normal false
+marble.png diffuse1 true
+marble_normal.png normal1 false
 
 Bunker
 32
 0
 2
-wall.jpg diffuse true
-wall_normal.jpg normal false
+wall.jpg diffuse1 true
+wall_normal.jpg normal1 false
 
 BrickWall
 64
 0.03
 3
-brickwall.jpg diffuse true
-brickwall_normal.jpg normal false
-brickwall_disp.jpg displacement false
+brickwall.jpg diffuse1 true
+brickwall_normal.jpg normal1 false
+brickwall_disp.jpg displacement1 false
 
 Bricks
 64
 0.1
 3
-bricks.jpg diffuse true
-bricks_normal.jpg normal false
-bricks_disp.jpg displacement false
+bricks.jpg diffuse1 true
+bricks_normal.jpg normal1 false
+bricks_disp.jpg displacement1 false
 
 end
 
