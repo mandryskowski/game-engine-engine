@@ -9,31 +9,74 @@ RenderEngine::RenderEngine()
 	glFrontFace(GL_CCW);
 	glCullFace(GL_BACK);
 
+	GShader.LoadShaders("geometry.vs", "geometry.fs");
+	GShader.UniformBlockBinding("Matrices", 0);
+	
+	GShader.Use();
+	std::vector<std::pair<unsigned int, std::string>> gShaderTextureUnits = {
+		std::pair<unsigned int, std::string>(0, "diffuse1"),
+		std::pair<unsigned int, std::string>(1, "specular1"),
+		std::pair<unsigned int, std::string>(2, "normal1"),
+		std::pair<unsigned int, std::string>(3, "depth1")
+	};
+	GShader.SetTextureUnitNames(gShaderTextureUnits);
+
 	//load the default shader
 	DefaultShader.LoadShaders("default.vs", "default.fs");
 	DefaultShader.UniformBlockBinding("Matrices", 0);
 	DefaultShader.UniformBlockBinding("Lights", 1);
 
-	//bind texture units of the default shader
 	DefaultShader.Use();
-	std::vector<std::pair<unsigned int, std::string>> shaderTextureUnits = {
+	std::vector<std::pair<unsigned int, std::string>> defaultShaderTextureUnits = {
 		std::pair<unsigned int, std::string>(0, "diffuse1"),
 		std::pair<unsigned int, std::string>(1, "specular1"),
 		std::pair<unsigned int, std::string>(2, "normal1"),
-		std::pair<unsigned int, std::string>(3, "displacement1")
+		std::pair<unsigned int, std::string>(3, "depth1")
 	};
-	DefaultShader.SetTextureUnitNames(shaderTextureUnits);
+	DefaultShader.SetTextureUnitNames(defaultShaderTextureUnits);
 	DefaultShader.Uniform1i("shadowMaps", 10);
 	DefaultShader.Uniform1i("shadowCubeMaps", 11);
 
+	//initialize shadow mapping stuff
 	ShadowMapSize = glm::uvec2(0);
 	ShadowFBO = 0;
 	ShadowMapArray = 0;
 	ShadowCubemapArray = 0;
 	
 	//load shadow shaders
-	ShadowShader.LoadShaders("shadow.vs", "shadow.fs");
-	ShadowLinearizeShader.LoadShaders("shadow_linearize.vs", "shadow_linearize.fs");
+	DepthShader.LoadShaders("depth.vs", "depth.fs");
+	DepthLinearizeShader.LoadShaders("depth_linearize.vs", "depth_linearize.fs");
+
+	//load debug shaders
+	DebugShader.LoadShaders("debug.vs", "debug.fs");
+	DebugShader.UniformBlockBinding("Matrices", 0);
+
+	GenerateEngineObjects();
+
+	//LightShaders[LightType::DIRECTIONAL].LoadShaders("directional.vs", "directional.fs");
+	//LightShaders[LightType::DIRECTIONAL].UniformBlockBinding("Lights", 1);
+	LightShaders[LightType::POINT].LoadShaders("point.vs", "point.fs");
+	LightShaders[LightType::POINT].UniformBlockBinding("Matrices", 0);
+	LightShaders[LightType::POINT].UniformBlockBinding("Lights", 1);
+	LightShaders[LightType::SPOT].LoadShaders("spot.vs", "spot.fs");
+	LightShaders[LightType::SPOT].UniformBlockBinding("Matrices", 0);
+	LightShaders[LightType::SPOT].UniformBlockBinding("Lights", 1);
+
+
+	for (int i = 0; i < 3; i++)
+	{
+		if (LightType::POINT != i && LightType::SPOT != i)		//!!!!!!!!!!!!!!!!!!!!!!!!!DELETE THIS!!!!!!!!!!!!!!!!!!!!!!!!!1
+			continue;
+		LightShaders[i].Use();
+		LightShaders[i].Uniform1i("gPosition", 0);
+		LightShaders[i].Uniform1i("gNormal", 1);
+		LightShaders[i].Uniform1i("gAlbedoSpec", 2);
+		
+		if (i == (int)LightType::POINT)
+			LightShaders[i].Uniform1i("shadowCubemaps", 11);
+		else
+			LightShaders[i].Uniform1i("shadowMaps", 10);
+	}
 
 	//generate engine's empty texture
 	glGenTextures(1, &EmptyTexture);
@@ -41,6 +84,113 @@ RenderEngine::RenderEngine()
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 1, 1, 0, GL_RGB, GL_UNSIGNED_BYTE, glm::value_ptr(glm::vec3(0.0f, 0.0f, 1.0f)));
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+}
+
+void RenderEngine::GenerateEngineObjects()
+{
+	glm::vec4 quadVertices[] = {
+		glm::vec4(-1.0f, -1.0f,		0.0f, 0.0f),
+		glm::vec4( 1.0f, -1.0f,		1.0f, 0.0f),
+		glm::vec4( 1.0f,  1.0f,		1.0f, 1.0f),
+
+		glm::vec4( 1.0f,  1.0f,		1.0f, 1.0f),
+		glm::vec4(-1.0f,  1.0f,		0.0f, 1.0f),
+		glm::vec4(-1.0f, -1.0f,		0.0f, 0.0f)
+	};
+
+	glm::vec3 cubeVertices[] = {
+		//FRONT
+		glm::vec3(0.5f, -0.5f, -0.5f),
+		glm::vec3(-0.5f, -0.5f, -0.5f),
+		glm::vec3(-0.5f,  0.5f, -0.5f),
+
+		glm::vec3(-0.5f,  0.5f, -0.5f),
+		glm::vec3(0.5f,  0.5f, -0.5f),
+		glm::vec3(0.5f, -0.5f, -0.5f),
+
+		//BACK
+		glm::vec3(-0.5f, -0.5f,  0.5f),
+		glm::vec3(0.5f, -0.5f,  0.5f),
+		glm::vec3(0.5f,  0.5f,  0.5f),
+
+		glm::vec3(0.5f,  0.5f,  0.5f),
+		glm::vec3(-0.5f,  0.5f,  0.5f),
+		glm::vec3(-0.5f, -0.5f,  0.5f),
+
+		//LEFT
+		glm::vec3(-0.5f, -0.5f, -0.5f),
+		glm::vec3(-0.5f, -0.5f,  0.5f),
+		glm::vec3(-0.5f,  0.5f,  0.5f),
+
+		glm::vec3(-0.5f,  0.5f,  0.5f),
+		glm::vec3(-0.5f,  0.5f, -0.5f),
+		glm::vec3(-0.5f, -0.5f, -0.5f),
+
+		//RIGHT
+		glm::vec3(0.5f, -0.5f,  0.5f),
+		glm::vec3(0.5f, -0.5f, -0.5f),
+		glm::vec3(0.5f,  0.5f, -0.5f),
+
+		glm::vec3(0.5f,  0.5f, -0.5f),
+		glm::vec3(0.5f,  0.5f,  0.5f),
+		glm::vec3(0.5f, -0.5f,  0.5f),
+
+		//TOP
+		glm::vec3(-0.5f,  0.5f,  0.5f),
+		glm::vec3(0.5f,  0.5f,  0.5f),
+		glm::vec3(0.5f,  0.5f, -0.5f),
+
+		glm::vec3(0.5f,  0.5f, -0.5f),
+		glm::vec3(-0.5f,  0.5f, -0.5f),
+		glm::vec3(-0.5f,  0.5f,  0.5f),
+
+		//BOTTOM
+		glm::vec3(-0.5f, -0.5f, -0.5f),
+		glm::vec3(0.5f, -0.5f, -0.5f),
+		glm::vec3(0.5f, -0.5f,  0.5f),
+
+		glm::vec3(0.5f, -0.5f,  0.5f),
+		glm::vec3(-0.5f, -0.5f,  0.5f),
+		glm::vec3(-0.5f, -0.5f, -0.5f)
+	};
+
+	unsigned int quadVBO;
+	unsigned int quadVAO;
+	glGenVertexArrays(1, &quadVAO);
+	glGenBuffers(1, &quadVBO);
+
+	glBindVertexArray(quadVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), quadVertices, GL_STATIC_DRAW);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec4), (void*)(nullptr));
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec4), (void*)(sizeof(float) * 2));
+	glEnableVertexAttribArray(0);
+	glEnableVertexAttribArray(1);
+
+	EngineObjects[EngineObjectTypes::QUAD].first = quadVAO;
+	EngineObjects[EngineObjectTypes::QUAD].second = 6;
+
+	unsigned int cubeVBO;
+	unsigned int cubeVAO;
+	glGenVertexArrays(1, &cubeVAO);
+	glGenBuffers(1, &cubeVBO);
+
+	glBindVertexArray(cubeVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVertices), cubeVertices, GL_STATIC_DRAW);
+
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 3, (void*)(nullptr));
+	glEnableVertexAttribArray(0);
+
+	EngineObjects[EngineObjectTypes::CUBE].first = cubeVAO;
+	EngineObjects[EngineObjectTypes::CUBE].second = 36;
+
+	size_t vertexCount = 0;
+	EngineObjects[EngineObjectTypes::SPHERE].first = loadMeshToVAO("sphere.obj", &vertexCount);
+	EngineObjects[EngineObjectTypes::SPHERE].second = vertexCount;
+
+	EngineObjects[EngineObjectTypes::CONE].first = loadMeshToVAO("cone3.obj", &vertexCount);
+	EngineObjects[EngineObjectTypes::CONE].second = vertexCount;
 }
 
 void RenderEngine::AddMesh(MeshComponent* mesh)
@@ -128,76 +278,6 @@ void RenderEngine::SetupShadowmaps(glm::uvec2 size)
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void RenderEngine::RenderShadowMaps(std::vector <LightComponent*> lights)
-{
-	float timeSum = 0.0f;
-	float time1, time2;
-	glBindFramebuffer(GL_FRAMEBUFFER, ShadowFBO);
-	glEnable(GL_DEPTH_TEST);
-	glDisable(GL_CULL_FACE);
-	glViewport(0, 0, ShadowMapSize.x, ShadowMapSize.y);
-
-	bool bCubemapBound = false;
-
-	for (unsigned int i = 0; i < lights.size(); i++)
-	{
-		LightComponent* light = lights[i];
-		if (light->GetType() == LightType::POINT)
-		{
-			time1 = glfwGetTime();
-			if (!bCubemapBound)
-			{
-				ShadowLinearizeShader.Use();
-				glActiveTexture(GL_TEXTURE0 + 11);
-				glBindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, ShadowCubemapArray);
-				bCubemapBound = true;
-			}
-
-			glm::vec3 lightPos = light->GetTransform()->GetWorldTransform().Position;
-
-			ShadowLinearizeShader.Uniform1f("far", light->GetFar());
-			ShadowLinearizeShader.Uniform3fv("lightPos", lightPos);
-
-			unsigned int cubemapFirst = light->GetShadowMapNr() * 6;
-		
-			for (unsigned int i = cubemapFirst; i < cubemapFirst + 6; i++)
-			{
-				ShadowLinearizeShader.UniformMatrix4fv("lightSpaceMatrix", light->GetProjection() * glm::lookAt(lightPos, lightPos + GetCubemapFront(i), GetCubemapUp(i)));
-				time1 = glfwGetTime();
-				glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, ShadowCubemapArray, 0, i);
-				glClear(GL_DEPTH_BUFFER_BIT);
-				time2 = glfwGetTime();
-				timeSum += time2 - time1;
-				RenderScene(light->GetTransform()->GetWorldTransform().GetViewMatrix(), &ShadowLinearizeShader, false);
-			}
-		}
-		else
-		{
-			if (bCubemapBound || i == 0)
-			{
-				ShadowShader.Use();
-				glActiveTexture(GL_TEXTURE0 + 10);
-				glBindTexture(GL_TEXTURE_2D_ARRAY, ShadowMapArray);
-				bCubemapBound = false;
-			}
-
-			ShadowShader.UniformMatrix4fv("lightSpaceMatrix", light->GetProjection() * light->GetTransform()->GetWorldTransform().GetViewMatrix());
-			time1 = glfwGetTime();
-			glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, ShadowMapArray, 0, light->GetShadowMapNr());
-			glClear(GL_DEPTH_BUFFER_BIT);
-			time2 = glfwGetTime();
-			timeSum += time2 - time1;
-			RenderScene(light->GetTransform()->GetWorldTransform().GetViewMatrix(), &ShadowShader, false);
-		}
-	}
-
-	glActiveTexture(GL_TEXTURE0);
-	glEnable(GL_CULL_FACE);
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-	//std::cout << "Wyczyscilem sobie " << timeSum * 1000.0f << "ms.\n";
-}
-
 void RenderEngine::LoadMaterials(std::string path)
 {
 	std::ifstream file;
@@ -212,7 +292,7 @@ void RenderEngine::LoadMaterials(std::string path)
 	}
 
 	while (!isNextWordEqual(filestr, "end"))
-	{
+	{ 
 		std::string materialName;
 		float shininess, depthScale;
 		unsigned int texCount;
@@ -248,11 +328,214 @@ Material* RenderEngine::FindMaterial(std::string name)
 			return Materials[i];
 
 	std::cerr << "Can't find material " << name << "!\n";
-	
+
 	return nullptr;
 }
 
-void RenderEngine::RenderScene(glm::mat4 view, Shader* shader, bool bUseMaterials)
+void RenderEngine::RenderEngineObject(RenderInfo& info, std::pair<EngineObjectTypes, const Transform*> object, Shader* shader)
+{
+	RenderEngineObjects(info, std::vector<std::pair<EngineObjectTypes, const Transform*>> {object}, shader);
+}
+
+void RenderEngine::RenderEngineObjects(RenderInfo& info, std::vector<std::pair<EngineObjectTypes, const Transform*>> objects, Shader* shader)
+{
+	if (!shader)
+	{
+		shader = &DebugShader;
+		shader->Use();
+	}
+
+	EngineObjectTypes boundObject = EngineObjectTypes::SPHERE;
+	glBindVertexArray(EngineObjects[boundObject].first);	//first = VAO
+
+	glm::vec3 colors[4] = {
+		glm::vec3(1.0f, 0.0f, 0.0f),
+		glm::vec3(0.0f, 1.0f, 0.0f),
+		glm::vec3(0.0f, 0.0f, 1.0f),
+		glm::vec3(1.0f, 1.0f, 0.0f)
+	};
+
+	for (unsigned int i = 0; i < objects.size(); i++)
+	{
+		if (objects[i].first != boundObject)	//first = type of drawn object
+		{
+			boundObject = objects[i].first;		//first = type of drawn object
+			glBindVertexArray(EngineObjects[boundObject].first);	//first = VAO
+		}
+
+		if (objects[i].second != nullptr)	//second = transform of drawn object
+		{
+			glm::mat4 model = objects[i].second->GetWorldTransform().GetMatrix();
+			shader->UniformMatrix4fv("model", model);
+			shader->UniformMatrix4fv("MVP", (*info.VP) * model);
+		}
+		shader->Uniform3fv("color", colors[i % 4]);
+
+		if (boundObject == EngineObjectTypes::SPHERE || boundObject == EngineObjectTypes::CONE)
+			glDrawElements(GL_TRIANGLES, EngineObjects[boundObject].second, GL_UNSIGNED_INT, nullptr);
+		else
+			glDrawArrays(GL_TRIANGLES, 0, EngineObjects[boundObject].second);	//second = vertex count
+	}
+}
+
+void RenderEngine::RenderShadowMaps(std::vector <LightComponent*> lights)
+{
+	glBindFramebuffer(GL_FRAMEBUFFER, ShadowFBO);
+	glEnable(GL_DEPTH_TEST);
+	glDisable(GL_CULL_FACE);
+	glViewport(0, 0, ShadowMapSize.x, ShadowMapSize.y);
+
+	bool bCubemapBound = false;
+
+	for (unsigned int i = 0; i < lights.size(); i++)
+	{
+		LightComponent* light = lights[i];
+		if (light->GetType() == LightType::POINT)
+		{
+			if (!bCubemapBound)
+			{
+				DepthLinearizeShader.Use();
+				glActiveTexture(GL_TEXTURE0 + 11);
+				glBindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, ShadowCubemapArray);
+				bCubemapBound = true;
+			}
+
+			Transform lightWorld = light->GetTransform()->GetWorldTransform();
+			glm::vec3 lightPos = lightWorld.Position;
+			glm::mat4 projection = light->GetProjection();
+
+			DepthLinearizeShader.Uniform1f("far", light->GetFar());
+			DepthLinearizeShader.Uniform3fv("lightPos", lightPos);
+
+			unsigned int cubemapFirst = light->GetShadowMapNr() * 6;
+		
+			for (unsigned int i = cubemapFirst; i < cubemapFirst + 6; i++)
+			{
+				glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, ShadowCubemapArray, 0, i);
+				glClear(GL_DEPTH_BUFFER_BIT);
+
+				glm::mat4 VP = projection * glm::lookAt(lightPos, lightPos + GetCubemapFront(i), GetCubemapUp(i));
+				RenderInfo info(nullptr, nullptr, &VP);
+				RenderScene(info, &DepthLinearizeShader, false);
+			}
+		}
+		else
+		{
+			if (bCubemapBound || i == 0)
+			{
+				DepthShader.Use();
+				glActiveTexture(GL_TEXTURE0 + 10);
+				glBindTexture(GL_TEXTURE_2D_ARRAY, ShadowMapArray);
+				bCubemapBound = false;
+			}
+
+			glm::mat4 VP = light->GetVP();
+
+			glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, ShadowMapArray, 0, light->GetShadowMapNr());
+			glClear(GL_DEPTH_BUFFER_BIT);
+			RenderInfo info(nullptr, nullptr, &VP);
+			RenderScene(info, &DepthShader, false);
+		}
+	}
+
+	glActiveTexture(GL_TEXTURE0);
+	glEnable(GL_CULL_FACE);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	//std::cout << "Wyczyscilem sobie " << timeSum * 1000.0f << "ms.\n";
+}
+
+void RenderEngine::RenderLightVolume(RenderInfo& info, LightType type, const Transform* transform, bool shade)
+{
+	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	switch (type)
+	{
+	case LightType::DIRECTIONAL:	break;// glDisable(GL_CULL_FACE); RenderEngineObject(info, std::pair<EngineObjectTypes, const Transform*>(EngineObjectTypes::QUAD, nullptr)); glEnable(GL_CULL_FACE); break;
+
+	case LightType::POINT:			RenderEngineObject(info, std::pair<EngineObjectTypes, const Transform*>(EngineObjectTypes::SPHERE, transform), ((shade) ? (&LightShaders[(unsigned int)LightType::POINT]) : (&DepthShader))); break;
+
+	case LightType::SPOT:			RenderEngineObject(info, std::pair<EngineObjectTypes, const Transform*>(EngineObjectTypes::CONE, transform), ((shade) ? (&LightShaders[(unsigned int)LightType::SPOT]) : (&DepthShader))); break;
+
+	default:						std::cerr << "ERROR! Invalid light type.\n";
+	}
+	//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+}
+
+void RenderEngine::RenderLightVolumes(RenderInfo& info, std::vector <LightComponent*> lights, glm::vec2 resolution)
+{
+	for (int i = 0; i < 3; i++)	//TODO: Optimize this
+	{
+		if (i != LightType::POINT && i != LightType::SPOT)
+			continue;
+		LightShaders[i].Use();
+		LightShaders[i].Uniform2fv("resolution", resolution);
+	}
+	std::pair<LightType, Shader*> shader(LightType::POINT, &LightShaders[LightType::POINT]);	//we use a pair object for some optimisation - when we want to check only the type of the shader we use the first element; the second one contains actual shader object
+	shader.second->Use();
+
+	glEnable(GL_DEPTH_TEST);
+	glDepthMask(0x00);
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_FRONT);
+	glEnable(GL_BLEND);
+	glBlendEquation(GL_FUNC_ADD);
+	glBlendFunc(GL_ONE, GL_ONE);
+	glEnable(GL_STENCIL_TEST);
+	glStencilOpSeparate(GL_FRONT, GL_KEEP, GL_INCR_WRAP, GL_KEEP);
+	glStencilOpSeparate(GL_BACK, GL_KEEP, GL_KEEP, GL_INCR_WRAP);
+	glStencilMask(0xFF);
+
+	for (unsigned int i = 0; i < lights.size(); i++)
+	{
+		LightType type = lights[i]->GetType();
+		if (type != shader.first)
+		{
+			shader.first = type;
+			shader.second = &LightShaders[type];
+			shader.second->Use();
+		}
+
+		if (lights[i]->GetName() != "Flashlight")
+			continue;
+
+		lights[i]->CutOff = glm::cos(glm::radians(glfwGetTime() * 1.0f));
+		lights[i]->OuterCutOff = glm::cos(glm::radians(glfwGetTime() * 1.1f));
+		lights[i]->CalculateLightRadius();
+
+		Transform lightTransform = lights[i]->GetTransform()->GetWorldTransform();
+		lightTransform.Scale = lights[i]->GetTransform()->Scale;
+		shader.second->Uniform1i("lightIndex", i);	//lights in the array on GPU should be sorted in the same order as they are in this vector!
+
+
+		//1st pass: stencil
+	
+		glStencilMask(0xFF);
+		glClear(GL_STENCIL_BUFFER_BIT);
+		glDisable(GL_CULL_FACE);
+		glStencilFunc(GL_ALWAYS, 1, 0xFF);
+		glDepthFunc(GL_LEQUAL);
+		glDrawBuffer(GL_NONE);
+		RenderLightVolume(info, type, &lightTransform);
+
+		//2nd pass: lighting
+		glStencilMask(0x00);
+		glStencilFunc(GL_EQUAL, 0, 0xFF);
+		glEnable(GL_CULL_FACE);
+		glDepthFunc(GL_ALWAYS);
+		GLenum bufs[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
+		glDrawBuffers(2, bufs);
+		RenderLightVolume(info, type, &lightTransform);
+	}
+
+	glDisable(GL_BLEND);
+	glCullFace(GL_BACK);
+	glDepthFunc(GL_LEQUAL);
+	glDepthMask(0xFF);
+	glStencilMask(0xFF);
+	glDisable(GL_CULL_FACE);
+	glDisable(GL_STENCIL_TEST);
+}
+
+void RenderEngine::RenderScene(RenderInfo& info, Shader* shader, bool bUseMaterials)
 {
 	if (!shader)
 		shader = &DefaultShader;
@@ -274,12 +557,28 @@ void RenderEngine::RenderScene(glm::mat4 view, Shader* shader, bool bUseMaterial
 			materialBound = Meshes[i]->MeshMaterial;
 		}
 
-		Meshes[i]->Render(shader, view);
+		Meshes[i]->Render(shader, info);
 	}
 	for (unsigned int i = 0; i < Models.size(); i++)
 	{
-		Models[i]->Render(shader, view, VAOBound, materialBound, bUseMaterials, EmptyTexture);
+		Models[i]->Render(shader, info, VAOBound, materialBound, bUseMaterials, EmptyTexture);
 	}
+}
+
+void RenderEngine::RenderScene(RenderInfo& info, std::string shaderName, bool bUseMaterials)
+{
+	Shader* shader = nullptr;
+	if (shaderName == "default")
+		shader = &DefaultShader;
+	else if (shaderName == "geometry")
+		shader = &GShader;
+	else
+	{
+		std::cerr << "ERROR! Can't find a shader named " << shaderName << ". Scene won't be rendered.\n";
+		return;
+	}
+
+	RenderScene(info, shader, bUseMaterials);
 }
 
 glm::vec3 GetCubemapFront(unsigned int index)

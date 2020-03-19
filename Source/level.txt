@@ -16,7 +16,7 @@ skip
 end
 newcomp model Subway child Cube x3.obj
 transform
-0 0 -10
+0 1 -10
 skip
 0.4 0.4 0.04
 end
@@ -32,14 +32,14 @@ newcomp collision BCube child Cube
 cube
 true
 end
-newcomp mesh Crate
+newcomdp mesh Crate
 copy Cube material Bricks
 transform
 0 0 3
 skip
 1 0.35 0.01
 end
-newcomp collision BCrate child Crate
+newcomdp collision BCrate child Crate
 cube
 false
 end
@@ -47,7 +47,7 @@ newcomp light Lamp point
 0.05 0.05 0.05
 5 4 0
 2.5 2 0
-8 0 0
+16 0 0
 transform
 0 0.3 -4.5
 end
@@ -57,7 +57,7 @@ newcomp light Flashlight spot
 2.5 2.5 2.5
 0.5 12.5 30
 transform
-0 0 3.75
+0 0 -3.75
 skip
 skip
 0 0 -1
@@ -104,8 +104,8 @@ true
 end
 newcomp light Bekalight child Camera spot
 0 0 0
-2 2 2
 1 1 1
+0.5 0.5 0.5
 2 12.5 45
 transform
 0.03 -0.04 0

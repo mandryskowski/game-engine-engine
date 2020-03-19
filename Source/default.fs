@@ -126,7 +126,7 @@ float CalcShadow3D(Light light)
 		return 0.0;
 	float actualDepth = length(lightToFrag) / light.far;
 
-	return (actualDepth > mapDepth + 0.02) ? (1.0) : (0.0);
+	return (actualDepth > mapDepth + 0.01) ? (1.0) : (0.0);
 }
 
 vec3 CalcLight(Light light, vec3 diffuseColor, vec3 specularColor, vec3 normal)

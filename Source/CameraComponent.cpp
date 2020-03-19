@@ -22,6 +22,14 @@ glm::mat4 CameraComponent::GetProjectionMat()
 	return Projection;
 }
 
+glm::mat4 CameraComponent::GetVP(Transform* worldTransform)
+{
+	if (worldTransform)
+		return Projection * worldTransform->GetViewMatrix();
+	else
+		return Projection * ComponentTransform.GetWorldTransform().GetViewMatrix();
+}
+
 bool CameraComponent::PerformCollisionCheck(std::vector<CollisionComponent*> components, glm::vec3 offset, std::vector<glm::vec3>* bounceNormals, std::vector<CollisionComponent*>* collidingComponents)
 {
 	ComponentTransform.Position += offset;
@@ -180,7 +188,7 @@ void CameraComponent::Update(float deltaTime)
 		PerformCollisionCheck(std::vector<CollisionComponent*> {GroundCheckComponent}, glm::vec3(0.0f, -0.5f, 0.0f), nullptr, &collidingAtGround);
 
 	float distanceFromGround = 0.0f;
-	float limit = 1.0f;
+	float limit = 5.0f;
 	for (unsigned int i = 0; i < collidingAtGround.size(); i++)
 	{
 		float topmostPosition = collidingAtGround[i]->GetTransform()->GetWorldTransform().Position.y - (collidingAtGround[i]->GetTransform()->GetWorldTransform().Scale.y / 2.0f);

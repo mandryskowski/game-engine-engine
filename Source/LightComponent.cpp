@@ -7,7 +7,7 @@ LightComponent::LightComponent(std::string name, LightType type, unsigned int sh
 
 	ShadowMapNr = shadowNr;
 	Far = far;
-	ProjectionMat = projection;
+	Projection = projection;
 
 	Ambient = amb;
 	Diffuse = diff;
@@ -33,16 +33,48 @@ unsigned int LightComponent::GetShadowMapNr()
 	return ShadowMapNr;
 }
 
+glm::mat4 LightComponent::GetProjection()
+{
+	return Projection;
+}
+
+glm::mat4 LightComponent::GetVP(Transform* worldTransform)
+{
+	if (worldTransform)
+		return Projection * worldTransform->GetViewMatrix();
+	else
+		return Projection * ComponentTransform.GetWorldTransform().GetViewMatrix();
+}
+
+void LightComponent::CalculateLightRadius()
+{
+	float constant = 1.0f;
+	float linear = 0.0f;
+	float quadratic = Attenuation;
+	float lightMax = std::fmax(std::fmax(Diffuse.r, Diffuse.g), Diffuse.b);
+
+	float radius = 10.0f;
+	if (Attenuation > 0.0f)
+		radius = (-linear + std::sqrtf(linear * linear - 4.0f * quadratic * (constant - lightMax * (256.0f / 5.0f)))) / (2.0f * quadratic);
+
+	Far = radius;
+	Projection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, Far);
+	ComponentTransform.Scale.z = radius;
+	if (Type == LightType::SPOT)
+	{
+		float realOuter = glm::radians(glfwGetTime() * 1.1f / 2.0f);
+		float scale = radius * tan(realOuter);
+		std::cout << "Outer: " << realOuter << "			Scale: " << scale << ".\n";
+		ComponentTransform.Scale.x = scale;
+		ComponentTransform.Scale.y = scale;
+	}
+}
+
 void LightComponent::SetAdditionalData(glm::vec3 data)
 {
 	Attenuation = data.x;
 	CutOff = glm::cos(glm::radians(data.y));
 	OuterCutOff = glm::cos(glm::radians(data.z));
-}
-
-glm::mat4 LightComponent::GetProjection()
-{
-	return ProjectionMat;
 }
 
 void LightComponent::UpdateUBOData(UniformBuffer* lightsUBO, size_t offset)
@@ -71,7 +103,7 @@ void LightComponent::UpdateUBOData(UniformBuffer* lightsUBO, size_t offset)
 	lightsUBO->SubData1i(Type, lightsUBO->offsetCache);
 	lightsUBO->SubData1i(ShadowMapNr, lightsUBO->offsetCache);
 	lightsUBO->SubData1f(Far, lightsUBO->offsetCache);
-	lightsUBO->SubDataMatrix4fv(ProjectionMat * worldTransform.GetViewMatrix(), lightsUBO->offsetCache + 8);
+	lightsUBO->SubDataMatrix4fv(Projection * worldTransform.GetViewMatrix(), lightsUBO->offsetCache + 8);
 	lightsUBO->PadOffset();
 }
 

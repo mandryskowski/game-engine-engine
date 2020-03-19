@@ -10,12 +10,12 @@ Transform::Transform(glm::vec3 pos, glm::vec3 rot, glm::vec3 scale, glm::vec3 fr
 	bConstrain = constrain;
 }
 
-glm::mat3 Transform::GetRotationMatrix(float scalar)
+glm::mat3 Transform::GetRotationMatrix(float scalar) const
 {
 	return GetRotationMatrixWithOffset(glm::vec3(0.0f), scalar);
 }
 
-glm::mat3 Transform::GetRotationMatrixWithOffset(glm::vec3 offset, float scalar)
+glm::mat3 Transform::GetRotationMatrixWithOffset(glm::vec3 offset, float scalar) const
 {
 	glm::vec3 rot = (Rotation + offset) * scalar;
 
@@ -25,7 +25,7 @@ glm::mat3 Transform::GetRotationMatrixWithOffset(glm::vec3 offset, float scalar)
 	return (glm::mat3)glm::eulerAngleYXZ(glm::radians(rot.y), glm::radians(rot.x), glm::radians(rot.z));
 }
 
-glm::mat4 Transform::GetMatrix()
+glm::mat4 Transform::GetMatrix() const
 {
 	glm::mat4 mat = glm::translate(glm::mat4(1.0f), Position);
 
@@ -39,12 +39,12 @@ glm::mat4 Transform::GetMatrix()
 	return mat;
 }
 
-glm::mat4 Transform::GetViewMatrix()
+glm::mat4 Transform::GetViewMatrix() const
 {
 	return glm::lookAt(Position, Position + Front, glm::vec3(0.0f, 1.0f, 0.0f));
 }
 
-Transform Transform::GetWorldTransform()
+Transform Transform::GetWorldTransform() const
 {
 	if (ParentTransform == nullptr)
 		return Transform(Position, Rotation, Scale, Front, bConstrain);
@@ -61,6 +61,11 @@ Transform Transform::GetWorldTransform()
 
 
 	return Transform(pos, rot, scale, front, bConstrain);
+}
+
+Transform* Transform::GetParentTransform() const
+{
+	return ParentTransform;
 }
 
 void Transform::SetParentTransform(Transform* parent, bool relocate)

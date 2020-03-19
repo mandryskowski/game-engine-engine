@@ -2,6 +2,14 @@
 #include "Shader.h"
 #include <vector>
 
+enum EngineObjectTypes
+{
+	QUAD,
+	CUBE,
+	SPHERE,
+	CONE
+};
+
 struct UniformBuffer
 {
 	unsigned int UBO;

@@ -36,7 +36,7 @@ void ModelComponent::ProcessAiNode(const aiScene* scene, aiNode* node, std::vect
 	}
 }
 
-void ModelComponent::Render(Shader* shader, glm::mat4& view, unsigned int& VAOBound, Material* materialBound, bool& bUseMaterials, unsigned int& emptyTexture)
+void ModelComponent::Render(Shader* shader, RenderInfo& info, unsigned int& VAOBound, Material* materialBound, bool& bUseMaterials, unsigned int& emptyTexture)
 {
 	shader->UniformMatrix4fv("model", ComponentTransform.GetWorldTransform().GetMatrix());
 	for (unsigned int i = 0; i < Meshes.size(); i++)
@@ -51,6 +51,6 @@ void ModelComponent::Render(Shader* shader, glm::mat4& view, unsigned int& VAOBo
 			Meshes[i]->MeshMaterial->UpdateUBOData(shader, emptyTexture);
 			materialBound = Meshes[i]->MeshMaterial;
 		}
-		Meshes[i]->Render(shader, view);
+		Meshes[i]->Render(shader, info);
 	}
 }

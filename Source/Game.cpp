@@ -21,15 +21,18 @@ Game::Game(GLFWwindow *window) :
 		mainFBOTexType = GL_TEXTURE_2D_MULTISAMPLE;
 	}
 
-	MainFramebuffer.Load(Settings.WindowSize, std::vector<ColorBufferData> {ColorBufferData(true, true, mainFBOTexType), ColorBufferData(true, true, mainFBOTexType, GL_LINEAR, GL_LINEAR)}, new DepthBufferData(mainFBOTexType), Settings.AntiAliasingSamples);
+	DepthBufferData* sharedDepthStencil = new DepthBufferData(GL_TEXTURE_2D, GL_NEAREST, GL_NEAREST, GL_DEPTH24_STENCIL8);	//we share this buffer between the geometry and main framebuffer - we want the deferred-rendered objects depth to influence light volumes&forward rendered objects
+	GFramebuffer.Load(Settings.WindowSize, std::vector<ColorBufferData> {
+		ColorBufferData(true, false, GL_TEXTURE_2D, GL_NEAREST, GL_NEAREST),	//gPosition texture
+		ColorBufferData(true, false, GL_TEXTURE_2D, GL_NEAREST, GL_NEAREST),	//gNormal texture
+		ColorBufferData(false, true, GL_TEXTURE_2D, GL_NEAREST, GL_NEAREST)},	//gAlbedoSpec texture
+		sharedDepthStencil); //depth+stencil
+	MainFramebuffer.Load(Settings.WindowSize, std::vector<ColorBufferData> {ColorBufferData(true, true, mainFBOTexType), ColorBufferData(true, true, mainFBOTexType, GL_LINEAR, GL_LINEAR)}, sharedDepthStencil, Settings.AntiAliasingSamples);
 	BlitFramebuffer.Load(Settings.WindowSize, std::vector<ColorBufferData> {ColorBufferData(true, true), ColorBufferData(true, true, GL_TEXTURE_2D, GL_LINEAR, GL_LINEAR)});
 
 	ActiveCamera = nullptr;
 	
-	MatricesBuffer.Generate(0, sizeof(glm::mat4) * 2);
-
-	DebugShader.LoadShaders("debug.vs", "debug.fs");
-	DebugShader.UniformBlockBinding("Matrices", 0);
+	MatricesBuffer.Generate(0, sizeof(glm::mat4) * 2); 
 
 	RenderEng.SetupShadowmaps(glm::uvec2(1024));
 
@@ -181,6 +184,8 @@ Component* Game::LoadComponentData(std::stringstream& filestr, Actor* currentAct
 			filestr >> additionalData[i];
 		lightPtr->SetAdditionalData(additionalData);
 
+		lightPtr->CalculateLightRadius();
+
 		AddLightToScene(lightPtr);
 		comp = lightPtr;
 	}
@@ -328,6 +333,7 @@ void Game::Run()
 
 void Game::Update(float deltaTime)
 {
+
 	RootActor.UpdateAll(deltaTime);
 	MatricesBuffer.SubDataMatrix4fv(ActiveCamera->GetTransform()->GetWorldTransform().GetViewMatrix(), 0);
 	LightsBuffer.SubData4fv(ActiveCamera->GetTransform()->GetWorldTransform().Position, 16);
@@ -336,28 +342,61 @@ void Game::Update(float deltaTime)
 
 void Game::Render()
 {
+	Transform camWorld = ActiveCamera->GetTransform()->GetWorldTransform();
+	glm::mat4 view = camWorld.GetViewMatrix();
+	glm::mat4 projection = ActiveCamera->GetProjectionMat();
+	glm::mat4 VP = ActiveCamera->GetVP(&camWorld);
+	std::cout << VP[0][0] << " " << VP[0][1] << '\n';
+	RenderInfo info(&view, &projection, &VP);
+
+	////////////////////1. Shadow maps pass
 	float time1, time2;
 	time1 = glfwGetTime();
 	RenderEng.RenderShadowMaps(Lights);
 	time2 = glfwGetTime();
 	//std::cout << "Zjadlo mi " << (time2 - time1) * 1000.0f << "ms.\n";
 
-	MainFramebuffer.Bind();
+	////////////////////2. Geometry pass
+	GFramebuffer.Bind();
 	glViewport(0, 0, Settings.WindowSize.x, Settings.WindowSize.y);
 	glEnable(GL_DEPTH_TEST);
-	glClearBufferfv(GL_COLOR, 0, glm::value_ptr(glm::vec3(0.1f, 0.15f, 0.15f)));
+	glEnable(GL_CULL_FACE);
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	RenderEng.RenderScene(info, "geometry");
+	
+	////////////////////X. Lighting pass
+	MainFramebuffer.Bind();
+	glClearBufferfv(GL_COLOR, 0, glm::value_ptr(glm::vec3(0.0f, 0.0f, 0.0f)));
 	glClearBufferfv(GL_COLOR, 1, glm::value_ptr(glm::vec3(0.0f)));
-	glClear(GL_DEPTH_BUFFER_BIT);
+
+	for (int i = 0; i < 3; i++)
+	{
+		glActiveTexture(GL_TEXTURE0 + i);
+		glBindTexture(GL_TEXTURE_2D, GFramebuffer.GetColorBuffer(i).OpenGLBuffer);
+	}
+	RenderEng.RenderLightVolumes(info, Lights, Settings.WindowSize);
+
+	////////////////////3. Forward rendering pass
+	glEnable(GL_DEPTH_TEST);
 	glDisable(GL_CULL_FACE);
 	
-	RenderEng.RenderScene(ActiveCamera->GetTransform()->GetWorldTransform().GetViewMatrix());
+	//RenderEng.RenderScene(ActiveCamera->GetTransform()->GetWorldTransform().GetViewMatrix());
 
-	//CollisionEng.Draw(&DebugShader);		//uncomment to debug collision system
+	
+	/*glDisable(GL_CULL_FACE);
+	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	std::vector <std::pair<EngineObjectTypes, const Transform*>> collisionDebugData = CollisionEng.GetCollisionInstancesDebugData();		//Uncomment to debug bounding boxes.
+	RenderEng.RenderEngineObjects(info, collisionDebugData);
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	glEnable(GL_CULL_FACE);*/
+	
 
-	//if (Settings.AntiAliasingSamples > 0)
+	////////////////////4. Postprocessing pass (Blur + Tonemapping & Gamma Correction)
 	MainFramebuffer.BlitToFBO(BlitFramebuffer.GetFBO());
-
 	GamePostprocess.Render(BlitFramebuffer.GetColorBuffer(0).OpenGLBuffer, GamePostprocess.GaussianBlur(BlitFramebuffer.GetColorBuffer(1).OpenGLBuffer, 10));
+	//GamePostprocess.Render(GFramebuffer.GetColorBuffer(1).OpenGLBuffer, GamePostprocess.GaussianBlur(BlitFramebuffer.GetColorBuffer(1).OpenGLBuffer, 10));
 
 	glfwSwapBuffers(Window);
 }

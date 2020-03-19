@@ -6,10 +6,10 @@ out vec4 fragPos;
 
 //uniform
 uniform mat4 model;
-uniform mat4 lightSpaceMatrix;
+uniform mat4 MVP;
 
 void main()
 {
 	fragPos = model * vec4(vPosition, 1.0);
-	gl_Position = lightSpaceMatrix * fragPos;
+	gl_Position = MVP * vec4(vPosition, 1.0);
 }

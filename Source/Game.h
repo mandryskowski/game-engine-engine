@@ -8,10 +8,10 @@
 class Game
 {
 	GLFWwindow *Window;
+	Framebuffer GFramebuffer;
 	Framebuffer MainFramebuffer;
 	Framebuffer BlitFramebuffer;
 	Postprocess GamePostprocess;
-	Shader DebugShader;
 
 	Actor RootActor;
 	CameraComponent* ActiveCamera;	//there are 2 similiar camera variables: ActiveCamera and global MouseContextCamera. the first one is basically the camera we use to see the world (view mat); the second one is updated by mouse controls.

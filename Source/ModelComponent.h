@@ -7,9 +7,10 @@ class ModelComponent: public Component
 	std::string FilePath;
 
 public:
-	ModelComponent(std::string="error");
+	ModelComponent(std::string="undefined");
 	void SetFilePath(std::string);
 	std::string GetFilePath();
 	void ProcessAiNode(const aiScene*, aiNode*, std::vector<ModelComponent*>&, MaterialLoadingData*);	//the vector contains the pointers of newly created ModelComponents for the render engine
-	virtual void Render(Shader*, glm::mat4&, unsigned int&, Material*, bool&, unsigned int&);
+	virtual void Render(Shader*, RenderInfo&, unsigned int&, Material*, bool&, unsigned int&);
 };
+

@@ -42,99 +42,23 @@ bool CollisionEngine::CheckForCollision(std::vector<CollisionComponent*> compone
 	return bCollision;
 }
 
-void CollisionEngine::Draw(Shader* shader)
+std::vector <std::pair<EngineObjectTypes, const Transform*>> CollisionEngine::GetCollisionInstancesDebugData()
 {
-	shader->Use();
-	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-	glDisable(GL_CULL_FACE);
-
-	glm::vec3 vertices[] = {
-		//FRONT
-		glm::vec3( 0.5f, -0.5f, -0.5f),
-		glm::vec3(-0.5f, -0.5f, -0.5f),
-		glm::vec3(-0.5f,  0.5f, -0.5f),
-
-		glm::vec3(-0.5f,  0.5f, -0.5f),
-		glm::vec3( 0.5f,  0.5f, -0.5f),
-		glm::vec3( 0.5f, -0.5f, -0.5f),
-
-		//BACK
-		glm::vec3(-0.5f, -0.5f,  0.5f),
-		glm::vec3( 0.5f, -0.5f,  0.5f),
-		glm::vec3( 0.5f,  0.5f,  0.5f),
-
-		glm::vec3( 0.5f,  0.5f,  0.5f),
-		glm::vec3(-0.5f,  0.5f,  0.5f),
-		glm::vec3(-0.5f, -0.5f,  0.5f),
-
-		//LEFT
-		glm::vec3(-0.5f, -0.5f, -0.5f),
-		glm::vec3(-0.5f, -0.5f,  0.5f),
-		glm::vec3(-0.5f,  0.5f,  0.5f),
-
-		glm::vec3(-0.5f,  0.5f,  0.5f),
-		glm::vec3(-0.5f,  0.5f, -0.5f),
-		glm::vec3(-0.5f, -0.5f, -0.5f),
-		
-		//RIGHT
-		glm::vec3( 0.5f, -0.5f,  0.5f),
-		glm::vec3( 0.5f, -0.5f, -0.5f),
-		glm::vec3( 0.5f,  0.5f, -0.5f),
-
-		glm::vec3( 0.5f,  0.5f, -0.5f),
-		glm::vec3( 0.5f,  0.5f,  0.5f),
-		glm::vec3( 0.5f, -0.5f,  0.5f),
-
-		//TOP
-		glm::vec3(-0.5f,  0.5f,  0.5f),
-		glm::vec3( 0.5f,  0.5f,  0.5f),
-		glm::vec3( 0.5f,  0.5f, -0.5f),
-
-		glm::vec3( 0.5f,  0.5f, -0.5f),
-		glm::vec3(-0.5f,  0.5f, -0.5f),
-		glm::vec3(-0.5f,  0.5f,  0.5f),
-
-		//BOTTOM
-		glm::vec3(-0.5f, -0.5f, -0.5f),
-		glm::vec3( 0.5f, -0.5f, -0.5f),
-		glm::vec3( 0.5f, -0.5f,  0.5f),
-
-		glm::vec3 (0.5f, -0.5f,  0.5f),
-		glm::vec3(-0.5f, -0.5f,  0.5f),
-		glm::vec3(-0.5f, -0.5f, -0.5f)
-	};
-
-	unsigned int VBO, VAO;
-	glGenVertexArrays(1, &VAO);
-	glGenBuffers(1, &VBO);
-
-	glBindVertexArray(VAO);
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void*)(nullptr));
-	glEnableVertexAttribArray(0);
-	
-	glm::vec3 colors[6] = {
-		glm::vec3(1.0f, 0.0f, 0.0f),
-		glm::vec3(0.0f, 1.0f, 0.0f),
-		glm::vec3(0.0f, 0.0f, 1.0f),
-		glm::vec3(1.0f, 1.0f, 0.0f),
-		glm::vec3(1.0f, 0.0f, 1.0f),
-		glm::vec3(0.0f, 1.0f, 1.0f)
-	};
+	std::vector <std::pair<EngineObjectTypes, const Transform*>> data;
 	for (unsigned int i = 0; i < CollisionInstances.size(); i++)
 	{
-		Transform t = CollisionInstances[i]->GetTransform()->GetWorldTransform();
-		shader->UniformMatrix4fv("model", t.GetMatrix());
-		shader->Uniform3fv("color", colors[i % 4]);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
+		std::pair <EngineObjectTypes, const Transform*> instanceData;
+
+		if (dynamic_cast<BSphere*>(CollisionInstances[i]))
+			instanceData.first = EngineObjectTypes::SPHERE;
+		else
+			instanceData.first = EngineObjectTypes::CUBE;
+
+		instanceData.second = CollisionInstances[i]->GetTransform();
+		data.push_back(instanceData);
 	}
 
-	glDeleteBuffers(1, &VBO);
-	glDeleteVertexArrays(1, &VAO);
-
-	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-	//glEnable(GL_CULL_FACE);
+	return data;
 }
 
 template<class T>bool isComponentInVector(std::vector <T*> v, T* comp)

@@ -32,7 +32,10 @@ void Material::LoadFromAiMaterial(aiMaterial* material, MaterialLoadingData* mat
 
 void Material::LoadAiTexturesOfType(aiMaterial* material, aiTextureType type, std::string shaderName, MaterialLoadingData* matLoadingData)
 {
-	std::vector <Texture*>* prevLoadedTextures = &matLoadingData->LoadedTextures;
+	std::vector <Texture*>* prevLoadedTextures = nullptr;
+	if (matLoadingData)
+		prevLoadedTextures = &matLoadingData->LoadedTextures;
+
 	bool sRGB = false;
 	if (type == aiTextureType_DIFFUSE)
 		sRGB = true;
@@ -46,23 +49,27 @@ void Material::LoadAiTexturesOfType(aiMaterial* material, aiTextureType type, st
 		material->GetTexture(type, i, &path, &texMapping);
 		pathStr = path.C_Str();
 
-		bool bWasLoadedPreviously = false;
-		for (unsigned int j = 0; j < prevLoadedTextures->size(); j++)	//check if the texture was loaded in the past (saves a lot of time)
+		if (prevLoadedTextures)
 		{
-			if ((*prevLoadedTextures)[j]->Path == pathStr)
+			bool bWasLoadedPreviously = false;
+			for (unsigned int j = 0; j < prevLoadedTextures->size(); j++)	//check if the texture was loaded in the past (saves a lot of time)
 			{
-				Textures.push_back((*prevLoadedTextures)[j]);
-				bWasLoadedPreviously = true;
-				break;
+				if ((*prevLoadedTextures)[j]->Path == pathStr)
+				{
+					Textures.push_back((*prevLoadedTextures)[j]);
+					bWasLoadedPreviously = true;
+					break;
+				}
 			}
-		}
 
-		if (bWasLoadedPreviously)	//skip the costly loading if we already loaded this file
-			continue;
+			if (bWasLoadedPreviously)	//skip the costly loading if we already loaded this file
+				continue;
+		}
 
 		Texture* tex = new Texture(pathStr, shaderName + std::to_string(i + 1), sRGB);	//create a new Texture and pass the file path, the shader name (for example diffuse1, diffuse2, ...) and the sRGB info
 		Textures.push_back(tex);
-		prevLoadedTextures->push_back(tex);
+		if (prevLoadedTextures)
+			prevLoadedTextures->push_back(tex);
 	}
 }
 

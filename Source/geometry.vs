@@ -9,17 +9,14 @@ layout (location = 4) in vec3 vBitangent;
 out VS_OUT
 {
 	vec3 position;
-	vec3 normal;
 	vec2 texCoord;
-	vec3 tangentDupa;
 	
 	mat3 TBN;
 }	vs_out;
 
 //uniforms
-uniform vec3 scale;
 uniform mat4 model;
-uniform mat4 MVP; 
+uniform mat4 MVP;
 uniform mat3 normalMat;
 layout (std140) uniform Matrices
 {
@@ -30,7 +27,7 @@ layout (std140) uniform Matrices
 void main()
 {
 	vs_out.position = vec3(model * vec4(vPosition, 1.0));
-	vs_out.normal = normalize(normalMat * vNormal);
+	vs_out.texCoord = vTexCoord;
 	
 	vec3 T = normalize(vTangent);
 	vec3 B;
@@ -40,18 +37,11 @@ void main()
 	else
 		B = normalize(vBitangent);
 	
-	//scale the texture coords along with the model (so the textures repeat instead of stretching)
-	vec2 tangentScale = vec2(transpose(mat3(T, B, N)) * scale);
-	tangentScale = abs(tangentScale);
-	vs_out.texCoord = vTexCoord;// * tangentScale.xy;
-	
 	T = normalize(normalMat * T);
 	B = normalize(normalMat * B);
 	N = normalize(normalMat * N);
 	
 	vs_out.TBN = mat3(T, B, N);
-	
-	vs_out.tangentDupa = vTangent;
 	
 	gl_Position = MVP * vec4(vPosition, 1.0);
 }

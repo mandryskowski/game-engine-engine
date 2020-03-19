@@ -9,8 +9,8 @@ protected:
 	std::vector <Component*> Children;
 
 public:
-	Component(std::string name = "error", Transform t = Transform());
-	Component(std::string name = "error", glm::vec3 pos = glm::vec3(0.0f), glm::vec3 rot = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 scale = glm::vec3(1.0f));
+	Component(std::string name = "undefined", Transform t = Transform());
+	Component(std::string name = "undefined", glm::vec3 pos = glm::vec3(0.0f), glm::vec3 rot = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 scale = glm::vec3(1.0f));
 	std::string GetName();
 	Transform* GetTransform();
 	std::vector<Component*> GetChildren();
