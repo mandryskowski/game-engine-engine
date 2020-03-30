@@ -1,41 +1,41 @@
 #include "Postprocess.h"
 
-ColorBufferData::ColorBufferData(bool hdr, bool alpha, GLenum texEnum, GLenum magFilter, GLenum minFilter)
+ColorBufferData::ColorBufferData(GLenum texEnum, GLenum internalFormat, GLenum type, GLenum magFilter, GLenum minFilter)
 {
 	OpenGLBuffer = 0;
-	bHDR = hdr;
-	bAlpha = alpha;
 	TextureEnum = texEnum;
+	InternalFormat = internalFormat;
+	Type = type;
 	MagFilter = magFilter;
 	MinFilter = minFilter;
 }
-GLenum ColorBufferData::GetInternalFormat()
+
+bool ColorBufferData::ContainsAlphaChannel()
 {
-	if (bHDR)
+	switch (InternalFormat)
 	{
-		if (bAlpha)	return GL_RGBA16F;
-		return GL_RGB16F;
+	case GL_RGB16F:
+	case GL_RGB32F:
+	case GL_RGBA:
+		return true;
 	}
-	else
-	{
-		if (bAlpha)	return GL_RGBA;
-		return GL_RGB;
-	}
+
+	return false;
 }
+
 void ColorBufferData::CreateOpenGLBuffer(glm::uvec2 size, unsigned int samples)
 {
 	glGenTextures(1, &OpenGLBuffer);
 	glBindTexture(TextureEnum, OpenGLBuffer);
-	GLenum internalformat = GetInternalFormat();
-	GLenum format = (bAlpha) ? (GL_RGBA) : (GL_RGB);
+	GLenum format = (ContainsAlphaChannel()) ? (GL_RGBA) : (GL_RGB);
 	if (TextureEnum == GL_TEXTURE_2D_MULTISAMPLE || TextureEnum == GL_TEXTURE_2D_MULTISAMPLE_ARRAY)
 	{
 		//glTexImage2D(GL_TEXTURE_2D, 0, (bAlpha) ? (GL_RGBA16F) : (GL_RGB16F), size.x, size.y, 0, (bAlpha) ? (GL_RGBA) : (GL_RGB), GL_FLOAT, (void*)(nullptr));
-		glTexImage2DMultisample(TextureEnum, samples, internalformat, size.x, size.y, GL_TRUE);
+		glTexImage2DMultisample(TextureEnum, samples, InternalFormat, size.x, size.y, GL_TRUE);
 	}
 	else
 	{
-		glTexImage2D(TextureEnum, 0, internalformat, size.x, size.y, 0, format, (bHDR) ? (GL_FLOAT) : (GL_UNSIGNED_BYTE), (void*)(nullptr));
+		glTexImage2D(TextureEnum, 0, InternalFormat, size.x, size.y, 0, format, Type, (void*)(nullptr));
 		glTexParameteri(TextureEnum, GL_TEXTURE_MAG_FILTER, MagFilter);
 		glTexParameteri(TextureEnum, GL_TEXTURE_MIN_FILTER, MinFilter);
 		glTexParameteri(TextureEnum, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -49,13 +49,13 @@ void ColorBufferData::BindToFramebuffer(GLenum target, GLenum attachment)
 }
 
 
-DepthBufferData::DepthBufferData(GLenum texEnum, GLenum magFilter, GLenum minFilter, GLenum internalFormat)
+DepthBufferData::DepthBufferData(GLenum texEnum, GLenum internalFormat, GLenum magFilter, GLenum minFilter)
 {
 	OpenGLBuffer = 0;
 	TextureEnum = texEnum;
+	InternalFormat = internalFormat;
 	MagFilter = magFilter;
 	MinFilter = minFilter;
-	InternalFormat = internalFormat;
 }
 
 bool DepthBufferData::ContainsStencil()
@@ -238,7 +238,7 @@ void Postprocess::LoadSettings(const GameSettings* settings)
 
 	//load framebuffers
 	for (int i = 0; i < 2; i++)
-		PingPongFramebuffers[i].Load(settings->WindowSize, ColorBufferData(true, true, GL_TEXTURE_2D, GL_LINEAR, GL_LINEAR));
+		PingPongFramebuffers[i].Load(settings->WindowSize, ColorBufferData(GL_TEXTURE_2D, GL_RGB16F, GL_FLOAT, GL_LINEAR, GL_LINEAR));
 }
 
 void Postprocess::Render(unsigned int colorBuffer, unsigned int brightnessBuffer)

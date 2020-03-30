@@ -7,6 +7,11 @@ out vec4 fragPos;
 //uniform
 uniform mat4 model;
 uniform mat4 MVP;
+layout (std140) uniform Matrices
+{
+	mat4 view;
+	mat4 projection;
+};
 
 void main()
 {

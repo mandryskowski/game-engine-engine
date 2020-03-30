@@ -20,6 +20,8 @@ void main()
 	vec3 brightColor = texture(brightnessBuffer, frag.texCoord).rgb;
 	
 	fragColor = vec4(HDRcolor, 1.0);
+	fragColor = vec4(fragColor.r);
+	//return;
 	fragColor = vec4(brightColor, 1.0);
 	//return;
 	

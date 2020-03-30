@@ -1,14 +1,12 @@
 #include "Component.h"
 
 Component::Component(std::string name, Transform t):
-	ComponentTransform(t)
+	Name(name), ComponentTransform(t)
 {
-	Name = name;
 }
 Component::Component(std::string name, glm::vec3 pos, glm::vec3 rot, glm::vec3 scale):
-	ComponentTransform(pos, rot, scale)
+	Name(name), ComponentTransform(pos, rot, scale)
 {
-	Name = name; 
 }
 std::string Component::GetName()
 {
@@ -28,7 +26,12 @@ void Component::SetName(std::string name)
 }
 void Component::SetTransform(Transform transform)
 { 
-	transform.SetParentTransform(ComponentTransform.GetParentTransform()); ComponentTransform = transform;
+	//don't change the ParentTransform pointer; it's not needed in this case
+	ComponentTransform.SetPosition(transform.PositionRef);
+	ComponentTransform.SetRotation(transform.RotationRef);
+	ComponentTransform.SetScale(transform.ScaleRef);
+	ComponentTransform.SetFront(transform.FrontRef);
+	ComponentTransform.bConstrain = transform.bConstrain;
 }
 void Component::AddComponent(Component* component)
 {

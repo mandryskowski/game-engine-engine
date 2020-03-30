@@ -2,7 +2,7 @@
 materialsfile Materials.fware
 newactor CubeActor
 newcomp mesh Cube root
-load Cube.fware material Bunker
+load Cube.fware material Bricks
 transform
 skip
 skip
@@ -32,14 +32,14 @@ newcomp collision BCube child Cube
 cube
 true
 end
-newcomdp mesh Crate
+newcomp mesh Crate
 copy Cube material Bricks
 transform
 0 0 3
 skip
 1 0.35 0.01
 end
-newcomdp collision BCrate child Crate
+newcomp collision BCrate child Crate
 cube
 false
 end
@@ -55,9 +55,9 @@ newcomp light Flashlight spot
 0 0 0
 5 5 5
 2.5 2.5 2.5
-0.5 12.5 30
+0.5 27 30
 transform
-0 0 -3.75
+0 0 3.75
 skip
 skip
 0 0 -1
@@ -79,12 +79,23 @@ transform
 0 -0.35 0
 end
 newcomp light EpicLight3 point
-0 0 0
+0.5 0.5 0.5
 1 2 2
 0.5 1 1
 6 0 0
 transform
 0 -0.35 1
+end
+newcomp light Sun direction
+0.1 0.1 0.1
+1 1 1
+0.5 0.5 0.5
+0 0 0
+transform
+0 3 -11
+skip
+skip
+0 -3 11
 end
 
 newactor CameraActor
@@ -112,4 +123,5 @@ transform
 skip
 skip
 0 0 -1
+true
 end

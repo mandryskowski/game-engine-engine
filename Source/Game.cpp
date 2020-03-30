@@ -1,4 +1,5 @@
 #include "Game.h"
+#include <thread>
 
 CameraComponent* mouseContextCamera = nullptr;
 
@@ -14,27 +15,22 @@ Game::Game(GLFWwindow *window) :
 	if (!Settings.bVSync)
 		glfwSwapInterval(0);
 
-	GLenum mainFBOTexType = GL_TEXTURE_2D;
-	if (Settings.AntiAliasingSamples > 0)
-	{
-		glEnable(GL_MULTISAMPLE);			//this is not necessary - it should be enabled by default, but i'm not sure if i can count on it
-		mainFBOTexType = GL_TEXTURE_2D_MULTISAMPLE;
-	}
+	glDisable(GL_MULTISAMPLE);
 
-	DepthBufferData* sharedDepthStencil = new DepthBufferData(GL_TEXTURE_2D, GL_NEAREST, GL_NEAREST, GL_DEPTH24_STENCIL8);	//we share this buffer between the geometry and main framebuffer - we want the deferred-rendered objects depth to influence light volumes&forward rendered objects
+	DepthBufferData* sharedDepthStencil = new DepthBufferData(GL_TEXTURE_2D, GL_DEPTH24_STENCIL8, GL_NEAREST, GL_NEAREST);	//we share this buffer between the geometry and main framebuffer - we want the deferred-rendered objects depth to influence light volumes&forward rendered objects
 	GFramebuffer.Load(Settings.WindowSize, std::vector<ColorBufferData> {
-		ColorBufferData(true, false, GL_TEXTURE_2D, GL_NEAREST, GL_NEAREST),	//gPosition texture
-		ColorBufferData(true, false, GL_TEXTURE_2D, GL_NEAREST, GL_NEAREST),	//gNormal texture
-		ColorBufferData(false, true, GL_TEXTURE_2D, GL_NEAREST, GL_NEAREST)},	//gAlbedoSpec texture
+		ColorBufferData(GL_TEXTURE_2D, GL_RGB16F, GL_FLOAT, GL_NEAREST, GL_NEAREST),	//gPosition texture
+		ColorBufferData(GL_TEXTURE_2D, GL_RGB16F, GL_FLOAT, GL_NEAREST, GL_NEAREST),	//gNormal texture
+		ColorBufferData(GL_TEXTURE_2D, GL_RGBA, GL_FLOAT, GL_NEAREST, GL_NEAREST)},		//gAlbedoSpec texture
 		sharedDepthStencil); //depth+stencil
-	MainFramebuffer.Load(Settings.WindowSize, std::vector<ColorBufferData> {ColorBufferData(true, true, mainFBOTexType), ColorBufferData(true, true, mainFBOTexType, GL_LINEAR, GL_LINEAR)}, sharedDepthStencil, Settings.AntiAliasingSamples);
-	BlitFramebuffer.Load(Settings.WindowSize, std::vector<ColorBufferData> {ColorBufferData(true, true), ColorBufferData(true, true, GL_TEXTURE_2D, GL_LINEAR, GL_LINEAR)});
+	MainFramebuffer.Load(Settings.WindowSize, std::vector<ColorBufferData> {ColorBufferData(GL_TEXTURE_2D, GL_RGBA16F, GL_FLOAT), ColorBufferData(GL_TEXTURE_2D, GL_RGBA16F, GL_FLOAT, GL_LINEAR, GL_LINEAR)}, sharedDepthStencil);
 
 	ActiveCamera = nullptr;
 	
 	MatricesBuffer.Generate(0, sizeof(glm::mat4) * 2); 
 
 	RenderEng.SetupShadowmaps(glm::uvec2(1024));
+	RenderEng.SetupAmbientOcclusion(Settings.WindowSize, 64);
 
 	glfwSetInputMode(Window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	glfwSetCursorPos(Window, (double)Settings.WindowSize.x / 2.0, (double)Settings.WindowSize.y / 2.0);
@@ -266,7 +262,7 @@ void Game::UpdateLightUniforms()
 {
 	LightsBuffer.offsetCache = sizeof(glm::vec4) * 2;
 	for (unsigned int i = 0; i < Lights.size(); i++)
-		Lights[i]->UpdateUBOData(&LightsBuffer);
+		Lights[i]->UpdateUBOData(&LightsBuffer, ActiveCamera->GetTransform()->GetWorldTransform().GetViewMatrix());
 }
 
 void Game::BindActiveCamera(CameraComponent* cam)
@@ -292,6 +288,9 @@ void Game::AddMeshToScene(MeshComponent* mesh)
 	RenderEng.AddMesh(mesh);
 }
 
+unsigned int ticks = 1;
+bool wasSecondFPS = false;
+float timeSum = 0.0f;
 void Game::Run()
 {
 	if (!ActiveCamera)
@@ -303,18 +302,34 @@ void Game::Run()
 	SetupLights();
 	 
 	float lastUpdateTime = (float)glfwGetTime();
-	const float timeStep = 1.0f / 60.0f;
+	const float timeStep = 1.0f / 30.0f;
 	float deltaTime = 0.0f;
 	float timeAccumulator = 0.0f;
+
+	float beginning = glfwGetTime();
+
 	while (!glfwWindowShouldClose(Window))
 	{
 		glfwPollEvents();
+		if (glfwGetKey(Window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+			glfwSetWindowShouldClose(Window, true);
 
 		deltaTime = (float)glfwGetTime() - lastUpdateTime;
 		lastUpdateTime = (float)glfwGetTime();
 
 		if (deltaTime > 0.25f)
 			deltaTime = 0.25f;
+
+		float fraction = fmod(glfwGetTime(), 1.0f);
+		if (fraction < 0.1f && !wasSecondFPS)
+		{
+			std::cout << "******Frames per second: " << (float)ticks / (glfwGetTime() - beginning) << "			Milliseconds per frame: " << (glfwGetTime() - beginning) * 1000.0f / (float)ticks << '\n';
+			std::cout << "Update%: " << timeSum / (glfwGetTime() - beginning) * 100.0f << "%\n";
+			std::cout << "Matrix%: " << Transform::test() / (glfwGetTime() - beginning) * 100.0f << "%\n";
+			wasSecondFPS = true;
+		}
+		else if (fraction > 0.9f)
+			wasSecondFPS = false;
 
 		RootActor.HandleInputsAll(Window, deltaTime);
 
@@ -326,34 +341,30 @@ void Game::Run()
 			Update(timeStep);
 			timeAccumulator -= timeStep;
 		}
-		
+
 		Render();
+		ticks++;
 	}
 }
 
 void Game::Update(float deltaTime)
 {
-
 	RootActor.UpdateAll(deltaTime);
-	MatricesBuffer.SubDataMatrix4fv(ActiveCamera->GetTransform()->GetWorldTransform().GetViewMatrix(), 0);
-	LightsBuffer.SubData4fv(ActiveCamera->GetTransform()->GetWorldTransform().Position, 16);
-	UpdateLightUniforms();		//TODO: Optimize this - it takes too much time to update every light each frame.
+	MatricesBuffer.SubDataMatrix4fv(ActiveCamera->GetTransform()->GetWorldTransform().GetViewMatrix(),0);
+	LightsBuffer.SubData4fv(ActiveCamera->GetTransform()->GetWorldTransform().PositionRef, 16);
 }
-
+bool wasSecond = false;
+float pBegin = 0.0f;
 void Game::Render()
 {
 	Transform camWorld = ActiveCamera->GetTransform()->GetWorldTransform();
 	glm::mat4 view = camWorld.GetViewMatrix();
 	glm::mat4 projection = ActiveCamera->GetProjectionMat();
 	glm::mat4 VP = ActiveCamera->GetVP(&camWorld);
-	std::cout << VP[0][0] << " " << VP[0][1] << '\n';
 	RenderInfo info(&view, &projection, &VP);
 
 	////////////////////1. Shadow maps pass
-	float time1, time2;
-	time1 = glfwGetTime();
 	RenderEng.RenderShadowMaps(Lights);
-	time2 = glfwGetTime();
 	//std::cout << "Zjadlo mi " << (time2 - time1) * 1000.0f << "ms.\n";
 
 	////////////////////2. Geometry pass
@@ -364,9 +375,25 @@ void Game::Render()
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	RenderEng.RenderScene(info, "geometry");
+	Shader* gShader = RenderEng.GetShader("geometry");
+	gShader->Use();
+	gShader->Uniform3fv("camPos", camWorld.PositionRef);
 	
-	////////////////////X. Lighting pass
+	RenderEng.RenderScene(info, gShader, MeshType::MESH_ALL, true);
+	
+	////////////////////2.5 SSAO pass
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, GFramebuffer.GetColorBuffer(0).OpenGLBuffer);	//gPosition
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, GFramebuffer.GetColorBuffer(1).OpenGLBuffer);	//gNormal
+
+	RenderEng.RenderSSAO(info, Settings.WindowSize);
+	GamePostprocess.GaussianBlur(RenderEng.GetSSAOTex(), 4);
+
+
+	////////////////////3. Lighting pass
+	UpdateLightUniforms();
 	MainFramebuffer.Bind();
 	glClearBufferfv(GL_COLOR, 0, glm::value_ptr(glm::vec3(0.0f, 0.0f, 0.0f)));
 	glClearBufferfv(GL_COLOR, 1, glm::value_ptr(glm::vec3(0.0f)));
@@ -376,13 +403,16 @@ void Game::Render()
 		glActiveTexture(GL_TEXTURE0 + i);
 		glBindTexture(GL_TEXTURE_2D, GFramebuffer.GetColorBuffer(i).OpenGLBuffer);
 	}
+	glActiveTexture(GL_TEXTURE3);
+	glBindTexture(GL_TEXTURE_2D, RenderEng.GetSSAOTex());
 	RenderEng.RenderLightVolumes(info, Lights, Settings.WindowSize);
 
-	////////////////////3. Forward rendering pass
+	////////////////////3.5 Forward rendering pass
 	glEnable(GL_DEPTH_TEST);
 	glDisable(GL_CULL_FACE);
 	
-	//RenderEng.RenderScene(ActiveCamera->GetTransform()->GetWorldTransform().GetViewMatrix());
+	Shader* forwardShader = RenderEng.GetShader("forward");
+	//RenderEng.RenderScene(info, forwardShader, MeshType::MESH_FORWARD, true);
 
 	
 	/*glDisable(GL_CULL_FACE);
@@ -394,11 +424,16 @@ void Game::Render()
 	
 
 	////////////////////4. Postprocessing pass (Blur + Tonemapping & Gamma Correction)
-	MainFramebuffer.BlitToFBO(BlitFramebuffer.GetFBO());
-	GamePostprocess.Render(BlitFramebuffer.GetColorBuffer(0).OpenGLBuffer, GamePostprocess.GaussianBlur(BlitFramebuffer.GetColorBuffer(1).OpenGLBuffer, 10));
-	//GamePostprocess.Render(GFramebuffer.GetColorBuffer(1).OpenGLBuffer, GamePostprocess.GaussianBlur(BlitFramebuffer.GetColorBuffer(1).OpenGLBuffer, 10));
+	GamePostprocess.Render(MainFramebuffer.GetColorBuffer(0).OpenGLBuffer, GamePostprocess.GaussianBlur(MainFramebuffer.GetColorBuffer(1).OpenGLBuffer, 10));
+	//GamePostprocess.Render(RenderEng.GetSSAOTex(), 0);
 
+	if (pBegin == 0.0f)
+		pBegin = glfwGetTime();
+	float time1, time2;
+	time1 = glfwGetTime() - pBegin;
 	glfwSwapBuffers(Window);
+	time2 = glfwGetTime() - pBegin;
+	timeSum += time2 - time1;
 }
 
 

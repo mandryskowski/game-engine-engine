@@ -2,7 +2,6 @@
 layout (location = 0) in vec3 vPosition;
 
 //uniform
-uniform mat4 model;
 uniform mat4 MVP;
 
 void main()

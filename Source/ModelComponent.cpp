@@ -36,21 +36,28 @@ void ModelComponent::ProcessAiNode(const aiScene* scene, aiNode* node, std::vect
 	}
 }
 
-void ModelComponent::Render(Shader* shader, RenderInfo& info, unsigned int& VAOBound, Material* materialBound, bool& bUseMaterials, unsigned int& emptyTexture)
+void ModelComponent::Render(Shader* shader, RenderInfo& info, unsigned int& VAOBound, Material* materialBound, bool& materials, MeshType& renderMeshType, unsigned int& emptyTexture)
 {
-	shader->UniformMatrix4fv("model", ComponentTransform.GetWorldTransform().GetMatrix());
+	shader->UniformMatrix4fv("model", ComponentTransform.GetWorldTransformMatrix());
 	for (unsigned int i = 0; i < Meshes.size(); i++)
 	{
-		if (VAOBound != Meshes[i]->VAO || i == 0)
+		MeshComponent* mesh = Meshes[i];
+		MeshType thisMeshType = mesh->GetMeshType();
+		if (!(renderMeshType == thisMeshType || renderMeshType == MeshType::MESH_ALL || thisMeshType == MeshType::MESH_ALL))
+			continue;
+
+		if (VAOBound != mesh->VAO || i == 0)
 		{
-			glBindVertexArray(Meshes[i]->VAO);
-			VAOBound = Meshes[i]->VAO;
+			glBindVertexArray(mesh->VAO);
+			VAOBound = mesh->VAO;
 		}
-		if (bUseMaterials && materialBound != Meshes[i]->MeshMaterial && Meshes[i]->MeshMaterial)	//jesli ostatni zbindowany material jest taki sam, to nie musimy zmieniac danych w shaderze; oszczedzmy sobie roboty
+
+		if (materials && materialBound != mesh->MeshMaterial && mesh->MeshMaterial)	//jesli ostatni zbindowany material jest taki sam, to nie musimy zmieniac danych w shaderze; oszczedzmy sobie roboty
 		{
-			Meshes[i]->MeshMaterial->UpdateUBOData(shader, emptyTexture);
-			materialBound = Meshes[i]->MeshMaterial;
+			mesh->MeshMaterial->UpdateUBOData(shader, emptyTexture);
+			materialBound = mesh->MeshMaterial;
 		}
-		Meshes[i]->Render(shader, info);
+
+		mesh->Render(shader, info);
 	}
 }

@@ -110,3 +110,13 @@ std::string framebufferStatusToString(GLenum status)
 
 	return "Error " + std::to_string(status) + " is not known by the program.\n";
 }
+
+void printVector(glm::vec3 vec)
+{
+	std::cout << vec.x << ", " << vec.y << ", " << vec.z << '\n';
+}
+
+float lerp(float min, float max, float scale)
+{
+	return (max - min) * scale + min;
+}

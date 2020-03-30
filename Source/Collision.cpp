@@ -21,7 +21,7 @@ void Collision::GetCubeMinMax(glm::vec3 axis, BBox cube, float* min, float* max)
 		glm::vec3(-0.5f,  0.5f, -0.5f)
 	};
 
-	glm::mat4 model = cube.GetTransform()->GetWorldTransform().GetMatrix();
+	glm::mat4 model = cube.GetTransform()->GetWorldTransformMatrix();
 	for (unsigned int i = 0; i < 8; i++)
 	{
 		cubeVerts[i] = model * glm::vec4(cubeVerts[i], 1.0f);
@@ -62,8 +62,6 @@ CollisionType Collision::CheckAxis(glm::vec3 axis, BBox cube1, BBox cube2, bool&
 	return CollisionType::NONE;
 }
 
-//////////////////////////SAT//////////////////////////
-
 CollisionType Collision::CubeCube(BBox cube1, BBox cube2, std::vector<glm::vec3>* bounceNormals)
 {
 	std::vector <glm::vec3> axises;
@@ -77,7 +75,7 @@ CollisionType Collision::CubeCube(BBox cube1, BBox cube2, std::vector<glm::vec3>
 		axises.push_back(normalMat * glm::vec3(0.0f, 1.0f, 0.0f));
 		axises.push_back(normalMat * glm::vec3(0.0f, 0.0f, 1.0f));
 
-		if (cube1.GetTransform()->GetWorldTransform().Rotation == cube2.GetTransform()->GetWorldTransform().Rotation)
+		if (cube1.GetTransform()->GetWorldTransform().RotationRef == cube2.GetTransform()->GetWorldTransform().RotationRef)
 			break;
 	}
 	
@@ -100,26 +98,27 @@ CollisionType Collision::CubeCube(BBox cube1, BBox cube2, std::vector<glm::vec3>
 	return CollisionType::INTERSECT;
 }
 
-CollisionType Collision::CubeSphere(BBox cube1, BSphere sphere1, std::vector<glm::vec3>* bounceNormals)
+//////////////////////////SAT//////////////////////////
+
+CollisionType Collision::CubeSphere(BBox& cube1, BSphere& sphere1, std::vector<glm::vec3>* bounceNormals)
 {
-	Transform* sphereTransform = sphere1.GetTransform();
-	Transform* cubeTransform = cube1.GetTransform();
+	Transform sphereTransform = sphere1.GetTransform()->GetWorldTransform();
+	Transform cubeTransform = cube1.GetTransform()->GetWorldTransform();
 
-	*sphereTransform = sphereTransform->GetWorldTransform();
-	*cubeTransform = cubeTransform->GetWorldTransform();
-	sphereTransform->SetParentTransform(cubeTransform, true);
-	glm::mat4 rotMat = cubeTransform->GetRotationMatrix(1.0f);
+	sphereTransform.SetParentTransform(&cubeTransform, true);
+	glm::mat4 rotMat = cubeTransform.GetRotationMatrix(1.0f);
 
-	float radius2 = pow(sphere1.GetTransform()->Scale.x / 2.0f, 2);
-	glm::vec3 cubeHalfSize = cube1.GetTransform()->Scale / 2.0f;	//obliczamy polowe rozmiarow kostki (w 3 wymiarach, pamietajmy ze w kazdym moga byc inne) aby uproscic obliczenia w nastepnej linijce
-	glm::vec3 closestPointInBox = glm::clamp(sphereTransform->Position, -cubeHalfSize, cubeHalfSize); //znajdujemy punkt w kostce, ktory jest najblizej srodka kuli
+	float radius2 = pow(sphereTransform.ScaleRef.x / 2.0f, 2);
+	glm::vec3 cubeHalfSize = cubeTransform.ScaleRef / 2.0f;	//obliczamy polowe rozmiarow kostki (w 3 wymiarach, pamietajmy ze w kazdym moga byc inne) aby uproscic obliczenia w nastepnej linijce
+	glm::vec3 closestPointInBox = glm::clamp(sphereTransform.PositionRef, -cubeHalfSize, cubeHalfSize); //znajdujemy punkt w kostce, ktory jest najblizej srodka kuli
+	//printVector(closestPointInBox);
 
-	glm::vec3 displacement = sphereTransform->Position - closestPointInBox;	//obliczamy odleglosc najblizszego punktu do srodka kuli od srodka kuli...
+	glm::vec3 displacement = sphereTransform.PositionRef - closestPointInBox;	//obliczamy odleglosc najblizszego punktu do srodka kuli od srodka kuli...
 
 	if (length2(displacement) > radius2)							//...jesli odleglosc srodka kuli od tego punktu jest wieksza niz promien tego kola, to mamy 100% pewnosc, ze kolizja nie zachodzi
 		return CollisionType::NONE;
 
-	std::vector <glm::vec3> bNormals = getBounceNormals(cube1, sphere1);
+	std::vector <glm::vec3> bNormals = getBounceNormals(cubeTransform, sphereTransform);
 
 
 	if ((displacement == glm::vec3(0.0f)) && (bNormals.empty()))	//...moze nie byc zadnej odleglosci, jesli srodek kuli znajduje sie w kostce; wiemy, ze kula znajduje sie w srodku kostki
@@ -136,15 +135,15 @@ CollisionType Collision::CubeSphere(BBox cube1, BSphere sphere1, std::vector<glm
 
 bool Collision::SpherePoint(BSphere sphere, glm::vec3 point)
 {
-	float radius2 = pow(sphere.GetTransform()->Scale.x, 2);
-	float distance2 = length2(point - sphere.GetTransform()->Position);
+	float radius2 = pow(sphere.GetTransform()->ScaleRef.x, 2);
+	float distance2 = length2(point - sphere.GetTransform()->PositionRef);
 	return distance2 <= radius2;
 }
 
 CollisionType Collision::SphereSphere(BSphere sphere1, BSphere sphere2)
 {
-	float radius1 = sphere1.GetTransform()->Scale.x, radius2 = sphere2.GetTransform()->Scale.x;
-	float distance2 = length2(sphere2.GetTransform()->Position - sphere1.GetTransform()->Position);
+	float radius1 = sphere1.GetTransform()->ScaleRef.x, radius2 = sphere2.GetTransform()->ScaleRef.x;
+	float distance2 = length2(sphere2.GetTransform()->PositionRef - sphere1.GetTransform()->PositionRef);
 	float radiusSum2 = pow((radius1 + radius2), 2);
 
 	if (distance2 > radiusSum2)
@@ -181,8 +180,8 @@ float length2(glm::vec3 vec)
 
 glm::vec3 clampToNearestFace(BBox cube, glm::vec3 point)
 {
-	glm::vec3 cubeHalfSize = cube.GetTransform()->Scale / 2.0f;
-	glm::vec3 cubePos = cube.GetTransform()->Position;
+	glm::vec3 cubeHalfSize = cube.GetTransform()->ScaleRef / 2.0f;
+	glm::vec3 cubePos = cube.GetTransform()->PositionRef;
 	glm::vec3 closestClampPos(0.0f);
 	float minDistance2 = length2(cubeHalfSize);
 
@@ -206,18 +205,18 @@ glm::vec3 clampToNearestFace(BBox cube, glm::vec3 point)
 	return closestClampPos;
 }
 
-std::vector <glm::vec3> getBounceNormals(BBox cube, BSphere sphere)
+std::vector <glm::vec3> getBounceNormals(Transform& cubeT, Transform& sphereT)
 {
 	std::vector <glm::vec3> collidingNormals;
 
-	glm::vec3 cubeHalfSize = cube.GetTransform()->Scale / 2.0f;
-	float sphereRadius = sphere.GetTransform()->Scale.x / 2.0f;
+	glm::vec3 cubeHalfSize = cubeT.ScaleRef / 2.0f;
+	float sphereRadius = sphereT.ScaleRef.x / 2.0f;
 	                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 
 	for (int axis = 0; axis < 3; axis++)	//dla wszystkich osi...
 	{
 		for (int sign = -1; sign <= 1; sign += 2)
 		{
-			float distanceFromClamped = abs(cubeHalfSize[axis] * sign - sphere.GetTransform()->Position[axis]);	//...sprawdzamy najblizszy dystans punktu do sciany kostki o "axis" osi w kierunku "sign"
+			float distanceFromClamped = abs(cubeHalfSize[axis] * sign - sphereT.PositionRef[axis]);	//...sprawdzamy najblizszy dystans punktu do sciany kostki o "axis" osi w kierunku "sign"
 			//obie bryly (kostka i kula) znajduja sie w Przestrzeni Kostki, czyli kostka znajduje sie w (0, 0, 0) tego ukladu, jej rotacja rowniez wynosi 0 itd itp...
 			//kula jest natomiast przemieszczona i obrocona wzglednie do kostki, co znacznie uproscilo nam obliczenia
 
@@ -226,7 +225,7 @@ std::vector <glm::vec3> getBounceNormals(BBox cube, BSphere sphere)
 				glm::vec3 normal(0.0f);
 				normal[axis] = (float)-sign;
 				collidingNormals.push_back(normal);
-				//break;	//wychodzimy z zagniezdzonej petli znaku, bo nie ma zadnego sensu sprawdzac normalne, ktore sa do siebie rownolegle
+				break;	//wychodzimy z zagniezdzonej petli znaku, bo nie ma zadnego sensu sprawdzac normalne, ktore sa do siebie rownolegle
 						//przekazanie dalej rownoleglych normalnych wymusi dodatkowe obliczenia, lub nawet wplynie na swiat gry (np obiekt kolizji od wartosci przemieszczenia odejmuje normalne, aby nie przemiescic sie w sciane...
 						//a odjecie 2 normalnych na tej samej osi spowoduje odjecie "normalna - normalna", czyli "-(2 * normalna)" - obiekt odbije sie, zamiast plynnie przeslizgnac po powierzchni sciany
 			}

@@ -9,17 +9,31 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+enum MatrixType
+{
+	MODEL,
+	VIEW,
+	PROJECTION,
+	MV,
+	VP,
+	MVP,
+	NORMAL
+};
+
 class Shader
 {
 	unsigned int Program;
 	std::vector <std::pair<unsigned int, std::string>> MaterialTextureUnits;
+	bool ExpectedMatrices[7];
 
 	void DebugShader(unsigned int);
 public:
 	Shader();
 	Shader(const char*, const char*, const char* = nullptr);
 	std::vector<std::pair<unsigned int, std::string>>* GetMaterialTextureUnits();
+	bool ExpectsMatrix(unsigned int);
 	void SetTextureUnitNames(std::vector<std::pair<unsigned int, std::string>>);
+	void SetExpectedMatrices(std::vector<MatrixType>);
 	unsigned int LoadShader(GLenum, const char*);
 	void LoadShaders(const char*, const char*, const char* = nullptr);
 	void Uniform1i(std::string, int);

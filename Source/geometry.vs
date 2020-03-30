@@ -16,6 +16,7 @@ out VS_OUT
 
 //uniforms
 uniform mat4 model;
+uniform mat4 MV;
 uniform mat4 MVP;
 uniform mat3 normalMat;
 layout (std140) uniform Matrices
@@ -26,20 +27,14 @@ layout (std140) uniform Matrices
 
 void main()
 {
-	vs_out.position = vec3(model * vec4(vPosition, 1.0));
+	vs_out.position = vec3(MV * vec4(vPosition, 1.0));
 	vs_out.texCoord = vTexCoord;
 	
-	vec3 T = normalize(vTangent);
-	vec3 B;
-	vec3 N = normalize(vNormal);
-	if (true)//B == vec3(0.0))
-		B = normalize(cross(N, T));
-	else
-		B = normalize(vBitangent);
-	
-	T = normalize(normalMat * T);
-	B = normalize(normalMat * B);
-	N = normalize(normalMat * N);
+	vec3 T = normalize(normalMat * vTangent);
+	vec3 B = normalize(normalMat * vBitangent);
+	vec3 N = normalize(normalMat * vNormal);
+	if (vBitangent == vec3(0.0))
+		B = normalize(normalMat * cross(T, N));
 	
 	vs_out.TBN = mat3(T, B, N);
 	

@@ -1,6 +1,14 @@
 #pragma once
 #include "Material.h"
 
+enum MeshType
+{
+	MESH_NONE,
+	MESH_FORWARD,
+	MESH_DEFERRED,
+	MESH_ALL
+};
+
 struct Vertex
 {
 	glm::vec3 Position;
@@ -33,8 +41,19 @@ class MeshComponent : public Component
 	size_t VertexCount;
 	Material* MeshMaterial;
 
+	MeshType Type;
+	/* A mesh can be of different types (they are only for semantic purposes!):
+		NONE - doesn't clasiffy as a normal mesh; it shouldn't be rendered
+		FORWARD - ignore this object in deferred-rendering. When an algorithm like SSAO (or other that uses textures from G-Buffer) is enabled, this mesh should be rendered just like deferred-type objects (it will be rendered again in the forward pass).
+		DEFERRED - render in the geometry pass, don't render in the forward pass
+		ALL - always render it, no matter what (bad for optimisation, stability and barely fits in the semantic way - avoid assigning this state to a MeshComponent)
+
+		Basically, if you follow the semantics, the performance from highest to lowest is: NONE(not rendered) - DEFERRED - FORWARD - ALL
+	*/
+
 public:
 	MeshComponent(std::string="undefined");
+	MeshType GetMeshType();
 	unsigned int GetVAO();
 	unsigned int GetVertexCount();
 	void SetMaterial(Material*);

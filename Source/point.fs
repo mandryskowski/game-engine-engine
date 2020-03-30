@@ -13,11 +13,11 @@ struct Light
 	float attenuation;	//quadratic component of light's attenuation equation
 	float cutOff;		//cosine of the angle of the inner fallof cone (spot lights)
 	float outerCutOff;	//cos of the outer angle
-	int type;			//determines the type of the light - directional, point or spot
+	float type;			//determines the type of the light - directional, point or spot
 	
-	int shadowMapNr;
+	float shadowMapNr;
 	float far;				//used for lights that use Ominidirectional Shadow Mapping (point lights)
-	mat4 lightSpaceMatrix;	//used for lights that use 2D shadowmaps (directional and spot lights)
+	mat4 inverseView;	//in point lights used to transform lightToFrag direction from view space to world space
 };
 
 struct Fragment
@@ -29,7 +29,8 @@ struct Fragment
 };
 
 //out
-out vec4 fragColor;
+layout (location = 0) out vec4 fragColor;
+layout (location = 1) out vec4 brightColor;
 
 //uniform
 uniform int lightIndex;
@@ -38,6 +39,7 @@ uniform sampler2D gPosition;
 uniform sampler2D gNormal;
 uniform sampler2D gAlbedoSpec;
 uniform samplerCubeArray shadowCubemaps;
+
 layout (std140) uniform Lights
 {
 	int lightCount;
@@ -45,22 +47,23 @@ layout (std140) uniform Lights
 	Light lights[MAX_LIGHTS];
 };
 
+
 ////////////////////////////////
 ////////////////////////////////
 ////////////////////////////////
 
 float CalcShadow3D(Light light, vec3 fragPosition)
 {
-	vec3 lightToFrag = fragPosition - light.position.xyz;
+	vec3 lightToFrag = mat3(light.inverseView) * (fragPosition - light.position.xyz);
 	float mapDepth = texture(shadowCubemaps, vec4(lightToFrag, light.shadowMapNr)).r;
 	float realDepth = length(lightToFrag) / light.far;
 
-	return ((realDepth > mapDepth + 0.01) ? (1.0) : (0.0));
+	return ((realDepth > mapDepth) ? (1.0) : (0.0));
 }
 
 vec3 CalcLight(Light light, Fragment frag)
 {
-	vec3 lightDir = normalize(light.position.rgb - frag.position);;
+	vec3 lightDir = normalize(light.position.xyz - frag.position);
 
 	//////////////
 	
@@ -69,7 +72,7 @@ vec3 CalcLight(Light light, Fragment frag)
 	float diff = max(dot(frag.normal, lightDir), 0.0);
 	vec3 diffuse = light.diffuse.rgb * frag.albedo * diff;
 	
-	vec3 camDir = normalize(camPos.xyz - frag.position);
+	vec3 camDir = normalize(-frag.position);
 	vec3 halfwayDir = normalize(camDir + lightDir);
 	float spec = pow(max(dot(frag.normal, halfwayDir), 0.0), 64);
 	vec3 specular = light.specular.rgb * frag.specular * spec;
@@ -102,4 +105,10 @@ void main()
 	frag.specular = albedoSpec.a;
 	
 	fragColor = vec4(CalcLight(lights[lightIndex], frag), 1.0);
+	
+	
+	if (dot(vec3(0.2126, 0.7152, 0.0722), fragColor.rgb) > 1.0)
+		brightColor = fragColor;
+	else
+		brightColor = vec4(vec3(0.0), 1.0);
 }

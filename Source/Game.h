@@ -1,6 +1,5 @@
 #pragma once
 #include "RenderEngine.h"
-#include "Postprocess.h"
 #include "Actor.h"
 #include "CameraComponent.h"
 
@@ -10,7 +9,6 @@ class Game
 	GLFWwindow *Window;
 	Framebuffer GFramebuffer;
 	Framebuffer MainFramebuffer;
-	Framebuffer BlitFramebuffer;
 	Postprocess GamePostprocess;
 
 	Actor RootActor;

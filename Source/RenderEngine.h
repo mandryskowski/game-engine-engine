@@ -1,12 +1,7 @@
 #pragma once
+#include "Postprocess.h"
 #include "ModelComponent.h"
 #include "LightComponent.h"
-
-enum RenderType
-{
-	FORWARD,
-	DEFERRED
-};
 
 class RenderEngine
 {
@@ -22,6 +17,10 @@ class RenderEngine
 	unsigned int ShadowCubemapArray;
 	Shader DepthShader, DepthLinearizeShader;
 
+	Framebuffer* SSAOFramebuffer;
+	Shader* SSAOShader;
+	unsigned int SSAONoiseTex;
+
 	Shader DebugShader;
 	std::pair<unsigned int, unsigned int> EngineObjects[4];	//the first element is the object's VAO; the latter is its vertex count
 
@@ -33,22 +32,25 @@ class RenderEngine
 	void GenerateEngineObjects();
 public:
 	RenderEngine();
+	Shader* GetShader(std::string);
+	unsigned int GetSSAOTex();
 	void AddMesh(MeshComponent* mesh);
 	void AddModel(ModelComponent* model);
 	void AddModels(std::vector<ModelComponent*>& models);
 	void AddMaterial(Material* material);
 	void LoadModels();
 	void SetupShadowmaps(glm::uvec2);
+	void SetupAmbientOcclusion(glm::uvec2, unsigned int);
 	void LoadMaterials(std::string);
 	MeshComponent* FindMesh(std::string);
 	Material* FindMaterial(std::string);
-	void RenderEngineObject(RenderInfo&, std::pair<EngineObjectTypes, const Transform*>, Shader* = nullptr);
-	void RenderEngineObjects(RenderInfo&, std::vector<std::pair<EngineObjectTypes, const Transform*>>, Shader* = nullptr);
+	void RenderEngineObject(RenderInfo&, std::pair<EngineObjectTypes, Transform*>, Shader* = nullptr);
+	void RenderEngineObjects(RenderInfo&, std::vector<std::pair<EngineObjectTypes, Transform*>>, Shader* = nullptr);
 	void RenderShadowMaps(std::vector<LightComponent*>);
-	void RenderLightVolume(RenderInfo&, LightType, const Transform* = nullptr, bool = true);
+	void RenderSSAO(RenderInfo&, glm::uvec2);
+	void RenderLightVolume(RenderInfo&, LightComponent*, Transform* = nullptr, bool = true);
 	void RenderLightVolumes(RenderInfo&, std::vector<LightComponent*>, glm::vec2);
-	void RenderScene(RenderInfo&, Shader* = nullptr, bool = true);
-	void RenderScene(RenderInfo&, std::string, bool = true);
+	void RenderScene(RenderInfo& info, Shader* shader = nullptr, MeshType renderMeshType = MeshType::MESH_ALL, bool materials = true);
 };
 
 glm::vec3 GetCubemapFront(unsigned int);

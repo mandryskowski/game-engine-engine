@@ -5,14 +5,14 @@
 struct ColorBufferData
 {
 	unsigned int OpenGLBuffer;
-	bool bHDR;
-	bool bAlpha;
 	GLenum TextureEnum;
+	GLenum InternalFormat;
+	GLenum Type;
 	GLenum MagFilter;
 	GLenum MinFilter;
 
-	ColorBufferData(bool hdr = true, bool alpha = true, GLenum texEnum = GL_TEXTURE_2D, GLenum magFilter = GL_NEAREST, GLenum minFilter = GL_NEAREST);
-	GLenum GetInternalFormat();
+	ColorBufferData(GLenum texEnum = GL_TEXTURE_2D, GLenum internalFormat = GL_RGB, GLenum type = GL_UNSIGNED_BYTE, GLenum magFilter = GL_NEAREST, GLenum minFilter = GL_NEAREST);
+	bool ContainsAlphaChannel();
 	void CreateOpenGLBuffer(glm::uvec2 size, unsigned int samples = 0);
 	void BindToFramebuffer(GLenum target, GLenum attachment);
 };
@@ -21,9 +21,9 @@ struct DepthBufferData
 {
 	unsigned int OpenGLBuffer;
 	GLenum TextureEnum;
+	GLenum InternalFormat;
 	GLenum MagFilter;
 	GLenum MinFilter;
-	GLenum InternalFormat;
 
 	DepthBufferData(GLenum texEnum = GL_TEXTURE_2D, GLenum magFilter = GL_NEAREST, GLenum minFilter = GL_NEAREST, GLenum = GL_DEPTH_COMPONENT);
 	bool ContainsStencil();

@@ -32,3 +32,6 @@ std::string getNextWord(std::stringstream&);			//checks the next word in stream 
 bool isNextWordEqual(std::stringstream&, std::string);	//works just like the previous one, but moves the pointer if the word is equal to a passed string
 bool toBool(std::string);
 std::string framebufferStatusToString(GLenum);
+void printVector(glm::vec3);
+
+float lerp(float, float, float);

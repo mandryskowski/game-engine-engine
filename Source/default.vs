@@ -36,7 +36,7 @@ void main()
 	vec3 B;
 	vec3 N = normalize(vNormal);
 	if (true)//B == vec3(0.0))
-		B = normalize(cross(N, T));
+		B = normalize(cross(T, N));
 	else
 		B = normalize(vBitangent);
 	

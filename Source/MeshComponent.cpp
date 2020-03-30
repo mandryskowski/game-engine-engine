@@ -8,6 +8,13 @@ MeshComponent::MeshComponent(std::string name):
 	EBO = 0;
 	VertexCount = 0;
 	MeshMaterial = nullptr;
+
+	Type = MeshType::MESH_DEFERRED;	//Optimize the mesh by default
+}
+
+MeshType MeshComponent::GetMeshType()
+{
+	return Type;
 }
 
 unsigned int MeshComponent::GetVAO()
@@ -190,6 +197,7 @@ void MeshComponent::GenerateVAO(std::vector <Vertex>& vertices, std::vector <uns
 	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(offsetof(Vertex, Vertex::TexCoord)));
 	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(offsetof(Vertex, Vertex::Tangent)));
 	glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(offsetof(Vertex, Vertex::Bitangent)));
+
 	for (int i = 0; i < 5; i++)
 		glEnableVertexAttribArray(i);
 
@@ -200,11 +208,18 @@ void MeshComponent::Render(Shader* shader, RenderInfo& info)
 {
 	//TODO: zmienic zaleznie od shadera
 	Transform worldTransform = ComponentTransform.GetWorldTransform();
-	glm::mat4 modelMat = worldTransform.GetMatrix();
-	shader->Uniform3fv("scale", ComponentTransform.Scale);
-	shader->UniformMatrix4fv("model", modelMat);
-	shader->UniformMatrix4fv("MVP", (*info.VP) * modelMat);
-	shader->UniformMatrix3fv("normalMat", ModelToNormal(modelMat));
+	glm::mat4 modelMat = ComponentTransform.GetWorldTransformMatrix();	//don't worry, the ComponentTransform's world transform is cached
+
+	if (shader->ExpectsMatrix(MatrixType::MODEL))
+		shader->UniformMatrix4fv("model", modelMat);
+	if (shader->ExpectsMatrix(MatrixType::VIEW))
+		shader->UniformMatrix4fv("view", *info.view);
+	if (shader->ExpectsMatrix(MatrixType::MV))
+		shader->UniformMatrix4fv("MV", (*info.view) * modelMat);
+	if (shader->ExpectsMatrix(MatrixType::MVP))
+		shader->UniformMatrix4fv("MVP", (*info.VP) * modelMat);
+	if (shader->ExpectsMatrix(MatrixType::NORMAL))
+		shader->UniformMatrix3fv("normalMat", ModelToNormal(*info.view * modelMat));
 
 	if (EBO)
 		glDrawElements(GL_TRIANGLES, VertexCount, GL_UNSIGNED_INT, nullptr);

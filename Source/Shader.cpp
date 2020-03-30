@@ -12,9 +12,10 @@ void Shader::DebugShader(unsigned int shader)
 	}
 }
 
-Shader::Shader()
+Shader::Shader():
+	Program(0),
+	ExpectedMatrices{ 0 }
 {
-	Program = 0;
 }
 
 Shader::Shader(const char* vShaderPath, const char* fShaderPath, const char* gShaderPath)
@@ -22,18 +23,27 @@ Shader::Shader(const char* vShaderPath, const char* fShaderPath, const char* gSh
 	LoadShaders(vShaderPath, fShaderPath, gShaderPath);
 }
 
-
 std::vector<std::pair<unsigned int, std::string>>* Shader::GetMaterialTextureUnits()
 {
 	return &MaterialTextureUnits;
 }
 
+bool Shader::ExpectsMatrix(unsigned int index)
+{
+	return ExpectedMatrices[index];
+}
 
 void Shader::SetTextureUnitNames(std::vector <std::pair<unsigned int, std::string>> materialTexUnits)
 {
 	MaterialTextureUnits = materialTexUnits;
 	for (unsigned int i = 0; i < MaterialTextureUnits.size(); i++)
 		Uniform1i("material." + MaterialTextureUnits[i].second, MaterialTextureUnits[i].first);
+}
+
+void Shader::SetExpectedMatrices(std::vector <MatrixType> matrices)
+{
+	for (unsigned int i = 0; i < matrices.size(); i++)
+		ExpectedMatrices[(unsigned int)matrices[i]] = true;
 }
 
 unsigned int Shader::LoadShader(GLenum type, const char* shaderPath)

@@ -1,18 +1,17 @@
 #include "CameraComponent.h"
 
 CameraComponent::CameraComponent(std::string name, glm::uvec2 screenSize, CollisionEngine *collisionEng, float speedPerSec, Transform transform):
-	Component(name, transform)
+	Component(name, transform),
+	CollisionEng(collisionEng),
+	VelocityPerSec(glm::vec3(0.0f)),
+	SpeedPerSec(speedPerSec),
+	GroundCheckComponent(new BBox("twojababka")),
+	HoverHeight(0.3f),
+	bHoverHeightUnlocked(false),
+	Projection(glm::perspective(glm::radians(90.0f), ((float)screenSize.x / (float)screenSize.y), 0.01f, 100.0f))
 {
-	CollisionEng = collisionEng;
-	SpeedPerSec = speedPerSec;
-	VelocityPerSec = glm::vec3(0.0f);
-	GroundCheckComponent = nullptr;
-	bHoverHeightUnlocked = false;
-	HoverHeight = 0.3f;
-	Projection = glm::perspective(glm::radians(90.0f), ((float)screenSize.x / (float)screenSize.y), 0.01f, 100.0f);
-	ComponentTransform.Front = glm::vec3(0.0f, 0.0f, -1.0f);	//to jest kierunek, w ktorym poczatkowo patrzy sie nasz komponent (domyslnie negatywne Z)
+	ComponentTransform.SetFront(glm::vec3(0.0f, 0.0f, -1.0f));	//to jest kierunek, w ktorym poczatkowo patrzy sie nasz komponent (domyslnie negatywne Z)
 	ComponentTransform.bConstrain = true;		//zmieniamy rotacje tego komponentu z XYZ na YXZ, zeby w wygodny sposob obracac nim myszka (w przypadku XYZ obrot pitch i yaw dodaje rowniez roll - utrudnia to obliczenia)
-	GroundCheckComponent = new BBox("twojababka");
 	GroundCheckComponent->SetTransform(Transform(glm::vec3(0.0f, -0.65f, 0.0f), glm::vec3(0.0f), glm::vec3(1.0f)));
 }
 
@@ -32,9 +31,9 @@ glm::mat4 CameraComponent::GetVP(Transform* worldTransform)
 
 bool CameraComponent::PerformCollisionCheck(std::vector<CollisionComponent*> components, glm::vec3 offset, std::vector<glm::vec3>* bounceNormals, std::vector<CollisionComponent*>* collidingComponents)
 {
-	ComponentTransform.Position += offset;
+	ComponentTransform.Move(offset);
 	bool type = CollisionEng->CheckForCollision(components, bounceNormals, collidingComponents);
-	ComponentTransform.Position -= offset;
+	ComponentTransform.Move(-offset);
 	return type;
 }
 
@@ -80,7 +79,8 @@ glm::vec3 CameraComponent::ApplyCollisionResponse(glm::vec3 offset)
 
 void CameraComponent::RotateWithMouse(glm::vec2 mouseOffset)
 {
-	glm::vec3 Rotation = ComponentTransform.Rotation;
+	glm::vec3 Rotation = ComponentTransform.RotationRef;
+
 	float sensitivity = 0.15f;
 	Rotation.x -= mouseOffset.y * sensitivity;
 	Rotation.y -= mouseOffset.x * sensitivity;
@@ -88,7 +88,7 @@ void CameraComponent::RotateWithMouse(glm::vec2 mouseOffset)
 	Rotation.x = glm::clamp(Rotation.x, -89.9f, 89.9f);
 	Rotation.y = fmod(Rotation.y, 360.0f);
 
-	ComponentTransform.Rotation = Rotation;
+	ComponentTransform.SetRotation(Rotation);
 
 	std::vector <CollisionComponent*> collisionChildren;
 	GetAllComponents<CollisionComponent, BBox>(&collisionChildren);
@@ -96,7 +96,7 @@ void CameraComponent::RotateWithMouse(glm::vec2 mouseOffset)
 	glm::vec3 minSize(0.1f);
 	for (unsigned int i = 0; i < collisionChildren.size(); i++)
 	{
-		glm::vec3 childSize = collisionChildren[i]->GetTransform()->Scale;
+		glm::vec3 childSize = collisionChildren[i]->GetTransform()->ScaleRef;
 
 		if (i == 0)
 		{
@@ -122,14 +122,14 @@ void CameraComponent::RotateWithMouse(glm::vec2 mouseOffset)
 		{
 			glm::mat3 inverseRotMat = ComponentTransform.GetParentTransform()->GetWorldTransform().GetRotationMatrix(-1.0f);
 			bounceNormals[i] = inverseRotMat * bounceNormals[i];
-			ComponentTransform.Position += bounceNormals[i] * minSize * glm::vec3(0.01f); //mnozymy normalna przez czesc rozmiaru obiektu kolizji, aby odsunac go od sciany
+			ComponentTransform.Move(bounceNormals[i] * minSize * glm::vec3(0.01f)); //mnozymy normalna przez czesc rozmiaru obiektu kolizji, aby odsunac go od sciany
 		}
 	}
 }
 
 void CameraComponent::HandleInputs(GLFWwindow* window, float deltaTime)
 {
-	glm::vec3 Front = ComponentTransform.GetRotationMatrix() * ComponentTransform.Front;
+	glm::vec3 Front = ComponentTransform.GetRotationMatrix() * ComponentTransform.FrontRef;
 	glm::vec3 FrontFPS = glm::normalize(glm::vec3(Front.x, 0.0f, Front.z));
 
 	if (true)
@@ -156,10 +156,10 @@ void CameraComponent::HandleInputs(GLFWwindow* window, float deltaTime)
 			CollisionComponent* col = dynamic_cast<CollisionComponent*>(Children[xd]);
 			if (!col)
 				continue;
-			glm::vec3 scale = Children[xd]->GetTransform()->Scale;
+			glm::vec3 scale = Children[xd]->GetTransform()->ScaleRef;
 			Children[xd]->SetTransform(ComponentTransform);
 			Children[xd]->GetTransform()->SetParentTransform(ComponentTransform.GetParentTransform());
-			Children[xd]->GetTransform()->Scale = scale;
+			Children[xd]->GetTransform()->SetScale(scale);
 		}
 		Children.clear();
 	}
@@ -178,30 +178,28 @@ void CameraComponent::Update(float deltaTime)
 
 	offset = ApplyCollisionResponse(offset);
 
-	ComponentTransform.Position += offset;	//przemieszczamy obiekt (WAZNE: W LOCAL SPACE!!!)
+	ComponentTransform.Move(offset);	//przemieszczamy obiekt (WAZNE: W LOCAL SPACE!!!)
 
-	std::vector <CollisionComponent*> collidingAtGround;
-	GroundCheckComponent->GetTransform()->Position.x = ComponentTransform.Position.x;
-	GroundCheckComponent->GetTransform()->Position.y = ComponentTransform.Position.y - 0.65f;
-	GroundCheckComponent->GetTransform()->Position.z = ComponentTransform.Position.z;
+	/*std::vector <CollisionComponent*> collidingAtGround;
+	GroundCheckComponent->GetTransform()->SetPosition(ComponentTransform.PositionRef - glm::vec3(0.0f, 0.65f, 0.0f));
 	if (GroundCheckComponent)
 		PerformCollisionCheck(std::vector<CollisionComponent*> {GroundCheckComponent}, glm::vec3(0.0f, -0.5f, 0.0f), nullptr, &collidingAtGround);
 
 	float distanceFromGround = 0.0f;
-	float limit = 5.0f;
 	for (unsigned int i = 0; i < collidingAtGround.size(); i++)
 	{
-		float topmostPosition = collidingAtGround[i]->GetTransform()->GetWorldTransform().Position.y - (collidingAtGround[i]->GetTransform()->GetWorldTransform().Scale.y / 2.0f);
-		float dist = ComponentTransform.Position.y - topmostPosition;
+		float topmostPosition = collidingAtGround[i]->GetTransform()->GetWorldTransform().PositionRef.y - (collidingAtGround[i]->GetTransform()->GetWorldTransform().ScaleRef.y / 2.0f);
+		float dist = ComponentTransform.PositionRef.y - topmostPosition;
 		if (dist < distanceFromGround || i == 0)
 			distanceFromGround = dist;
-	}
+	}*/
 
+	float limit = 5.0f;
 	HoverHeight = glm::clamp(HoverHeight, -limit, limit);
 
 	//std::cout << distanceFromGround << '\n';
 
-	float ypos = ComponentTransform.Position.y;
+	float ypos = ComponentTransform.PositionRef.y;
 
 	if (ypos != HoverHeight)
 		VelocityPerSec.y = (HoverHeight - ypos) * 5.0f;

@@ -6,7 +6,7 @@ struct GameSettings
 	bool bWindowFullscreen;
 	std::string WindowTitle;
 
-	size_t AntiAliasingSamples;
+	unsigned int AmbientOcclusionSamples;
 	bool bVSync;
 
 	float MonitorGamma;
@@ -18,8 +18,8 @@ struct GameSettings
 		WindowSize = glm::uvec2(800, 600);
 		bWindowFullscreen = false;
 		WindowTitle = "kulki";
-		AntiAliasingSamples = 8;
 		bVSync = false;
+		AmbientOcclusionSamples = 0;
 		MonitorGamma = 2.2f;
 	}
 
@@ -44,8 +44,8 @@ struct GameSettings
 				file >> bWindowFullscreen;				//bool wczytujemy tak jak int - 0 jest falszywe a wieksza wartosc (1) prawdziwa
 			else if (settingName == "windowtitle")
 				getline(file.ignore(), WindowTitle);	//tytul moze skladac sie z wielu wyrazow, wczytaj wiec cala linie do konca oraz pomin jeden znak, gdyz jest to spacja
-			else if (settingName == "aasamples")
-				file >> AntiAliasingSamples;
+			else if (settingName == "ssaosamples")
+				file >> AmbientOcclusionSamples;
 			else if (settingName == "vsync")
 				file >> bVSync;
 			else if (settingName == "gamma")
