@@ -10,7 +10,7 @@ public:
 	void AddCollisionInstance(CollisionComponent* comp) { CollisionInstances.push_back(comp); }
 	bool CheckForCollision(CollisionComponent*, std::vector<glm::vec3>*);
 	bool CheckForCollision(std::vector<CollisionComponent*>, std::vector<glm::vec3>*, std::vector<CollisionComponent*>* = nullptr);
-	std::vector <std::pair<EngineObjectTypes, const Transform*>> GetCollisionInstancesDebugData();
+	std::vector <std::pair<EngineObjectType, Transform*>> GetCollisionInstancesDebugData();
 };
 
 template<class T>bool isComponentInVector(std::vector<T*>, T*);

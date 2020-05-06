@@ -1,11 +1,43 @@
 #include "Material.h"
 
+Material::Material(std::string name, float shine, float depthScale, Shader* shader)
+{ 
+	Name = name;
+	Shininess = shine;
+	DepthScale = depthScale;
+	RenderShader = shader;
+}
+
 std::string Material::GetName()
 {
 	return Name;
 }
 
-void Material::LoadFromAiMaterial(aiMaterial* material, MaterialLoadingData* matLoadingData)
+Shader* Material::GetRenderShader()
+{
+	return RenderShader;
+}
+
+void Material::SetDepthScale(float scale)
+{
+	DepthScale = scale;
+}
+void Material::SetShininess(float shine)
+{
+	Shininess = shine;
+}
+
+void Material::SetRenderShader(Shader* shader)
+{
+	RenderShader = shader;
+}
+
+void Material::AddTexture(Texture* tex)
+{
+	Textures.push_back(tex);
+}
+
+void Material::LoadFromAiMaterial(aiMaterial* material, std::string directory, MaterialLoadingData* matLoadingData)
 {
 	//Load material's name
 	aiString name;
@@ -24,13 +56,13 @@ void Material::LoadFromAiMaterial(aiMaterial* material, MaterialLoadingData* mat
 		std::pair<aiTextureType, std::string>(aiTextureType_HEIGHT, "normal"),
 		std::pair<aiTextureType, std::string>(aiTextureType_DISPLACEMENT, "depth")
 	};
-
+	
 	//Load textures by type
 	for (unsigned int i = 0; i < materialTypes.size(); i++)
-		LoadAiTexturesOfType(material, materialTypes[i].first, materialTypes[i].second, matLoadingData);
+		LoadAiTexturesOfType(material, directory, materialTypes[i].first, materialTypes[i].second, matLoadingData);
 }
 
-void Material::LoadAiTexturesOfType(aiMaterial* material, aiTextureType type, std::string shaderName, MaterialLoadingData* matLoadingData)
+void Material::LoadAiTexturesOfType(aiMaterial* material, std::string directory, aiTextureType type, std::string shaderName, MaterialLoadingData* matLoadingData)
 {
 	std::vector <Texture*>* prevLoadedTextures = nullptr;
 	if (matLoadingData)
@@ -47,7 +79,7 @@ void Material::LoadAiTexturesOfType(aiMaterial* material, aiTextureType type, st
 		aiTextureMapping texMapping;	//TODO: maybe use this later?
 
 		material->GetTexture(type, i, &path, &texMapping);
-		pathStr = path.C_Str();
+		pathStr = directory + path.C_Str();
 
 		if (prevLoadedTextures)
 		{
@@ -73,7 +105,7 @@ void Material::LoadAiTexturesOfType(aiMaterial* material, aiTextureType type, st
 	}
 }
 
-void Material::UpdateUBOData(Shader* shader, unsigned int emptyTexture)
+void Material::UpdateWholeUBOData(Shader* shader, unsigned int emptyTexture)
 {
 	shader->Uniform1f("material.shininess", Shininess);
 	shader->Uniform1f("material.depthScale", DepthScale);
@@ -100,6 +132,108 @@ void Material::UpdateUBOData(Shader* shader, unsigned int emptyTexture)
 	}
 }
 
+/*
+========================================================================================================================
+========================================================================================================================
+========================================================================================================================
+*/
+
+AtlasMaterial::AtlasMaterial(std::string name, glm::vec2 atlasSize, float shine, float depthScale, Shader* shader) :
+	Material(name, shine, depthScale, shader),
+	AtlasSize(atlasSize),
+	TextureID(0.0f)
+{
+}
+
+void AtlasMaterial::InterpolateInAnimation(Interpolation* interp)
+{
+	if (!interp)
+	{
+		TextureID = 0.0f;
+		return;
+	}
+
+	TextureID = interp->InterpolateValues(0.0f, AtlasSize.x * AtlasSize.y - 1.0f);
+	//std::cout << "Uwaga: " << TextureID << '\n';
+}
+
+void AtlasMaterial::UpdateInstanceUBOData(Shader* shader)
+{
+	shader->Uniform2fv("atlasData", glm::vec2(TextureID, AtlasSize.x));
+}
+
+void AtlasMaterial::UpdateWholeUBOData(Shader* shader, unsigned int emptyTexture)
+{
+	UpdateInstanceUBOData(shader);
+	Material::UpdateWholeUBOData(shader, emptyTexture);
+
+	shader->Uniform2fv("atlasTexOffset", glm::vec2(1.0f) / AtlasSize);
+}
+
+/*
+========================================================================================================================
+========================================================================================================================
+========================================================================================================================
+*/
+
+MaterialInstance::MaterialInstance(Material* materialPtr,  Interpolation* interp, bool drawBefore, bool drawAfter):
+	MaterialPtr(materialPtr),
+	AnimationInterp(interp),
+	DrawBeforeAnim(drawBefore),
+	DrawAfterAnim(drawAfter)
+{
+}
+
+Material* MaterialInstance::GetMaterialPtr()
+{
+	return MaterialPtr;
+}
+
+bool MaterialInstance::ShouldBeDrawn()
+{
+	if ((!AnimationInterp) ||
+		((DrawBeforeAnim || AnimationInterp->GetT() > 0.0f) && (DrawAfterAnim || AnimationInterp->GetT() < 1.0f)))
+		return true;
+
+	return false;
+}
+
+void MaterialInstance::SetInterp(Interpolation* interp)
+{
+	AnimationInterp = interp;
+}
+
+void MaterialInstance::ResetAnimation()
+{
+	AnimationInterp->Reset();
+}
+
+void MaterialInstance::Update(float deltaTime)
+{
+	if (!AnimationInterp)	//if not animated, return
+		return;
+
+	AnimationInterp->UpdateT(deltaTime);
+}
+
+void MaterialInstance::UpdateInstanceUBOData(Shader* shader)
+{
+	MaterialPtr->InterpolateInAnimation(AnimationInterp);
+	MaterialPtr->UpdateInstanceUBOData(shader);
+}
+
+void MaterialInstance::UpdateWholeUBOData(Shader* shader, unsigned int emptyTexture)
+{
+	UpdateInstanceUBOData(shader);
+	MaterialPtr->UpdateWholeUBOData(shader, emptyTexture);
+}
+
+/*
+========================================================================================================================
+========================================================================================================================
+========================================================================================================================
+*/
+
 unsigned int textureFromFile(std::string path, bool sRGB)
 {
 	unsigned int tex;
@@ -117,14 +251,16 @@ unsigned int textureFromFile(std::string path, bool sRGB)
 		return tex;
 	}
 	GLenum format = GL_RGB;
+	GLenum internalformat = (sRGB) ? (GL_SRGB) : (GL_RGB);
 	switch (nrChannels)
 	{
 	case 1: format = GL_RED; break;
 	case 3: format = GL_RGB; break;
-	case 4: format = GL_RGBA; break;
+	case 4: format = GL_RGBA;
+			internalformat = (sRGB) ? (GL_SRGB_ALPHA) : (GL_RGBA); break;
 	}
 
-	glTexImage2D(GL_TEXTURE_2D, 0, ((sRGB) ? (GL_SRGB) : (GL_RGB)), width, height, 0, format, GL_UNSIGNED_BYTE, data);
+	glTexImage2D(GL_TEXTURE_2D, 0, internalformat, width, height, 0, format, GL_UNSIGNED_BYTE, data);
 
 	glGenerateMipmap(GL_TEXTURE_2D);
 

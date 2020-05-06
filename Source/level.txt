@@ -1,24 +1,77 @@
 ///PREFIX ENGINE
-materialsfile Materials.fware
-newactor CubeActor
-newcomp mesh Cube root
-load Cube.fware material Bricks
+materialsfile EngineMaterials/Materials.fware
+
+newactor GunActor Gun
+newcomp model MyDoubleBarrel doublebarrel/doublebarrel.obj
 transform
 skip
 skip
-1 1 10
+0.075 0.075 0.05
 end
-newcomp model Nanosuit child Cube nanosuit.obj
+newcomp empty GunTip child MyDoubleBarrel
+transform
+0 0.35 -2
+end
+newcomp soundsource DoubleBarrelBlast child GunTip Sounds/shotgun.wav
+end
+newcomp model FireParticle child GunTip CPY_ENG_QUAD material FireAtlas
+end
+actorinfo
+FireMaterial FireAtlas
+end
+
+newactor Actor CameraActor
+newcomp camera Camera root
+1.5
+active
+transform
+end
+newcomp collision BCameraSphere child Camera
+sphere
+false
+transform
+skip
+skip
+0.3 0.3 0.3
+skip
+constrain
+end
+newcomp light Bekalight child Camera spot
+0 0 0
+1 1 1
+0.5 0.5 0.5
+2 12.5 45
+transform
+0.03 -0.1 0
+skip
+skip
+0 0 -1
+constrain
+end
+newcomp model Obrzyn child Camera doublebarrel/doublebarrel.obj
+transform
+0.1 -0.1 -0.2
+skip
+0.075 0.075 0.05
+constrain
+end
+
+newactor Actor CubeActor
+newcomp model Cube root tunnel/tunnel.obj material Bunker
+end
+newcomp soundsource ShotgunBlast child Cube Sounds/shotgun.wav
+end
+newcomp model Nanosuit child Cube nanosuit/nanosuit.obj
 transform
 0 -0.5 2.5
 skip
-0.05 0.05 0.005
+0.05 0.05 0.05
 end
-newcomp model Subway child Cube x3.obj
+newcomp model Subway child Cube subway/subway.obj
 transform
 0 1 -10
 skip
-0.4 0.4 0.04
+0.4 0.4 0.4
 end
 newcomp light SubwayLight child Subway point
 0.1 0.1 0.1
@@ -26,14 +79,17 @@ newcomp light SubwayLight child Subway point
 1 1 1
 1 0 0
 transform
-0 1.5 5
+0 3.75 12.5
 end
 newcomp collision BCube child Cube
 cube
 true
+transform
+skip
+skip
+1 1 10
 end
-newcomp mesh Crate
-copy Cube material Bricks
+newcomp model Crate child Cube tunnel/tunnel.obj
 transform
 0 0 3
 skip
@@ -42,6 +98,22 @@ end
 newcomp collision BCrate child Crate
 cube
 false
+transform
+skip
+skip
+1 1 10
+end
+newcomp light Sun child Cube direction
+0.1 0.1 0.1
+1 1 1
+0.5 0.5 0.5
+0 0 0
+transform
+0 3 -11
+skip
+skip
+0 -3 11
+rotlock
 end
 newcomp light Lamp point
 0.05 0.05 0.05
@@ -79,49 +151,14 @@ transform
 0 -0.35 0
 end
 newcomp light EpicLight3 point
-0.5 0.5 0.5
+0 0 0
 1 2 2
 0.5 1 1
 6 0 0
 transform
 0 -0.35 1
 end
-newcomp light Sun direction
-0.1 0.1 0.1
-1 1 1
-0.5 0.5 0.5
-0 0 0
-transform
-0 3 -11
-skip
-skip
-0 -3 11
-end
 
-newactor CameraActor
-newcomp camera Camera root
-1.5
-active
-end
-newcomp collision BCameraSphere child Camera
-sphere
-false
-transform
-skip
-skip
-0.3 0.3 0.3
-skip
-true
-end
-newcomp light Bekalight child Camera spot
-0 0 0
-1 1 1
-0.5 0.5 0.5
-2 12.5 45
-transform
-0.03 -0.04 0
-skip
-skip
-0 0 -1
-true
+newactor Actor GameLevel
+newcomp model Warehouse root warehouse/warehouse.obj
 end

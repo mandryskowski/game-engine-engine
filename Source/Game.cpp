@@ -36,6 +36,7 @@ Game::Game(GLFWwindow *window) :
 	glfwSetCursorPos(Window, (double)Settings.WindowSize.x / 2.0, (double)Settings.WindowSize.y / 2.0);
 	glfwSetCursorPosCallback(Window, cursorPosCallback);
 
+	Searcher.Setup(&RenderEng, RootActor.GetRoot());
 	GamePostprocess.LoadSettings(&Settings);
 }
 
@@ -51,13 +52,22 @@ void Game::LoadLevel(std::string path)
 	{
 		if (type == "newactor")
 		{
-			std::string actorName;
-			filestr >> actorName;
+			std::string actorName, typeName;
+			filestr >> typeName >> actorName;
 
-			currentActor = new Actor(actorName);
+			if (typeName == "GunActor")
+				currentActor = new GunActor(actorName);
+			else if (typeName == "Actor")
+				currentActor = new Actor(actorName);
+			else
+			{
+				std::cerr << "ERROR! Unrecognized actor type " << typeName << ".\n";
+				continue;
+			}
 			AddActorToScene(currentActor);
 		}
-		if (type == "newcomp")
+
+		else if (type == "newcomp")
 		{
 			if (!currentActor)
 			{
@@ -66,16 +76,36 @@ void Game::LoadLevel(std::string path)
 			}
 			LoadComponentData(filestr, currentActor);
 		}
-		if (type == "materialsfile")
+
+		else if (type == "materialsfile")
 		{
-			std::string path;
+			std::string path, directory;
 			filestr >> path;
 
-			RenderEng.LoadMaterials(path);
+			size_t dirPos = path.find_last_of('/');
+			if (dirPos != std::string::npos)
+				directory = path.substr(0, dirPos + 1);
+
+			RenderEng.LoadMaterials(path, directory);
+		}
+		
+		else if (type == "actorinfo" && currentActor)
+		{
+			std::stringstream* stream = new std::stringstream;
+			std::string data;
+
+			while (data != "end")
+			{
+				filestr >> data;
+				(*stream) << data;
+			}
+			
+			currentActor->SetLoadStream(stream);
 		}
 	}
 
 	RenderEng.LoadModels();
+	RootActor.LoadDataFromLevel(&Searcher);
 }
 
 Component* Game::LoadComponentData(std::stringstream& filestr, Actor* currentActor)
@@ -86,9 +116,9 @@ Component* Game::LoadComponentData(std::stringstream& filestr, Actor* currentAct
 	filestr >> type >> name;
 
 	///////////////////////////////2. Load info about its position in hierarchy
-	
+
 	std::string familyWord, parentName;
-	familyWord = getNextWord(filestr);
+	familyWord = lookupNextWord(filestr);
 	if (familyWord == "child")
 		filestr >> familyWord >> parentName;	///skip familyword and load parentname
 	else if (familyWord == "root")
@@ -98,54 +128,7 @@ Component* Game::LoadComponentData(std::stringstream& filestr, Actor* currentAct
 
 	///////////////////////////////3. Load component's data
 
-	if (type == "mesh")
-	{
-		MeshComponent* meshPtr = nullptr;
-		std::string loadType, materialName;
-		filestr >> loadType;
-
-		if (loadType == "load")
-		{
-			std::string path;
-			filestr >> path;
-			meshPtr = new MeshComponent(name);
-			meshPtr->LoadFromFile(path, &materialName);
-		}
-		else if (loadType == "copy")
-		{
-			std::string targetName;
-			filestr >> targetName;
-
-			MeshComponent* target = RenderEng.FindMesh(targetName);
-			if (!target)
-			{
-				std::cerr << "Can't find mesh " << targetName << '\n';
-				return nullptr;
-			}
-
-			meshPtr = new MeshComponent(*target);
-			meshPtr->SetName(name);
-		}
-
-		if (isNextWordEqual(filestr, "material"))
-			filestr >> materialName;
-
-		if (!materialName.empty())
-		{
-			Material* material = RenderEng.FindMaterial(materialName);
-
-			if (!material)
-			{
-				std::cerr << "Can't find material " << materialName << '\n';
-				return nullptr;
-			}
-			meshPtr->SetMaterial(RenderEng.FindMaterial(materialName));
-		}
-
-		AddMeshToScene(meshPtr);
-		comp = meshPtr;
-	}
-	else if (type == "model")
+	if (type == "model")
 	{
 		ModelComponent* modelPtr = nullptr;
 		std::string path, materialName;
@@ -155,7 +138,10 @@ Component* Game::LoadComponentData(std::stringstream& filestr, Actor* currentAct
 		modelPtr->SetFilePath(path);
 
 		if (isNextWordEqual(filestr, "material"))
+		{
 			filestr >> materialName;
+			modelPtr->SetOverrideMaterial(RenderEng.FindMaterial(materialName));
+		}
 
 		RenderEng.AddModel(modelPtr);
 		comp = modelPtr;
@@ -170,7 +156,7 @@ Component* Game::LoadComponentData(std::stringstream& filestr, Actor* currentAct
 		else
 			projection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 1.0f, 10.0f);
 
-		LightComponent* lightPtr = new LightComponent(name, toLightType(lightType), Lights.size(), 10.0f, projection);
+		LightComponent* lightPtr = new LightComponent(name, toLightType(lightType), (unsigned int)Lights.size(), 10.0f, projection);
 		for (unsigned int vector = 0; vector < 3; vector++)
 			for (unsigned int axis = 0; axis < 3; axis++)
 				filestr >> (*lightPtr)[vector][axis];	//TODO: sprawdzic czy sie wywala
@@ -216,6 +202,18 @@ Component* Game::LoadComponentData(std::stringstream& filestr, Actor* currentAct
 		CollisionEng.AddCollisionInstance(colPtr);
 		comp = colPtr;
 	}
+	else if (type == "soundsource")
+	{
+		SoundSourceComponent* sourcePtr = nullptr;
+		std::string path;
+		filestr >> path;
+		sourcePtr = AudioEng.AddSource(path, name);
+		//sourcePtr->SetLoop(true);
+		sourcePtr->Play();
+		comp = sourcePtr;
+	}
+	else if (type == "empty")
+		comp = new Component(name, Transform());
 	else
 		return nullptr;
 
@@ -253,7 +251,7 @@ Component* Game::LoadComponentData(std::stringstream& filestr, Actor* currentAct
 void Game::SetupLights()
 {
 	LightsBuffer.Generate(1, sizeof(glm::vec4) * 2 + Lights.size() * 192);
-	LightsBuffer.SubData1i(Lights.size(), 0);
+	LightsBuffer.SubData1i((int)Lights.size(), (size_t)0);
 
 	UpdateLightUniforms();
 }
@@ -262,7 +260,7 @@ void Game::UpdateLightUniforms()
 {
 	LightsBuffer.offsetCache = sizeof(glm::vec4) * 2;
 	for (unsigned int i = 0; i < Lights.size(); i++)
-		Lights[i]->UpdateUBOData(&LightsBuffer, ActiveCamera->GetTransform()->GetWorldTransform().GetViewMatrix());
+		Lights[i]->UpdateUBOData(&LightsBuffer);
 }
 
 void Game::BindActiveCamera(CameraComponent* cam)
@@ -272,6 +270,7 @@ void Game::BindActiveCamera(CameraComponent* cam)
 	ActiveCamera = cam;
 	mouseContextCamera = cam;
 	MatricesBuffer.SubDataMatrix4fv(ActiveCamera->GetProjectionMat(), sizeof(glm::mat4));
+	AudioEng.SetListenerTransformPtr(ActiveCamera->GetTransform());
 }
 
 void Game::AddActorToScene(Actor* actor)
@@ -282,10 +281,6 @@ void Game::AddActorToScene(Actor* actor)
 void Game::AddLightToScene(LightComponent* light)
 {
 	Lights.push_back(light);
-}
-void Game::AddMeshToScene(MeshComponent* mesh)
-{
-	RenderEng.AddMesh(mesh);
 }
 
 unsigned int ticks = 1;
@@ -306,11 +301,12 @@ void Game::Run()
 	float deltaTime = 0.0f;
 	float timeAccumulator = 0.0f;
 
-	float beginning = glfwGetTime();
+	float beginning = (float)glfwGetTime();
 
 	while (!glfwWindowShouldClose(Window))
 	{
 		glfwPollEvents();
+
 		if (glfwGetKey(Window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 			glfwSetWindowShouldClose(Window, true);
 
@@ -320,7 +316,7 @@ void Game::Run()
 		if (deltaTime > 0.25f)
 			deltaTime = 0.25f;
 
-		float fraction = fmod(glfwGetTime(), 1.0f);
+		float fraction = fmod((float)glfwGetTime(), 1.0f);
 		if (fraction < 0.1f && !wasSecondFPS)
 		{
 			std::cout << "******Frames per second: " << (float)ticks / (glfwGetTime() - beginning) << "			Milliseconds per frame: " << (glfwGetTime() - beginning) * 1000.0f / (float)ticks << '\n';
@@ -352,6 +348,7 @@ void Game::Update(float deltaTime)
 	RootActor.UpdateAll(deltaTime);
 	MatricesBuffer.SubDataMatrix4fv(ActiveCamera->GetTransform()->GetWorldTransform().GetViewMatrix(),0);
 	LightsBuffer.SubData4fv(ActiveCamera->GetTransform()->GetWorldTransform().PositionRef, 16);
+	AudioEng.Update();
 }
 bool wasSecond = false;
 float pBegin = 0.0f;
@@ -375,14 +372,14 @@ void Game::Render()
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	Shader* gShader = RenderEng.GetShader("geometry");
+	Shader* gShader = RenderEng.FindShader("geometry");
 	gShader->Use();
 	gShader->Uniform3fv("camPos", camWorld.PositionRef);
 	
-	RenderEng.RenderScene(info, gShader, MeshType::MESH_ALL, true);
+	RenderEng.RenderScene(info, gShader);
 	
 	////////////////////2.5 SSAO pass
-
+	/*
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, GFramebuffer.GetColorBuffer(0).OpenGLBuffer);	//gPosition
 	glActiveTexture(GL_TEXTURE1);
@@ -390,7 +387,7 @@ void Game::Render()
 
 	RenderEng.RenderSSAO(info, Settings.WindowSize);
 	GamePostprocess.GaussianBlur(RenderEng.GetSSAOTex(), 4);
-
+	*/
 
 	////////////////////3. Lighting pass
 	UpdateLightUniforms();
@@ -411,16 +408,17 @@ void Game::Render()
 	glEnable(GL_DEPTH_TEST);
 	glDisable(GL_CULL_FACE);
 	
-	Shader* forwardShader = RenderEng.GetShader("forward");
-	//RenderEng.RenderScene(info, forwardShader, MeshType::MESH_FORWARD, true);
+	std::vector<Shader*> forwardShaders = RenderEng.GetForwardShaders();
+	for (unsigned int i = 0; i < forwardShaders.size(); i++)
+		RenderEng.RenderScene(info, forwardShaders[i]);
 
 	
-	/*glDisable(GL_CULL_FACE);
+	glDisable(GL_CULL_FACE);
 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-	std::vector <std::pair<EngineObjectTypes, const Transform*>> collisionDebugData = CollisionEng.GetCollisionInstancesDebugData();		//Uncomment to debug bounding boxes.
+	std::vector <std::pair<EngineObjectType, Transform*>> collisionDebugData = CollisionEng.GetCollisionInstancesDebugData();		//Uncomment to debug bounding boxes.
 	RenderEng.RenderEngineObjects(info, collisionDebugData);
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-	glEnable(GL_CULL_FACE);*/
+	glEnable(GL_CULL_FACE);
 	
 
 	////////////////////4. Postprocessing pass (Blur + Tonemapping & Gamma Correction)
@@ -428,11 +426,11 @@ void Game::Render()
 	//GamePostprocess.Render(RenderEng.GetSSAOTex(), 0);
 
 	if (pBegin == 0.0f)
-		pBegin = glfwGetTime();
+		pBegin = (float)glfwGetTime();
 	float time1, time2;
-	time1 = glfwGetTime() - pBegin;
+	time1 = (float)glfwGetTime() - pBegin;
 	glfwSwapBuffers(Window);
-	time2 = glfwGetTime() - pBegin;
+	time2 = (float)glfwGetTime() - pBegin;
 	timeSum += time2 - time1;
 }
 
@@ -457,11 +455,17 @@ void loadTransform(std::stringstream& filestr, Transform* transform)
 			filestr >> value;
 			if (value == "skip")
 				break;
-			else if (value == "true")
+			else if (value == "constrain")
 			{
 				transform->bConstrain = true;
 				continue;
 			}
+			else if (value == "rotlock")
+			{
+				transform->bRotationLock = true;
+				continue;
+			}
+
 			else if (value == "end")
 			{
 				filestr.seekg(pos);	//go back to the position before the component's end, so other functions aren't alarmed
@@ -471,6 +475,8 @@ void loadTransform(std::stringstream& filestr, Transform* transform)
 		}
 	}
 
-	if (isNextWordEqual(filestr, "true"))
+	if (isNextWordEqual(filestr, "constrain"))
 		transform->bConstrain = true;
+	if (isNextWordEqual(filestr, "rotlock"))
+		transform->bRotationLock = true;
 }

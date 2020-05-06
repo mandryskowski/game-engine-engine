@@ -1,15 +1,17 @@
 #pragma once
-#include "Component.h"
+#include "SearchEngine.h"
 #include <iostream>
 
 class Actor
 {
+protected:
 	Component* RootComponent;
 	std::vector <Actor*> Children;
 	std::string Name;
+	std::stringstream* LoadStream;
 
 public:
-	Actor(std::string);
+	Actor(std::string, bool createRoot = true);
 	Component* GetRoot();
 	std::string GetName();
 	Transform* GetTransform();
@@ -18,8 +20,10 @@ public:
 	void SetTransform(Transform);
 	void AddComponent(Component*);
 	void AddChild(Actor*);
-	void HandleInputs(GLFWwindow*, float);
+	void SetLoadStream(std::stringstream* stream);
+	virtual void LoadDataFromLevel(SearchEngine* searcher);
+	virtual void HandleInputs(GLFWwindow*, float);
 	void HandleInputsAll(GLFWwindow*, float);
-	void Update(float);
+	virtual void Update(float);
 	void UpdateAll(float);
 };

@@ -1,0 +1,15 @@
+﻿AudioEngine.obj : error LNK2001: nierozpoznany symbol zewnętrzny __imp__alBufferData
+AudioEngine.obj : error LNK2001: nierozpoznany symbol zewnętrzny __imp__alcMakeContextCurrent
+AudioEngine.obj : error LNK2001: nierozpoznany symbol zewnętrzny __imp__alcDestroyContext
+AudioEngine.obj : error LNK2001: nierozpoznany symbol zewnętrzny __imp__alcOpenDevice
+AudioEngine.obj : error LNK2001: nierozpoznany symbol zewnętrzny __imp__alcCreateContext
+AudioEngine.obj : error LNK2001: nierozpoznany symbol zewnętrzny __imp__alGenBuffers
+SoundSourceComponent.obj : error LNK2001: nierozpoznany symbol zewnętrzny __imp__alDeleteSources
+SoundSourceComponent.obj : error LNK2001: nierozpoznany symbol zewnętrzny __imp__alGenSources
+SoundSourceComponent.obj : error LNK2001: nierozpoznany symbol zewnętrzny __imp__alSourcePause
+SoundSourceComponent.obj : error LNK2001: nierozpoznany symbol zewnętrzny __imp__alSourcePlay
+SoundSourceComponent.obj : error LNK2001: nierozpoznany symbol zewnętrzny __imp__alGetSourcei
+SoundSourceComponent.obj : error LNK2001: nierozpoznany symbol zewnętrzny __imp__alSourceStop
+SoundSourceComponent.obj : error LNK2001: nierozpoznany symbol zewnętrzny __imp__alSourcefv
+SoundSourceComponent.obj : error LNK2001: nierozpoznany symbol zewnętrzny __imp__alSourcei
+C:\Users\Michał\source\repos\kulki\Release\kulki.exe : fatal error LNK1120: liczba nierozpoznanych elementów zewnętrznych: 14

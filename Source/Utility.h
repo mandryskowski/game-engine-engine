@@ -1,8 +1,16 @@
 #pragma once
 #include "Shader.h"
 #include <vector>
+#include <algorithm>
 
-enum EngineObjectTypes
+enum InterpolationType
+{
+	CONSTANT,
+	LINEAR,
+	QUADRATIC
+};
+
+enum EngineObjectType
 {
 	QUAD,
 	CUBE,
@@ -28,10 +36,8 @@ struct UniformBuffer
 	void PadOffset();
 };
 
-std::string getNextWord(std::stringstream&);			//checks the next word in stream without moving the pointer
+std::string lookupNextWord(std::stringstream&);			//checks the next word in stream without moving the pointer
 bool isNextWordEqual(std::stringstream&, std::string);	//works just like the previous one, but moves the pointer if the word is equal to a passed string
 bool toBool(std::string);
 std::string framebufferStatusToString(GLenum);
-void printVector(glm::vec3);
-
-float lerp(float, float, float);
+void printVector(glm::vec3, std::string);

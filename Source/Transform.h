@@ -1,9 +1,8 @@
 #pragma once
-#include "Utility.h"
+#include "Animation.h"
 #include <glfw/glfw3.h>
 #include <glm/gtx/euler_angles.hpp>
 #include <string>
-
 
 class Transform
 {
@@ -20,9 +19,11 @@ class Transform
 
 	std::vector <bool> DirtyFlags;
 
+	std::vector <Interpolator<glm::vec3>*> Interpolators;
+
 	static float tSum;
 	
-	void FlagChildrenAsDirty();
+	void FlagMeAndChildrenAsDirty();
 
 public:
 	const glm::vec3& PositionRef;
@@ -31,8 +32,9 @@ public:
 	const glm::vec3& FrontRef;
 
 	bool bConstrain;
+	bool bRotationLock;
 
-	Transform(glm::vec3 pos = glm::vec3(0.0f), glm::vec3 rot = glm::vec3(0.0f), glm::vec3 scale = glm::vec3(1.0f), glm::vec3 front = glm::vec3(0.0f), bool constrain = false);
+	Transform(glm::vec3 pos = glm::vec3(0.0f), glm::vec3 rot = glm::vec3(0.0f), glm::vec3 scale = glm::vec3(1.0f), glm::vec3 front = glm::vec3(0.0f), bool constrain = false, bool rotlock = false);
 	Transform(const Transform&);
 	Transform(Transform&&) noexcept = default;
 	static float test()
@@ -63,6 +65,9 @@ public:
 	void SetDirtyFlag(unsigned int index = 0, bool val = true);
 	void SetDirtyFlags(bool val = true);
 	unsigned int AddDirtyFlag();
+
+	void AddInterpolator(Interpolator<glm::vec3>*, std::string name);
+	void Update(float deltaTime);
 	
 	~Transform() = default;
 

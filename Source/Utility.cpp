@@ -66,7 +66,7 @@ void UniformBuffer::PadOffset()
 	offsetCache = offsetCache - offsetCache % 16 + 16;	//pad to the next multiple of 16
 }
 
-std::string getNextWord(std::stringstream& str)
+std::string lookupNextWord(std::stringstream& str)
 {
 	std::string word;
 	size_t pos = (size_t)str.tellg();
@@ -111,12 +111,10 @@ std::string framebufferStatusToString(GLenum status)
 	return "Error " + std::to_string(status) + " is not known by the program.\n";
 }
 
-void printVector(glm::vec3 vec)
+void printVector(glm::vec3 vec, std::string title)
 {
-	std::cout << vec.x << ", " << vec.y << ", " << vec.z << '\n';
-}
+	if (!title.empty())
+		title.append(": ");	//if we want to draw a title, add something after it
 
-float lerp(float min, float max, float scale)
-{
-	return (max - min) * scale + min;
+	std::cout << title << vec.x << ", " << vec.y << ", " << vec.z << '\n';
 }

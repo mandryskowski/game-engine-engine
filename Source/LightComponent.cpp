@@ -16,6 +16,8 @@ LightComponent::LightComponent(std::string name, LightType type, unsigned int sh
 	CutOff = glm::cos(glm::radians(settings.y));
 	OuterCutOffBeforeCos = glm::radians(settings.z);
 	OuterCutOff = glm::cos(OuterCutOffBeforeCos);
+
+	TransformDirtyFlagIndex = ComponentTransform.AddDirtyFlag();
 }
 
 LightType LightComponent::GetType()
@@ -46,20 +48,20 @@ glm::mat4 LightComponent::GetVP(Transform* worldTransform)
 		return Projection * ComponentTransform.GetWorldTransform().GetViewMatrix();
 }
 
-EngineObjectTypes LightComponent::GetLightVolumeType()
+EngineObjectType LightComponent::GetLightVolumeType()
 {
 	switch (Type)
 	{
 	case SPOT:
 		if (Ambient == glm::vec3(0.0f))
-			return EngineObjectTypes::CONE;
+			return EngineObjectType::CONE;
 	case POINT:
-		return EngineObjectTypes::SPHERE;
+		return EngineObjectType::SPHERE;
 	case DIRECTIONAL:
-		return EngineObjectTypes::QUAD;
+		return EngineObjectType::QUAD;
 	default:
 		std::cerr << "ERROR! Unknown light type: " << (int)Type << ".\n";
-		return EngineObjectTypes::SPHERE;
+		return EngineObjectType::SPHERE;
 	}
 }
 
@@ -84,6 +86,7 @@ void LightComponent::CalculateLightRadius()
 
 	Far = radius;
 	Projection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, Far);
+
 	ComponentTransform.SetScale(glm::vec3(radius));
 
 	///////////////////////////////////////////////////////////////////////////////////
@@ -105,32 +108,34 @@ void LightComponent::SetAdditionalData(glm::vec3 data)
 	OuterCutOff = glm::cos(OuterCutOffBeforeCos);
 }
 
-void LightComponent::UpdateUBOData(UniformBuffer* lightsUBO, const glm::mat4& view, size_t offset)
+void LightComponent::UpdateUBOData(UniformBuffer* lightsUBO, size_t offset)
 {
 	if (offset != -1)
 		lightsUBO->offsetCache = offset;
-	
-	float pierszy = lightsUBO->offsetCache;
-	glm::mat4 viewInverse = glm::inverse(view);
 
 	Transform worldTransform = ComponentTransform.GetWorldTransform();
+	bool transformDirtyFlag = ComponentTransform.GetDirtyFlag(TransformDirtyFlagIndex);
 
-	switch (Type)
+	if (transformDirtyFlag)
 	{
-	case LightType::DIRECTIONAL:
-		lightsUBO->offsetCache += sizeof(glm::vec4);
-		lightsUBO->SubData4fv(glm::vec3(view * glm::vec4(worldTransform.FrontRef, 0.0f)), lightsUBO->offsetCache); break;
-	case LightType::POINT:
-		lightsUBO->SubData4fv(glm::vec3(view * glm::vec4(worldTransform.PositionRef, 1.0f)), lightsUBO->offsetCache);
-		lightsUBO->offsetCache += sizeof(glm::vec4); break;
-	case LightType::SPOT:
-		lightsUBO->SubData4fv(glm::vec3(view * glm::vec4(worldTransform.PositionRef, 1.0f)), lightsUBO->offsetCache);
-		lightsUBO->SubData4fv(glm::vec3(view * glm::vec4(worldTransform.FrontRef, 0.0f)), lightsUBO->offsetCache); break;
+		switch (Type)
+		{
+		case LightType::DIRECTIONAL:
+			lightsUBO->offsetCache += sizeof(glm::vec4);
+			lightsUBO->SubData4fv(worldTransform.FrontRef, lightsUBO->offsetCache); break;
+		case LightType::POINT:
+			lightsUBO->SubData4fv(worldTransform.PositionRef, lightsUBO->offsetCache);
+			lightsUBO->offsetCache += sizeof(glm::vec4); break;
+		case LightType::SPOT:
+			lightsUBO->SubData4fv(worldTransform.PositionRef, lightsUBO->offsetCache);
+			lightsUBO->SubData4fv(worldTransform.FrontRef, lightsUBO->offsetCache); break;
+		}
 	}
+	else
+		lightsUBO->offsetCache += sizeof(glm::vec4) * 2;
 	
 	if (DirtyFlag)
 	{
-		float first = lightsUBO->offsetCache;
 		lightsUBO->SubData4fv(std::vector <glm::vec3> {Ambient, Diffuse, Specular}, lightsUBO->offsetCache);
 		float additionalData[3] = { Attenuation, CutOff, OuterCutOff };
 		lightsUBO->SubData(12, additionalData, lightsUBO->offsetCache);
@@ -143,10 +148,11 @@ void LightComponent::UpdateUBOData(UniformBuffer* lightsUBO, const glm::mat4& vi
 	else
 		lightsUBO->offsetCache += 72;
 
-	if (Type != LightType::POINT)
-		lightsUBO->SubDataMatrix4fv(Projection * worldTransform.GetViewMatrix() * viewInverse, lightsUBO->offsetCache + 8);
+	if (transformDirtyFlag)
+		lightsUBO->SubDataMatrix4fv(Projection * worldTransform.GetViewMatrix(), lightsUBO->offsetCache + 8);
 	else
-		lightsUBO->SubDataMatrix4fv(viewInverse, lightsUBO->offsetCache + 8);
+		lightsUBO->offsetCache += sizeof(glm::mat4);
+
 	lightsUBO->PadOffset();
 }
 

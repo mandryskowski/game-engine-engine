@@ -15,7 +15,6 @@ CameraComponent::CameraComponent(std::string name, glm::uvec2 screenSize, Collis
 	GroundCheckComponent->SetTransform(Transform(glm::vec3(0.0f, -0.65f, 0.0f), glm::vec3(0.0f), glm::vec3(1.0f)));
 }
 
-
 glm::mat4 CameraComponent::GetProjectionMat()
 {
 	return Projection;
@@ -49,6 +48,21 @@ glm::vec3 CameraComponent::ApplyCollisionResponse(glm::vec3 offset)
 
 	if(!PerformCollisionCheck(collisionChildren, offset, &bounceNormals))	//na poczatku sprawdzamy, czy przesuniecie obiektu o offset wywola kolizje; jesli nie, to po pomijamy reszte funkcji -  nie ma potrzeby zmieniac offsetu
 		return offset;
+
+	/*for (int i = 0; i < bounceNormals.size() - 1; i++) //remove duplicates
+	{
+		for (int j = i + 1; j < bounceNormals.size(); j++)
+		{
+			if (bounceNormals[i] == bounceNormals[j])
+			{
+				bounceNormals.erase(bounceNormals.begin() + j);
+				j--;
+			}
+		}
+	}*/
+
+	for (int i = 0; i < bounceNormals.size(); i++)
+		printVector(bounceNormals[i], "Bounce normal " + std::to_string(i + 1));
 
 	glm::vec3 offsetSum = offset;
 	glm::vec3 potentialVelocity = VelocityPerSec;

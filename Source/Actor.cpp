@@ -1,9 +1,10 @@
 #include "Actor.h"
 
-Actor::Actor(std::string name)
+Actor::Actor(std::string name, bool createRoot)
 {
-	RootComponent = new Component("root", Transform());
+	RootComponent = (createRoot) ? (new Component("root", Transform())) : (nullptr);
 	Name = name;
+	LoadStream = nullptr;
 }
 
 Component* Actor::GetRoot()
@@ -47,6 +48,23 @@ void Actor::AddChild(Actor* child)
 {
 	Children.push_back(child);
 	child->GetTransform()->SetParentTransform(RootComponent->GetTransform());
+}
+
+void Actor::SetLoadStream(std::stringstream* stream)
+{
+	LoadStream = stream;
+}
+
+void Actor::LoadDataFromLevel(SearchEngine* searcher)
+{
+	if (LoadStream)
+	{
+		delete LoadStream;
+		LoadStream = nullptr;
+	}
+
+	for (unsigned int i = 0; i < Children.size(); i++)
+		Children[i]->LoadDataFromLevel(searcher);
 }
 
 void Actor::HandleInputs(GLFWwindow* window, float deltaTime)

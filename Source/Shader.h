@@ -23,19 +23,25 @@ enum MatrixType
 class Shader
 {
 	unsigned int Program;
+	std::string Name;
+
 	std::vector <std::pair<unsigned int, std::string>> MaterialTextureUnits;
 	bool ExpectedMatrices[7];
 
 	void DebugShader(unsigned int);
 public:
 	Shader();
-	Shader(const char*, const char*, const char* = nullptr);
+	Shader(std::string, std::string, std::string=std::string());
+	std::string GetName();
 	std::vector<std::pair<unsigned int, std::string>>* GetMaterialTextureUnits();
 	bool ExpectsMatrix(unsigned int);
+	void SetName(std::string);
 	void SetTextureUnitNames(std::vector<std::pair<unsigned int, std::string>>);
+	void AddTextureUnit(unsigned int, std::string);
 	void SetExpectedMatrices(std::vector<MatrixType>);
+	void AddExpectedMatrix(std::string);
 	unsigned int LoadShader(GLenum, const char*);
-	void LoadShaders(const char*, const char*, const char* = nullptr);
+	void LoadShaders(std::string, std::string, std::string = std::string());
 	void Uniform1i(std::string, int);
 	void Uniform1f(std::string, float);
 	void Uniform2fv(std::string, glm::vec2);

@@ -1,8 +1,7 @@
 #pragma once
-#include "RenderEngine.h"
-#include "Actor.h"
+#include "GunActor.h"
 #include "CameraComponent.h"
-
+#include "AudioEngine.h"
 
 class Game
 {
@@ -21,6 +20,8 @@ protected:
 	GameSettings Settings;
 	RenderEngine RenderEng;
 	CollisionEngine CollisionEng;
+	AudioEngine AudioEng;
+	SearchEngine Searcher;
 
 public:
 	Game(GLFWwindow*);
@@ -32,7 +33,6 @@ public:
 	void BindActiveCamera(CameraComponent*);
 	void AddActorToScene(Actor* actor); //you use this function to make the game interact (update, draw...) with the actor; without adding it to the scene, the Actor instance isnt updated real-time by default
 	void AddLightToScene(LightComponent* light); // this function lets the game know that the passed light component's data needs to be forwarded to shaders (therefore lighting our meshes)
-	void AddMeshToScene(MeshComponent* mesh);
 	void Run();
 	void Update(float);
 	void Render();

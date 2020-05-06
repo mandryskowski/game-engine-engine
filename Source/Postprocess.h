@@ -1,6 +1,6 @@
 #pragma once
 #include "GameSettings.h"
-#include "MeshComponent.h"
+#include "Mesh.h"
 
 struct ColorBufferData
 {

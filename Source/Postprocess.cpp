@@ -220,12 +220,12 @@ Postprocess::Postprocess()
 	QuadVAO = generateVAO(QuadVBO, std::vector<unsigned int> {2, 2}, 6, data);
 
 
-	PPShader.LoadShaders("postprocess.vs", "postprocess.fs");
+	PPShader.LoadShaders("Shaders/postprocess.vs", "Shaders/postprocess.fs");
 	PPShader.Use();
 	PPShader.Uniform1i("HDRbuffer", 0);
 	PPShader.Uniform1i("brightnessBuffer", 1);
 
-	GaussianBlurShader.LoadShaders("gaussianblur.vs", "gaussianblur.fs");
+	GaussianBlurShader.LoadShaders("Shaders/gaussianblur.vs", "Shaders/gaussianblur.fs");
 	GaussianBlurShader.Use();
 	GaussianBlurShader.Uniform1i("tex", 0);
 }

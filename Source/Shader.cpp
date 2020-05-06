@@ -8,19 +8,26 @@ void Shader::DebugShader(unsigned int shader)
 	if (!result)
 	{
 		glGetShaderInfoLog(shader, 512, NULL, data);
-		std::cout << "blad: " << data;
+		std::cout << "Shader error: " << data;
 	}
 }
 
 Shader::Shader():
 	Program(0),
+	Name("Internal"),
 	ExpectedMatrices{ 0 }
 {
 }
 
-Shader::Shader(const char* vShaderPath, const char* fShaderPath, const char* gShaderPath)
+Shader::Shader( std::string vShaderPath, std::string fShaderPath, std::string gShaderPath):
+	Name("Internal")
 {
 	LoadShaders(vShaderPath, fShaderPath, gShaderPath);
+}
+
+std::string Shader::GetName()
+{
+	return Name;
 }
 
 std::vector<std::pair<unsigned int, std::string>>* Shader::GetMaterialTextureUnits()
@@ -33,11 +40,22 @@ bool Shader::ExpectsMatrix(unsigned int index)
 	return ExpectedMatrices[index];
 }
 
+void Shader::SetName(std::string name)
+{
+	Name = name;
+}
+
 void Shader::SetTextureUnitNames(std::vector <std::pair<unsigned int, std::string>> materialTexUnits)
 {
 	MaterialTextureUnits = materialTexUnits;
 	for (unsigned int i = 0; i < MaterialTextureUnits.size(); i++)
 		Uniform1i("material." + MaterialTextureUnits[i].second, MaterialTextureUnits[i].first);
+}
+
+void Shader::AddTextureUnit(unsigned int unitIndex, std::string nameInShader)
+{
+	MaterialTextureUnits.push_back(std::pair<unsigned int, std::string>(unitIndex, nameInShader));
+	Uniform1i("material." + nameInShader, unitIndex);
 }
 
 void Shader::SetExpectedMatrices(std::vector <MatrixType> matrices)
@@ -46,13 +64,33 @@ void Shader::SetExpectedMatrices(std::vector <MatrixType> matrices)
 		ExpectedMatrices[(unsigned int)matrices[i]] = true;
 }
 
+void Shader::AddExpectedMatrix(std::string matType)
+{
+	if (matType == "M")
+		ExpectedMatrices[MatrixType::MODEL] = true;
+	else if (matType == "V")
+		ExpectedMatrices[MatrixType::VIEW] = true;
+	else if (matType == "P")
+		ExpectedMatrices[MatrixType::PROJECTION] = true;
+	else if (matType == "MV")
+		ExpectedMatrices[MatrixType::MV] = true;
+	else if (matType == "VP")
+		ExpectedMatrices[MatrixType::VP] = true;
+	else if (matType == "MVP")
+		ExpectedMatrices[MatrixType::MVP] = true;
+	else if (matType == "NORMAL")
+		ExpectedMatrices[MatrixType::NORMAL] = true;
+	else
+		std::cerr << "ERROR! Can't find matrix type " << matType << '\n';
+}
+
 unsigned int Shader::LoadShader(GLenum type, const char* shaderPath)
 {
 	std::fstream shaderFile(shaderPath);
 
 	if (!shaderFile.good())
 	{
-		std::cout << "Cannot open: " << shaderPath << " :(\n";
+		std::cout << "ERROR! Cannot open: " << shaderPath << " :(\n";
 		return -1;
 	}
 
@@ -72,13 +110,13 @@ unsigned int Shader::LoadShader(GLenum type, const char* shaderPath)
 	return shader;
 }
 
-void Shader::LoadShaders(const char* vShaderPath, const char* fShaderPath, const char* gShaderPath)
+void Shader::LoadShaders(std::string vShaderPath, std::string fShaderPath, std::string gShaderPath)
 {
-	unsigned int nrShaders = (gShaderPath) ? (3) : (2);
+	unsigned int nrShaders = (gShaderPath.empty()) ? (2) : (3);
 	unsigned int* shaders = new unsigned int[nrShaders];
-	shaders[0] = LoadShader(GL_VERTEX_SHADER, vShaderPath);
-	shaders[1] = LoadShader(GL_FRAGMENT_SHADER, fShaderPath);
-	if (nrShaders == 3) shaders[2] = LoadShader(GL_GEOMETRY_SHADER, gShaderPath);
+	shaders[0] = LoadShader(GL_VERTEX_SHADER, vShaderPath.c_str());
+	shaders[1] = LoadShader(GL_FRAGMENT_SHADER, fShaderPath.c_str());
+	if (nrShaders == 3) shaders[2] = LoadShader(GL_GEOMETRY_SHADER, gShaderPath.c_str());
 
 	Program = glCreateProgram();
 	for (unsigned int i = 0; i < nrShaders; i++)
