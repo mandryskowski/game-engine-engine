@@ -1,7 +1,0 @@
-testowy
-1
-2.0
-3.14159
-5
-twoja stara
-59
