@@ -55,7 +55,7 @@ void Component::UpdateAll(float dt)
 {
 	Update(dt);
 	for (unsigned int i = 0; i < Children.size(); i++)
-		Children[i]->Update(dt);
+		Children[i]->UpdateAll(dt);
 }
 Component* Component::SearchForComponent(std::string name)
 {

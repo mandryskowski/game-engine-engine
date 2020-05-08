@@ -15,6 +15,21 @@ public:
 	}
 };
 
+class Obiekt
+{
+	glm::vec3 Pozycja;
+	
+public:
+	Obiekt(glm::vec3 poz)
+	{
+		Pozycja = poz;
+	}
+	glm::vec3 GetPozycja()
+	{
+		return Pozycja;
+	}
+};
+
 int main()
 {
 	glfwInit();

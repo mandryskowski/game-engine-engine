@@ -7,7 +7,10 @@ enum InterpolationType
 {
 	CONSTANT,
 	LINEAR,
-	QUADRATIC
+	QUADRATIC,
+	CUBIC,
+	QUARTIC,
+	QUINTIC
 };
 
 enum EngineObjectType

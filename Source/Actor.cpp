@@ -90,3 +90,14 @@ void Actor::UpdateAll(float deltaTime)
 	for (unsigned int i = 0; i < Children.size(); i++)
 		Children[i]->UpdateAll(deltaTime);
 }
+
+Actor* Actor::SearchForActor(std::string name)
+{
+	if (Name == name)
+		return this;
+
+	for (unsigned int i = 0; i < Children.size(); i++)
+		return Children[i]->SearchForActor(name);
+
+	return nullptr;
+}

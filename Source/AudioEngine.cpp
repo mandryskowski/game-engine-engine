@@ -51,9 +51,10 @@ SoundBuffer* AudioEngine::LoadALBuffer(ALenum format, ALvoid* data, ALsizei size
 
 SoundBuffer* AudioEngine::SearchForAlreadyLoadedBuffer(std::string path)
 {
-	for (unsigned int i = 0; i < ALBuffers.size(); i++)
-		if (ALBuffers[i]->Path == path && !ALBuffers[i]->Path.empty())
-			return ALBuffers[i];
+	auto bufferIt = std::find_if(ALBuffers.begin(), ALBuffers.end(), [path](SoundBuffer* buffer) { return (buffer->Path == path && !buffer->Path.empty()); });
+
+	if (bufferIt != ALBuffers.end())
+			return *bufferIt;
 
 	return nullptr;
 }
@@ -77,6 +78,17 @@ SoundSourceComponent* AudioEngine::AddSource(std::string path, std::string name)
 {
 	Sources.push_back(new SoundSourceComponent(name, LoadBuffer(path)));
 	return Sources.back();
+}
+
+SoundSourceComponent* AudioEngine::FindSource(std::string name)
+{
+	auto sourceIt = std::find_if(Sources.begin(), Sources.end(), [name](SoundSourceComponent* source) { return source->GetName() == name; });
+
+	if (sourceIt != Sources.end())
+		return *sourceIt;
+
+	std::cerr << "ERROR! Can't find sound source " + name + ".\n";
+	return nullptr;
 }
 
 void AudioEngine::Update()
@@ -147,6 +159,7 @@ SoundBuffer* AudioEngine::LoadBufferFromWav(std::string path)
 
 	//////////////// Create an OpenAL buffer using our loaded data.
 	std::vector <char> charSamples;
+	//TODO: USE STL HERE!!!!
 	for (unsigned int i = 0; i < file.samples[0].size(); i++)
 	{
 		charSamples.push_back((char)(file.samples[0][i] * 128.0f));

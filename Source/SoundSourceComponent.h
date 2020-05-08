@@ -25,7 +25,7 @@ public:
 	void Pause();
 	void Stop();
 
-	void Update(float);
+	virtual void Update(float) override;
 
 	void Dispose();
 

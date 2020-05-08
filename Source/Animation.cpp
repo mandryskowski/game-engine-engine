@@ -1,10 +1,12 @@
 #include "Animation.h"
 
-Interpolation::Interpolation(float begin, float end, InterpolationType type, AnimBehaviour before, AnimBehaviour after)
+Interpolation::Interpolation(float begin, float end, InterpolationType type, bool fadeAway, AnimBehaviour before, AnimBehaviour after)
 {
 	Reset(begin, end);
 
 	Type = type;
+	FadeAway = fadeAway;
+
 	BeforeBehaviour = before;
 	AfterBehaviour = after;
 }
@@ -37,42 +39,37 @@ void Interpolation::UpdateT(float deltaTime)
 {
 	CurrentTime += deltaTime;
 
-	switch (Type)
+	if (AfterBehaviour == STOP && CurrentTime > End)
+		CurrentTime = End;
+	else if ((BeforeBehaviour == REPEAT && CurrentTime < 0.0f) || (AfterBehaviour == REPEAT && CurrentTime > End))
+		CurrentTime = fmod(CurrentTime, End);
+
+	////////////////////////////////////////////////////////////////////
+
+	if (Type == CONSTANT && CurrentTime >= End)
+		T = 1.0f;
+	else
 	{
-	case LINEAR:
-		T = abs(CurrentTime) / End;	//inverselerp(Begin.x, End.x, x)
-		break;
-
-	case QUADRATIC:
-		T = pow(CurrentTime / End, 2.0f);
-		break;
-
-	case CONSTANT:
-	default:
-		if (CurrentTime >= End)
-			T = 1.0f;
+		float exponent = static_cast<float>(Type);	//LINEAR = 1, QUADRATIC = 2, CUBIC = 3, etc.
+		T = (FadeAway) ? (1.0f - pow(1.0f - CurrentTime / End, exponent)) : (pow(CurrentTime / End, exponent));
 	}
 
-	if (CurrentTime < 0.0f)
-		T *= -1.0f;
+	////////////////////////////////////////////////////////////////////
 
-	T = AdjustTToBehaviours(T, BeforeBehaviour, AfterBehaviour);
+	if (BeforeBehaviour == STOP && T < 0.0f)
+		T = 0.0f;
 }
 
 template<class ValType> ValType Interpolation::InterpolateValues(ValType y1, ValType y2)
 {
-	switch (Type)
+	if (Type == CONSTANT)
 	{
-	case LINEAR:
-	case QUADRATIC:
-		return glm::mix(y1, y2, T);
-
-	case CONSTANT:
-	default:
 		if (T >= 1.0f)
 			return y2;
 		return y1;
 	}
+
+	return glm::mix(y1, y2, T);
 }
 
 /*
@@ -81,39 +78,83 @@ template<class ValType> ValType Interpolation::InterpolateValues(ValType y1, Val
 	=========================================================
 */
 
-template <class ValType> Interpolator<ValType>::Interpolator(float begin, float end, ValType min, ValType max, InterpolationType type, AnimBehaviour before, AnimBehaviour after, ValType* valPtr):
-	Interpolator(new Interpolation(begin, end, type, before, after), min, max, valPtr)
+template <class ValType> Interpolator<ValType>::Interpolator(float begin, float end, ValType min, ValType max, InterpolationType type, bool fadeAway, AnimBehaviour before, AnimBehaviour after, bool updateMinOnBegin, ValType* valPtr):
+	Interpolator(std::make_shared<Interpolation>(begin, end, type, fadeAway, before, after), min, max, updateMinOnBegin, valPtr)
 {
 }
 
-template <class ValType> Interpolator<ValType>::Interpolator(Interpolation* interp, ValType min, ValType max, ValType* valPtr)
+template <class ValType> Interpolator<ValType>::Interpolator(std::shared_ptr<Interpolation> interp, ValType min, ValType max, bool updateOnBegin, ValType* valPtr):
+	Interp(interp),
+	MinVal(min),
+	MaxVal(max),
+	LastInterpResult(MinVal),
+	HasBegun(false),
+	HasEnded(false),
+	UpdateMinValOnBegin(updateOnBegin),
+	InterpolatedValPtr(valPtr)
 {
-	Interp = interp;
-	MinVal = min;
-	MaxVal = max;
-	InterpolatedValPtr = valPtr;
 }
 
-template <class ValType> Interpolation* Interpolator<ValType>::GetInterp()
+template <class ValType> bool Interpolator<ValType>::GetHasEnded()
+{
+	return HasEnded;
+}
+
+template <class ValType> std::shared_ptr<Interpolation> Interpolator<ValType>::GetInterp()
 {
 	return Interp;
 }
-
 
 template <class ValType> void Interpolator<ValType>::SetValPtr(ValType* valPtr)
 {
 	InterpolatedValPtr = valPtr;
 }
 
+template <class ValType> void Interpolator<ValType>::SetMinVal(ValType val)
+{
+	MinVal = val;
+}
+
+template <class ValType> void Interpolator<ValType>::SetMaxVal(ValType val)
+{
+	MaxVal = val;
+}
+
 
 template <class ValType> ValType Interpolator<ValType>::Update(float deltaTime)
 {
+	if (!HasBegun && Interp->IsChanging())
+	{
+		if (UpdateMinValOnBegin)
+			MinVal = *InterpolatedValPtr;
+		else
+			*InterpolatedValPtr = MinVal;
+
+		LastInterpResult = MinVal;
+		HasBegun = true;
+	}
+
 	Interp->UpdateT(deltaTime);
 	ValType result = Interp->InterpolateValues(MinVal, MaxVal);
+	bool change = true;
 
-	if (InterpolatedValPtr)
-		*InterpolatedValPtr = result;
+	if (!Interp->IsChanging())
+	{
+		if (HasBegun && !HasEnded)
+		{
+			result = MaxVal;
+			HasEnded = true;
+		}
+		else
+			change = false;
+	}
 
+
+	if (InterpolatedValPtr && change)
+		*InterpolatedValPtr += result - LastInterpResult;	//we subtract the last result from the current result, because if two interpolations of the same variable happen at once, we can't just assign the result, we have to add delta
+
+
+	LastInterpResult = result;
 	return result;
 }
 
@@ -127,24 +168,3 @@ template float Interpolation::InterpolateValues<float>(float y1, float y2);
 template glm::vec3 Interpolation::InterpolateValues<glm::vec3>(glm::vec3 y1, glm::vec3 y2);
 
 template class Interpolator<glm::vec3>;
-
-float AdjustTToBehaviours(float T, AnimBehaviour before, AnimBehaviour after)
-{
-	AnimBehaviour behaviours[2] = { before, after };
-
-	for (int i = 0; i <= 1; i++)
-	{
-		if ((i == 0 && T > 0.0f) || (i == 1 && T < 1.0f))
-			continue;
-
-		switch (behaviours[i])
-		{
-		case STOP: return (i == 0) ? (0.0f) : (1.0f);	//the condition can be simplified to static_cast<float>(i) but i don't think that's readable
-		case REPEAT: return fmod(T, 1.0f);
-		default:
-		case EXTRAPOLATE: return T;
-		}
-	}
-
-	return T;
-}

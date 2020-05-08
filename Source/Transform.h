@@ -7,7 +7,7 @@
 class Transform
 {
 	Transform* ParentTransform;
-	Transform* WorldTransformCache;
+	std::unique_ptr<Transform> WorldTransformCache;
 	glm::mat4 WorldTransformMatrixCache;
 
 	std::vector <Transform*> Children;
@@ -22,7 +22,7 @@ class Transform
 	std::vector <Interpolator<glm::vec3>*> Interpolators;
 
 	static float tSum;
-	
+
 	void FlagMeAndChildrenAsDirty();
 
 public:
@@ -66,7 +66,9 @@ public:
 	void SetDirtyFlags(bool val = true);
 	unsigned int AddDirtyFlag();
 
-	void AddInterpolator(Interpolator<glm::vec3>*, std::string name);
+	void AddInterpolator(std::string fieldName, Interpolator<glm::vec3>*, bool animateFromCurrent = true);	//if animateFromCurrent is true, the method automatically changes the minimum value of the interpolator to be the current value of the interpolated variable.
+	void AddInterpolator(std::string fieldName, float begin, float end, glm::vec3 min, glm::vec3 max, InterpolationType interpType, bool fadeAway = false, AnimBehaviour before = AnimBehaviour::STOP, AnimBehaviour after = AnimBehaviour::STOP);
+	void AddInterpolator(std::string fieldName, float begin, float end, glm::vec3 max, InterpolationType interpType, bool fadeAway = false, AnimBehaviour before = AnimBehaviour::STOP, AnimBehaviour after = AnimBehaviour::STOP);
 	void Update(float deltaTime);
 	
 	~Transform() = default;

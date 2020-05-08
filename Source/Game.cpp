@@ -36,7 +36,7 @@ Game::Game(GLFWwindow *window) :
 	glfwSetCursorPos(Window, (double)Settings.WindowSize.x / 2.0, (double)Settings.WindowSize.y / 2.0);
 	glfwSetCursorPosCallback(Window, cursorPosCallback);
 
-	Searcher.Setup(&RenderEng, RootActor.GetRoot());
+	Searcher.Setup(&RenderEng, &AudioEng, RootActor.GetRoot());
 	GamePostprocess.LoadSettings(&Settings);
 }
 
@@ -53,7 +53,18 @@ void Game::LoadLevel(std::string path)
 		if (type == "newactor")
 		{
 			std::string actorName, typeName;
+			Actor* parent = nullptr;
+
 			filestr >> typeName >> actorName;
+			if (isNextWordEqual(filestr, "child"))
+			{
+				std::string parentName;
+				filestr >> parentName;
+				parent = RootActor.SearchForActor(parentName);
+
+				if (!parent)
+					std::cerr << "ERROR! Can't find actor " + parentName + ", parent of " + actorName + " will be assigned automatically.\n";
+			}
 
 			if (typeName == "GunActor")
 				currentActor = new GunActor(actorName);
@@ -64,7 +75,11 @@ void Game::LoadLevel(std::string path)
 				std::cerr << "ERROR! Unrecognized actor type " << typeName << ".\n";
 				continue;
 			}
-			AddActorToScene(currentActor);
+
+			if (parent)
+				parent->AddChild(currentActor);
+			else
+				AddActorToScene(currentActor);
 		}
 
 		else if (type == "newcomp")
@@ -208,8 +223,7 @@ Component* Game::LoadComponentData(std::stringstream& filestr, Actor* currentAct
 		std::string path;
 		filestr >> path;
 		sourcePtr = AudioEng.AddSource(path, name);
-		//sourcePtr->SetLoop(true);
-		sourcePtr->Play();
+
 		comp = sourcePtr;
 	}
 	else if (type == "empty")
@@ -297,7 +311,7 @@ void Game::Run()
 	SetupLights();
 	 
 	float lastUpdateTime = (float)glfwGetTime();
-	const float timeStep = 1.0f / 30.0f;
+	const float timeStep = 1.0f / 60.0f;
 	float deltaTime = 0.0f;
 	float timeAccumulator = 0.0f;
 
@@ -316,7 +330,7 @@ void Game::Run()
 		if (deltaTime > 0.25f)
 			deltaTime = 0.25f;
 
-		float fraction = fmod((float)glfwGetTime(), 1.0f);
+		/*float fraction = fmod((float)glfwGetTime(), 1.0f);
 		if (fraction < 0.1f && !wasSecondFPS)
 		{
 			std::cout << "******Frames per second: " << (float)ticks / (glfwGetTime() - beginning) << "			Milliseconds per frame: " << (glfwGetTime() - beginning) * 1000.0f / (float)ticks << '\n';
@@ -325,7 +339,7 @@ void Game::Run()
 			wasSecondFPS = true;
 		}
 		else if (fraction > 0.9f)
-			wasSecondFPS = false;
+			wasSecondFPS = false;*/
 
 		RootActor.HandleInputsAll(Window, deltaTime);
 

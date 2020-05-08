@@ -23,6 +23,7 @@ public:
 	void SetListenerTransformPtr(Transform*);
 	SoundSourceComponent* AddSource(SoundSourceComponent*);
 	SoundSourceComponent* AddSource(std::string path, std::string name);
+	SoundSourceComponent* FindSource(std::string name);
 
 	void Update();
 

@@ -466,6 +466,7 @@ void RenderEngine::SetupAmbientOcclusion(glm::uvec2 windowSize, unsigned int sam
 	std::default_random_engine generator;
 
 	std::vector<glm::vec3> ssaoSamples;
+	ssaoSamples.reserve(samples);
 	for (unsigned int i = 0; i < samples; i++)
 	{
 		glm::vec3 sample(
@@ -485,6 +486,7 @@ void RenderEngine::SetupAmbientOcclusion(glm::uvec2 windowSize, unsigned int sam
 	}
 	
 	std::vector<glm::vec3> ssaoNoise;
+	ssaoNoise.reserve(16);
 	for (unsigned int i = 0; i < 16; i++)
 	{
 		glm::vec3 noise(
@@ -507,9 +509,10 @@ void RenderEngine::SetupAmbientOcclusion(glm::uvec2 windowSize, unsigned int sam
 
 ModelComponent* RenderEngine::FindModel(std::string name)
 {
-	for (unsigned int i = 0; i < Models.size(); i++)
-		if (name == Models[i]->GetName())
-			return Models[i];
+	auto modelIt = std::find_if(Models.begin(), Models.end(), [name](ModelComponent* model) { return model->GetName() == name; });
+
+	if (modelIt != Models.end())
+		return *modelIt;
 
 	std::cerr << "ERROR! Can't find model " << name << "!\n";
 	return nullptr;
@@ -517,9 +520,10 @@ ModelComponent* RenderEngine::FindModel(std::string name)
 
 Material* RenderEngine::FindMaterial(std::string name)
 {
-	for (unsigned int i = 0; i < Materials.size(); i++)
-		if (Materials[i]->GetName() == name)
-			return Materials[i];
+	auto materialIt = std::find_if(Materials.begin(), Materials.end(), [name](Material* material) {	return material->GetName() == name; });
+
+	if (materialIt != Materials.end())
+		return *materialIt;
 
 	std::cerr << "ERROR! Can't find material " << name << "!\n";
 	return nullptr;
@@ -532,9 +536,10 @@ Shader* RenderEngine::FindShader(std::string name)
 	if (name == "geometry")
 		return &GShader;
 
-	for (unsigned int i = 0; i < ExternalShaders.size(); i++)
-		if (ExternalShaders[i]->GetName() == name)
-			return ExternalShaders[i];
+	auto shaderIt = std::find_if(ExternalShaders.begin(), ExternalShaders.end(), [name](Shader* shader) { return shader->GetName() == name; });
+
+	if (shaderIt != ExternalShaders.end())
+		return *shaderIt;
 
 	std::cerr << "ERROR! Can't find a shader named " << name << "!\n";
 	return nullptr;

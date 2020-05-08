@@ -98,39 +98,22 @@ const Transform& Transform::GetWorldTransform()
 
 	if (ParentTransform == nullptr)
 	{
-		if (WorldTransformCache)
-			delete WorldTransformCache;
-		WorldTransformCache = new Transform(Position, Rotation, Scale, Front, bConstrain);
+		WorldTransformCache.reset(new Transform(Position, Rotation, Scale, Front, bConstrain));
 		DirtyFlags[0] = false;
 		return *WorldTransformCache;
 	}
 
 	Transform ParentWorldTransform = ParentTransform->GetWorldTransform();
+	glm::mat3 parentMat = ParentWorldTransform.GetMatrix();
+	glm::mat3 mat = parentMat * static_cast<glm::mat3>(GetMatrix());
 
-	glm::vec3 pos = ParentWorldTransform.Position;
-	glm::vec3 front = Front;
-
-	if (!bRotationLock)
-	{
-		glm::mat3 parentMat = ParentWorldTransform.GetMatrix();
-		glm::mat3 mat = parentMat * (glm::mat3)GetMatrix();
-
-		pos += glm::vec3(parentMat * Position);
-
-		if (Front != glm::vec3(0.0f))
-			front = ModelToNormal(mat) * front;
-	}
-	else
-	{
-		pos += Position;
-	}
+	glm::vec3 pos = ParentWorldTransform.Position + glm::vec3(parentMat * Position);
+	glm::vec3 front = (Front == glm::vec3(0.0f)) ? (glm::vec3(0.0f)) : (ModelToNormal(mat) * Front);
 
 	glm::vec3 rot = ParentWorldTransform.Rotation + Rotation;
 	glm::vec3 scale = ParentWorldTransform.Scale * Scale;
 
-	if (WorldTransformCache)
-		delete WorldTransformCache;
-	WorldTransformCache = new Transform(pos, rot, scale, front, bConstrain);
+	WorldTransformCache.reset(new Transform(pos, rot, scale, front, bConstrain));
 	DirtyFlags[0] = false;
 
 	return *WorldTransformCache;
@@ -249,20 +232,40 @@ unsigned int Transform::AddDirtyFlag()
 	return (unsigned int)DirtyFlags.size() - 1;
 }
 
-void Transform::AddInterpolator(Interpolator<glm::vec3>* interpolator, std::string name)
+void Transform::AddInterpolator(std::string fieldName, Interpolator<glm::vec3>* interpolator, bool animateFromCurrent)
 {
 	Interpolators.push_back(interpolator);
+	glm::vec3* animatedField = nullptr;
 
-	if (name == "position")
-		Interpolators.back()->SetValPtr(&Position);
-	else if (name == "rotation")
-		Interpolators.back()->SetValPtr(&Rotation);
-	else if (name == "scale")
-		Interpolators.back()->SetValPtr(&Scale);
-	else if (name == "front")
-		Interpolators.back()->SetValPtr(&Front);
+	if (fieldName == "position")
+		animatedField = &Position;
+	else if (fieldName == "rotation")
+		animatedField = &Rotation;
+	else if (fieldName == "scale")
+		animatedField = &Scale;
+	else if (fieldName == "front")
+		animatedField = &Front;
 	else
-		std::cerr << "ERROR! Unrecognized interpolator type: " << name << ".\n";
+	{
+		std::cerr << "ERROR! Unrecognized interpolator type: " << fieldName << ".\n";
+		return;
+	}
+
+	if (animateFromCurrent)
+		interpolator->SetMinVal(*animatedField);
+
+	interpolator->SetValPtr(animatedField);
+	//interpolator->SetMinValPtr()
+}
+
+void Transform::AddInterpolator(std::string fieldName, float begin, float end, glm::vec3 min, glm::vec3 max, InterpolationType interpType, bool fadeAway, AnimBehaviour before, AnimBehaviour after)
+{
+	AddInterpolator(fieldName, new Interpolator<glm::vec3>(begin, end, min, max, interpType, fadeAway, before, after, false), false);
+}
+
+void Transform::AddInterpolator(std::string fieldName, float begin, float end, glm::vec3 max, InterpolationType interpType, bool fadeAway, AnimBehaviour before, AnimBehaviour after)
+{
+	AddInterpolator(fieldName, new Interpolator<glm::vec3>(begin, end, glm::vec3(0.0f), max, interpType, fadeAway, before, after), true);
 }
 
 void Transform::Update(float deltaTime)
@@ -271,12 +274,16 @@ void Transform::Update(float deltaTime)
 		return;
 
 	bool dirty = false;
-
 	for (unsigned int i = 0; i < Interpolators.size(); i++)
 	{
 		Interpolators[i]->Update(deltaTime);
 		if (Interpolators[i]->GetInterp()->IsChanging())
 			dirty = true;
+		else if (Interpolators[i]->GetHasEnded())
+		{
+			Interpolators.erase(Interpolators.begin() + i);
+			i--;
+		}
 	}
 
 	if (dirty)
