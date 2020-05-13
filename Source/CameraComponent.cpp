@@ -31,7 +31,6 @@ CameraComponent::CameraComponent(std::string name, glm::uvec2 screenSize, Collis
 			case RIGHT: dir.Direction = glm::vec3(1.0f, 0.0f, 0.0f); break;
 			}
 			i++;
-
 			return dir;
 		});
 }
