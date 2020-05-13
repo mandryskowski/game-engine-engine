@@ -30,6 +30,11 @@ void GunActor::LoadDataFromLevel(SearchEngine* searcher)
 	
 	GunModel = searcher->FindModel("MyDoubleBarrel");
 
+	/*
+	GunModel->GetTransform()->AddInterpolator("position", 10.0f, 20.0f, glm::vec3(0.0f, 0.0f, -10.0f), InterpolationType::LINEAR);
+	GunModel->GetTransform()->AddInterpolator("rotation", 10.0f, 5.0f, glm::vec3(360.0f, 0.0f, 0.0f), InterpolationType::QUADRATIC, false, AnimBehaviour::STOP, AnimBehaviour::EXTRAPOLATE);
+	GunModel->GetTransform()->AddInterpolator("scale", 10.0f, 10.0f, glm::vec3(0.3f, 0.3f, 0.2f), InterpolationType::CONSTANT);*/
+
 	GunBlast = searcher->FindSoundSource("DoubleBarrelBlast");
 
 	Actor::LoadDataFromLevel(searcher);
@@ -46,6 +51,8 @@ void GunActor::HandleInputs(GLFWwindow* window, float deltaTime)
 {
 	CooldownLeft -= deltaTime;
 
+	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS)
+		printVector(GunModel->GetTransform()->RotationRef, "Prawdziwa rotacja");
 	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS && CooldownLeft <= 0.0f)
 	{
 		ParticleMeshInst->GetMaterialInst()->ResetAnimation();

@@ -1,12 +1,29 @@
 #pragma once
 #include "CollisionEngine.h"
-
+#include <array>
 class CameraComponent: public Component
 {
+	enum MovementDir
+	{
+		FORWARD,
+		LEFT,
+		RIGHT,
+		BACKWARD
+	};
+
+	struct MovementAxis
+	{
+		std::unique_ptr<Interpolator<float>> MovementInterpolator;
+		bool Inversed;
+		glm::vec3 Direction;
+	};
+
+
 	CollisionEngine* CollisionEng;
 
 	glm::vec3 VelocityPerSec;
 	float SpeedPerSec;
+	std::array<MovementAxis, 4> MovementAxises;
 
 	CollisionComponent* GroundCheckComponent;
 	float HoverHeight;
@@ -22,5 +39,6 @@ public:
 	glm::mat4 GetVP(Transform* = nullptr);	//you can pass a WorldTransform of this component if it was calculated before (you can save on calculations
 	void RotateWithMouse(glm::vec2);	//rotates camera - you should pass the mouse offset from the center
 	virtual void HandleInputs(GLFWwindow*, float);	//checks for keyboard input
+	void HandleMovementAxis(bool pressed, MovementAxis& axis);
 	virtual void Update(float);		//controls the component
 };

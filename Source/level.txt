@@ -1,30 +1,10 @@
 ///PREFIX ENGINE
 materialsfile EngineMaterials/Materials.fware
 
-newactor GunActor Gun
-newcomp model MyDoubleBarrel doublebarrel/doublebarrel.obj
-transform
-skip
-skip
-0.075 0.075 0.05
-end
-newcomp empty GunTip child MyDoubleBarrel
-transform
-0 0.35 -2
-end
-newcomp soundsource DoubleBarrelBlast child GunTip Sounds/shotgun.wav
-end
-newcomp model FireParticle child GunTip CPY_ENG_QUAD material FireAtlas
-end
-actorinfo
-FireMaterial FireAtlas
-end
-
 newactor Actor CameraActor
 newcomp camera Camera root
 1.5
 active
-transform
 end
 newcomp collision BCameraSphere child Camera
 sphere
@@ -48,18 +28,29 @@ skip
 0 0 -1
 constrain
 end
-newcomp model Obrzyn child Camera doublebarrel/doublebarrel.obj
+
+newactor GunActor Gun child CameraActor
+newcomp model MyDoubleBarrel root doublebarrel/doublebarrel.obj
 transform
 0.1 -0.1 -0.2
 skip
 0.075 0.075 0.05
 constrain
 end
+newcomp empty GunTip child MyDoubleBarrel
+transform
+0 0.375 -2
+end
+newcomp soundsource DoubleBarrelBlast child GunTip Sounds/shotgun.wav
+end
+newcomp model FireParticle child GunTip CPY_ENG_QUAD material FireAtlas
+end
+actorinfo
+FireMaterial FireAtlas
+end
 
 newactor Actor CubeActor
-newcomp model Cube root tunnel/tunnel.obj material Bunker
-end
-newcomp soundsource ShotgunBlast child Cube Sounds/shotgun.wav
+newcomp model Cube root tunnel/tunnel.obj
 end
 newcomp model Nanosuit child Cube nanosuit/nanosuit.obj
 transform

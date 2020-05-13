@@ -35,6 +35,12 @@ void Interpolation::Reset(float begin, float end)
 	T = 0.0f;
 }
 
+void Interpolation::Inverse()
+{
+	FadeAway = !FadeAway;
+	CurrentTime = End - CurrentTime;
+}
+
 void Interpolation::UpdateT(float deltaTime)
 {
 	CurrentTime += deltaTime;
@@ -62,13 +68,6 @@ void Interpolation::UpdateT(float deltaTime)
 
 template<class ValType> ValType Interpolation::InterpolateValues(ValType y1, ValType y2)
 {
-	if (Type == CONSTANT)
-	{
-		if (T >= 1.0f)
-			return y2;
-		return y1;
-	}
-
 	return glm::mix(y1, y2, T);
 }
 
@@ -105,6 +104,11 @@ template <class ValType> std::shared_ptr<Interpolation> Interpolator<ValType>::G
 	return Interp;
 }
 
+template <class ValType> ValType Interpolator<ValType>::GetCurrentValue()
+{
+	return Interp->InterpolateValues(MinVal, MaxVal);
+}
+
 template <class ValType> void Interpolator<ValType>::SetValPtr(ValType* valPtr)
 {
 	InterpolatedValPtr = valPtr;
@@ -120,10 +124,16 @@ template <class ValType> void Interpolator<ValType>::SetMaxVal(ValType val)
 	MaxVal = val;
 }
 
+template <class ValType> void Interpolator<ValType>::Inverse()
+{
+	Interp->Inverse();
+	std::swap(MinVal, MaxVal);	//we swap the min and max values, because we're now interpolating in the other direction
+}
+
 
 template <class ValType> ValType Interpolator<ValType>::Update(float deltaTime)
 {
-	if (!HasBegun && Interp->IsChanging())
+	if (!HasBegun && Interp->IsChanging() && InterpolatedValPtr)
 	{
 		if (UpdateMinValOnBegin)
 			MinVal = *InterpolatedValPtr;
@@ -167,4 +177,5 @@ template <class ValType> ValType Interpolator<ValType>::Update(float deltaTime)
 template float Interpolation::InterpolateValues<float>(float y1, float y2);
 template glm::vec3 Interpolation::InterpolateValues<glm::vec3>(glm::vec3 y1, glm::vec3 y2);
 
+template class Interpolator<float>;
 template class Interpolator<glm::vec3>;

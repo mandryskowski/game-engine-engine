@@ -27,9 +27,10 @@ public:
 	float GetT();
 
 	void Reset(float begin = -1.0f, float end = -1.0f);
+	void Inverse();	//this method essentially changes the direction of the interpolation. When you inverse an Interpolation, the interpolation function and time become inversed, so T increases at the same pace
 	void UpdateT(float deltaTime);
 
-	template <class ValType> ValType InterpolateValues(ValType y1, ValType y2);	//TODO: Byc moze przeniesc te funkcje do Interpolator (zobaczyc czy Type tak naprawde wplywa na interpolacje, np nwm czy musze brac logarytm10 w tej funkcji)
+	template <class ValType> ValType InterpolateValues(ValType y1, ValType y2);
 };
 
 template <class ValType>
@@ -51,10 +52,13 @@ public:
 
 	bool GetHasEnded();
 	std::shared_ptr<Interpolation> GetInterp();
+	ValType GetCurrentValue();
 	void SetValPtr(ValType* valPtr);
 
 	void SetMinVal(ValType val);	//these 2 methods are not recommended for use during actual interpolation
 	void SetMaxVal(ValType val);
+
+	void Inverse();		//make the interpolator "go another way" (interpolate to the starting point). Useful for stuff like camera interpolation
 
 	ValType Update(float deltaTime);
 };

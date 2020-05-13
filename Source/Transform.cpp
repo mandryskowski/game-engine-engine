@@ -232,9 +232,9 @@ unsigned int Transform::AddDirtyFlag()
 	return (unsigned int)DirtyFlags.size() - 1;
 }
 
-void Transform::AddInterpolator(std::string fieldName, Interpolator<glm::vec3>* interpolator, bool animateFromCurrent)
+void Transform::AddInterpolator(std::string fieldName, std::unique_ptr<Interpolator<glm::vec3>> interpolator, bool animateFromCurrent)
 {
-	Interpolators.push_back(interpolator);
+	Interpolators.push_back(std::move(interpolator));
 	glm::vec3* animatedField = nullptr;
 
 	if (fieldName == "position")
@@ -252,20 +252,19 @@ void Transform::AddInterpolator(std::string fieldName, Interpolator<glm::vec3>* 
 	}
 
 	if (animateFromCurrent)
-		interpolator->SetMinVal(*animatedField);
+		Interpolators.back()->SetMinVal(*animatedField);
 
-	interpolator->SetValPtr(animatedField);
-	//interpolator->SetMinValPtr()
+	Interpolators.back()->SetValPtr(animatedField);
 }
 
 void Transform::AddInterpolator(std::string fieldName, float begin, float end, glm::vec3 min, glm::vec3 max, InterpolationType interpType, bool fadeAway, AnimBehaviour before, AnimBehaviour after)
 {
-	AddInterpolator(fieldName, new Interpolator<glm::vec3>(begin, end, min, max, interpType, fadeAway, before, after, false), false);
+	AddInterpolator(fieldName, std::make_unique<Interpolator<glm::vec3>>(Interpolator<glm::vec3>(begin, end, min, max, interpType, fadeAway, before, after, false)), false);
 }
 
 void Transform::AddInterpolator(std::string fieldName, float begin, float end, glm::vec3 max, InterpolationType interpType, bool fadeAway, AnimBehaviour before, AnimBehaviour after)
 {
-	AddInterpolator(fieldName, new Interpolator<glm::vec3>(begin, end, glm::vec3(0.0f), max, interpType, fadeAway, before, after), true);
+	AddInterpolator(fieldName, std::make_unique<Interpolator<glm::vec3>>(Interpolator<glm::vec3>(begin, end, glm::vec3(0.0f), max, interpType, fadeAway, before, after)), true);
 }
 
 void Transform::Update(float deltaTime)
