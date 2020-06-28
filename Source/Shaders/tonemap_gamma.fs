@@ -1,5 +1,3 @@
-#version 400 core
-
 //in
 in VS_OUT
 {
@@ -28,4 +26,5 @@ void main()
 	HDRcolor /= HDRcolor + vec3(1.0);
 	
 	fragColor = vec4(pow(HDRcolor, vec3(1.0 / gamma)), 1.0);
+	//fragColor = vec4(HDRcolor, 1.0);
 }

@@ -1,7 +1,7 @@
 #include "AudioEngine.h"
 
-AudioEngine::AudioEngine() :
-	Device(nullptr), Context(nullptr), ListenerTransformPtr(nullptr)
+AudioEngine::AudioEngine(GameManager* gameHandle) :
+	Device(nullptr), Context(nullptr), ListenerTransformPtr(nullptr), GameHandle(gameHandle)
 {
 	Init();
 }
@@ -71,12 +71,12 @@ void AudioEngine::SetListenerTransformPtr(Transform* transformPtr)
 SoundSourceComponent* AudioEngine::AddSource(SoundSourceComponent* source)
 {
 	Sources.push_back(source);
-	return source;
+	return Sources.back();
 }
 
 SoundSourceComponent* AudioEngine::AddSource(std::string path, std::string name)
 {
-	Sources.push_back(new SoundSourceComponent(name, LoadBuffer(path)));
+	Sources.push_back(new SoundSourceComponent(GameHandle, name, LoadBuffer(path)));
 	return Sources.back();
 }
 

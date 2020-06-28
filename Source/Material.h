@@ -13,18 +13,8 @@ struct Texture
 	unsigned int ID;
 	std::string ShaderName;
 	std::string Path;
-	Texture(std::string path, std::string name = "diffuse", bool sRGB = true)
-	{
-		ID = textureFromFile(path, sRGB);
-		ShaderName = name;
-		Path = path;
-	}
-	Texture(unsigned int id = -1, std::string name = "diffuse")
-	{
-		ID = id;
-		ShaderName = name;
-		Path = "";
-	}
+	Texture(std::string path, std::string name = "diffuse", bool sRGB = true);
+	Texture(unsigned int id = -1, std::string name = "diffuse");
 };
 
 class Material
@@ -75,7 +65,7 @@ public:
 	AtlasMaterial(std::string name, glm::vec2 atlasSize, float shine = 64.0f, float depthScale = 0.0f, Shader* shader = nullptr);
 	virtual void InterpolateInAnimation(Interpolation* interp) override;
 	virtual void UpdateInstanceUBOData(Shader* shader) override;
-	virtual void UpdateWholeUBOData(Shader* shader, unsigned int emptyTexture);
+	virtual void UpdateWholeUBOData(Shader* shader, unsigned int emptyTexture) override;
 };
 
 /*
@@ -108,4 +98,5 @@ public:
 ========================================================================================================================
 */
 
-unsigned int textureFromFile(std::string, bool);
+unsigned int textureFromFile(std::string path, GLenum magFilter = GL_NEAREST, GLenum minFilter = GL_LINEAR_MIPMAP_LINEAR, bool sRGB = true, bool flip = false);
+unsigned int textureFromBuffer(const unsigned char& buffer, unsigned int width, unsigned int height, GLenum internalformat, GLenum format, GLenum magFilter = GL_NEAREST, GLenum minFilter = GL_LINEAR_MIPMAP_LINEAR);

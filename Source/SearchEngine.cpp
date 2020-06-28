@@ -5,14 +5,19 @@ SearchEngine::SearchEngine()
 {
 	RenderEngPtr = nullptr;
 	AudioEngPtr = nullptr;
-	RootComponentPtr = nullptr;
+	RootActorPtr = nullptr;
 }
 
-void SearchEngine::Setup(RenderEngine* renderEngPtr, AudioEngine* audioEngPtr, Component* rootCompPtr)
+void SearchEngine::Setup(RenderEngine* renderEngPtr, AudioEngine* audioEngPtr, Actor* rootActorPtr)
 {
 	RenderEngPtr = renderEngPtr;
 	AudioEngPtr = audioEngPtr;
-	RootComponentPtr = rootCompPtr;
+	RootActorPtr = rootActorPtr;
+}
+
+Actor* SearchEngine::FindActor(std::string name)
+{
+	return RootActorPtr->SearchForActor(name);
 }
 
 ModelComponent* SearchEngine::FindModel(std::string name)
@@ -23,6 +28,11 @@ ModelComponent* SearchEngine::FindModel(std::string name)
 Material* SearchEngine::FindMaterial(std::string name)
 {
 	return RenderEngPtr->FindMaterial(name);
+}
+
+Shader* SearchEngine::FindShader(std::string name)
+{
+	return RenderEngPtr->FindShader(name);
 }
 
 SoundSourceComponent* SearchEngine::FindSoundSource(std::string name)

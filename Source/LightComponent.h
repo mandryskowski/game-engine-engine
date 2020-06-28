@@ -30,7 +30,7 @@ class LightComponent: public Component
 	unsigned int TransformDirtyFlagIndex; //again for optimisation; the ComponentTransform's flag of this index should be on if the light's position/direction has changed
 
 public:
-	LightComponent(std::string name = "undefined", LightType = LightType::POINT, unsigned int = 0, float = 10.0f, glm::mat4 = glm::perspective(glm::radians(90.0f), 1.0f, 0.01f, 10.0f), glm::vec3 = glm::vec3(0.1f), glm::vec3 = glm::vec3(1.0f), glm::vec3 = glm::vec3(0.5f), glm::vec3 = glm::vec3(0.0f));
+	LightComponent(GameManager*, std::string name = "undefined", LightType = LightType::POINT, unsigned int = 0, float = 10.0f, glm::mat4 = glm::perspective(glm::radians(90.0f), 1.0f, 0.01f, 10.0f), glm::vec3 = glm::vec3(0.1f), glm::vec3 = glm::vec3(1.0f), glm::vec3 = glm::vec3(0.5f), glm::vec3 = glm::vec3(0.0f));
 	LightType GetType();
 	float GetFar();
 	unsigned int GetShadowMapNr();

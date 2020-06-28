@@ -1,4 +1,3 @@
-#version 400 core
 layout (location = 0) in vec2 vPosition;
 layout (location = 1) in vec2 vTexCoord;
 

@@ -4,7 +4,7 @@
 #include <AL/alc.h>
 #include "AudioFile.h"
 
-class AudioEngine
+class AudioEngine: public AudioEngineManager
 {
 	ALCdevice* Device;
 	ALCcontext* Context;
@@ -13,16 +13,18 @@ class AudioEngine
 	std::vector <SoundSourceComponent*> Sources;
 	Transform* ListenerTransformPtr;
 
+	GameManager* GameHandle;
+
 private:
 	SoundBuffer* LoadALBuffer(ALenum, ALvoid*, ALsizei, ALsizei, std::string = "");
 	SoundBuffer* SearchForAlreadyLoadedBuffer(std::string);
 public:
-	AudioEngine();
+	AudioEngine(GameManager*);
 	void Init();
 
 	void SetListenerTransformPtr(Transform*);
-	SoundSourceComponent* AddSource(SoundSourceComponent*);
-	SoundSourceComponent* AddSource(std::string path, std::string name);
+	virtual SoundSourceComponent* AddSource(SoundSourceComponent*) override;
+	virtual SoundSourceComponent* AddSource(std::string path, std::string name) override;
 	SoundSourceComponent* FindSource(std::string name);
 
 	void Update();

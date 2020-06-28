@@ -1,14 +1,14 @@
 #include "CameraComponent.h"
 
-CameraComponent::CameraComponent(std::string name, glm::uvec2 screenSize, CollisionEngine* collisionEng, float speedPerSec, Transform transform) :
-	Component(name, transform),
-	CollisionEng(collisionEng),
+CameraComponent::CameraComponent(GameManager* gameHandle, std::string name, float speedPerSec) :
+	Component(gameHandle, name, Transform(glm::vec3(0.0f), glm::vec3(0.0f), glm::vec3(1.0f), glm::vec3(0.0f, 0.0f, -1.0f))),
+	RotationEuler(0.0f),
 	VelocityPerSec(glm::vec3(0.0f)),
 	SpeedPerSec(speedPerSec),
-	GroundCheckComponent(new BBox("twojababka")),
-	HoverHeight(0.3f),
+	GroundCheckComponent(new BBox(gameHandle, "twojababka")),
+	HoverHeight(0.5f),
 	bHoverHeightUnlocked(false),
-	Projection(glm::perspective(glm::radians(90.0f), ((float)screenSize.x / (float)screenSize.y), 0.01f, 100.0f)),
+	Projection(glm::perspective(glm::radians(90.0f), ((float)gameHandle->GetGameSettings()->WindowSize.x / (float)gameHandle->GetGameSettings()->WindowSize.y), 0.01f, 100.0f)),
 	MovementAxises()
 {
 	ComponentTransform.SetFront(glm::vec3(0.0f, 0.0f, -1.0f));	//to jest kierunek, w ktorym poczatkowo patrzy sie nasz komponent (domyslnie negatywne Z)
@@ -33,6 +33,7 @@ CameraComponent::CameraComponent(std::string name, glm::uvec2 screenSize, Collis
 			i++;
 			return dir;
 		});
+	ComponentTransform.KUPA = true;
 }
 
 glm::mat4 CameraComponent::GetProjectionMat()
@@ -50,10 +51,12 @@ glm::mat4 CameraComponent::GetVP(Transform* worldTransform)
 
 bool CameraComponent::PerformCollisionCheck(std::vector<CollisionComponent*> components, glm::vec3 offset, std::vector<glm::vec3>* bounceNormals, std::vector<CollisionComponent*>* collidingComponents)
 {
+	return false;
+	/*
 	ComponentTransform.Move(offset);
 	bool type = CollisionEng->CheckForCollision(components, bounceNormals, collidingComponents);
 	ComponentTransform.Move(-offset);
-	return type;
+	return type;*/
 }
 
 glm::vec3 CameraComponent::ApplyCollisionResponse(glm::vec3 offset)
@@ -69,20 +72,6 @@ glm::vec3 CameraComponent::ApplyCollisionResponse(glm::vec3 offset)
 	if(!PerformCollisionCheck(collisionChildren, offset, &bounceNormals))	//na poczatku sprawdzamy, czy przesuniecie obiektu o offset wywola kolizje; jesli nie, to po pomijamy reszte funkcji -  nie ma potrzeby zmieniac offsetu
 		return offset;
 
-	/*for (int i = 0; i < bounceNormals.size() - 1; i++) //remove duplicates
-	{
-		for (int j = i + 1; j < bounceNormals.size(); j++)
-		{
-			if (bounceNormals[i] == bounceNormals[j])
-			{
-				bounceNormals.erase(bounceNormals.begin() + j);
-				j--;
-			}
-		}
-	}*/
-
-	for (int i = 0; i < bounceNormals.size(); i++)
-		printVector(bounceNormals[i], "Bounce normal " + std::to_string(i + 1));
 
 	glm::vec3 offsetSum = offset;
 	glm::vec3 potentialVelocity = VelocityPerSec;
@@ -113,17 +102,16 @@ glm::vec3 CameraComponent::ApplyCollisionResponse(glm::vec3 offset)
 
 void CameraComponent::RotateWithMouse(glm::vec2 mouseOffset)
 {
-	glm::vec3 Rotation = ComponentTransform.RotationRef;
-
 	float sensitivity = 0.15f;
-	Rotation.x -= mouseOffset.y * sensitivity;
-	Rotation.y -= mouseOffset.x * sensitivity;
+	RotationEuler.x -= mouseOffset.y * sensitivity;
+	RotationEuler.y -= mouseOffset.x * sensitivity;
 
-	Rotation.x = glm::clamp(Rotation.x, -89.9f, 89.9f);
-	Rotation.y = fmod(Rotation.y, 360.0f);
+	RotationEuler.x = glm::clamp(RotationEuler.x, -89.9f, 89.9f);
+	RotationEuler.y = fmod(RotationEuler.y, 360.0f);
 
-	ComponentTransform.SetRotation(Rotation);
+	ComponentTransform.SetRotation(RotationEuler);
 
+	/*
 	std::vector <CollisionComponent*> collisionChildren;
 	GetAllComponents<CollisionComponent, BBox>(&collisionChildren);
 
@@ -142,6 +130,7 @@ void CameraComponent::RotateWithMouse(glm::vec2 mouseOffset)
 			minSize = childSize;
 	}
 
+	
 	std::vector <glm::vec3> bounceNormals;
 	CollisionEng->CheckForCollision(collisionChildren, &bounceNormals);
 	std::vector <glm::vec3> bNormals;
@@ -159,6 +148,7 @@ void CameraComponent::RotateWithMouse(glm::vec2 mouseOffset)
 			ComponentTransform.Move(bounceNormals[i] * minSize * glm::vec3(0.01f)); //mnozymy normalna przez czesc rozmiaru obiektu kolizji, aby odsunac go od sciany
 		}
 	}
+	*/
 }
 
 void CameraComponent::HandleInputs(GLFWwindow* window, float deltaTime)
@@ -183,10 +173,10 @@ void CameraComponent::HandleInputs(GLFWwindow* window, float deltaTime)
 			CollisionComponent* col = dynamic_cast<CollisionComponent*>(Children[xd]);
 			if (!col)
 				continue;
-			glm::vec3 scale = Children[xd]->GetTransform()->ScaleRef;
+			glm::vec3 scale = Children[xd]->GetTransform().ScaleRef;
 			Children[xd]->SetTransform(ComponentTransform);
-			Children[xd]->GetTransform()->SetParentTransform(ComponentTransform.GetParentTransform());
-			Children[xd]->GetTransform()->SetScale(scale);
+			Children[xd]->GetTransform().SetParentTransform(ComponentTransform.GetParentTransform());
+			Children[xd]->GetTransform().SetScale(scale);
 		}
 		Children.clear();
 	}

@@ -1,5 +1,18 @@
 #include "Material.h"
 
+Texture::Texture(std::string path, std::string name, bool sRGB)
+{
+	ID = textureFromFile(path, GL_NEAREST, GL_LINEAR_MIPMAP_LINEAR, sRGB);
+	ShaderName = name;
+	Path = path;
+}
+Texture::Texture(unsigned int id, std::string name)
+{
+	ID = id;
+	ShaderName = name;
+	Path = "";
+}
+
 Material::Material(std::string name, float shine, float depthScale, Shader* shader)
 { 
 	Name = name;
@@ -234,8 +247,11 @@ void MaterialInstance::UpdateWholeUBOData(Shader* shader, unsigned int emptyText
 ========================================================================================================================
 */
 
-unsigned int textureFromFile(std::string path, bool sRGB)
+unsigned int textureFromFile(std::string path, GLenum magFilter, GLenum minFilter, bool sRGB, bool flip)
 {
+	if (flip)
+		stbi_set_flip_vertically_on_load(true);
+
 	unsigned int tex;
 	glGenTextures(1, &tex);
 	glBindTexture(GL_TEXTURE_2D, tex);
@@ -262,11 +278,31 @@ unsigned int textureFromFile(std::string path, bool sRGB)
 
 	glTexImage2D(GL_TEXTURE_2D, 0, internalformat, width, height, 0, format, GL_UNSIGNED_BYTE, data);
 
-	glGenerateMipmap(GL_TEXTURE_2D);
+	if (minFilter == GL_NEAREST_MIPMAP_NEAREST || minFilter == GL_LINEAR_MIPMAP_NEAREST || minFilter == GL_NEAREST_MIPMAP_LINEAR || minFilter == GL_LINEAR_MIPMAP_LINEAR)
+		glGenerateMipmap(GL_TEXTURE_2D);
 
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, magFilter);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minFilter);
 
+	if (flip)
+		stbi_set_flip_vertically_on_load(false);
+
+	return tex;
+}
+
+unsigned int textureFromBuffer(const unsigned char& buffer, unsigned int width, unsigned int height, GLenum internalformat, GLenum format, GLenum magFilter, GLenum minFilter)
+{
+	unsigned int tex;
+	glGenTextures(1, &tex);
+	glBindTexture(GL_TEXTURE_2D, tex);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, internalformat, width, height, 0, format, GL_UNSIGNED_BYTE, &buffer);
+
+	if (minFilter == GL_NEAREST_MIPMAP_NEAREST || minFilter == GL_LINEAR_MIPMAP_NEAREST || minFilter == GL_NEAREST_MIPMAP_LINEAR || minFilter == GL_LINEAR_MIPMAP_LINEAR)
+		glGenerateMipmap(GL_TEXTURE_2D);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, magFilter);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minFilter);
 
 	return tex;
 }

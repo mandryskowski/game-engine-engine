@@ -3,24 +3,33 @@
 float Transform::tSum = 0.0f;
 float beginning;
 
-void Transform::FlagMeAndChildrenAsDirty()
+void Transform::FlagMyDirtiness()
 {
-	for (unsigned int i = 0; i < DirtyFlags.size(); i++)
-		DirtyFlags[i] = true;
-
-	for (unsigned int i = 0; i < Children.size(); i++)
-		Children[i]->FlagMeAndChildrenAsDirty();
+	Empty = false;
+	DirtyFlags[0] = true;
+	FlagWorldDirtiness();
 }
 
-Transform::Transform(glm::vec3 pos, glm::vec3 rot, glm::vec3 scale, glm::vec3 front, bool constrain, bool rotLock):
+void Transform::FlagWorldDirtiness()
+{
+	for (int i = 1; i < static_cast<int>(DirtyFlags.size()); i++)
+		DirtyFlags[i] = true;
+
+	for (int i = 0; i < static_cast<int>(Children.size()); i++)
+		Children[i]->FlagWorldDirtiness();
+}
+
+Transform::Transform(glm::vec3 pos, glm::quat rot, glm::vec3 scale, glm::vec3 front, bool constrain, bool rotLock) :
 	ParentTransform(nullptr),
 	WorldTransformCache(nullptr),
 	WorldTransformMatrixCache(glm::mat4(1.0f)),
+	MatrixCache(glm::mat4(1.0f)),
 	Position(pos),
 	Rotation(rot),
 	Scale(scale),
 	Front(front),
-	DirtyFlags(2, true),
+	DirtyFlags(3, true),
+	Empty(false),
 	bConstrain(constrain),
 	bRotationLock(rotLock),
 	PositionRef(Position),
@@ -28,40 +37,42 @@ Transform::Transform(glm::vec3 pos, glm::vec3 rot, glm::vec3 scale, glm::vec3 fr
 	ScaleRef(Scale),
 	FrontRef(Front)
 {
+	if (pos == glm::vec3(0.0f) && rot == glm::quat(glm::vec3(0.0f)) && scale == glm::vec3(1.0f) && front == glm::vec3(0.0f))
+		Empty = true;
+	KUPA = false;
 }
 
 Transform::Transform(const Transform& t):
-	ParentTransform(nullptr),
-	WorldTransformCache(nullptr),
-	WorldTransformMatrixCache(glm::mat4(1.0f)),
-	Position(t.Position),
-	Rotation(t.Rotation),
-	Scale(t.Scale),
-	Front(t.Front),
-	DirtyFlags(2, true),
-	bConstrain(t.bConstrain),
-	bRotationLock(t.bRotationLock),
-	PositionRef(Position),
-	RotationRef(Rotation),
-	ScaleRef(Scale),
-	FrontRef(Front)
+	Transform(t.Position, t.Rotation, t.Scale, t.Front, t.bConstrain, t.bRotationLock)
 {
-	//ParentTransform = t.ParentTransform;
+	/* if (t.ParentTransform)
+		t.ParentTransform->AddChild(this); */
+}
+
+Transform::Transform(Transform&& t) noexcept :
+	Transform(t.Position, t.Rotation, t.Scale, t.Front, t.bConstrain, t.bRotationLock)
+{
+	/*
+	if (t.ParentTransform)
+	{
+		t.ParentTransform->AddChild(this);
+		t.ParentTransform->RemoveChild(t.ParentTransform);
+	}  */
 }
 
 glm::mat3 Transform::GetRotationMatrix(float scalar) const
 {
-	return GetRotationMatrixWithOffset(glm::vec3(0.0f), scalar);
-}
+	glm::quat rot = Rotation;
+	if (scalar == -1.0f)
+		rot = glm::inverse(rot);
 
-glm::mat3 Transform::GetRotationMatrixWithOffset(glm::vec3 offset, float scalar) const
-{
-	glm::vec3 rot = (Rotation + offset) * scalar;
+	return glm::mat4_cast(rot);
 
-	if (!bConstrain)
+	/*if (!bConstrain)
 		return (glm::mat3)glm::eulerAngleXYZ(glm::radians(rot.x), glm::radians(rot.y), glm::radians(rot.z));
 
 	return (glm::mat3)glm::eulerAngleYXZ(glm::radians(rot.y), glm::radians(rot.x), glm::radians(rot.z));
+	*/
 }
 
 glm::mat4 Transform::GetMatrix() const
@@ -70,20 +81,29 @@ glm::mat4 Transform::GetMatrix() const
 	if (tSum == 0.0f)
 		beginning = (float)glfwGetTime();
 	time1 = (float)glfwGetTime() - beginning;
-	glm::mat4 mat = glm::translate(glm::mat4(1.0f), Position);
+
+	if (!DirtyFlags[0])
+		return MatrixCache;
+	if (Empty)
+		return glm::mat4(1.0f);
+
+	MatrixCache = glm::translate(glm::mat4(1.0f), Position);
 
 	
-	if (bConstrain)
+	/*if (bConstrain)
 		mat *= glm::eulerAngleYXZ(glm::radians(Rotation.y), glm::radians(Rotation.x), glm::radians(Rotation.z));
 	else
-		mat *= glm::eulerAngleXYZ(glm::radians(Rotation.x), glm::radians(Rotation.y), glm::radians(Rotation.z));
+		mat *= glm::eulerAngleXYZ(glm::radians(Rotation.x), glm::radians(Rotation.y), glm::radians(Rotation.z));*/
+	MatrixCache *= glm::mat4_cast(Rotation);
 
-	mat = glm::scale(mat, Scale);
+	MatrixCache = glm::scale(MatrixCache, Scale);
 
 	time2 = (float)glfwGetTime() - beginning;
 	tSum += time2 - time1;
 
-	return mat;
+	DirtyFlags[0] = false;
+
+	return MatrixCache;
 }
 
 glm::mat4 Transform::GetViewMatrix() const
@@ -91,42 +111,42 @@ glm::mat4 Transform::GetViewMatrix() const
 	return glm::lookAt(Position, Position + Front, glm::vec3(0.0f, 1.0f, 0.0f));
 }
 
-const Transform& Transform::GetWorldTransform()
+const Transform& Transform::GetWorldTransform() const
 {
-	if (!DirtyFlags[0])
+	if (!DirtyFlags[1])
 		return *WorldTransformCache;
 
-	if (ParentTransform == nullptr)
+	if (!ParentTransform)
 	{
-		WorldTransformCache.reset(new Transform(Position, Rotation, Scale, Front, bConstrain));
-		DirtyFlags[0] = false;
+		WorldTransformCache.reset(new Transform(Position, Rotation, Scale, Front));
+		DirtyFlags[1] = false;
 		return *WorldTransformCache;
 	}
+	else if (Empty)
+		return ParentTransform->GetWorldTransform();
 
 	Transform ParentWorldTransform = ParentTransform->GetWorldTransform();
-	glm::mat3 parentMat = ParentWorldTransform.GetMatrix();
-	glm::mat3 mat = parentMat * static_cast<glm::mat3>(GetMatrix());
+	glm::mat3 parentMat = static_cast<glm::mat3>(ParentWorldTransform.GetMatrix());
 
 	glm::vec3 pos = ParentWorldTransform.Position + glm::vec3(parentMat * Position);
-	glm::vec3 front = (Front == glm::vec3(0.0f)) ? (glm::vec3(0.0f)) : (ModelToNormal(mat) * Front);
-
-	glm::vec3 rot = ParentWorldTransform.Rotation + Rotation;
+	glm::quat rot = ParentWorldTransform.Rotation * Rotation;
 	glm::vec3 scale = ParentWorldTransform.Scale * Scale;
+	glm::vec3 front = (Front == glm::vec3(0.0f)) ? (glm::vec3(0.0f)) : (glm::normalize(rot * Front));
 
-	WorldTransformCache.reset(new Transform(pos, rot, scale, front, bConstrain));
-	DirtyFlags[0] = false;
+	WorldTransformCache.reset(new Transform(pos, rot, scale, front));
+	DirtyFlags[1] = false;
 
 	return *WorldTransformCache;
 }
 
-const glm::mat4& Transform::GetWorldTransformMatrix()
+const glm::mat4& Transform::GetWorldTransformMatrix() const
 {
-	if (!DirtyFlags[1])
+	if (!DirtyFlags[2])
 		return WorldTransformMatrixCache;
 
 	Transform worldTransform = GetWorldTransform();
 	WorldTransformMatrixCache = worldTransform.GetMatrix();
-	DirtyFlags[1] = false;
+	DirtyFlags[2] = false;
 
 	return WorldTransformMatrixCache;
 }
@@ -139,7 +159,16 @@ Transform* Transform::GetParentTransform() const
 void Transform::SetPosition(glm::vec3 pos)
 {
 	Position = pos;
-	FlagMeAndChildrenAsDirty();
+	FlagMyDirtiness();
+}
+
+void Transform::SetPositionWorld(glm::vec3 worldPos)
+{
+	glm::vec3 localPos = worldPos;
+	if (ParentTransform)
+		localPos = glm::vec3(glm::inverse(ParentTransform->GetWorldTransformMatrix()) * glm::vec4(worldPos, 1.0f));
+
+	SetPosition(localPos);
 }
 
 void Transform::Move(glm::vec3 offset)
@@ -147,27 +176,59 @@ void Transform::Move(glm::vec3 offset)
 	SetPosition(Position + offset);
 }
 
-void Transform::SetRotation(glm::vec3 rot)
+void Transform::SetRotation(glm::vec3 euler)
 {
-	Rotation = rot;
-	FlagMeAndChildrenAsDirty();
+	Rotation = toQuat(euler);
+	FlagMyDirtiness();
 }
 
-void Transform::Rotate(glm::vec3 offset)
+void Transform::SetRotation(glm::quat q)
 {
-	SetRotation(Rotation + offset);
+	Rotation = q;
+	FlagMyDirtiness();
+}
+
+void Transform::SetRotationWorld(glm::quat q)
+{
+	glm::quat localRot = q;
+	if (ParentTransform)
+		localRot = glm::inverse(ParentTransform->GetWorldTransform().RotationRef) * localRot;
+
+	SetRotation(localRot);
+}
+
+void Transform::Rotate(glm::vec3 euler)
+{
+	SetRotation(Rotation * toQuat(euler));
+}
+
+void Transform::Rotate(glm::quat q)
+{
+	SetRotation(Rotation * q);
 }
 
 void Transform::SetScale(glm::vec3 scale)
 {
 	Scale = scale;
-	FlagMeAndChildrenAsDirty();
+	FlagMyDirtiness();
 }
 
 void Transform::SetFront(glm::vec3 front)
 {
 	Front = front;
-	FlagMeAndChildrenAsDirty();
+	FlagMyDirtiness();
+}
+
+void Transform::Set(int index, glm::vec3 vec)
+{
+	switch (index)
+	{
+	case 0:	SetPosition(vec); return;
+	case 1:	SetRotation(vec); return;
+	case 2:	SetScale(vec); return;
+	case 3: SetFront(vec); return;
+	default: std::cerr << "ERROR! Tried to access Transform field nr " << index << ".\n";
+	}
 }
 
 void Transform::SetParentTransform(Transform* parent, bool relocate)
@@ -176,19 +237,27 @@ void Transform::SetParentTransform(Transform* parent, bool relocate)
 		ParentTransform->RemoveChild(this);
 	if (!parent)
 	{
-		ParentTransform = parent;
+		ParentTransform = nullptr;
 		return;
 	}
 
 	if (relocate)
 	{
+		//TODO: zmien to kurwa bo siara jak ktos zobaczy
 		Transform parentWorld = parent->GetWorldTransform();
 		Transform worldTransform = GetWorldTransform();
 		Position = worldTransform.Position - parentWorld.PositionRef;
 		Position = glm::vec3(parentWorld.GetRotationMatrix(-1.0f) * PositionRef);
 		Rotation = worldTransform.Rotation = parentWorld.RotationRef;
-	}
 
+	
+		/*
+		glm::mat4 parentWorldMat = parent->GetWorldTransformMatrix();
+		Position = glm::vec3(glm::inverse(parentWorldMat) * glm::vec4(Position, 1.0f));
+		Rotation = glm::inverse(parent->GetWorldTransform().RotationRef) * Rotation;
+		Rotation = parent->GetWorldTransform().RotationRef;*/
+	}
+	
 	ParentTransform = parent;
 	ParentTransform->AddChild(this);
 }
@@ -232,39 +301,43 @@ unsigned int Transform::AddDirtyFlag()
 	return (unsigned int)DirtyFlags.size() - 1;
 }
 
-void Transform::AddInterpolator(std::string fieldName, std::unique_ptr<Interpolator<glm::vec3>> interpolator, bool animateFromCurrent)
+void Transform::AddInterpolator(std::string fieldName, std::shared_ptr<InterpolatorBase> interpolator, bool animateFromCurrent)
 {
-	Interpolators.push_back(std::move(interpolator));
-	glm::vec3* animatedField = nullptr;
+	Interpolators.push_back(interpolator);
+	std::shared_ptr<InterpolatorBase> obj = Interpolators.back();
+	Interpolator<glm::vec3>* vecCast = dynamic_cast<Interpolator<glm::vec3>*>(obj.get());
+	Interpolator<glm::quat>* quatCast = dynamic_cast<Interpolator<glm::quat>*>(obj.get());
 
-	if (fieldName == "position")
-		animatedField = &Position;
-	else if (fieldName == "rotation")
-		animatedField = &Rotation;
-	else if (fieldName == "scale")
-		animatedField = &Scale;
+	if (fieldName == "position" && vecCast)
+		vecCast->SetValPtr(&Position);
+	else if (fieldName == "rotation" && quatCast)
+		quatCast->SetValPtr(&Rotation);
+	else if (fieldName == "scale" && vecCast)
+		vecCast->SetValPtr(&Scale);
 	else if (fieldName == "front")
-		animatedField = &Front;
+		vecCast->SetValPtr(&Front);
 	else
 	{
-		std::cerr << "ERROR! Unrecognized interpolator type: " << fieldName << ".\n";
+		std::string type = (vecCast) ? ("glm::vec3") : ((quatCast) ? ("glm::quat") : ("unknown"));
+		std::cerr << "ERROR! Unrecognized interpolator " << fieldName << " of type " + type << ".\n";
 		return;
 	}
 
+
 	if (animateFromCurrent)
-		Interpolators.back()->SetMinVal(*animatedField);
-
-	Interpolators.back()->SetValPtr(animatedField);
+		obj->ResetMinVal();
 }
 
-void Transform::AddInterpolator(std::string fieldName, float begin, float end, glm::vec3 min, glm::vec3 max, InterpolationType interpType, bool fadeAway, AnimBehaviour before, AnimBehaviour after)
+template <class T>
+void Transform::AddInterpolator(std::string fieldName, float begin, float end, T min, T max, InterpolationType interpType, bool fadeAway, AnimBehaviour before, AnimBehaviour after)
 {
-	AddInterpolator(fieldName, std::make_unique<Interpolator<glm::vec3>>(Interpolator<glm::vec3>(begin, end, min, max, interpType, fadeAway, before, after, false)), false);
+	AddInterpolator(fieldName, std::make_unique<Interpolator<T>>(Interpolator<T>(begin, end, min, max, interpType, fadeAway, before, after, false)), false);
 }
 
-void Transform::AddInterpolator(std::string fieldName, float begin, float end, glm::vec3 max, InterpolationType interpType, bool fadeAway, AnimBehaviour before, AnimBehaviour after)
+template <class T>
+void Transform::AddInterpolator(std::string fieldName, float begin, float end, T max, InterpolationType interpType, bool fadeAway, AnimBehaviour before, AnimBehaviour after)
 {
-	AddInterpolator(fieldName, std::make_unique<Interpolator<glm::vec3>>(Interpolator<glm::vec3>(begin, end, glm::vec3(0.0f), max, interpType, fadeAway, before, after)), true);
+	AddInterpolator(fieldName, std::make_unique<Interpolator<T>>(Interpolator<T>(begin, end, T(), max, interpType, fadeAway, before, after)), true);
 }
 
 void Transform::Update(float deltaTime)
@@ -286,7 +359,59 @@ void Transform::Update(float deltaTime)
 	}
 
 	if (dirty)
-		FlagMeAndChildrenAsDirty();
+		FlagMyDirtiness();
+}
+
+Transform& Transform::operator=(const Transform& t)
+{
+	Position = t.PositionRef;
+	Rotation = t.RotationRef;
+	Scale = t.ScaleRef;
+	Front = t.FrontRef;
+
+	FlagMyDirtiness();
+
+	return *this;
+}
+
+Transform& Transform::operator=(Transform&& t) noexcept
+{
+	Position = t.PositionRef;
+	Rotation = t.RotationRef;
+	Scale = t.ScaleRef;
+	Front = t.FrontRef;
+
+	FlagMyDirtiness();
+
+	return *this;
+}
+
+Transform& Transform::operator*=(const Transform& t)
+{
+	return *(this) * t;
+}
+
+Transform& Transform::operator*=(Transform&& t)
+{
+	return *(this) * t;
+}
+
+Transform& Transform::operator*(const Transform& t)
+{
+	Position += t.Position;
+	Rotation *= t.Rotation;
+	Scale *= t.Scale;
+
+	return *this;
+}
+
+Transform& Transform::operator*(Transform&& t)
+{
+	Position += t.Position;
+	Rotation *= t.Rotation;
+	Scale *= t.Scale;
+
+	return *this;
 }
 
 glm::mat3 ModelToNormal(glm::mat4 model)
@@ -294,19 +419,8 @@ glm::mat3 ModelToNormal(glm::mat4 model)
 	return glm::mat3(glm::transpose(glm::inverse(model)));
 }
 
-glm::vec3& Transform::operator [](unsigned int i)
-{
-	FlagMeAndChildrenAsDirty();
-	switch (i)
-	{
-	case 0:
-		return Position;
-	case 1:
-		return Rotation;
-	case 2:
-		return Scale;
-	case 3:
-		return Front;
-	}
-	return Position;
-}
+template void Transform::AddInterpolator<glm::vec3>(std::string, float, float, glm::vec3, glm::vec3, InterpolationType, bool, AnimBehaviour, AnimBehaviour);
+template void Transform::AddInterpolator<glm::vec3>(std::string, float, float, glm::vec3, InterpolationType, bool, AnimBehaviour, AnimBehaviour);
+
+template void Transform::AddInterpolator<glm::quat>(std::string, float, float, glm::quat, glm::quat, InterpolationType, bool, AnimBehaviour, AnimBehaviour);
+template void Transform::AddInterpolator<glm::quat>(std::string, float, float, glm::quat, InterpolationType, bool, AnimBehaviour, AnimBehaviour);

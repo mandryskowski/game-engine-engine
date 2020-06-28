@@ -1,5 +1,3 @@
-#version 400 core
-
 //in
 in vec4 fragPos;
 

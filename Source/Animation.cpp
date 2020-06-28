@@ -106,7 +106,7 @@ template <class ValType> std::shared_ptr<Interpolation> Interpolator<ValType>::G
 
 template <class ValType> ValType Interpolator<ValType>::GetCurrentValue()
 {
-	return Interp->InterpolateValues(MinVal, MaxVal);
+	return LastInterpResult;
 }
 
 template <class ValType> void Interpolator<ValType>::SetValPtr(ValType* valPtr)
@@ -117,6 +117,14 @@ template <class ValType> void Interpolator<ValType>::SetValPtr(ValType* valPtr)
 template <class ValType> void Interpolator<ValType>::SetMinVal(ValType val)
 {
 	MinVal = val;
+}
+
+template <class ValType> void Interpolator<ValType>::ResetMinVal()
+{
+	if (InterpolatedValPtr)
+		MinVal = *InterpolatedValPtr;
+	else
+		MinVal = LastInterpResult;
 }
 
 template <class ValType> void Interpolator<ValType>::SetMaxVal(ValType val)
@@ -131,7 +139,7 @@ template <class ValType> void Interpolator<ValType>::Inverse()
 }
 
 
-template <class ValType> ValType Interpolator<ValType>::Update(float deltaTime)
+template <class ValType> void Interpolator<ValType>::Update(float deltaTime)
 {
 	if (!HasBegun && Interp->IsChanging() && InterpolatedValPtr)
 	{
@@ -163,9 +171,7 @@ template <class ValType> ValType Interpolator<ValType>::Update(float deltaTime)
 	if (InterpolatedValPtr && change)
 		*InterpolatedValPtr += result - LastInterpResult;	//we subtract the last result from the current result, because if two interpolations of the same variable happen at once, we can't just assign the result, we have to add delta
 
-
 	LastInterpResult = result;
-	return result;
 }
 
 /*
@@ -179,3 +185,4 @@ template glm::vec3 Interpolation::InterpolateValues<glm::vec3>(glm::vec3 y1, glm
 
 template class Interpolator<float>;
 template class Interpolator<glm::vec3>;
+template class Interpolator<glm::quat>;

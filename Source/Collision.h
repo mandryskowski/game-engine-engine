@@ -15,7 +15,7 @@ class CollisionComponent : public Component
 {
 public:
 	bool bFlipCollisionSide;
-	CollisionComponent(std::string name, bool flip = false) : Component(name, Transform()), bFlipCollisionSide(flip) {}
+	CollisionComponent(GameManager* gameHandle, std::string name, bool flip = false) : Component(gameHandle, name, Transform()), bFlipCollisionSide(flip) {}
 };
 
 ////////////////////////
@@ -23,7 +23,7 @@ public:
 class BSphere: public CollisionComponent
 {
 public:
-	BSphere(std::string name, bool flip = false) : CollisionComponent(name, flip) {}
+	BSphere(GameManager* gameHandle, std::string name, bool flip = false) : CollisionComponent(gameHandle, name, flip) {}
 };
 
 ////////////////////////
@@ -31,7 +31,7 @@ public:
 class BBox : public CollisionComponent
 {
 public:
-	BBox(std::string name, bool flip = false) : CollisionComponent(name, flip) {}
+	BBox(GameManager* gameHandle, std::string name, bool flip = false) : CollisionComponent(gameHandle, name, flip) {}
 };
 
 /*  ===========================================  */

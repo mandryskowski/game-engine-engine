@@ -1,5 +1,6 @@
 #pragma once
 #include "Material.h"
+#include "FileLoader.h"
 
 struct Vertex
 {
@@ -44,30 +45,32 @@ class Mesh
 
 public:
 	Mesh(std::string="undefined");
-	unsigned int GetVAO();
-	unsigned int GetVertexCount();
-	std::string GetName();
+	unsigned int GetVAO() const;
+	unsigned int GetVertexCount() const;
+	std::string GetName() const;
 	Material* GetMaterial();
-	bool CanCastShadow();
+	bool CanCastShadow() const;
 	void SetMaterial(Material*);
-	void LoadFromAiMesh(const aiScene*, aiMesh*, std::string directory, bool = true, MaterialLoadingData* = nullptr);
 	void LoadFromGLBuffers(unsigned int vertexCount, unsigned int VAO, unsigned int VBO, unsigned int EBO = 0);
-	void LoadSingleFromAiFile(std::string, bool = true);
-	void GenerateVAO(std::vector<Vertex>&, std::vector<unsigned int>&);
-	void Render();
+	void GenerateVAO(std::vector<Vertex>*, std::vector<unsigned int>*);
+	void Render() const;
 };
 
 class MeshInstance
 {
 	Mesh* MeshPtr;
-	MaterialInstance* MaterialInst;
+	std::unique_ptr<MaterialInstance> MaterialInst;
 
 public:
 	MeshInstance(Mesh* mesh, Material* overrideMaterial = nullptr);
-	Mesh* GetMesh();
-	Material* GetMaterialPtr();
-	MaterialInstance* GetMaterialInst();
+	MeshInstance(const MeshInstance&);
+	MeshInstance(MeshInstance&&) noexcept;
+
+	const Mesh& GetMesh() const;
+	Material* GetMaterialPtr() const;
+	MaterialInstance* GetMaterialInst() const;
+
+	void SetMaterial(Material*);
 };
 
 unsigned int generateVAO(unsigned int&, std::vector<unsigned int>, size_t, float*, size_t = -1);
-unsigned int loadMeshToVAO(std::string, size_t* = nullptr);

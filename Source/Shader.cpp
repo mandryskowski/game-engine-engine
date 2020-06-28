@@ -1,5 +1,32 @@
 #include "Shader.h"
 
+unsigned int Shader::LoadShader(GLenum type, std::string shaderPath, std::string additionalData)
+{
+	additionalData = "#version 400 core\n" + additionalData;
+	std::fstream shaderFile(shaderPath);
+
+	if (!shaderFile.good())
+	{
+		std::cout << "ERROR! Cannot open: " << shaderPath << " :(\n";
+		return -1;
+	}
+
+	std::stringstream shaderStream;
+	shaderStream << shaderFile.rdbuf();
+
+	std::string shaderSourceStr = additionalData + shaderStream.str();
+
+	const char* shaderSource = shaderSourceStr.c_str();
+
+	unsigned int shader = glCreateShader(type);
+	glShaderSource(shader, 1, &shaderSource, 0);
+	glCompileShader(shader);
+
+	DebugShader(shader);
+
+	return shader;
+}
+
 void Shader::DebugShader(unsigned int shader)
 {
 	int result;
@@ -11,6 +38,23 @@ void Shader::DebugShader(unsigned int shader)
 		std::cout << "Shader error: " << data;
 	}
 }
+
+GLint Shader::FindLocation(std::string name) const
+{
+	auto loc = std::find_if(Locations.begin(), Locations.end(), [name](const UniformLocation& location) { return location.Name == name; });
+
+	if (loc != Locations.end())
+		return loc->Location;
+
+	Locations.push_back(UniformLocation(name, glGetUniformLocation(Program, name.c_str())));
+	return Locations.back().Location;
+}
+
+/*
+==================================================================
+==================================================================
+==================================================================
+*/
 
 Shader::Shader():
 	Program(0),
@@ -84,39 +128,23 @@ void Shader::AddExpectedMatrix(std::string matType)
 		std::cerr << "ERROR! Can't find matrix type " << matType << '\n';
 }
 
-unsigned int Shader::LoadShader(GLenum type, const char* shaderPath)
-{
-	std::fstream shaderFile(shaderPath);
-
-	if (!shaderFile.good())
-	{
-		std::cout << "ERROR! Cannot open: " << shaderPath << " :(\n";
-		return -1;
-	}
-
-	std::stringstream shaderStream;
-	shaderStream << shaderFile.rdbuf();
-
-	std::string shaderSourceStr = shaderStream.str();
-
-	const char* shaderSource = shaderSourceStr.c_str();
-
-	unsigned int shader = glCreateShader(type);
-	glShaderSource(shader, 1, &shaderSource, 0);
-	glCompileShader(shader);
-
-	DebugShader(shader);
-
-	return shader;
-}
-
 void Shader::LoadShaders(std::string vShaderPath, std::string fShaderPath, std::string gShaderPath)
 {
+	LoadShadersWithInclData("", vShaderPath, fShaderPath, gShaderPath);
+}
+
+void Shader::LoadShadersWithInclData(std::string data, std::string vShaderPath, std::string fShaderPath, std::string gShaderPath)
+{
+	LoadShadersWithExclData(data, vShaderPath, data, fShaderPath, (gShaderPath.empty()) ? (std::string()) : (data), gShaderPath);
+}
+
+void Shader::LoadShadersWithExclData(std::string vShaderData, std::string vShaderPath, std::string fShaderData, std::string fShaderPath, std::string gShaderData, std::string gShaderPath)
+{
 	unsigned int nrShaders = (gShaderPath.empty()) ? (2) : (3);
-	unsigned int* shaders = new unsigned int[nrShaders];
-	shaders[0] = LoadShader(GL_VERTEX_SHADER, vShaderPath.c_str());
-	shaders[1] = LoadShader(GL_FRAGMENT_SHADER, fShaderPath.c_str());
-	if (nrShaders == 3) shaders[2] = LoadShader(GL_GEOMETRY_SHADER, gShaderPath.c_str());
+	std::vector<unsigned int> shaders(nrShaders);
+	shaders[0] = LoadShader(GL_VERTEX_SHADER, vShaderPath, vShaderData);
+	shaders[1] = LoadShader(GL_FRAGMENT_SHADER, fShaderPath, fShaderData);
+	if (nrShaders == 3) shaders[2] = LoadShader(GL_GEOMETRY_SHADER, gShaderPath, gShaderData);
 
 	Program = glCreateProgram();
 	for (unsigned int i = 0; i < nrShaders; i++)
@@ -129,57 +157,57 @@ void Shader::LoadShaders(std::string vShaderPath, std::string fShaderPath, std::
 	}
 }
 
-void Shader::Uniform1i(std::string name, int val)
+void Shader::Uniform1i(std::string name, int val) const
 {
-	glUniform1i(glGetUniformLocation(Program, name.c_str()), val);
+	glUniform1i(FindLocation(name), val);
 }
 
-void Shader::Uniform1f(std::string name, float val)
+void Shader::Uniform1f(std::string name, float val) const
 {
-	glUniform1f(glGetUniformLocation(Program, name.c_str()), val);
+	glUniform1f(FindLocation(name), val);
 }
 
-void Shader::Uniform2fv(std::string name, glm::vec2 val)
+void Shader::Uniform2fv(std::string name, glm::vec2 val) const
 {
-	glUniform2fv(glGetUniformLocation(Program, name.c_str()), 1, glm::value_ptr(val));
+	glUniform2fv(FindLocation(name), 1, glm::value_ptr(val));
 }
 
-void Shader::Uniform3fv(std::string name, glm::vec3 val)
+void Shader::Uniform3fv(std::string name, glm::vec3 val) const
 {
-	glUniform3fv(glGetUniformLocation(Program, name.c_str()), 1, glm::value_ptr(val));
+	glUniform3fv(FindLocation(name), 1, glm::value_ptr(val));
 }
 
-void Shader::Uniform4fv(std::string name, glm::vec4 val)
+void Shader::Uniform4fv(std::string name, glm::vec4 val) const
 {
-	glUniform4fv(glGetUniformLocation(Program, name.c_str()), 1, glm::value_ptr(val));
+	glUniform4fv(FindLocation(name), 1, glm::value_ptr(val));
 }
 
-void Shader::UniformMatrix3fv(std::string name, glm::mat3 val)
+void Shader::UniformMatrix3fv(std::string name, glm::mat3 val) const
 {
-	glUniformMatrix3fv(glGetUniformLocation(Program, name.c_str()), 1, GL_FALSE, glm::value_ptr(val));
+	glUniformMatrix3fv(FindLocation(name), 1, GL_FALSE, glm::value_ptr(val));
 }
 
-void Shader::UniformMatrix4fv(std::string name, glm::mat4 val)
+void Shader::UniformMatrix4fv(std::string name, const glm::mat4& val) const
 {
-	glUniformMatrix4fv(glGetUniformLocation(Program, name.c_str()), 1, GL_FALSE, glm::value_ptr(val));
+	glUniformMatrix4fv(FindLocation(name), 1, GL_FALSE, glm::value_ptr(val));
 }
 
-void Shader::UniformBlockBinding(std::string name, unsigned int binding)
+void Shader::UniformBlockBinding(std::string name, unsigned int binding) const
 {
 	glUniformBlockBinding(Program, GetUniformBlockIndex(name), binding);
 }
 
-void Shader::UniformBlockBinding(unsigned int blockID, unsigned int binding)
+void Shader::UniformBlockBinding(unsigned int blockID, unsigned int binding) const
 {
 	glUniformBlockBinding(Program, blockID, binding);
 }
 
-unsigned int Shader::GetUniformBlockIndex(std::string name)
+unsigned int Shader::GetUniformBlockIndex(std::string name) const
 {
 	return glGetUniformBlockIndex(Program, name.c_str());
 }
 
-void Shader::Use()
+void Shader::Use() const
 {
 	glUseProgram(Program);
 }

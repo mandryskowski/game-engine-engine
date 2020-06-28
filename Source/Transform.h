@@ -4,60 +4,77 @@
 #include <glm/gtx/euler_angles.hpp>
 #include <string>
 
+struct PhysicsInput
+{
+	glm::vec3 Position;
+	glm::quat Rotation;
+};
+
 class Transform
 {
+	friend class CameraComponent;
+	friend class LightComponent;
+	friend class RenderEngine;
+	bool KUPA;
 	Transform* ParentTransform;
-	std::unique_ptr<Transform> WorldTransformCache;
-	glm::mat4 WorldTransformMatrixCache;
+	mutable std::unique_ptr<Transform> WorldTransformCache;
+	mutable glm::mat4 WorldTransformMatrixCache;
+	mutable glm::mat4 MatrixCache;
 
 	std::vector <Transform*> Children;
 
 	glm::vec3 Position;
-	glm::vec3 Rotation;
+	glm::quat Rotation;
 	glm::vec3 Scale;
 	glm::vec3 Front;
 
-	std::vector <bool> DirtyFlags;
+	mutable std::vector <bool> DirtyFlags;
+	mutable bool Empty;	//true if the Transform object has never been changed. Allows for a simple optimization - we skip it during world transform calculation
 
-	std::vector <std::unique_ptr<Interpolator<glm::vec3>>> Interpolators;
+	std::vector <std::shared_ptr<InterpolatorBase>> Interpolators;
 
 	static float tSum;
 
-	void FlagMeAndChildrenAsDirty();
+	void FlagMyDirtiness();
+	void FlagWorldDirtiness();
 
 public:
-	const glm::vec3& PositionRef;
-	const glm::vec3& RotationRef;		//read-only for optimization purposes
+	const glm::vec3& PositionRef;		//read-only for optimization purposes
+	const glm::quat& RotationRef;
 	const glm::vec3& ScaleRef;
 	const glm::vec3& FrontRef;
 
 	bool bConstrain;
 	bool bRotationLock;
 
-	Transform(glm::vec3 pos = glm::vec3(0.0f), glm::vec3 rot = glm::vec3(0.0f), glm::vec3 scale = glm::vec3(1.0f), glm::vec3 front = glm::vec3(0.0f), bool constrain = false, bool rotlock = false);
+	Transform(glm::vec3 pos = glm::vec3(0.0f), glm::quat rot = glm::quat(glm::vec3(0.0f)), glm::vec3 scale = glm::vec3(1.0f), glm::vec3 front = glm::vec3(0.0f), bool constrain = false, bool rotlock = false);
 	Transform(const Transform&);
-	Transform(Transform&&) noexcept = default;
+	Transform(Transform&&) noexcept;
 	static float test()
 	{
 		return tSum;
 	}
 
 	glm::mat3 GetRotationMatrix(float = 1.0f) const; //this argument is used as a multiplier for the rotation vector - you can pass -1.0f to get the inverse matrix for a low cost
-	glm::mat3 GetRotationMatrixWithOffset(glm::vec3 = glm::vec3(0.0f), float = 1.0f) const;
 	glm::mat4 GetMatrix() const; //returns model matrix
 	glm::mat4 GetViewMatrix() const; //returns view/eye/camera matrix
-	const Transform& GetWorldTransform(); //calculates the world transform (transform data is stored in local space)
-	const glm::mat4& GetWorldTransformMatrix(); //calls this->GetWorldTransform().GetMatrix() and then stores the matrix in cache - you should call this method instead of 2 seperate ones (for sweet sweet FPS)
+	const Transform& GetWorldTransform() const; //calculates the world transform (transform data is stored in local space)
+	const glm::mat4& GetWorldTransformMatrix() const; //calls this->GetWorldTransform().GetMatrix() and then stores the matrix in cache - you should call this method instead of 2 seperate ones (for sweet sweet FPS)
 	Transform* GetParentTransform() const;
 
 	void SetPosition(glm::vec3);
+	void SetPositionWorld(glm::vec3);
 	void Move(glm::vec3);
-	void SetRotation(glm::vec3);
-	void Rotate(glm::vec3);
+	void SetRotation(glm::vec3 euler);
+	void SetRotation(glm::quat quat);
+	void SetRotationWorld(glm::quat quat);
+	void Rotate(glm::vec3 euler);
+	void Rotate(glm::quat quat);
 	void SetScale(glm::vec3);
 	void SetFront(glm::vec3);
+	void Set(int, glm::vec3);
 
-	void SetParentTransform(Transform* transform, bool = false); //if the bool is true, the transform is recalculated to the parent's space
+	void SetParentTransform(Transform* transform, bool relocate = false); //if the bool is true, the transform is recalculated to the parent's space
 	void AddChild(Transform*);
 	void RemoveChild(Transform*);
 
@@ -66,16 +83,21 @@ public:
 	void SetDirtyFlags(bool val = true);
 	unsigned int AddDirtyFlag();
 
-	void AddInterpolator(std::string fieldName, std::unique_ptr<Interpolator<glm::vec3>>, bool animateFromCurrent = true);	//if animateFromCurrent is true, the method automatically changes the minimum value of the interpolator to be the current value of the interpolated variable.
-	void AddInterpolator(std::string fieldName, float begin, float end, glm::vec3 min, glm::vec3 max, InterpolationType interpType, bool fadeAway = false, AnimBehaviour before = AnimBehaviour::STOP, AnimBehaviour after = AnimBehaviour::STOP);
-	void AddInterpolator(std::string fieldName, float begin, float end, glm::vec3 max, InterpolationType interpType, bool fadeAway = false, AnimBehaviour before = AnimBehaviour::STOP, AnimBehaviour after = AnimBehaviour::STOP);
+	void AddInterpolator(std::string fieldName, std::shared_ptr<InterpolatorBase>, bool animateFromCurrent = true);	//if animateFromCurrent is true, the method automatically changes the minimum value of the interpolator to be the current value of the interpolated variable.
+	template <class T> void AddInterpolator(std::string fieldName, float begin, float end, T min, T max, InterpolationType interpType, bool fadeAway = false, AnimBehaviour before = AnimBehaviour::STOP, AnimBehaviour after = AnimBehaviour::STOP);
+	template <class T> void AddInterpolator(std::string fieldName, float begin, float end, T max, InterpolationType interpType, bool fadeAway = false, AnimBehaviour before = AnimBehaviour::STOP, AnimBehaviour after = AnimBehaviour::STOP);
 	void Update(float deltaTime);
 	
 	~Transform() = default;
 
-	Transform& operator=(const Transform&) = default;
-	Transform& operator=(Transform&&) noexcept = default;
-	glm::vec3& operator [](unsigned int);
+	Transform& operator*(const Transform&);
+	Transform& operator*(Transform&&);
+
+	Transform& operator=(const Transform&);
+	Transform& operator=(Transform&&) noexcept;
+
+	Transform& operator*=(const Transform&);
+	Transform& operator*=(Transform&&);
 };
 
 glm::mat3 ModelToNormal(glm::mat4);

@@ -6,24 +6,27 @@ class Actor
 {
 protected:
 	Component* RootComponent;
-	std::vector <Actor*> Children;
+	std::vector <std::shared_ptr<Actor>> Children;
 	std::string Name;
-	std::stringstream* LoadStream;
+	std::stringstream* SetupStream;
+	GameManager* GameHandle;
 
 public:
-	Actor(std::string, bool createRoot = true);
+	Actor(GameManager*, std::string);
 	Component* GetRoot();
 	std::string GetName();
 	Transform* GetTransform();
 	Actor* GetChild(unsigned int);
 
+	void DebugHierarchy(int nrTabs = 0);
+
 	void ReplaceRoot(Component*);
 	void SetTransform(Transform);
 	void AddComponent(Component*);
-	void AddChild(Actor*);
-	void SetLoadStream(std::stringstream* stream);
+	void AddChild(std::shared_ptr<Actor>);
+	void SetSetupStream(std::stringstream* stream);
 
-	virtual void LoadDataFromLevel(SearchEngine* searcher);
+	virtual void Setup(SearchEngine* searcher);
 
 	virtual void HandleInputs(GLFWwindow*, float);
 	void HandleInputsAll(GLFWwindow*, float);

@@ -1,20 +1,77 @@
 #include "Component.h"
+#include "FileLoader.h"
 
-Component::Component(std::string name, Transform t):
-	Name(name), ComponentTransform(t)
+Component::Component(GameManager* gameHandle, std::string name, const Transform& t):
+	Name(name), ComponentTransform(t), GameHandle(gameHandle)
 {
 }
-Component::Component(std::string name, glm::vec3 pos, glm::vec3 rot, glm::vec3 scale):
-	Name(name), ComponentTransform(pos, rot, scale)
+Component::Component(GameManager* gameHandle, std::string name, glm::vec3 pos, glm::vec3 rot, glm::vec3 scale):
+	Name(name), ComponentTransform(pos, rot, scale), GameHandle(gameHandle)
 {
 }
-std::string Component::GetName()
+
+void Component::Setup(std::stringstream& filestr, Actor* myActor)
+{
+	///////////////////////////////1. Load the type and the name of the current component
+	SearchEngine* searcher = GameHandle->GetSearchEngine();
+	RenderEngineManager* renderEngHandle = GameHandle->GetRenderEngineHandle();
+
+	Component* comp = nullptr;
+	std::string type, name;
+	filestr >> type;
+	name = multipleWordInput(filestr);
+
+	///////////////////////////////2. Load info about its position in hierarchy
+
+	std::string familyWord, parentName;
+	familyWord = lookupNextWord(filestr);
+	if (familyWord == "child")
+		filestr >> familyWord >> parentName;	///skip familyword and load parentname
+	else if (familyWord == "root")
+		filestr >> familyWord;	///skip familyword
+	else
+		familyWord = "attachToRoot";
+
+	///////////////////////////////4. Load its tranformations
+
+	if (isNextWordEqual(filestr, "transform"))
+		EngineDataLoader::LoadTransform(filestr, comp->GetTransform());
+
+	///////////////////////////////5.  After the component has been created, we can take care of its hierarchy stuff (it was loaded in 2.)
+
+	/*if (familyWord == "child")
+	{
+		Component* parent = myActor->GetRoot()->SearchForComponent(parentName);
+		if (parent)
+			parent->AddComponent(comp);
+		else
+			std::cerr << "ERROR! Can't find target parent " << parentName << "!\n";
+	}
+	else if (familyWord == "root")
+		myActor->ReplaceRoot(comp);
+	else if (familyWord == "attachToRoot")
+		myActor->AddComponent(comp);
+		*/
+
+	//////Check for an error
+
+	std::string lastWord;
+	filestr >> lastWord;
+	if (lastWord != "end")
+		std::cerr << "ERROR: There is no ''end'' after component's " << name << " definition! Detected word: " << lastWord << ".\n";
+}
+
+std::string Component::GetName() const
 {
 	return Name;
 }
-Transform* Component::GetTransform()
+Transform& Component::GetTransform()
 {
-	return &ComponentTransform;
+	return ComponentTransform;
+}
+const Transform& Component::GetTransform() const
+{
+	return ComponentTransform;
 }
 std::vector<Component*> Component::GetChildren()
 {
@@ -35,13 +92,14 @@ void Component::SetTransform(Transform transform)
 }
 void Component::AddComponent(Component* component)
 {
-	component->GetTransform()->SetParentTransform(&this->ComponentTransform); Children.push_back(component);
+	component->GetTransform().SetParentTransform(&this->ComponentTransform);
+	Children.push_back(component);
 }
 void Component::AddComponents(std::vector<Component*> components)
 {
 	for (unsigned int i = 0; i < components.size(); i++)
 	{
-		components[i]->GetTransform()->SetParentTransform(&this->ComponentTransform);
+		components[i]->GetTransform().SetParentTransform(&this->ComponentTransform);
 		Children.push_back(components[i]);
 	}
 }
@@ -73,6 +131,9 @@ Component* Component::SearchForComponent(std::string name)
 
 Component::~Component()
 {
+	ComponentTransform.SetParentTransform(nullptr);
 	for (unsigned int i = 0; i < Children.size(); i++)
-		Children[i]->GetTransform()->SetParentTransform(nullptr);
+	{
+		Children[i]->GetTransform().SetParentTransform(nullptr);
+	}
 }

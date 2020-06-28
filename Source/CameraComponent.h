@@ -1,5 +1,6 @@
 #pragma once
 #include "CollisionEngine.h"
+#include "GameSettings.h"
 #include <array>
 class CameraComponent: public Component
 {
@@ -18,11 +19,9 @@ class CameraComponent: public Component
 		glm::vec3 Direction;
 	};
 
-
-	CollisionEngine* CollisionEng;
-
 	glm::vec3 VelocityPerSec;
 	float SpeedPerSec;
+	glm::vec3 RotationEuler;
 	std::array<MovementAxis, 4> MovementAxises;
 
 	CollisionComponent* GroundCheckComponent;
@@ -32,7 +31,7 @@ class CameraComponent: public Component
 	glm::mat4 Projection;	
 
 public:
-	CameraComponent(std::string name, glm::uvec2, CollisionEngine*, float = 3.0f, Transform = Transform(glm::vec3(0.0f), glm::vec3(0.0f), glm::vec3(1.0f), glm::vec3(0.0f), true));
+	CameraComponent(GameManager*, std::string name,float = 3.0f);
 	bool PerformCollisionCheck(std::vector<CollisionComponent*>, glm::vec3, std::vector<glm::vec3>*, std::vector<CollisionComponent*>* = nullptr);
 	glm::vec3 ApplyCollisionResponse(glm::vec3);
 	glm::mat4 GetProjectionMat();		//returns the camera projection matrix - i've decided that each camera should have their own projection mat, because just as in the real world each cam has its own FoV and aspect ratio

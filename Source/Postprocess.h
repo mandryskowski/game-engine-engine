@@ -1,68 +1,34 @@
 #pragma once
 #include "GameSettings.h"
 #include "Mesh.h"
-
-struct ColorBufferData
-{
-	unsigned int OpenGLBuffer;
-	GLenum TextureEnum;
-	GLenum InternalFormat;
-	GLenum Type;
-	GLenum MagFilter;
-	GLenum MinFilter;
-
-	ColorBufferData(GLenum texEnum = GL_TEXTURE_2D, GLenum internalFormat = GL_RGB, GLenum type = GL_UNSIGNED_BYTE, GLenum magFilter = GL_NEAREST, GLenum minFilter = GL_NEAREST);
-	bool ContainsAlphaChannel();
-	void CreateOpenGLBuffer(glm::uvec2 size, unsigned int samples = 0);
-	void BindToFramebuffer(GLenum target, GLenum attachment);
-};
-
-struct DepthBufferData
-{
-	unsigned int OpenGLBuffer;
-	GLenum TextureEnum;
-	GLenum InternalFormat;
-	GLenum MagFilter;
-	GLenum MinFilter;
-
-	DepthBufferData(GLenum texEnum = GL_TEXTURE_2D, GLenum magFilter = GL_NEAREST, GLenum minFilter = GL_NEAREST, GLenum = GL_DEPTH_COMPONENT);
-	bool ContainsStencil();
-	void CreateOpenGLBuffer(glm::uvec2 size, unsigned int samples = 0);
-	void BindToFramebuffer(GLenum target, GLenum attachment);
-};
-
-class Framebuffer
-{
-	unsigned int FBO;
-	glm::uvec2 RenderSize;
-public:
-	std::vector <ColorBufferData> ColorBuffers;
-	DepthBufferData* DepthBuffer;
-public:
-	Framebuffer();
-	
-	bool isLoaded();
-	unsigned int GetFBO();
-	ColorBufferData GetColorBuffer(unsigned int index);
-	void Load(glm::uvec2 size, ColorBufferData colorBuffer, DepthBufferData* depthBuffer = nullptr, unsigned int samples = 0);	//If you pass a DeptBufferData which OpenGLBuffer is not one (was generated), then this one will be used (another one won't be automatically generated; first delete the GL buffer yourself and set it to 0)
-	void Load(glm::uvec2 size, std::vector <ColorBufferData> colorBuffers, DepthBufferData* depthBuffer = nullptr, unsigned int samples = 0);
-	void BlitToFBO(unsigned int, int = 1);
-	void Bind();
-};
+#include "Framebuffer.h"
 
 class Postprocess
 {
 	unsigned int QuadVAO;
 	unsigned int QuadVBO;
 
-	Shader PPShader;
 	Shader GaussianBlurShader;
+	std::unique_ptr<Shader> SSAOShader;
+	Shader TonemapGammaShader;
+	Shader SMAAShaders[3];
 
-	Framebuffer PingPongFramebuffers[2];
+	unsigned int SMAAAreaTex, SMAASearchTex;
+	std::unique_ptr<unsigned int> SSAONoiseTex;
+
+	std::unique_ptr<Framebuffer> SSAOFramebuffer;
+	Framebuffer TonemapGammaFramebuffer;
+	Framebuffer SMAAFramebuffer;		//two color buffers; we use the color buffers as edgeTex&blendTex in SMAA pass.
+	Framebuffer BlurFramebuffers[2];	//only color buffer; we use them as ping pong framebuffers in gaussian blur pass.
+										//Side note: I wonder which method is quicker - switching a framebuffer or switching an attachment or switching a buffer to draw to via glDrawBuffer.
+										//Side note 2: I've heard that they are similar in terms of performance. So now I wonder why do we use ping-pong framebuffers and not ping-pong color buffers. They should work the same, shouldn't they?
 
 public:
 	Postprocess();
-	void LoadSettings(const GameSettings*);
-	void Render(unsigned int, unsigned int);
-	unsigned int GaussianBlur(unsigned int, int);
+	void Init(const GameSettings*);
+	unsigned int GaussianBlur(unsigned int tex, int passes, Framebuffer* writeFramebuffer = nullptr) const;
+	unsigned int SSAOPass(RenderInfo&, unsigned int gPosition, unsigned int gNormal);
+	unsigned int SMAAPass(unsigned int colorTex, unsigned int depthTex) const;
+	unsigned int TonemapGammaPass(unsigned int colorTex, unsigned int blurTex, bool bFinal = false) const;	//converts from linear to gamma and from HDR data to LDR
+	void Render(unsigned int colorTex, unsigned int blurTex, unsigned int depthTex, const GameSettings*) const;
 };

@@ -1,7 +1,7 @@
 # Blender v2.82 (sub 7) OBJ File: 'tunnel.blend'
 # www.blender.org
 mtllib tunnel.mtl
-o Cube_Cube.001
+o Tunnel
 v -0.500000 -0.500000 5.000000
 v -0.500000 0.500000 5.000000
 v -0.500000 -0.500000 -5.000000

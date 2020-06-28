@@ -33,8 +33,17 @@ public:
 	template <class ValType> ValType InterpolateValues(ValType y1, ValType y2);
 };
 
+class InterpolatorBase
+{
+public:
+	virtual bool GetHasEnded() = 0;
+	virtual std::shared_ptr<Interpolation> GetInterp() = 0;
+	virtual void ResetMinVal() = 0;
+	virtual void Update(float deltaTime) = 0;
+};
+
 template <class ValType>
-class Interpolator
+class Interpolator: public InterpolatorBase
 {
 	std::shared_ptr<Interpolation> Interp;
 	ValType MinVal;
@@ -50,15 +59,16 @@ public:
 	Interpolator(float begin, float end, ValType min, ValType max, InterpolationType type, bool fadeAway = false, AnimBehaviour before = AnimBehaviour::STOP, AnimBehaviour after = AnimBehaviour::STOP, bool updateMinOnBegin = true, ValType* valPtr = nullptr);
 	Interpolator(std::shared_ptr<Interpolation> interp, ValType min, ValType max, bool updateMinOnBegin = true, ValType* valPtr = nullptr);
 
-	bool GetHasEnded();
-	std::shared_ptr<Interpolation> GetInterp();
+	virtual bool GetHasEnded() override;
+	virtual std::shared_ptr<Interpolation> GetInterp() override;
 	ValType GetCurrentValue();
 	void SetValPtr(ValType* valPtr);
 
-	void SetMinVal(ValType val);	//these 2 methods are not recommended for use during actual interpolation
+	void SetMinVal(ValType val);	//these 3 methods are not recommended for use during actual interpolation
+	virtual void ResetMinVal() override;	//set MinVal to the current value
 	void SetMaxVal(ValType val);
 
 	void Inverse();		//make the interpolator "go another way" (interpolate to the starting point). Useful for stuff like camera interpolation
 
-	ValType Update(float deltaTime);
+	void Update(float deltaTime) override;
 };

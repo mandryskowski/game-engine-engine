@@ -1,10 +1,68 @@
 ///PREFIX ENGINE
 materialsfile EngineMaterials/Materials.fware
+collisionfile CollisionData.txt
+
+edittree nanosuit/nanosuit.obj
+Body col 1 ps 0 0 11 0 2.5 5 2 transform skip 0 0 0 break , 
+Arms material doublebarrel/doublebarrel2.obj:Darkwood col 2 prs  0 -3 9 0 -10 0 0 2 5 1    0  3 9 0 -10 0 0 2 5 1 ,
+hands material doublebarrel/doublebarrel2.obj:Barrelmetal end
+
+edittree tunnel/tunnel.obj
+tunnel/tunnel.obj
+col 7 ps
+0
+-1 0 0
+1 1 10
+0
+1 0 0
+1 1 10
+0
+0 1 0
+3 1 10
+0
+0 -1 0
+3 1 10
+0
+0 0 -5.5
+3 1 1
+0
+0 0 5.5
+3 1 1
+1
+0 0 3
+0.25 0.25 0.25
+end
+
+131283129dsaadjkasd
+newtree SubwayoCube
+subway/subway.obj:Walls_Cube.003 material BrickWall :
+	tunnel/tunnel.obj:Tunnel
+	transform
+	skip
+	skip
+	0.1 0.1 0.1
+	break
+	col
+	1 -
+	0
+	end
+nanosuit/nanosuit.obj:Body
+transform
+skip
+skip
+0.025 0.025 0.025
+break ,
+doublebarrel/doublebarrel2.obj:doublebarrel/doublebarrel2.obj :
+	doublebarrel/doublebarrel2.obj:Shotgun_Cube_NoShadow material Barrelmetal ,
+	doublebarrel/doublebarrel2.obj:Barrel+Release_NoShadow end
+end
 
 newactor Actor CameraActor
 newcomp camera Camera root
 1.5
 active
+transform
+2.8 0 -7
 end
 newcomp collision BCameraSphere child Camera
 sphere
@@ -13,8 +71,6 @@ transform
 skip
 skip
 0.3 0.3 0.3
-skip
-constrain
 end
 newcomp light Bekalight child Camera spot
 0 0 0
@@ -22,20 +78,20 @@ newcomp light Bekalight child Camera spot
 0.5 0.5 0.5
 2 12.5 45
 transform
-0.03 -0.1 0
+0.08 -0.1 0
 skip
 skip
 0 0 -1
-constrain
 end
 
 newactor GunActor Gun child CameraActor
-newcomp model MyDoubleBarrel root doublebarrel/doublebarrel.obj
+newcomp model MyDoubleBarrel root doublebarrel/doublebarrel3.obj
+edit doublebarrel/doublebarrel3.obj
 transform
-0.1 -0.1 -0.2
+0.11 -0.1 -0.2
 skip
-0.075 0.075 0.05
-constrain
+0.08 0.08 0.06
+end
 end
 newcomp empty GunTip child MyDoubleBarrel
 transform
@@ -43,22 +99,28 @@ transform
 end
 newcomp soundsource DoubleBarrelBlast child GunTip Sounds/shotgun.wav
 end
-newcomp model FireParticle child GunTip CPY_ENG_QUAD material FireAtlas
+newcomp model FireParticle child GunTip ENG_QUAD
+edit Quad material FireAtlas
+end
 end
 actorinfo
 FireMaterial FireAtlas
 end
 
 newactor Actor CubeActor
-newcomp model Cube root tunnel/tunnel.obj
+newcomp model Tunnel root tunnel/tunnel.obj
 end
-newcomp model Nanosuit child Cube nanosuit/nanosuit.obj
+newcomp model Nanosuit child Tunnel nanosuit/nanosuit.obj
+edit nanosuit/nanosuit.obj
+col 1 -
+3 nanosuit/nanosuit.obj
+end
 transform
 0 -0.5 2.5
 skip
 0.05 0.05 0.05
 end
-newcomp model Subway child Cube subway/subway.obj
+newcomp model Subway child Tunnel subway/subway.obj
 transform
 0 1 -10
 skip
@@ -72,7 +134,7 @@ newcomp light SubwayLight child Subway point
 transform
 0 3.75 12.5
 end
-newcomp collision BCube child Cube
+newcomp collision BCube child Tunnel
 cube
 true
 transform
@@ -80,7 +142,7 @@ skip
 skip
 1 1 10
 end
-newcomp model Crate child Cube tunnel/tunnel.obj
+newcomp model Crate child Tunnel tunnel/tunnel.obj
 transform
 0 0 3
 skip
@@ -94,7 +156,7 @@ skip
 skip
 1 1 10
 end
-newcomp light Sun child Cube direction
+newcomp light Sun child Tunnel direction
 0.1 0.1 0.1
 1 1 1
 0.5 0.5 0.5
@@ -104,7 +166,6 @@ transform
 skip
 skip
 0 -3 11
-rotlock
 end
 newcomp light Lamp point
 0.05 0.05 0.05
@@ -148,6 +209,57 @@ newcomp light EpicLight3 point
 6 0 0
 transform
 0 -0.35 1
+end
+
+newactor Actor PhysActor child CubeActor
+newcomp empty Lol root
+end
+newcomp model Shotgun child Lol doublebarrel/doublebarrel2.obj
+edit doublebarrel/doublebarrel2.obj
+col 1 -
+3 doublebarrel/doublebarrel2.obj
+end
+transform
+0 0 -3
+0 45 0
+0.1 0.1 0.1
+end
+
+newactor Actor cube child CubeActor
+newcomp model FloatingCube root ENG_SPHERE
+edit Sphere
+material Bunker
+col dynamic 1 -
+1
+end
+transform
+0 0 0
+skip
+0.1 0.1 0.1
+end
+
+newactor Actor secondtunnel
+newcomp model SecondTunnel root tunnel/tunnel.obj
+transform
+5 0 0
+end
+newcomp model SecondBall child SecondTunnel ENG_SPHERE
+edit Sphere
+material BrickWall
+col dynamic 1 -
+1
+end
+transform
+skip
+skip
+0.2 0.2 0.2
+end
+
+newactor Actor DUPAACTOR
+newcomp model Kupa root SubwayoCube
+edit Body material Bricks end
+transform
+10 0 10
 end
 
 newactor Actor GameLevel

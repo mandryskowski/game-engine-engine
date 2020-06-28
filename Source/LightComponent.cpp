@@ -1,6 +1,7 @@
 #include "LightComponent.h"
 
-LightComponent::LightComponent(std::string name, LightType type, unsigned int shadowNr, float far, glm::mat4 projection, glm::vec3 amb, glm::vec3 diff, glm::vec3 spec, glm::vec3 settings):
+LightComponent::LightComponent(GameManager* gameHandle, std::string name, LightType type, unsigned int shadowNr, float far, glm::mat4 projection, glm::vec3 amb, glm::vec3 diff, glm::vec3 spec, glm::vec3 settings):
+	Component(gameHandle, name, Transform()),
 	Type(type),
 	Ambient(amb),
 	Diffuse(diff),
@@ -9,8 +10,7 @@ LightComponent::LightComponent(std::string name, LightType type, unsigned int sh
 	ShadowMapNr(shadowNr),
 	Far(far),
 	Projection(projection),
-	DirtyFlag(true),
-	Component(name, Transform())
+	DirtyFlag(true)
 {
 
 	CutOff = glm::cos(glm::radians(settings.y));
@@ -113,7 +113,7 @@ void LightComponent::UpdateUBOData(UniformBuffer* lightsUBO, size_t offset)
 	if (offset != -1)
 		lightsUBO->offsetCache = offset;
 
-	Transform worldTransform = ComponentTransform.GetWorldTransform();
+	const Transform& worldTransform = ComponentTransform.GetWorldTransform();
 	bool transformDirtyFlag = ComponentTransform.GetDirtyFlag(TransformDirtyFlagIndex);
 
 	if (transformDirtyFlag)

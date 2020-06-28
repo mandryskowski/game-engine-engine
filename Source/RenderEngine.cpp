@@ -1,9 +1,12 @@
 #include "RenderEngine.h"
-#include <random>
+#include "Postprocess.h"
+#include "FileLoader.h"
+#include "LightComponent.h"
+#include "ModelComponent.h"
+#include <random> //DO WYJEBANIA
 
-RenderEngine::RenderEngine() :
-	SSAOShader(nullptr),
-	SSAOFramebuffer(nullptr)
+RenderEngine::RenderEngine(GameManager* gameHandle) :
+	GameHandle(gameHandle)
 {
 	//configure some openGL settings
 	glEnable(GL_DEPTH_TEST);
@@ -12,9 +15,20 @@ RenderEngine::RenderEngine() :
 	glFrontFace(GL_CCW);
 	glCullFace(GL_BACK);
 
+
+	//generate engine's empty texture
+	glGenTextures(1, &EmptyTexture);
+	glBindTexture(GL_TEXTURE_2D, EmptyTexture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 1, 1, 0, GL_RGB, GL_UNSIGNED_BYTE, glm::value_ptr(glm::vec3(0.0f, 0.0f, 1.0f)));
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+}
+
+void RenderEngine::Init()
+{
 	GShader.LoadShaders("Shaders/geometry.vs", "Shaders/geometry.fs");
 	GShader.UniformBlockBinding("Matrices", 0);
-	
+
 	GShader.Use();
 	std::vector<std::pair<unsigned int, std::string>> gShaderTextureUnits = {
 		std::pair<unsigned int, std::string>(0, "diffuse1"),
@@ -47,7 +61,7 @@ RenderEngine::RenderEngine() :
 	ShadowFBO = 0;
 	ShadowMapArray = 0;
 	ShadowCubemapArray = 0;
-	
+
 	//load shadow shaders
 	DepthShader.LoadShaders("Shaders/depth.vs", "Shaders/depth.fs");
 	DepthShader.SetExpectedMatrices(std::vector<MatrixType>{MatrixType::MVP});
@@ -61,13 +75,14 @@ RenderEngine::RenderEngine() :
 
 	GenerateEngineObjects();
 
-	LightShaders[LightType::DIRECTIONAL].LoadShaders("Shaders/directional.vs", "Shaders/directional.fs");
+	std::string settingsDefines = GameHandle->GetGameSettings()->GetShaderDefines();
+	LightShaders[LightType::DIRECTIONAL].LoadShadersWithInclData(settingsDefines, "Shaders/directional.vs", "Shaders/directional.fs");
 	LightShaders[LightType::DIRECTIONAL].UniformBlockBinding("Matrices", 0);
 	LightShaders[LightType::DIRECTIONAL].UniformBlockBinding("Lights", 1);
-	LightShaders[LightType::POINT].LoadShaders("Shaders/point.vs", "Shaders/point.fs");
+	LightShaders[LightType::POINT].LoadShadersWithInclData(settingsDefines, "Shaders/point.vs", "Shaders/point.fs");
 	LightShaders[LightType::POINT].UniformBlockBinding("Matrices", 0);
 	LightShaders[LightType::POINT].UniformBlockBinding("Lights", 1);
-	LightShaders[LightType::SPOT].LoadShaders("Shaders/spot.vs", "Shaders/spot.fs");
+	LightShaders[LightType::SPOT].LoadShadersWithInclData(settingsDefines, "Shaders/spot.vs", "Shaders/spot.fs");
 	LightShaders[LightType::SPOT].UniformBlockBinding("Matrices", 0);
 	LightShaders[LightType::SPOT].UniformBlockBinding("Lights", 1);
 
@@ -79,7 +94,7 @@ RenderEngine::RenderEngine() :
 		LightShaders[i].Uniform1i("gNormal", 1);
 		LightShaders[i].Uniform1i("gAlbedoSpec", 2);
 		LightShaders[i].Uniform1i("ssaoTex", 3);
-		
+
 		if (i == (int)LightType::POINT)
 			LightShaders[i].Uniform1i("shadowCubemaps", 11);
 		else
@@ -88,13 +103,6 @@ RenderEngine::RenderEngine() :
 		if (i != (int)LightType::DIRECTIONAL)
 			LightShaders[i].SetExpectedMatrices(std::vector<MatrixType>{MatrixType::VIEW, MatrixType::MVP});
 	}
-
-	//generate engine's empty texture
-	glGenTextures(1, &EmptyTexture);
-	glBindTexture(GL_TEXTURE_2D, EmptyTexture);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 1, 1, 0, GL_RGB, GL_UNSIGNED_BYTE, glm::value_ptr(glm::vec3(0.0f, 0.0f, 1.0f)));
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 }
 
 void RenderEngine::GenerateEngineObjects()
@@ -182,9 +190,7 @@ void RenderEngine::GenerateEngineObjects()
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(quadEBOBuffer), quadEBOBuffer, GL_STATIC_DRAW);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void*)(nullptr));
 	glEnableVertexAttribArray(0);
-
-	EngineObjects[EngineObjectType::QUAD] = new Mesh("ENG_QUAD_NoShadow");
-	EngineObjects[EngineObjectType::QUAD]->LoadFromGLBuffers(6, quadVAO, quadVBO, quadEBO);
+	
 
 	unsigned int cubeVBO;
 	unsigned int cubeVAO;
@@ -198,27 +204,17 @@ void RenderEngine::GenerateEngineObjects()
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 3, (void*)(nullptr));
 	glEnableVertexAttribArray(0);
 
-	EngineObjects[EngineObjectType::CUBE] = new Mesh("ENG_CUBE");
+	//Add the engine objects to the tree collection. This way models loaded from the level file can simply use the internal engine meshes for stuff like particles
+	//Preferably, the engine objects should be added to the tree collection first, so searching for them takes less time and they'll possibly be used often.
+
+	EngineObjects[EngineObjectType::CUBE] = &CreateMeshTree("ENG_CUBE")->GetRoot().AddChild("Cube").AddMesh("Cube");
 	EngineObjects[EngineObjectType::CUBE]->LoadFromGLBuffers(36, cubeVAO, cubeVBO);
 
-	size_t vertexCount = 0;
+	EngineObjects[EngineObjectType::QUAD] = &CreateMeshTree("ENG_QUAD")->GetRoot().AddChild("Quad").AddMesh("Quad_NoShadow");
+	EngineObjects[EngineObjectType::QUAD]->LoadFromGLBuffers(6, quadVAO, quadVBO, quadEBO);
 
-	EngineObjects[EngineObjectType::SPHERE] = new Mesh("ENG_SPHERE");
-	EngineObjects[EngineObjectType::SPHERE]->LoadSingleFromAiFile("EngineObjects/sphere.obj", false);
-
-	EngineObjects[EngineObjectType::CONE] = new Mesh("ENG_CONE");
-	EngineObjects[EngineObjectType::CONE]->LoadSingleFromAiFile("EngineObjects/cone.obj", false);
-
-	//Add the engine objects to the mesh collection. This way models loaded from the level file can simply use the internal engine meshes for stuff like particles
-	//Preferably, the engine objects should be added to the mesh collection first, so searching for them takes little time and they'll possibly be used often.
-
-	for (int i = 0; i < 4; i++)
-		MeshCollection.push_back(EngineObjects[i]);
-}
-
-unsigned int RenderEngine::GetSSAOTex()
-{
-	return SSAOFramebuffer->GetColorBuffer(0).OpenGLBuffer;
+	EngineObjects[EngineObjectType::SPHERE] = EngineDataLoader::LoadMeshTree(GameHandle, this, GameHandle->GetSearchEngine(), "EngineObjects/sphere.obj", CreateMeshTree("ENG_SPHERE"))->FindMesh("Sphere");
+	EngineObjects[EngineObjectType::CONE] = EngineDataLoader::LoadMeshTree(GameHandle, this, GameHandle->GetSearchEngine(), "EngineObjects/cone.obj", CreateMeshTree("ENG_CONE"))->FindMesh("Cone");
 }
 
 std::vector<Shader*> RenderEngine::GetForwardShaders()
@@ -232,194 +228,47 @@ std::vector<Shader*> RenderEngine::GetForwardShaders()
 	return shaders;
 }
 
-void RenderEngine::AddModel(ModelComponent* model)
+
+void RenderEngine::AddModel(std::shared_ptr<ModelComponent> model)
 {
 	Models.push_back(model);
 }
-void RenderEngine::AddModels(std::vector<ModelComponent*>& models)
+
+std::shared_ptr<ModelComponent> RenderEngine::CreateModel(const ModelComponent& model)
 {
-	for (unsigned int i = 0; i < models.size(); i++)
-		AddModel(models[i]);
+	Models.push_back(std::make_shared<ModelComponent>(ModelComponent(model)));
+	return Models.back();
 }
+
+std::shared_ptr<ModelComponent> RenderEngine::CreateModel(ModelComponent&& model)
+{
+	Models.push_back(std::make_shared<ModelComponent>(ModelComponent(model)));
+	return Models.back();
+}
+
+MeshSystem::MeshTree* RenderEngine::CreateMeshTree(std::string path)
+{
+	MeshTrees.push_back(std::make_unique<MeshSystem::MeshTree>(MeshSystem::MeshTree(path)));
+	return MeshTrees.back().get();
+}
+
+MeshSystem::MeshTree* RenderEngine::FindMeshTree(std::string path, MeshSystem::MeshTree* ignore)
+{
+	auto found = std::find_if(MeshTrees.begin(), MeshTrees.end(), [path, ignore](const std::unique_ptr<MeshSystem::MeshTree>& tree) { return tree->GetFilePath() == path && tree.get() != ignore; });
+	if (found != MeshTrees.end())
+		return (*found).get();
+
+	return nullptr;
+}
+
 void RenderEngine::AddMaterial(Material* material)
 {
 	Materials.push_back(material);
 }
-void RenderEngine::LoadModels()
+
+void RenderEngine::AddExternalShader(Shader* shader)
 {
-	std::vector <std::string> filePaths;
-	std::vector <ModelComponent*> copyModels;
-	for (unsigned int i = 0; i < Models.size(); i++)
-	{
-		std::string path = Models[i]->GetFilePath();
-		if (path.size() > 3 && path.substr(0, 3) == "CPY") //check if the model should really be loaded from a file, or copy an existing mesh instead
-		{
-			copyModels.push_back(Models[i]);
-			continue;
-		}
-
-		for (unsigned int j = 0; j < filePaths.size(); j++)	//check for a duplicate
-		{
-			if (filePaths[j] == path)
-			{
-				path.clear();
-				break;
-			}
-		}
-
-		if (!path.empty())
-			filePaths.push_back(path);
-	}
-
-	Assimp::Importer importer;
-	std::vector <const aiScene*> scenes;
-	MaterialLoadingData matLoadingData;
-
-	for (unsigned int i = 0; i < filePaths.size(); i++)
-	{
-		scenes.push_back(importer.ReadFile(filePaths[i], aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_GenNormals | aiProcess_CalcTangentSpace));
-		if (!scenes[i] || scenes[i]->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scenes[i]->mRootNode)
-		{
-			std::cerr << "Can't load scene " << filePaths[i] << ".\n";
-			continue;
-		}
-
-		std::string directory;
-		size_t dirPos = filePaths[i].find_last_of('/');
-		if (dirPos != std::string::npos)
-			directory = filePaths[i].substr(0, dirPos + 1);
-
-		std::vector<ModelComponent*> modelsPtr;
-		for (unsigned int j = 0; j < Models.size(); j++)	//for all models that use this file path
-			if (Models[j]->GetFilePath() == filePaths[i])
-				Models[j]->ProcessAiNode(scenes[i], directory, scenes[i]->mRootNode, modelsPtr, &matLoadingData);
-
-		std::vector<Mesh*> meshesFromThisFile = modelsPtr[0]->GetReferencedMeshes();
-		MeshCollection.insert(MeshCollection.end(), meshesFromThisFile.begin(), meshesFromThisFile.end());
-
-		AddModels(modelsPtr);
-	}
-
-	for (unsigned int i = 0; i < copyModels.size(); i++)	//Do the copying at the end
-	{
-		std::string name = copyModels[i]->GetFilePath().substr(4);
-
-		for (unsigned int j = 0; j < MeshCollection.size(); j++)
-		{
-			if (MeshCollection[j]->GetName().find(name) != std::string::npos)
-			{
-				copyModels[i]->AddMeshInst(MeshCollection[j]);
-				break;
-			}
-		}
-
-		std::cout << "Copying " + name << '\n';
-	}
-
-	for (unsigned int i = 0; i < matLoadingData.LoadedMaterials.size(); i++)
-		matLoadingData.LoadedMaterials[i]->SetRenderShader(&GShader);
-}
-
-void RenderEngine::LoadMaterials(std::string path, std::string directory)
-{
-	std::ifstream file;
-	file.open(path);
-	std::stringstream filestr;
-	filestr << file.rdbuf();
-
-	if (!file.good())
-	{
-		std::cerr << "Cannot open materials file " << path << "!\n";
-		return;
-	}
-
-	if (isNextWordEqual(filestr, "shaders"))
-		LoadShaders(filestr, directory);
-
-	while (!isNextWordEqual(filestr, "end"))
-	{
-		Material* material = nullptr;
-		std::string materialName, shaderName;
-		float shininess, depthScale;
-		Shader* shader = &GShader;
-		unsigned int texCount;
-
-		filestr >> materialName;
-
-		if (isNextWordEqual(filestr, "atlas"))
-		{
-			glm::vec2 size;
-			filestr >> size.x >> size.y;
-			material = new AtlasMaterial(materialName, size);
-		}
-		else
-			material = new Material(materialName);
-
-		filestr >> shaderName >> shininess >> depthScale >> texCount;
-
-		if (shaderName != "deferred")
-			shader = FindShader(shaderName);
-
-		material->SetRenderShader(shader);
-		material->SetShininess(shininess);
-		material->SetDepthScale(depthScale);
-
-		Materials.push_back(material);
-
-		for (unsigned int i = 0; i < texCount; i++)
-		{
-			std::string path, shaderUniformName, isSRGB;
-			filestr >> path >> shaderUniformName >> isSRGB;
-
-			material->AddTexture(new Texture(directory + path, shaderUniformName, toBool(isSRGB)));
-		}
-	}
-}
-
-
-void RenderEngine::LoadShaders(std::stringstream& filestr, std::string directory)
-{
-	while (!isNextWordEqual(filestr, "end"))
-	{
-		std::string name;
-		std::string paths[3];
-		unsigned int fileCount;
-
-		filestr >> name >> fileCount;
-		for (unsigned int i = 0; i < fileCount; i++)
-		{
-			filestr >> paths[i];
-
-			if (!(paths[i].size() > 3 && paths[i].substr(0, 2) == "./"))
-				paths[i] = directory + paths[i];
-		}
-
-		Shader* shader = new Shader(paths[0], paths[1], paths[2]);
-		shader->SetName(name);
-
-		unsigned int expectedMatricesCount, texUnitsCount;
-
-		filestr >> expectedMatricesCount;
-		for (unsigned int i = 0; i < expectedMatricesCount; i++)
-		{
-			std::string expectedMatrixType;
-			filestr >> expectedMatrixType;
-			
-			shader->AddExpectedMatrix(expectedMatrixType);
-		}
-
-		filestr >> texUnitsCount;
-		for (unsigned int i = 0; i < texUnitsCount; i++)
-		{
-			unsigned int unitIndex;
-			std::string texUnitName;
-			filestr >> unitIndex >> texUnitName;
-
-			shader->AddTextureUnit(unitIndex, texUnitName);
-		}
-
-		ExternalShaders.push_back(shader);
-	}
+	ExternalShaders.push_back(shader);
 }
 
 void RenderEngine::SetupShadowmaps(glm::uvec2 size)
@@ -449,70 +298,12 @@ void RenderEngine::SetupShadowmaps(glm::uvec2 size)
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void RenderEngine::SetupAmbientOcclusion(glm::uvec2 windowSize, unsigned int samples)
-{
-	SSAOShader = new Shader("Shaders/ssao.vs", "Shaders/ssao.fs");
-	SSAOShader->SetExpectedMatrices(std::vector<MatrixType> {MatrixType::PROJECTION});
-	SSAOShader->Use();
-	SSAOShader->Uniform1f("radius", 0.3f);
-	SSAOShader->Uniform1i("gPosition", 0);
-	SSAOShader->Uniform1i("gNormal", 1);
-	SSAOShader->Uniform1i("noiseTex", 2);
-
-	SSAOFramebuffer = new Framebuffer;
-	SSAOFramebuffer->Load(windowSize, ColorBufferData(GL_TEXTURE_2D, GL_RED, GL_FLOAT, GL_LINEAR, GL_LINEAR));
-
-	std::uniform_real_distribution<float> randomFloats(0.0f, 1.0f);
-	std::default_random_engine generator;
-
-	std::vector<glm::vec3> ssaoSamples;
-	ssaoSamples.reserve(samples);
-	for (unsigned int i = 0; i < samples; i++)
-	{
-		glm::vec3 sample(
-			randomFloats(generator) * 2.0f - 1.0f,
-			randomFloats(generator) * 2.0f - 1.0f,
-			randomFloats(generator)
-		);
-
-		sample = glm::normalize(sample) * randomFloats(generator);
-
-		float scale = (float)i / (float)samples;
-		scale = glm::mix(0.1f, 1.0f, scale * scale);
-		sample *= scale;
-
-		SSAOShader->Uniform3fv("samples[" + std::to_string(i) + "]", sample);
-		ssaoSamples.push_back(sample);
-	}
-	
-	std::vector<glm::vec3> ssaoNoise;
-	ssaoNoise.reserve(16);
-	for (unsigned int i = 0; i < 16; i++)
-	{
-		glm::vec3 noise(
-			randomFloats(generator) * 2.0f - 1.0f,
-			randomFloats(generator) * 2.0f - 1.0f,
-			0.0f
-		);
-
-		ssaoNoise.push_back(noise);
-	}
-
-	glGenTextures(1, &SSAONoiseTex);
-	glBindTexture(GL_TEXTURE_2D, SSAONoiseTex);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, 4, 4, 0, GL_RGB, GL_FLOAT, &ssaoNoise[0]);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-}
-
 ModelComponent* RenderEngine::FindModel(std::string name)
 {
-	auto modelIt = std::find_if(Models.begin(), Models.end(), [name](ModelComponent* model) { return model->GetName() == name; });
+	auto modelIt = std::find_if(Models.begin(), Models.end(), [name](std::shared_ptr<ModelComponent>& model) { if (name == "FireParticle Child")std::cout << model->GetName() << "!!!!!!!!!!!!!!!!!!!!\n"; return model->GetName() == name; });
 
 	if (modelIt != Models.end())
-		return *modelIt;
+		return modelIt->get();
 
 	std::cerr << "ERROR! Can't find model " << name << "!\n";
 	return nullptr;
@@ -520,6 +311,9 @@ ModelComponent* RenderEngine::FindModel(std::string name)
 
 Material* RenderEngine::FindMaterial(std::string name)
 {
+	if (name.empty())
+		return nullptr;
+
 	auto materialIt = std::find_if(Materials.begin(), Materials.end(), [name](Material* material) {	return material->GetName() == name; });
 
 	if (materialIt != Materials.end())
@@ -533,7 +327,7 @@ Shader* RenderEngine::FindShader(std::string name)
 {
 	if (name == "forward")
 		return &DefaultShader;
-	if (name == "geometry")
+	if (name == "deferred" || name == "geometry")
 		return &GShader;
 
 	auto shaderIt = std::find_if(ExternalShaders.begin(), ExternalShaders.end(), [name](Shader* shader) { return shader->GetName() == name; });
@@ -543,6 +337,14 @@ Shader* RenderEngine::FindShader(std::string name)
 
 	std::cerr << "ERROR! Can't find a shader named " << name << "!\n";
 	return nullptr;
+}
+
+void RenderEngine::RenderBoundInDebug(RenderInfo& info, GLenum mode, GLint first, GLint count, glm::vec3 color)
+{
+	DebugShader.Use();
+	DebugShader.UniformMatrix4fv("MVP", *info.VP);
+	DebugShader.Uniform3fv("color", color);
+	glDrawArrays(mode, first, count);
 }
 
 void RenderEngine::RenderEngineObject(RenderInfo& info, std::pair<EngineObjectType, Transform*> object, Shader* shader)
@@ -625,7 +427,7 @@ void RenderEngine::RenderShadowMaps(std::vector <LightComponent*> lights)
 				bCubemapBound = true;
 			}
 
-			Transform lightWorld = light->GetTransform()->GetWorldTransform();
+			Transform lightWorld = light->GetTransform().GetWorldTransform();
 			glm::vec3 lightPos = lightWorld.PositionRef;
 			glm::mat4 projection = light->GetProjection();
 
@@ -669,32 +471,6 @@ void RenderEngine::RenderShadowMaps(std::vector <LightComponent*> lights)
 	glCullFace(GL_BACK);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	//std::cout << "Wyczyscilem sobie " << timeSum * 1000.0f << "ms.\n";
-}
-
-void RenderEngine::RenderSSAO(RenderInfo& info, glm::uvec2 resolution)
-{
-	if (!SSAOFramebuffer)
-	{
-		std::cerr << "ERROR! Attempting to render SSAO image without calling the setup\n";
-		return;
-	}
-
-	SSAOFramebuffer->Bind();
-	glDisable(GL_DEPTH_TEST);
-	glDisable(GL_CULL_FACE);
-	glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT);
-
-	//gPosition and gNormal were bound in the Game render method
-	glActiveTexture(GL_TEXTURE2);
-	glBindTexture(GL_TEXTURE_2D, SSAONoiseTex);
-
-	SSAOShader->Use();
-	SSAOShader->Uniform2fv("resolution", resolution);
-	RenderEngineObject(info, std::pair<EngineObjectType, Transform*>(EngineObjectType::QUAD, nullptr), SSAOShader);
-
-	glEnable(GL_CULL_FACE);
-	glEnable(GL_DEPTH_TEST);
 }
 
 void RenderEngine::RenderLightVolume(RenderInfo& info, LightComponent* light, Transform* transform, bool shade)
@@ -746,8 +522,8 @@ void RenderEngine::RenderLightVolumes(RenderInfo& info, std::vector <LightCompon
 			shader.second->Use();
 		}
 
-		Transform lightTransform = lights[i]->GetTransform()->GetWorldTransform();
-		lightTransform.SetScale(lights[i]->GetTransform()->ScaleRef);
+		Transform lightTransform = lights[i]->GetTransform().GetWorldTransform();
+		lightTransform.SetScale(lights[i]->GetTransform().ScaleRef);
 		shader.second->Uniform1i("lightIndex", i);	//lights in the array on GPU should be sorted in the same order as they are in this vector!
 		lightTransform.bConstrain = true;
 
@@ -794,7 +570,55 @@ void RenderEngine::RenderScene(RenderInfo& info, Shader* shader)
 
 	for (unsigned int i = 0; i < Models.size(); i++)
 	{
-		Models[i]->Render(shader, info, VAOBound, materialBound, EmptyTexture);
+		//Models[i]->Render(shader, info, VAOBound, materialBound, EmptyTexture);
+		Render(*Models[i], shader, info, VAOBound, materialBound, EmptyTexture);
+	}
+}
+
+void RenderEngine::Render(const ModelComponent& model, Shader* shader, RenderInfo& info, unsigned int VAOBound, Material* materialBound, unsigned int emptyTexture)
+{
+	if (model.GetMeshInstanceCount() == 0)
+		return;
+
+	const glm::mat4& modelMat = model.GetTransform().GetWorldTransformMatrix();	//don't worry, the ComponentTransform's world transform is cached
+
+	if (shader->ExpectsMatrix(MatrixType::MODEL))
+		shader->UniformMatrix4fv("model", modelMat);
+	if (shader->ExpectsMatrix(MatrixType::VIEW))
+		shader->UniformMatrix4fv("view", *info.view);
+	if (shader->ExpectsMatrix(MatrixType::MV))
+		shader->UniformMatrix4fv("MV", (*info.view) * modelMat);
+	if (shader->ExpectsMatrix(MatrixType::MVP))
+		shader->UniformMatrix4fv("MVP", (*info.VP) * modelMat);
+	if (shader->ExpectsMatrix(MatrixType::NORMAL))
+		shader->UniformMatrix3fv("normalMat", ModelToNormal(modelMat));
+
+
+	for (int i = 0; i < static_cast<int>(model.GetMeshInstanceCount()); i++)
+	{
+		const MeshInstance& meshInst = model.GetMeshInstance(i);
+		const Mesh& mesh = meshInst.GetMesh();
+		Material* material = meshInst.GetMaterialPtr();
+		MaterialInstance* materialInst = meshInst.GetMaterialInst();
+
+		if ((info.CareAboutShader && material && shader != material->GetRenderShader()) || (info.OnlyShadowCasters && !mesh.CanCastShadow()) || !materialInst->ShouldBeDrawn())
+			continue;
+
+		if (VAOBound != mesh.VAO || i == 0)
+		{
+			glBindVertexArray(mesh.VAO);
+			VAOBound = mesh.VAO;
+		}
+
+		if (info.UseMaterials && materialBound != material && material) //jesli zbindowany jest inny material niz potrzebny obecnie, musimy zmienic go w shaderze
+		{
+			materialInst->UpdateWholeUBOData(shader, emptyTexture);
+			materialBound = material;
+		}
+		else if (materialBound) //jesli ostatni zbindowany material jest taki sam, to nie musimy zmieniac wszystkich danych w shaderze; oszczedzmy sobie roboty
+			materialInst->UpdateInstanceUBOData(shader);
+
+		mesh.Render();
 	}
 }
 

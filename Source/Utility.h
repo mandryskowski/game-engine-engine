@@ -1,7 +1,6 @@
 #pragma once
 #include "Shader.h"
 #include <vector>
-#include <algorithm>
 
 enum InterpolationType
 {
@@ -13,6 +12,12 @@ enum InterpolationType
 	QUINTIC
 };
 
+/*
+==========================================
+==========================================
+==========================================
+*/
+
 enum EngineObjectType
 {
 	QUAD,
@@ -20,6 +25,12 @@ enum EngineObjectType
 	SPHERE,
 	CONE
 };
+
+/*
+==========================================
+==========================================
+==========================================
+*/
 
 struct UniformBuffer
 {
@@ -39,8 +50,20 @@ struct UniformBuffer
 	void PadOffset();
 };
 
+/*
+==========================================
+==========================================
+==========================================
+*/
+
 std::string lookupNextWord(std::stringstream&);			//checks the next word in stream without moving the pointer
+std::string multipleWordInput(std::stringstream&);
 bool isNextWordEqual(std::stringstream&, std::string);	//works just like the previous one, but moves the pointer if the word is equal to a passed string
+
 bool toBool(std::string);
-std::string framebufferStatusToString(GLenum);
+glm::quat toQuat(const glm::vec3& euler);
+
+std::string extractDirectory(std::string path);
+
 void printVector(glm::vec3, std::string);
+void printVector(glm::quat, std::string);

@@ -1,5 +1,3 @@
-#version 400 core
-
 struct Material
 {
 	sampler2D diffuse1;

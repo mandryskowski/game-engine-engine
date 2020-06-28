@@ -1,4 +1,3 @@
-#version 400 core
 #define MAX_LIGHTS 16
 
 struct Light
@@ -25,12 +24,17 @@ struct Fragment
 	vec3 position;
 	vec3 normal;
 	vec3 albedo;
+	#ifdef ENABLE_SSAO
+	float ambient;
+	#endif
 	float specular;
 };
 
 //out
 layout (location = 0) out vec4 fragColor;
+#ifdef ENABLE_BLOOM
 layout (location = 1) out vec4 brightColor;
+#endif
 
 //uniform
 uniform int lightIndex;
@@ -38,6 +42,9 @@ uniform vec2 resolution;
 uniform sampler2D gPosition;
 uniform sampler2D gNormal;
 uniform sampler2D gAlbedoSpec;
+#ifdef ENABLE_SSAO
+uniform sampler2D ssaoTex;
+#endif
 uniform samplerCubeArray shadowCubemaps;
 
 layout (std140) uniform Lights
@@ -67,7 +74,12 @@ vec3 CalcLight(Light light, Fragment frag)
 
 	//////////////
 	
+	#ifdef ENABLE_SSAO
+	vec3 ambient = light.ambient.rgb * frag.albedo * frag.ambient;
+	#endif
+	#ifndef ENABLE_SSAO
 	vec3 ambient = light.ambient.rgb * frag.albedo;
+	#endif
 	
 	float diff = max(dot(frag.normal, lightDir), 0.0);
 	vec3 diffuse = light.diffuse.rgb * frag.albedo * diff;
@@ -90,6 +102,7 @@ vec3 CalcLight(Light light, Fragment frag)
 	if (shadow == 1.0)
 		return ambient * attenuation;
 	
+	
 	return ((diffuse + specular) + ambient) * attenuation;
 }
 
@@ -102,13 +115,17 @@ void main()
 	frag.normal = texture(gNormal, texCoord).rgb;
 	vec4 albedoSpec = texture(gAlbedoSpec, texCoord);
 	frag.albedo = albedoSpec.rgb;
+	#ifdef ENABLE_SSAO
+	frag.ambient = texture(ssaoTex, texCoord).r;
+	#endif
 	frag.specular = albedoSpec.a;
 	
 	fragColor = vec4(CalcLight(lights[lightIndex], frag), 1.0);
 	
-	
+	#ifdef ENABLE_BLOOM
 	if (dot(vec3(0.2126, 0.7152, 0.0722), fragColor.rgb) > 1.0)
 		brightColor = fragColor;
 	else
 		brightColor = vec4(vec3(0.0), 1.0);
+	#endif //ENABLE_BLOOM
 }

@@ -1,6 +1,3 @@
-#version 400 core
-#define SSAO_SAMPLES 64
-
 //in
 in vec2 texCoord;
 
@@ -11,6 +8,7 @@ out float ambientOcclusion;
 uniform float radius;
 uniform vec2 resolution;
 uniform vec3 samples[SSAO_SAMPLES];
+uniform mat4 view;
 uniform mat4 projection;
 uniform sampler2D gPosition;
 uniform sampler2D gNormal;
@@ -20,11 +18,11 @@ void main()
 {
 	vec2 noiseTexCoordScale = resolution / vec2(4.0);
 	
-	vec3 fragPos = texture(gPosition, texCoord).xyz;
-	vec3 fragNormal = texture(gNormal, texCoord).xyz;
-	vec3 randomVec = texture(noiseTex, texCoord * noiseTexCoordScale).xyz;
+	vec3 fragPos = vec3(view * vec4(texture(gPosition, texCoord).xyz, 1.0));
+	vec3 fragNormal = mat3(view) * texture(gNormal, texCoord).xyz;
+	vec3 randomVec = normalize(texture(noiseTex, texCoord * noiseTexCoordScale).xyz);
 	
-	vec3 tangent = randomVec - fragNormal * dot(fragNormal, randomVec);
+	vec3 tangent = normalize(randomVec - fragNormal * dot(fragNormal, randomVec));
 	vec3 bitangent = cross(fragNormal, tangent);
 	
 	mat3 TBN = mat3(tangent, bitangent, fragNormal);
@@ -40,7 +38,7 @@ void main()
 		projCoords.xyz /= projCoords.w;
 		projCoords = projCoords * 0.5 + 0.5;
 		
-		float sampleDepth = texture(gPosition, projCoords.xy).z;
+		float sampleDepth = (view * vec4(texture(gPosition, projCoords.xy).xyz, 1.0)).z;
 		float rangeCheck = smoothstep(0.0, 1.0, radius / abs(fragPos.z - sampleDepth));
 		ambientOcclusion += (sampleDepth > thisSample.z + 0.025) ? (rangeCheck) : (0.0);
 	}

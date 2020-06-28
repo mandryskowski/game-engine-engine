@@ -1,4 +1,3 @@
-#version 400 core
 #define MAX_LIGHTS 16
 #define TYPE_DIR 0
 #define TYPE_POINT 1

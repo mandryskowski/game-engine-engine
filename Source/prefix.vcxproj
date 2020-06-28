@@ -118,8 +118,11 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <Link>
-      <AdditionalDependencies>opengl32.lib;glfw/glfw3_64.lib;AL64/OpenAL32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opengl32.lib;glfw/glfw3_64.lib;AL64/OpenAL32.lib;PhysX64/PhysX_64.lib;PhysX64/PhysXCommon_64.lib;PhysX64/PhysXFoundation_64.lib;PhysX64/PhysXPvdSDK_static_64.lib;PhysX64/PhysXExtensions_static_64.lib;PhysX64/PhysXCooking_64.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <ClCompile>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+    </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\..\..\..\..\Dev\Include\glad4\src\glad.c" />
@@ -130,13 +133,17 @@
     <ClCompile Include="Collision.cpp" />
     <ClCompile Include="CollisionEngine.cpp" />
     <ClCompile Include="Component.cpp" />
+    <ClCompile Include="FileLoader.cpp" />
+    <ClCompile Include="Framebuffer.cpp" />
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="GunActor.cpp" />
     <ClCompile Include="LightComponent.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Material.cpp" />
     <ClCompile Include="Mesh.cpp" />
+    <ClCompile Include="MeshSystem.cpp" />
     <ClCompile Include="ModelComponent.cpp" />
+    <ClCompile Include="PhysicsEngine.cpp" />
     <ClCompile Include="Postprocess.cpp" />
     <ClCompile Include="RenderEngine.cpp" />
     <ClCompile Include="SearchEngine.cpp" />
@@ -153,14 +160,20 @@
     <ClInclude Include="CameraComponent.h" />
     <ClInclude Include="Collision.h" />
     <ClInclude Include="CollisionEngine.h" />
+    <ClInclude Include="CollisionObject.h" />
     <ClInclude Include="Component.h" />
+    <ClInclude Include="FileLoader.h" />
+    <ClInclude Include="Framebuffer.h" />
     <ClInclude Include="Game.h" />
+    <ClInclude Include="GameManager.h" />
     <ClInclude Include="GameSettings.h" />
     <ClInclude Include="GunActor.h" />
     <ClInclude Include="LightComponent.h" />
     <ClInclude Include="Material.h" />
     <ClInclude Include="Mesh.h" />
+    <ClInclude Include="MeshSystem.h" />
     <ClInclude Include="ModelComponent.h" />
+    <ClInclude Include="PhysicsEngine.h" />
     <ClInclude Include="Postprocess.h" />
     <ClInclude Include="RenderEngine.h" />
     <ClInclude Include="SearchEngine.h" />

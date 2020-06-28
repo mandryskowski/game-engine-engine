@@ -1,4 +1,3 @@
-#version 400 core
 #define MAX_LIGHTS 16
 layout (location = 0) in vec3 vPosition;
 

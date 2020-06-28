@@ -54,7 +54,7 @@ std::vector <std::pair<EngineObjectType, Transform*>> CollisionEngine::GetCollis
 		else
 			instanceData.first = EngineObjectType::CUBE;
 
-		instanceData.second = CollisionInstances[i]->GetTransform();
+		instanceData.second = &CollisionInstances[i]->GetTransform();
 		data.push_back(instanceData);
 	}
 

@@ -4,40 +4,30 @@
 class KulkiGame : public Game
 {
 public:
-	KulkiGame(GLFWwindow *window) :
-		Game(window)
+	KulkiGame(GLFWwindow* window) :
+		Game()
 	{
-		Init();
+		Init(window);
 	} 
-	virtual void Init()
+	virtual void Init(GLFWwindow* window) override
 	{
+		Game::Init(window);
 		LoadLevel("level.txt");
-	}
-};
-
-class Obiekt
-{
-	glm::vec3 Pozycja;
-	
-public:
-	Obiekt(glm::vec3 poz)
-	{
-		Pozycja = poz;
-	}
-	glm::vec3 GetPozycja()
-	{
-		return Pozycja;
 	}
 };
 
 int main()
 {
+	glm::quat myRot = toQuat(glm::vec3(0.0f, 20.0f, 0.0f));
+	glm::quat shapeRot = toQuat(glm::vec3(0.0f, 45.0f, 0.0f));
+	myRot = shapeRot * myRot;
+	printVector(myRot * glm::inverse(shapeRot), "test");
 	glfwInit();
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-	GLFWwindow* programWindow = glfwCreateWindow(1920, 1080, "c00lki", nullptr, nullptr);
+	GLFWwindow* programWindow = glfwCreateWindow(800, 600, "c00lki", nullptr, nullptr);
 
 	if (!programWindow)
 	{
@@ -55,7 +45,6 @@ int main()
 
 	KulkiGame game(programWindow);
 	game.Run();
-	
 	return 0;
 }
 

@@ -21,7 +21,7 @@ void Collision::GetCubeMinMax(glm::vec3 axis, BBox cube, float* min, float* max)
 		glm::vec3(-0.5f,  0.5f, -0.5f)
 	};
 
-	glm::mat4 model = cube.GetTransform()->GetWorldTransformMatrix();
+	glm::mat4 model = cube.GetTransform().GetWorldTransformMatrix();
 	for (unsigned int i = 0; i < 8; i++)
 	{
 		cubeVerts[i] = model * glm::vec4(cubeVerts[i], 1.0f);
@@ -69,13 +69,13 @@ CollisionType Collision::CubeCube(BBox cube1, BBox cube2, std::vector<glm::vec3>
 
 	for (int i = 0; i < 2; i++)
 	{
-		glm::mat3 normalMat = (i == 0) ? (cube1.GetTransform()->GetWorldTransform().GetRotationMatrix()) : (cube2.GetTransform()->GetWorldTransform().GetRotationMatrix());
+		glm::mat3 normalMat = (i == 0) ? (cube1.GetTransform().GetWorldTransform().GetRotationMatrix()) : (cube2.GetTransform().GetWorldTransform().GetRotationMatrix());
 
 		axises.push_back(normalMat * glm::vec3(1.0f, 0.0f, 0.0f));
 		axises.push_back(normalMat * glm::vec3(0.0f, 1.0f, 0.0f));
 		axises.push_back(normalMat * glm::vec3(0.0f, 0.0f, 1.0f));
 
-		if (cube1.GetTransform()->GetWorldTransform().RotationRef == cube2.GetTransform()->GetWorldTransform().RotationRef)
+		if (cube1.GetTransform().GetWorldTransform().RotationRef == cube2.GetTransform().GetWorldTransform().RotationRef)
 			break;
 	}
 	
@@ -102,8 +102,8 @@ CollisionType Collision::CubeCube(BBox cube1, BBox cube2, std::vector<glm::vec3>
 
 CollisionType Collision::CubeSphere(BBox& cube1, BSphere& sphere1, std::vector<glm::vec3>* bounceNormals)
 {
-	Transform sphereTransform = sphere1.GetTransform()->GetWorldTransform();
-	Transform cubeTransform = cube1.GetTransform()->GetWorldTransform();
+	Transform sphereTransform = sphere1.GetTransform().GetWorldTransform();
+	Transform cubeTransform = cube1.GetTransform().GetWorldTransform();
 
 	sphereTransform.SetParentTransform(&cubeTransform, true);
 	glm::mat4 rotMat = cubeTransform.GetRotationMatrix(1.0f);
@@ -135,15 +135,15 @@ CollisionType Collision::CubeSphere(BBox& cube1, BSphere& sphere1, std::vector<g
 
 bool Collision::SpherePoint(BSphere sphere, glm::vec3 point)
 {
-	float radius2 = pow(sphere.GetTransform()->ScaleRef.x, 2);
-	float distance2 = length2(point - sphere.GetTransform()->PositionRef);
+	float radius2 = pow(sphere.GetTransform().ScaleRef.x, 2);
+	float distance2 = length2(point - sphere.GetTransform().PositionRef);
 	return distance2 <= radius2;
 }
 
 CollisionType Collision::SphereSphere(BSphere sphere1, BSphere sphere2)
 {
-	float radius1 = sphere1.GetTransform()->ScaleRef.x, radius2 = sphere2.GetTransform()->ScaleRef.x;
-	float distance2 = length2(sphere2.GetTransform()->PositionRef - sphere1.GetTransform()->PositionRef);
+	float radius1 = sphere1.GetTransform().ScaleRef.x, radius2 = sphere2.GetTransform().ScaleRef.x;
+	float distance2 = length2(sphere2.GetTransform().PositionRef - sphere1.GetTransform().PositionRef);
 	float radiusSum2 = pow((radius1 + radius2), 2);
 
 	if (distance2 > radiusSum2)
@@ -180,8 +180,8 @@ float length2(glm::vec3 vec)
 
 glm::vec3 clampToNearestFace(BBox cube, glm::vec3 point)
 {
-	glm::vec3 cubeHalfSize = cube.GetTransform()->ScaleRef / 2.0f;
-	glm::vec3 cubePos = cube.GetTransform()->PositionRef;
+	glm::vec3 cubeHalfSize = cube.GetTransform().ScaleRef / 2.0f;
+	glm::vec3 cubePos = cube.GetTransform().PositionRef;
 	glm::vec3 closestClampPos(0.0f);
 	float minDistance2 = length2(cubeHalfSize);
 

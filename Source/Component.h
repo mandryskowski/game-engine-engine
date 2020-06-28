@@ -1,27 +1,49 @@
 #pragma once
+#include "GameManager.h"
 #include "Transform.h"
 
 class Component
 {
 protected:
 	std::string Name;
+
 	Transform ComponentTransform;
 	std::vector <Component*> Children;
 
+	GameManager* GameHandle;
+
 public:
-	Component(std::string name = "undefined", Transform t = Transform());
-	Component(std::string name = "undefined", glm::vec3 pos = glm::vec3(0.0f), glm::vec3 rot = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 scale = glm::vec3(1.0f));
-	std::string GetName();
-	Transform* GetTransform();
+	Component(GameManager*, std::string name = "undefined", const Transform& t = Transform());
+	Component(GameManager*, std::string name = "undefined", glm::vec3 pos = glm::vec3(0.0f), glm::vec3 rot = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 scale = glm::vec3(1.0f));
+
+	virtual void Setup(std::stringstream&, Actor* myActor);
+
+	void DebugHierarchy(int nrTabs = 0)
+	{
+		std::string tabs;
+		for (int i = 0; i < nrTabs; i++)	tabs += "	";
+		std::cout << tabs + "-" + Name + "\n";
+
+		for (int i = 0; i < static_cast<int>(Children.size()); i++)
+			Children[i]->DebugHierarchy(nrTabs + 1);
+	}
+
+	std::string GetName() const;
+	Transform& GetTransform();
+	const Transform& GetTransform() const;
 	std::vector<Component*> GetChildren();
+
 	void SetName(std::string name);
 	void SetTransform(Transform transform);
 	void AddComponent(Component* component);
 	void AddComponents(std::vector<Component*> components);
+
 	virtual void HandleInputs(GLFWwindow*, float) {}
 	void HandleInputsAll(GLFWwindow* window, float deltaTime);
+
 	virtual void Update(float) {}
 	void UpdateAll(float dt);
+
 	Component* SearchForComponent(std::string name);
 	template<class CompClass> void GetAllComponents(std::vector <CompClass*>* comps)	//this function returns every element further in the hierarchy tree (kids, kids' kids, ...) that is of CompClass type
 	{
@@ -49,5 +71,6 @@ public:
 		for (unsigned int i = 0; i < Children.size(); i++)
 			Children[i]->GetAllComponents<CastToClass, CheckClass>(comps);	//robimy to samo we wszystkich "dzieciach"
 	}
+
 	~Component();
 };

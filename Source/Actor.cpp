@@ -1,10 +1,11 @@
 #include "Actor.h"
 
-Actor::Actor(std::string name, bool createRoot)
+Actor::Actor(GameManager* gameHandle, std::string name)
 {
-	RootComponent = (createRoot) ? (new Component("root", Transform())) : (nullptr);
+	GameHandle = gameHandle;
+	RootComponent = new Component(GameHandle, "root", Transform());
 	Name = name;
-	LoadStream = nullptr;
+	SetupStream = nullptr;
 }
 
 Component* Actor::GetRoot()
@@ -19,18 +20,25 @@ std::string Actor::GetName()
 
 Transform* Actor::GetTransform()
 {
-	return RootComponent->GetTransform();
+	return &RootComponent->GetTransform();
 }
 
 Actor* Actor::GetChild(unsigned int index)
 {
-	return Children[index];
+	return Children[index].get();
+}
+
+void Actor::DebugHierarchy(int nrTabs)
+{
+	RootComponent->DebugHierarchy(nrTabs);
+	for (int i = 0; i < static_cast<int>(Children.size()); i++)
+		Children[i]->DebugHierarchy(nrTabs + 1);
 }
 
 void Actor::ReplaceRoot(Component* component)
 {
 	component->AddComponents(RootComponent->GetChildren());
-	component->GetTransform()->SetParentTransform(RootComponent->GetTransform()->GetParentTransform());
+	component->GetTransform().SetParentTransform(RootComponent->GetTransform().GetParentTransform());
 	delete RootComponent;
 	RootComponent = component;
 }
@@ -44,27 +52,29 @@ void Actor::AddComponent(Component* component)
 {
 	RootComponent->AddComponent(component);
 }
-void Actor::AddChild(Actor* child)
+
+void Actor::AddChild(std::shared_ptr<Actor> child)
 {
 	Children.push_back(child);
-	child->GetTransform()->SetParentTransform(RootComponent->GetTransform());
+	child->GetTransform()->SetParentTransform(&RootComponent->GetTransform());
 }
 
-void Actor::SetLoadStream(std::stringstream* stream)
+void Actor::SetSetupStream(std::stringstream* stream)
 {
-	LoadStream = stream;
+	SetupStream = stream;
+	std::cout << "Adding " << SetupStream << " to actor " + Name + ".\n";
 }
 
-void Actor::LoadDataFromLevel(SearchEngine* searcher)
+void Actor::Setup(SearchEngine* searcher)
 {
-	if (LoadStream)
+	if (SetupStream)
 	{
-		delete LoadStream;
-		LoadStream = nullptr;
+		delete SetupStream;
+		SetupStream = nullptr;
 	}
 
 	for (unsigned int i = 0; i < Children.size(); i++)
-		Children[i]->LoadDataFromLevel(searcher);
+		Children[i]->Setup(searcher);
 }
 
 void Actor::HandleInputs(GLFWwindow* window, float deltaTime)
@@ -82,6 +92,8 @@ void Actor::HandleInputsAll(GLFWwindow* window, float deltaTime)
 void Actor::Update(float deltaTime)
 {
 	RootComponent->UpdateAll(deltaTime);
+	if (Name == "CubeActor")
+		;//RootComponent->GetTransform().SetScale(glm::vec3(1.0f + glfwGetTime() * 0.05f));
 }
 
 void Actor::UpdateAll(float deltaTime)
@@ -96,8 +108,12 @@ Actor* Actor::SearchForActor(std::string name)
 	if (Name == name)
 		return this;
 
-	for (unsigned int i = 0; i < Children.size(); i++)
-		return Children[i]->SearchForActor(name);
+	for (int i = 0; i < static_cast<int>(Children.size()); i++)
+	{
+		Actor* found = Children[i]->SearchForActor(name);
+		if (found)
+			return found;
+	}
 
 	return nullptr;
 }

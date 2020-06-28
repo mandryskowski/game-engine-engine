@@ -9,12 +9,14 @@ class GunActor: public Actor	//example class implented using engine's components
 	ModelComponent* GunModel;
 	SoundSourceComponent* GunBlast;
 
+	int FiredBullets;
+
 	float FireCooldown;	//in seconds
 	float CooldownLeft;	//also in seconds
 
 public:
-	GunActor(std::string name);
-	virtual void LoadDataFromLevel(SearchEngine* searcher) override;
+	GunActor(GameManager*, std::string name);
+	virtual void Setup(SearchEngine* searcher) override;
 	virtual void Update(float) override;
 	virtual void HandleInputs(GLFWwindow*, float) override;
 };

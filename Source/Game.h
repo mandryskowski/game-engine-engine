@@ -1,8 +1,12 @@
 #pragma once
-#include "GunActor.h"
-#include "CameraComponent.h"
+#include "PhysicsEngine.h"
+#include "RenderEngine.h"
+#include "CollisionEngine.h"
+#include "AudioEngine.h"
+#include "SearchEngine.h"
+#include "GameSettings.h"
 
-class Game
+class Game: public GameManager
 {
 	GLFWwindow *Window;
 	Framebuffer GFramebuffer;
@@ -15,25 +19,42 @@ class Game
 
 	UniformBuffer MatricesBuffer, LightsBuffer;
 
+
 protected:
-	GameSettings Settings;
+	std::unique_ptr<GameSettings> Settings;
 	RenderEngine RenderEng;
+	PhysicsEngine PhysicsEng;
 	CollisionEngine CollisionEng;
 	AudioEngine AudioEng;
 	SearchEngine Searcher;
 
+	bool DebugMode;
+
 public:
-	Game(GLFWwindow*);
-	virtual void Init() = 0;
+	Game();
+	virtual void Init(GLFWwindow* window);
+
 	void LoadLevel(std::string);
-	Component* LoadComponentData(std::stringstream&, Actor*);
+
 	void SetupLights();
 	void UpdateLightUniforms();
-	void BindActiveCamera(CameraComponent*);
-	void AddActorToScene(Actor* actor); //you use this function to make the game interact (update, draw...) with the actor; without adding it to the scene, the Actor instance isnt updated real-time by default
-	void AddLightToScene(LightComponent* light); // this function lets the game know that the passed light component's data needs to be forwarded to shaders (therefore lighting our meshes)
+
+	virtual void BindActiveCamera(CameraComponent*) override;
+	virtual std::shared_ptr<Actor> AddActorToScene(std::shared_ptr<Actor> actor) override; //you use this function to make the game interact (update, draw...) with the actor; without adding it to the scene, the Actor instance isnt updated real-time by default
+	virtual void AddLightToScene(LightComponent* light) override; // this function lets the engine know that the passed light component's data needs to be forwarded to shaders (therefore lighting our meshes)
+	virtual int GetAvailableLightIndex() override;
+	virtual SearchEngine* GetSearchEngine() override;
+
+	virtual PhysicsEngineManager* GetPhysicsHandle() override;
+	virtual RenderEngineManager* GetRenderEngineHandle() override;
+	virtual AudioEngineManager* GetAudioEngineHandle() override;
+
+	virtual const GameSettings* GetGameSettings() override;
+
 	void Run();
+
 	void Update(float);
+
 	void Render();
 };
 

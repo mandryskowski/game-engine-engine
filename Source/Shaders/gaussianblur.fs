@@ -1,5 +1,3 @@
-#version 330 core
-
 //in
 in vec2 texCoord;
 

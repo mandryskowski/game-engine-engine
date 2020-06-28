@@ -76,6 +76,24 @@ std::string lookupNextWord(std::stringstream& str)
 	return word;
 }
 
+std::string multipleWordInput(std::stringstream& str)
+{
+	std::string word;
+	str >> word;
+
+	if (word.empty() || word[0] != '"')
+		return word;
+
+	std::string input = word;
+	while (word.back() != '"')
+	{
+		str >> word;
+		input += " " + word;
+	}
+
+	return input.substr(1, input.size() - 2);	//return the input string without quotation marks
+}
+
 bool isNextWordEqual(std::stringstream& str, std::string equalTo)
 {
 	std::string word;
@@ -96,19 +114,18 @@ bool toBool(std::string str)
 	return true;
 }
 
-std::string framebufferStatusToString(GLenum status)
+glm::quat toQuat(const glm::vec3& euler)
 {
-	switch (status)
-	{
-	case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT: return "Incomplete attachment.\n";
-	case GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER: return "Incomplete draw buffer.\n";
-	case GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS: return "Incomplete layer targets.\n";
-	case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT: return "Missing attachments.\n";
-	case GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE: return "Incomplete multisample.\n";
-	case GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER: return "Incomplete read buffer.\n";
-	}
+	return glm::quat(glm::radians(euler));
+}
 
-	return "Error " + std::to_string(status) + " is not known by the program.\n";
+std::string extractDirectory(std::string path)
+{
+	size_t dirPos = path.find_last_of('/');
+	if (dirPos != std::string::npos)
+		return path.substr(0, dirPos + 1);
+
+	return std::string();
 }
 
 void printVector(glm::vec3 vec, std::string title)
@@ -117,4 +134,9 @@ void printVector(glm::vec3 vec, std::string title)
 		title.append(": ");	//if we want to draw a title, add something after it
 
 	std::cout << title << vec.x << ", " << vec.y << ", " << vec.z << '\n';
+}
+
+void printVector(glm::quat q, std::string title)
+{
+	printVector(glm::degrees(glm::eulerAngles(q)), title);
 }

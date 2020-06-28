@@ -1,7 +1,7 @@
 #include "SoundSourceComponent.h"
 
-SoundSourceComponent::SoundSourceComponent(std::string name, SoundBuffer* buffer, Transform transform):
-	Component(name, transform), ALIndex(0), BufferPtr(buffer)
+SoundSourceComponent::SoundSourceComponent(GameManager* gameHandle, std::string name, SoundBuffer* buffer, Transform transform):
+	Component(gameHandle, name, transform), ALIndex(0), BufferPtr(buffer)
 {
 	if (buffer)
 		GenAL(buffer);
