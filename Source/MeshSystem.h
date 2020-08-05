@@ -68,17 +68,17 @@ namespace MeshSystem
 	class MeshTree
 	{
 		MeshNode Root;	//root of the tree. Its meshes will probably be ignored in loading
-		std::string FilePath;	//This path is also serving a purpose for naming the tree. Trying to load a tree when there's an already loaded tree with the same path (name) should return a reference to the already loaded one.
+		std::string Path;	//This path is also serving a purpose for naming the tree. Trying to load a tree when there's an already loaded tree with the same path (name) should return a reference to the already loaded one.
 
 	public:
 		MeshTree(std::string path);
 		MeshTree(const MeshTree&, std::string path = std::string());
 		MeshTree(MeshTree&&, std::string path = std::string());
-		std::string GetFilePath() const;
+		std::string GetPath() const;
 		MeshNode& GetRoot();
 		bool IsEmpty();
 
-		void SetFilePath(std::string);	//DOES NOT load from the path automatically. It's useful when you want to refer to this tree from the new name/path (f.e. used for engine objects, to keep their path as ENG_NAME instead of long file paths)
+		void SetPath(std::string);	//DOES NOT load from the path automatically. It's useful when you want to refer to this tree from the new name/path (f.e. used for engine objects, to keep their path as ENG_NAME instead of long file paths)
 
 		Mesh* FindMesh(std::string name);
 		Material* FindMaterial(std::string name);

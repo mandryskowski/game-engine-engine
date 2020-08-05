@@ -20,6 +20,12 @@ namespace MeshSystem
 	class MeshTree;
 }
 
+class PostprocessManager
+{
+public:
+	virtual glm::mat4 GetJitterMat() = 0;
+};
+
 class PhysicsEngineManager
 {
 public:
@@ -59,6 +65,7 @@ public:
 	virtual int GetAvailableLightIndex() = 0;
 
 	virtual SearchEngine* GetSearchEngine() = 0;
+	virtual PostprocessManager* GetPostprocessHandle() = 0;
 	virtual PhysicsEngineManager* GetPhysicsHandle() = 0;
 	virtual RenderEngineManager* GetRenderEngineHandle() = 0;
 	virtual AudioEngineManager* GetAudioEngineHandle() = 0;

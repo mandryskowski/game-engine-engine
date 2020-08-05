@@ -8,6 +8,7 @@ class MaterialLoadingData;
 class Vertex;
 class Mesh;
 class Transform;
+class Component;
 namespace MeshSystem
 {
 	class MeshNode;

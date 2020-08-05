@@ -1,37 +1,20 @@
 #define SMAA_RT_METRICS float4(1.0 / SCR_WIDTH, 1.0 / SCR_HEIGHT, SCR_WIDTH, SCR_HEIGHT)
 #define SMAA_GLSL_4 1
-#define SMAA_INCLUDE_VS 0
-#define SMAA_INCLUDE_PS 1
+#define SMAA_INCLUDE_VS 1 
+#define SMAA_INCLUDE_PS 0 
 
-#define SMAATexture2D(tex) sampler2D tex
-
-//in
-in vec2 texCoord;
-in vec2 pixCoord;
-in vec4 offset[3];
+layout (location = 0) in vec2 vPosition;
+layout (location = 1) in vec2 vTexCoord;
 
 //out
-out vec4 fragColor;
-
-//uniform
-uniform sampler2D edgesTex;
-uniform sampler2D areaTex;
-uniform sampler2D searchTex;
-uniform vec4 ssIndices;
-
-vec4 SMAABlendingWeightCalculationPS(vec2 texcoord,
-                                       vec2 pixcoord,
-                                       vec4 offset[3],
-                                       SMAATexture2D(edgesTex),
-                                       SMAATexture2D(areaTex),
-                                       SMAATexture2D(searchTex),
-                                       vec4 subsampleIndices);
-									   
+out vec2 texCoord;
 
 void main()
 {
-	fragColor = SMAABlendingWeightCalculationPS(texCoord, pixCoord, offset, edgesTex, areaTex, searchTex, ssIndices);
+	texCoord = vTexCoord;
+	gl_Position = vec4(vPosition.x, vPosition.y, 0.0, 1.0);
 }
+
 /**
  * Copyright (C) 2013 Jorge Jimenez (jorge@iryoku.com)
  * Copyright (C) 2013 Jose I. Echevarria (joseignacioechevarria@gmail.com)
@@ -909,7 +892,7 @@ float4 SMAABlendingWeightCalculationPS(float2 texcoord,
                                        SMAATexture2D(searchTex),
                                        float4 subsampleIndices) { // Just pass zero for SMAA 1x, see @SUBSAMPLE_INDICES.
     float4 weights = float4(0.0, 0.0, 0.0, 0.0);
-									   	
+
     float2 e = SMAASample(edgesTex, texcoord).rg;
 
     SMAA_BRANCH

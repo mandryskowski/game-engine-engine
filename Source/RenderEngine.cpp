@@ -26,8 +26,7 @@ RenderEngine::RenderEngine(GameManager* gameHandle) :
 
 void RenderEngine::Init()
 {
-	GShader.LoadShaders("Shaders/geometry.vs", "Shaders/geometry.fs");
-	GShader.UniformBlockBinding("Matrices", 0);
+	GShader.LoadShadersWithInclData(GameHandle->GetGameSettings()->GetShaderDefines(), "Shaders/geometry.vs", "Shaders/geometry.fs");
 
 	GShader.Use();
 	std::vector<std::pair<unsigned int, std::string>> gShaderTextureUnits = {
@@ -56,12 +55,6 @@ void RenderEngine::Init()
 	DefaultShader.Uniform1i("shadowMaps", 10);
 	DefaultShader.Uniform1i("shadowCubeMaps", 11);
 
-	//initialize shadow mapping stuff
-	ShadowMapSize = glm::uvec2(0);
-	ShadowFBO = 0;
-	ShadowMapArray = 0;
-	ShadowCubemapArray = 0;
-
 	//load shadow shaders
 	DepthShader.LoadShaders("Shaders/depth.vs", "Shaders/depth.fs");
 	DepthShader.SetExpectedMatrices(std::vector<MatrixType>{MatrixType::MVP});
@@ -76,13 +69,14 @@ void RenderEngine::Init()
 	GenerateEngineObjects();
 
 	std::string settingsDefines = GameHandle->GetGameSettings()->GetShaderDefines();
-	LightShaders[LightType::DIRECTIONAL].LoadShadersWithInclData(settingsDefines, "Shaders/directional.vs", "Shaders/directional.fs");
+	std::cout << settingsDefines << '\n';
+	LightShaders[LightType::DIRECTIONAL].LoadShadersWithInclData(settingsDefines + "#define DIRECTIONAL_LIGHT 1\n", "Shaders/phong.vs", "Shaders/phong.fs");
 	LightShaders[LightType::DIRECTIONAL].UniformBlockBinding("Matrices", 0);
 	LightShaders[LightType::DIRECTIONAL].UniformBlockBinding("Lights", 1);
-	LightShaders[LightType::POINT].LoadShadersWithInclData(settingsDefines, "Shaders/point.vs", "Shaders/point.fs");
+	LightShaders[LightType::POINT].LoadShadersWithInclData(settingsDefines + "#define POINT_LIGHT 1\n", "Shaders/phong.vs", "Shaders/phong.fs");
 	LightShaders[LightType::POINT].UniformBlockBinding("Matrices", 0);
 	LightShaders[LightType::POINT].UniformBlockBinding("Lights", 1);
-	LightShaders[LightType::SPOT].LoadShadersWithInclData(settingsDefines, "Shaders/spot.vs", "Shaders/spot.fs");
+	LightShaders[LightType::SPOT].LoadShadersWithInclData(settingsDefines + "#define SPOT_LIGHT 1\n", "Shaders/phong.vs", "Shaders/phong.fs");
 	LightShaders[LightType::SPOT].UniformBlockBinding("Matrices", 0);
 	LightShaders[LightType::SPOT].UniformBlockBinding("Lights", 1);
 
@@ -254,7 +248,7 @@ MeshSystem::MeshTree* RenderEngine::CreateMeshTree(std::string path)
 
 MeshSystem::MeshTree* RenderEngine::FindMeshTree(std::string path, MeshSystem::MeshTree* ignore)
 {
-	auto found = std::find_if(MeshTrees.begin(), MeshTrees.end(), [path, ignore](const std::unique_ptr<MeshSystem::MeshTree>& tree) { return tree->GetFilePath() == path && tree.get() != ignore; });
+	auto found = std::find_if(MeshTrees.begin(), MeshTrees.end(), [path, ignore](const std::unique_ptr<MeshSystem::MeshTree>& tree) { return tree->GetPath() == path && tree.get() != ignore; });
 	if (found != MeshTrees.end())
 		return (*found).get();
 
@@ -271,27 +265,32 @@ void RenderEngine::AddExternalShader(Shader* shader)
 	ExternalShaders.push_back(shader);
 }
 
-void RenderEngine::SetupShadowmaps(glm::uvec2 size)
+void RenderEngine::SetupShadowmaps()
 {
-	ShadowMapSize = size;
+	glm::uvec2 shadowMapSize(512);
+	switch (GameHandle->GetGameSettings()->ShadowLevel)
+	{
+		case SETTING_LOW: shadowMapSize = glm::vec2(1024); break;
+		case SETTING_MEDIUM: shadowMapSize = glm::vec2(2048); break;
+		case SETTING_HIGH: shadowMapSize = glm::vec2(512); break;
+		case SETTING_ULTRA: shadowMapSize = glm::vec2(1024); break;
+	}
+	ShadowFramebuffer.Load(shadowMapSize);
 
-	glGenFramebuffers(1, &ShadowFBO);	//TODO: Update this so it uses Framebuffer class
-	glBindFramebuffer(GL_FRAMEBUFFER, ShadowFBO);
-	glDrawBuffer(GL_NONE);
-	glReadBuffer(GL_NONE);
 
-	glGenTextures(1, &ShadowMapArray);
-	glBindTexture(GL_TEXTURE_2D_ARRAY, ShadowMapArray);
-	glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_DEPTH_COMPONENT, ShadowMapSize.x, ShadowMapSize.y, 16, 0, GL_DEPTH_COMPONENT, GL_FLOAT, (void*)(nullptr));
+	ShadowMapArray.GenerateID(GL_TEXTURE_2D_ARRAY);
+	ShadowMapArray.Bind();
+	glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_DEPTH_COMPONENT, shadowMapSize.x, shadowMapSize.y, 16, 0, GL_DEPTH_COMPONENT, GL_FLOAT, (void*)(nullptr));
 	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
 	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
 	glTexParameterfv(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_BORDER_COLOR, glm::value_ptr(glm::vec4(1.0f)));
 
-	glGenTextures(1, &ShadowCubemapArray);
-	glBindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, ShadowCubemapArray);
-	glTexImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 0, GL_DEPTH_COMPONENT, ShadowMapSize.x, ShadowMapSize.y, 16 * 6, 0, GL_DEPTH_COMPONENT, GL_FLOAT, (void*)(nullptr));
+
+	ShadowCubemapArray.GenerateID(GL_TEXTURE_CUBE_MAP_ARRAY);
+	ShadowCubemapArray.Bind();
+	glTexImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 0, GL_DEPTH_COMPONENT, shadowMapSize.x, shadowMapSize.y, 16 * 6, 0, GL_DEPTH_COMPONENT, GL_FLOAT, (void*)(nullptr));
 	glTexParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
@@ -300,7 +299,7 @@ void RenderEngine::SetupShadowmaps(glm::uvec2 size)
 
 ModelComponent* RenderEngine::FindModel(std::string name)
 {
-	auto modelIt = std::find_if(Models.begin(), Models.end(), [name](std::shared_ptr<ModelComponent>& model) { if (name == "FireParticle Child")std::cout << model->GetName() << "!!!!!!!!!!!!!!!!!!!!\n"; return model->GetName() == name; });
+	auto modelIt = std::find_if(Models.begin(), Models.end(), [name](std::shared_ptr<ModelComponent>& model) { return model->GetName() == name; });
 
 	if (modelIt != Models.end())
 		return modelIt->get();
@@ -400,20 +399,18 @@ void RenderEngine::RenderEngineObjects(RenderInfo& info, std::vector<std::pair<E
 
 void RenderEngine::RenderShadowMaps(std::vector <LightComponent*> lights)
 {
-	glBindFramebuffer(GL_FRAMEBUFFER, ShadowFBO);
+	ShadowFramebuffer.Bind(true);
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_FRONT);
-	glViewport(0, 0, ShadowMapSize.x, ShadowMapSize.y);
+	glDrawBuffer(GL_NONE);
 
 	bool bCubemapBound = false;
 	float timeSum = 0.0f;
 	float time1;
 
-	glActiveTexture(GL_TEXTURE0 + 10);
-	glBindTexture(GL_TEXTURE_2D_ARRAY, ShadowMapArray);
-	glActiveTexture(GL_TEXTURE0 + 11);
-	glBindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, ShadowCubemapArray);
+	ShadowMapArray.Bind(10);
+	ShadowCubemapArray.Bind(11);
 
 	for (unsigned int i = 0; i < lights.size(); i++)
 	{
@@ -439,7 +436,7 @@ void RenderEngine::RenderShadowMaps(std::vector <LightComponent*> lights)
 		
 			for (unsigned int i = cubemapFirst; i < cubemapFirst + 6; i++)
 			{
-				glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, ShadowCubemapArray, 0, i);
+				glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, ShadowCubemapArray.GetID(), 0, i);
 				glClear(GL_DEPTH_BUFFER_BIT);
 
 				glm::mat4 VP = projection * glm::lookAt(lightPos, lightPos + GetCubemapFront(i), GetCubemapUp(i));
@@ -459,7 +456,7 @@ void RenderEngine::RenderShadowMaps(std::vector <LightComponent*> lights)
 			glm::mat4 VP = light->GetVP();
 
 			timeSum += (float)glfwGetTime() - time1;
-			glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, ShadowMapArray, 0, light->GetShadowMapNr());
+			glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, ShadowMapArray.GetID(), 0, light->GetShadowMapNr());
 			glClear(GL_DEPTH_BUFFER_BIT);
 			
 			RenderInfo info(nullptr, nullptr, &VP, false, true, false);
@@ -470,6 +467,7 @@ void RenderEngine::RenderShadowMaps(std::vector <LightComponent*> lights)
 	glActiveTexture(GL_TEXTURE0);
 	glCullFace(GL_BACK);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glDrawBuffer(GL_COLOR_ATTACHMENT0);
 	//std::cout << "Wyczyscilem sobie " << timeSum * 1000.0f << "ms.\n";
 }
 
@@ -575,24 +573,24 @@ void RenderEngine::RenderScene(RenderInfo& info, Shader* shader)
 	}
 }
 
-void RenderEngine::Render(const ModelComponent& model, Shader* shader, RenderInfo& info, unsigned int VAOBound, Material* materialBound, unsigned int emptyTexture)
+void RenderEngine::Render(const ModelComponent& model, Shader* shader, RenderInfo& info, unsigned int& VAOBound, Material* materialBound, unsigned int emptyTexture)
 {
 	if (model.GetMeshInstanceCount() == 0)
 		return;
 
-	const glm::mat4& modelMat = model.GetTransform().GetWorldTransformMatrix();	//don't worry, the ComponentTransform's world transform is cached
+	const glm::mat4& modelMat = model.GetTransform().GetWorldTransformMatrix();	//the ComponentTransform's world transform is cached
+	bool bCalcVelocity = GameHandle->GetGameSettings()->IsVelocityBufferNeeded() && info.MainPass;
+	bool jitter = info.MainPass && GameHandle->GetGameSettings()->IsTemporalReprojectionEnabled();
+	
+	//shader->BindMatrices((jitter) ? (modelMat * GameHandle->GetPostprocessHandle()->GetJitterMat()) : (modelMat), info.view, info.projection, info.VP);
+	glm::mat4 xd = (jitter) ? (GameHandle->GetPostprocessHandle()->GetJitterMat()  * *info.VP) : (*info.VP);
+	shader->BindMatrices(modelMat, info.view, info.projection, &xd);
 
-	if (shader->ExpectsMatrix(MatrixType::MODEL))
-		shader->UniformMatrix4fv("model", modelMat);
-	if (shader->ExpectsMatrix(MatrixType::VIEW))
-		shader->UniformMatrix4fv("view", *info.view);
-	if (shader->ExpectsMatrix(MatrixType::MV))
-		shader->UniformMatrix4fv("MV", (*info.view) * modelMat);
-	if (shader->ExpectsMatrix(MatrixType::MVP))
-		shader->UniformMatrix4fv("MVP", (*info.VP) * modelMat);
-	if (shader->ExpectsMatrix(MatrixType::NORMAL))
-		shader->UniformMatrix3fv("normalMat", ModelToNormal(modelMat));
-
+	if (bCalcVelocity)
+	{
+		shader->UniformMatrix4fv("prevMVP", model.GetLastFrameMVP());
+		model.SetLastFrameMVP(xd * modelMat);
+	}
 
 	for (int i = 0; i < static_cast<int>(model.GetMeshInstanceCount()); i++)
 	{
@@ -620,6 +618,8 @@ void RenderEngine::Render(const ModelComponent& model, Shader* shader, RenderInf
 
 		mesh.Render();
 	}
+
+
 }
 
 glm::vec3 GetCubemapFront(unsigned int index)

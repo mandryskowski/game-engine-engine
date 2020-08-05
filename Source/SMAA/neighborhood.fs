@@ -15,6 +15,9 @@ out vec4 fragColor;
 //uniform
 uniform sampler2D colorTex;
 uniform sampler2D blendTex;
+#if SMAA_REPROJECTION
+uniform sampler2D velocityTex;
+#endif
 
 vec4 SMAANeighborhoodBlendingPS(vec2 texcoord,
                                   vec4 offset,
@@ -26,10 +29,14 @@ vec4 SMAANeighborhoodBlendingPS(vec2 texcoord,
                                   );
 
 void main()
-{
-	fragColor = texture(blendTex, texCoord);
-	fragColor = SMAANeighborhoodBlendingPS(texCoord, offset, colorTex, blendTex);
-	fragColor = vec4(pow(fragColor.rgb, vec3(2.2)), 1.0);
+{	
+	fragColor = SMAANeighborhoodBlendingPS(texCoord, offset, colorTex, blendTex
+	#ifdef SMAA_REPROJECTION
+	, velocityTex
+	#endif
+	);
+
+	fragColor = vec4(pow(fragColor.rgb, vec3(2.2)), fragColor.a);
 }
 
 /**

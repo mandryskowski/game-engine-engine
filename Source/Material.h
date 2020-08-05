@@ -8,18 +8,11 @@
 
 struct MaterialLoadingData;	//note: it's legally incomplete in class Material declaration (it's safe to use incomplete types in functions'/methods' declarations!)
 
-struct Texture
-{
-	unsigned int ID;
-	std::string ShaderName;
-	std::string Path;
-	Texture(std::string path, std::string name = "diffuse", bool sRGB = true);
-	Texture(unsigned int id = -1, std::string name = "diffuse");
-};
+class MaterialTexture;
 
 class Material
 {
-	std::vector <Texture*> Textures;
+	std::vector <MaterialTexture*> Textures;
 	float Shininess;
 	float DepthScale;	//used in parallax mapping
 	std::string Name;
@@ -32,7 +25,7 @@ public:
 	void SetDepthScale(float);
 	void SetShininess(float);
 	void SetRenderShader(Shader*);
-	void AddTexture(Texture* tex);
+	void AddTexture(MaterialTexture* tex);
 
 	void LoadFromAiMaterial(aiMaterial*, std::string, MaterialLoadingData*);
 	void LoadAiTexturesOfType(aiMaterial*, std::string, aiTextureType, std::string, MaterialLoadingData*);
@@ -46,7 +39,7 @@ struct MaterialLoadingData
 {
 	std::vector <Material*> LoadedMaterials;	//note: LoadedMaterials and LoadedAiMaterials will ALWAYS be the same size
 	std::vector <aiMaterial*> LoadedAiMaterials;
-	std::vector <Texture*> LoadedTextures;
+	std::vector <MaterialTexture*> LoadedTextures;
 };
 
 /*
@@ -91,12 +84,3 @@ public:
 	void UpdateInstanceUBOData(Shader* shader);
 	void UpdateWholeUBOData(Shader* shader, unsigned int emptyTexture);
 };
-
-/*
-========================================================================================================================
-========================================================================================================================
-========================================================================================================================
-*/
-
-unsigned int textureFromFile(std::string path, GLenum magFilter = GL_NEAREST, GLenum minFilter = GL_LINEAR_MIPMAP_LINEAR, bool sRGB = true, bool flip = false);
-unsigned int textureFromBuffer(const unsigned char& buffer, unsigned int width, unsigned int height, GLenum internalformat, GLenum format, GLenum magFilter = GL_NEAREST, GLenum minFilter = GL_LINEAR_MIPMAP_LINEAR);

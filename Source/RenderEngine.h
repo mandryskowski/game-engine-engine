@@ -3,7 +3,6 @@
 #include "GameManager.h"
 #include "MeshSystem.h"
 
-class Framebuffer;
 
 class RenderEngine: public RenderEngineManager
 {
@@ -14,10 +13,8 @@ class RenderEngine: public RenderEngineManager
 	std::vector <Mesh*> MeshCollection;
 	std::vector <std::unique_ptr<MeshSystem::MeshTree>> MeshTrees;
 
-	glm::uvec2 ShadowMapSize;
-	unsigned int ShadowFBO;
-	unsigned int ShadowMapArray;
-	unsigned int ShadowCubemapArray;
+	GEE_FB::Framebuffer ShadowFramebuffer;
+	Texture ShadowMapArray, ShadowCubemapArray;
 	Shader DepthShader, DepthLinearizeShader;
 
 	Shader DebugShader;
@@ -44,7 +41,7 @@ public:
 	virtual void AddMaterial(Material* material) override;
 	virtual void AddExternalShader(Shader* shader) override;
 
-	void SetupShadowmaps(glm::uvec2);
+	void SetupShadowmaps();
 
 	ModelComponent* FindModel(std::string);
 	Material* FindMaterial(std::string);
@@ -57,7 +54,9 @@ public:
 	void RenderLightVolume(RenderInfo&, LightComponent*, Transform* = nullptr, bool = true);
 	void RenderLightVolumes(RenderInfo&, std::vector<LightComponent*>, glm::vec2);
 	void RenderScene(RenderInfo& info, Shader* shader = nullptr);
-	void Render(const ModelComponent& model, Shader* shader, RenderInfo& info, unsigned int VAOBound, Material* materialBound, unsigned int emptyTexture);
+	void RenderCubemapFromTexture(GLenum texType, unsigned int tex);
+	void RenderCubemapFromScene();
+	void Render(const ModelComponent& model, Shader* shader, RenderInfo& info, unsigned int& VAOBound, Material* materialBound, unsigned int emptyTexture);
 };
 
 glm::vec3 GetCubemapFront(unsigned int);

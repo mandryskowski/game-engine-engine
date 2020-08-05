@@ -7,25 +7,27 @@ layout (location = 4) in vec3 vBitangent;
 //out
 out VS_OUT
 {
-	vec3 position;
+	vec3 worldPosition;
+	#ifdef CALC_VELOCITY_BUFFER
+	smooth vec4 prevMVPPosition;
+	#endif
+	
 	vec2 texCoord;
 	
 	mat3 TBN;
 }	vs_out;
 
-//uniforms
+//uniform
 uniform mat4 model;
 uniform mat4 MVP;
+#ifdef CALC_VELOCITY_BUFFER
+uniform mat4 prevMVP;
+#endif
 uniform mat3 normalMat;
-layout (std140) uniform Matrices
-{
-	mat4 view;
-	mat4 projection;
-};
 
 void main()
 {
-	vs_out.position = vec3(model * vec4(vPosition, 1.0));
+	vs_out.worldPosition = vec3(model * vec4(vPosition, 1.0));
 	vs_out.texCoord = vTexCoord;
 	
 	vec3 T = normalize(normalMat * vTangent);
@@ -35,6 +37,10 @@ void main()
 		B = normalize(normalMat * cross(T, N));
 	
 	vs_out.TBN = mat3(T, B, N);
+	
+	#ifdef CALC_VELOCITY_BUFFER
+	vs_out.prevMVPPosition = prevMVP * vec4(vPosition, 1.0);
+	#endif
 	
 	gl_Position = MVP * vec4(vPosition, 1.0);
 }

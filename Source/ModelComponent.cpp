@@ -4,7 +4,8 @@
 using namespace MeshSystem;
 
 ModelComponent::ModelComponent(GameManager* gameHandle, std::string name, const Transform& transform, std::string path, Material* overrideMat):
-	Component(gameHandle, name, transform)
+	Component(gameHandle, name, transform),
+	LastFrameMVP(glm::mat4(1.0f))
 {
 }
 
@@ -33,10 +34,13 @@ CollisionObject* ModelComponent::SetCollisionObject(std::unique_ptr<CollisionObj
 	obj.swap(CollisionObj);
 	CollisionObj->TransformPtr = &ComponentTransform;
 	GameHandle->GetPhysicsHandle()->AddCollisionObject(CollisionObj.get());
-
-	printVector(ComponentTransform.ScaleRef, "uwaga skala buleta");
 	
 	return CollisionObj.get();
+}
+
+void ModelComponent::SetLastFrameMVP(const glm::mat4& lastMVP) const
+{
+	LastFrameMVP = lastMVP;
 }
 
 void ModelComponent::GenerateFromNode(const MeshSystem::MeshNode& node, Material* overrideMaterial)
@@ -47,7 +51,6 @@ void ModelComponent::GenerateFromNode(const MeshSystem::MeshNode& node, Material
 	ComponentTransform *= node.GetTemplateTransform();
 
 	SetCollisionObject(node.InstantiateCollisionObj());
-	std::cout << "zxczs " + Name + ": " << CollisionObj.get() << ".\n";
 
 	if (overrideMaterial)
 		OverrideInstancesMaterial(overrideMaterial);
@@ -63,6 +66,11 @@ int ModelComponent::GetMeshInstanceCount() const
 const MeshInstance& ModelComponent::GetMeshInstance(int index) const
 {
 	return *MeshInstances[index];
+}
+
+const glm::mat4& ModelComponent::GetLastFrameMVP() const
+{
+	return LastFrameMVP;
 }
 
 

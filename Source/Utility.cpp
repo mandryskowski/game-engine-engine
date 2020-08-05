@@ -140,3 +140,15 @@ void printVector(glm::quat q, std::string title)
 {
 	printVector(glm::degrees(glm::eulerAngles(q)), title);
 }
+
+void printMatrix(const glm::mat4& mat, std::string title)
+{
+	if (!title.empty())
+		std::cout << "//Matrix " + title + "\\ \n";
+	for (int y = 0; y < 4; y++)
+	{
+		for (int x = 0; x < 4; x++)
+			std::cout << mat[y][x] << "			";
+		std::cout << '\n';
+	}
+}

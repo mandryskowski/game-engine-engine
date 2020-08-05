@@ -136,6 +136,7 @@
     <ClCompile Include="FileLoader.cpp" />
     <ClCompile Include="Framebuffer.cpp" />
     <ClCompile Include="Game.cpp" />
+    <ClCompile Include="GameSettings.cpp" />
     <ClCompile Include="GunActor.cpp" />
     <ClCompile Include="LightComponent.cpp" />
     <ClCompile Include="main.cpp" />
@@ -149,6 +150,7 @@
     <ClCompile Include="SearchEngine.cpp" />
     <ClCompile Include="Shader.cpp" />
     <ClCompile Include="SoundSourceComponent.cpp" />
+    <ClCompile Include="Texture.cpp" />
     <ClCompile Include="Transform.cpp" />
     <ClCompile Include="Utility.cpp" />
   </ItemGroup>
@@ -179,6 +181,7 @@
     <ClInclude Include="SearchEngine.h" />
     <ClInclude Include="Shader.h" />
     <ClInclude Include="SoundSourceComponent.h" />
+    <ClInclude Include="Texture.h" />
     <ClInclude Include="Transform.h" />
     <ClInclude Include="Utility.h" />
   </ItemGroup>

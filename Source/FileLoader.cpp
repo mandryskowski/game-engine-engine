@@ -57,7 +57,7 @@ void EngineDataLoader::LoadMaterials(RenderEngineManager* renderHandle, SearchEn
 			std::string path, shaderUniformName, isSRGB;
 			filestr >> path >> shaderUniformName >> isSRGB;
 
-			material->AddTexture(new Texture(directory + path, shaderUniformName, toBool(isSRGB)));
+			material->AddTexture(new MaterialTexture(textureFromFile(directory + path, (toBool(isSRGB)) ? (GL_SRGB) : (GL_RGB)), shaderUniformName));
 		}
 	}
 }
@@ -546,10 +546,10 @@ MeshSystem::MeshTree* EngineDataLoader::LoadMeshTree(GameManager* gameHandle, Re
 {
 	if (path.empty())
 	{
-		if (!treePtr || treePtr->GetFilePath().empty())
+		if (!treePtr || treePtr->GetPath().empty())
 			return nullptr;
 
-		path = treePtr->GetFilePath();
+		path = treePtr->GetPath();
 	}
 
 	if (MeshSystem::MeshTree* found = renderHandle->FindMeshTree(path, treePtr))
@@ -626,7 +626,7 @@ void EngineDataLoader::LoadCustomMeshNode(GameManager* gameHandle, std::stringst
 		else
 		{
 			nodeName = input;
-			std::cout << "Edytuje " << treeToEdit->GetFilePath() << ", a w nim " << nodeName << ".\n";
+			std::cout << "Edytuje " << treeToEdit->GetPath() << ", a w nim " << nodeName << ".\n";
 		}
 
 		if (bCreateNodes)

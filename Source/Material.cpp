@@ -1,17 +1,5 @@
 #include "Material.h"
-
-Texture::Texture(std::string path, std::string name, bool sRGB)
-{
-	ID = textureFromFile(path, GL_NEAREST, GL_LINEAR_MIPMAP_LINEAR, sRGB);
-	ShaderName = name;
-	Path = path;
-}
-Texture::Texture(unsigned int id, std::string name)
-{
-	ID = id;
-	ShaderName = name;
-	Path = "";
-}
+#include "Texture.h"
 
 Material::Material(std::string name, float shine, float depthScale, Shader* shader)
 { 
@@ -45,7 +33,7 @@ void Material::SetRenderShader(Shader* shader)
 	RenderShader = shader;
 }
 
-void Material::AddTexture(Texture* tex)
+void Material::AddTexture(MaterialTexture* tex)
 {
 	Textures.push_back(tex);
 }
@@ -77,7 +65,7 @@ void Material::LoadFromAiMaterial(aiMaterial* material, std::string directory, M
 
 void Material::LoadAiTexturesOfType(aiMaterial* material, std::string directory, aiTextureType type, std::string shaderName, MaterialLoadingData* matLoadingData)
 {
-	std::vector <Texture*>* prevLoadedTextures = nullptr;
+	std::vector <MaterialTexture*>* prevLoadedTextures = nullptr;
 	if (matLoadingData)
 		prevLoadedTextures = &matLoadingData->LoadedTextures;
 
@@ -99,7 +87,7 @@ void Material::LoadAiTexturesOfType(aiMaterial* material, std::string directory,
 			bool bWasLoadedPreviously = false;
 			for (unsigned int j = 0; j < prevLoadedTextures->size(); j++)	//check if the texture was loaded in the past (saves a lot of time)
 			{
-				if ((*prevLoadedTextures)[j]->Path == pathStr)
+				if ((*prevLoadedTextures)[j]->GetPath() == pathStr)
 				{
 					Textures.push_back((*prevLoadedTextures)[j]);
 					bWasLoadedPreviously = true;
@@ -111,7 +99,7 @@ void Material::LoadAiTexturesOfType(aiMaterial* material, std::string directory,
 				continue;
 		}
 
-		Texture* tex = new Texture(pathStr, shaderName + std::to_string(i + 1), sRGB);	//create a new Texture and pass the file path, the shader name (for example diffuse1, diffuse2, ...) and the sRGB info
+		MaterialTexture* tex = new MaterialTexture(textureFromFile(pathStr, (sRGB) ? (GL_SRGB) : (GL_RGB)), shaderName + std::to_string(i + 1));	//create a new Texture and pass the file path, the shader name (for example diffuse1, diffuse2, ...) and the sRGB info
 		Textures.push_back(tex);
 		if (prevLoadedTextures)
 			prevLoadedTextures->push_back(tex);
@@ -133,9 +121,9 @@ void Material::UpdateWholeUBOData(Shader* shader, unsigned int emptyTexture)
 		bool found = false;
 		for (unsigned int j = 0; j < Textures.size(); j++)
 		{
-			if (Textures[j]->ShaderName == unitPair->second)
+			if (Textures[j]->GetShaderName() == unitPair->second)
 			{
-				glBindTexture(GL_TEXTURE_2D, Textures[j]->ID);
+				glBindTexture(GL_TEXTURE_2D, Textures[j]->GetID());
 				found = true;
 				break;
 			}
@@ -239,70 +227,4 @@ void MaterialInstance::UpdateWholeUBOData(Shader* shader, unsigned int emptyText
 {
 	UpdateInstanceUBOData(shader);
 	MaterialPtr->UpdateWholeUBOData(shader, emptyTexture);
-}
-
-/*
-========================================================================================================================
-========================================================================================================================
-========================================================================================================================
-*/
-
-unsigned int textureFromFile(std::string path, GLenum magFilter, GLenum minFilter, bool sRGB, bool flip)
-{
-	if (flip)
-		stbi_set_flip_vertically_on_load(true);
-
-	unsigned int tex;
-	glGenTextures(1, &tex);
-	glBindTexture(GL_TEXTURE_2D, tex);
-
-	int width, height, nrChannels;
-	unsigned char* data = stbi_load(path.c_str(), &width, &height, &nrChannels, 0);
-
-	if (!data)
-	{
-		std::cerr << "nie laduje mi " << path << '\n';
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 1, 1, 0, GL_RGB, GL_FLOAT, glm::value_ptr(glm::vec3(1.0f, 0.0f, 1.0f)));	//set the texture's color to pink so its obvious that this texture is missing
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		return tex;
-	}
-	GLenum format = GL_RGB;
-	GLenum internalformat = (sRGB) ? (GL_SRGB) : (GL_RGB);
-	switch (nrChannels)
-	{
-	case 1: format = GL_RED; break;
-	case 3: format = GL_RGB; break;
-	case 4: format = GL_RGBA;
-			internalformat = (sRGB) ? (GL_SRGB_ALPHA) : (GL_RGBA); break;
-	}
-
-	glTexImage2D(GL_TEXTURE_2D, 0, internalformat, width, height, 0, format, GL_UNSIGNED_BYTE, data);
-
-	if (minFilter == GL_NEAREST_MIPMAP_NEAREST || minFilter == GL_LINEAR_MIPMAP_NEAREST || minFilter == GL_NEAREST_MIPMAP_LINEAR || minFilter == GL_LINEAR_MIPMAP_LINEAR)
-		glGenerateMipmap(GL_TEXTURE_2D);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, magFilter);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minFilter);
-
-	if (flip)
-		stbi_set_flip_vertically_on_load(false);
-
-	return tex;
-}
-
-unsigned int textureFromBuffer(const unsigned char& buffer, unsigned int width, unsigned int height, GLenum internalformat, GLenum format, GLenum magFilter, GLenum minFilter)
-{
-	unsigned int tex;
-	glGenTextures(1, &tex);
-	glBindTexture(GL_TEXTURE_2D, tex);
-
-	glTexImage2D(GL_TEXTURE_2D, 0, internalformat, width, height, 0, format, GL_UNSIGNED_BYTE, &buffer);
-
-	if (minFilter == GL_NEAREST_MIPMAP_NEAREST || minFilter == GL_LINEAR_MIPMAP_NEAREST || minFilter == GL_NEAREST_MIPMAP_LINEAR || minFilter == GL_LINEAR_MIPMAP_LINEAR)
-		glGenerateMipmap(GL_TEXTURE_2D);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, magFilter);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minFilter);
-
-	return tex;
 }

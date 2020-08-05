@@ -18,8 +18,6 @@ MeshNode::MeshNode(const MeshNode& node, bool copyChildren) :
 	OverrideMaterial(node.OverrideMaterial)
 {
 	CollisionObjTemplate = (node.CollisionObjTemplate) ? (std::make_unique<CollisionObject>(*node.CollisionObjTemplate)) : (nullptr);
-
-	std::cout << "Copying " << node.Name << ".\n";
 	
 	if (copyChildren)
 	{
@@ -50,7 +48,7 @@ const MeshNode* MeshNode::GetChild(int index) const
 {
 	if (index >= Children.size())
 	{
-		std::cout << "ERROR! Tried to get child nr " << index << ", but I have only " << Children.size() << " children.\n";
+		std::cout << "ERROR! Tried to get child nr " << index << ", but " + Name + " has only " << Children.size() << " children.\n";
 		return nullptr;
 	}
 
@@ -220,27 +218,27 @@ MeshNode& MeshSystem::MeshNode::operator=(MeshNode&& node)
 
 MeshTree::MeshTree(std::string path):
 	Root(path),
-	FilePath(path)
+	Path(path)
 {
 }
 
 MeshTree::MeshTree(const MeshTree& tree, std::string path) :
-	FilePath((path.empty()) ? (tree.FilePath) : (path)),
+	Path((path.empty()) ? (tree.Path) : (path)),
 	Root(tree.Root, true)
 {
 
 }
 
 MeshTree::MeshTree(MeshTree&& tree, std::string path) :
-	FilePath((path.empty()) ? (tree.FilePath) : (path)),
+	Path((path.empty()) ? (tree.Path) : (path)),
 	Root(tree.Root, true)
 {
 
 }
 
-std::string MeshTree::GetFilePath() const
+std::string MeshTree::GetPath() const
 {
-	return FilePath;
+	return Path;
 }
 
 MeshNode& MeshTree::GetRoot()
@@ -253,9 +251,9 @@ bool MeshTree::IsEmpty()
 	return Root.GetChildCount() > 0;
 }
 
-void MeshTree::SetFilePath(std::string path)
+void MeshTree::SetPath(std::string path)
 {
-	FilePath = path;
+	Path = path;
 }
 
 Mesh* MeshTree::FindMesh(std::string name)

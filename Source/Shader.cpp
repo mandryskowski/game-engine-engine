@@ -211,3 +211,26 @@ void Shader::Use() const
 {
 	glUseProgram(Program);
 }
+
+void Shader::BindMatrices(const glm::mat4& model, const glm::mat4* view, const glm::mat4* projection, const glm::mat4* VP) const
+{
+	if (ExpectedMatrices[MatrixType::MODEL])
+		UniformMatrix4fv("model", model);
+	if (ExpectedMatrices[MatrixType::VIEW])
+		UniformMatrix4fv("view", *view);
+	if (ExpectedMatrices[MatrixType::PROJECTION])
+		UniformMatrix4fv("projection", *projection);
+	if (ExpectedMatrices[MatrixType::MV])
+		UniformMatrix4fv("MV", (*view) * model);
+	if (ExpectedMatrices[MatrixType::VP])
+		UniformMatrix4fv("VP", *VP);
+	if (ExpectedMatrices[MatrixType::MVP])
+		UniformMatrix4fv("MVP", (*VP) * model);
+	if (ExpectedMatrices[MatrixType::NORMAL])
+		UniformMatrix3fv("normalMat", ModelToNormal(model));
+}
+
+glm::mat3 ModelToNormal(glm::mat4 model)
+{
+	return glm::mat3(glm::transpose(glm::inverse(model)));
+}

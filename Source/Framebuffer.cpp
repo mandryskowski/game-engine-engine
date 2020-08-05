@@ -1,9 +1,12 @@
 #include "Framebuffer.h"
 #include <iostream>
+#include <algorithm>
 
-ColorBufferData::ColorBufferData(GLenum texEnum, GLenum internalFormat, GLenum type, GLenum magFilter, GLenum minFilter)
+using namespace GEE_FB;
+
+FramebufferAttachment::FramebufferAttachment(GLenum texEnum, GLenum internalFormat, GLenum type, GLenum magFilter, GLenum minFilter)
 {
-	OpenGLBuffer = 0;
+	ID = 0;
 	TextureEnum = texEnum;
 	InternalFormat = internalFormat;
 	Type = type;
@@ -11,7 +14,33 @@ ColorBufferData::ColorBufferData(GLenum texEnum, GLenum internalFormat, GLenum t
 	MinFilter = minFilter;
 }
 
-bool ColorBufferData::ContainsAlphaChannel()
+bool FramebufferAttachment::WasCreated()
+{
+	return ID != 0;
+}
+
+void FramebufferAttachment::CreateOpenGLBuffer(glm::uvec2 size, unsigned int samples)
+{
+	glGenTextures(1, &ID);
+	glBindTexture(TextureEnum, ID);
+}
+
+void FramebufferAttachment::BindToFramebuffer(GLenum target, GLenum attachment)
+{
+	glBindTexture(GL_TEXTURE_2D, ID);
+	if (TextureEnum == GL_TEXTURE_CUBE_MAP)
+		glFramebufferTexture(target, attachment, ID, 0);
+	else
+		glFramebufferTexture2D(target, attachment, TextureEnum, ID, 0);
+}
+
+
+ColorBuffer::ColorBuffer(GLenum texEnum, GLenum internalFormat, GLenum type, GLenum magFilter, GLenum minFilter) :
+	FramebufferAttachment(texEnum, internalFormat, type, magFilter, minFilter)
+{
+}
+
+bool ColorBuffer::ContainsAlphaChannel()
 {
 	switch (InternalFormat)
 	{
@@ -24,10 +53,9 @@ bool ColorBufferData::ContainsAlphaChannel()
 	return false;
 }
 
-void ColorBufferData::CreateOpenGLBuffer(glm::uvec2 size, unsigned int samples)
+void ColorBuffer::CreateOpenGLBuffer(glm::uvec2 size, unsigned int samples)
 {
-	glGenTextures(1, &OpenGLBuffer);
-	glBindTexture(TextureEnum, OpenGLBuffer);
+	FramebufferAttachment::CreateOpenGLBuffer(size, samples);
 	GLenum format = (ContainsAlphaChannel()) ? (GL_RGBA) : (GL_RGB);
 	if (TextureEnum == GL_TEXTURE_2D_MULTISAMPLE || TextureEnum == GL_TEXTURE_2D_MULTISAMPLE_ARRAY)
 	{
@@ -43,60 +71,40 @@ void ColorBufferData::CreateOpenGLBuffer(glm::uvec2 size, unsigned int samples)
 		glTexParameteri(TextureEnum, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	}
 }
-void ColorBufferData::BindToFramebuffer(GLenum target, GLenum attachment)
+
+
+DepthStencilBuffer::DepthStencilBuffer(GLenum texEnum, GLenum internalFormat, GLenum type, GLenum magFilter, GLenum minFilter):
+	FramebufferAttachment(texEnum, internalFormat, type, magFilter, minFilter)
 {
-	glBindTexture(TextureEnum, OpenGLBuffer);
-	glFramebufferTexture2D(target, attachment, TextureEnum, OpenGLBuffer, 0);
 }
 
-
-DepthBufferData::DepthBufferData(GLenum texEnum, GLenum internalFormat, GLenum magFilter, GLenum minFilter)
-{
-	OpenGLBuffer = 0;
-	TextureEnum = texEnum;
-	InternalFormat = internalFormat;
-	MagFilter = magFilter;
-	MinFilter = minFilter;
-}
-
-bool DepthBufferData::ContainsStencil()
+bool DepthStencilBuffer::ContainsStencil()
 {
 	if (InternalFormat == GL_DEPTH24_STENCIL8 || InternalFormat == GL_DEPTH32F_STENCIL8)
 		return true;
 	return false;
 }
 
-void DepthBufferData::CreateOpenGLBuffer(glm::uvec2 size, unsigned int samples)
+void DepthStencilBuffer::CreateOpenGLBuffer(glm::uvec2 size, unsigned int samples)
 {
+	FramebufferAttachment::CreateOpenGLBuffer(size, samples);
 	bool bCubemap = (TextureEnum == GL_TEXTURE_CUBE_MAP || TextureEnum == GL_TEXTURE_CUBE_MAP_ARRAY) ? (true) : (false);
 	bool bMultisample = (TextureEnum == GL_TEXTURE_2D_MULTISAMPLE || TextureEnum == GL_TEXTURE_2D_MULTISAMPLE_ARRAY) ? (true) : (false);
 
-	glGenTextures(1, &OpenGLBuffer);
-	glBindTexture(TextureEnum, OpenGLBuffer);
-
 	GLenum format = ((this->ContainsStencil()) ? (GL_DEPTH_STENCIL) : (GL_DEPTH_COMPONENT));
-	GLenum type = ((this->ContainsStencil() ? (GL_UNSIGNED_INT_24_8) : (GL_FLOAT)));
 	if (bMultisample)
 		glTexImage2DMultisample(TextureEnum, samples, InternalFormat, size.x, size.y, GL_TRUE);
 	else
 	{
 		GLenum target = (bCubemap) ? (GL_TEXTURE_CUBE_MAP_POSITIVE_X) : (TextureEnum);
 		for (int i = 0; i < ((bCubemap) ? (6) : (1)); i++)
-			glTexImage2D(target + i, 0, InternalFormat, size.x, size.y, 0, format, type, (void*)(nullptr));
+			glTexImage2D(target + i, 0, InternalFormat, size.x, size.y, 0, format, Type, (void*)(nullptr));
 	}
 	if (!bMultisample)
 	{
 		glTexParameteri(TextureEnum, GL_TEXTURE_MAG_FILTER, MagFilter);
 		glTexParameteri(TextureEnum, GL_TEXTURE_MIN_FILTER, MinFilter);
 	}
-}
-void DepthBufferData::BindToFramebuffer(GLenum target, GLenum attachment)
-{
-	glBindTexture(TextureEnum, OpenGLBuffer);
-	if (TextureEnum == GL_TEXTURE_CUBE_MAP)
-		glFramebufferTexture(target, attachment, OpenGLBuffer, 0);
-	else
-		glFramebufferTexture2D(target, attachment, TextureEnum, OpenGLBuffer, 0);
 }
 
 Framebuffer::Framebuffer()
@@ -118,21 +126,35 @@ unsigned int Framebuffer::GetFBO() const
 	return FBO;
 }
 
-ColorBufferData Framebuffer::GetColorBuffer(unsigned int index) const
+glm::uvec2 Framebuffer::GetSize() const
+{
+	return RenderSize;
+}
+
+std::shared_ptr<ColorBuffer> Framebuffer::GetColorBuffer(unsigned int index) const
 {
 	if (index >= ColorBuffers.size())
 	{
 		std::cerr << "Can't find colorbuffer " << index << '\n';
-		return ColorBufferData();
+		return nullptr;
 	}
 	return ColorBuffers[index];
 }
 
-void Framebuffer::Load(glm::uvec2 size, ColorBufferData colorBuffer, DepthBufferData* depthBuffer, unsigned int samples)
+unsigned int Framebuffer::GetNumberOfColorBuffers() const
 {
-	Load(size, std::vector<ColorBufferData>{colorBuffer}, depthBuffer, samples);
+	return ColorBuffers.size();
 }
-void Framebuffer::Load(glm::uvec2 size, std::vector <ColorBufferData> colorBuffers, DepthBufferData* depthBuffer, unsigned int samples)
+
+void Framebuffer::Load(glm::uvec2 size, std::shared_ptr<ColorBuffer> colorBuffer, std::shared_ptr<DepthStencilBuffer> depthBuffer, unsigned int samples)
+{
+	std::vector<std::shared_ptr<ColorBuffer>> colorBuffers;
+	if (colorBuffer)
+		colorBuffers.push_back(colorBuffer);
+
+	Load(size, colorBuffers, depthBuffer, samples);
+}
+void Framebuffer::Load(glm::uvec2 size, std::vector <std::shared_ptr<ColorBuffer>> colorBuffers, std::shared_ptr<DepthStencilBuffer> depthBuffer, unsigned int samples)
 {
 	RenderSize = size;
 
@@ -140,14 +162,14 @@ void Framebuffer::Load(glm::uvec2 size, std::vector <ColorBufferData> colorBuffe
 	glBindFramebuffer(GL_FRAMEBUFFER, FBO);
 
 	std::vector <GLenum> attachments;
-	ColorBuffers.assign(colorBuffers.size(), ColorBufferData());
+	ColorBuffers = colorBuffers;
 
 	for (unsigned int i = 0; i < colorBuffers.size(); i++)
 	{
-		ColorBuffers[i] = colorBuffers[i];
-		ColorBuffers[i].CreateOpenGLBuffer(RenderSize, samples);
+		if (!ColorBuffers[i]->WasCreated())
+			ColorBuffers[i]->CreateOpenGLBuffer(RenderSize, samples);
 		attachments.push_back(GL_COLOR_ATTACHMENT0 + i);
-		ColorBuffers[i].BindToFramebuffer(GL_FRAMEBUFFER, attachments[i]);
+		ColorBuffers[i]->BindToFramebuffer(GL_FRAMEBUFFER, attachments[i]);
 	}
 
 	if (attachments.empty())
@@ -163,7 +185,7 @@ void Framebuffer::Load(glm::uvec2 size, std::vector <ColorBufferData> colorBuffe
 	DepthBuffer = depthBuffer;
 	if (DepthBuffer)
 	{
-		if (DepthBuffer->OpenGLBuffer == 0)
+		if (!DepthBuffer->WasCreated())
 			DepthBuffer->CreateOpenGLBuffer(RenderSize, samples);
 		else
 			std::cerr << "INFO: A texture is bound to two framebuffers at once.\n";
@@ -171,10 +193,23 @@ void Framebuffer::Load(glm::uvec2 size, std::vector <ColorBufferData> colorBuffe
 		DepthBuffer->BindToFramebuffer(GL_FRAMEBUFFER, (DepthBuffer->ContainsStencil()) ? (GL_DEPTH_STENCIL_ATTACHMENT) : (GL_DEPTH_ATTACHMENT));
 	}
 
-	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+	if ((colorBuffers.size() > 0 || depthBuffer) && glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		std::cerr << "FBO has not been loaded properly: " << framebufferStatusToString(glCheckFramebufferStatus(GL_FRAMEBUFFER)) << '\n';
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+void Framebuffer::Load(glm::uvec2 size, const ColorBuffer& colorBuffer, DepthStencilBuffer* depthBuffer, unsigned int samples)
+{
+	Load(size, std::make_shared<ColorBuffer>(colorBuffer), (depthBuffer) ? (std::make_shared<DepthStencilBuffer>(*depthBuffer)) : (nullptr), samples);
+}
+void Framebuffer::Load(glm::uvec2 size, const std::vector<ColorBuffer>& colorBuffers, DepthStencilBuffer* depthBuffer, unsigned int samples)
+{
+	std::vector<std::shared_ptr<ColorBuffer>> createdColorBuffers;
+	createdColorBuffers.resize(colorBuffers.size());
+	std::transform(colorBuffers.begin(), colorBuffers.end(), createdColorBuffers.begin(), [](const ColorBuffer& colorBuffer) { return std::make_shared<ColorBuffer>(colorBuffer); });
+	
+	Load(size, createdColorBuffers, (depthBuffer) ? (std::make_shared<DepthStencilBuffer>(*depthBuffer)) : (nullptr), samples);
 }
 
 void Framebuffer::BlitToFBO(unsigned int fbo2, int bufferCount)
@@ -192,9 +227,11 @@ void Framebuffer::BlitToFBO(unsigned int fbo2, int bufferCount)
 	}
 }
 
-void Framebuffer::Bind() const
+void Framebuffer::Bind(bool changeViewportSize) const
 {
 	glBindFramebuffer(GL_FRAMEBUFFER, FBO);
+	if (changeViewportSize)
+		glViewport(0, 0, RenderSize.x, RenderSize.y);
 }
 
 std::string framebufferStatusToString(GLenum status)
@@ -207,7 +244,9 @@ std::string framebufferStatusToString(GLenum status)
 	case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT: return "Missing attachments.\n";
 	case GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE: return "Incomplete multisample.\n";
 	case GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER: return "Incomplete read buffer.\n";
+	case GL_FRAMEBUFFER_COMPLETE: return "Framebuffer is complete.\n";
 	}
 
 	return "Error " + std::to_string(status) + " is not known by the program.\n";
 }
+

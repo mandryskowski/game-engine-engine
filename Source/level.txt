@@ -30,7 +30,9 @@ col 7 ps
 3 1 1
 1
 0 0 3
-0.25 0.25 0.25
+0.25 0.25 0.25 ,
+Tunnel
+material Bricks
 end
 
 131283129dsaadjkasd
@@ -55,6 +57,13 @@ break ,
 doublebarrel/doublebarrel2.obj:doublebarrel/doublebarrel2.obj :
 	doublebarrel/doublebarrel2.obj:Shotgun_Cube_NoShadow material Barrelmetal ,
 	doublebarrel/doublebarrel2.obj:Barrel+Release_NoShadow end
+end
+newtree StupidSkybox
+tunnel/tunnel.obj:Tunnel material Marble 
+transform
+skip
+skip
+50 50 5 end
 end
 
 newactor Actor CameraActor
@@ -257,9 +266,13 @@ end
 
 newactor Actor DUPAACTOR
 newcomp model Kupa root SubwayoCube
-edit Body material Bricks end
+edit Body material tunnel/tunnel.obj:Brickwall end
 transform
 10 0 10
+end
+
+newactor Actor Xd
+newcomp model Skybox root StupidSkybox
 end
 
 newactor Actor GameLevel

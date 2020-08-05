@@ -99,5 +99,3 @@ public:
 	Transform& operator*=(const Transform&);
 	Transform& operator*=(Transform&&);
 };
-
-glm::mat3 ModelToNormal(glm::mat4);

@@ -1,21 +1,45 @@
 #include "Postprocess.h"
 #include "SMAA/AreaTex.h"
 #include "SMAA/SearchTex.h"
+#include "Mesh.h"
 #include <random>
 
+using namespace GEE_FB;
+
+void Postprocess::RenderQuad(unsigned int tex, unsigned int texSlot, bool bound, bool defaultFBO) const
+{
+	if (!bound)
+		glBindVertexArray(QuadVAO);
+	if (tex > 0)
+	{
+		glActiveTexture(GL_TEXTURE0 + texSlot);
+		glBindTexture(GL_TEXTURE_2D, tex);
+	}
+	if (defaultFBO)
+	{
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glDrawBuffer(GL_COLOR_ATTACHMENT0);
+	}
+
+	QuadShader.Use();
+	glDrawArrays(GL_TRIANGLES, 0, 6);
+}
+
 Postprocess::Postprocess():
+	Settings(nullptr),
 	QuadVAO(0),
 	QuadVBO(0),
-	SMAAAreaTex(0),
-	SMAASearchTex(0),
 	SSAOShader(nullptr),
 	SSAOFramebuffer(nullptr),
-	SSAONoiseTex(nullptr)
+	SSAONoiseTex(nullptr),
+	StorageFramebuffer(nullptr),
+	FrameIndex(0)
 {
 }
 
 void Postprocess::Init(const GameSettings* settings)
 {
+	Settings = settings;
 	float data[] = {
 		-1.0f, -1.0f,
 		 1.0f, -1.0f,
@@ -33,67 +57,91 @@ void Postprocess::Init(const GameSettings* settings)
 	};
 	QuadVAO = generateVAO(QuadVBO, std::vector<unsigned int> {2, 2}, 6, data);
 
+	QuadShader.LoadShaders("Shaders/quad.vs", "Shaders/quad.fs");
+	QuadShader.Use();
+	QuadShader.Uniform1i("tex", 0);
+
 	TonemapGammaShader.LoadShaders("Shaders/tonemap_gamma.vs", "Shaders/tonemap_gamma.fs");
 	TonemapGammaShader.Use();
 	TonemapGammaShader.Uniform1i("HDRbuffer", 0);
 	TonemapGammaShader.Uniform1i("brightnessBuffer", 1);
-	TonemapGammaShader.Uniform1f("gamma", settings->MonitorGamma);
+	TonemapGammaShader.Uniform1f("gamma", Settings->MonitorGamma);
 
 	GaussianBlurShader.LoadShaders("Shaders/gaussianblur.vs", "Shaders/gaussianblur.fs");
 	GaussianBlurShader.Use();
 	GaussianBlurShader.Uniform1i("tex", 0);
 
-	std::string smaaDefines =   "#define SCR_WIDTH " + std::to_string(settings->WindowSize.x) + ".0 \n" +
-								"#define SCR_HEIGHT " + std::to_string(settings->WindowSize.y) + ".0 \n" +
-								"#define SMAA_PRESET_ULTRA 1" + "\n";
-	
-	SMAAShaders[0].LoadShadersWithInclData(smaaDefines, "SMAA/edge.vs", "SMAA/edge.fs");
-	SMAAShaders[0].Use();
-	SMAAShaders[0].Uniform1i("colorTex", 0);
-	SMAAShaders[0].Uniform1i("depthTex", 1);
+	std::string smaaDefines = "#define SCR_WIDTH " + std::to_string(Settings->WindowSize.x) + ".0 \n" +
+							  "#define SCR_HEIGHT " + std::to_string(Settings->WindowSize.y) + ".0 \n";
+	switch (Settings->AALevel)
+	{
+		case SettingLevel::SETTING_LOW: smaaDefines += "#define SMAA_PRESET_LOW 1\n"; break;
+		case SettingLevel::SETTING_MEDIUM: smaaDefines += "#define SMAA_PRESET_MEDIUM 1\n"; break;
+		case SettingLevel::SETTING_HIGH: smaaDefines += "#define SMAA_PRESET_HIGH 1\n"; break;
+		case SettingLevel::SETTING_ULTRA: smaaDefines += "#define SMAA_PRESET_ULTRA 1\n"; break;
+	}
+	if (Settings->AAType == AntiAliasingType::AA_SMAAT2X)
+		smaaDefines += "#define SMAA_REPROJECTION 1\n";
 
-	SMAAShaders[1].LoadShadersWithInclData(smaaDefines, "SMAA/blend.vs", "SMAA/blend.fs");
-	SMAAShaders[1].Use();
-	SMAAShaders[1].Uniform1i("edgesTex", 0);
-	SMAAShaders[1].Uniform1i("areaTex", 1);
-	SMAAShaders[1].Uniform1i("searchTex", 2);
+	if (Settings->AAType == AntiAliasingType::AA_SMAA1X || Settings->AAType == AntiAliasingType::AA_SMAAT2X)
+	{
+		SMAAShaders[0].LoadShadersWithInclData(smaaDefines, "SMAA/edge.vs", "SMAA/edge.fs");
+		SMAAShaders[0].Use();
+		SMAAShaders[0].Uniform1i("colorTex", 0);
+		SMAAShaders[0].Uniform1i("depthTex", 1);
 
-	SMAAAreaTex = textureFromBuffer(*areaTexBytes, AREATEX_WIDTH, AREATEX_HEIGHT, GL_RG, GL_RG, GL_NEAREST, GL_NEAREST);
-	SMAASearchTex = textureFromBuffer(*searchTexBytes, SEARCHTEX_WIDTH, SEARCHTEX_HEIGHT, GL_R8, GL_RED, GL_NEAREST, GL_NEAREST);
+		SMAAShaders[1].LoadShadersWithInclData(smaaDefines, "SMAA/blend.vs", "SMAA/blend.fs");
+		SMAAShaders[1].Use();
+		SMAAShaders[1].Uniform1i("edgesTex", 0);
+		SMAAShaders[1].Uniform1i("areaTex", 1);
+		SMAAShaders[1].Uniform1i("searchTex", 2);
+		SMAAShaders[1].Uniform4fv("ssIndices", glm::vec4(0.0f));
 
-	SMAAShaders[2].LoadShadersWithInclData(smaaDefines, "SMAA/neighborhood.vs", "SMAA/neighborhood.fs");
-	SMAAShaders[2].Use();
-	SMAAShaders[2].Uniform1i("colorTex", 0);
-	SMAAShaders[2].Uniform1i("blendTex", 1);
+		SMAAAreaTex = textureFromBuffer(areaTexBytes, AREATEX_WIDTH, AREATEX_HEIGHT, GL_RG, GL_RG, GL_UNSIGNED_BYTE, GL_NEAREST, GL_NEAREST);
+		SMAASearchTex = textureFromBuffer(searchTexBytes, SEARCHTEX_WIDTH, SEARCHTEX_HEIGHT, GL_R8, GL_RED, GL_UNSIGNED_BYTE, GL_NEAREST, GL_NEAREST);
 
-	//load framebuffers
-	SMAAFramebuffer.Load(settings->WindowSize, std::vector<ColorBufferData>{ ColorBufferData(GL_TEXTURE_2D, GL_RGB, GL_UNSIGNED_BYTE, GL_LINEAR, GL_LINEAR), ColorBufferData(GL_TEXTURE_2D, GL_RGBA, GL_UNSIGNED_BYTE, GL_LINEAR, GL_LINEAR) });
-	TonemapGammaFramebuffer.Load(settings->WindowSize, ColorBufferData(GL_TEXTURE_2D, GL_RGB, GL_UNSIGNED_BYTE, GL_LINEAR, GL_LINEAR));
+		SMAAShaders[2].LoadShadersWithInclData(smaaDefines, "SMAA/neighborhood.vs", "SMAA/neighborhood.fs");
+		SMAAShaders[2].Use();
+		SMAAShaders[2].Uniform1i("colorTex", 0);
+		SMAAShaders[2].Uniform1i("blendTex", 1);
+		SMAAShaders[2].Uniform1i("velocityTex", 2);
 
-	for (int i = 0; i < 2; i++)
-		BlurFramebuffers[i].Load(settings->WindowSize, ColorBufferData(GL_TEXTURE_2D, GL_RGB16F, GL_FLOAT, GL_LINEAR, GL_LINEAR));
+		SMAAFramebuffer = std::make_unique<Framebuffer>();
+		SMAAFramebuffer->Load(Settings->WindowSize, std::vector<ColorBuffer>{ ColorBuffer(GL_TEXTURE_2D, GL_RGB, GL_UNSIGNED_BYTE, GL_LINEAR, GL_LINEAR), ColorBuffer(GL_TEXTURE_2D, GL_RGBA, GL_UNSIGNED_BYTE, GL_LINEAR, GL_LINEAR), ColorBuffer(GL_TEXTURE_2D, GL_RGBA, GL_UNSIGNED_BYTE, GL_LINEAR, GL_LINEAR) });
+		if (Settings->AAType == AntiAliasingType::AA_SMAAT2X)
+		{
+			SMAAShaders[3].LoadShadersWithInclData(smaaDefines, "SMAA/reproject.vs", "SMAA/reproject.fs");
+			SMAAShaders[3].Use();
+			SMAAShaders[3].Uniform1i("colorTex", 0);
+			SMAAShaders[3].Uniform1i("prevColorTex", 1);
+			SMAAShaders[3].Uniform1i("velocityTex", 2);
 
-	if (settings->AmbientOcclusionSamples > 0)
+			StorageFramebuffer = std::make_unique<Framebuffer>();
+			StorageFramebuffer->Load(Settings->WindowSize, std::vector<ColorBuffer>{ ColorBuffer(GL_TEXTURE_2D, GL_RGBA, GL_UNSIGNED_BYTE), ColorBuffer(GL_TEXTURE_2D, GL_RGBA, GL_UNSIGNED_BYTE) });
+		}
+	}
+
+	if (Settings->AmbientOcclusionSamples > 0)
 	{
 		SSAOShader = std::make_unique<Shader>();
-		SSAOShader->LoadShadersWithInclData("#define SSAO_SAMPLES " + std::to_string(settings->AmbientOcclusionSamples) + "\n", "Shaders/ssao.vs", "Shaders/ssao.fs");
+		SSAOShader->LoadShadersWithInclData("#define SSAO_SAMPLES " + std::to_string(Settings->AmbientOcclusionSamples) + "\n", "Shaders/ssao.vs", "Shaders/ssao.fs");
 		SSAOShader->SetExpectedMatrices(std::vector<MatrixType> {MatrixType::PROJECTION});
 		SSAOShader->Use();
 		SSAOShader->Uniform1f("radius", 0.5f);
 		SSAOShader->Uniform1i("gPosition", 0);
 		SSAOShader->Uniform1i("gNormal", 1);
 		SSAOShader->Uniform1i("noiseTex", 2);
-		SSAOShader->Uniform2fv("resolution", settings->WindowSize);
+		SSAOShader->Uniform2fv("resolution", Settings->WindowSize);
 
 		SSAOFramebuffer = std::make_unique<Framebuffer>();
-		SSAOFramebuffer->Load(settings->WindowSize, ColorBufferData(GL_TEXTURE_2D, GL_RED, GL_FLOAT, GL_LINEAR, GL_LINEAR));
+		SSAOFramebuffer->Load(Settings->WindowSize, ColorBuffer(GL_TEXTURE_2D, GL_RED, GL_FLOAT, GL_LINEAR, GL_LINEAR));
 
 		std::uniform_real_distribution<float> randomFloats(0.0f, 1.0f);
 		std::default_random_engine generator;
 
 		std::vector<glm::vec3> ssaoSamples;
-		ssaoSamples.reserve(settings->AmbientOcclusionSamples);
-		for (unsigned int i = 0; i < settings->AmbientOcclusionSamples; i++)
+		ssaoSamples.reserve(Settings->AmbientOcclusionSamples);
+		for (unsigned int i = 0; i < Settings->AmbientOcclusionSamples; i++)
 		{
 			glm::vec3 sample(
 				randomFloats(generator) * 2.0f - 1.0f,
@@ -103,7 +151,7 @@ void Postprocess::Init(const GameSettings* settings)
 
 			sample = glm::normalize(sample) * randomFloats(generator);
 
-			float scale = (float)i / (float)settings->AmbientOcclusionSamples;
+			float scale = (float)i / (float)Settings->AmbientOcclusionSamples;
 			scale = glm::mix(0.1f, 1.0f, scale * scale);
 			sample *= scale;
 
@@ -124,18 +172,51 @@ void Postprocess::Init(const GameSettings* settings)
 			ssaoNoise.push_back(noise);
 		}
 
-		SSAONoiseTex = std::make_unique<unsigned int>();
-		glGenTextures(1, SSAONoiseTex.get());
-		glBindTexture(GL_TEXTURE_2D, *SSAONoiseTex);
+		SSAONoiseTex = std::make_unique<Texture>();
+		SSAONoiseTex->GenerateID();
+		SSAONoiseTex->Bind();
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, 4, 4, 0, GL_RGB, GL_FLOAT, &ssaoNoise[0]);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 	}
+
+	TonemapGammaFramebuffer.Load(Settings->WindowSize, ColorBuffer(GL_TEXTURE_2D, GL_RGB, GL_UNSIGNED_BYTE, GL_LINEAR, GL_LINEAR));
+
+	for (int i = 0; i < 2; i++)
+		BlurFramebuffers[i].Load(Settings->WindowSize, ColorBuffer(GL_TEXTURE_2D, GL_RGB16F, GL_FLOAT, GL_LINEAR, GL_LINEAR));
 }
 
-unsigned int Postprocess::GaussianBlur(unsigned int tex, int passes, Framebuffer* writeFramebuffer) const	//Implemented using ping-pong framebuffers (one gaussian blur pass is separable into two lower-cost passes) and linear filtering for performance
+glm::mat4 Postprocess::GetJitterMat()
+{
+	glm::vec2 jitter(0.0f);
+
+	switch (Settings->AAType)
+	{
+		case AA_NONE:
+		case AA_SMAA1X:
+		default:
+			return glm::mat4(1.0f);
+		case AA_SMAAT2X:
+			glm::vec2 jitters[] = {
+				glm::vec2(0.25f, -0.25f),
+				glm::vec2(-0.25f, 0.25f)
+			};
+
+			/*glm::vec2 jitters[] = {
+	glm::vec2(10.0f, -10.0f),
+	glm::vec2(-10.0f, 10.0f)
+};*/
+			jitter = jitters[FrameIndex];
+			break;
+	}
+
+	jitter /= static_cast<glm::vec2>(Settings->WindowSize);
+	return glm::translate(glm::mat4(1.0f), glm::vec3(jitter, 0.0f));
+}
+
+const Texture* Postprocess::GaussianBlur(const Texture* tex, int passes, Framebuffer* writeFramebuffer, unsigned int writeColorBuffer) const	//Implemented using ping-pong framebuffers (one gaussian blur pass is separable into two lower-cost passes) and linear filtering for performance
 {
 	if (passes == 0)
 		return tex;
@@ -149,11 +230,15 @@ unsigned int Postprocess::GaussianBlur(unsigned int tex, int passes, Framebuffer
 	for (int i = 0; i < passes; i++)
 	{
 		if (i == passes - 1 && writeFramebuffer)	//If the calling function specified the framebuffer to write the final result to, bind the given framebuffer for the last pass.
+		{
 			writeFramebuffer->Bind();
+			glDrawBuffer(GL_COLOR_ATTACHMENT0 + writeColorBuffer);
+		}
 		else	//For any pass that doesn't match given criteria, just switch the ping pong fbos
 		{
 			BlurFramebuffers[horizontal].Bind();
-			glBindTexture(GL_TEXTURE_2D, (i == 0) ? (tex) : (BlurFramebuffers[!horizontal].GetColorBuffer(0).OpenGLBuffer));
+			const Texture* bindTex = (i == 0) ? (tex) : (BlurFramebuffers[!horizontal].GetColorBuffer(0).get());
+			bindTex->Bind();
 		}
 		GaussianBlurShader.Uniform1i("horizontal", horizontal);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
@@ -161,10 +246,12 @@ unsigned int Postprocess::GaussianBlur(unsigned int tex, int passes, Framebuffer
 		horizontal = !horizontal;
 	}
 
-	return (writeFramebuffer) ? (writeFramebuffer->GetColorBuffer(0).OpenGLBuffer) : (BlurFramebuffers[!horizontal].GetColorBuffer(0).OpenGLBuffer);
+	glDrawBuffer(GL_COLOR_ATTACHMENT0);
+
+	return (writeFramebuffer) ? (writeFramebuffer->GetColorBuffer(0).get()) : (BlurFramebuffers[!horizontal].GetColorBuffer(0).get());
 }
 
-unsigned int Postprocess::SSAOPass(RenderInfo& info, unsigned int gPosition, unsigned int gNormal)
+const Texture* Postprocess::SSAOPass(RenderInfo& info, const Texture* gPosition, const Texture* gNormal)
 {
 	if (!SSAOFramebuffer)
 	{
@@ -179,12 +266,9 @@ unsigned int Postprocess::SSAOPass(RenderInfo& info, unsigned int gPosition, uns
 	glClear(GL_COLOR_BUFFER_BIT);
 
 
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, gPosition);
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, gNormal);
-	glActiveTexture(GL_TEXTURE2);
-	glBindTexture(GL_TEXTURE_2D, *SSAONoiseTex);
+	gPosition->Bind(0);
+	gNormal->Bind(1);
+	SSAONoiseTex->Bind(2);
 
 	SSAOShader->Use();
 	SSAOShader->UniformMatrix4fv("view", *info.view);
@@ -196,13 +280,13 @@ unsigned int Postprocess::SSAOPass(RenderInfo& info, unsigned int gPosition, uns
 	glEnable(GL_CULL_FACE);
 	glEnable(GL_DEPTH_TEST);
 
-	GaussianBlur(SSAOFramebuffer->GetColorBuffer(0).OpenGLBuffer, 4, SSAOFramebuffer.get());
-	return SSAOFramebuffer->GetColorBuffer(0).OpenGLBuffer;
+	GaussianBlur(SSAOFramebuffer->GetColorBuffer(0).get(), 4, SSAOFramebuffer.get());
+	return SSAOFramebuffer->GetColorBuffer(0).get();
 }
 
-unsigned int Postprocess::SMAAPass(unsigned int colorTex, unsigned int depthTex) const
+const Texture* Postprocess::SMAAPass(const Texture* colorTex, const Texture* depthTex, const Texture* previousColorTex, const Texture* velocityTex, Framebuffer* writeFramebuffer, unsigned int writeColorBuffer) const
 {
-	SMAAFramebuffer.Bind();
+	SMAAFramebuffer->Bind();
 
 	/////////////////1. Edge detection
 	glDrawBuffer(GL_COLOR_ATTACHMENT0);
@@ -210,10 +294,8 @@ unsigned int Postprocess::SMAAPass(unsigned int colorTex, unsigned int depthTex)
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	SMAAShaders[0].Use();
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, colorTex);
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, depthTex);
+	colorTex->Bind(0);
+	depthTex->Bind(1);
 
 	glBindVertexArray(QuadVAO);
 	glDrawArrays(GL_TRIANGLES, 0, 6);
@@ -224,32 +306,65 @@ unsigned int Postprocess::SMAAPass(unsigned int colorTex, unsigned int depthTex)
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	SMAAShaders[1].Use();
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, SMAAFramebuffer.GetColorBuffer(0).OpenGLBuffer);	//bind edges texture to slot 0
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, SMAAAreaTex);
-	glActiveTexture(GL_TEXTURE2);
-	glBindTexture(GL_TEXTURE_2D, SMAASearchTex);
+	if (writeFramebuffer)
+		SMAAShaders[1].Uniform4fv("ssIndices", (FrameIndex) ? (glm::vec4(1, 1, 1, 0)) : (glm::vec4(2, 2, 2, 0)));
+
+	SMAAFramebuffer->GetColorBuffer(0)->Bind(0);	//bind edges texture to slot 0
+	SMAAAreaTex.Bind(1);
+	SMAASearchTex.Bind(2);
 
 	glDrawArrays(GL_TRIANGLES, 0, 6);
 
 	///////////////3. Neighborhood blending
+	if (writeFramebuffer)
+	{
+		glDrawBuffer(GL_COLOR_ATTACHMENT2);
+	}
+	else
+	{
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glDrawBuffer(GL_COLOR_ATTACHMENT0);
+	}
+
 	glEnable(GL_FRAMEBUFFER_SRGB);
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
 	SMAAShaders[2].Use();
 
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, colorTex);
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, SMAAFramebuffer.GetColorBuffer(1).OpenGLBuffer);
+	colorTex->Bind(0);
+	SMAAFramebuffer->GetColorBuffer(1)->Bind(1);
+
+	if (velocityTex != 0)
+	{
+		velocityTex->Bind(2);
+	}
 
 	glDrawArrays(GL_TRIANGLES, 0, 6);
 
 	glDisable(GL_FRAMEBUFFER_SRGB);
+
+	if (writeFramebuffer)
+	{
+		///////////////4. Temporal resolve (optional)
+		writeFramebuffer->Bind();
+		glDrawBuffer(GL_COLOR_ATTACHMENT0 + writeColorBuffer);
+	
+		SMAAShaders[3].Use();
+
+		SMAAFramebuffer->GetColorBuffer(2)->Bind(0);
+		previousColorTex->Bind(1);
+		velocityTex->Bind(2);
+
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+
+		glDrawBuffer(GL_COLOR_ATTACHMENT0);
+
+		return writeFramebuffer->GetColorBuffer(writeColorBuffer).get();
+	}
+
 	return 0;
 }
 
-unsigned int Postprocess::TonemapGammaPass(unsigned int colorTex, unsigned int blurTex, bool bFinal) const
+const Texture* Postprocess::TonemapGammaPass(const Texture* colorTex, const Texture* blurTex, bool bFinal) const
 {
 	(bFinal) ? (glBindFramebuffer(GL_FRAMEBUFFER, 0)) : (TonemapGammaFramebuffer.Bind());
 	glDisable(GL_DEPTH_TEST);
@@ -258,27 +373,43 @@ unsigned int Postprocess::TonemapGammaPass(unsigned int colorTex, unsigned int b
 
 	TonemapGammaShader.Use();
 
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, colorTex);
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, blurTex);
+	colorTex->Bind(0);
+	blurTex->Bind(1);
 	TonemapGammaShader.Uniform1i("HDRbuffer", 0);
 
 	glBindVertexArray(QuadVAO);
 	glDrawArrays(GL_TRIANGLES, 0, 6);
 
-	return (bFinal) ? (0) : (TonemapGammaFramebuffer.GetColorBuffer(0).OpenGLBuffer);
+	return (bFinal) ? (nullptr) : (TonemapGammaFramebuffer.GetColorBuffer(0).get());
 }
 
-void Postprocess::Render(unsigned int colorTex, unsigned int blurTex, unsigned int depthTex, const GameSettings* settings) const
+void Postprocess::Render(const Texture* colorTex, const Texture* blurTex, const Texture* depthTex, const Texture* velocityTex) const
 {
-	if (settings->bBloom)
+	if (Settings->bBloom && blurTex != 0)
 		blurTex = GaussianBlur(blurTex, 10);
 
-	if (settings->AAType == AntiAliasingType::AA_SMAA)
+	if (Settings->AAType == AntiAliasingType::AA_SMAA1X)
 	{
-		unsigned int compositedTex = TonemapGammaPass(colorTex, blurTex);
+		const Texture* compositedTex = TonemapGammaPass(colorTex, blurTex);
 		SMAAPass(compositedTex, depthTex);
+	}
+	else if (Settings->AAType == AntiAliasingType::AA_SMAAT2X && velocityTex != 0)
+	{
+		const Texture* compositedTex = TonemapGammaPass(colorTex, blurTex);
+		unsigned int previousFrameIndex = (static_cast<int>(FrameIndex) - 1) % StorageFramebuffer->GetNumberOfColorBuffers();
+		const Texture* SMAAresult = SMAAPass(compositedTex, depthTex, StorageFramebuffer->GetColorBuffer(previousFrameIndex).get(), velocityTex, StorageFramebuffer.get(), FrameIndex);
+
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glEnable(GL_FRAMEBUFFER_SRGB);
+		QuadShader.Use();
+
+		SMAAresult->Bind(0);
+
+		glBindVertexArray(QuadVAO);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+		glDisable(GL_FRAMEBUFFER_SRGB);
+		
+		FrameIndex = (FrameIndex + 1) % StorageFramebuffer->GetNumberOfColorBuffers();
 	}
 	else
 		TonemapGammaPass(colorTex, blurTex, true);

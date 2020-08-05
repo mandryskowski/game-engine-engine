@@ -1,55 +1,66 @@
 #pragma once
-#include <glad/glad.h>
+#include "Texture.h"
 #include <glm/glm.hpp>
 #include <vector>
 #include <string> 
+#include <memory>
 
-struct ColorBufferData
+namespace GEE_FB
 {
-	unsigned int OpenGLBuffer;
-	GLenum TextureEnum;
-	GLenum InternalFormat;
-	GLenum Type;
-	GLenum MagFilter;
-	GLenum MinFilter;
+	class FramebufferAttachment : public Texture
+	{
+	protected:
+		GLenum TextureEnum;
+		GLenum InternalFormat;
+		GLenum Type;
+		GLenum MagFilter;
+		GLenum MinFilter;
 
-	ColorBufferData(GLenum texEnum = GL_TEXTURE_2D, GLenum internalFormat = GL_RGB, GLenum type = GL_UNSIGNED_BYTE, GLenum magFilter = GL_NEAREST, GLenum minFilter = GL_NEAREST);
-	bool ContainsAlphaChannel();
-	void CreateOpenGLBuffer(glm::uvec2 size, unsigned int samples = 0);
-	void BindToFramebuffer(GLenum target, GLenum attachment);
-};
+		//TODO: Implement this class as a base class for ColorBuffers and DepthBuffers.
+	public:
+		FramebufferAttachment(GLenum texEnum = GL_TEXTURE_2D, GLenum internalFormat = GL_RGB, GLenum type = GL_UNSIGNED_BYTE, GLenum magFilter = GL_NEAREST, GLenum minFilter = GL_NEAREST);
+		virtual bool WasCreated();
+		virtual void CreateOpenGLBuffer(glm::uvec2 size, unsigned int samples = 0);
+		void BindToFramebuffer(GLenum target, GLenum attachment);
+	};
 
-struct DepthBufferData
-{
-	unsigned int OpenGLBuffer;
-	GLenum TextureEnum;
-	GLenum InternalFormat;
-	GLenum MagFilter;
-	GLenum MinFilter;
+	class ColorBuffer : public FramebufferAttachment
+	{
+	public:
+		ColorBuffer(GLenum texEnum = GL_TEXTURE_2D, GLenum internalFormat = GL_RGB, GLenum type = GL_UNSIGNED_BYTE, GLenum magFilter = GL_NEAREST, GLenum minFilter = GL_NEAREST);
+		bool ContainsAlphaChannel();
+		void CreateOpenGLBuffer(glm::uvec2 size, unsigned int samples = 0);
+	};
 
-	DepthBufferData(GLenum texEnum = GL_TEXTURE_2D, GLenum magFilter = GL_NEAREST, GLenum minFilter = GL_NEAREST, GLenum = GL_DEPTH_COMPONENT);
-	bool ContainsStencil();
-	void CreateOpenGLBuffer(glm::uvec2 size, unsigned int samples = 0);
-	void BindToFramebuffer(GLenum target, GLenum attachment);
-};
+	class DepthStencilBuffer : public FramebufferAttachment
+	{
+	public:
+		DepthStencilBuffer(GLenum texEnum = GL_TEXTURE_2D, GLenum internalFormat = GL_DEPTH_COMPONENT, GLenum type = GL_DEPTH_COMPONENT, GLenum magFilter = GL_NEAREST, GLenum minFilter = GL_NEAREST);
+		bool ContainsStencil();
+		void CreateOpenGLBuffer(glm::uvec2 size, unsigned int samples = 0);
+	};
 
-class Framebuffer
-{
-	unsigned int FBO;
-	glm::uvec2 RenderSize;
-public:
-	std::vector <ColorBufferData> ColorBuffers;
-	DepthBufferData* DepthBuffer;
-public:
-	Framebuffer();
+	class Framebuffer
+	{
+		unsigned int FBO;
+		glm::uvec2 RenderSize;
+	public:
+		std::vector <std::shared_ptr<ColorBuffer>> ColorBuffers;
+		std::shared_ptr<DepthStencilBuffer> DepthBuffer;
+	public:
+		Framebuffer();
 
-	bool IsLoaded() const;
-	unsigned int GetFBO() const;
-	ColorBufferData GetColorBuffer(unsigned int index) const;
-	void Load(glm::uvec2 size, ColorBufferData colorBuffer, DepthBufferData* depthBuffer = nullptr, unsigned int samples = 0);	//If you pass a DeptBufferData which OpenGLBuffer is not one (was generated), then this one will be used (another one won't be automatically generated; first delete the GL buffer yourself and set it to 0)
-	void Load(glm::uvec2 size, std::vector <ColorBufferData> colorBuffers, DepthBufferData* depthBuffer = nullptr, unsigned int samples = 0);
-	void BlitToFBO(unsigned int, int = 1);
-	void Bind() const;
-};
-
+		bool IsLoaded() const;
+		unsigned int GetFBO() const;
+		glm::uvec2 GetSize() const;
+		std::shared_ptr<ColorBuffer> GetColorBuffer(unsigned int index) const;
+		unsigned int GetNumberOfColorBuffers() const;
+		void Load(glm::uvec2 size, std::shared_ptr<ColorBuffer> colorBuffer = nullptr, std::shared_ptr<DepthStencilBuffer> depthBuffer = nullptr, unsigned int samples = 0);
+		void Load(glm::uvec2 size, std::vector<std::shared_ptr<ColorBuffer>> colorBuffers, std::shared_ptr<DepthStencilBuffer> depthBuffer = nullptr, unsigned int samples = 0);
+		void Load(glm::uvec2 size, const ColorBuffer& colorBuffer, DepthStencilBuffer* depthBuffer = nullptr, unsigned int samples = 0);
+		void Load(glm::uvec2 size, const std::vector<ColorBuffer>& colorBuffers, DepthStencilBuffer* depthBuffer = nullptr, unsigned int samples = 0);
+		void BlitToFBO(unsigned int, int = 1);
+		void Bind(bool changeViewportSize = true) const;
+	};
+}
 std::string framebufferStatusToString(GLenum);

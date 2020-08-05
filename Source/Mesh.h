@@ -19,8 +19,9 @@ struct RenderInfo
 	bool UseMaterials;
 	bool OnlyShadowCasters;
 	bool CareAboutShader;
+	bool MainPass;
 
-	RenderInfo(glm::mat4* v = nullptr, glm::mat4* p = nullptr, glm::mat4* vp = nullptr, bool materials = true, bool onlyshadow = false, bool careAboutShader = true)
+	RenderInfo(glm::mat4* v = nullptr, glm::mat4* p = nullptr, glm::mat4* vp = nullptr, bool materials = true, bool onlyshadow = false, bool careAboutShader = true, bool mainPass = false)
 	{
 		view = v;
 		projection = p;
@@ -28,6 +29,7 @@ struct RenderInfo
 		UseMaterials = materials;
 		OnlyShadowCasters = onlyshadow;
 		CareAboutShader = careAboutShader;
+		MainPass = mainPass;
 	}
 };
 

@@ -18,7 +18,8 @@ enum MatrixType
 	MV,
 	VP,
 	MVP,
-	NORMAL
+	NORMAL,
+	MATRICES_NB
 };
 
 class Shader
@@ -42,7 +43,7 @@ class Shader
 
 	std::vector <std::pair<unsigned int, std::string>> MaterialTextureUnits;
 	mutable std::vector <UniformLocation> Locations;
-	bool ExpectedMatrices[7];
+	bool ExpectedMatrices[MATRICES_NB];
 
 	unsigned int LoadShader(GLenum type, std::string path, std::string additionalData = std::string());
 	void DebugShader(unsigned int);
@@ -72,4 +73,7 @@ public:
 	void UniformBlockBinding(unsigned int, unsigned int) const;
 	unsigned int GetUniformBlockIndex(std::string) const;
 	void Use() const;
+	void BindMatrices(const glm::mat4& model, const glm::mat4* view, const glm::mat4* projection, const glm::mat4* VP) const;
 };
+
+glm::mat3 ModelToNormal(glm::mat4);

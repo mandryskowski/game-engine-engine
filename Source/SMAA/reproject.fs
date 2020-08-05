@@ -1,37 +1,40 @@
 #define SMAA_RT_METRICS float4(1.0 / SCR_WIDTH, 1.0 / SCR_HEIGHT, SCR_WIDTH, SCR_HEIGHT)
 #define SMAA_GLSL_4 1
 #define SMAA_INCLUDE_VS 0
-#define SMAA_INCLUDE_PS 1
+#define SMAA_INCLUDE_PS 1 
 
 #define SMAATexture2D(tex) sampler2D tex
 
 //in
 in vec2 texCoord;
-in vec2 pixCoord;
-in vec4 offset[3];
 
 //out
 out vec4 fragColor;
 
 //uniform
-uniform sampler2D edgesTex;
-uniform sampler2D areaTex;
-uniform sampler2D searchTex;
-uniform vec4 ssIndices;
-
-vec4 SMAABlendingWeightCalculationPS(vec2 texcoord,
-                                       vec2 pixcoord,
-                                       vec4 offset[3],
-                                       SMAATexture2D(edgesTex),
-                                       SMAATexture2D(areaTex),
-                                       SMAATexture2D(searchTex),
-                                       vec4 subsampleIndices);
-									   
+uniform sampler2D colorTex;
+uniform sampler2D prevColorTex;
+#if SMAA_REPROJECTION
+uniform sampler2D velocityTex;
+#endif
+								  
+vec4 SMAAResolvePS(vec2 texcoord,
+                     SMAATexture2D(currentColorTex),
+                     SMAATexture2D(previousColorTex)
+                     #if SMAA_REPROJECTION
+                     , SMAATexture2D(velocityTex)
+                     #endif
+                     );
 
 void main()
 {
-	fragColor = SMAABlendingWeightCalculationPS(texCoord, pixCoord, offset, edgesTex, areaTex, searchTex, ssIndices);
+	fragColor = SMAAResolvePS(texCoord, colorTex, prevColorTex
+	#if SMAA_REPROJECTION
+	, velocityTex
+	#endif
+	);
 }
+
 /**
  * Copyright (C) 2013 Jorge Jimenez (jorge@iryoku.com)
  * Copyright (C) 2013 Jose I. Echevarria (joseignacioechevarria@gmail.com)

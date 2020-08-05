@@ -39,7 +39,7 @@ brickwall_disp.jpg depth1 false
 Bricks
 deferred
 64
-0.075
+0.06
 3
 bricks.jpg diffuse1 true
 bricks_normal.jpg normal1 false

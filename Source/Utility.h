@@ -65,5 +65,7 @@ glm::quat toQuat(const glm::vec3& euler);
 
 std::string extractDirectory(std::string path);
 
-void printVector(glm::vec3, std::string);
-void printVector(glm::quat, std::string);
+void printVector(glm::vec3, std::string title = std::string());
+void printVector(glm::quat, std::string title = std::string());
+
+void printMatrix(const glm::mat4&, std::string title = std::string());

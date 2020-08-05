@@ -9,8 +9,8 @@
 class Game: public GameManager
 {
 	GLFWwindow *Window;
-	Framebuffer GFramebuffer;
-	Framebuffer MainFramebuffer;
+	GEE_FB::Framebuffer GFramebuffer;
+	GEE_FB::Framebuffer MainFramebuffer;
 	Postprocess GamePostprocess;
 
 	Actor RootActor;
@@ -19,8 +19,6 @@ class Game: public GameManager
 
 	UniformBuffer MatricesBuffer, LightsBuffer;
 
-
-protected:
 	std::unique_ptr<GameSettings> Settings;
 	RenderEngine RenderEng;
 	PhysicsEngine PhysicsEng;
@@ -48,6 +46,7 @@ public:
 	virtual PhysicsEngineManager* GetPhysicsHandle() override;
 	virtual RenderEngineManager* GetRenderEngineHandle() override;
 	virtual AudioEngineManager* GetAudioEngineHandle() override;
+	virtual PostprocessManager* GetPostprocessHandle() override;
 
 	virtual const GameSettings* GetGameSettings() override;
 

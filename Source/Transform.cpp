@@ -388,11 +388,13 @@ Transform& Transform::operator=(Transform&& t) noexcept
 
 Transform& Transform::operator*=(const Transform& t)
 {
+	FlagMyDirtiness();
 	return *(this) * t;
 }
 
 Transform& Transform::operator*=(Transform&& t)
 {
+	FlagMyDirtiness();
 	return *(this) * t;
 }
 
@@ -412,11 +414,6 @@ Transform& Transform::operator*(Transform&& t)
 	Scale *= t.Scale;
 
 	return *this;
-}
-
-glm::mat3 ModelToNormal(glm::mat4 model)
-{
-	return glm::mat3(glm::transpose(glm::inverse(model)));
 }
 
 template void Transform::AddInterpolator<glm::vec3>(std::string, float, float, glm::vec3, glm::vec3, InterpolationType, bool, AnimBehaviour, AnimBehaviour);

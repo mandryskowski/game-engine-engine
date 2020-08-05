@@ -2,6 +2,7 @@
 #include <array>
 #include "RenderEngine.h"
 #include "CollisionObject.h"
+#include "Mesh.h"
 #include "Transform.h"
 
 
@@ -81,8 +82,6 @@ void PhysicsEngine::Init()
 
 void PhysicsEngine::CreatePxActorForObject(CollisionObject* object)
 {
-	std::cout << "Tworze " + object->Name + ".\n";
-
 	glm::vec3 worldObjectScale = object->TransformPtr->GetWorldTransform().ScaleRef;
 
 	for (int i = 0; i < static_cast<int>(object->Shapes.size()); i++)
