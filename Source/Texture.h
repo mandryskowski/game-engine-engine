@@ -2,19 +2,6 @@
 #include <string>
 #include <glad/glad.h>
 
-template <typename T>
-struct stbiOverloads
-{
-	float* foo(const char* filename, int* width, int* height, int* nrChannels, int reqChannels)
-	{
-		return stbi_loadf(filename, width, height, nrChannels, reqChannels);
-	}
-	unsigned int* foo(const char* filename, int* width, int* height, int* nrChannels, int reqChannels)
-	{
-		return stbi_load(filename, width, height, nrChannels, reqChannels);
-	}
-};
-
 class Texture
 {
 protected:
