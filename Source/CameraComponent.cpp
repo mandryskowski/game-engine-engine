@@ -33,7 +33,6 @@ CameraComponent::CameraComponent(GameManager* gameHandle, std::string name, floa
 			i++;
 			return dir;
 		});
-	ComponentTransform.KUPA = true;
 }
 
 glm::mat4 CameraComponent::GetProjectionMat()

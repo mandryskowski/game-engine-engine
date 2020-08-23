@@ -5,9 +5,16 @@
 using namespace MeshSystem;
 
 
-MeshNode::MeshNode(std::string name) :
+MeshNode::MeshNode(std::string name, std::shared_ptr<Mesh> optionalMesh) :
 	Name(name),
 	OverrideMaterial(nullptr)
+{
+	if (optionalMesh)
+		Meshes.push_back(optionalMesh);
+}
+
+MeshNode::MeshNode(std::shared_ptr<Mesh> optionalMesh) :
+	MeshNode("undefined", optionalMesh)
 {
 }
 
@@ -128,6 +135,19 @@ Mesh* MeshNode::FindMesh(std::string name)
 
 	for (int i = 0; i < static_cast<int>(Children.size()); i++)
 		if (Mesh* found = Children[i]->FindMesh(name))
+			return found;
+
+	return nullptr;
+}
+
+const std::shared_ptr<Mesh> MeshNode::FindMeshPtr(std::string name)
+{
+	auto found = std::find_if(Meshes.begin(), Meshes.end(), [name](const std::shared_ptr<Mesh>& mesh) { return mesh->GetName() == name; });
+	if (found != Meshes.end())
+		return *found;
+
+	for (int i = 0; i < static_cast<int>(Children.size()); i++)
+		if (std::shared_ptr<Mesh> found = Children[i]->FindMeshPtr(name))
 			return found;
 
 	return nullptr;
@@ -259,6 +279,11 @@ void MeshTree::SetPath(std::string path)
 Mesh* MeshTree::FindMesh(std::string name)
 {
 	return Root.FindMesh(name);
+}
+
+const std::shared_ptr<Mesh> MeshSystem::MeshTree::FindMeshPtr(std::string name)
+{
+	return Root.FindMeshPtr(name);
 }
 
 Material* MeshSystem::MeshTree::FindMaterial(std::string name)

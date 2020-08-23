@@ -1,12 +1,12 @@
 #pragma once
 #include "Component.h"
+#include "RenderableVolume.h"
 enum LightType
 {
 	DIRECTIONAL,
 	POINT,
 	SPOT
 };
-
 
 class LightComponent: public Component
 {
@@ -22,6 +22,7 @@ class LightComponent: public Component
 	//
 	float OuterCutOffBeforeCos;	//for optimisation purposes; it allows to calculate a cone's radius more easily
 
+	unsigned int LightIndex;
 	unsigned int ShadowMapNr;
 	float Far;
 	glm::mat4 Projection;
@@ -30,17 +31,32 @@ class LightComponent: public Component
 	unsigned int TransformDirtyFlagIndex; //again for optimisation; the ComponentTransform's flag of this index should be on if the light's position/direction has changed
 
 public:
-	LightComponent(GameManager*, std::string name = "undefined", LightType = LightType::POINT, unsigned int = 0, float = 10.0f, glm::mat4 = glm::perspective(glm::radians(90.0f), 1.0f, 0.01f, 10.0f), glm::vec3 = glm::vec3(0.1f), glm::vec3 = glm::vec3(1.0f), glm::vec3 = glm::vec3(0.5f), glm::vec3 = glm::vec3(0.0f));
-	LightType GetType();
-	float GetFar();
-	unsigned int GetShadowMapNr();
-	glm::mat4 GetProjection();
-	glm::mat4 GetVP(Transform* = nullptr);	//you can pass a WorldTransform of this component if it was calculated before (you can save on calculations
-	EngineObjectType GetLightVolumeType();
+	LightComponent(GameManager*, std::string name = "undefinedLight", LightType = LightType::POINT, unsigned int index = 0, unsigned int shadowMapNr = 0, float = 10.0f, glm::mat4 = glm::perspective(glm::radians(90.0f), 1.0f, 0.01f, 10.0f), glm::vec3 = glm::vec3(0.1f), glm::vec3 = glm::vec3(1.0f), glm::vec3 = glm::vec3(0.5f), glm::vec3 = glm::vec3(0.0f));
+	LightType GetType() const;
+	float GetFar() const;
+	unsigned int GetLightIndex() const;
+	unsigned int GetShadowMapNr() const;
+	glm::mat4 GetProjection() const;
+	glm::mat4 GetVP(Transform* = nullptr) const;	//you can pass a WorldTransform of this component if it was calculated before (you can save on calculations
+	EngineBasicShape GetVolumeType() const;
+	Shader* GetRenderShader() const;
 	void CalculateLightRadius();	//calculates ProjectionMat and Far
 	void SetAdditionalData(glm::vec3);
 	void UpdateUBOData(UniformBuffer*, size_t = -1);
 	glm::vec3& operator[](unsigned int);
 };
+
+
+class LightVolume : public RenderableVolume
+{
+	const LightComponent* LightCompPtr;
+public:
+	LightVolume(const LightComponent&);
+	virtual EngineBasicShape GetShape() const override;
+	virtual Transform GetRenderTransform() const override;
+	virtual Shader* GetRenderShader() const override;
+	virtual void SetupRenderUniforms(const Shader& shader) const override;
+};
+
 
 LightType toLightType(std::string);

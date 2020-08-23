@@ -4,6 +4,9 @@
 #include "LightComponent.h"
 #include "MeshSystem.h"
 #include "FileLoader.h"
+#include "Texture.h"
+#include "LightProbe.h"
+#include "SoundSourceComponent.h"
 #include <functional>
 
 
@@ -44,9 +47,7 @@ void EngineDataLoader::LoadMaterials(RenderEngineManager* renderHandle, SearchEn
 
 		filestr >> shaderName >> shininess >> depthScale >> texCount;
 
-		shader = searcher->FindShader(shaderName);
-
-		material->SetRenderShader(shader);
+		material->SetRenderShaderName(shaderName);
 		material->SetShininess(shininess);
 		material->SetDepthScale(depthScale);
 
@@ -57,7 +58,7 @@ void EngineDataLoader::LoadMaterials(RenderEngineManager* renderHandle, SearchEn
 			std::string path, shaderUniformName, isSRGB;
 			filestr >> path >> shaderUniformName >> isSRGB;
 
-			material->AddTexture(new MaterialTexture(textureFromFile(directory + path, (toBool(isSRGB)) ? (GL_SRGB) : (GL_RGB)), shaderUniformName));
+			material->AddTexture(new NamedTexture(textureFromFile(directory + path, (toBool(isSRGB)) ? (GL_SRGB) : (GL_RGB)), shaderUniformName));
 		}
 	}
 }
@@ -79,8 +80,7 @@ void EngineDataLoader::LoadShaders(RenderEngineManager* renderEngHandle, std::st
 				paths[i] = directory + paths[i];
 		}
 
-		Shader* shader = new Shader(paths[0], paths[1], paths[2]);
-		shader->SetName(name);
+		std::shared_ptr<Shader> shader = ShaderLoader::LoadShaders(name, paths[0], paths[1], paths[2]);
 
 		unsigned int expectedMatricesCount, texUnitsCount;
 
@@ -103,7 +103,7 @@ void EngineDataLoader::LoadShaders(RenderEngineManager* renderEngHandle, std::st
 			shader->AddTextureUnit(unitIndex, texUnitName);
 		}
 
-		renderEngHandle->AddExternalShader(shader);
+		renderEngHandle->AddShader(shader, true);
 	}
 }
 
@@ -154,7 +154,7 @@ void EngineDataLoader::LoadComponentData(GameManager* gameHandle, std::stringstr
 		else if (isNextWordEqual(filestr, "merge"))
 			instancingType = MeshTreeInstancingType::MERGE;
 
-		modelPtr = renderEngHandle->CreateModel(ModelComponent(gameHandle, name)).get();
+		modelPtr = renderEngHandle->CreateModel(ModelComponent(gameHandle, Transform(), name)).get();
 
 		MeshSystem::MeshTree* tree = LoadMeshTree(gameHandle, renderEngHandle, searcher, path);
 		std::unique_ptr<MeshSystem::MeshTree> tempTreeCopyForEdit = nullptr;
@@ -179,7 +179,7 @@ void EngineDataLoader::LoadComponentData(GameManager* gameHandle, std::stringstr
 		else
 			projection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 1.0f, 10.0f);
 
-		LightComponent* lightPtr = new LightComponent(gameHandle, name, toLightType(lightType), gameHandle->GetAvailableLightIndex(), 10.0f, projection);
+		std::shared_ptr<LightComponent> lightPtr = std::make_shared<LightComponent>(gameHandle, name, toLightType(lightType), renderEngHandle->GetAvailableLightIndex(), renderEngHandle->GetAvailableLightIndex(), 10.0f, projection);
 		for (unsigned int vector = 0; vector < 3; vector++)
 			for (unsigned int axis = 0; axis < 3; axis++)
 				filestr >> (*lightPtr)[vector][axis];	//TODO: sprawdzic czy sie wywala
@@ -191,8 +191,8 @@ void EngineDataLoader::LoadComponentData(GameManager* gameHandle, std::stringstr
 
 		lightPtr->CalculateLightRadius();
 
-		gameHandle->AddLightToScene(lightPtr);
-		comp = lightPtr;
+		renderEngHandle->AddLight(lightPtr);
+		comp = lightPtr.get();
 	}
 	else if (type == "camera")
 	{
@@ -285,6 +285,35 @@ std::unique_ptr<CollisionObject> EngineDataLoader::LoadCollisionObject(std::stri
 	}
 
 	return obj;
+}
+
+void EngineDataLoader::LoadLightProbes(GameManager* gameHandle, std::stringstream& filestr)
+{
+	int probeCount;
+	filestr >> probeCount;
+
+	for (int i = 0; i < probeCount; i++)
+	{
+		bool bLocal;
+		EngineBasicShape shape;
+		std::string path;
+		Transform probeTransform;
+		
+		filestr >> bLocal;
+		if (bLocal)
+		{
+			int shapeNr;
+			filestr >> shapeNr;
+			shape = static_cast<EngineBasicShape>(shapeNr);
+			LoadTransform(filestr, probeTransform);
+			gameHandle->GetRenderEngineHandle()->AddLightProbe(std::make_shared<LocalLightProbe>(LocalLightProbe(probeTransform, shape)));
+		}
+		else
+		{
+			filestr >> path;
+			gameHandle->GetRenderEngineHandle()->AddLightProbe(LightProbeLoader::LightProbeFromFile(path));
+		}
+	}
 }
 
 void EngineDataLoader::LoadMeshFromAi(Mesh* meshPtr, const aiScene* scene, aiMesh* mesh, std::string directory, bool bLoadMaterial, MaterialLoadingData* matLoadingData, std::vector<glm::vec3>* vertsPosPtr, std::vector<unsigned int>* indicesPtr, std::vector<Vertex>* verticesPtr)
@@ -511,9 +540,12 @@ void EngineDataLoader::LoadLevelFile(GameManager* gameHandle, std::string path)
 
 		else if (type == "newtree")
 			LoadCustomMeshTree(gameHandle, filestr);
-		
+
 		else if (type == "edittree")
 			LoadCustomMeshTree(gameHandle, filestr, true);
+
+		else if (type == "newprobes")
+			LoadLightProbes(gameHandle, filestr);
 
 		else if (type == "materialsfile")
 		{
@@ -554,7 +586,8 @@ MeshSystem::MeshTree* EngineDataLoader::LoadMeshTree(GameManager* gameHandle, Re
 
 	if (MeshSystem::MeshTree* found = renderHandle->FindMeshTree(path, treePtr))
 	{
-		std::cout << "Found " << path << ".\n";
+		if (PrimitiveDebugger::bDebugMeshTrees)
+			std::cout << "Found " << path << ".\n";
 		return found;
 	}
 	if (!treePtr)
@@ -581,9 +614,8 @@ MeshSystem::MeshTree* EngineDataLoader::LoadMeshTree(GameManager* gameHandle, Re
 
 
 
-	Shader* defaultShader = searcher->FindShader("deferred");
 	for (unsigned int i = 0; i < matLoadingData.LoadedMaterials.size(); i++)
-		matLoadingData.LoadedMaterials[i]->SetRenderShader(defaultShader);
+		matLoadingData.LoadedMaterials[i]->SetRenderShaderName("Geometry");
 
 	return treePtr;
 }
@@ -621,12 +653,14 @@ void EngineDataLoader::LoadCustomMeshNode(GameManager* gameHandle, std::stringst
 			treeName = input.substr(0, nodeNamePos);
 			nodeName = input.substr(nodeNamePos + 1);
 
-			std::cout << "Laduje " << treeName << ", a w nim " << nodeName << ".\n";
+			if (PrimitiveDebugger::bDebugMeshTrees)
+				std::cout << "Laduje " << treeName << ", a w nim " << nodeName << ".\n";
 		}
 		else
 		{
 			nodeName = input;
-			std::cout << "Edytuje " << treeToEdit->GetPath() << ", a w nim " << nodeName << ".\n";
+			if (PrimitiveDebugger::bDebugMeshTrees)
+				std::cout << "Edytuje " << treeToEdit->GetPath() << ", a w nim " << nodeName << ".\n";
 		}
 
 		if (bCreateNodes)
@@ -637,7 +671,8 @@ void EngineDataLoader::LoadCustomMeshNode(GameManager* gameHandle, std::stringst
 			std::cerr << "ERROR! Can't load " << input << ".\n";
 			return;
 		}
-		std::cout << "Znalazlem node " << foundNode->GetName() << ".\n";
+		if (PrimitiveDebugger::bDebugMeshTrees)
+			std::cout << "Znalazlem node " << foundNode->GetName() << ".\n";
 
 		MeshSystem::MeshNode& copiedNode = (bCreateNodes) ? (parent->AddChild(*foundNode)) : (*foundNode);
 
@@ -696,7 +731,8 @@ void EngineDataLoader::LoadMeshNodeFromAi(GameManager* gameHandle,const aiScene*
 
 void EngineDataLoader::LoadComponentsFromMeshTree(GameManager* gameHandle, Component* comp, const MeshSystem::MeshNode& node, Material* overrideMaterial)
 {
-	std::cout << comp->GetName() << ":::::" << node.GetMeshCount() << "\n";
+	if (PrimitiveDebugger::bDebugMeshTrees)
+		std::cout << comp->GetName() << ":::::" << node.GetMeshCount() << "\n";
 	ModelComponent* modelCast = dynamic_cast<ModelComponent*>(comp);
 	if (node.GetMeshCount() > 0 && !modelCast)
 	{
@@ -711,7 +747,7 @@ void EngineDataLoader::LoadComponentsFromMeshTree(GameManager* gameHandle, Compo
 
 	for (int i = 0; i < node.GetChildCount(); i++)
 	{
-		ModelComponent* child = gameHandle->GetRenderEngineHandle()->CreateModel(ModelComponent(gameHandle, node.GetChild(i)->GetName())).get();
+		ModelComponent* child = gameHandle->GetRenderEngineHandle()->CreateModel(ModelComponent(gameHandle, Transform(), node.GetChild(i)->GetName())).get();
 		comp->AddComponent(child);
 		LoadComponentsFromMeshTree(gameHandle, child, *node.GetChild(i), overrideMaterial);
 	}

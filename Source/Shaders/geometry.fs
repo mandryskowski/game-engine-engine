@@ -12,9 +12,6 @@ struct Material
 	sampler2D metallic1;
 	sampler2D ao1;
 	#endif
-	#ifdef PHONG_SHADING
-	sampler2D specular1;
-	#endif
 	
 	float shininess;
 };
@@ -36,7 +33,12 @@ in VS_OUT
 layout (location = 0) out vec3 gPosition;
 layout (location = 1) out vec3 gNormal;
 layout (location = 2) out vec4 gAlbedoSpec;
-#ifdef CALC_VELOCITY_BUFFER
+#ifdef PBR_SHADING
+layout (location = 3) out vec3 gAlphaMetalAo;
+#endif
+#if defined(CALC_VELOCITY_BUFFER) && defined(PBR_SHADING)
+layout (location = 4) out vec2 velocity;
+#elif defined(CALC_VELOCITY_BUFFER)
 layout (location = 3) out vec2 velocity;
 #endif
 
@@ -116,10 +118,16 @@ void main()
 	gNormal = normal;
 	gAlbedoSpec.rgb = texture(material.albedo1, texCoord).rgb;
 	gAlbedoSpec.a = texture(material.specular1, texCoord).r;
+	#ifdef PBR_SHADING
+	gAlphaMetalAo.r = pow(texture(material.roughness1, texCoord).r, 2.0);
+	gAlphaMetalAo.g = texture(material.metallic1, texCoord).r;
+	gAlphaMetalAo.b = texture(material.ao1, texCoord).r;
+	#endif
 	
 	#ifdef CALC_VELOCITY_BUFFER
 	vec2 currentPos = vec2(gl_FragCoord.xy) / vec2(SCR_WIDTH, SCR_HEIGHT);
 	vec2 previousPos = (frag.prevMVPPosition.xy / frag.prevMVPPosition.w) * 0.5 + 0.5;
 	velocity = (currentPos - previousPos);
+	DUPA
 	#endif
 }

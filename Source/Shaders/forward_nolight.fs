@@ -1,6 +1,6 @@
 struct Material
 {
-	sampler2D diffuse1;
+	sampler2D albedo1;
 };
 
 //in
@@ -18,7 +18,7 @@ uniform Material material;
 
 void main()
 {
-	fragColor = mix(texture(material.diffuse1, texCoord1), texture(material.diffuse1, texCoord2), blend);
+	fragColor = mix(texture(material.albedo1, texCoord1), texture(material.albedo1, texCoord2), blend);
 	brightColor = fragColor;
 	
 	//fragColor = vec4(texCoord1, 0.0, 1.0);

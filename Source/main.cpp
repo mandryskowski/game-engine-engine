@@ -4,8 +4,8 @@
 class KulkiGame : public Game
 {
 public:
-	KulkiGame(GLFWwindow* window) :
-		Game()
+	KulkiGame(GLFWwindow* window, const ShadingModel& shading) :
+		Game(shading)
 	{
 		Init(window);
 	} 
@@ -16,8 +16,35 @@ public:
 	}
 };
 
+class Base
+{
+public:
+	Base()
+	{
+		method();
+	}
+	virtual void method()
+	{
+		std::cout << "jedynka\n";
+	}
+};
+
+class Child : public Base
+{
+public:
+	Child():
+		Base()
+	{}
+	virtual void method() override
+	{
+		Base::method();
+		std::cout << "dwojka\n";
+	}
+};
+
 int main()
 {
+	Child xd;
 	glm::quat myRot = toQuat(glm::vec3(0.0f, 20.0f, 0.0f));
 	glm::quat shapeRot = toQuat(glm::vec3(0.0f, 45.0f, 0.0f));
 	myRot = shapeRot * myRot;
@@ -26,6 +53,7 @@ int main()
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+	glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, true);
 
 	GLFWwindow* programWindow = glfwCreateWindow(800, 600, "c00lki", nullptr, nullptr);
 
@@ -43,7 +71,7 @@ int main()
 		return -1;
 	}
 
-	KulkiGame game(programWindow);
+	KulkiGame game(programWindow, ShadingModel::SHADING_PBR_COOK_TORRANCE);
 	game.Run();
 	return 0;
 }
@@ -53,5 +81,9 @@ int main()
 	0-9 free
 	10 2D shadow map array
 	11 3D shadow map array
-	12+ free
+	12 irradiance map array
+	13 prefilter map array
+	14 BRDF lookup texture
+	15+ free
+	TODO: Environment map jest mipmapowany; czy te mipmapy sa wgl uzyte???
 */

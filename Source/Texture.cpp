@@ -42,13 +42,20 @@ void Texture::Bind(int texSlot) const
 	glBindTexture(Type, ID);
 }
 
-MaterialTexture::MaterialTexture(Texture tex, std::string name) :
+void Texture::Dispose()
+{
+	if (ID > 0)
+		glDeleteTextures(1, &ID);
+	ID = 0;
+}
+
+NamedTexture::NamedTexture(Texture tex, std::string name) :
 	Texture(tex),
 	ShaderName(name)
 {
 }
 
-std::string MaterialTexture::GetShaderName()
+std::string NamedTexture::GetShaderName()
 {
 	return ShaderName;
 }
@@ -82,12 +89,16 @@ template <class T> Texture textureFromFile(std::string path, GLenum internalform
 	glBindTexture(GL_TEXTURE_2D, tex);
 
 	int width, height, nrChannels;
+	GLenum type = GL_UNSIGNED_BYTE;
 
 	void* data;
 	if (std::is_same<T, unsigned char>::value)
 		data = stbi_load(path.c_str(), &width, &height, &nrChannels, 0);
 	else if (std::is_same<T, float>::value)
+	{
 		data = stbi_loadf(path.c_str(), &width, &height, &nrChannels, 0);
+		type = GL_FLOAT;
+	}
 
 	if (!data)
 	{
@@ -110,7 +121,7 @@ template <class T> Texture textureFromFile(std::string path, GLenum internalform
 		std::cout << "Info: Channel count " << nrChannels << " of " << path << " is not supported. Texture will be loaded as GL_RGB.\n";
 	}
 
-	glTexImage2D(GL_TEXTURE_2D, 0, internalformat, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+	glTexImage2D(GL_TEXTURE_2D, 0, internalformat, width, height, 0, format, type, data);
 
 	if (minFilter == GL_NEAREST_MIPMAP_NEAREST || minFilter == GL_LINEAR_MIPMAP_NEAREST || minFilter == GL_NEAREST_MIPMAP_LINEAR || minFilter == GL_LINEAR_MIPMAP_LINEAR)
 		glGenerateMipmap(GL_TEXTURE_2D);

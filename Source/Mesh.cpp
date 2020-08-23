@@ -43,6 +43,11 @@ void Mesh::SetMaterial(Material* material)
 	DefaultMeshMaterial = material;
 }
 
+void Mesh::Bind() const
+{
+	glBindVertexArray(VAO);
+}
+
 void Mesh::LoadFromGLBuffers(unsigned int vertexCount, unsigned int vao, unsigned int vbo, unsigned int ebo)
 {
 	VertexCount = vertexCount;

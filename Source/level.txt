@@ -2,6 +2,13 @@
 materialsfile EngineMaterials/Materials.fware
 collisionfile CollisionData.txt
 
+newprobes 4
+0 apartment.hdr
+1 1 0 0.38 0 skip 1.1 1.1 10.1 break
+1 1 2 0.7 -8 break
+1 1 0.147809 1.93476 -4.31168 break
+
+
 edittree nanosuit/nanosuit.obj
 Body col 1 ps 0 0 11 0 2.5 5 2 transform skip 0 0 0 break , 
 Arms material doublebarrel/doublebarrel2.obj:Darkwood col 2 prs  0 -3 9 0 -10 0 0 2 5 1    0  3 9 0 -10 0 0 2 5 1 ,
@@ -35,7 +42,9 @@ Tunnel
 material Bricks
 end
 
-131283129dsaadjkasd
+edittree hqSphere/hqSphere.obj
+Sphere material RustedIron end
+
 newtree SubwayoCube
 subway/subway.obj:Walls_Cube.003 material BrickWall :
 	tunnel/tunnel.obj:Tunnel
@@ -249,6 +258,7 @@ end
 
 newactor Actor secondtunnel
 newcomp model SecondTunnel root tunnel/tunnel.obj
+edit Tunnel material RustedIron end
 transform
 5 0 0
 end
@@ -271,8 +281,8 @@ transform
 10 0 10
 end
 
-newactor Actor Xd
-newcomp model Skybox root StupidSkybox
+neaactor Actor Xd
+neacomp model Skybox root StupidSkybox
 end
 
 newactor Actor GameLevel

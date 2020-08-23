@@ -18,7 +18,7 @@ enum InterpolationType
 ==========================================
 */
 
-enum EngineObjectType
+enum EngineBasicShape
 {
 	QUAD,
 	CUBE,

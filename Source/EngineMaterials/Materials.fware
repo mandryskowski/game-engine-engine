@@ -7,43 +7,56 @@ Forward_NoLight
 1
 MVP
 1
-0 diffuse1
+0 albedo1
 
 end
 
 Marble
-deferred
+Geometry
 64
 0
 2
-marble.png diffuse1 true
+marble.png albedo1 true
 marble_normal.png normal1 false
 
 Bunker
-deferred
+Geometry
 32
 0
 2
-wall.jpg diffuse1 true
+wall.jpg albedo1 true
 wall_normal.jpg normal1 false
 
 BrickWall
-deferred
+Geometry
 64
 0.03
-3
-brickwall.jpg diffuse1 true
+4
+brickwall.jpg albedo1 true
+brickwall_roughness.jpg roughness1 false
 brickwall_normal.jpg normal1 false
 brickwall_disp.jpg depth1 false
 
 Bricks
-deferred
+Geometry
 64
 0.06
 3
-bricks.jpg diffuse1 true
+bricks.jpg albedo1 true
 bricks_normal.jpg normal1 false
 bricks_disp.jpg depth1 false
+
+RustedIron
+Geometry
+64
+0
+5
+rustediron_albedo.png albedo1 true
+rustediron_normal.png normal1 false
+rustediron_roughness.png roughness1 false
+rustediron_metallic.png metallic1 false
+rustediron_ao.png ao1 false
+
 
 FireAtlas
 atlas 4 2
@@ -51,7 +64,7 @@ Forward_NoLight
 0
 0
 1
-atlas.png diffuse1 true
+atlas.png albedo1 true
 
 end
 

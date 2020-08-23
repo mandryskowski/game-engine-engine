@@ -5,7 +5,7 @@
 
 struct Material
 {
-	sampler2D diffuse1;
+	sampler2D albedo1;
 	sampler2D specular1;
 	sampler2D normal1;
 	sampler2D depth1;
@@ -181,7 +181,7 @@ void main()
 	//return;
 	
 	vec2 parallaxCoord = ParallaxOcclusion(frag.texCoord);
-	vec3 diffuseColor = texture(material.diffuse1, parallaxCoord).rgb;
+	vec3 diffuseColor = texture(material.albedo1, parallaxCoord).rgb;
 	vec3 specularColor = texture(material.specular1, parallaxCoord).rgb;
 	vec3 normal = texture(material.normal1, parallaxCoord).rgb;
 	if (normal == vec3(0.0))

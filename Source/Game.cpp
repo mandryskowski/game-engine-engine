@@ -3,14 +3,75 @@
 #include "ModelComponent.h"
 #include "CameraComponent.h"
 #include "FileLoader.h"
+#include "LightProbe.h"
 #include <thread>
+
+bool PrimitiveDebugger::bDebugMeshTrees = false;
+bool PrimitiveDebugger::bDebugProbeLoading = false;
+bool PrimitiveDebugger::bDebugCubemapFromTex = false;
+bool PrimitiveDebugger::bDebugFramebuffers = false;
+bool PrimitiveDebugger::bDebugHierarchy = false;
 
 CameraComponent* mouseContextCamera = nullptr;
 
-Game::Game() :
-	RootActor(static_cast<GameManager*>(this), "Root"), Settings(std::make_unique<GameSettings>("Settings.ini")), AudioEng(static_cast<GameManager*>(this)), RenderEng(static_cast<GameManager*>(this)), PhysicsEng(&DebugMode)
+void APIENTRY debugOutput(GLenum source,
+	GLenum type,
+	unsigned int id,
+	GLenum severity,
+	GLsizei length,
+	const char* message,
+	const void* userParam)
+{
+	// ignore non-significant error/warning codes
+	if (id == 131169 || id == 131185 || id == 131218 || id == 131204) return;
+	if (type == GL_DEBUG_TYPE_PERFORMANCE_ARB)
+		return;
+
+	std::cout << "---------------" << std::endl;
+	std::cout << "Debug message (" << id << "): " << message << std::endl;
+
+	switch (source)
+	{
+	case GL_DEBUG_SOURCE_API_ARB:             std::cout << "Source: API"; break;
+	case GL_DEBUG_SOURCE_WINDOW_SYSTEM_ARB:   std::cout << "Source: Window System"; break;
+	case GL_DEBUG_SOURCE_SHADER_COMPILER_ARB: std::cout << "Source: Shader Compiler"; break;
+	case GL_DEBUG_SOURCE_THIRD_PARTY_ARB:     std::cout << "Source: Third Party"; break;
+	case GL_DEBUG_SOURCE_APPLICATION_ARB:     std::cout << "Source: Application"; break;
+	case GL_DEBUG_SOURCE_OTHER_ARB:           std::cout << "Source: Other"; break;
+	} std::cout << std::endl;
+
+	switch (type)
+	{
+	case GL_DEBUG_TYPE_ERROR_ARB:               std::cout << "Type: Error"; break;
+	case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR_ARB: std::cout << "Type: Deprecated Behaviour"; break;
+	case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR_ARB:  std::cout << "Type: Undefined Behaviour"; break;
+	case GL_DEBUG_TYPE_PORTABILITY_ARB:         std::cout << "Type: Portability"; break;
+	case GL_DEBUG_TYPE_PERFORMANCE_ARB:         std::cout << "Type: Performance"; break;
+	//case GL_DEBUG_TYPE_MARKER_ARB:              std::cout << "Type: Marker"; break;
+	//case GL_DEBUG_TYPE_PUSH_GROUP_ARB:          std::cout << "Type: Push Group"; break;
+	//case GL_DEBUG_TYPE_POP_GROUP_ARB:           std::cout << "Type: Pop Group"; break;
+	case GL_DEBUG_TYPE_OTHER_ARB:               std::cout << "Type: Other"; break;
+	} std::cout << std::endl;
+	
+	switch (severity)
+	{
+	case GL_DEBUG_SEVERITY_HIGH_ARB:         std::cout << "Severity: high"; break;
+	case GL_DEBUG_SEVERITY_MEDIUM_ARB:       std::cout << "Severity: medium"; break;
+	case GL_DEBUG_SEVERITY_LOW_ARB:          std::cout << "Severity: low"; break;
+	//case GL_DEBUG_SEVERITY_NOTIFICATION_ARB: std::cout << "Severity: notification"; break;
+	} std::cout << std::endl;
+	std::cout << std::endl;
+}
+
+Game::Game(const ShadingModel& shading) :
+	RootActor(static_cast<GameManager*>(this), "Root"), Settings(std::make_unique<GameSettings>("Settings.ini")), AudioEng(static_cast<GameManager*>(this)), RenderEng(static_cast<GameManager*>(this), shading), PhysicsEng(&DebugMode), Shading(shading), PreviousFrameView(glm::mat4(1.0f))
 {
 	glDisable(GL_MULTISAMPLE);
+	glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
+
+	glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS_ARB);
+	glDebugMessageCallbackARB(debugOutput, nullptr);
+	glDebugMessageControlARB(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
 
 	ActiveCamera = nullptr;
 
@@ -32,34 +93,14 @@ void Game::Init(GLFWwindow* window)
 	glfwSetCursorPos(Window, (double)Settings->WindowSize.x / 2.0, (double)Settings->WindowSize.y / 2.0);
 	glfwSetCursorPosCallback(Window, cursorPosCallback);
 
-	std::shared_ptr<GEE_FB::DepthStencilBuffer> sharedDepthStencil = std::make_shared<GEE_FB::DepthStencilBuffer>(GL_TEXTURE_2D, GL_DEPTH24_STENCIL8, GL_UNSIGNED_INT_24_8, GL_NEAREST, GL_NEAREST);	//we share this buffer between the geometry and main framebuffer - we want deferred-rendered objects depth to influence light volumes&forward rendered objects
-	std::shared_ptr<GEE_FB::ColorBuffer> velocityBuffer = std::make_shared<GEE_FB::ColorBuffer>(GL_TEXTURE_2D, GL_RGB16F, GL_FLOAT, GL_NEAREST, GL_NEAREST);
-	std::vector<std::shared_ptr<GEE_FB::ColorBuffer>> gColorBuffers = {
-		std::make_shared<GEE_FB::ColorBuffer>(GL_TEXTURE_2D, GL_RGB16F, GL_FLOAT, GL_NEAREST, GL_NEAREST),	//gPosition texture
-		std::make_shared<GEE_FB::ColorBuffer>(GL_TEXTURE_2D, GL_RGB16F, GL_FLOAT, GL_NEAREST, GL_NEAREST),	//gNormal texture
-		std::make_shared<GEE_FB::ColorBuffer>(GL_TEXTURE_2D, GL_RGBA, GL_FLOAT, GL_NEAREST, GL_NEAREST)		//gAlbedoSpec texture
-		//std::make_shared<GEE_FB::ColorBuffer>(GL_TEXTURE_2D, GL_RGBA, GL_FLOAT, GL_NEAREST, GL_NEAREST)		//roughness, metallic, ao texture
-	};
-	if (Settings->IsVelocityBufferNeeded())
-		gColorBuffers.push_back(velocityBuffer);
-	GFramebuffer.Load(Settings->WindowSize, gColorBuffers, sharedDepthStencil);
-
-	std::vector<std::shared_ptr<GEE_FB::ColorBuffer>> colorBuffers;
-	colorBuffers.push_back(std::make_shared<GEE_FB::ColorBuffer>(GL_TEXTURE_2D, GL_RGBA16F, GL_FLOAT, GL_LINEAR, GL_LINEAR));	//add color buffer
-	if (Settings->bBloom)
-		colorBuffers.push_back(std::make_shared<GEE_FB::ColorBuffer>(GL_TEXTURE_2D, GL_RGBA16F, GL_FLOAT, GL_LINEAR, GL_LINEAR));	//add blur buffer
-	if (Settings->IsVelocityBufferNeeded())
-		colorBuffers.push_back(velocityBuffer);
-	MainFramebuffer.Load(Settings->WindowSize, colorBuffers, sharedDepthStencil);	//color and blur buffers
 
 	MatricesBuffer.Generate(0, sizeof(glm::mat4) * 2);
 
-	RenderEng.Init();
+	RenderEng.Init(Settings->WindowSize);
 	PhysicsEng.Init();
 	Searcher.Setup(&RenderEng, &AudioEng, &RootActor);
-	GamePostprocess.Init(Settings.get());
 
-	RenderEng.SetupShadowmaps();
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 void Game::LoadLevel(std::string path)
@@ -72,23 +113,8 @@ void Game::LoadLevel(std::string path)
 	RootActor.Setup(&Searcher);
 	std::cout << "Data loading finished.\n";
 
-	RootActor.DebugHierarchy();
-}
-
-
-void Game::SetupLights()
-{
-	LightsBuffer.Generate(1, sizeof(glm::vec4) * 2 + Lights.size() * 192);
-	LightsBuffer.SubData1i((int)Lights.size(), (size_t)0);
-
-	UpdateLightUniforms();
-}
-
-void Game::UpdateLightUniforms()
-{
-	LightsBuffer.offsetCache = sizeof(glm::vec4) * 2;
-	for (unsigned int i = 0; i < Lights.size(); i++)
-		Lights[i]->UpdateUBOData(&LightsBuffer);
+	if (PrimitiveDebugger::bDebugHierarchy)
+		RootActor.DebugHierarchy();
 }
 
 void Game::BindActiveCamera(CameraComponent* cam)
@@ -105,16 +131,6 @@ std::shared_ptr<Actor> Game::AddActorToScene(std::shared_ptr<Actor> actor)
 {
 	RootActor.AddChild(actor);
 	return actor;
-}
-
-void Game::AddLightToScene(LightComponent* light)
-{
-	Lights.push_back(light);
-}
-
-int Game::GetAvailableLightIndex()
-{
-	return Lights.size();
 }
 
 SearchEngine* Game::GetSearchEngine()
@@ -137,11 +153,6 @@ AudioEngineManager* Game::GetAudioEngineHandle()
 	return &AudioEng;
 }
 
-PostprocessManager* Game::GetPostprocessHandle()
-{
-	return &GamePostprocess;
-}
-
 const GameSettings* Game::GetGameSettings()
 {
 	return Settings.get();
@@ -158,8 +169,8 @@ void Game::Run()
 		return;
 	}
 
-	SetupLights();
-	 
+	RenderEng.PreRenderPass();
+
 	float lastUpdateTime = (float)glfwGetTime();
 	const float timeStep = 1.0f / 60.0f;
 	float deltaTime = 0.0f;
@@ -195,6 +206,11 @@ void Game::Run()
 		else if (fraction > 0.9f)
 			wasSecondFPS = false;
 
+		if (GLenum error = glGetError())
+		{
+			std::cout << "OpenGL Error: " << error << ".\n";
+		}
+
 		RootActor.HandleInputsAll(Window, deltaTime);
 
 		timeAccumulator += deltaTime;
@@ -206,8 +222,8 @@ void Game::Run()
 			timeAccumulator -= timeStep;
 		}
 
-		RenderEng.FindShader("geometry")->Use();
-		RenderEng.FindShader("geometry")->Uniform1f("velocityScale", timeStep / deltaTime);
+		//RenderEng.FindShader("Geometry")->Use();
+		//RenderEng.FindShader("Geometry")->Uniform1f("velocityScale", timeStep / deltaTime);
 		Render();
 		ticks++;
 	}
@@ -217,8 +233,7 @@ void Game::Update(float deltaTime)
 {
 	PhysicsEng.Update(deltaTime);
 	RootActor.UpdateAll(deltaTime);
-	MatricesBuffer.SubDataMatrix4fv(ActiveCamera->GetTransform().GetWorldTransform().GetViewMatrix(),0);
-	LightsBuffer.SubData4fv(ActiveCamera->GetTransform().GetWorldTransform().PositionRef, 16);
+	MatricesBuffer.SubDataMatrix4fv(ActiveCamera->GetTransform().GetWorldTransform().GetViewMatrix(), 0);
 	AudioEng.Update();
 }
 float pBegin = 0.0f;
@@ -226,83 +241,20 @@ bool DUPA = false;
 void Game::Render()
 {
 	Transform camWorld = ActiveCamera->GetTransform().GetWorldTransform();
+	glm::vec3 camPos = ActiveCamera->GetTransform().GetWorldTransform().PositionRef;
 	glm::mat4 view = camWorld.GetViewMatrix();
 	glm::mat4 projection = ActiveCamera->GetProjectionMat();
 	glm::mat4 VP = ActiveCamera->GetVP(&camWorld);
 	RenderInfo info(&view, &projection, &VP);
-	info.MainPass = true;
 
-	if (DebugMode)
-		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-
-	////////////////////1. Shadow maps pass
-	if (!DUPA || (Settings->ShadowLevel > SettingLevel::SETTING_MEDIUM))
-	{
-		RenderEng.RenderShadowMaps(Lights);
-		DUPA = true;
-	}
-	//std::cout << "Zjadlo mi " << (time2 - time1) * 1000.0f << "ms.\n";
-
-	////////////////////2. Geometry pass
-	GFramebuffer.Bind();
-	glViewport(0, 0, Settings->WindowSize.x, Settings->WindowSize.y);
-	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_CULL_FACE);
+	info.camPos = &camPos;
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glDrawBuffer(GL_BACK);
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	Shader* gShader = RenderEng.FindShader("geometry");
-	gShader->Use();
-	gShader->Uniform3fv("camPos", camWorld.PositionRef);
+	RenderEng.FullRender(info);
 	
-	RenderEng.RenderScene(info, gShader);
-	
-	////////////////////2.5 SSAO pass
-
-	const Texture* SSAOtex = nullptr;
-	if (Settings->AmbientOcclusionSamples > 0)
-		//SSAOtex = RenderEng.RenderSSAO(info, GFramebuffer.GetColorBuffer(0)->GetID(), GFramebuffer.GetColorBuffer(1)->GetID(), GamePostprocess);	//pass gPosition and gNormal
-		SSAOtex = GamePostprocess.SSAOPass(info, GFramebuffer.GetColorBuffer(0).get(), GFramebuffer.GetColorBuffer(1).get());	//pass gPosition and gNormal
-	
-
-	////////////////////3. Lighting pass
-	UpdateLightUniforms();
-	MainFramebuffer.Bind();
-	glClearBufferfv(GL_COLOR, 0, glm::value_ptr(glm::vec3(0.0f, 0.0f, 0.0f)));
-	glClearBufferfv(GL_COLOR, 1, glm::value_ptr(glm::vec3(0.0f)));
-
-	for (int i = 0; i < 3; i++)
-	{
-		GFramebuffer.GetColorBuffer(i)->Bind(i);
-	}
-
-	if (SSAOtex)
-		SSAOtex->Bind(3);
-	RenderEng.RenderLightVolumes(info, Lights, Settings->WindowSize);
-
-	////////////////////3.5 Forward rendering pass
-	glEnable(GL_DEPTH_TEST);
-	glDisable(GL_CULL_FACE);
-	
-	std::vector<Shader*> forwardShaders = RenderEng.GetForwardShaders();
-	for (unsigned int i = 0; i < forwardShaders.size(); i++)
-		RenderEng.RenderScene(info, forwardShaders[i]);
-
-	if (DebugMode)
-		PhysicsEng.DebugRender(&RenderEng, info);
-	
-
-	////////////////////4. Postprocessing pass (Blur + Tonemapping & Gamma Correction)
-	GamePostprocess.Render(MainFramebuffer.GetColorBuffer(0).get(), (Settings->bBloom) ? (MainFramebuffer.GetColorBuffer(1).get()) : (nullptr), MainFramebuffer.DepthBuffer.get(), (Settings->IsVelocityBufferNeeded()) ? (GFramebuffer.GetColorBuffer(3).get()) : (nullptr));
-	//GamePostprocess.Render(GFramebuffer.GetColorBuffer(3)->GetID(), 0, MainFramebuffer.DepthBuffer->GetID(), (Settings->IsVelocityBufferNeeded()) ? (GFramebuffer.GetColorBuffer(3)->GetID()) : (0));
-
-	if (pBegin == 0.0f)
-		pBegin = (float)glfwGetTime();
-	float time1, time2;
-	time1 = (float)glfwGetTime() - pBegin;
 	glfwSwapBuffers(Window);
-	time2 = (float)glfwGetTime() - pBegin;
-	timeSum += time2 - time1;
 }
 
 

@@ -9,27 +9,34 @@ struct Vertex
 	glm::vec2 TexCoord;
 	glm::vec3 Tangent;
 	glm::vec3 Bitangent;
+	//glm::ivec4 BoneIDs;
+	//glm::vec4 BoneWeights;
 };
+
 
 struct RenderInfo
 {
+	glm::vec3* camPos;
 	glm::mat4* view;
 	glm::mat4* projection;
 	glm::mat4* VP;
+	glm::mat4* previousFrameView;
 	bool UseMaterials;
 	bool OnlyShadowCasters;
 	bool CareAboutShader;
 	bool MainPass;
 
-	RenderInfo(glm::mat4* v = nullptr, glm::mat4* p = nullptr, glm::mat4* vp = nullptr, bool materials = true, bool onlyshadow = false, bool careAboutShader = true, bool mainPass = false)
+	RenderInfo(glm::mat4* v = nullptr, glm::mat4* p = nullptr, glm::mat4* vp = nullptr, bool materials = true, bool onlyshadow = false, bool careAboutShader = true, bool mainPass = false):
+		camPos(nullptr),
+		view(v),
+		projection(p),
+		VP(vp),
+		previousFrameView(nullptr),
+		UseMaterials(materials),
+		OnlyShadowCasters(onlyshadow),
+		CareAboutShader(careAboutShader),
+		MainPass(mainPass)
 	{
-		view = v;
-		projection = p;
-		VP = vp;
-		UseMaterials = materials;
-		OnlyShadowCasters = onlyshadow;
-		CareAboutShader = careAboutShader;
-		MainPass = mainPass;
 	}
 };
 
@@ -46,13 +53,16 @@ class Mesh
 	bool CastsShadow;
 
 public:
-	Mesh(std::string="undefined");
+	Mesh(std::string="undefinedMesh");
 	unsigned int GetVAO() const;
 	unsigned int GetVertexCount() const;
 	std::string GetName() const;
 	Material* GetMaterial();
 	bool CanCastShadow() const;
+
 	void SetMaterial(Material*);
+
+	void Bind() const;
 	void LoadFromGLBuffers(unsigned int vertexCount, unsigned int VAO, unsigned int VBO, unsigned int EBO = 0);
 	void GenerateVAO(std::vector<Vertex>*, std::vector<unsigned int>*);
 	void Render() const;

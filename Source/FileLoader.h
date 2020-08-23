@@ -28,6 +28,7 @@ class EngineDataLoader
 	static void LoadShaders(RenderEngineManager*, std::stringstream&, std::string path);
 	static void LoadComponentData(GameManager*, std::stringstream&, Actor* currentActor);
 	static std::unique_ptr<CollisionObject> LoadCollisionObject(std::string path, PhysicsEngineManager* physicsHandle, std::stringstream&);
+	static void LoadLightProbes(GameManager*, std::stringstream&);
 
 public:
 	static void LoadMeshFromAi(Mesh* meshPtr, const aiScene* scene, aiMesh* mesh, std::string directory, bool bLoadMaterial, MaterialLoadingData* matLoadingData = nullptr, std::vector<glm::vec3>* vertsPosPtr = nullptr, std::vector<unsigned int>* indicesPtr = nullptr, std::vector<Vertex>* verticesPtr = nullptr);

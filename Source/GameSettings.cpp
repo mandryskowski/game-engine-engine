@@ -31,15 +31,20 @@ bool GameSettings::IsTemporalReprojectionEnabled() const
 	return AAType == AntiAliasingType::AA_SMAAT2X;
 }
 
-std::string GameSettings::GetShaderDefines() const
+std::string GameSettings::GetShaderDefines(glm::uvec2 resolution) const
 {
-	std::string shaderDefines = "#define SCR_WIDTH " + std::to_string(WindowSize.x) + 
-							  "\n#define SCR_HEIGHT " + std::to_string(WindowSize.y) + "\n";
+	if (resolution == glm::uvec2(0))
+		resolution = WindowSize;
+	std::string shaderDefines = "#define SCR_WIDTH " + std::to_string(resolution.x) + 
+							  "\n#define SCR_HEIGHT " + std::to_string(resolution.y) + "\n";
 
 	if (bBloom)
 		shaderDefines += "#define ENABLE_BLOOM 1\n";
 	if (AmbientOcclusionSamples > 0)
+	{
 		shaderDefines += "#define ENABLE_SSAO 1\n";
+		shaderDefines += "#define SSAO_SAMPLES " + std::to_string(AmbientOcclusionSamples) + "\n";
+	}
 	if (IsVelocityBufferNeeded())
 		shaderDefines += "#define CALC_VELOCITY_BUFFER 1\n";
 	if (POMLevel != SETTING_NONE)

@@ -1,7 +1,13 @@
 #pragma once
-#include "RenderEngine.h"
-#include "AudioEngine.h"
-#include "Actor.h"
+#include <string>
+
+class RenderEngine;
+class Actor;
+class ModelComponent;
+class Material;
+class Shader;
+class AudioEngine;
+class SoundSourceComponent;
 
 class SearchEngine
 {

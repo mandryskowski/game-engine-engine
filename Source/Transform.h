@@ -12,9 +12,6 @@ struct PhysicsInput
 
 class Transform
 {
-	friend class CameraComponent;
-	friend class LightComponent;
-	friend class RenderEngine;
 	bool KUPA;
 	Transform* ParentTransform;
 	mutable std::unique_ptr<Transform> WorldTransformCache;
@@ -47,7 +44,7 @@ public:
 	bool bConstrain;
 	bool bRotationLock;
 
-	Transform(glm::vec3 pos = glm::vec3(0.0f), glm::quat rot = glm::quat(glm::vec3(0.0f)), glm::vec3 scale = glm::vec3(1.0f), glm::vec3 front = glm::vec3(0.0f), bool constrain = false, bool rotlock = false);
+	explicit Transform(glm::vec3 pos = glm::vec3(0.0f), glm::quat rot = glm::quat(glm::vec3(0.0f)), glm::vec3 scale = glm::vec3(1.0f), glm::vec3 front = glm::vec3(0.0f), bool constrain = false, bool rotlock = false);
 	Transform(const Transform&);
 	Transform(Transform&&) noexcept;
 	static float test()

@@ -1,6 +1,9 @@
 #pragma once
 #include "SearchEngine.h"
+#include "GameManager.h"
 #include <iostream>
+
+struct GLFWwindow;
 
 class Actor
 {

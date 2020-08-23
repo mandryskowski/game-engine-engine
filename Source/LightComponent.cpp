@@ -1,12 +1,13 @@
 #include "LightComponent.h"
 
-LightComponent::LightComponent(GameManager* gameHandle, std::string name, LightType type, unsigned int shadowNr, float far, glm::mat4 projection, glm::vec3 amb, glm::vec3 diff, glm::vec3 spec, glm::vec3 settings):
+LightComponent::LightComponent(GameManager* gameHandle, std::string name, LightType type, unsigned int index, unsigned int shadowNr, float far, glm::mat4 projection, glm::vec3 amb, glm::vec3 diff, glm::vec3 spec, glm::vec3 settings):
 	Component(gameHandle, name, Transform()),
 	Type(type),
 	Ambient(amb),
 	Diffuse(diff),
 	Specular(spec),
 	Attenuation(settings.x),
+	LightIndex(index),
 	ShadowMapNr(shadowNr),
 	Far(far),
 	Projection(projection),
@@ -20,27 +21,32 @@ LightComponent::LightComponent(GameManager* gameHandle, std::string name, LightT
 	TransformDirtyFlagIndex = ComponentTransform.AddDirtyFlag();
 }
 
-LightType LightComponent::GetType()
+LightType LightComponent::GetType() const
 {
 	return Type;
 }
 
-float LightComponent::GetFar()
+float LightComponent::GetFar() const
 {
 	return Far;
 }
 
-unsigned int LightComponent::GetShadowMapNr()
+unsigned int LightComponent::GetLightIndex() const
+{
+	return LightIndex;
+}
+
+unsigned int LightComponent::GetShadowMapNr() const
 {
 	return ShadowMapNr;
 }
 
-glm::mat4 LightComponent::GetProjection()
+glm::mat4 LightComponent::GetProjection() const
 {
 	return Projection;
 }
 
-glm::mat4 LightComponent::GetVP(Transform* worldTransform)
+glm::mat4 LightComponent::GetVP(Transform* worldTransform) const
 {
 	if (worldTransform)
 		return Projection * worldTransform->GetViewMatrix();
@@ -48,21 +54,26 @@ glm::mat4 LightComponent::GetVP(Transform* worldTransform)
 		return Projection * ComponentTransform.GetWorldTransform().GetViewMatrix();
 }
 
-EngineObjectType LightComponent::GetLightVolumeType()
+EngineBasicShape LightComponent::GetVolumeType() const
 {
 	switch (Type)
 	{
 	case SPOT:
 		if (Ambient == glm::vec3(0.0f))
-			return EngineObjectType::CONE;
+			return EngineBasicShape::CONE;
 	case POINT:
-		return EngineObjectType::SPHERE;
+		return EngineBasicShape::SPHERE;
 	case DIRECTIONAL:
-		return EngineObjectType::QUAD;
+		return EngineBasicShape::QUAD;
 	default:
 		std::cerr << "ERROR! Unknown light type: " << (int)Type << ".\n";
-		return EngineObjectType::SPHERE;
+		return EngineBasicShape::SPHERE;
 	}
+}
+
+Shader* LightComponent::GetRenderShader() const
+{
+	return GameHandle->GetRenderEngineHandle()->GetLightShader(Type);
 }
 
 void LightComponent::CalculateLightRadius()
@@ -171,6 +182,36 @@ glm::vec3& LightComponent::operator[](unsigned int i)
 
 	return Ambient;
 }
+
+LightVolume::LightVolume(const LightComponent& lightCompPtr):
+	LightCompPtr(&lightCompPtr)
+{
+}
+
+EngineBasicShape LightVolume::GetShape() const
+{
+	return LightCompPtr->GetVolumeType();
+}
+
+Transform LightVolume::GetRenderTransform() const
+{
+	Transform lightTransform = LightCompPtr->GetTransform().GetWorldTransform();
+	lightTransform.SetScale(LightCompPtr->GetTransform().ScaleRef);
+
+	return lightTransform;
+}
+
+Shader* LightVolume::GetRenderShader() const
+{
+	return LightCompPtr->GetRenderShader();
+}
+
+void LightVolume::SetupRenderUniforms(const Shader& shader) const
+{
+	shader.Uniform1i("lightIndex", LightCompPtr->GetLightIndex());
+}
+
+
 
 LightType toLightType(std::string str)
 {

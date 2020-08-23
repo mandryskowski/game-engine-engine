@@ -8,38 +8,38 @@
 
 struct MaterialLoadingData;	//note: it's legally incomplete in class Material declaration (it's safe to use incomplete types in functions'/methods' declarations!)
 
-class MaterialTexture;
+class NamedTexture;
 
 class Material
 {
-	std::vector <MaterialTexture*> Textures;
+	std::vector <NamedTexture*> Textures;
 	float Shininess;
 	float DepthScale;	//used in parallax mapping
 	std::string Name;
-	Shader* RenderShader;
+	std::string RenderShaderName;
 
 public:
 	Material(std::string name, float shine = 64.0f, float depthScale = 0.0f, Shader* shader = nullptr);
 	std::string GetName();
-	Shader* GetRenderShader();
+	std::string GetRenderShaderName();
 	void SetDepthScale(float);
 	void SetShininess(float);
-	void SetRenderShader(Shader*);
-	void AddTexture(MaterialTexture* tex);
+	void SetRenderShaderName(std::string);
+	void AddTexture(NamedTexture* tex);
 
 	void LoadFromAiMaterial(aiMaterial*, std::string, MaterialLoadingData*);
 	void LoadAiTexturesOfType(aiMaterial*, std::string, aiTextureType, std::string, MaterialLoadingData*);
 
 	virtual void InterpolateInAnimation(Interpolation*) {}	//some Materials can be animated. That's why we declare these two virtual methods - objects of some child classes interpolate their animated values in here...
 	virtual void UpdateInstanceUBOData(Shader*) {}	//...and pass the interpolated values to shader in here. I separated these functions for flexibility - you don't always want to interpolate the values each time you use the material for rendering
-	virtual void UpdateWholeUBOData(Shader*, unsigned int);
+	virtual void UpdateWholeUBOData(Shader*, Texture& emptyTexture);
 };
 
 struct MaterialLoadingData
 {
 	std::vector <Material*> LoadedMaterials;	//note: LoadedMaterials and LoadedAiMaterials will ALWAYS be the same size
 	std::vector <aiMaterial*> LoadedAiMaterials;
-	std::vector <MaterialTexture*> LoadedTextures;
+	std::vector <NamedTexture*> LoadedTextures;
 };
 
 /*
@@ -58,7 +58,7 @@ public:
 	AtlasMaterial(std::string name, glm::vec2 atlasSize, float shine = 64.0f, float depthScale = 0.0f, Shader* shader = nullptr);
 	virtual void InterpolateInAnimation(Interpolation* interp) override;
 	virtual void UpdateInstanceUBOData(Shader* shader) override;
-	virtual void UpdateWholeUBOData(Shader* shader, unsigned int emptyTexture) override;
+	virtual void UpdateWholeUBOData(Shader* shader, Texture& emptyTexture) override;
 };
 
 /*
@@ -82,5 +82,5 @@ public:
 
 	void Update(float deltaTime);
 	void UpdateInstanceUBOData(Shader* shader);
-	void UpdateWholeUBOData(Shader* shader, unsigned int emptyTexture);
+	void UpdateWholeUBOData(Shader* shader, Texture& emptyTexture);
 };

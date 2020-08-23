@@ -1,5 +1,8 @@
 #pragma once
 #include "SearchEngine.h"
+#include "RenderEngine.h"
+#include "AudioEngine.h"
+#include "Actor.h"
 
 SearchEngine::SearchEngine()
 {

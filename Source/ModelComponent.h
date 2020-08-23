@@ -19,7 +19,8 @@ class ModelComponent: public Component
 	mutable glm::mat4 LastFrameMVP;	//for velocity buffer; this field is only updated when velocity buffer is needed (for temporal AA/motion blur), in any other case it will be set to an identity matrix
 
 public:
-	ModelComponent(GameManager*, std::string name = "undefined", const Transform& = Transform(), std::string path = std::string(), Material* overrideMat = nullptr);
+	ModelComponent(GameManager*, const Transform& = Transform(), std::string name = "undefinedModel", Material* overrideMat = nullptr);
+	ModelComponent(GameManager*, const MeshSystem::MeshNode&, const Transform& = Transform(), std::string name = "undefinedModel", Material* overrideMat = nullptr);
 	ModelComponent(const ModelComponent&);
 	ModelComponent(ModelComponent&&);
 
@@ -34,8 +35,6 @@ public:
 
 	MeshInstance* FindMeshInstance(std::string);
 	void AddMeshInst(Mesh*);
-
-	virtual void Render(Shader*, RenderInfo&, unsigned int&, Material*, unsigned int);
 
 	ModelComponent& operator=(const ModelComponent&);
 	ModelComponent& operator=(ModelComponent&&);

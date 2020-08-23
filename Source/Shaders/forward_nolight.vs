@@ -10,6 +10,7 @@ uniform vec2 atlasData;	//x - texture id, y - number of columns in atlas
 uniform vec2 atlasTexOffset;
 uniform mat4 MVP;
 
+
 void main()
 {
 	gl_Position = MVP * vec4(vPosition, 1.0);

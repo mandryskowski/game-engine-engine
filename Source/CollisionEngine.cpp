@@ -42,17 +42,17 @@ bool CollisionEngine::CheckForCollision(std::vector<CollisionComponent*> compone
 	return bCollision;
 }
 
-std::vector <std::pair<EngineObjectType, Transform*>> CollisionEngine::GetCollisionInstancesDebugData()
+std::vector <std::pair<EngineBasicShape, Transform*>> CollisionEngine::GetCollisionInstancesDebugData()
 {
-	std::vector <std::pair<EngineObjectType, Transform*>> data;
+	std::vector <std::pair<EngineBasicShape, Transform*>> data;
 	for (unsigned int i = 0; i < CollisionInstances.size(); i++)
 	{
-		std::pair<EngineObjectType, Transform*> instanceData;
+		std::pair<EngineBasicShape, Transform*> instanceData;
 
 		if (dynamic_cast<BSphere*>(CollisionInstances[i]))
-			instanceData.first = EngineObjectType::SPHERE;
+			instanceData.first = EngineBasicShape::SPHERE;
 		else
-			instanceData.first = EngineObjectType::CUBE;
+			instanceData.first = EngineBasicShape::CUBE;
 
 		instanceData.second = &CollisionInstances[i]->GetTransform();
 		data.push_back(instanceData);

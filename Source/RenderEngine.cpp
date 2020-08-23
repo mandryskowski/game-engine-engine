@@ -3,10 +3,14 @@
 #include "FileLoader.h"
 #include "LightComponent.h"
 #include "ModelComponent.h"
+#include "LightProbe.h"
+#include "RenderableVolume.h"
 #include <random> //DO WYJEBANIA
 
-RenderEngine::RenderEngine(GameManager* gameHandle) :
-	GameHandle(gameHandle)
+RenderEngine::RenderEngine(GameManager* gameHandle, const ShadingModel& shading) :
+	GameHandle(gameHandle),
+	Shading(shading),
+	PreviousFrameView(glm::mat4(1.0f))
 {
 	//configure some openGL settings
 	glEnable(GL_DEPTH_TEST);
@@ -17,85 +21,40 @@ RenderEngine::RenderEngine(GameManager* gameHandle) :
 
 
 	//generate engine's empty texture
-	glGenTextures(1, &EmptyTexture);
-	glBindTexture(GL_TEXTURE_2D, EmptyTexture);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 1, 1, 0, GL_RGB, GL_UNSIGNED_BYTE, glm::value_ptr(glm::vec3(0.0f, 0.0f, 1.0f)));
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	EmptyTexture = std::make_shared<Texture>(textureFromBuffer(glm::value_ptr(glm::vec3(0.5f, 0.5f, 1.0f)), 1, 1, GL_RGB, GL_RGB, GL_UNSIGNED_BYTE, GL_NEAREST, GL_NEAREST));
+
+	LightProbeLoader::RenderHandle = this;
 }
 
-void RenderEngine::Init()
+void RenderEngine::Init(glm::uvec2 resolution)
 {
-	GShader.LoadShadersWithInclData(GameHandle->GetGameSettings()->GetShaderDefines(), "Shaders/geometry.vs", "Shaders/geometry.fs");
+	Resize(resolution);
 
-	GShader.Use();
-	std::vector<std::pair<unsigned int, std::string>> gShaderTextureUnits = {
-		std::pair<unsigned int, std::string>(0, "diffuse1"),
-		std::pair<unsigned int, std::string>(1, "specular1"),
-		std::pair<unsigned int, std::string>(2, "normal1"),
-		std::pair<unsigned int, std::string>(3, "depth1")
-	};
-	GShader.SetTextureUnitNames(gShaderTextureUnits);
-	GShader.SetExpectedMatrices(std::vector<MatrixType>{MatrixType::MODEL, MatrixType::MVP, MatrixType::NORMAL});
-
-	//load the default shader
-	DefaultShader.LoadShaders("Shaders/default.vs", "Shaders/default.fs");
-	DefaultShader.UniformBlockBinding("Matrices", 0);
-	DefaultShader.UniformBlockBinding("Lights", 1);
-	DefaultShader.SetExpectedMatrices(std::vector<MatrixType>{MatrixType::MODEL, MatrixType::MVP, MatrixType::NORMAL});
-
-	DefaultShader.Use();
-	std::vector<std::pair<unsigned int, std::string>> defaultShaderTextureUnits = {
-		std::pair<unsigned int, std::string>(0, "diffuse1"),
-		std::pair<unsigned int, std::string>(1, "specular1"),
-		std::pair<unsigned int, std::string>(2, "normal1"),
-		std::pair<unsigned int, std::string>(3, "depth1")
-	};
-	DefaultShader.SetTextureUnitNames(defaultShaderTextureUnits);
-	DefaultShader.Uniform1i("shadowMaps", 10);
-	DefaultShader.Uniform1i("shadowCubeMaps", 11);
-
-	//load shadow shaders
-	DepthShader.LoadShaders("Shaders/depth.vs", "Shaders/depth.fs");
-	DepthShader.SetExpectedMatrices(std::vector<MatrixType>{MatrixType::MVP});
-	DepthLinearizeShader.LoadShaders("Shaders/depth_linearize.vs", "Shaders/depth_linearize.fs");
-	DepthLinearizeShader.SetExpectedMatrices(std::vector<MatrixType>{MatrixType::MODEL, MatrixType::MVP});
-
-	//load debug shaders
-	DebugShader.LoadShaders("Shaders/debug.vs", "Shaders/debug.fs");
-	DebugShader.SetExpectedMatrices(std::vector<MatrixType>{MatrixType::MVP});
-	DebugShader.UniformBlockBinding("Matrices", 0);
-
+	LoadInternalShaders();
 	GenerateEngineObjects();
+	SetupShadowmaps();
 
-	std::string settingsDefines = GameHandle->GetGameSettings()->GetShaderDefines();
-	std::cout << settingsDefines << '\n';
-	LightShaders[LightType::DIRECTIONAL].LoadShadersWithInclData(settingsDefines + "#define DIRECTIONAL_LIGHT 1\n", "Shaders/phong.vs", "Shaders/phong.fs");
-	LightShaders[LightType::DIRECTIONAL].UniformBlockBinding("Matrices", 0);
-	LightShaders[LightType::DIRECTIONAL].UniformBlockBinding("Lights", 1);
-	LightShaders[LightType::POINT].LoadShadersWithInclData(settingsDefines + "#define POINT_LIGHT 1\n", "Shaders/phong.vs", "Shaders/phong.fs");
-	LightShaders[LightType::POINT].UniformBlockBinding("Matrices", 0);
-	LightShaders[LightType::POINT].UniformBlockBinding("Lights", 1);
-	LightShaders[LightType::SPOT].LoadShadersWithInclData(settingsDefines + "#define SPOT_LIGHT 1\n", "Shaders/phong.vs", "Shaders/phong.fs");
-	LightShaders[LightType::SPOT].UniformBlockBinding("Matrices", 0);
-	LightShaders[LightType::SPOT].UniformBlockBinding("Lights", 1);
+	Postprocessing.Init(GameHandle, Resolution);
 
+	CubemapData.DefaultV[0] = glm::lookAt(glm::vec3(0.0f), glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f));
+	CubemapData.DefaultV[1] = glm::lookAt(glm::vec3(0.0f), glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f));
+	CubemapData.DefaultV[2] = glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+	CubemapData.DefaultV[3] = glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f));
+	CubemapData.DefaultV[4] = glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, -1.0f, 0.0f));
+	CubemapData.DefaultV[5] = glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, -1.0f, 0.0f));
 
-	for (int i = 0; i < 3; i++)
+	glm::mat4 cubemapProj = glm::ortho(-0.5f, 0.5f, -0.5f, 0.5f, 0.0f, 2.0f);
+
+	for (int i = 0; i < 6; i++)
+		CubemapData.DefaultVP[i] = cubemapProj * CubemapData.DefaultV[i];
+
+	if (LightProbes.empty())
 	{
-		LightShaders[i].Use();
-		LightShaders[i].Uniform1i("gPosition", 0);
-		LightShaders[i].Uniform1i("gNormal", 1);
-		LightShaders[i].Uniform1i("gAlbedoSpec", 2);
-		LightShaders[i].Uniform1i("ssaoTex", 3);
-
-		if (i == (int)LightType::POINT)
-			LightShaders[i].Uniform1i("shadowCubemaps", 11);
-		else
-			LightShaders[i].Uniform1i("shadowMaps", 10);
-
-		if (i != (int)LightType::DIRECTIONAL)
-			LightShaders[i].SetExpectedMatrices(std::vector<MatrixType>{MatrixType::VIEW, MatrixType::MVP});
+		LightProbeLoader::LoadLightProbeTextureArrays();
+		LightProbeTextureArrays::IrradianceMapArr.Bind(12);
+		LightProbeTextureArrays::PrefilterMapArr.Bind(13);
+		LightProbeTextureArrays::BRDFLut.Bind(14);
+		glActiveTexture(GL_TEXTURE0);
 	}
 }
 
@@ -201,31 +160,228 @@ void RenderEngine::GenerateEngineObjects()
 	//Add the engine objects to the tree collection. This way models loaded from the level file can simply use the internal engine meshes for stuff like particles
 	//Preferably, the engine objects should be added to the tree collection first, so searching for them takes less time and they'll possibly be used often.
 
-	EngineObjects[EngineObjectType::CUBE] = &CreateMeshTree("ENG_CUBE")->GetRoot().AddChild("Cube").AddMesh("Cube");
-	EngineObjects[EngineObjectType::CUBE]->LoadFromGLBuffers(36, cubeVAO, cubeVBO);
-
-	EngineObjects[EngineObjectType::QUAD] = &CreateMeshTree("ENG_QUAD")->GetRoot().AddChild("Quad").AddMesh("Quad_NoShadow");
-	EngineObjects[EngineObjectType::QUAD]->LoadFromGLBuffers(6, quadVAO, quadVBO, quadEBO);
-
-	EngineObjects[EngineObjectType::SPHERE] = EngineDataLoader::LoadMeshTree(GameHandle, this, GameHandle->GetSearchEngine(), "EngineObjects/sphere.obj", CreateMeshTree("ENG_SPHERE"))->FindMesh("Sphere");
-	EngineObjects[EngineObjectType::CONE] = EngineDataLoader::LoadMeshTree(GameHandle, this, GameHandle->GetSearchEngine(), "EngineObjects/cone.obj", CreateMeshTree("ENG_CONE"))->FindMesh("Cone");
+	CreateMeshTree("ENG_CUBE")->GetRoot().AddChild("Cube").AddMesh("Cube").LoadFromGLBuffers(36, cubeVAO, cubeVBO);
+	CreateMeshTree("ENG_QUAD")->GetRoot().AddChild("Quad").AddMesh("Quad_NoShadow").LoadFromGLBuffers(6, quadVAO, quadVBO, quadEBO);
+	EngineDataLoader::LoadMeshTree(GameHandle, this, GameHandle->GetSearchEngine(), "EngineObjects/sphere.obj", CreateMeshTree("ENG_SPHERE"))->FindMesh("Sphere");
+	EngineDataLoader::LoadMeshTree(GameHandle, this, GameHandle->GetSearchEngine(), "EngineObjects/cone.obj", CreateMeshTree("ENG_CONE"))->FindMesh("Cone");
 }
 
-std::vector<Shader*> RenderEngine::GetForwardShaders()
+void RenderEngine::LoadInternalShaders()
 {
-	std::vector<Shader*> shaders;
-	shaders.push_back(FindShader("forward"));	//add the default forward shader
+	std::string settingsDefines = GameHandle->GetGameSettings()->GetShaderDefines(Resolution);
+	switch (Shading)
+	{
+	case ShadingModel::SHADING_PHONG: settingsDefines += "#define PHONG_SHADING 1\n"; break;
+	case ShadingModel::SHADING_PBR_COOK_TORRANCE: settingsDefines += "#define PBR_SHADING 1\n"; break;
+	}
+	std::vector<std::pair<unsigned int, std::string>> gShaderTextureUnits = {
+		std::pair<unsigned int, std::string>(0, "albedo1"),
+		std::pair<unsigned int, std::string>(1, "specular1"),
+		std::pair<unsigned int, std::string>(2, "normal1"),
+		std::pair<unsigned int, std::string>(3, "depth1")
+	};
+	if (Shading == ShadingModel::SHADING_PBR_COOK_TORRANCE)
+	{
+		std::vector<std::pair<unsigned int, std::string>> pbrTextures = {
+			std::pair<unsigned int, std::string>(4, "roughness1"),
+			std::pair<unsigned int, std::string>(5, "metallic1"),
+			std::pair<unsigned int, std::string>(6, "ao1") };
+		gShaderTextureUnits.insert(gShaderTextureUnits.begin(), pbrTextures.begin(), pbrTextures.end());
+	}
+	
+	Shaders.push_back(ShaderLoader::LoadShadersWithInclData("Geometry", settingsDefines, "Shaders/geometry.vs", "Shaders/geometry.fs"));
+	Shaders.back()->SetTextureUnitNames(gShaderTextureUnits);
+	Shaders.back()->SetExpectedMatrices(std::vector<MatrixType>{MatrixType::MODEL, MatrixType::MVP, MatrixType::NORMAL});
 
-	for (unsigned int i = 0; i < ExternalShaders.size(); i++)
-		shaders.push_back(ExternalShaders[i]);
+	//load the default shader
+	std::vector<std::pair<unsigned int, std::string>> defaultShaderTextureUnits = {
+		std::pair<unsigned int, std::string>(0, "albedo1"),
+		std::pair<unsigned int, std::string>(1, "specular1"),
+		std::pair<unsigned int, std::string>(2, "normal1"),
+		std::pair<unsigned int, std::string>(3, "depth1")
+	};
 
-	return shaders;
+	Shaders.push_back(ShaderLoader::LoadShaders("Default", "Shaders/default.vs", "Shaders/default.fs"));
+	Shaders.back()->UniformBlockBinding("Matrices", 0);
+	Shaders.back()->UniformBlockBinding("Lights", 1);
+	Shaders.back()->SetExpectedMatrices(std::vector<MatrixType>{MatrixType::MODEL, MatrixType::MVP, MatrixType::NORMAL});
+	Shaders.back()->SetTextureUnitNames(defaultShaderTextureUnits);
+	Shaders.back()->Uniform1i("shadowMaps", 10);
+	Shaders.back()->Uniform1i("shadowCubeMaps", 11);
+
+	//load shadow shaders
+	Shaders.push_back(ShaderLoader::LoadShaders("Depth", "Shaders/depth.vs", "Shaders/depth.fs"));
+	Shaders.back()->SetExpectedMatrices(std::vector<MatrixType>{MatrixType::MVP});
+	Shaders.push_back(ShaderLoader::LoadShaders("DepthLinearize", "Shaders/depth_linearize.vs", "Shaders/depth_linearize.fs"));
+	Shaders.back()->SetExpectedMatrices(std::vector<MatrixType>{MatrixType::MODEL, MatrixType::MVP});
+
+	Shaders.push_back(ShaderLoader::LoadShaders("ErToCubemap", "Shaders/LightProbe/erToCubemap.vs", "Shaders/LightProbe/erToCubemap.fs"));
+	Shaders.back()->SetExpectedMatrices(std::vector<MatrixType>{MatrixType::VP});
+
+	Shaders.push_back(ShaderLoader::LoadShadersWithInclData("Cubemap", settingsDefines, "Shaders/cubemap.vs", "Shaders/cubemap.fs"));
+	Shaders.back()->SetExpectedMatrices(std::vector<MatrixType>{MatrixType::VP});
+
+	Shaders.push_back(ShaderLoader::LoadShaders("CubemapToIrradiance", "Shaders/irradianceCubemap.vs", "Shaders/irradianceCubemap.fs"));
+	Shaders.back()->SetExpectedMatrices(std::vector<MatrixType>{MatrixType::VP});
+
+	Shaders.push_back(ShaderLoader::LoadShaders("CubemapToPrefilter", "Shaders/prefilterCubemap.vs", "Shaders/prefilterCubemap.fs"));
+	Shaders.back()->SetExpectedMatrices(std::vector<MatrixType>{MatrixType::VP});
+
+	Shaders.push_back(ShaderLoader::LoadShaders("BRDFLutGeneration", "Shaders/brdfLutGeneration.vs", "Shaders/brdfLutGeneration.fs"));
+
+	//load debug shaders
+	Shaders.push_back(ShaderLoader::LoadShaders("Debug", "Shaders/debug.vs", "Shaders/debug.fs"));
+	Shaders.back()->SetExpectedMatrices(std::vector<MatrixType>{MatrixType::MVP});
+
+	std::vector<std::string> lightShadersNames;
+	std::vector<std::string> lightShadersDefines;
+	std::pair<std::string, std::string> lightShadersPath;
+	switch (Shading)
+	{
+	case ShadingModel::SHADING_PHONG:
+		lightShadersNames = { "PhongDirectional", "PhongPoint", "PhongSpot" };
+		lightShadersDefines = { "#define DIRECTIONAL_LIGHT 1\n", "#define POINT_LIGHT 1\n", "#define SPOT_LIGHT 1\n" };
+		lightShadersPath = std::pair<std::string, std::string>("Shaders/phong.vs", "Shaders/phong.fs");
+		break;
+	case ShadingModel::SHADING_PBR_COOK_TORRANCE:
+		lightShadersNames = { "CookTorranceDirectional", "CookTorrancePoint", "CookTorranceSpot", "CookTorranceIBL" };
+		lightShadersDefines = { "#define DIRECTIONAL_LIGHT 1\n", "#define POINT_LIGHT 1\n", "#define SPOT_LIGHT 1\n", "#define IBL_PASS 1\n" };
+		lightShadersPath = std::pair<std::string, std::string>("Shaders/pbrCookTorrance.vs", "Shaders/pbrCookTorrance.fs");
+		break;
+	}
+
+	std::cout << settingsDefines << '\n';
+
+	for (int i = 0; i < static_cast<int>(lightShadersNames.size()); i++)
+	{
+		Shaders.push_back(ShaderLoader::LoadShadersWithInclData(lightShadersNames[i], settingsDefines + lightShadersDefines[i], lightShadersPath.first, lightShadersPath.second));
+		LightShaders.push_back(Shaders.back().get());
+		Shaders.back()->UniformBlockBinding("Lights", 1);
+		Shaders.back()->Use();
+		Shaders.back()->Uniform1i("gPosition", 0);
+		Shaders.back()->Uniform1i("gNormal", 1);
+		Shaders.back()->Uniform1i("gAlbedoSpec", 2);
+		Shaders.back()->Uniform1i("gAlphaMetalAo", 3);
+		if (GameHandle->GetGameSettings()->AmbientOcclusionSamples > 0)
+			Shaders.back()->Uniform1i("ssaoTex", 4);
+
+		Shaders.back()->Uniform1i("shadowMaps", 10);
+		Shaders.back()->Uniform1i("shadowCubemaps", 11);
+		Shaders.back()->Uniform1i("irradianceCubemaps", 12);
+		Shaders.back()->Uniform1i("prefilterCubemaps", 13);
+		Shaders.back()->Uniform1i("BRDFLutTex", 14);
+
+		Shaders.back()->Uniform1f("lightProbeNr", 3.0f);
+
+		if (i == (int)LightType::POINT || i == (int)LightType::SPOT)
+			Shaders.back()->SetExpectedMatrices(std::vector<MatrixType>{MatrixType::VIEW, MatrixType::MVP});
+	}
+}
+
+void RenderEngine::Resize(glm::uvec2 resolution)
+{
+	Resolution = resolution;
+	const GameSettings* settings = GameHandle->GetGameSettings();
+	std::shared_ptr<GEE_FB::FramebufferAttachment> sharedDepthStencil = GEE_FB::reserveDepthBuffer(Resolution, GL_DEPTH24_STENCIL8, GL_UNSIGNED_INT_24_8, GL_NEAREST, GL_NEAREST);	//we share this buffer between the geometry and main framebuffer - we want deferred-rendered objects depth to influence light volumes&forward rendered objects
+	std::shared_ptr<GEE_FB::FramebufferAttachment> velocityBuffer = GEE_FB::reserveColorBuffer(Resolution, GL_RGB16F, GL_FLOAT, GL_NEAREST, GL_NEAREST, GL_TEXTURE_2D, 0, "velocityTex");
+	std::vector<std::shared_ptr<GEE_FB::FramebufferAttachment>> gColorBuffers = {
+		GEE_FB::reserveColorBuffer(Resolution, GL_RGB16F, GL_FLOAT, GL_NEAREST, GL_NEAREST, GL_TEXTURE_2D, 0, "gPosition"),			//gPosition texture
+		GEE_FB::reserveColorBuffer(Resolution, GL_RGB16F, GL_FLOAT, GL_NEAREST, GL_NEAREST, GL_TEXTURE_2D, 0, "gNormal"),				//gNormal texture
+		GEE_FB::reserveColorBuffer(Resolution, GL_RGBA, GL_UNSIGNED_BYTE, GL_NEAREST, GL_NEAREST, GL_TEXTURE_2D, 0, "gAlbedoSpec")	//gAlbedoSpec texture
+		//std::make_shared<GEE_FB::ColorBuffer>(GL_TEXTURE_2D, GL_RGBA, GL_FLOAT, GL_NEAREST, GL_NEAREST)		//alpha, metallic, ao texture
+	};
+	if (Shading == SHADING_PBR_COOK_TORRANCE)
+		gColorBuffers.push_back(GEE_FB::reserveColorBuffer(Resolution, GL_RGB, GL_UNSIGNED_BYTE, GL_NEAREST, GL_NEAREST, GL_TEXTURE_2D, 0, "gAlphaMetalAo")); //alpha, metallic, ao texture
+
+	if (settings->IsVelocityBufferNeeded())
+		gColorBuffers.push_back(velocityBuffer);
+	GFramebuffer.SetAttachments(Resolution, gColorBuffers, sharedDepthStencil);
+
+	std::vector<std::shared_ptr<GEE_FB::FramebufferAttachment>> colorBuffers;
+	colorBuffers.push_back(GEE_FB::reserveColorBuffer(Resolution, GL_RGBA16F, GL_FLOAT, GL_LINEAR, GL_LINEAR));	//add color buffer
+	if (settings->bBloom)
+		colorBuffers.push_back(GEE_FB::reserveColorBuffer(Resolution, GL_RGBA16F, GL_FLOAT, GL_LINEAR, GL_LINEAR));	//add blur buffer
+	if (settings->IsVelocityBufferNeeded())
+		colorBuffers.push_back(velocityBuffer);
+	MainFramebuffer.SetAttachments(Resolution, colorBuffers, sharedDepthStencil);	//color and blur buffers
+}
+
+void RenderEngine::SetupShadowmaps()
+{
+	glm::uvec2 shadowMapSize(512);
+	switch (GameHandle->GetGameSettings()->ShadowLevel)
+	{
+	case SETTING_LOW: shadowMapSize = glm::vec2(1024); break;
+	case SETTING_MEDIUM: shadowMapSize = glm::vec2(2048); break;
+	case SETTING_HIGH: shadowMapSize = glm::vec2(512); break;
+	case SETTING_ULTRA: shadowMapSize = glm::vec2(1024); break;
+	}
+	ShadowFramebuffer.SetAttachments(shadowMapSize);
+
+
+	ShadowMapArray = std::make_shared<Texture>();
+	ShadowMapArray->GenerateID(GL_TEXTURE_2D_ARRAY);
+	ShadowMapArray->Bind();
+	glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_DEPTH_COMPONENT, shadowMapSize.x, shadowMapSize.y, 16, 0, GL_DEPTH_COMPONENT, GL_FLOAT, (void*)(nullptr));
+	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+	glTexParameterfv(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_BORDER_COLOR, glm::value_ptr(glm::vec4(1.0f)));
+
+	ShadowCubemapArray = std::make_shared<Texture>();
+	ShadowCubemapArray->GenerateID(GL_TEXTURE_CUBE_MAP_ARRAY);
+	ShadowCubemapArray->Bind();
+	glTexImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 0, GL_DEPTH_COMPONENT, shadowMapSize.x, shadowMapSize.y, 16 * 6, 0, GL_DEPTH_COMPONENT, GL_FLOAT, (void*)(nullptr));
+	glTexParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+}
+
+const std::shared_ptr<Mesh> RenderEngine::GetBasicShapeMesh(EngineBasicShape type)
+{
+	switch (type)
+	{
+	case EngineBasicShape::QUAD:
+		return FindMeshTree("ENG_QUAD")->FindMeshPtr("Quad_NoShadow");
+	case EngineBasicShape::CUBE:
+		return FindMeshTree("ENG_CUBE")->FindMeshPtr("Cube");
+	case EngineBasicShape::SPHERE:
+		return FindMeshTree("ENG_SPHERE")->FindMeshPtr("Sphere");
+	case EngineBasicShape::CONE:
+		return FindMeshTree("ENG_CONE")->FindMeshPtr("Cone");
+	}
+
+	std::cout << "ERROR! Type " << type << " does not represent a basic shape mesh.\n";
+	return nullptr;
+}
+
+int RenderEngine::GetAvailableLightIndex()
+{
+	return LightData.GetAvailableLightIndex();
+}
+
+Shader* RenderEngine::GetLightShader(LightType type)
+{
+	return LightShaders[static_cast<unsigned int>(type)];
 }
 
 
-void RenderEngine::AddModel(std::shared_ptr<ModelComponent> model)
+std::shared_ptr<ModelComponent> RenderEngine::AddModel(std::shared_ptr<ModelComponent> model)
 {
 	Models.push_back(model);
+	return Models.back();
+}
+
+std::shared_ptr<LightProbe> RenderEngine::AddLightProbe(std::shared_ptr<LightProbe> probe)
+{
+	LightProbes.push_back(probe);
+	return LightProbes.back();
+}
+
+std::shared_ptr<LightComponent> RenderEngine::AddLight(std::shared_ptr<LightComponent> light)
+{
+	LightData.AddLight(light);
+	return light;
 }
 
 std::shared_ptr<ModelComponent> RenderEngine::CreateModel(const ModelComponent& model)
@@ -255,46 +411,20 @@ MeshSystem::MeshTree* RenderEngine::FindMeshTree(std::string path, MeshSystem::M
 	return nullptr;
 }
 
-void RenderEngine::AddMaterial(Material* material)
+Material* RenderEngine::AddMaterial(Material* material)
 {
 	Materials.push_back(material);
+	return Materials.back();
 }
 
-void RenderEngine::AddExternalShader(Shader* shader)
+std::shared_ptr<Shader> RenderEngine::AddShader(std::shared_ptr<Shader> shader, bool bForwardShader)
 {
-	ExternalShaders.push_back(shader);
-}
+	if (bForwardShader)
+		ForwardShaders.push_back(shader);
 
-void RenderEngine::SetupShadowmaps()
-{
-	glm::uvec2 shadowMapSize(512);
-	switch (GameHandle->GetGameSettings()->ShadowLevel)
-	{
-		case SETTING_LOW: shadowMapSize = glm::vec2(1024); break;
-		case SETTING_MEDIUM: shadowMapSize = glm::vec2(2048); break;
-		case SETTING_HIGH: shadowMapSize = glm::vec2(512); break;
-		case SETTING_ULTRA: shadowMapSize = glm::vec2(1024); break;
-	}
-	ShadowFramebuffer.Load(shadowMapSize);
+	Shaders.push_back(shader);
 
-
-	ShadowMapArray.GenerateID(GL_TEXTURE_2D_ARRAY);
-	ShadowMapArray.Bind();
-	glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_DEPTH_COMPONENT, shadowMapSize.x, shadowMapSize.y, 16, 0, GL_DEPTH_COMPONENT, GL_FLOAT, (void*)(nullptr));
-	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-	glTexParameterfv(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_BORDER_COLOR, glm::value_ptr(glm::vec4(1.0f)));
-
-
-	ShadowCubemapArray.GenerateID(GL_TEXTURE_CUBE_MAP_ARRAY);
-	ShadowCubemapArray.Bind();
-	glTexImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 0, GL_DEPTH_COMPONENT, shadowMapSize.x, shadowMapSize.y, 16 * 6, 0, GL_DEPTH_COMPONENT, GL_FLOAT, (void*)(nullptr));
-	glTexParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	return Shaders.back();
 }
 
 ModelComponent* RenderEngine::FindModel(std::string name)
@@ -324,15 +454,19 @@ Material* RenderEngine::FindMaterial(std::string name)
 
 Shader* RenderEngine::FindShader(std::string name)
 {
-	if (name == "forward")
-		return &DefaultShader;
-	if (name == "deferred" || name == "geometry")
-		return &GShader;
+	//std::cout << "Searching for " + name + ".\n";
+	auto shaderIt = std::find_if(Shaders.begin(), Shaders.end(), [name](std::shared_ptr<Shader> shader) { return shader->GetName() == name; });
 
-	auto shaderIt = std::find_if(ExternalShaders.begin(), ExternalShaders.end(), [name](Shader* shader) { return shader->GetName() == name; });
+	//std::cout << *shaderIt << '\n';
+	if (*shaderIt == nullptr)
+	{
+		std::cout << "Ups.\n";
+		for (int i = 0; i < Shaders.size(); i++)
+			std::cout << "zjebane: " << Shaders[i]->GetName() << ".\n";
+	}
 
-	if (shaderIt != ExternalShaders.end())
-		return *shaderIt;
+	if (shaderIt != Shaders.end())
+		return shaderIt->get();
 
 	std::cerr << "ERROR! Can't find a shader named " << name << "!\n";
 	return nullptr;
@@ -340,64 +474,28 @@ Shader* RenderEngine::FindShader(std::string name)
 
 void RenderEngine::RenderBoundInDebug(RenderInfo& info, GLenum mode, GLint first, GLint count, glm::vec3 color)
 {
-	DebugShader.Use();
-	DebugShader.UniformMatrix4fv("MVP", *info.VP);
-	DebugShader.Uniform3fv("color", color);
+	Shader* debugShader = FindShader("Debug");
+	debugShader->Use();
+	debugShader->UniformMatrix4fv("MVP", *info.VP);
+	debugShader->Uniform3fv("color", color);
 	glDrawArrays(mode, first, count);
 }
 
-void RenderEngine::RenderEngineObject(RenderInfo& info, std::pair<EngineObjectType, Transform*> object, Shader* shader)
+void RenderEngine::PreRenderPass()
 {
-	RenderEngineObjects(info, std::vector<std::pair<EngineObjectType, Transform*>> {object}, shader);
-}
-
-void RenderEngine::RenderEngineObjects(RenderInfo& info, std::vector<std::pair<EngineObjectType, Transform*>> objects, Shader* shader)
-{
-	if (!shader)
+	LightData.SetupLights();
+	RenderLightProbes();
+	LightShaders[3]->Use();
+	for (int i = 0; i < static_cast<int>(LightProbes.size()); i++)
 	{
-		shader = &DebugShader;
-		shader->Use();
-	}
-
-	EngineObjectType boundObject = objects[0].first;
-	glBindVertexArray(EngineObjects[boundObject]->GetVAO());	//first = VAO
-
-	glm::vec3 colors[4] = {
-		glm::vec3(1.0f, 0.0f, 0.0f),
-		glm::vec3(0.0f, 1.0f, 0.0f),
-		glm::vec3(0.0f, 0.0f, 1.0f),
-		glm::vec3(1.0f, 1.0f, 0.0f)
-	};
-
-	for (unsigned int i = 0; i < objects.size(); i++)
-	{
-		if (objects[i].first != boundObject)	//first = type of drawn object
-		{
-			boundObject = objects[i].first;		//first = type of drawn object
-			glBindVertexArray(EngineObjects[boundObject]->GetVAO());	//first = VAO
-		}
-
-		if (objects[i].second != nullptr)	//second = transform of drawn object
-		{
-			glm::mat4 model = objects[i].second->GetWorldTransformMatrix();
-			if (shader->ExpectsMatrix(MatrixType::MODEL))
-				shader->UniformMatrix4fv("model", model);
-			if (shader->ExpectsMatrix(MatrixType::MVP))
-				shader->UniformMatrix4fv("MVP", (*info.VP) * model);
-			//std::cout << objects[i].second->bConstrain << '\n';
-		}
-
-		if (shader->ExpectsMatrix(MatrixType::PROJECTION))
-			shader->UniformMatrix4fv("projection", *info.projection);
-
-		if (shader == &DebugShader)
-			shader->Uniform3fv("color", colors[i % 4]);
-
-		EngineObjects[boundObject]->Render();
+		LocalLightProbe* localProbeCast = dynamic_cast<LocalLightProbe*>(LightProbes[i].get());
+		if (!localProbeCast)
+			continue;
+		LightShaders[3]->Uniform3fv("lightProbePositions[" + std::to_string(i) + "]", localProbeCast->ProbeTransform.PositionRef);
 	}
 }
 
-void RenderEngine::RenderShadowMaps(std::vector <LightComponent*> lights)
+void RenderEngine::RenderShadowMaps(std::vector <std::shared_ptr<LightComponent>> lights)
 {
 	ShadowFramebuffer.Bind(true);
 	glEnable(GL_DEPTH_TEST);
@@ -409,94 +507,99 @@ void RenderEngine::RenderShadowMaps(std::vector <LightComponent*> lights)
 	float timeSum = 0.0f;
 	float time1;
 
-	ShadowMapArray.Bind(10);
-	ShadowCubemapArray.Bind(11);
+	ShadowMapArray->Bind(10);
+	ShadowCubemapArray->Bind(11);
 
 	for (unsigned int i = 0; i < lights.size(); i++)
 	{
-		LightComponent* light = lights[i];
+		LightComponent* light = lights[i].get();
 		if (light->GetType() == LightType::POINT)
 		{
 			time1 = (float)glfwGetTime();
 			if (!bCubemapBound)
 			{
-				DepthLinearizeShader.Use();
+				FindShader("DepthLinearize")->Use();
 				bCubemapBound = true;
 			}
 
 			Transform lightWorld = light->GetTransform().GetWorldTransform();
 			glm::vec3 lightPos = lightWorld.PositionRef;
+			glm::mat4 viewTranslation = glm::translate(glm::mat4(1.0f), -lightPos);
 			glm::mat4 projection = light->GetProjection();
 
-			DepthLinearizeShader.Uniform1f("far", light->GetFar());
-			DepthLinearizeShader.Uniform3fv("lightPos", lightPos);
+			FindShader("DepthLinearize")->Uniform1f("far", light->GetFar());
+			FindShader("DepthLinearize")->Uniform3fv("lightPos", lightPos);
 
-			unsigned int cubemapFirst = light->GetShadowMapNr() * 6;
+			int cubemapFirst = light->GetShadowMapNr() * 6;
 			timeSum += (float)glfwGetTime() - time1;
-		
-			for (unsigned int i = cubemapFirst; i < cubemapFirst + 6; i++)
-			{
-				glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, ShadowCubemapArray.GetID(), 0, i);
-				glClear(GL_DEPTH_BUFFER_BIT);
-
-				glm::mat4 VP = projection * glm::lookAt(lightPos, lightPos + GetCubemapFront(i), GetCubemapUp(i));
-				RenderInfo info(nullptr, nullptr, &VP, false, true, false);
-				RenderScene(info, &DepthLinearizeShader);
-			}
+			
+			
+			RenderInfo info(&viewTranslation, &projection, nullptr, false, true, false);
+			ShadowFramebuffer.DepthBuffer = std::make_shared<GEE_FB::FramebufferAttachment>(*ShadowCubemapArray, GL_DEPTH_ATTACHMENT);
+			RenderCubemapFromScene(info, ShadowFramebuffer, *ShadowFramebuffer.DepthBuffer.get(), GL_DEPTH_ATTACHMENT, FindShader("DepthLinearize"), &cubemapFirst);
 		}
 		else
 		{
 			time1 = glfwGetTime();
 			if (bCubemapBound || i == 0)
 			{
-				DepthShader.Use();
+				FindShader("Depth")->Use();
 				bCubemapBound = false;
 			}
 
 			glm::mat4 VP = light->GetVP();
 
 			timeSum += (float)glfwGetTime() - time1;
-			glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, ShadowMapArray.GetID(), 0, light->GetShadowMapNr());
+			glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, ShadowMapArray->GetID(), 0, light->GetShadowMapNr());
 			glClear(GL_DEPTH_BUFFER_BIT);
 			
 			RenderInfo info(nullptr, nullptr, &VP, false, true, false);
-			RenderScene(info, &DepthShader);
+			RenderScene(info, FindShader("Depth"));
 		}
 	}
 
 	glActiveTexture(GL_TEXTURE0);
 	glCullFace(GL_BACK);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	glDrawBuffer(GL_COLOR_ATTACHMENT0);
 	//std::cout << "Wyczyscilem sobie " << timeSum * 1000.0f << "ms.\n";
 }
 
-void RenderEngine::RenderLightVolume(RenderInfo& info, LightComponent* light, Transform* transform, bool shade)
+void RenderEngine::RenderVolume(RenderInfo& info, EngineBasicShape shape, Shader& shader, const Transform* transform)
 {
-	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-	EngineObjectType lightVolumeType = light->GetLightVolumeType();
-	switch (light->GetType())
-	{
-	case LightType::DIRECTIONAL:	glDisable(GL_CULL_FACE); RenderEngineObject(info, std::pair<EngineObjectType, Transform*>(lightVolumeType, nullptr), &LightShaders[(unsigned int)LightType::DIRECTIONAL]); glEnable(GL_CULL_FACE); break;
+	if (shape == EngineBasicShape::QUAD)
+		glDisable(GL_CULL_FACE);
 
-	case LightType::POINT:			RenderEngineObject(info, std::pair<EngineObjectType, Transform*>(lightVolumeType, transform), ((shade) ? (&LightShaders[(unsigned int)LightType::POINT]) : (&DepthShader))); break;
+	shader.Use();
+	Render(info, GetBasicShapeMesh(shape), (transform) ? (*transform) : (Transform()), &shader);
 
-	case LightType::SPOT:			RenderEngineObject(info, std::pair<EngineObjectType, Transform*>(lightVolumeType, transform), ((shade) ? (&LightShaders[(unsigned int)LightType::SPOT]) : (&DepthShader))); break;
-
-	default:						std::cerr << "ERROR! Invalid light type.\n";
-	}
-	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	if (shape == EngineBasicShape::QUAD)
+		glEnable(GL_CULL_FACE);
 }
 
-void RenderEngine::RenderLightVolumes(RenderInfo& info, std::vector <LightComponent*> lights, glm::vec2 resolution)
+void RenderEngine::RenderVolume(RenderInfo& info, RenderableVolume* volume, Shader* boundShader, bool shadedRender)
 {
-	for (int i = 0; i < 3; i++)	//TODO: Optimize this
+	if (shadedRender)
 	{
-		LightShaders[i].Use();
-		LightShaders[i].Uniform2fv("resolution", resolution);
+		if (boundShader != volume->GetRenderShader())
+		{
+			boundShader = volume->GetRenderShader();
+			boundShader->Use();
+		}
+
+		volume->SetupRenderUniforms(*boundShader);
 	}
-	std::pair<LightType, Shader*> shader(LightType::POINT, &LightShaders[LightType::POINT]);	//we use a pair object for some optimisation - when we want to check only the type of the shader we use the first element; the second one contains actual shader object
-	shader.second->Use();
+	else if (!boundShader || boundShader->GetName() != "Depth")
+	{
+		boundShader = FindShader("Depth");
+		boundShader->Use();
+	}
+
+	RenderVolume(info, volume->GetShape(), *boundShader, &volume->GetRenderTransform());
+}
+
+void RenderEngine::RenderVolumes(RenderInfo& info, const GEE_FB::Framebuffer& framebuffer, const std::vector<std::unique_ptr<RenderableVolume>>& volumes, bool bIBLPass)
+{
+	Shader* boundShader = nullptr;
 
 	glEnable(GL_DEPTH_TEST);
 	glDepthMask(0x00);
@@ -510,24 +613,10 @@ void RenderEngine::RenderLightVolumes(RenderInfo& info, std::vector <LightCompon
 	glStencilOpSeparate(GL_BACK, GL_KEEP, GL_KEEP, GL_INCR_WRAP);
 	glStencilMask(0xFF);
 
-	for (unsigned int i = 0; i < lights.size(); i++)
+	for (unsigned int i = 0; i < volumes.size(); i++)
 	{
-		LightType type = lights[i]->GetType();
-		if (type != shader.first)
-		{
-			shader.first = type;
-			shader.second = &LightShaders[type];
-			shader.second->Use();
-		}
-
-		Transform lightTransform = lights[i]->GetTransform().GetWorldTransform();
-		lightTransform.SetScale(lights[i]->GetTransform().ScaleRef);
-		shader.second->Uniform1i("lightIndex", i);	//lights in the array on GPU should be sorted in the same order as they are in this vector!
-		lightTransform.bConstrain = true;
-
 		//1st pass: stencil
-	
-		if (type != LightType::DIRECTIONAL)		//if this is a directional light everything will be in range; don't waste time
+		if (volumes[i]->GetShape() != EngineBasicShape::QUAD)		//if this is a quad everything will be in range; don't waste time
 		{
 			glStencilMask(0xFF);
 			glClear(GL_STENCIL_BUFFER_BIT);
@@ -535,17 +624,24 @@ void RenderEngine::RenderLightVolumes(RenderInfo& info, std::vector <LightCompon
 			glStencilFunc(GL_ALWAYS, 1, 0xFF);
 			glDepthFunc(GL_LEQUAL);
 			glDrawBuffer(GL_NONE);
-			RenderLightVolume(info, lights[i], &lightTransform);
+			RenderVolume(info, volumes[i].get(), boundShader, false);
 		}
 
 		//2nd pass: lighting
 		glStencilMask(0x00);
-		glStencilFunc(((type == LightType::DIRECTIONAL) ? (GL_ALWAYS) : (GL_EQUAL)), 0, 0xFF);
+		glStencilFunc(((volumes[i]->GetShape() == EngineBasicShape::QUAD) ? (GL_ALWAYS) : (GL_EQUAL)), 0, 0xFF);
 		glEnable(GL_CULL_FACE);
 		glDepthFunc(GL_ALWAYS);
-		GLenum bufs[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
-		glDrawBuffers(2, bufs);
-		RenderLightVolume(info, lights[i], &lightTransform);
+		framebuffer.SetDrawBuffers();
+		RenderVolume(info, volumes[i].get(), boundShader, true);
+	}
+
+	if (bIBLPass)
+	{
+		glDisable(GL_CULL_FACE);
+		glDisable(GL_STENCIL_TEST);
+		FindShader("CookTorranceIBL")->Use();
+		Render(info, GetBasicShapeMesh(EngineBasicShape::QUAD), Transform(), FindShader("CookTorranceIBL"));
 	}
 
 	glDisable(GL_BLEND);
@@ -557,23 +653,252 @@ void RenderEngine::RenderLightVolumes(RenderInfo& info, std::vector <LightCompon
 	glDisable(GL_STENCIL_TEST);
 }
 
+void RenderEngine::RenderLightProbes()
+{
+	std::cout << "Initting.\n";
+	Dispose();
+	Init(glm::uvec2(1024));
+
+	//RenderInfo info;
+
+	//info.projection = &p;
+
+	GEE_FB::Framebuffer framebuffer;
+	std::shared_ptr<GEE_FB::FramebufferAttachment> depthBuffer = GEE_FB::reserveDepthBuffer(glm::uvec2(1024), GL_DEPTH_COMPONENT, GL_FLOAT, GL_NEAREST, GL_NEAREST, GL_TEXTURE_2D);
+	framebuffer.Bind(); 
+	framebuffer.SetAttachments(glm::uvec2(1024), GEE_FB::FramebufferAttachment(), nullptr);
+	framebuffer.Bind(true);
+
+	for (int i = 0; i < static_cast<int>(LightProbes.size()); i++)
+	{
+		LocalLightProbe* localProbeCast = dynamic_cast<LocalLightProbe*>(LightProbes[i].get());
+		if (!localProbeCast)
+			continue;
+		glm::vec3 camPos = localProbeCast->ProbeTransform.PositionRef;
+		glm::mat4 viewTranslation = glm::translate(glm::mat4(1.0f), -camPos);
+		glm::mat4 p = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 100.0f);
+
+		RenderInfo info;
+		info.view = &viewTranslation;
+		info.projection = &p;
+		info.camPos = &camPos;
+		FindShader("Geometry")->Use();
+		RenderCubemapFromScene(info, framebuffer, GEE_FB::FramebufferAttachment(LightProbes[i]->EnvironmentMap), GL_COLOR_ATTACHMENT0, FindShader("Geometry"), 0, true);
+		
+		LightProbes[i]->EnvironmentMap.Bind();
+		glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
+;
+		LightProbeLoader::ConvoluteLightProbe(*LightProbes[i], &LightProbes[i]->EnvironmentMap); 
+		if (PrimitiveDebugger::bDebugProbeLoading)
+			printVector(camPos, "Rendering probe");
+	}
+
+	Dispose();
+	Init(GameHandle->GetGameSettings()->WindowSize);
+}
+
 void RenderEngine::RenderScene(RenderInfo& info, Shader* shader)
 {
 	if (!shader)
-		shader = &DefaultShader;
+		shader = FindShader("Default");
 
 	shader->Use();
-	unsigned int VAOBound = 0;
+	Mesh* VAOBound = nullptr;
 	Material* materialBound = nullptr;
 
 	for (unsigned int i = 0; i < Models.size(); i++)
 	{
-		//Models[i]->Render(shader, info, VAOBound, materialBound, EmptyTexture);
-		Render(*Models[i], shader, info, VAOBound, materialBound, EmptyTexture);
+		Render(info, *Models[i], shader, VAOBound, materialBound);
 	}
 }
 
-void RenderEngine::Render(const ModelComponent& model, Shader* shader, RenderInfo& info, unsigned int& VAOBound, Material* materialBound, unsigned int emptyTexture)
+void RenderEngine::FullRender(RenderInfo& info, GEE_FB::Framebuffer* framebuffer)
+{
+	const GameSettings* settings = GameHandle->GetGameSettings();
+	bool DebugMode = false;
+	bool DUPA = false;
+	glm::mat4 currentFrameView = *info.view;
+	info.previousFrameView = &PreviousFrameView;
+
+	if (DebugMode)
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
+	////////////////////1. Shadow maps pass
+	if (1 || (settings->ShadowLevel > SettingLevel::SETTING_MEDIUM))
+	{
+		RenderShadowMaps(LightData.Lights);
+		DUPA = true;
+	}
+
+	LightData.LightsBuffer.SubData4fv(*info.camPos, 16);
+
+	////////////////////2. Geometry pass
+	GFramebuffer.Bind(true);
+	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_CULL_FACE);
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	info.MainPass = true;
+	info.CareAboutShader = true;
+
+	Shader* gShader = FindShader("Geometry");
+	gShader->Use();
+	gShader->Uniform3fv("camPos", *info.camPos);
+
+	RenderScene(info, gShader);
+	info.MainPass = false;
+	info.CareAboutShader = false;
+
+	////////////////////2.5 SSAO pass
+
+	const Texture* SSAOtex = nullptr;
+	if (settings->AmbientOcclusionSamples > 0)
+		SSAOtex = Postprocessing.SSAOPass(info, GFramebuffer.GetColorBuffer(0).get(), GFramebuffer.GetColorBuffer(1).get());	//pass gPosition and gNormal
+
+	////////////////////3. Lighting pass
+	LightData.UpdateLightUniforms();
+	MainFramebuffer.Bind();
+
+	glClearBufferfv(GL_COLOR, 0, glm::value_ptr(glm::vec3(0.0f, 0.0f, 0.0f)));
+	glClearBufferfv(GL_COLOR, 1, glm::value_ptr(glm::vec3(0.0f)));
+
+	for (int i = 0; i < 4; i++)
+	{
+		GFramebuffer.GetColorBuffer(i)->Bind(i);
+	}
+
+	if (SSAOtex)
+		SSAOtex->Bind(4);
+	std::vector<std::unique_ptr<RenderableVolume>> volumes;
+	volumes.resize(LightData.Lights.size());
+	std::transform(LightData.Lights.begin(), LightData.Lights.end(), volumes.begin(), [](const std::shared_ptr<LightComponent>& light) {return std::make_unique<LightVolume>(LightVolume(*light.get())); });
+	RenderVolumes(info, MainFramebuffer, volumes, false);// Shading == ShadingModel::SHADING_PBR_COOK_TORRANCE);
+
+	std::vector<std::unique_ptr<RenderableVolume>> probeVolumes;
+	probeVolumes.resize(LightProbes.size());
+	std::transform(LightProbes.begin(), LightProbes.end(), probeVolumes.begin(), [](const std::shared_ptr<LightProbe>& probe) {return std::make_unique<LightProbeVolume>(LightProbeVolume(*probe.get())); });
+	probeVolumes.erase(probeVolumes.begin());
+	RenderVolumes(info, MainFramebuffer, probeVolumes, false);
+
+
+	////////////////////3.5 Forward rendering pass
+	glEnable(GL_DEPTH_TEST);
+	glDisable(GL_CULL_FACE);
+	info.MainPass = true;
+	info.CareAboutShader = true;
+
+	for (unsigned int i = 0; i < ForwardShaders.size(); i++)
+		RenderScene(info, ForwardShaders[i].get());
+
+	//if (DebugMode)
+		//PhysicsEng.DebugRender(&RenderEng, info);
+	if (!framebuffer) 
+		TestRenderCubemap(info);
+	info.MainPass = false;
+	info.CareAboutShader = false;
+
+	////////////////////4. Postprocessing pass (Blur + Tonemapping & Gamma Correction)
+	Postprocessing.Render(MainFramebuffer.GetColorBuffer(0).get(), (settings->bBloom) ? (MainFramebuffer.GetColorBuffer(1).get()) : (nullptr), MainFramebuffer.DepthBuffer.get(), (settings->IsVelocityBufferNeeded()) ? (MainFramebuffer.GetColorBuffer("velocityTex").get()) : (nullptr), framebuffer);
+	      
+	PreviousFrameView = currentFrameView;
+}
+
+void RenderEngine::TestRenderCubemap(RenderInfo& info)
+{
+	LightProbeTextureArrays::PrefilterMapArr.Bind(0);
+	//LightProbes[1]->EnvironmentMap.Bind(0);
+	FindShader("Cubemap")->Use();
+	FindShader("Cubemap")->Uniform1f("mipLevel", (float)std::fmod(glfwGetTime(), 4.0));
+
+	bool bCalcVelocity = GameHandle->GetGameSettings()->IsVelocityBufferNeeded() && info.MainPass;
+	bool jitter = info.MainPass && GameHandle->GetGameSettings()->IsTemporalReprojectionEnabled();
+
+	glm::mat4 previousJitteredVP = (jitter) ? (Postprocessing.GetJitterMat((Postprocessing.GetFrameIndex() - 1) % 2) * *info.VP) : (*info.VP);
+
+	if (bCalcVelocity)
+		FindShader("Cubemap")->UniformMatrix4fv("prevVP", *info.projection * *info.previousFrameView);
+
+	Render(info, GetBasicShapeMesh(EngineBasicShape::CUBE), Transform(), FindShader("Cubemap"));
+}
+
+void RenderEngine::RenderCubemapFromTexture(Texture targetTex, Texture tex, glm::uvec2 size, Shader& shader, int* layer, int mipLevel)
+{
+	CubemapData.DefaultFramebuffer.SetAttachments(size);
+	CubemapData.DefaultFramebuffer.Bind(true);
+	glActiveTexture(GL_TEXTURE0);
+	glDepthFunc(GL_LEQUAL);
+	glDisable(GL_CULL_FACE);
+	glDisable(GL_DEPTH_TEST); 
+
+	shader.Use();
+	MeshSystem::MeshNode* cubeNode = FindMeshTree("ENG_CUBE")->FindNode("Cube");
+	Mesh* cubeMesh = cubeNode->FindMesh("Cube");
+	cubeMesh->Bind();
+
+	if (PrimitiveDebugger::bDebugCubemapFromTex)
+	{
+		std::cout << "0: ";
+		debugFramebuffer();
+	}
+	 
+	for (int i = 0; i < 6; i++)
+	{
+		targetTex.Bind();
+		switch (targetTex.GetType())
+		{
+		case GL_TEXTURE_CUBE_MAP:		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, targetTex.GetID(), mipLevel); break;
+		case GL_TEXTURE_CUBE_MAP_ARRAY: glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, targetTex.GetID(), mipLevel, *layer); *layer = *layer + 1; break;
+		default:						std::cerr << "ERROR: Can't render a scene to cubemap texture, when the texture's type is " << targetTex.GetType() << ".\n"; return;
+		}
+		glDrawBuffer(GL_COLOR_ATTACHMENT0);
+		if (PrimitiveDebugger::bDebugCubemapFromTex)
+		{
+			std::cout << "1: ";
+			debugFramebuffer();
+		}
+
+		tex.Bind();
+
+		RenderInfo info;
+		info.VP = &CubemapData.DefaultVP[i];
+
+		Render(info, ModelComponent(GameHandle, *cubeNode), &shader, cubeMesh);
+	}
+
+	glEnable(GL_CULL_FACE);
+	glEnable(GL_DEPTH_TEST);
+}
+
+void RenderEngine::RenderCubemapFromScene(RenderInfo& info, GEE_FB::Framebuffer target, GEE_FB::FramebufferAttachment targetTex, GLenum attachmentType, Shader* shader, int* layer, bool fullRender)
+{
+	target.Bind(true);
+	glActiveTexture(GL_TEXTURE0);
+
+	glm::mat4 viewTranslation = (info.view) ? (*info.view) : (glm::mat4(1.0f));
+	glm::mat4 pCopy = *info.projection;
+
+	for (int i = 0; i < 6; i++)
+	{
+		targetTex.Bind();
+		switch (targetTex.GetType())
+		{
+			case GL_TEXTURE_CUBE_MAP:		glFramebufferTexture2D(GL_FRAMEBUFFER, attachmentType, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, targetTex.GetID(), 0); break;
+			case GL_TEXTURE_CUBE_MAP_ARRAY: glFramebufferTextureLayer(GL_FRAMEBUFFER, attachmentType, targetTex.GetID(), 0, *layer); *layer = *layer + 1; break;
+			default:						std::cerr << "ERROR: Can't render a scene to cubemap texture, when the texture's type is " << targetTex.GetType() << ".\n"; return;
+		}
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		glm::mat4 view = CubemapData.DefaultV[i] * viewTranslation;
+		glm::mat4 proj = pCopy;
+		glm::mat4 VP = (info.projection) ? ((*info.projection) * view) : (view);
+		info.view = &view;
+		info.VP = &VP;
+		info.projection = &proj;
+		(fullRender) ? (FullRender(info, &target)) : (RenderScene(info, shader));
+	}
+}
+
+void RenderEngine::Render(RenderInfo& info, const ModelComponent& model, Shader* shader, const Mesh* boundMesh, Material* materialBound)
 {
 	if (model.GetMeshInstanceCount() == 0)
 		return;
@@ -581,15 +906,14 @@ void RenderEngine::Render(const ModelComponent& model, Shader* shader, RenderInf
 	const glm::mat4& modelMat = model.GetTransform().GetWorldTransformMatrix();	//the ComponentTransform's world transform is cached
 	bool bCalcVelocity = GameHandle->GetGameSettings()->IsVelocityBufferNeeded() && info.MainPass;
 	bool jitter = info.MainPass && GameHandle->GetGameSettings()->IsTemporalReprojectionEnabled();
-	
-	//shader->BindMatrices((jitter) ? (modelMat * GameHandle->GetPostprocessHandle()->GetJitterMat()) : (modelMat), info.view, info.projection, info.VP);
-	glm::mat4 xd = (jitter) ? (GameHandle->GetPostprocessHandle()->GetJitterMat()  * *info.VP) : (*info.VP);
-	shader->BindMatrices(modelMat, info.view, info.projection, &xd);
+
+	glm::mat4 jitteredVP = (info.VP) ? ((jitter) ? (Postprocessing.GetJitterMat() * *info.VP) : (*info.VP)) : (glm::mat4(1.0f));
+	shader->BindMatrices(modelMat, info.view, info.projection, &jitteredVP);
 
 	if (bCalcVelocity)
 	{
 		shader->UniformMatrix4fv("prevMVP", model.GetLastFrameMVP());
-		model.SetLastFrameMVP(xd * modelMat);
+		model.SetLastFrameMVP(jitteredVP * modelMat);
 	}
 
 	for (int i = 0; i < static_cast<int>(model.GetMeshInstanceCount()); i++)
@@ -599,18 +923,18 @@ void RenderEngine::Render(const ModelComponent& model, Shader* shader, RenderInf
 		Material* material = meshInst.GetMaterialPtr();
 		MaterialInstance* materialInst = meshInst.GetMaterialInst();
 
-		if ((info.CareAboutShader && material && shader != material->GetRenderShader()) || (info.OnlyShadowCasters && !mesh.CanCastShadow()) || !materialInst->ShouldBeDrawn())
+		if ((info.CareAboutShader && material && shader->GetName() != material->GetRenderShaderName()) || (info.OnlyShadowCasters && !mesh.CanCastShadow()) || !materialInst->ShouldBeDrawn())
 			continue;
 
-		if (VAOBound != mesh.VAO || i == 0)
+		if (boundMesh != &mesh || i == 0)
 		{
-			glBindVertexArray(mesh.VAO);
-			VAOBound = mesh.VAO;
+			mesh.Bind();
+			boundMesh = &mesh;
 		}
 
 		if (info.UseMaterials && materialBound != material && material) //jesli zbindowany jest inny material niz potrzebny obecnie, musimy zmienic go w shaderze
 		{
-			materialInst->UpdateWholeUBOData(shader, emptyTexture);
+			materialInst->UpdateWholeUBOData(shader, *EmptyTexture);
 			materialBound = material;
 		}
 		else if (materialBound) //jesli ostatni zbindowany material jest taki sam, to nie musimy zmieniac wszystkich danych w shaderze; oszczedzmy sobie roboty
@@ -618,8 +942,35 @@ void RenderEngine::Render(const ModelComponent& model, Shader* shader, RenderInf
 
 		mesh.Render();
 	}
+}
 
+void RenderEngine::Render(RenderInfo& info, const std::shared_ptr<Mesh>& mesh, const Transform& transform, Shader* shader, const Mesh* boundMesh, Material* materialBound)
+{
+	Render(info, ModelComponent(GameHandle, MeshSystem::MeshNode(mesh), transform), shader, boundMesh, materialBound);
+}
 
+void RenderEngine::Dispose()
+{
+	GFramebuffer.Dispose(true);
+	MainFramebuffer.Dispose(true);
+	CubemapData.DefaultFramebuffer.Dispose();
+
+	Postprocessing.Dispose();
+	//ShadowFramebuffer.Dispose();
+
+	ShadowMapArray->Dispose();
+	ShadowCubemapArray->Dispose();
+	//EmptyTexture->Dispose();
+
+	for (auto i = Shaders.begin(); i != Shaders.end(); i++)
+		if (std::find(ForwardShaders.begin(), ForwardShaders.end(), *i) == ForwardShaders.end())
+		{
+			(*i)->Dispose();
+			Shaders.erase(i);
+			i--;
+		}
+
+	LightShaders.clear();
 }
 
 glm::vec3 GetCubemapFront(unsigned int index)

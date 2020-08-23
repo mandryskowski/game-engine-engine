@@ -33,7 +33,8 @@ namespace MeshSystem
 		Material* OverrideMaterial;
 
 	public:
-		MeshNode(std::string name);
+		explicit MeshNode(std::string name, std::shared_ptr<Mesh> optionalMesh = nullptr);
+		MeshNode(std::shared_ptr<Mesh> optionalMesh = nullptr);
 		MeshNode(const MeshNode&, bool copyChildren = false);
 		MeshNode(MeshNode&&);
 		std::string GetName() const;
@@ -53,6 +54,7 @@ namespace MeshSystem
 		std::unique_ptr<CollisionObject> InstantiateCollisionObj() const;
 
 		Mesh* FindMesh(std::string name);
+		const std::shared_ptr<Mesh> FindMeshPtr(std::string name);
 		Material* FindMaterial(std::string name);
 		MeshNode* FindNode(std::string name);
 		MeshNode* FindNode(int number, int&& currentNumber = 0);
@@ -81,6 +83,7 @@ namespace MeshSystem
 		void SetPath(std::string);	//DOES NOT load from the path automatically. It's useful when you want to refer to this tree from the new name/path (f.e. used for engine objects, to keep their path as ENG_NAME instead of long file paths)
 
 		Mesh* FindMesh(std::string name);
+		const std::shared_ptr<Mesh> FindMeshPtr(std::string name);
 		Material* FindMaterial(std::string name);
 		MeshNode* FindNode(std::string name);
 		MeshNode* FindNode(int number);

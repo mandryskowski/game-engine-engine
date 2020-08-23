@@ -6,7 +6,8 @@ Material::Material(std::string name, float shine, float depthScale, Shader* shad
 	Name = name;
 	Shininess = shine;
 	DepthScale = depthScale;
-	RenderShader = shader;
+	if (shader)
+		RenderShaderName = shader->GetName();
 }
 
 std::string Material::GetName()
@@ -14,9 +15,9 @@ std::string Material::GetName()
 	return Name;
 }
 
-Shader* Material::GetRenderShader()
+std::string Material::GetRenderShaderName()
 {
-	return RenderShader;
+	return RenderShaderName;
 }
 
 void Material::SetDepthScale(float scale)
@@ -28,12 +29,12 @@ void Material::SetShininess(float shine)
 	Shininess = shine;
 }
 
-void Material::SetRenderShader(Shader* shader)
+void Material::SetRenderShaderName(std::string name)
 {
-	RenderShader = shader;
+	RenderShaderName = name;
 }
 
-void Material::AddTexture(MaterialTexture* tex)
+void Material::AddTexture(NamedTexture* tex)
 {
 	Textures.push_back(tex);
 }
@@ -47,12 +48,11 @@ void Material::LoadFromAiMaterial(aiMaterial* material, std::string directory, M
 	material->Get(AI_MATKEY_SHININESS, shininess);
 	Name = name.C_Str();
 	Shininess = shininess;
-	std::cout << "swieconko: " << shininess << '\n';
 
 	//This vector should contain all of the texture types that the engine can process (or they will not be loaded)
 	std::vector<std::pair<aiTextureType, std::string>> materialTypes =
 	{
-		std::pair<aiTextureType, std::string>(aiTextureType_DIFFUSE, "diffuse"),
+		std::pair<aiTextureType, std::string>(aiTextureType_DIFFUSE, "albedo"),
 		std::pair<aiTextureType, std::string>(aiTextureType_SPECULAR, "specular"),
 		std::pair<aiTextureType, std::string>(aiTextureType_HEIGHT, "normal"),
 		std::pair<aiTextureType, std::string>(aiTextureType_DISPLACEMENT, "depth")
@@ -65,7 +65,7 @@ void Material::LoadFromAiMaterial(aiMaterial* material, std::string directory, M
 
 void Material::LoadAiTexturesOfType(aiMaterial* material, std::string directory, aiTextureType type, std::string shaderName, MaterialLoadingData* matLoadingData)
 {
-	std::vector <MaterialTexture*>* prevLoadedTextures = nullptr;
+	std::vector <NamedTexture*>* prevLoadedTextures = nullptr;
 	if (matLoadingData)
 		prevLoadedTextures = &matLoadingData->LoadedTextures;
 
@@ -99,14 +99,14 @@ void Material::LoadAiTexturesOfType(aiMaterial* material, std::string directory,
 				continue;
 		}
 
-		MaterialTexture* tex = new MaterialTexture(textureFromFile(pathStr, (sRGB) ? (GL_SRGB) : (GL_RGB)), shaderName + std::to_string(i + 1));	//create a new Texture and pass the file path, the shader name (for example diffuse1, diffuse2, ...) and the sRGB info
+		NamedTexture* tex = new NamedTexture(textureFromFile(pathStr, (sRGB) ? (GL_SRGB) : (GL_RGB)), shaderName + std::to_string(i + 1));	//create a new Texture and pass the file path, the shader name (for example albedo1, roughness1, ...) and the sRGB info
 		Textures.push_back(tex);
 		if (prevLoadedTextures)
 			prevLoadedTextures->push_back(tex);
 	}
 }
 
-void Material::UpdateWholeUBOData(Shader* shader, unsigned int emptyTexture)
+void Material::UpdateWholeUBOData(Shader* shader, Texture& emptyTexture)
 {
 	shader->Uniform1f("material.shininess", Shininess);
 	shader->Uniform1f("material.depthScale", DepthScale);
@@ -129,7 +129,7 @@ void Material::UpdateWholeUBOData(Shader* shader, unsigned int emptyTexture)
 			}
 		}
 		if (!found)
-			glBindTexture(GL_TEXTURE_2D, emptyTexture);
+			emptyTexture.Bind();
 	}
 }
 
@@ -163,7 +163,7 @@ void AtlasMaterial::UpdateInstanceUBOData(Shader* shader)
 	shader->Uniform2fv("atlasData", glm::vec2(TextureID, AtlasSize.x));
 }
 
-void AtlasMaterial::UpdateWholeUBOData(Shader* shader, unsigned int emptyTexture)
+void AtlasMaterial::UpdateWholeUBOData(Shader* shader, Texture& emptyTexture)
 {
 	UpdateInstanceUBOData(shader);
 	Material::UpdateWholeUBOData(shader, emptyTexture);
@@ -223,7 +223,7 @@ void MaterialInstance::UpdateInstanceUBOData(Shader* shader)
 	MaterialPtr->UpdateInstanceUBOData(shader);
 }
 
-void MaterialInstance::UpdateWholeUBOData(Shader* shader, unsigned int emptyTexture)
+void MaterialInstance::UpdateWholeUBOData(Shader* shader, Texture& emptyTexture)
 {
 	UpdateInstanceUBOData(shader);
 	MaterialPtr->UpdateWholeUBOData(shader, emptyTexture);

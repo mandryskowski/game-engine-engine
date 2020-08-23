@@ -40,7 +40,7 @@ struct GameSettings
 
 	bool IsVelocityBufferNeeded() const;
 	bool IsTemporalReprojectionEnabled() const;
-	std::string GetShaderDefines() const;
+	std::string GetShaderDefines(glm::uvec2 resolution = glm::uvec2(0)) const;
 	void LoadFromFile(std::string path);
 
 	virtual void LoadSetting(std::stringstream& filestr, std::string settingName);

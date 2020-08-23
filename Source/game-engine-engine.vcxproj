@@ -140,6 +140,8 @@
     <ClCompile Include="GameSettings.cpp" />
     <ClCompile Include="GunActor.cpp" />
     <ClCompile Include="LightComponent.cpp" />
+    <ClCompile Include="LightProbe.cpp" />
+    <ClCompile Include="LightsManager.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Material.cpp" />
     <ClCompile Include="Mesh.cpp" />
@@ -147,6 +149,7 @@
     <ClCompile Include="ModelComponent.cpp" />
     <ClCompile Include="PhysicsEngine.cpp" />
     <ClCompile Include="Postprocess.cpp" />
+    <ClCompile Include="RenderableVolume.cpp" />
     <ClCompile Include="RenderEngine.cpp" />
     <ClCompile Include="SearchEngine.cpp" />
     <ClCompile Include="Shader.cpp" />
@@ -172,12 +175,15 @@
     <ClInclude Include="GameSettings.h" />
     <ClInclude Include="GunActor.h" />
     <ClInclude Include="LightComponent.h" />
+    <ClInclude Include="LightProbe.h" />
+    <ClInclude Include="LightsManager.h" />
     <ClInclude Include="Material.h" />
     <ClInclude Include="Mesh.h" />
     <ClInclude Include="MeshSystem.h" />
     <ClInclude Include="ModelComponent.h" />
     <ClInclude Include="PhysicsEngine.h" />
     <ClInclude Include="Postprocess.h" />
+    <ClInclude Include="RenderableVolume.h" />
     <ClInclude Include="RenderEngine.h" />
     <ClInclude Include="SearchEngine.h" />
     <ClInclude Include="Shader.h" />

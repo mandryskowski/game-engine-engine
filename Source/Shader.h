@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 #include <algorithm>
+#include <array>
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -36,32 +37,33 @@ class Shader
 		}
 	};
 
+	friend struct ShaderLoader;
+
 
 
 	unsigned int Program;
 	std::string Name;
 
 	std::vector <std::pair<unsigned int, std::string>> MaterialTextureUnits;
-	mutable std::vector <UniformLocation> Locations;
 	bool ExpectedMatrices[MATRICES_NB];
 
-	unsigned int LoadShader(GLenum type, std::string path, std::string additionalData = std::string());
 	void DebugShader(unsigned int);
 	GLint FindLocation(std::string) const;
+	friend class RenderEngine;
 public:
-	Shader();
-	Shader(std::string, std::string, std::string=std::string());
+	mutable std::vector <UniformLocation> Locations;
+	std::array<std::string, 3> ShadersSource;
+	Shader(std::string name = "undefinedShader");
 	std::string GetName();
 	std::vector<std::pair<unsigned int, std::string>>* GetMaterialTextureUnits();
 	bool ExpectsMatrix(unsigned int);
+
 	void SetName(std::string);
 	void SetTextureUnitNames(std::vector<std::pair<unsigned int, std::string>>);
 	void AddTextureUnit(unsigned int, std::string);
 	void SetExpectedMatrices(std::vector<MatrixType>);
 	void AddExpectedMatrix(std::string);
-	void LoadShaders(std::string vShaderPath, std::string fShaderPath, std::string gShaderPath = std::string());
-	void LoadShadersWithInclData(std::string data, std::string vShaderPath, std::string fShaderPath, std::string gShaderPath = std::string());
-	void LoadShadersWithExclData(std::string vShaderData, std::string vShaderPath, std::string fShaderData, std::string fShaderPath, std::string gShaderData = std::string(), std::string gShaderPath = std::string());
+
 	void Uniform1i(std::string, int) const;
 	void Uniform1f(std::string, float) const;
 	void Uniform2fv(std::string, glm::vec2) const;
@@ -71,9 +73,23 @@ public:
 	void UniformMatrix4fv(std::string, const glm::mat4&) const;
 	void UniformBlockBinding(std::string, unsigned int) const;
 	void UniformBlockBinding(unsigned int, unsigned int) const;
+
 	unsigned int GetUniformBlockIndex(std::string) const;
 	void Use() const;
 	void BindMatrices(const glm::mat4& model, const glm::mat4* view, const glm::mat4* projection, const glm::mat4* VP) const;
+
+	void Dispose();
 };
 
-glm::mat3 ModelToNormal(glm::mat4);
+struct ShaderLoader
+{
+private:
+	static unsigned int LoadShader(GLenum type, std::string path, std::string additionalData = std::string(), std::string* shaderSourcePtr = nullptr);
+	static void DebugShader(unsigned int);
+
+public:
+	static std::shared_ptr<Shader> LoadShaders(std::string shaderName, std::string vShaderPath, std::string fShaderPath, std::string gShaderPath = std::string());
+	static std::shared_ptr<Shader> LoadShadersWithInclData(std::string shaderName, std::string data, std::string vShaderPath, std::string fShaderPath, std::string gShaderPath = std::string());
+	static std::shared_ptr<Shader> LoadShadersWithExclData(std::string shaderName, std::string vShaderData, std::string vShaderPath, std::string fShaderData, std::string fShaderPath, std::string gShaderData = std::string(), std::string gShaderPath = std::string());
+};
+glm::mat3 ModelToNormal(glm::mat4);	//what the fuck is it doing here

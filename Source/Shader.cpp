@@ -1,32 +1,5 @@
 #include "Shader.h"
 
-unsigned int Shader::LoadShader(GLenum type, std::string shaderPath, std::string additionalData)
-{
-	additionalData = "#version 400 core\n" + additionalData;
-	std::fstream shaderFile(shaderPath);
-
-	if (!shaderFile.good())
-	{
-		std::cout << "ERROR! Cannot open: " << shaderPath << " :(\n";
-		return -1;
-	}
-
-	std::stringstream shaderStream;
-	shaderStream << shaderFile.rdbuf();
-
-	std::string shaderSourceStr = additionalData + shaderStream.str();
-
-	const char* shaderSource = shaderSourceStr.c_str();
-
-	unsigned int shader = glCreateShader(type);
-	glShaderSource(shader, 1, &shaderSource, 0);
-	glCompileShader(shader);
-
-	DebugShader(shader);
-
-	return shader;
-}
-
 void Shader::DebugShader(unsigned int shader)
 {
 	int result;
@@ -56,17 +29,12 @@ GLint Shader::FindLocation(std::string name) const
 ==================================================================
 */
 
-Shader::Shader():
+Shader::Shader(std::string name):
 	Program(0),
-	Name("Internal"),
-	ExpectedMatrices{ 0 }
+	Name(name),
+	ExpectedMatrices{}
 {
-}
-
-Shader::Shader( std::string vShaderPath, std::string fShaderPath, std::string gShaderPath):
-	Name("Internal")
-{
-	LoadShaders(vShaderPath, fShaderPath, gShaderPath);
+	ShadersSource = { "", "", "" };
 }
 
 std::string Shader::GetName()
@@ -91,6 +59,7 @@ void Shader::SetName(std::string name)
 
 void Shader::SetTextureUnitNames(std::vector <std::pair<unsigned int, std::string>> materialTexUnits)
 {
+	Use();
 	MaterialTextureUnits = materialTexUnits;
 	for (unsigned int i = 0; i < MaterialTextureUnits.size(); i++)
 		Uniform1i("material." + MaterialTextureUnits[i].second, MaterialTextureUnits[i].first);
@@ -98,6 +67,7 @@ void Shader::SetTextureUnitNames(std::vector <std::pair<unsigned int, std::strin
 
 void Shader::AddTextureUnit(unsigned int unitIndex, std::string nameInShader)
 {
+	Use();
 	MaterialTextureUnits.push_back(std::pair<unsigned int, std::string>(unitIndex, nameInShader));
 	Uniform1i("material." + nameInShader, unitIndex);
 }
@@ -126,35 +96,6 @@ void Shader::AddExpectedMatrix(std::string matType)
 		ExpectedMatrices[MatrixType::NORMAL] = true;
 	else
 		std::cerr << "ERROR! Can't find matrix type " << matType << '\n';
-}
-
-void Shader::LoadShaders(std::string vShaderPath, std::string fShaderPath, std::string gShaderPath)
-{
-	LoadShadersWithInclData("", vShaderPath, fShaderPath, gShaderPath);
-}
-
-void Shader::LoadShadersWithInclData(std::string data, std::string vShaderPath, std::string fShaderPath, std::string gShaderPath)
-{
-	LoadShadersWithExclData(data, vShaderPath, data, fShaderPath, (gShaderPath.empty()) ? (std::string()) : (data), gShaderPath);
-}
-
-void Shader::LoadShadersWithExclData(std::string vShaderData, std::string vShaderPath, std::string fShaderData, std::string fShaderPath, std::string gShaderData, std::string gShaderPath)
-{
-	unsigned int nrShaders = (gShaderPath.empty()) ? (2) : (3);
-	std::vector<unsigned int> shaders(nrShaders);
-	shaders[0] = LoadShader(GL_VERTEX_SHADER, vShaderPath, vShaderData);
-	shaders[1] = LoadShader(GL_FRAGMENT_SHADER, fShaderPath, fShaderData);
-	if (nrShaders == 3) shaders[2] = LoadShader(GL_GEOMETRY_SHADER, gShaderPath, gShaderData);
-
-	Program = glCreateProgram();
-	for (unsigned int i = 0; i < nrShaders; i++)
-		glAttachShader(Program, shaders[i]);
-	glLinkProgram(Program);
-	for (unsigned int i = 0; i < nrShaders; i++)
-	{
-		glDetachShader(Program, shaders[i]);
-		glDeleteShader(shaders[i]);
-	}
 }
 
 void Shader::Uniform1i(std::string name, int val) const
@@ -214,6 +155,7 @@ void Shader::Use() const
 
 void Shader::BindMatrices(const glm::mat4& model, const glm::mat4* view, const glm::mat4* projection, const glm::mat4* VP) const
 {
+	Locations.clear();
 	if (ExpectedMatrices[MatrixType::MODEL])
 		UniformMatrix4fv("model", model);
 	if (ExpectedMatrices[MatrixType::VIEW])
@@ -229,6 +171,90 @@ void Shader::BindMatrices(const glm::mat4& model, const glm::mat4* view, const g
 	if (ExpectedMatrices[MatrixType::NORMAL])
 		UniformMatrix3fv("normalMat", ModelToNormal(model));
 }
+
+void Shader::Dispose()
+{
+	glDeleteProgram(Program);
+	Program = 0;
+}
+
+unsigned int ShaderLoader::LoadShader(GLenum type, std::string shaderPath, std::string additionalData, std::string* shaderSourcePtr)
+{
+	additionalData = "#version 400 core\n" + additionalData;
+	std::fstream shaderFile(shaderPath);
+
+	if (!shaderFile.good())
+	{
+		std::cout << "ERROR! Cannot open: " << shaderPath << " :(\n";
+		return -1;
+	}
+
+	std::stringstream shaderStream;
+	shaderStream << shaderFile.rdbuf();
+
+	std::string shaderSourceStr = additionalData + shaderStream.str();
+	if (shaderSourcePtr)
+		*shaderSourcePtr = shaderSourceStr;
+
+
+	const char* shaderSource = shaderSourceStr.c_str();
+
+	unsigned int shader = glCreateShader(type);
+	glShaderSource(shader, 1, &shaderSource, 0);
+	glCompileShader(shader);
+
+	DebugShader(shader);
+
+	return shader;
+}
+
+void ShaderLoader::DebugShader(unsigned int shader)
+{
+	int result;
+	char data[512];
+	glGetShaderiv(shader, GL_COMPILE_STATUS, &result);
+	if (!result)
+	{
+		glGetShaderInfoLog(shader, 512, NULL, data);
+		std::cout << "Shader error: " << data;
+	}
+}
+
+std::shared_ptr<Shader> ShaderLoader::LoadShaders(std::string shaderName, std::string vShaderPath, std::string fShaderPath, std::string gShaderPath)
+{
+	return LoadShadersWithInclData(shaderName, "", vShaderPath, fShaderPath, gShaderPath);
+}
+
+std::shared_ptr<Shader> ShaderLoader::LoadShadersWithInclData(std::string shaderName, std::string data, std::string vShaderPath, std::string fShaderPath, std::string gShaderPath)
+{
+	return LoadShadersWithExclData(shaderName, data, vShaderPath, data, fShaderPath, (gShaderPath.empty()) ? (std::string()) : (data), gShaderPath);
+}
+
+std::shared_ptr<Shader> ShaderLoader::LoadShadersWithExclData(std::string shaderName, std::string vShaderData, std::string vShaderPath, std::string fShaderData, std::string fShaderPath, std::string gShaderData, std::string gShaderPath)
+{
+	std::shared_ptr<Shader> shaderObj = std::make_shared<Shader>(shaderName);
+	unsigned int nrShaders = (gShaderPath.empty()) ? (2) : (3);
+	std::vector<unsigned int> shaders(nrShaders);
+
+	shaders[0] = LoadShader(GL_VERTEX_SHADER, vShaderPath, vShaderData, &shaderObj->ShadersSource[0]);
+	shaders[1] = LoadShader(GL_FRAGMENT_SHADER, fShaderPath, fShaderData, &shaderObj->ShadersSource[1]);
+	if (nrShaders == 3) shaders[2] = LoadShader(GL_GEOMETRY_SHADER, gShaderPath, gShaderData, &shaderObj->ShadersSource[2]);
+
+	shaderObj->Program = glCreateProgram();
+
+	for (unsigned int i = 0; i < nrShaders; i++)
+		glAttachShader(shaderObj->Program, shaders[i]);
+	glLinkProgram(shaderObj->Program);
+
+	for (unsigned int i = 0; i < nrShaders; i++)
+	{
+		glDetachShader(shaderObj->Program, shaders[i]);
+		glDeleteShader(shaders[i]);
+	}
+
+	return shaderObj;
+}
+
 
 glm::mat3 ModelToNormal(glm::mat4 model)
 {

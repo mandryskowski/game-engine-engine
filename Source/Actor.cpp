@@ -1,4 +1,6 @@
 #include "Actor.h"
+#include "Component.h"
+#include <vector>
 
 Actor::Actor(GameManager* gameHandle, std::string name)
 {

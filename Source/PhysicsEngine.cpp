@@ -153,7 +153,7 @@ PxShape* PhysicsEngine::CreateTriangleMeshShape(CollisionShape* colShape, glm::v
 
 	switch (result)
 	{
-		case PxTriangleMeshCookingResult::Enum::eSUCCESS: std::cout << "Successfully cooked a mesh!\n"; break;
+		case PxTriangleMeshCookingResult::Enum::eSUCCESS: break;
 		case PxTriangleMeshCookingResult::Enum::eLARGE_TRIANGLE: std::cout << "INFO: Triangles are too large in a cooked mesh!\n"; break;
 		case PxTriangleMeshCookingResult::Enum::eFAILURE: std::cout << "ERROR! Can't cook a mesh\n"; return nullptr;
 	}

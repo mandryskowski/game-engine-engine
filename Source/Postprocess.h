@@ -9,15 +9,18 @@ class RenderInfo;
 class Postprocess: public PostprocessManager
 {
 	const GameSettings* Settings;
+	glm::uvec2 Resolution;
+
+	friend class RenderEngine;	//usun to
 
 	unsigned int QuadVAO;
 	unsigned int QuadVBO;
 
-	Shader QuadShader;
-	Shader GaussianBlurShader;
-	std::unique_ptr<Shader> SSAOShader;
-	Shader TonemapGammaShader;
-	Shader SMAAShaders[4];
+	std::shared_ptr<Shader> QuadShader;
+	std::shared_ptr<Shader> GaussianBlurShader;
+	std::shared_ptr<Shader> SSAOShader;
+	std::shared_ptr<Shader> TonemapGammaShader;
+	std::shared_ptr<Shader> SMAAShaders[4];
 
 	Texture SMAAAreaTex, SMAASearchTex;
 	std::unique_ptr<Texture> SSAONoiseTex;
@@ -34,13 +37,16 @@ class Postprocess: public PostprocessManager
 	void RenderQuad(unsigned int tex = 0, unsigned int texSlot = 0, bool bound = false, bool defaultFBO = true) const;
 public:
 	Postprocess();
-	void Init(const GameSettings*);
+	void Init(GameManager* gameHandle, glm::uvec2 resolution);
 
-	virtual glm::mat4 GetJitterMat() override;
+	virtual unsigned int GetFrameIndex() override;
+	virtual glm::mat4 GetJitterMat(int optionalIndex = -1) override;	//dont pass anything to receive the current jitter matrix
 
 	const Texture* GaussianBlur(const Texture* tex, int passes, GEE_FB::Framebuffer* writeFramebuffer = nullptr, unsigned int writeColorBuffer = 0) const;
 	const Texture* SSAOPass(RenderInfo&, const Texture* gPosition, const Texture* gNormal);
-	const Texture* SMAAPass(const Texture* colorTex, const Texture* depthTex, const Texture* previousColorTex = nullptr, const Texture* velocityTex = nullptr, GEE_FB::Framebuffer* writeFramebuffer = nullptr, unsigned int writeColorBuffer = 0) const;
-	const Texture* TonemapGammaPass(const Texture* colorTex, const Texture* blurTex, bool bFinal = false) const;	//converts from linear to gamma and from HDR data to LDR
-	void Render(const Texture* colorTex, const Texture* blurTex = nullptr, const Texture* depthTex = nullptr, const Texture* velocityTex = nullptr) const;
+	const Texture* SMAAPass(const Texture* colorTex, const Texture* depthTex, const Texture* previousColorTex = nullptr, const Texture* velocityTex = nullptr, GEE_FB::Framebuffer* writeFramebuffer = nullptr, unsigned int writeColorBuffer = 0, bool bT2x = false) const;
+	const Texture* TonemapGammaPass(const Texture* colorTex, const Texture* blurTex, GEE_FB::Framebuffer* writeFramebuffer = nullptr, bool bWriteToDefault = false) const;	//converts from linear to gamma and from HDR data to LDR
+	void Render(const Texture* colorTex, const Texture* blurTex = nullptr, const Texture* depthTex = nullptr, const Texture* velocityTex = nullptr, GEE_FB::Framebuffer* finalFramebuffer = nullptr) const;
+
+	void Dispose();
 };

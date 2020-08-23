@@ -18,18 +18,19 @@ public:
 	std::string GetPath() const;
 
 	void Bind(int texSlot = -1) const;
+
+	void Dispose();
 };
 
-class MaterialTexture: public Texture
+class NamedTexture: public Texture
 {
 	std::string ShaderName;
 
 public:
-	MaterialTexture(Texture tex, std::string name = "diffuse");
+	NamedTexture(Texture tex, std::string name = "diffuse");
 
 	std::string GetShaderName();
 };
-
 
 GLenum internalFormatToAlpha(GLenum);
 template <class T = unsigned char> Texture textureFromFile(std::string path, GLenum internalformat, GLenum magFilter = GL_NEAREST, GLenum minFilter = GL_LINEAR_MIPMAP_LINEAR, bool flip = false);
