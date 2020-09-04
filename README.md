@@ -1,29 +1,28 @@
-## Hello!
-I am a 16 year old polish developer learning OpenGL. After one year of gaining experience in the library, I've decided to go one step further and create my own somewhat-functional 3D engine!
+# My Game Engine Engine C++/OpenGL (26 Oct 2019 -> Now)
 
-
-
-# Prefix Engine C++/OpenGL (26 Oct 2019 -> Now)
-
-#### First version   0.1
+#### Features
 - Actor & Component hierarchy
 - Transformations system (local & world)
 - Shader loading
-- No sane mesh loader yet; the engine can only load my own file format *.fware*
+- Model and Phong material loading
 - Basic material system
 - Phong lighting system + normal maps
+- Shadow mapping for multiple lights (directional, spot or point)
 - Parallax Occlusion Mapping
+- Ugly SSAO
 - FPS camera system
-- Collision engine with wall sliding (spheres, cubes and points)
 - Postprocessing - HDR, Gamma Correction and efficient gaussian blur
+- SMAAT2x, velocity buffer could be useful for implementing per-pixel motion blur
+- Basic PhysX integration (with built-in debug system)
+- Primitive audio engine using OpenAL Soft; you can only load .wav files for now
+- Interpolation system for simple animation
 - Some utility classes for future development
 
 **TODO:**
-1. Repair some stuff!
-2. Sound system
-3. Shadows (or if you like fancy names, Omnidirectional Shadow Mapping)
-4. Implement loading popular 3D model formats (preferably with Assimp)
-5. Wonder if lighting should be done in view or world space
+1. PBR Shading (with light probe generation for IBL)
+2. Skeletal animation system
+3. .ogg loading
+4. Possibly add about some audio engine that is usable and affordable
 
 
 #### Made possible thanks to
