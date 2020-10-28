@@ -7,6 +7,8 @@
 - Model and Phong material loading
 - Basic material system
 - Phong lighting system + normal maps
+- PBR Shading (with light probe generation for IBL)
+- Skeletal animation system
 - Shadow mapping for multiple lights (directional, spot or point)
 - Parallax Occlusion Mapping
 - Ugly SSAO
@@ -19,10 +21,9 @@
 - Some utility classes for future development
 
 **TODO:**
-1. PBR Shading (with light probe generation for IBL)
-2. Skeletal animation system
-3. .ogg loading
-4. Possibly add about some audio engine that is usable and affordable
+1. .ogg loading
+2. Fix calculating the velocity buffer by taking bone matrices from previous frame into account (applies to animated models). SMAA T2x is shaky because of this.
+3. Possibly add about some audio engine that is usable and affordable
 
 
 #### Made possible thanks to
