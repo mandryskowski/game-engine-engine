@@ -1,5 +1,6 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "Game.h"
+#include <map>
 
 class KulkiGame : public Game
 {
@@ -45,6 +46,7 @@ public:
 int main()
 {
 	Child xd;
+	int max_v_uniforms;
 	glm::quat myRot = toQuat(glm::vec3(0.0f, 20.0f, 0.0f));
 	glm::quat shapeRot = toQuat(glm::vec3(0.0f, 45.0f, 0.0f));
 	myRot = shapeRot * myRot;
@@ -70,6 +72,11 @@ int main()
 		std::cerr << "zjebalo sie.";
 		return -1;
 	}
+
+	glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, &max_v_uniforms);
+	std::cout << "max: " << max_v_uniforms << "\n";
+	glGetIntegerv(GL_MAX_VERTEX_UNIFORM_COMPONENTS, &max_v_uniforms);
+	std::cout << "max2: " << max_v_uniforms << "\n";
 
 	KulkiGame game(programWindow, ShadingModel::SHADING_PBR_COOK_TORRANCE);
 	game.Run();

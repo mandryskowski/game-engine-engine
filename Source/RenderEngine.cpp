@@ -5,12 +5,16 @@
 #include "ModelComponent.h"
 #include "LightProbe.h"
 #include "RenderableVolume.h"
+#include "Font.h"
 #include <random> //DO WYJEBANIA
 
 RenderEngine::RenderEngine(GameManager* gameHandle, const ShadingModel& shading) :
 	GameHandle(gameHandle),
 	Shading(shading),
-	PreviousFrameView(glm::mat4(1.0f))
+	PreviousFrameView(glm::mat4(1.0f)),
+	BoundSkeletonBatch(nullptr),
+	BoundMesh(nullptr),
+	BoundMaterial(nullptr)
 {
 	//configure some openGL settings
 	glEnable(GL_DEPTH_TEST);
@@ -160,8 +164,8 @@ void RenderEngine::GenerateEngineObjects()
 	//Add the engine objects to the tree collection. This way models loaded from the level file can simply use the internal engine meshes for stuff like particles
 	//Preferably, the engine objects should be added to the tree collection first, so searching for them takes less time and they'll possibly be used often.
 
-	CreateMeshTree("ENG_CUBE")->GetRoot().AddChild("Cube").AddMesh("Cube").LoadFromGLBuffers(36, cubeVAO, cubeVBO);
-	CreateMeshTree("ENG_QUAD")->GetRoot().AddChild("Quad").AddMesh("Quad_NoShadow").LoadFromGLBuffers(6, quadVAO, quadVBO, quadEBO);
+	CreateMeshTree("ENG_CUBE")->GetRoot().AddChild<MeshSystem::MeshNode>("Cube")->AddMesh("Cube").LoadFromGLBuffers(36, cubeVAO, cubeVBO);
+	CreateMeshTree("ENG_QUAD")->GetRoot().AddChild<MeshSystem::MeshNode>("Quad")->AddMesh("Quad_NoShadow").LoadFromGLBuffers(6, quadVAO, quadVBO, quadEBO);
 	EngineDataLoader::LoadMeshTree(GameHandle, this, GameHandle->GetSearchEngine(), "EngineObjects/sphere.obj", CreateMeshTree("ENG_SPHERE"))->FindMesh("Sphere");
 	EngineDataLoader::LoadMeshTree(GameHandle, this, GameHandle->GetSearchEngine(), "EngineObjects/cone.obj", CreateMeshTree("ENG_CONE"))->FindMesh("Cone");
 }
@@ -190,6 +194,7 @@ void RenderEngine::LoadInternalShaders()
 	}
 	
 	Shaders.push_back(ShaderLoader::LoadShadersWithInclData("Geometry", settingsDefines, "Shaders/geometry.vs", "Shaders/geometry.fs"));
+	Shaders.back()->UniformBlockBinding("BoneMatrices", 2);
 	Shaders.back()->SetTextureUnitNames(gShaderTextureUnits);
 	Shaders.back()->SetExpectedMatrices(std::vector<MatrixType>{MatrixType::MODEL, MatrixType::MVP, MatrixType::NORMAL});
 
@@ -273,7 +278,7 @@ void RenderEngine::LoadInternalShaders()
 
 		Shaders.back()->Uniform1f("lightProbeNr", 3.0f);
 
-		if (i == (int)LightType::POINT || i == (int)LightType::SPOT)
+		if (i == (int)LightType::POINT || i == (int)LightType::SPOT || lightShadersNames[i] == "CookTorranceIBL")
 			Shaders.back()->SetExpectedMatrices(std::vector<MatrixType>{MatrixType::VIEW, MatrixType::MVP});
 	}
 }
@@ -288,13 +293,13 @@ void RenderEngine::Resize(glm::uvec2 resolution)
 		GEE_FB::reserveColorBuffer(Resolution, GL_RGB16F, GL_FLOAT, GL_NEAREST, GL_NEAREST, GL_TEXTURE_2D, 0, "gPosition"),			//gPosition texture
 		GEE_FB::reserveColorBuffer(Resolution, GL_RGB16F, GL_FLOAT, GL_NEAREST, GL_NEAREST, GL_TEXTURE_2D, 0, "gNormal"),				//gNormal texture
 		GEE_FB::reserveColorBuffer(Resolution, GL_RGBA, GL_UNSIGNED_BYTE, GL_NEAREST, GL_NEAREST, GL_TEXTURE_2D, 0, "gAlbedoSpec")	//gAlbedoSpec texture
-		//std::make_shared<GEE_FB::ColorBuffer>(GL_TEXTURE_2D, GL_RGBA, GL_FLOAT, GL_NEAREST, GL_NEAREST)		//alpha, metallic, ao texture
 	};
+
 	if (Shading == SHADING_PBR_COOK_TORRANCE)
 		gColorBuffers.push_back(GEE_FB::reserveColorBuffer(Resolution, GL_RGB, GL_UNSIGNED_BYTE, GL_NEAREST, GL_NEAREST, GL_TEXTURE_2D, 0, "gAlphaMetalAo")); //alpha, metallic, ao texture
-
 	if (settings->IsVelocityBufferNeeded())
 		gColorBuffers.push_back(velocityBuffer);
+
 	GFramebuffer.SetAttachments(Resolution, gColorBuffers, sharedDepthStencil);
 
 	std::vector<std::shared_ptr<GEE_FB::FramebufferAttachment>> colorBuffers;
@@ -366,10 +371,10 @@ Shader* RenderEngine::GetLightShader(LightType type)
 }
 
 
-std::shared_ptr<ModelComponent> RenderEngine::AddModel(std::shared_ptr<ModelComponent> model)
+std::shared_ptr<RenderableComponent> RenderEngine::AddRenderable(std::shared_ptr<RenderableComponent> renderable)
 {
-	Models.push_back(model);
-	return Models.back();
+	Renderables.push_back(renderable);
+	return Renderables.back();
 }
 
 std::shared_ptr<LightProbe> RenderEngine::AddLightProbe(std::shared_ptr<LightProbe> probe)
@@ -384,16 +389,15 @@ std::shared_ptr<LightComponent> RenderEngine::AddLight(std::shared_ptr<LightComp
 	return light;
 }
 
-std::shared_ptr<ModelComponent> RenderEngine::CreateModel(const ModelComponent& model)
+std::shared_ptr<SkeletonInfo> RenderEngine::AddSkeletonInfo()
 {
-	Models.push_back(std::make_shared<ModelComponent>(ModelComponent(model)));
-	return Models.back();
-}
-
-std::shared_ptr<ModelComponent> RenderEngine::CreateModel(ModelComponent&& model)
-{
-	Models.push_back(std::make_shared<ModelComponent>(ModelComponent(model)));
-	return Models.back();
+	std::shared_ptr<SkeletonInfo> info = std::make_shared<SkeletonInfo>(SkeletonInfo());
+	if (SkeletonBatches.empty() || !SkeletonBatches.back()->AddSkeleton(info))
+	{
+		SkeletonBatches.push_back(std::make_shared<SkeletonBatch>());
+		SkeletonBatches.back()->AddSkeleton(info);
+	}
+	return info;
 }
 
 MeshSystem::MeshTree* RenderEngine::CreateMeshTree(std::string path)
@@ -427,12 +431,30 @@ std::shared_ptr<Shader> RenderEngine::AddShader(std::shared_ptr<Shader> shader, 
 	return Shaders.back();
 }
 
-ModelComponent* RenderEngine::FindModel(std::string name)
+void RenderEngine::BindSkeletonBatch(SkeletonBatch* batch)
 {
-	auto modelIt = std::find_if(Models.begin(), Models.end(), [name](std::shared_ptr<ModelComponent>& model) { return model->GetName() == name; });
+	if (!batch)
+		return;
 
-	if (modelIt != Models.end())
-		return modelIt->get();
+	batch->BindToUBO();
+	BoundSkeletonBatch = batch;
+}
+
+void RenderEngine::BindSkeletonBatch(unsigned int index)
+{
+	if (index >= SkeletonBatches.size())
+		return;
+
+	SkeletonBatches[index]->BindToUBO();
+	BoundSkeletonBatch = SkeletonBatches[index].get();
+}
+
+RenderableComponent* RenderEngine::FindRenderable(std::string name)
+{
+	auto renderableIt = std::find_if(Renderables.begin(), Renderables.end(), [name](std::shared_ptr<RenderableComponent>& renderable) { return renderable->GetName() == name; });
+
+	if (renderableIt != Renderables.end())
+		return renderableIt->get();
 
 	std::cerr << "ERROR! Can't find model " << name << "!\n";
 	return nullptr;
@@ -570,6 +592,8 @@ void RenderEngine::RenderVolume(RenderInfo& info, EngineBasicShape shape, Shader
 		glDisable(GL_CULL_FACE);
 
 	shader.Use();
+	BoundMaterial = nullptr;
+	BoundMesh = nullptr;
 	Render(info, GetBasicShapeMesh(shape), (transform) ? (*transform) : (Transform()), &shader);
 
 	if (shape == EngineBasicShape::QUAD)
@@ -703,12 +727,12 @@ void RenderEngine::RenderScene(RenderInfo& info, Shader* shader)
 		shader = FindShader("Default");
 
 	shader->Use();
-	Mesh* VAOBound = nullptr;
-	Material* materialBound = nullptr;
+	BoundMesh = nullptr;
+	BoundMaterial = nullptr;
 
-	for (unsigned int i = 0; i < Models.size(); i++)
+	for (unsigned int i = 0; i < Renderables.size(); i++)
 	{
-		Render(info, *Models[i], shader, VAOBound, materialBound);
+		Renderables[i]->Render(info, shader);
 	}
 }
 
@@ -719,9 +743,6 @@ void RenderEngine::FullRender(RenderInfo& info, GEE_FB::Framebuffer* framebuffer
 	bool DUPA = false;
 	glm::mat4 currentFrameView = *info.view;
 	info.previousFrameView = &PreviousFrameView;
-
-	if (DebugMode)
-		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
 	////////////////////1. Shadow maps pass
 	if (1 || (settings->ShadowLevel > SettingLevel::SETTING_MEDIUM))
@@ -741,6 +762,10 @@ void RenderEngine::FullRender(RenderInfo& info, GEE_FB::Framebuffer* framebuffer
 	info.MainPass = true;
 	info.CareAboutShader = true;
 
+
+	if (DebugMode)
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
 	Shader* gShader = FindShader("Geometry");
 	gShader->Use();
 	gShader->Uniform3fv("camPos", *info.camPos);
@@ -748,6 +773,10 @@ void RenderEngine::FullRender(RenderInfo& info, GEE_FB::Framebuffer* framebuffer
 	RenderScene(info, gShader);
 	info.MainPass = false;
 	info.CareAboutShader = false;
+
+
+	if (DebugMode)
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 	////////////////////2.5 SSAO pass
 
@@ -777,7 +806,8 @@ void RenderEngine::FullRender(RenderInfo& info, GEE_FB::Framebuffer* framebuffer
 	std::vector<std::unique_ptr<RenderableVolume>> probeVolumes;
 	probeVolumes.resize(LightProbes.size());
 	std::transform(LightProbes.begin(), LightProbes.end(), probeVolumes.begin(), [](const std::shared_ptr<LightProbe>& probe) {return std::make_unique<LightProbeVolume>(LightProbeVolume(*probe.get())); });
-	probeVolumes.erase(probeVolumes.begin());
+	if (!probeVolumes.empty())	//TODO: DELETE. VERY NASTY!!!!!! ADD LOADING LIGHT PROBES FROM FILE AND DONT DELETE THE FIRST PROBE FOR NO REASON
+		probeVolumes.erase(probeVolumes.begin());
 	RenderVolumes(info, MainFramebuffer, probeVolumes, false);
 
 
@@ -787,13 +817,14 @@ void RenderEngine::FullRender(RenderInfo& info, GEE_FB::Framebuffer* framebuffer
 	info.MainPass = true;
 	info.CareAboutShader = true;
 
+	if (!framebuffer)
+		TestRenderCubemap(info);
+
 	for (unsigned int i = 0; i < ForwardShaders.size(); i++)
 		RenderScene(info, ForwardShaders[i].get());
 
-	//if (DebugMode)
-		//PhysicsEng.DebugRender(&RenderEng, info);
-	if (!framebuffer) 
-		TestRenderCubemap(info);
+	if (DebugMode)
+		GameHandle->GetPhysicsHandle()->DebugRender(this, info);
 	info.MainPass = false;
 	info.CareAboutShader = false;
 
@@ -831,9 +862,10 @@ void RenderEngine::RenderCubemapFromTexture(Texture targetTex, Texture tex, glm:
 	glDisable(GL_DEPTH_TEST); 
 
 	shader.Use();
-	MeshSystem::MeshNode* cubeNode = FindMeshTree("ENG_CUBE")->FindNode("Cube");
+	MeshSystem::MeshNode* cubeNode = dynamic_cast<MeshSystem::MeshNode*>(FindMeshTree("ENG_CUBE")->FindNode("Cube"));
 	Mesh* cubeMesh = cubeNode->FindMesh("Cube");
 	cubeMesh->Bind();
+	BoundMesh = cubeMesh;
 
 	if (PrimitiveDebugger::bDebugCubemapFromTex)
 	{
@@ -862,14 +894,14 @@ void RenderEngine::RenderCubemapFromTexture(Texture targetTex, Texture tex, glm:
 		RenderInfo info;
 		info.VP = &CubemapData.DefaultVP[i];
 
-		Render(info, ModelComponent(GameHandle, *cubeNode), &shader, cubeMesh);
+		Render(info, ModelComponent(GameHandle, *cubeNode), &shader);
 	}
 
 	glEnable(GL_CULL_FACE);
 	glEnable(GL_DEPTH_TEST);
 }
 
-void RenderEngine::RenderCubemapFromScene(RenderInfo& info, GEE_FB::Framebuffer target, GEE_FB::FramebufferAttachment targetTex, GLenum attachmentType, Shader* shader, int* layer, bool fullRender)
+void RenderEngine::RenderCubemapFromScene(RenderInfo info, GEE_FB::Framebuffer target, GEE_FB::FramebufferAttachment targetTex, GLenum attachmentType, Shader* shader, int* layer, bool fullRender)
 {
 	target.Bind(true);
 	glActiveTexture(GL_TEXTURE0);
@@ -888,6 +920,7 @@ void RenderEngine::RenderCubemapFromScene(RenderInfo& info, GEE_FB::Framebuffer 
 		}
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+
 		glm::mat4 view = CubemapData.DefaultV[i] * viewTranslation;
 		glm::mat4 proj = pCopy;
 		glm::mat4 VP = (info.projection) ? ((*info.projection) * view) : (view);
@@ -898,10 +931,81 @@ void RenderEngine::RenderCubemapFromScene(RenderInfo& info, GEE_FB::Framebuffer 
 	}
 }
 
-void RenderEngine::Render(RenderInfo& info, const ModelComponent& model, Shader* shader, const Mesh* boundMesh, Material* materialBound)
+void RenderEngine::RenderText(RenderInfo info, const Font& font, std::string content, Transform t, glm::vec3 color, Shader* shader, bool convertFromPx)
+{
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glBlendEquation(GL_FUNC_ADD);
+
+	if (!shader)
+	{
+		shader = FindShader("TextShader");
+		shader->Use();
+	}
+
+	shader->Uniform3fv("color", color);
+	font.GetBitmapsArray().Bind(0);
+
+	glm::vec2 resolution = (glm::vec2)GameHandle->GetGameSettings()->WindowSize;
+
+	info.projection = nullptr;
+	info.view = nullptr;
+	//info.VP = nullptr;
+	glm::mat4 pxConvertMatrix = (convertFromPx) ? (glm::ortho(0.0f, resolution.x, 0.0f, resolution.y)) : (glm::mat4(1.0f));
+	glm::mat4 identity(1.0f);
+	glm::mat4 proj = info.GetProjection();
+	glm::mat4 vp = info.GetVP() * pxConvertMatrix;
+	info.projection = &proj;
+	info.VP = &vp;
+	info.CareAboutShader = true;
+	info.MainPass = false;
+	info.UseMaterials = true;
+
+	glm::vec3 scale = t.ScaleRef / 64.0f;
+	t.Move(glm::vec3(0.0f, -t.ScaleRef.y + font.GetBaselineHeight() * scale.y, 0.0f));
+
+	//t.Move(glm::vec3(0.0f, -64.0f, 0.0f));
+	//t.Move(glm::vec3(0.0f, 11.0f, 0.0f) / scale);
+
+	float advancesSum = 0.0f;
+	for (int i = 0; i < static_cast<int>(content.length()); i++)
+		advancesSum += (font.GetCharacter(content[i]).Advance / 64.0f) * scale.x / 2.0f;
+
+	//t.Move(glm::vec3(-advancesSum, -t.ScaleRef.y / 2.0f, 0.0f));
+
+	Material textMaterial("TextMaterial", 0.0f, 0.0f, FindShader("TextShader"));
+
+	for (int i = 0; i < static_cast<int>(content.length()); i++)
+	{
+		shader->Uniform1i("glyphNr", content[i]);
+		const Character& c = font.GetCharacter(content[i]);
+
+		t.Move(glm::vec3((float)c.Bearing.x, (float)c.Bearing.y, 0.0f) * scale);
+		t.SetScale(glm::vec3(glm::vec2(64.0f), 0.0f) * scale);
+		//printVector(vp * t.GetWorldTransformMatrix() * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f), "Letter " + std::to_string(i));
+		Render(info, GetBasicShapeMesh(EngineBasicShape::QUAD), t, shader, &textMaterial);
+		t.Move(-glm::vec3((float)c.Bearing.x, (float)c.Bearing.y, 0.0f) * scale);
+
+		t.Move(glm::vec3(c.Advance / 64.0f, 0.0f, 0.0f) * scale);
+	}
+
+	glDisable(GL_BLEND);
+}
+
+void RenderEngine::Render(RenderInfo info, const ModelComponent& model, Shader* shader)
 {
 	if (model.GetMeshInstanceCount() == 0)
 		return;
+
+	model.DRAWBATCH();
+
+	if (SkeletonInfo* skelInfo = model.GetSkeletonInfo())
+	{
+		if (skelInfo->GetBatchPtr() != BoundSkeletonBatch)
+			BindSkeletonBatch(model.GetSkeletonInfo()->GetBatchPtr());
+
+		shader->Uniform1i("boneIDOffset", skelInfo->GetIDOffset());
+	}
 
 	const glm::mat4& modelMat = model.GetTransform().GetWorldTransformMatrix();	//the ComponentTransform's world transform is cached
 	bool bCalcVelocity = GameHandle->GetGameSettings()->IsVelocityBufferNeeded() && info.MainPass;
@@ -916,6 +1020,7 @@ void RenderEngine::Render(RenderInfo& info, const ModelComponent& model, Shader*
 		model.SetLastFrameMVP(jitteredVP * modelMat);
 	}
 
+
 	for (int i = 0; i < static_cast<int>(model.GetMeshInstanceCount()); i++)
 	{
 		const MeshInstance& meshInst = model.GetMeshInstance(i);
@@ -926,27 +1031,30 @@ void RenderEngine::Render(RenderInfo& info, const ModelComponent& model, Shader*
 		if ((info.CareAboutShader && material && shader->GetName() != material->GetRenderShaderName()) || (info.OnlyShadowCasters && !mesh.CanCastShadow()) || !materialInst->ShouldBeDrawn())
 			continue;
 
-		if (boundMesh != &mesh || i == 0)
+		if (BoundMesh != &mesh || i == 0)
 		{
 			mesh.Bind();
-			boundMesh = &mesh;
+			BoundMesh = &mesh;
 		}
-
-		if (info.UseMaterials && materialBound != material && material) //jesli zbindowany jest inny material niz potrzebny obecnie, musimy zmienic go w shaderze
+		
+		if (info.UseMaterials && material)
 		{
-			materialInst->UpdateWholeUBOData(shader, *EmptyTexture);
-			materialBound = material;
+			if (BoundMaterial != material) //jesli zbindowany jest inny material niz potrzebny obecnie, musimy zmienic go w shaderze
+			{
+				materialInst->UpdateWholeUBOData(shader, *EmptyTexture);
+				BoundMaterial = material;
+			}
+			else if (BoundMaterial) //jesli ostatni zbindowany material jest taki sam, to nie musimy zmieniac wszystkich danych w shaderze; oszczedzmy sobie roboty
+				materialInst->UpdateInstanceUBOData(shader);
 		}
-		else if (materialBound) //jesli ostatni zbindowany material jest taki sam, to nie musimy zmieniac wszystkich danych w shaderze; oszczedzmy sobie roboty
-			materialInst->UpdateInstanceUBOData(shader);
 
 		mesh.Render();
 	}
 }
 
-void RenderEngine::Render(RenderInfo& info, const std::shared_ptr<Mesh>& mesh, const Transform& transform, Shader* shader, const Mesh* boundMesh, Material* materialBound)
+void RenderEngine::Render(RenderInfo info, const std::shared_ptr<Mesh>& mesh, const Transform& transform, Shader* shader, Material* material)
 {
-	Render(info, ModelComponent(GameHandle, MeshSystem::MeshNode(mesh), transform), shader, boundMesh, materialBound);
+	Render(info, ModelComponent(GameHandle, MeshSystem::MeshNode(mesh), "", transform, nullptr, material), shader);
 }
 
 void RenderEngine::Dispose()

@@ -1,4 +1,8 @@
 #include "Animation.h"
+#include <assimp/scene.h>
+
+
+float DUPA::AnimTime = 9999.0f;
 
 Interpolation::Interpolation(float begin, float end, InterpolationType type, bool fadeAway, AnimBehaviour before, AnimBehaviour after)
 {
@@ -172,6 +176,34 @@ template <class ValType> void Interpolator<ValType>::Update(float deltaTime)
 		*InterpolatedValPtr += result - LastInterpResult;	//we subtract the last result from the current result, because if two interpolations of the same variable happen at once, we can't just assign the result, we have to add delta
 
 	LastInterpResult = result;
+}
+
+Animation::Animation(aiAnimation* anim)
+{
+	for (int i = 0; i < static_cast<int>(anim->mNumChannels); i++)
+		Channels.push_back(std::make_shared<AnimChannel>(AnimChannel(anim->mChannels[i])));
+}
+
+AnimChannel::AnimChannel(aiNodeAnim* aiChannel) :
+	Name(aiChannel->mNodeName.C_Str())
+{
+	for (int i = 0; i < static_cast<int>(aiChannel->mNumPositionKeys); i++)
+		PosKeys.push_back(std::make_shared<AnimVecKey>(AnimVecKey(aiChannel->mPositionKeys[i].mTime / 24.0f, aiToGlm(aiChannel->mPositionKeys[i].mValue))));
+	for (int i = 0; i < static_cast<int>(aiChannel->mNumRotationKeys); i++)
+		RotKeys.push_back(std::make_shared<AnimQuatKey>(AnimQuatKey(aiChannel->mRotationKeys[i].mTime / 24.0f, aiToGlm(aiChannel->mRotationKeys[i].mValue))));
+	for (int i = 0; i < static_cast<int>(aiChannel->mNumScalingKeys); i++)
+		ScaleKeys.push_back(std::make_shared<AnimVecKey>(AnimVecKey(aiChannel->mScalingKeys[i].mTime / 24.0f, aiToGlm(aiChannel->mScalingKeys[i].mValue))));
+}
+
+
+glm::vec3 aiToGlm(const aiVector3D& aiVec)
+{
+	return glm::vec3(aiVec.x, aiVec.y, aiVec.z);
+}
+
+glm::quat aiToGlm(const aiQuaternion& aiQuat)
+{
+	return glm::quat(aiQuat.w, aiQuat.x, aiQuat.y, aiQuat.z);
 }
 
 /*

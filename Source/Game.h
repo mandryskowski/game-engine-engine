@@ -1,11 +1,12 @@
 #pragma once
 #include "PhysicsEngine.h"
 #include "RenderEngine.h"
-#include "CollisionEngine.h"
 #include "AudioEngine.h"
 #include "SearchEngine.h"
 #include "GameSettings.h"
 #include "Actor.h"
+
+class Font;
 
 class Game: public GameManager
 {
@@ -17,9 +18,9 @@ class Game: public GameManager
 	UniformBuffer MatricesBuffer;
 
 	std::unique_ptr<GameSettings> Settings;
+	std::shared_ptr<Font> MyFont;
 	RenderEngine RenderEng;
 	PhysicsEngine PhysicsEng;
-	CollisionEngine CollisionEng;
 	AudioEngine AudioEng;
 	SearchEngine Searcher;
 
@@ -33,6 +34,7 @@ public:
 
 	void LoadLevel(std::string);
 	virtual void BindActiveCamera(CameraComponent*) override;
+	virtual void PassMouseControl(CameraComponent*) override;
 	virtual std::shared_ptr<Actor> AddActorToScene(std::shared_ptr<Actor> actor) override; //you use this function to make the game interact (update, draw...) with the actor; without adding it to the scene, the Actor instance isnt updated real-time by default
 	virtual SearchEngine* GetSearchEngine() override;
 

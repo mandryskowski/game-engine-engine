@@ -66,6 +66,19 @@ std::string NamedTexture::GetShaderName()
 ========================================================================================================================
 */
 
+bool containsAlphaChannel(GLenum internalformat)
+{
+	switch (internalformat)
+	{
+	case GL_RGB16F:
+	case GL_RGB32F:
+	case GL_RGBA:
+		return true;
+	}
+
+	return false;
+}
+
 GLenum internalFormatToAlpha(GLenum internalformat)
 {
 	switch (internalformat)
@@ -99,6 +112,8 @@ template <class T> Texture textureFromFile(std::string path, GLenum internalform
 		data = stbi_loadf(path.c_str(), &width, &height, &nrChannels, 0);
 		type = GL_FLOAT;
 	}
+	else
+		std::cerr << "ERROR! Unrecognized type of T for file " + path + "\n";
 
 	if (!data)
 	{
@@ -122,12 +137,19 @@ template <class T> Texture textureFromFile(std::string path, GLenum internalform
 	}
 
 	glTexImage2D(GL_TEXTURE_2D, 0, internalformat, width, height, 0, format, type, data);
-
-	if (minFilter == GL_NEAREST_MIPMAP_NEAREST || minFilter == GL_LINEAR_MIPMAP_NEAREST || minFilter == GL_NEAREST_MIPMAP_LINEAR || minFilter == GL_LINEAR_MIPMAP_LINEAR)
-		glGenerateMipmap(GL_TEXTURE_2D);
+	if (path == "nanosuit/glass_dif.png")
+		std::cout << "TEX1: " << internalformat << "/" << width << "/" << height << "/" << format << "/" << (type  == GL_UNSIGNED_BYTE) << "/" << data << "\n";
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, magFilter);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minFilter);
+
+	if (path == "nanosuit/glass_dif.png")
+		std::cout << glGetError() << "\n";
+	if (minFilter == GL_NEAREST_MIPMAP_NEAREST || minFilter == GL_LINEAR_MIPMAP_NEAREST || minFilter == GL_NEAREST_MIPMAP_LINEAR || minFilter == GL_LINEAR_MIPMAP_LINEAR)
+		glGenerateMipmap(GL_TEXTURE_2D);
+
+	if (path == "nanosuit/glass_dif.png")
+		std::cout << "TEX2\n";
 
 	if (flip)
 		stbi_set_flip_vertically_on_load(false);
@@ -153,6 +175,65 @@ Texture textureFromBuffer(const void* buffer, unsigned int width, unsigned int h
 
 	return Texture(GL_TEXTURE_2D, tex);
 }
+
+std::shared_ptr<Texture> reserveTexture(glm::uvec2 size, GLenum internalformat, GLenum type, GLenum magFilter, GLenum minFilter, GLenum texType, unsigned int samples, std::string texName, GLenum format)
+{
+	std::shared_ptr<Texture> tex = std::make_shared<Texture>(NamedTexture(Texture(), texName));
+	tex->GenerateID(texType);
+	tex->Bind();
+
+	bool bCubemap = texType == GL_TEXTURE_CUBE_MAP || texType == GL_TEXTURE_CUBE_MAP_ARRAY;
+	bool bMultisample = texType == GL_TEXTURE_2D_MULTISAMPLE || texType == GL_TEXTURE_2D_MULTISAMPLE_ARRAY;
+
+	if (bMultisample)
+	{
+		glTexImage2DMultisample(texType, samples, internalformat, size.x, size.y, GL_TRUE);
+		return tex;
+	}
+
+	GLenum texImageType = (bCubemap) ? (GL_TEXTURE_CUBE_MAP_POSITIVE_X) : (texType);
+	if (format == GL_ZERO)
+		format = (containsAlphaChannel(internalformat)) ? (GL_RGBA) : (GL_RGB);
+
+	for (int i = 0; i < ((bCubemap) ? (6) : (1)); i++)
+		glTexImage2D(texImageType + i, 0, internalformat, size.x, size.y, 0, format, type, (void*)(nullptr));
+
+	glTexParameteri(texType, GL_TEXTURE_MAG_FILTER, magFilter);
+	glTexParameteri(texType, GL_TEXTURE_MIN_FILTER, minFilter);
+	glTexParameteri(texType, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(texType, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+	return tex;
+}
+
+std::shared_ptr<Texture> reserveTexture(glm::uvec3 size, GLenum internalformat, GLenum type, GLenum magFilter, GLenum minFilter, GLenum texType, unsigned int samples, std::string texName, GLenum format)
+{
+	std::shared_ptr<Texture> tex = std::make_shared<Texture>(NamedTexture(Texture(), texName));
+	tex->GenerateID(texType);
+	tex->Bind();
+
+	bool bCubemap = texType == GL_TEXTURE_CUBE_MAP || texType == GL_TEXTURE_CUBE_MAP_ARRAY;
+	bool bMultisample = texType == GL_TEXTURE_2D_MULTISAMPLE || texType == GL_TEXTURE_2D_MULTISAMPLE_ARRAY;
+
+	if (bMultisample)
+	{
+		glTexImage3DMultisample(texType, samples, internalformat, size.x, size.y, size.z * (bCubemap) ? (6) : (1), GL_TRUE);
+		return tex;
+	}
+
+	if (format == GL_ZERO)
+		format = (containsAlphaChannel(internalformat)) ? (GL_RGBA) : (GL_RGB);
+
+	glTexImage3D(texType, 0, internalformat, size.x, size.y, size.z * ((bCubemap) ? (6) : (1)), 0, format, type, (void*)(nullptr));
+
+	glTexParameteri(texType, GL_TEXTURE_MAG_FILTER, magFilter);
+	glTexParameteri(texType, GL_TEXTURE_MIN_FILTER, minFilter);
+	glTexParameteri(texType, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(texType, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+	return tex;
+}
+
 
 template Texture textureFromFile<unsigned char>(std::string, GLenum, GLenum, GLenum, bool);
 template Texture textureFromFile<float>(std::string, GLenum, GLenum, GLenum, bool);

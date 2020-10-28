@@ -1,7 +1,8 @@
 #pragma once
-#include "CollisionEngine.h"
+#include "Component.h"
 #include "GameSettings.h"
 #include <array>
+
 class CameraComponent: public Component
 {
 	enum MovementDir
@@ -24,7 +25,6 @@ class CameraComponent: public Component
 	glm::vec3 RotationEuler;
 	std::array<MovementAxis, 4> MovementAxises;
 
-	CollisionComponent* GroundCheckComponent;
 	float HoverHeight;
 	bool bHoverHeightUnlocked;
 	
@@ -32,8 +32,6 @@ class CameraComponent: public Component
 
 public:
 	CameraComponent(GameManager*, std::string name,float = 3.0f);
-	bool PerformCollisionCheck(std::vector<CollisionComponent*>, glm::vec3, std::vector<glm::vec3>*, std::vector<CollisionComponent*>* = nullptr);
-	glm::vec3 ApplyCollisionResponse(glm::vec3);
 	glm::mat4 GetProjectionMat();		//returns the camera projection matrix - i've decided that each camera should have their own projection mat, because just as in the real world each cam has its own FoV and aspect ratio
 	glm::mat4 GetVP(Transform* = nullptr);	//you can pass a WorldTransform of this component if it was calculated before (you can save on calculations
 	void RotateWithMouse(glm::vec2);	//rotates camera - you should pass the mouse offset from the center

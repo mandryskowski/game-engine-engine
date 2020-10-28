@@ -31,16 +31,14 @@ PhysicsEngine::PhysicsEngine(bool* debugmode):
 	DebugModePtr = debugmode;
 }
 
-
-
 void PhysicsEngine::Init()
 {
 	Foundation = PxCreateFoundation(PX_PHYSICS_VERSION, Allocator, ErrorCallback);
 
 	Pvd = PxCreatePvd(*Foundation);
 
-	//PxPvdTransport* transport = PxDefaultPvdSocketTransportCreate("localhost", 5425, 1000);
-	PxPvdTransport* transport = PxDefaultPvdFileTransportCreate("plik.pxd2");
+	PxPvdTransport* transport = PxDefaultPvdSocketTransportCreate("localhost", 5425, 1000);
+	//PxPvdTransport* transport = PxDefaultPvdFileTransportCreate("plik.pxd2");
 	Pvd = PxCreatePvd(*Foundation);
 	Pvd->connect(*transport, PxPvdInstrumentationFlag::eALL);
 
@@ -69,6 +67,8 @@ void PhysicsEngine::Init()
 
 	DefaultMaterial = Physics->createMaterial(0.5f, 1.0f, 0.6f);
 
+	ControllerManager = PxCreateControllerManager(*Scene);
+
 	PxRigidStatic* ground = PxCreatePlane(*Physics, PxPlane(0.0f, 1.0f, 0.0f, 0.5f), *DefaultMaterial);
 	Scene->addActor(*ground);
 
@@ -82,6 +82,16 @@ void PhysicsEngine::Init()
 
 void PhysicsEngine::CreatePxActorForObject(CollisionObject* object)
 {
+	if (object->ActorPtr)
+	{
+		std::cout << "INFO: The given CollisionObject is already associated with a PxActor object. No PxActor will be created.\n";
+		return;
+	}
+	if (!object->TransformPtr)
+	{
+		std::cerr << "ERROR! The given CollisionObject does not have a pointer to any Transform object.\n";
+		return;
+	}
 	glm::vec3 worldObjectScale = object->TransformPtr->GetWorldTransform().ScaleRef;
 
 	for (int i = 0; i < static_cast<int>(object->Shapes.size()); i++)
@@ -107,6 +117,7 @@ void PhysicsEngine::CreatePxActorForObject(CollisionObject* object)
 		if (!pxShape)
 			continue;
 	
+		pxShape->setLocalPose(PxTransform(toPx(object->TransformPtr->GetWorldTransform().ScaleRef * shapeT.PositionRef), toPx(shapeT.RotationRef)));
 		if (i == 0)
 		{
 			object->ActorPtr = (object->IsStatic) ?
@@ -115,8 +126,6 @@ void PhysicsEngine::CreatePxActorForObject(CollisionObject* object)
 		}
 		else
 			object->ActorPtr->attachShape(*pxShape);
-
-		pxShape->setLocalPose(PxTransform(toPx(object->TransformPtr->GetWorldTransform().ScaleRef * shapeT.PositionRef), toPx(shapeT.RotationRef)));
 	}
 
 	if (!object->ActorPtr)
@@ -175,6 +184,17 @@ CollisionObject* PhysicsEngine::CreateCollisionObject(glm::vec3 pos)
 	return obj;
 }
 
+PxController* PhysicsEngine::CreateController()
+{
+	PxCapsuleControllerDesc desc;
+	desc.radius = 0.1f;
+	desc.height = 0.5f;
+	desc.material = DefaultMaterial;
+	desc.position = PxExtendedVec3(-3.0f, 1.0f, 0.0f);
+	PxController* controller = ControllerManager->createController(desc);
+	return controller;
+}
+
 void PhysicsEngine::ApplyForce(CollisionObject* obj, glm::vec3 force)
 {
 	PxRigidDynamic* body = obj->ActorPtr->is<PxRigidDynamic>();
@@ -194,18 +214,10 @@ void PhysicsEngine::AddCollisionObject(CollisionObject* object)
 void PhysicsEngine::Setup()
 {
 	for (int i = 0; i < static_cast<int>(CollisionObjects.size()); i++)
-		CreatePxActorForObject(CollisionObjects[i]);
+		//if (!CollisionObjects[i]->ActorPtr)
+			CreatePxActorForObject(CollisionObjects[i]);
 
 	WasSetup = true;
-}
-
-CollisionObject* PhysicsEngine::FindCollisionObject(std::string name)
-{
-	for (int i = 0; i < static_cast<int>(CollisionObjects.size()); i++)
-		if (CollisionObjects[i]->Name == name)
-			return CollisionObjects[i];
-
-	return nullptr;
 }
 
 void PhysicsEngine::Update(float deltaTime)
@@ -220,7 +232,7 @@ void PhysicsEngine::Update(float deltaTime)
 
 void PhysicsEngine::UpdateTransforms()
 {
-	for (int i = 0; i < CollisionObjects.size(); i++)
+	for (int i = 0; i < static_cast<int>(CollisionObjects.size()); i++)
 	{
 		CollisionObject* obj = CollisionObjects[i];
 		if (!obj->ActorPtr || !obj->TransformPtr)
@@ -233,11 +245,17 @@ void PhysicsEngine::UpdateTransforms()
 		//obj->TransformPtr->SetMatrix(t.Matrix);
 
 	}
+
+	for (int i = 0; i < static_cast<int>(ControllerManager->getNbControllers()); i++)
+	{
+		PxController* controller = ControllerManager->getController(i);
+		controller->getActor()->getGlobalPose();
+	}
 }
 
 void PhysicsEngine::UpdatePxTransforms()
 {
-	for (int i = 0; i < CollisionObjects.size(); i++)
+	for (int i = 0; i < static_cast<int>(CollisionObjects.size()); i++)
 	{
 		CollisionObject* obj = CollisionObjects[i];
 		if (!obj->ActorPtr || !obj->TransformPtr)// || (obj->TransformPtr->NotDirty())
@@ -269,7 +287,7 @@ void PhysicsEngine::DebugRender(RenderEngine* engPtr, RenderInfo& info)
 	int v = 0;
 	verts.resize(sizeSum);
 
-	for (int i = 0; i < rb.getNbPoints(); i++)
+	for (int i = 0; i < static_cast<int>(rb.getNbPoints()); i++)
 	{
 		const PxDebugPoint& point = rb.getPoints()[i];
 
@@ -278,7 +296,7 @@ void PhysicsEngine::DebugRender(RenderEngine* engPtr, RenderInfo& info)
 	}
 	
 
-	for (int i = 0; i < rb.getNbLines(); i++)
+	for (int i = 0; i < static_cast<int>(rb.getNbLines()); i++)
 	{
 		const PxDebugLine& line = rb.getLines()[i];
 
@@ -288,7 +306,7 @@ void PhysicsEngine::DebugRender(RenderEngine* engPtr, RenderInfo& info)
 		verts[v++][1] = toVecColor(static_cast<PxDebugColor::Enum>(line.color1));
 	}
 
-	for (int i = 0; i < rb.getNbTriangles(); i++)
+	for (int i = 0; i < static_cast<int>(rb.getNbTriangles()); i++)
 	{
 		const PxDebugTriangle& triangle = rb.getTriangles()[i];
 

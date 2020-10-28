@@ -1,4 +1,5 @@
 #include "Transform.h"
+#include <glm/gtx/matrix_decompose.hpp>
 
 float Transform::tSum = 0.0f;
 float beginning;
@@ -362,6 +363,15 @@ void Transform::Update(float deltaTime)
 		FlagMyDirtiness();
 }
 
+void Transform::Print(std::string name) const
+{
+	std::cout << "===Transform " + name + ", child of " << ParentTransform << "===\n";
+	printVector(Position, "Position");
+	printVector(Rotation, "Rotation");
+	printVector(Scale, "Scale");
+	std::cout << "VVVVVV\n";
+}
+
 Transform& Transform::operator=(const Transform& t)
 {
 	Position = t.PositionRef;
@@ -421,3 +431,14 @@ template void Transform::AddInterpolator<glm::vec3>(std::string, float, float, g
 
 template void Transform::AddInterpolator<glm::quat>(std::string, float, float, glm::quat, glm::quat, InterpolationType, bool, AnimBehaviour, AnimBehaviour);
 template void Transform::AddInterpolator<glm::quat>(std::string, float, float, glm::quat, InterpolationType, bool, AnimBehaviour, AnimBehaviour);
+
+Transform decompose(const glm::mat4& mat)
+{
+	glm::vec3 position, scale, skew;
+	glm::vec4 perspective;
+	glm::quat rotation;
+
+	glm::decompose(mat, scale, rotation, position, skew, perspective);
+
+	return Transform(position, glm::conjugate(rotation), scale);
+}

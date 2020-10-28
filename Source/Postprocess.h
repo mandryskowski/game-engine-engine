@@ -4,7 +4,7 @@
 #include "Framebuffer.h"
 #include "Texture.h"
 
-class RenderInfo;
+struct RenderInfo;
 
 class Postprocess: public PostprocessManager
 {

@@ -85,7 +85,7 @@ struct ShaderLoader
 {
 private:
 	static unsigned int LoadShader(GLenum type, std::string path, std::string additionalData = std::string(), std::string* shaderSourcePtr = nullptr);
-	static void DebugShader(unsigned int);
+	static void DebugShader(unsigned int shaderID, std::string path = std::string());
 
 public:
 	static std::shared_ptr<Shader> LoadShaders(std::string shaderName, std::string vShaderPath, std::string fShaderPath, std::string gShaderPath = std::string());

@@ -1,5 +1,6 @@
 #include "GunActor.h"
 #include "SoundSourceComponent.h"
+#include "FileLoader.h"
 
 GunActor::GunActor(GameManager* gameHandle, std::string name):
 	Actor(gameHandle, name)
@@ -69,7 +70,7 @@ void GunActor::HandleInputs(GLFWwindow* window, float deltaTime)
 		GunModel->GetTransform().AddInterpolator<glm::quat>("rotation", 0.25f, 1.25f, glm::quat(glm::vec3(0.0f)), InterpolationType::QUADRATIC, true);
 
 		Actor* actor = GameHandle->AddActorToScene(std::make_shared<Actor>(GameHandle, "Bullet" + std::to_string(FiredBullets))).get();
-		ModelComponent* bulletModel = GameHandle->GetRenderEngineHandle()->CreateModel(ModelComponent(GameHandle, Transform(GetTransform()->GetWorldTransform().PositionRef, glm::vec3(0.0f), glm::vec3(0.1f)), "BulletModel" + std::to_string(FiredBullets++))).get();
+		ModelComponent* bulletModel = ModelComponent::Of(ModelComponent(GameHandle, "BulletModel" + std::to_string(FiredBullets++), Transform(GetTransform()->GetWorldTransform().PositionRef, glm::vec3(0.0f), glm::vec3(0.1f)))).get();
 		EngineDataLoader::LoadModel(GameHandle, "hqSphere/hqSphere.obj", bulletModel, MeshTreeInstancingType::ROOTTREE, GameHandle->GetSearchEngine()->FindMaterial("RustedIron"));
 
 		actor->ReplaceRoot(bulletModel);

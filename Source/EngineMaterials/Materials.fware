@@ -9,6 +9,14 @@ MVP
 1
 0 albedo1
 
+TextShader
+2
+./Shaders/text.vs
+./Shaders/text.fs
+1
+MVP
+0
+
 end
 
 Marble
@@ -55,6 +63,17 @@ rustediron_albedo.png albedo1 true
 rustediron_normal.png normal1 false
 rustediron_roughness.png roughness1 false
 rustediron_metallic.png metallic1 false
+rustediron_ao.png ao1 false
+
+VeryDamagedMetal
+Geometry
+64
+0
+5
+./doublebarrel/damagedmetal_albedo.png albedo1 true
+./doublebarrel/damagedmetal_normal.png normal1 false
+./doublebarrel/damagedmetal_roughness.png roughness1 false
+./doublebarrel/damagedmetal_metallic.png metallic1 false
 rustediron_ao.png ao1 false
 
 

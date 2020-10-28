@@ -16,6 +16,10 @@ protected:
 
 public:
 	Actor(GameManager*, std::string);
+
+	virtual void OnStart();
+	virtual void OnStartAll();
+
 	Component* GetRoot();
 	std::string GetName();
 	Transform* GetTransform();

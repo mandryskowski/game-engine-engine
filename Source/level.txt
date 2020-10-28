@@ -4,7 +4,7 @@ collisionfile CollisionData.txt
 
 newprobes 4
 0 apartment.hdr
-1 1 0 0.38 0 skip 1.1 1.1 10.1 break
+1 1 0 0 0 skip 1.1 1.1 10.1 break
 1 1 2 0.7 -8 break
 1 1 0.147809 1.93476 -4.31168 break
 
@@ -13,6 +13,10 @@ edittree nanosuit/nanosuit.obj
 Body col 1 ps 0 0 11 0 2.5 5 2 transform skip 0 0 0 break , 
 Arms material doublebarrel/doublebarrel2.obj:Darkwood col 2 prs  0 -3 9 0 -10 0 0 2 5 1    0  3 9 0 -10 0 0 2 5 1 ,
 hands material doublebarrel/doublebarrel2.obj:Barrelmetal end
+
+edittree boblamp/boblampclean.md5mesh
+upperarm.R col 1 ps 0 0 0 0 5 10 5 ,
+head col 1 ps 1 0 0 0 5 5 5 end
 
 edittree tunnel/tunnel.obj
 tunnel/tunnel.obj
@@ -79,8 +83,9 @@ newactor Actor CameraActor
 newcomp camera Camera root
 1.5
 active
+automousecontrol
 transform
-2.8 0 -7
+0.000028 0 3.000007
 end
 newcomp collision BCameraSphere child Camera
 sphere
@@ -102,9 +107,12 @@ skip
 0 0 -1
 end
 
+edittree doublebarrel/tescik.obj
+Barrel+Release.001_Cylinder.001 material VeryDamagedMetal end
+
 newactor GunActor Gun child CameraActor
-newcomp model MyDoubleBarrel root doublebarrel/doublebarrel3.obj
-edit doublebarrel/doublebarrel3.obj
+newcomp model MyDoubleBarrel root doublebarrel/doublebarrel.fbx
+edit doublebarrel/doublebarrel.fbx
 transform
 0.11 -0.1 -0.2
 skip
@@ -113,7 +121,7 @@ end
 end
 newcomp empty GunTip child MyDoubleBarrel
 transform
-0 0.375 -2
+0 0.175 -3.5
 end
 newcomp soundsource DoubleBarrelBlast child GunTip Sounds/shotgun.wav
 end
@@ -232,10 +240,10 @@ end
 newactor Actor PhysActor child CubeActor
 newcomp empty Lol root
 end
-newcomp model Shotgun child Lol doublebarrel/doublebarrel2.obj
-edit doublebarrel/doublebarrel2.obj
+newcomp model Shotgun child Lol doublebarrel/doublebarrel.fbx
+edit doublebarrel/doublebarrel.fbx
 col 1 -
-3 doublebarrel/doublebarrel2.obj
+3 doublebarrel/doublebarrel.fbx
 end
 transform
 0 0 -3
@@ -274,6 +282,70 @@ skip
 0.2 0.2 0.2
 end
 
+newactor Actor boblamp
+newcomp model BoblampModel root boblamp/boblampclean.md5mesh
+transform
+0 -0.5 1.3
+-90 180 0
+0.01 0.01 0.01
+end
+
+newactor Actor boblamp2
+newcomp model BoblampModel root boblamp/boblampclean.md5mesh
+transform
+0 -0.5 0
+-90 0 0
+0.01 0.01 0.01
+end
+
+newactor Actor boblamp3
+newcomp model BoblampModel root boblamp/boblampclean.md5mesh
+transform
+0 -0.5 -1.3
+-90 0 0
+0.01 0.01 0.01
+end
+
+newactor Actor boblamp4
+newcomp model BoblampModel root boblamp/boblampclean.md5mesh
+transform
+0 -0.5 -2.6
+-90 0 0
+0.01 0.01 0.01
+end
+
+newactor Actor boblamp5
+newcomp model BoblampModel root boblamp/boblampclean.md5mesh
+transform
+0 -0.5 -3.9
+-90 180 0
+0.01 0.01 0.01
+end
+
+newactor Actor boblamp6
+newcomp model BoblampModel root boblamp/boblampclean.md5mesh
+transform
+0 -0.5 -5.2
+-90 0 0
+0.01 0.01 0.01
+end
+
+newactor Actor boblamp7
+newcomp model BoblampModel root boblamp/boblampclean.md5mesh
+transform
+0 -0.5 -6.5
+-90 180 0
+0.01 0.01 0.01
+end
+
+newactor Actor boblamp8
+newcomp model BoblampModel root boblamp/boblampclean.md5mesh
+transform
+0 -0.5 -7.8
+-90 0 0
+0.01 0.01 0.01
+end
+
 newactor Actor DUPAACTOR
 newcomp model Kupa root SubwayoCube
 edit Body material tunnel/tunnel.obj:Brickwall end
@@ -288,3 +360,14 @@ end
 newactor Actor GameLevel
 newcomp model Warehouse root warehouse/warehouse.obj
 end
+
+newactor Actor GameLevel2
+newcomp model AlphaLevel root alphamap/alphamap.fbx
+end
+
+newactor Actor TextActor
+newcomp text SampleText root "fonts/expressway rg.ttf" "twoj stary (((((((((lvl 50)))))))))"
+transform
+0 -0.5 0
+0 0 0
+1 1 1 end

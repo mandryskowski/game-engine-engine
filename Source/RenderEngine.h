@@ -7,6 +7,8 @@
 class LightProbe;
 class LocalLightProbe;
 class RenderableVolume;
+class BoneComponent;
+class TextComponent;
 
 enum ShadingModel
 {
@@ -27,7 +29,9 @@ class RenderEngine : public RenderEngineManager
 	GEE_FB::Framebuffer GFramebuffer;
 	GEE_FB::Framebuffer MainFramebuffer;
 
-	std::vector <std::shared_ptr <ModelComponent>> Models;
+	std::vector <std::shared_ptr <RenderableComponent>> Renderables;
+	std::vector <std::shared_ptr <SkeletonBatch>> SkeletonBatches;
+	SkeletonBatch* BoundSkeletonBatch;
 	std::vector <Material*> Materials;
 	std::vector <std::shared_ptr <LightProbe>> LightProbes;
 	std::vector <std::unique_ptr <MeshSystem::MeshTree>> MeshTrees;
@@ -40,6 +44,9 @@ class RenderEngine : public RenderEngineManager
 	std::vector <Shader*> LightShaders;		//Same with light shaders
 	std::shared_ptr <Texture> EmptyTexture;
 	glm::mat4 PreviousFrameView;
+
+	const Mesh* BoundMesh;
+	Material* BoundMaterial;
 
 	struct CubemapRenderData
 	{
@@ -61,17 +68,19 @@ public:
 	virtual int GetAvailableLightIndex() override;
 	virtual Shader* GetLightShader(LightType type) override;
 
-	virtual std::shared_ptr<ModelComponent> AddModel(std::shared_ptr<ModelComponent> model) override;
+	virtual std::shared_ptr<RenderableComponent> AddRenderable(std::shared_ptr<RenderableComponent> model) override;
 	virtual std::shared_ptr<LightProbe> AddLightProbe(std::shared_ptr<LightProbe> probe) override;
 	virtual std::shared_ptr<LightComponent> AddLight(std::shared_ptr<LightComponent> light) override;
-	virtual std::shared_ptr<ModelComponent> CreateModel(const ModelComponent&) override;
-	virtual std::shared_ptr<ModelComponent> CreateModel(ModelComponent&&) override;
+	virtual std::shared_ptr<SkeletonInfo> AddSkeletonInfo() override;
 	virtual MeshSystem::MeshTree* CreateMeshTree(std::string path) override;
 	virtual MeshSystem::MeshTree* FindMeshTree(std::string path, MeshSystem::MeshTree* ignore = nullptr) override;
 	virtual Material* AddMaterial(Material* material) override;
 	virtual std::shared_ptr<Shader> AddShader(std::shared_ptr<Shader> shader, bool bForwardShader = false) override;
 
-	ModelComponent* FindModel(std::string);
+	void BindSkeletonBatch(SkeletonBatch* batch);
+	void BindSkeletonBatch(unsigned int index);
+
+	RenderableComponent* FindRenderable(std::string);
 	Material* FindMaterial(std::string);
 	virtual Shader* FindShader(std::string) override;
 
@@ -87,9 +96,10 @@ public:
 	void FullRender(RenderInfo& info, GEE_FB::Framebuffer* framebuffer = nullptr);
 	void TestRenderCubemap(RenderInfo& info);
 	virtual void RenderCubemapFromTexture(Texture targetTex, Texture tex, glm::uvec2 size, Shader& shader, int* layer = nullptr, int mipLevel = 0) override;
-	virtual void RenderCubemapFromScene(RenderInfo& info, GEE_FB::Framebuffer target, GEE_FB::FramebufferAttachment targetTex, GLenum attachmentType, Shader* shader = nullptr, int* layer = nullptr, bool fullRender = false) override;
-	virtual void Render(RenderInfo& info, const ModelComponent& model, Shader* shader, const Mesh* boundMesh = nullptr, Material* materialBound = nullptr) override;	//Note: this function does not call the Use method of passed Shader. Do it manually
-	virtual void Render(RenderInfo& info, const std::shared_ptr<Mesh>&, const Transform&, Shader* shader, const Mesh* boundMesh = nullptr, Material* materialBound = nullptr) override; //Note: this function does not call the Use method of passed Shader. Do it manually
+	virtual void RenderCubemapFromScene(RenderInfo info, GEE_FB::Framebuffer target, GEE_FB::FramebufferAttachment targetTex, GLenum attachmentType, Shader* shader = nullptr, int* layer = nullptr, bool fullRender = false) override;
+	virtual void RenderText(RenderInfo info, const Font& font, std::string content, Transform t = Transform(), glm::vec3 color = glm::vec3(1.0f), Shader* shader = nullptr, bool convertFromPx = false) override; //Pass a shader if you do not want the default shader to be used.
+	virtual void Render(RenderInfo info, const ModelComponent& model, Shader* shader) override;	//Note: this function does not call the Use method of passed Shader. Do it manually
+	virtual void Render(RenderInfo info, const std::shared_ptr<Mesh>&, const Transform&, Shader* shader, Material* material = nullptr) override; //Note: this function does not call the Use method of passed Shader. Do it manually
 
 	void Dispose();
 };

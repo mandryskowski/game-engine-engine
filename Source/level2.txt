@@ -1,0 +1,5 @@
+newactor Actor DefaultCamera
+newcomp camera Camera root
+0
+active
+end

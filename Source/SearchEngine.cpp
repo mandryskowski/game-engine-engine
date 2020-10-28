@@ -2,6 +2,7 @@
 #include "SearchEngine.h"
 #include "RenderEngine.h"
 #include "AudioEngine.h"
+#include "ModelComponent.h"
 #include "Actor.h"
 
 SearchEngine::SearchEngine()
@@ -25,7 +26,7 @@ Actor* SearchEngine::FindActor(std::string name)
 
 ModelComponent* SearchEngine::FindModel(std::string name)
 {
-	return RenderEngPtr->FindModel(name);
+	return dynamic_cast<ModelComponent*>(RenderEngPtr->FindRenderable(name));
 }
 
 Material* SearchEngine::FindMaterial(std::string name)

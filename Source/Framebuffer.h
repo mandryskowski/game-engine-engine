@@ -50,11 +50,10 @@ namespace GEE_FB
 		void Dispose(bool disposeBuffers = false);
 	};
 
-	bool ContainsAlphaChannel(GLenum internalformat);
-	bool ContainsStencil(GLenum internalformat);
+	bool containsStencil(GLenum internalformat);
 
-	std::shared_ptr<FramebufferAttachment> reserveColorBuffer(glm::uvec2 size, GLenum internalformat = GL_RGB, GLenum type = GL_UNSIGNED_BYTE, GLenum magFilter = GL_NEAREST, GLenum minFilter = GL_NEAREST, GLenum texType = GL_TEXTURE_2D, unsigned int samples = 0, std::string texName = "undefinedColorBuffer");
-	std::shared_ptr<FramebufferAttachment> reserveColorBuffer(glm::uvec3 size, GLenum internalformat = GL_RGB, GLenum type = GL_UNSIGNED_BYTE, GLenum magFilter = GL_NEAREST, GLenum minFilter = GL_NEAREST, GLenum texType = GL_TEXTURE_2D, unsigned int samples = 0, std::string texName = "undefinedColorBuffer");
-	std::shared_ptr<FramebufferAttachment> reserveDepthBuffer(glm::uvec2 size, GLenum internalformat = GL_RGB, GLenum type = GL_UNSIGNED_BYTE, GLenum magFilter = GL_NEAREST, GLenum minFilter = GL_NEAREST, GLenum texType = GL_TEXTURE_2D, unsigned int samples = 0, std::string texName = "undefinedDepthBuffer");
+	std::shared_ptr<FramebufferAttachment> reserveColorBuffer(glm::uvec2 size, GLenum internalformat = GL_RGB, GLenum type = GL_UNSIGNED_BYTE, GLenum magFilter = GL_NEAREST, GLenum minFilter = GL_NEAREST, GLenum texType = GL_TEXTURE_2D, unsigned int samples = 0, std::string texName = "undefinedColorBuffer", GLenum format = GL_ZERO);
+	std::shared_ptr<FramebufferAttachment> reserveColorBuffer(glm::uvec3 size, GLenum internalformat = GL_RGB, GLenum type = GL_UNSIGNED_BYTE, GLenum magFilter = GL_NEAREST, GLenum minFilter = GL_NEAREST, GLenum texType = GL_TEXTURE_2D, unsigned int samples = 0, std::string texName = "undefinedColorBuffer", GLenum format = GL_ZERO);
+	std::shared_ptr<FramebufferAttachment> reserveDepthBuffer(glm::uvec2 size, GLenum internalformat = GL_RGB, GLenum type = GL_UNSIGNED_BYTE, GLenum magFilter = GL_NEAREST, GLenum minFilter = GL_NEAREST, GLenum texType = GL_TEXTURE_2D, unsigned int samples = 0, std::string texName = "undefinedDepthBuffer", GLenum format = GL_ZERO);
 }
 std::string debugFramebuffer();

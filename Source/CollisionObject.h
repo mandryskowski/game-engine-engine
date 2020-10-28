@@ -35,31 +35,26 @@ class Transform;
 
 struct CollisionObject
 {
-	std::string Name;	//Used for copying shapes from this object. Usually, Name should be set to the file path
 	physx::PxRigidActor* ActorPtr;
 	std::vector <std::shared_ptr<CollisionShape>> Shapes;
 	Transform* TransformPtr;
 
 	bool IsStatic;
-	bool HasDefaultShapes;	//Used for shape loading. If the engine loads a model with the same path as a model that uses a "default" collision object, the pointers to the shapes from this CollisionObject will be copied
 
 	CollisionObject(bool isStatic = true) :
 		ActorPtr(nullptr),
 		TransformPtr(nullptr),
-		IsStatic(isStatic),
-		HasDefaultShapes(false)
+		IsStatic(isStatic)
 	{
 	}
 	CollisionObject(bool isStatic, CollisionShapeType type) :
 		ActorPtr(nullptr),
 		TransformPtr(nullptr),
-		IsStatic(isStatic),
-		HasDefaultShapes(false)
+		IsStatic(isStatic)
 	{
 		AddShape(type);
 	}
 	CollisionObject(const CollisionObject& obj):
-		Name(obj.Name),
 		ActorPtr(nullptr),
 		Shapes(obj.Shapes),
 		IsStatic(obj.IsStatic)

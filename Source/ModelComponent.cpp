@@ -3,26 +3,27 @@
 
 using namespace MeshSystem;
 
-ModelComponent::ModelComponent(GameManager* gameHandle, const Transform& transform, std::string name, Material* overrideMat) :
-	Component(gameHandle, name, transform),
-	LastFrameMVP(glm::mat4(1.0f))
+ModelComponent::ModelComponent(GameManager* gameHandle, std::string name, const Transform& transform, SkeletonInfo* info, Material* overrideMat) :
+	RenderableComponent(gameHandle, name, transform),
+	LastFrameMVP(glm::mat4(1.0f)),
+	SkelInfo(info)
 {
 }
 
-ModelComponent::ModelComponent(GameManager* gameHandle, const MeshSystem::MeshNode& node, const Transform& transform, std::string name, Material* overrideMat) :
-	ModelComponent(gameHandle, transform, name, overrideMat)
+ModelComponent::ModelComponent(GameManager* gameHandle, const MeshSystem::MeshNode& node, std::string name, const Transform& transform, SkeletonInfo* info, Material* overrideMat) :
+	ModelComponent(gameHandle, name, transform, info, overrideMat)
 {
-	GenerateFromNode(node, overrideMat);
+	GenerateFromNode(&node, overrideMat);
 }
 
 ModelComponent::ModelComponent(const ModelComponent& model) :
-	ModelComponent(model.GameHandle, model.ComponentTransform, model.Name)
+	ModelComponent(model.GameHandle, model.Name, model.ComponentTransform)
 {
 	*this = model;
 }
 
 ModelComponent::ModelComponent(ModelComponent&& model) :
-	ModelComponent(model.GameHandle, model.ComponentTransform, model.Name)
+	ModelComponent(model.GameHandle, model.Name, model.ComponentTransform)
 {
 	*this = model;
 }
@@ -33,35 +34,35 @@ void ModelComponent::OverrideInstancesMaterial(Material* overrideMat)
 		MeshInstances[i]->SetMaterial(overrideMat);
 }
 
-CollisionObject* ModelComponent::SetCollisionObject(std::unique_ptr<CollisionObject>& obj)
-{
-	if (!obj)
-		return nullptr;
-	obj.swap(CollisionObj);
-	CollisionObj->TransformPtr = &ComponentTransform;
-	GameHandle->GetPhysicsHandle()->AddCollisionObject(CollisionObj.get());
-
-	return CollisionObj.get();
-}
-
 void ModelComponent::SetLastFrameMVP(const glm::mat4& lastMVP) const
 {
 	LastFrameMVP = lastMVP;
 }
 
-void ModelComponent::GenerateFromNode(const MeshSystem::MeshNode& node, Material* overrideMaterial)
+void ModelComponent::SetSkeletonInfo(SkeletonInfo* info)
 {
-	for (int i = 0; i < node.GetMeshCount(); i++)
-		AddMeshInst(node.GetMesh(i));
+	SkelInfo = info;
+}
 
-	ComponentTransform *= node.GetTemplateTransform();
-
-	SetCollisionObject(node.InstantiateCollisionObj());
+void ModelComponent::GenerateFromNode(const MeshSystem::TemplateNode* node, Material* overrideMaterial)
+{
+	Component::GenerateFromNode(node, overrideMaterial);
+	const MeshSystem::MeshNode* meshNodeCast = dynamic_cast<const MeshSystem::MeshNode*>(node);
+	for (int i = 0; i < meshNodeCast->GetMeshCount(); i++)
+		AddMeshInst(meshNodeCast->GetMesh(i));
 
 	if (overrideMaterial)
 		OverrideInstancesMaterial(overrideMaterial);
-	else if (node.GetOverrideMaterial())
-		OverrideInstancesMaterial(node.GetOverrideMaterial());
+	else if (meshNodeCast->GetOverrideMaterial())
+		OverrideInstancesMaterial(meshNodeCast->GetOverrideMaterial());
+}
+
+void ModelComponent::DRAWBATCH() const
+{
+	if (SkelInfo)
+	{
+		SkelInfo->DRAWBATCH();
+	}
 }
 
 int ModelComponent::GetMeshInstanceCount() const
@@ -77,6 +78,11 @@ const MeshInstance& ModelComponent::GetMeshInstance(int index) const
 const glm::mat4& ModelComponent::GetLastFrameMVP() const
 {
 	return LastFrameMVP;
+}
+
+SkeletonInfo* ModelComponent::GetSkeletonInfo() const
+{
+	return SkelInfo;
 }
 
 
@@ -103,6 +109,25 @@ MeshInstance* ModelComponent::FindMeshInstance(std::string name)
 void ModelComponent::AddMeshInst(Mesh* mesh)
 {
 	MeshInstances.push_back(std::make_unique<MeshInstance>(MeshInstance(mesh)));
+}
+
+std::shared_ptr<ModelComponent> ModelComponent::Of(const ModelComponent& constructorVal)
+{
+	std::shared_ptr<ModelComponent> createdObj = std::make_shared<ModelComponent>(ModelComponent(constructorVal));
+	constructorVal.GameHandle->GetRenderEngineHandle()->AddRenderable(createdObj);
+	return createdObj;
+}
+
+std::shared_ptr<ModelComponent> ModelComponent::Of(ModelComponent&& constructorVal)
+{
+	std::shared_ptr<ModelComponent> createdObj = std::make_shared<ModelComponent>(ModelComponent(constructorVal));
+	constructorVal.GameHandle->GetRenderEngineHandle()->AddRenderable(createdObj);
+	return createdObj;
+}
+
+void ModelComponent::Render(RenderInfo& info, Shader* shader)
+{
+	GameHandle->GetRenderEngineHandle()->Render(info, *this, shader);
 }
 
 

@@ -210,20 +210,7 @@ std::string debugFramebuffer()
 	return message;
 }
 
-bool GEE_FB::ContainsAlphaChannel(GLenum internalformat)
-{
-	switch (internalformat)
-	{
-	case GL_RGB16F:
-	case GL_RGB32F:
-	case GL_RGBA:
-		return true;
-	}
-
-	return false;
-}
-
-bool GEE_FB::ContainsStencil(GLenum internalformat)
+bool GEE_FB::containsStencil(GLenum internalformat)
 {
 	//attachmentType = GL_DEPTH_STENCIL_ATTACHMENT;
 	if (internalformat == GL_DEPTH24_STENCIL8 || internalformat == GL_DEPTH32F_STENCIL8)
@@ -233,88 +220,29 @@ bool GEE_FB::ContainsStencil(GLenum internalformat)
 	return false;
 }
 
-std::shared_ptr<FramebufferAttachment> GEE_FB::reserveColorBuffer(glm::uvec2 size, GLenum internalformat, GLenum type, GLenum magFilter, GLenum minFilter, GLenum texType, unsigned int samples, std::string texName)
+std::shared_ptr<FramebufferAttachment> GEE_FB::reserveColorBuffer(glm::uvec2 size, GLenum internalformat, GLenum type, GLenum magFilter, GLenum minFilter, GLenum texType, unsigned int samples, std::string texName, GLenum format)
 {
-	std::shared_ptr<FramebufferAttachment> tex = std::make_shared<FramebufferAttachment>(NamedTexture(Texture(), texName));
-	tex->GenerateID(texType);
-	tex->Bind();
+	std::shared_ptr<FramebufferAttachment> tex = std::make_shared<FramebufferAttachment>(FramebufferAttachment(NamedTexture(*reserveTexture(size, internalformat, type, magFilter, minFilter, texType, samples, texName, format), texName)));
 	tex->SetAttachmentEnum(GL_COLOR_ATTACHMENT0);
-
-	bool bCubemap = texType == GL_TEXTURE_CUBE_MAP;
-	bool bMultisample = texType == GL_TEXTURE_2D_MULTISAMPLE;
-
-	if (bMultisample)
-	{
-		glTexImage2DMultisample(texType, samples, internalformat, size.x, size.y, GL_TRUE);
-		return tex;
-	}
-
-	GLenum texImageType = (bCubemap) ? (GL_TEXTURE_CUBE_MAP_POSITIVE_X) : (texType);
-	GLenum format = (GEE_FB::ContainsAlphaChannel(internalformat)) ? (GL_RGBA) : (GL_RGB);
-
-	for (int i = 0; i < ((bCubemap) ? (6) : (1)); i++)
-		glTexImage2D(texImageType + i, 0, internalformat, size.x, size.y, 0, format, type, (void*)(nullptr));
-
-	glTexParameteri(texType, GL_TEXTURE_MAG_FILTER, magFilter);
-	glTexParameteri(texType, GL_TEXTURE_MIN_FILTER, minFilter);
-	glTexParameteri(texType, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(texType, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 	return tex;
 }
 
-std::shared_ptr<FramebufferAttachment> GEE_FB::reserveColorBuffer(glm::uvec3 size, GLenum internalformat, GLenum type, GLenum magFilter, GLenum minFilter, GLenum texType, unsigned int samples, std::string texName)
+std::shared_ptr<FramebufferAttachment> GEE_FB::reserveColorBuffer(glm::uvec3 size, GLenum internalformat, GLenum type, GLenum magFilter, GLenum minFilter, GLenum texType, unsigned int samples, std::string texName, GLenum format)
 {
-	std::shared_ptr<FramebufferAttachment> tex = std::make_shared<FramebufferAttachment>(NamedTexture(Texture(), texName));
-	tex->GenerateID(texType);
-	tex->Bind();
+	std::shared_ptr<FramebufferAttachment> tex = std::make_shared<FramebufferAttachment>(FramebufferAttachment(NamedTexture(*reserveTexture(size, internalformat, type, magFilter, minFilter, texType, samples, texName, format), texName)));
 	tex->SetAttachmentEnum(GL_COLOR_ATTACHMENT0);
-
-	bool bCubemap = texType == GL_TEXTURE_CUBE_MAP_ARRAY;
-	bool bMultisample = texType == GL_TEXTURE_2D_MULTISAMPLE_ARRAY;
-
-	if (bMultisample)
-	{
-		glTexImage3DMultisample(texType, samples, internalformat, size.x, size.y, size.z * (bCubemap) ? (6) : (1), GL_TRUE);
-		return tex;
-	}
-
-	GLenum format = (GEE_FB::ContainsAlphaChannel(internalformat)) ? (GL_RGBA) : (GL_RGB);
-
-	glTexImage3D(texType, 0, internalformat, size.x, size.y, size.z * ((bCubemap) ? (6) : (1)), 0, format, type, (void*)(nullptr));
-
-	glTexParameteri(texType, GL_TEXTURE_MAG_FILTER, magFilter);
-	glTexParameteri(texType, GL_TEXTURE_MIN_FILTER, minFilter);
-	glTexParameteri(texType, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(texType, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 	return tex;
 }
 
-std::shared_ptr<FramebufferAttachment> GEE_FB::reserveDepthBuffer(glm::uvec2 size, GLenum internalformat, GLenum type, GLenum magFilter, GLenum minFilter, GLenum texType, unsigned int samples, std::string texName)
+std::shared_ptr<FramebufferAttachment> GEE_FB::reserveDepthBuffer(glm::uvec2 size, GLenum internalformat, GLenum type, GLenum magFilter, GLenum minFilter, GLenum texType, unsigned int samples, std::string texName, GLenum format)
 {
-	std::shared_ptr<FramebufferAttachment> tex = std::make_shared<FramebufferAttachment>(NamedTexture(Texture(), texName));
-	tex->GenerateID(texType);
-	tex->Bind();
+	if (format == GL_ZERO)
+		format = ((GEE_FB::containsStencil(internalformat)) ? (GL_DEPTH_STENCIL) : (GL_DEPTH_COMPONENT));
 
-	bool bCubemap = texType == GL_TEXTURE_CUBE_MAP || texType == GL_TEXTURE_CUBE_MAP_ARRAY;
-	bool bMultisample = texType == GL_TEXTURE_2D_MULTISAMPLE || texType == GL_TEXTURE_2D_MULTISAMPLE_ARRAY;
-
-	GLenum format = ((GEE_FB::ContainsStencil(internalformat)) ? (GL_DEPTH_STENCIL) : (GL_DEPTH_COMPONENT));
-	tex->SetAttachmentEnum((GEE_FB::ContainsStencil(internalformat)) ? (GL_DEPTH_STENCIL_ATTACHMENT) : (GL_DEPTH_ATTACHMENT));
-
-	if (bMultisample)
-	{
-		glTexImage2DMultisample(texType, samples, internalformat, size.x, size.y, GL_TRUE);
-		return tex;
-	}
-
-	GLenum texImageType = (bCubemap) ? (GL_TEXTURE_CUBE_MAP_POSITIVE_X) : (texType);
-	for (int i = 0; i < ((bCubemap) ? (6) : (1)); i++)
-		glTexImage2D(texImageType + i, 0, internalformat, size.x, size.y, 0, format, type, (void*)(nullptr));
-	
-	glTexParameteri(texType, GL_TEXTURE_MAG_FILTER, magFilter);
-	glTexParameteri(texType, GL_TEXTURE_MIN_FILTER, minFilter);
+	std::shared_ptr<FramebufferAttachment> tex = std::make_shared<FramebufferAttachment>(FramebufferAttachment(NamedTexture(*reserveTexture(size, internalformat, type, magFilter, minFilter, texType, samples, texName, format), texName)));
+	tex->SetAttachmentEnum((GEE_FB::containsStencil(internalformat)) ? (GL_DEPTH_STENCIL_ATTACHMENT) : (GL_DEPTH_ATTACHMENT));
 
 	return tex;
 }

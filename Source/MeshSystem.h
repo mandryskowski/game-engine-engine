@@ -3,9 +3,10 @@
 #include <string>
 #include <memory>
 #include "CollisionObject.h"
+#include "BoneComponent.h"
 class Mesh;
-class CollisionObject;
-class CollisionShape;
+struct CollisionObject;
+struct CollisionShape;
 class Material;
 
 /*
@@ -22,14 +23,64 @@ class Material;
 
 namespace MeshSystem
 {
+	class MeshNode;
 
-	class MeshNode
+	class TemplateNode
+	{
+	protected:
+		std::string Name;
+		Transform TemplateTransform;
+		std::vector <std::unique_ptr<TemplateNode>> Children;
+		std::unique_ptr<CollisionObject> CollisionObjTemplate;
+	public:
+		TemplateNode(std::string name, const Transform& transform = Transform());
+		TemplateNode(const TemplateNode&, bool copyChildren = false);
+		TemplateNode(TemplateNode&&);
+		std::string GetName() const;
+		const Transform& GetTemplateTransform() const;
+		const TemplateNode* GetChild(int index) const;
+		int GetChildCount() const;
+		std::unique_ptr<CollisionObject> InstantiateCollisionObj() const;
+
+		void SetCollisionObject(std::unique_ptr<CollisionObject>&);
+		void SetTemplateTransform(Transform&);
+
+		template<typename T> T* AddChild(std::string name);
+		template<typename T> T* AddChild(const T&);
+		template<typename T> T* AddChild(T&&);
+
+		TemplateNode* FindNode(std::string name);
+		TemplateNode* FindNode(int number, int&& currentNumber = 0);
+
+		virtual Mesh* FindMesh(std::string name);
+		virtual const std::shared_ptr<Mesh> FindMeshPtr(std::string name);
+		virtual Material* FindMaterial(std::string name);
+
+		virtual void DebugPrint(int nrTabs = 0);
+
+		virtual ~TemplateNode() {}
+	};
+
+	class BoneNode: public TemplateNode
+	{
+		glm::mat4 BoneOffset;
+		unsigned int BoneID;
+	public:
+		BoneNode(std::string name, const Transform& transform = Transform());
+		BoneNode(const BoneNode&, bool copyChildren = false);
+		BoneNode(BoneNode&&);
+
+		glm::mat4 GetBoneOffset() const;
+
+		void SetBoneOffset(const glm::mat4&);
+		void SetBoneID(unsigned int id);
+
+		virtual void DebugPrint(int nrTabs = 0) override;
+	};
+
+	class MeshNode: public TemplateNode
 	{
 		std::vector<std::shared_ptr<Mesh>> Meshes;
-		std::unique_ptr<CollisionObject> CollisionObjTemplate;
-		std::string Name;	//name from mesh file
-		std::vector <std::unique_ptr<MeshNode>> Children;
-		Transform TemplateTransform;
 		Material* OverrideMaterial;
 
 	public:
@@ -37,30 +88,18 @@ namespace MeshSystem
 		MeshNode(std::shared_ptr<Mesh> optionalMesh = nullptr);
 		MeshNode(const MeshNode&, bool copyChildren = false);
 		MeshNode(MeshNode&&);
-		std::string GetName() const;
 
-		const MeshNode* GetChild(int index) const;
-		int GetChildCount() const;
 		int GetMeshCount() const;
 		Mesh* GetMesh(int index) const;
-		const Transform& GetTemplateTransform() const;
 		Material* GetOverrideMaterial() const;
 
-		MeshNode& AddChild(std::string name);
-		MeshNode& AddChild(const MeshSystem::MeshNode&);
-		MeshNode& AddChild(MeshSystem::MeshNode&&);
 		Mesh& AddMesh(std::string name);
 		void AddMesh(std::shared_ptr<Mesh>);
-		std::unique_ptr<CollisionObject> InstantiateCollisionObj() const;
 
-		Mesh* FindMesh(std::string name);
-		const std::shared_ptr<Mesh> FindMeshPtr(std::string name);
-		Material* FindMaterial(std::string name);
-		MeshNode* FindNode(std::string name);
-		MeshNode* FindNode(int number, int&& currentNumber = 0);
+		virtual Mesh* FindMesh(std::string name) override;
+		virtual const std::shared_ptr<Mesh> FindMeshPtr(std::string name) override;
+		virtual Material* FindMaterial(std::string name) override;
 
-		void SetCollisionObject(std::unique_ptr<CollisionObject>&);
-		void SetTemplateTransform(Transform&);
 		void SetOverrideMaterial(Material*);
 
 		MeshNode& operator=(const MeshNode&);
@@ -71,6 +110,8 @@ namespace MeshSystem
 	{
 		MeshNode Root;	//root of the tree. Its meshes will probably be ignored in loading
 		std::string Path;	//This path is also serving a purpose for naming the tree. Trying to load a tree when there's an already loaded tree with the same path (name) should return a reference to the already loaded one.
+		std::unique_ptr<BoneMapping> TreeBoneMapping;
+	public: mutable std::shared_ptr<Animation> animation;
 
 	public:
 		MeshTree(std::string path);
@@ -78,6 +119,7 @@ namespace MeshSystem
 		MeshTree(MeshTree&&, std::string path = std::string());
 		std::string GetPath() const;
 		MeshNode& GetRoot();
+		BoneMapping* GetBoneMapping() const;
 		bool IsEmpty();
 
 		void SetPath(std::string);	//DOES NOT load from the path automatically. It's useful when you want to refer to this tree from the new name/path (f.e. used for engine objects, to keep their path as ENG_NAME instead of long file paths)
@@ -85,8 +127,8 @@ namespace MeshSystem
 		Mesh* FindMesh(std::string name);
 		const std::shared_ptr<Mesh> FindMeshPtr(std::string name);
 		Material* FindMaterial(std::string name);
-		MeshNode* FindNode(std::string name);
-		MeshNode* FindNode(int number);
+		TemplateNode* FindNode(std::string name);
+		TemplateNode* FindNode(int number);
 	};
 }
 

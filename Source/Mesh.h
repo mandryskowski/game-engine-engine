@@ -1,6 +1,14 @@
 #pragma once
 #include "Material.h"
-#include "FileLoader.h"
+
+
+struct VertexBoneData
+{
+	glm::ivec4 BoneIDs;
+	glm::vec4 BoneWeights;
+	VertexBoneData();
+	void AddWeight(unsigned int boneID, float boneWeight);
+};
 
 struct Vertex
 {
@@ -9,8 +17,7 @@ struct Vertex
 	glm::vec2 TexCoord;
 	glm::vec3 Tangent;
 	glm::vec3 Bitangent;
-	//glm::ivec4 BoneIDs;
-	//glm::vec4 BoneWeights;
+	VertexBoneData BoneData;
 };
 
 
@@ -26,7 +33,7 @@ struct RenderInfo
 	bool CareAboutShader;
 	bool MainPass;
 
-	RenderInfo(glm::mat4* v = nullptr, glm::mat4* p = nullptr, glm::mat4* vp = nullptr, bool materials = true, bool onlyshadow = false, bool careAboutShader = true, bool mainPass = false):
+	RenderInfo(glm::mat4* v = nullptr, glm::mat4* p = nullptr, glm::mat4* vp = nullptr, bool materials = true, bool onlyshadow = false, bool careAboutShader = true, bool mainPass = false) :
 		camPos(nullptr),
 		view(v),
 		projection(p),
@@ -37,6 +44,18 @@ struct RenderInfo
 		CareAboutShader(careAboutShader),
 		MainPass(mainPass)
 	{
+	}
+	const glm::mat4& GetView()
+	{
+		return (view) ? (*view) : (glm::mat4(1.0f));
+	}
+	const glm::mat4& GetProjection()
+	{
+		return (projection) ? (*projection) : (glm::mat4(1.0f));
+	}
+	const glm::mat4& GetVP()
+	{
+		return (VP) ? (*VP) : (glm::mat4(1.0f));
 	}
 };
 
@@ -52,8 +71,10 @@ class Mesh
 	std::string Name;
 	bool CastsShadow;
 
+	GameManager* GameHandle;
+
 public:
-	Mesh(std::string="undefinedMesh");
+	Mesh(std::string = "undefinedMesh");
 	unsigned int GetVAO() const;
 	unsigned int GetVertexCount() const;
 	std::string GetName() const;

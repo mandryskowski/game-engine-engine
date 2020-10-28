@@ -9,6 +9,7 @@ protected:
 
 	Transform ComponentTransform;
 	std::vector <Component*> Children;
+	std::unique_ptr<CollisionObject> CollisionObj;
 
 	GameManager* GameHandle;
 
@@ -16,7 +17,8 @@ public:
 	Component(GameManager*, std::string name = "undefined", const Transform& t = Transform());
 	Component(GameManager*, std::string name = "undefined", glm::vec3 pos = glm::vec3(0.0f), glm::vec3 rot = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 scale = glm::vec3(1.0f));
 
-	virtual void Setup(std::stringstream&, Actor* myActor);
+	virtual void OnStart() {}
+	virtual void OnStartAll();
 
 	void DebugHierarchy(int nrTabs = 0)
 	{
@@ -33,16 +35,22 @@ public:
 	const Transform& GetTransform() const;
 	std::vector<Component*> GetChildren();
 
+	virtual void GenerateFromNode(const MeshSystem::TemplateNode*, Material* overrideMaterial = nullptr);
+
 	void SetName(std::string name);
 	void SetTransform(Transform transform);
+	CollisionObject* SetCollisionObject(std::unique_ptr<CollisionObject>&);
 	void AddComponent(Component* component);
 	void AddComponents(std::vector<Component*> components);
 
 	virtual void HandleInputs(GLFWwindow*, float) {}
 	void HandleInputsAll(GLFWwindow* window, float deltaTime);
 
-	virtual void Update(float) {}
+	virtual void Update(float);
 	void UpdateAll(float dt);
+
+	virtual void QueueAnimation(Animation*);
+	void QueueAnimationAll(Animation*);
 
 	Component* SearchForComponent(std::string name);
 	template<class CompClass> void GetAllComponents(std::vector <CompClass*>* comps)	//this function returns every element further in the hierarchy tree (kids, kids' kids, ...) that is of CompClass type

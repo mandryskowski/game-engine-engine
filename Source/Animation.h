@@ -1,6 +1,10 @@
 #pragma once
 #include "Utility.h"
 #include <glfw/glfw3.h>
+#include "assimp/types.h"
+
+struct aiNodeAnim;
+struct aiAnimation;
 
 enum AnimBehaviour
 {
@@ -8,6 +12,12 @@ enum AnimBehaviour
 	EXTRAPOLATE,
 	REPEAT
 };
+
+struct DUPA
+{
+	static float AnimTime;
+};
+
 
 class Interpolation
 {
@@ -72,3 +82,51 @@ public:
 
 	void Update(float deltaTime) override;
 };
+
+
+struct AnimKey
+{
+	float Time;
+	AnimKey(float time) :
+		Time(time)
+	{
+	}
+};
+
+struct AnimVecKey : public AnimKey
+{
+	glm::vec3 Value;
+	AnimVecKey(float time, glm::vec3 value) :
+		AnimKey(time),
+		Value(value)
+	{
+	}
+};
+
+struct AnimQuatKey : public AnimKey
+{
+	glm::quat Value;
+	AnimQuatKey(float time, glm::quat value) :
+		AnimKey(time),
+		Value(value)
+	{
+	}
+};
+
+struct AnimChannel
+{
+	std::string Name;
+	std::vector<std::shared_ptr<AnimVecKey>> PosKeys;
+	std::vector<std::shared_ptr<AnimQuatKey>> RotKeys;
+	std::vector<std::shared_ptr<AnimVecKey>> ScaleKeys;
+	AnimChannel(aiNodeAnim*);
+};
+
+struct Animation
+{
+	std::vector<std::shared_ptr<AnimChannel>> Channels;
+	Animation(aiAnimation*);
+};
+
+glm::vec3 aiToGlm(const aiVector3D&);
+glm::quat aiToGlm(const aiQuaternion&);

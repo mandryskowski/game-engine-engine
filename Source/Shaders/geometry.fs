@@ -128,6 +128,5 @@ void main()
 	vec2 currentPos = vec2(gl_FragCoord.xy) / vec2(SCR_WIDTH, SCR_HEIGHT);
 	vec2 previousPos = (frag.prevMVPPosition.xy / frag.prevMVPPosition.w) * 0.5 + 0.5;
 	velocity = (currentPos - previousPos);
-	DUPA
 	#endif
 }

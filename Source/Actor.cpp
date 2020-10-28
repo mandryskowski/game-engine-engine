@@ -10,6 +10,18 @@ Actor::Actor(GameManager* gameHandle, std::string name)
 	SetupStream = nullptr;
 }
 
+void Actor::OnStart()
+{
+	RootComponent->OnStartAll();
+}
+
+void Actor::OnStartAll()
+{
+	OnStart();
+	for (int i = 0; i < static_cast<int>(Children.size()); i++)
+		Children[i]->OnStartAll();
+}
+
 Component* Actor::GetRoot()
 {
 	return RootComponent;

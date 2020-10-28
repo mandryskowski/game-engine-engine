@@ -1,4 +1,5 @@
 #include "Mesh.h"
+#include "FileLoader.h"
 
 Mesh::Mesh(std::string name):
 	VAO(0),
@@ -71,16 +72,22 @@ void Mesh::GenerateVAO(std::vector <Vertex>* vertices, std::vector <unsigned int
 	{
 		glGenBuffers(1, &EBO);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+		//std::cout << "uwagaaa: " + std::to_string(indices->size()) + "\n";
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * indices->size(), &(*indices)[0], GL_STATIC_DRAW);
+		//std::cout << "po uwadze\n";
 	}
 
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(nullptr));
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(offsetof(Vertex, Vertex::Position)));
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(offsetof(Vertex, Vertex::Normal)));
 	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(offsetof(Vertex, Vertex::TexCoord)));
+
 	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(offsetof(Vertex, Vertex::Tangent)));
 	glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(offsetof(Vertex, Vertex::Bitangent)));
 
-	for (int i = 0; i < 5; i++)
+	glVertexAttribIPointer(5, 4, GL_INT, sizeof(Vertex), (void*)(offsetof(Vertex, Vertex::BoneData) + offsetof(VertexBoneData, VertexBoneData::BoneIDs)));
+	glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(offsetof(Vertex, Vertex::BoneData) + offsetof(VertexBoneData, VertexBoneData::BoneWeights)));
+
+	for (int i = 0; i < 7; i++)
 		glEnableVertexAttribArray(i);
 
 	VertexCount = (unsigned int)vertices->size();
@@ -174,4 +181,25 @@ unsigned int generateVAO(unsigned int& VBO, std::vector <unsigned int> attribute
 	}
 
 	return VAO;
+}
+
+VertexBoneData::VertexBoneData() :
+	BoneIDs(glm::ivec4(0)),
+	BoneWeights(glm::vec4(0.0f))
+{
+}
+
+void VertexBoneData::AddWeight(unsigned int boneID, float boneWeight)
+{
+	for (int i = 0; i < 4; i++)
+	{
+		if (BoneWeights[i] == 0.0f)
+		{
+			BoneIDs[i] = boneID;
+			BoneWeights[i] = boneWeight;
+			return;
+		}
+	}
+
+	std::cerr << "ERROR! Mesh has more than 4 per vertex bone weights, but the engine supports only 4.\n";
 }

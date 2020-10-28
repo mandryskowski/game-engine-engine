@@ -1,8 +1,9 @@
 #include "Material.h"
 #include "Texture.h"
+#include <assimp/pbrmaterial.h>
 
 Material::Material(std::string name, float shine, float depthScale, Shader* shader)
-{ 
+{
 	Name = name;
 	Shininess = shine;
 	DepthScale = depthScale;
@@ -55,7 +56,11 @@ void Material::LoadFromAiMaterial(aiMaterial* material, std::string directory, M
 		std::pair<aiTextureType, std::string>(aiTextureType_DIFFUSE, "albedo"),
 		std::pair<aiTextureType, std::string>(aiTextureType_SPECULAR, "specular"),
 		std::pair<aiTextureType, std::string>(aiTextureType_HEIGHT, "normal"),
-		std::pair<aiTextureType, std::string>(aiTextureType_DISPLACEMENT, "depth")
+		std::pair<aiTextureType, std::string>(aiTextureType_DISPLACEMENT, "depth"),
+		std::pair<aiTextureType, std::string>(aiTextureType_SHININESS, "roughness"),
+		std::pair<aiTextureType, std::string>(aiTextureType_METALNESS, "metallic"),
+		std::pair<aiTextureType, std::string>(aiTextureType_UNKNOWN, "aaa"),
+		std::pair<aiTextureType, std::string>(aiTextureType_LIGHTMAP, "aaa"),
 	};
 	
 	//Load textures by type
@@ -68,6 +73,33 @@ void Material::LoadAiTexturesOfType(aiMaterial* material, std::string directory,
 	std::vector <NamedTexture*>* prevLoadedTextures = nullptr;
 	if (matLoadingData)
 		prevLoadedTextures = &matLoadingData->LoadedTextures;
+
+	std::string name;
+	switch (type)
+	{
+	case aiTextureType_DIFFUSE:
+		name = "aiTextureType_DIFFUSE"; break;
+	case aiTextureType_SPECULAR:
+		name = "aiTextureType_SPECULAR"; break;
+	case aiTextureType_HEIGHT:
+		name = "aiTextureType_HEIGHT"; break;
+	case aiTextureType_DISPLACEMENT:
+		name = "aiTextureType_DISPLACEMENT"; break;
+	case aiTextureType_SHININESS:
+		name = "aiTextureType_SHININESS"; break;
+	}
+	
+	if (directory == "doublebarrel/")
+	{
+		std::cout << name << ": " << material->GetTextureCount(type);
+		if (material->GetTextureCount(type) > 0)
+		{
+			aiString test;
+			material->GetTexture(type, 0, &test);
+			std::cout << test.C_Str();
+		}
+		std::cout << "\n";
+	}
 
 	bool sRGB = false;
 	if (type == aiTextureType_DIFFUSE)
@@ -100,6 +132,7 @@ void Material::LoadAiTexturesOfType(aiMaterial* material, std::string directory,
 		}
 
 		NamedTexture* tex = new NamedTexture(textureFromFile(pathStr, (sRGB) ? (GL_SRGB) : (GL_RGB)), shaderName + std::to_string(i + 1));	//create a new Texture and pass the file path, the shader name (for example albedo1, roughness1, ...) and the sRGB info
+		
 		Textures.push_back(tex);
 		if (prevLoadedTextures)
 			prevLoadedTextures->push_back(tex);

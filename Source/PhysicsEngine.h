@@ -1,5 +1,7 @@
 #pragma once
+#ifndef NDEBUG
 #define NDEBUG
+#endif
 #include <PhysX/PxPhysicsAPI.h>
 
 #include <glm/glm.hpp>
@@ -10,10 +12,10 @@
 #include <vector>
 #include "GameManager.h"
 
-class CollisionShape;
+struct CollisionShape;
 class RenderEngine;
 class Transform;
-class RenderInfo;
+struct RenderInfo;
 
 class PhysicsEngine: public PhysicsEngineManager
 {
@@ -28,7 +30,7 @@ class PhysicsEngine: public PhysicsEngineManager
 	physx::PxCooking* Cooking;
 
 	physx::PxMaterial* DefaultMaterial;
-
+	physx::PxControllerManager* ControllerManager;
 	physx::PxPvd* Pvd;
 
 	std::vector <CollisionObject*> CollisionObjects;
@@ -46,17 +48,17 @@ private:
 
 public:
 	virtual CollisionObject* CreateCollisionObject(glm::vec3 pos) override;
+	virtual physx::PxController* CreateController() override;
+
 	virtual void ApplyForce(CollisionObject*, glm::vec3 force) override;
 	virtual void AddCollisionObject(CollisionObject*) override;
 	void Setup();
-
-	virtual CollisionObject* FindCollisionObject(std::string name) override;
 
 	void Update(float deltaTime);
 	void UpdateTransforms();
 	void UpdatePxTransforms();
 
-	void DebugRender(RenderEngine*, RenderInfo&);
+	virtual void DebugRender(RenderEngine*, RenderInfo&) override;
 	~PhysicsEngine();
 };
 

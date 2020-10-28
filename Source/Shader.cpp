@@ -203,20 +203,20 @@ unsigned int ShaderLoader::LoadShader(GLenum type, std::string shaderPath, std::
 	glShaderSource(shader, 1, &shaderSource, 0);
 	glCompileShader(shader);
 
-	DebugShader(shader);
+	DebugShader(shader, shaderPath);
 
 	return shader;
 }
 
-void ShaderLoader::DebugShader(unsigned int shader)
+void ShaderLoader::DebugShader(unsigned int shaderID, std::string path)
 {
 	int result;
 	char data[512];
-	glGetShaderiv(shader, GL_COMPILE_STATUS, &result);
+	glGetShaderiv(shaderID, GL_COMPILE_STATUS, &result);
 	if (!result)
 	{
-		glGetShaderInfoLog(shader, 512, NULL, data);
-		std::cout << "Shader error: " << data;
+		glGetShaderInfoLog(shaderID, 512, NULL, data);
+		std::cout << "Shader error (" + path + "): " << data;
 	}
 }
 

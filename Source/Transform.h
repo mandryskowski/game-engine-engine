@@ -27,7 +27,7 @@ class Transform
 
 	mutable std::vector <bool> DirtyFlags;
 	mutable bool Empty;	//true if the Transform object has never been changed. Allows for a simple optimization - we skip it during world transform calculation
-
+public:
 	std::vector <std::shared_ptr<InterpolatorBase>> Interpolators;
 
 	static float tSum;
@@ -81,9 +81,11 @@ public:
 	unsigned int AddDirtyFlag();
 
 	void AddInterpolator(std::string fieldName, std::shared_ptr<InterpolatorBase>, bool animateFromCurrent = true);	//if animateFromCurrent is true, the method automatically changes the minimum value of the interpolator to be the current value of the interpolated variable.
-	template <class T> void AddInterpolator(std::string fieldName, float begin, float end, T min, T max, InterpolationType interpType, bool fadeAway = false, AnimBehaviour before = AnimBehaviour::STOP, AnimBehaviour after = AnimBehaviour::STOP);
-	template <class T> void AddInterpolator(std::string fieldName, float begin, float end, T max, InterpolationType interpType, bool fadeAway = false, AnimBehaviour before = AnimBehaviour::STOP, AnimBehaviour after = AnimBehaviour::STOP);
+	template <class T> void AddInterpolator(std::string fieldName, float begin, float end, T min, T max, InterpolationType interpType = InterpolationType::LINEAR, bool fadeAway = false, AnimBehaviour before = AnimBehaviour::STOP, AnimBehaviour after = AnimBehaviour::STOP);
+	template <class T> void AddInterpolator(std::string fieldName, float begin, float end, T max, InterpolationType interpType = InterpolationType::LINEAR, bool fadeAway = false, AnimBehaviour before = AnimBehaviour::STOP, AnimBehaviour after = AnimBehaviour::STOP);
 	void Update(float deltaTime);
+
+	void Print(std::string name = "unnamed") const;
 	
 	~Transform() = default;
 
@@ -96,3 +98,5 @@ public:
 	Transform& operator*=(const Transform&);
 	Transform& operator*=(Transform&&);
 };
+
+Transform decompose(const glm::mat4&);

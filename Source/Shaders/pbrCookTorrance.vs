@@ -2,7 +2,7 @@
 #error Cannot compile Cook-Torrance shader without defining POINT_LIGHT, DIRECTIONAL_LIGHT, SPOT_LIGHT or IBL_PASS.
 #endif
 
-#if defined(DIRECTIONAL_LIGHT) || defined(IBL_PASS)
+#if defined(DIRECTIONAL_LIGHT)
 layout (location = 0) in vec2 vPosition;
 
 void main()
