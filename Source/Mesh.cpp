@@ -107,6 +107,7 @@ void Mesh::Render() const
 	====================================================================
 */
 
+
 MeshInstance::MeshInstance(Mesh* mesh, Material* overrideMaterial):
 	MeshPtr(mesh)
 {

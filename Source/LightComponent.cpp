@@ -1,7 +1,7 @@
 #include "LightComponent.h"
 
-LightComponent::LightComponent(GameManager* gameHandle, std::string name, LightType type, unsigned int index, unsigned int shadowNr, float far, glm::mat4 projection, glm::vec3 amb, glm::vec3 diff, glm::vec3 spec, glm::vec3 settings):
-	Component(gameHandle, name, Transform()),
+LightComponent::LightComponent(GameScene* scene, std::string name, LightType type, unsigned int index, unsigned int shadowNr, float far, glm::mat4 projection, glm::vec3 amb, glm::vec3 diff, glm::vec3 spec, glm::vec3 settings):
+	Component(scene, name, Transform()),
 	Type(type),
 	Ambient(amb),
 	Diffuse(diff),
@@ -19,6 +19,12 @@ LightComponent::LightComponent(GameManager* gameHandle, std::string name, LightT
 	OuterCutOff = glm::cos(OuterCutOffBeforeCos);
 
 	TransformDirtyFlagIndex = ComponentTransform.AddDirtyFlag();
+}
+
+void LightComponent::OnStart()
+{
+	if (!DebugRenderMaterial)
+		LoadDebugRenderMaterial(GameHandle, "GEE_Mat_Default_Debug_LightComponent", "EditorAssets/LightComponentDebug.png");
 }
 
 LightType LightComponent::GetType() const
@@ -46,14 +52,6 @@ glm::mat4 LightComponent::GetProjection() const
 	return Projection;
 }
 
-glm::mat4 LightComponent::GetVP(Transform* worldTransform) const
-{
-	if (worldTransform)
-		return Projection * worldTransform->GetViewMatrix();
-	else
-		return Projection * ComponentTransform.GetWorldTransform().GetViewMatrix();
-}
-
 EngineBasicShape LightComponent::GetVolumeType() const
 {
 	switch (Type)
@@ -71,9 +69,9 @@ EngineBasicShape LightComponent::GetVolumeType() const
 	}
 }
 
-Shader* LightComponent::GetRenderShader() const
+Shader* LightComponent::GetRenderShader(const RenderToolboxCollection& renderCol) const
 {
-	return GameHandle->GetRenderEngineHandle()->GetLightShader(Type);
+	return GameHandle->GetRenderEngineHandle()->GetLightShader(renderCol, Type);
 }
 
 void LightComponent::CalculateLightRadius()
@@ -201,9 +199,9 @@ Transform LightVolume::GetRenderTransform() const
 	return lightTransform;
 }
 
-Shader* LightVolume::GetRenderShader() const
+Shader* LightVolume::GetRenderShader(const RenderToolboxCollection& renderCol) const
 {
-	return LightCompPtr->GetRenderShader();
+	return LightCompPtr->GetRenderShader(renderCol);
 }
 
 void LightVolume::SetupRenderUniforms(const Shader& shader) const

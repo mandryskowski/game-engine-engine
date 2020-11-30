@@ -6,7 +6,6 @@ out float ambientOcclusion;
 
 //uniform
 uniform float radius;
-uniform vec2 resolution;
 uniform vec3 samples[SSAO_SAMPLES];
 uniform mat4 view;
 uniform mat4 projection;
@@ -16,7 +15,7 @@ uniform sampler2D noiseTex;
 
 void main()
 {
-	vec2 noiseTexCoordScale = resolution / vec2(4.0);
+	vec2 noiseTexCoordScale = vec2(SCR_WIDTH, SCR_HEIGHT) / vec2(4.0);
 	
 	vec3 fragPos = vec3(view * vec4(texture(gPosition, texCoord).xyz, 1.0));
 	vec3 fragNormal = mat3(view) * texture(gNormal, texCoord).xyz;

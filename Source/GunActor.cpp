@@ -2,15 +2,15 @@
 #include "SoundSourceComponent.h"
 #include "FileLoader.h"
 
-GunActor::GunActor(GameManager* gameHandle, std::string name):
-	Actor(gameHandle, name)
+GunActor::GunActor(GameScene* scene, std::string name):
+	Actor(scene, name)
 {
 	FireCooldown = 2.0f;
 	CooldownLeft = 0.0f;
 	FiredBullets = 0;
 }
 
-void GunActor::Setup(SearchEngine* searcher)
+void GunActor::Setup()
 {
 	if (!SetupStream)
 	{
@@ -24,15 +24,16 @@ void GunActor::Setup(SearchEngine* searcher)
 	if (str == "FireMaterial")
 	{
 		(*SetupStream) >> str;
-		std::cout << "Firematerial = " << searcher->FindMaterial(str) << ".\n";
+		std::cout << "Firematerial = " << GameHandle->GetRenderEngineHandle()->FindMaterial(str) << ".\n";
 	}
 
-	ModelComponent* found = searcher->FindModel("FireParticle");
+	ModelComponent* found = dynamic_cast<ModelComponent*>(Scene->GetRenderData()->FindRenderable("FireParticle"));
 	std::cout << "Wyszukalem se: " << found << ".\n";
+	dynamic_cast<ModelComponent*>(found->SearchForComponent("Quad"))->SetRenderAsBillboard(true);
 	ParticleMeshInst = found->FindMeshInstance("Quad");
 	ParticleMeshInst->GetMaterialInst()->SetInterp(new Interpolation(0.0f, 0.25f, InterpolationType::LINEAR));
 	
-	GunModel = searcher->FindModel("MyDoubleBarrel");
+	GunModel = dynamic_cast<ModelComponent*>(Scene->GetRenderData()->FindRenderable("MyDoubleBarrel"));
 	GunModel->GetTransform().SetFront(glm::vec3(0.0f, 0.0f, -1.0f));
 
 	/*
@@ -40,22 +41,21 @@ void GunActor::Setup(SearchEngine* searcher)
 	GunModel->GetTransform()->AddInterpolator("rotation", 10.0f, 5.0f, glm::vec3(360.0f, 0.0f, 0.0f), InterpolationType::QUADRATIC, false, AnimBehaviour::STOP, AnimBehaviour::EXTRAPOLATE);
 	GunModel->GetTransform()->AddInterpolator("scale", 10.0f, 10.0f, glm::vec3(0.3f, 0.3f, 0.2f), InterpolationType::CONSTANT);*/
 
-	GunBlast = searcher->FindSoundSource("DoubleBarrelBlast");
+	GunBlast = Scene->GetAudioData()->FindSource("DoubleBarrelBlast");
 	
-	Actor::Setup(searcher);
+	Actor::Setup();
 }
 
 void GunActor::Update(float deltaTime)
 {
 	ParticleMeshInst->GetMaterialInst()->Update(deltaTime);
 	GunModel->GetTransform().Update(deltaTime);
+	CooldownLeft -= deltaTime;
 	Actor::Update(deltaTime);
 }
 
-void GunActor::HandleInputs(GLFWwindow* window, float deltaTime)
+void GunActor::HandleInputs(GLFWwindow* window)
 {
-	CooldownLeft -= deltaTime;
-
 	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS)
 	{
 		printVector(GunModel->GetTransform().RotationRef, "Prawdziwa rotacja");
@@ -69,9 +69,9 @@ void GunActor::HandleInputs(GLFWwindow* window, float deltaTime)
 		GunModel->GetTransform().AddInterpolator<glm::quat>("rotation", 0.0f, 0.25f, glm::quat(glm::vec3(0.0f)), toQuat(glm::vec3(30.0f, 0.0f, 0.0f)), InterpolationType::QUINTIC, true);
 		GunModel->GetTransform().AddInterpolator<glm::quat>("rotation", 0.25f, 1.25f, glm::quat(glm::vec3(0.0f)), InterpolationType::QUADRATIC, true);
 
-		Actor* actor = GameHandle->AddActorToScene(std::make_shared<Actor>(GameHandle, "Bullet" + std::to_string(FiredBullets))).get();
-		ModelComponent* bulletModel = ModelComponent::Of(ModelComponent(GameHandle, "BulletModel" + std::to_string(FiredBullets++), Transform(GetTransform()->GetWorldTransform().PositionRef, glm::vec3(0.0f), glm::vec3(0.1f)))).get();
-		EngineDataLoader::LoadModel(GameHandle, "hqSphere/hqSphere.obj", bulletModel, MeshTreeInstancingType::ROOTTREE, GameHandle->GetSearchEngine()->FindMaterial("RustedIron"));
+		Actor* actor = Scene->AddActorToRoot(std::make_shared<Actor>(Scene, "Bullet" + std::to_string(FiredBullets)));
+		ModelComponent* bulletModel = ModelComponent::Of(ModelComponent(Scene, "BulletModel" + std::to_string(FiredBullets++), Transform(GetTransform()->GetWorldTransform().PositionRef, glm::vec3(0.0f), glm::vec3(0.1f)))).get();
+		EngineDataLoader::LoadModel("hqSphere/hqSphere.obj", bulletModel, MeshTreeInstancingType::ROOTTREE, GameHandle->GetRenderEngineHandle()->FindMaterial("RustedIron"));
 
 		actor->ReplaceRoot(bulletModel);
 

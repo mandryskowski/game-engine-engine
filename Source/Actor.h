@@ -1,9 +1,9 @@
 #pragma once
-#include "SearchEngine.h"
 #include "GameManager.h"
 #include <iostream>
 
 struct GLFWwindow;
+
 
 class Actor
 {
@@ -12,18 +12,19 @@ protected:
 	std::vector <std::shared_ptr<Actor>> Children;
 	std::string Name;
 	std::stringstream* SetupStream;
+	GameScene* Scene;
 	GameManager* GameHandle;
 
 public:
-	Actor(GameManager*, std::string);
+	Actor(GameScene*, const std::string& name);
 
 	virtual void OnStart();
 	virtual void OnStartAll();
 
-	Component* GetRoot();
-	std::string GetName();
-	Transform* GetTransform();
-	Actor* GetChild(unsigned int);
+	Component* GetRoot() const;
+	std::string GetName() const;
+	Transform* GetTransform() const;
+	Actor* GetChild(unsigned int) const;
 
 	void DebugHierarchy(int nrTabs = 0);
 
@@ -33,12 +34,15 @@ public:
 	void AddChild(std::shared_ptr<Actor>);
 	void SetSetupStream(std::stringstream* stream);
 
-	virtual void Setup(SearchEngine* searcher);
+	virtual void Setup();
 
-	virtual void HandleInputs(GLFWwindow*, float);
-	void HandleInputsAll(GLFWwindow*, float);
+	virtual void HandleInputs(GLFWwindow*);
+	void HandleInputsAll(GLFWwindow*);
 	virtual void Update(float);
 	void UpdateAll(float);
+	virtual void DebugRender(RenderInfo info, Shader* shader) const; //this method should only be called to render the components as something (usually a textured billboard) to debug the project.
+	void DebugRenderAll(RenderInfo info, Shader* shader) const;
 
-	Actor* SearchForActor(std::string name);
+	Actor* FindActor(std::string name);
+	const Actor* FindActor(std::string name) const;
 };

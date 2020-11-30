@@ -45,6 +45,8 @@ namespace MeshSystem
 		void SetCollisionObject(std::unique_ptr<CollisionObject>&);
 		void SetTemplateTransform(Transform&);
 
+		void AddCollisionShape(std::shared_ptr<CollisionShape> shape);
+
 		template<typename T> T* AddChild(std::string name);
 		template<typename T> T* AddChild(const T&);
 		template<typename T> T* AddChild(T&&);

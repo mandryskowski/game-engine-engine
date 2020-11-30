@@ -2,53 +2,63 @@
 #include "PhysicsEngine.h"
 #include "RenderEngine.h"
 #include "AudioEngine.h"
-#include "SearchEngine.h"
 #include "GameSettings.h"
+#include "GameScene.h"
 #include "Actor.h"
 
 class Font;
+class Controller;
 
-class Game: public GameManager
+/*
+	todo: comment explaining how to use the Game class
+	1. Call Init with the window that you created
+	2. Call LoadSceneFromFile and load at least the Main Scene, otherwise there will be no scenes and the program will just shut down
+	3. Call PreGameLoop
+	4. Call GameLoopIteration with every iteration
+*/
+
+class Game : public GameManager
 {
-	GLFWwindow *Window;
+public:
+	Game(const ShadingModel&, const GameSettings&);
+	virtual void Init(GLFWwindow* window);
 
-	Actor RootActor;
-	CameraComponent* ActiveCamera;	//there are 2 similiar camera variables: ActiveCamera and global MouseContextCamera. the first one is basically the camera we use to see the world (view mat); the second one is updated by mouse controls.
+	void LoadSceneFromFile(std::string path);
+	void AddScene(std::unique_ptr <GameScene> scene);
+	virtual void BindAudioListenerTransformPtr(Transform*) override;
+	virtual void PassMouseControl(Controller* controller) override; //pass nullptr to unbind any controller and allow moving the mouse around freely
 
-	UniformBuffer MatricesBuffer;
+	virtual PhysicsEngineManager* GetPhysicsHandle() override;
+	virtual RenderEngineManager* GetRenderEngineHandle() override;
+	virtual AudioEngineManager* GetAudioEngineHandle() override;
+
+	virtual GameSettings* GetGameSettings() override;
+	virtual GameScene* GetMainScene() override;
+	virtual Actor* GetRootActor(GameScene* scene = nullptr) override;
+
+	virtual void PreGameLoop();
+	virtual bool GameLoopIteration(float timeStep, float deltaTime);
+
+	void Update(float);
+
+	virtual void Render() = 0;
+
+protected:
+	GLFWwindow* Window;
+
+	std::vector <std::unique_ptr <GameScene>> Scenes;	//The first scene (Scenes[0]) is referred to as the Main Scene. If you only use 1 scene in your application, don't bother with passing arround GameScene pointers - the Main Scene will be chosen automatically.
+	Controller* MouseController;
 
 	std::unique_ptr<GameSettings> Settings;
 	std::shared_ptr<Font> MyFont;
 	RenderEngine RenderEng;
 	PhysicsEngine PhysicsEng;
 	AudioEngine AudioEng;
-	SearchEngine Searcher;
 
 	const ShadingModel Shading;
 	bool DebugMode;
-	glm::mat4 PreviousFrameView;
-
-public:
-	Game(const ShadingModel&);
-	virtual void Init(GLFWwindow* window);
-
-	void LoadLevel(std::string);
-	virtual void BindActiveCamera(CameraComponent*) override;
-	virtual void PassMouseControl(CameraComponent*) override;
-	virtual std::shared_ptr<Actor> AddActorToScene(std::shared_ptr<Actor> actor) override; //you use this function to make the game interact (update, draw...) with the actor; without adding it to the scene, the Actor instance isnt updated real-time by default
-	virtual SearchEngine* GetSearchEngine() override;
-
-	virtual PhysicsEngineManager* GetPhysicsHandle() override;
-	virtual RenderEngineManager* GetRenderEngineHandle() override;
-	virtual AudioEngineManager* GetAudioEngineHandle() override;
-
-	virtual const GameSettings* GetGameSettings() override;
-
-	void Run();
-
-	void Update(float);
-
-	void Render();
+	float LoopBeginTime;
+	float TimeAccumulator;
 };
 
 void cursorPosCallback(GLFWwindow*, double, double);

@@ -4,6 +4,7 @@ in VS_OUT
 {
 	vec3 localPosition;
 	#ifdef CALC_VELOCITY_BUFFER
+	smooth vec4 currMVPPosition;
 	smooth vec4 prevMVPPosition;
 	#endif
 }	frag;
@@ -22,10 +23,11 @@ uniform samplerCubeArray cubemap;
 
 void main()
 {
-	fragColor = textureLod(cubemap, vec4(frag.localPosition, 3.0), mipLevel);
+	fragColor = textureLod(cubemap, vec4(frag.localPosition, 0.0), 0.0);
 	
 	#ifdef CALC_VELOCITY_BUFFER
-	vec2 currentPos = vec2(gl_FragCoord.xy) / vec2(SCR_WIDTH, SCR_HEIGHT);
+	//vec2 currentPos = vec2(gl_FragCoord.xy) / vec2(SCR_WIDTH, SCR_HEIGHT);
+	vec2 currentPos = (frag.currMVPPosition.xy / frag.currMVPPosition.w) * 0.5 + 0.5;
 	vec2 previousPos = (frag.prevMVPPosition.xy / frag.prevMVPPosition.w) * 0.5 + 0.5;
 	velocity = (currentPos - previousPos);
 	#endif

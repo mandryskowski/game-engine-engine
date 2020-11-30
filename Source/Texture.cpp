@@ -1,5 +1,7 @@
 #include "Texture.h"
+#ifndef STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_IMPLEMENTATION
+#endif
 #include <stb/stb_image.h>
 #include <iostream>
 #include <glm/glm.hpp>
@@ -60,6 +62,11 @@ std::string NamedTexture::GetShaderName()
 	return ShaderName;
 }
 
+void NamedTexture::SetShaderName(std::string name)
+{
+	ShaderName = name;
+}
+
 /*
 ========================================================================================================================
 ========================================================================================================================
@@ -89,7 +96,7 @@ GLenum internalFormatToAlpha(GLenum internalformat)
 	case GL_RGB32F: return GL_RGBA32F;
 	}
 
-	return GL_RGBA;
+	return internalformat;
 }
 
 template <class T> Texture textureFromFile(std::string path, GLenum internalformat, GLenum magFilter, GLenum minFilter, bool flip)
@@ -178,7 +185,7 @@ Texture textureFromBuffer(const void* buffer, unsigned int width, unsigned int h
 
 std::shared_ptr<Texture> reserveTexture(glm::uvec2 size, GLenum internalformat, GLenum type, GLenum magFilter, GLenum minFilter, GLenum texType, unsigned int samples, std::string texName, GLenum format)
 {
-	std::shared_ptr<Texture> tex = std::make_shared<Texture>(NamedTexture(Texture(), texName));
+	std::shared_ptr<Texture> tex = std::make_shared<NamedTexture>(NamedTexture(Texture(), texName));
 	tex->GenerateID(texType);
 	tex->Bind();
 
@@ -208,7 +215,7 @@ std::shared_ptr<Texture> reserveTexture(glm::uvec2 size, GLenum internalformat, 
 
 std::shared_ptr<Texture> reserveTexture(glm::uvec3 size, GLenum internalformat, GLenum type, GLenum magFilter, GLenum minFilter, GLenum texType, unsigned int samples, std::string texName, GLenum format)
 {
-	std::shared_ptr<Texture> tex = std::make_shared<Texture>(NamedTexture(Texture(), texName));
+	std::shared_ptr<Texture> tex = std::make_shared<NamedTexture>(NamedTexture(Texture(), texName));
 	tex->GenerateID(texType);
 	tex->Bind();
 

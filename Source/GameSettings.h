@@ -1,6 +1,13 @@
 #pragma once
 #include "Utility.h"
 
+enum ShadingModel
+{
+	SHADING_FULL_LIT,
+	SHADING_PHONG,
+	SHADING_PBR_COOK_TORRANCE
+};
+
 enum AntiAliasingType
 {
 	AA_NONE,
@@ -20,30 +27,49 @@ enum SettingLevel
 struct GameSettings
 {
 	glm::uvec2 WindowSize;
+
 	bool bWindowFullscreen;
 	std::string WindowTitle;
 
-	unsigned int AmbientOcclusionSamples;
-	bool bVSync;
-	bool bBloom;
-	AntiAliasingType AAType;
-	SettingLevel AALevel;
-	SettingLevel POMLevel;
-	SettingLevel ShadowLevel;
+	struct VideoSettings
+	{
+		glm::vec2 Resolution;
+		ShadingModel Shading;
 
-	float MonitorGamma;
+		unsigned int AmbientOcclusionSamples;
+		bool bVSync;
+		bool bBloom;
+		AntiAliasingType AAType;
+		SettingLevel AALevel;
+		SettingLevel POMLevel;
+		SettingLevel ShadowLevel;
+
+		float MonitorGamma;
+
+		VideoSettings();
+		bool IsVelocityBufferNeeded() const;
+		bool IsTemporalReprojectionEnabled() const;
+		std::string GetShaderDefines(glm::uvec2 resolution = glm::uvec2(0)) const;
+		virtual bool LoadSetting(std::stringstream& filestr, std::string settingName);
+	} Video;
 
 	/////////////////////////////
 
 	GameSettings();
 	GameSettings(std::string path);
 
-	bool IsVelocityBufferNeeded() const;
-	bool IsTemporalReprojectionEnabled() const;
-	std::string GetShaderDefines(glm::uvec2 resolution = glm::uvec2(0)) const;
 	void LoadFromFile(std::string path);
 
-	virtual void LoadSetting(std::stringstream& filestr, std::string settingName);
+	virtual bool LoadSetting(std::stringstream& filestr, std::string settingName);
+};
+
+
+struct Dupa : public GameSettings
+{
+	struct LOL : public GameSettings::VideoSettings
+	{
+
+	} Video;
 };
 
 template <class T> void LoadEnum(std::stringstream& filestr, T& var);

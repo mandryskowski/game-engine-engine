@@ -9,31 +9,31 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include "GameScene.h"
+
 #include <vector>
 #include "GameManager.h"
 
 struct CollisionShape;
 class RenderEngine;
 class Transform;
-struct RenderInfo;
+class RenderInfo;
 
 class PhysicsEngine: public PhysicsEngineManager
 {
 	physx::PxDefaultAllocator Allocator;
 	physx::PxDefaultErrorCallback ErrorCallback;
 
-	physx::PxFoundation* Foundation;
+	static physx::PxFoundation* Foundation;
 	physx::PxPhysics* Physics;
 
 	physx::PxDefaultCpuDispatcher* Dispatcher;
-	physx::PxScene* Scene;
 	physx::PxCooking* Cooking;
 
 	physx::PxMaterial* DefaultMaterial;
-	physx::PxControllerManager* ControllerManager;
 	physx::PxPvd* Pvd;
 
-	std::vector <CollisionObject*> CollisionObjects;
+	std::vector <GameScenePhysicsData*> ScenesPhysicsData;
 	unsigned int VAO, VBO;
 	bool WasSetup;
 	bool* DebugModePtr;
@@ -43,31 +43,25 @@ public:
 	void Init();
 
 private:
-	void CreatePxActorForObject(CollisionObject*);
 	physx::PxShape* CreateTriangleMeshShape(CollisionShape*, glm::vec3 scale);
+	void AddCollisionObjectToPx(GameScenePhysicsData* scenePhysicsData, CollisionObject*);
 
 public:
-	virtual CollisionObject* CreateCollisionObject(glm::vec3 pos) override;
-	virtual physx::PxController* CreateController() override;
+	void AddScenePhysicsDataPtr(GameScenePhysicsData* scenePhysicsData);
+	virtual void AddCollisionObject(GameScenePhysicsData* scenePhysicsData, CollisionObject*) override;
+
+	virtual CollisionObject* CreateCollisionObject(GameScenePhysicsData* scenePhysicsData, glm::vec3 pos) override;
+	virtual physx::PxController* CreateController(GameScenePhysicsData* scenePhysicsData) override;
 
 	virtual void ApplyForce(CollisionObject*, glm::vec3 force) override;
-	virtual void AddCollisionObject(CollisionObject*) override;
-	void Setup();
+	void SetupScene(GameScenePhysicsData* scenePhysicsData);
 
 	void Update(float deltaTime);
 	void UpdateTransforms();
 	void UpdatePxTransforms();
 
-	virtual void DebugRender(RenderEngine*, RenderInfo&) override;
+	virtual void DebugRender(GameScenePhysicsData* scenePhysicsData, RenderEngine*, RenderInfo&) override;
 	~PhysicsEngine();
 };
 
 glm::vec3 toVecColor(physx::PxDebugColor::Enum);
-
-glm::vec3 toGlm(physx::PxVec3);
-glm::quat toGlm(physx::PxQuat);
-
-physx::PxVec3 toPx(glm::vec3);
-physx::PxQuat toPx(glm::quat);
-physx::PxTransform toPx(Transform);
-physx::PxTransform toPx(Transform*);

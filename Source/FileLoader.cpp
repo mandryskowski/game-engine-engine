@@ -11,12 +11,14 @@
 #include "SoundSourceComponent.h"
 #include "TextComponent.h"
 #include "Font.h"
+#include "Controller.h"
+#include "GameScene.h"
 #include <ft2build.h>
 #include FT_FREETYPE_H
 #include <functional>
 
 
-void EngineDataLoader::LoadMaterials(RenderEngineManager* renderHandle, SearchEngine* searcher, std::string path, std::string directory)
+void EngineDataLoader::LoadMaterials(RenderEngineManager* renderHandle, std::string path, std::string directory)
 {
 	std::ifstream file;
 	file.open(path);
@@ -115,10 +117,9 @@ void EngineDataLoader::LoadShaders(RenderEngineManager* renderEngHandle, std::st
 	}
 }
 
-void EngineDataLoader::LoadComponentData(GameManager* gameHandle, std::stringstream& filestr, Actor* currentActor)
+void EngineDataLoader::LoadComponentData(GameManager* gameHandle, std::stringstream& filestr, Actor* currentActor, GameScene* scene)
 {
 	///////////////////////////////1. Load the type and the name of the current component
-	SearchEngine* searcher = gameHandle->GetSearchEngine();
 	RenderEngineManager* renderEngHandle = gameHandle->GetRenderEngineHandle();
 
 	Component* comp = nullptr;
@@ -162,9 +163,9 @@ void EngineDataLoader::LoadComponentData(GameManager* gameHandle, std::stringstr
 		else if (isNextWordEqual(filestr, "merge"))
 			instancingType = MeshTreeInstancingType::MERGE;
 
-		modelPtr = dynamic_cast<ModelComponent*>(renderEngHandle->AddRenderable(std::make_shared<ModelComponent>(ModelComponent(gameHandle, name, Transform()))).get());
+		modelPtr = dynamic_cast<ModelComponent*>(scene->GetRenderData()->AddRenderable(std::make_shared<ModelComponent>(ModelComponent(scene, name, Transform()))).get());
 
-		MeshSystem::MeshTree* tree = LoadMeshTree(gameHandle, renderEngHandle, searcher, path);
+		MeshSystem::MeshTree* tree = LoadMeshTree(gameHandle, renderEngHandle, path);
 		std::unique_ptr<MeshSystem::MeshTree> tempTreeCopyForEdit = nullptr;
 		if (isNextWordEqual(filestr, "edit"))
 		{
@@ -172,7 +173,7 @@ void EngineDataLoader::LoadComponentData(GameManager* gameHandle, std::stringstr
 			tree = tempTreeCopyForEdit.get();
 			LoadCustomMeshNode(gameHandle, filestr, nullptr, tree);
 		}
-		InstantiateTree(gameHandle, modelPtr, *tree, instancingType, searcher->FindMaterial(materialName));
+		InstantiateTree(modelPtr, *tree, instancingType, renderEngHandle->FindMaterial(materialName));
 
 		comp = modelPtr;
 	}
@@ -187,7 +188,7 @@ void EngineDataLoader::LoadComponentData(GameManager* gameHandle, std::stringstr
 		else
 			projection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 1.0f, 10.0f);
 
-		std::shared_ptr<LightComponent> lightPtr = std::make_shared<LightComponent>(gameHandle, name, toLightType(lightType), renderEngHandle->GetAvailableLightIndex(), renderEngHandle->GetAvailableLightIndex(), 10.0f, projection);
+		std::shared_ptr<LightComponent> lightPtr = std::make_shared<LightComponent>(scene, name, toLightType(lightType), scene->GetRenderData()->GetAvailableLightIndex(), scene->GetRenderData()->GetAvailableLightIndex(), 10.0f, projection);
 		for (unsigned int vector = 0; vector < 3; vector++)
 			for (unsigned int axis = 0; axis < 3; axis++)
 				filestr >> (*lightPtr)[vector][axis];	//TODO: sprawdzic czy sie wywala
@@ -199,7 +200,7 @@ void EngineDataLoader::LoadComponentData(GameManager* gameHandle, std::stringstr
 
 		lightPtr->CalculateLightRadius();
 
-		renderEngHandle->AddLight(lightPtr);
+		scene->GetRenderData()->AddLight(lightPtr);
 		comp = lightPtr.get();
 	}
 	else if (type == "camera")
@@ -207,19 +208,26 @@ void EngineDataLoader::LoadComponentData(GameManager* gameHandle, std::stringstr
 		float speedPerSec;
 		filestr >> speedPerSec;
 
-		comp = new CameraComponent(gameHandle, name, speedPerSec);
+		CameraComponent* camComp = new CameraComponent(scene, name, glm::perspective(glm::radians(90.0f), ((float)scene->GetGameHandle()->GetGameSettings()->Video.Resolution.x / (float)scene->GetGameHandle()->GetGameSettings()->Video.Resolution.y), 0.01f, 100.0f));
 
 		if (isNextWordEqual(filestr, "active"))
-			gameHandle->BindActiveCamera(dynamic_cast<CameraComponent*>(comp));
+			scene->BindActiveCamera(camComp);
 		if (isNextWordEqual(filestr, "automousecontrol"))
-			gameHandle->PassMouseControl(dynamic_cast<CameraComponent*>(comp));
+		{
+			std::shared_ptr<Controller> controller = std::make_shared<Controller>(Controller(scene, "MojTestowyController"));
+			scene->AddActorToRoot(controller);
+			gameHandle->PassMouseControl(controller.get());
+		}
+
+		comp = camComp;
 	}
 	else if (type == "soundsource")
 	{
 		SoundSourceComponent* sourcePtr = nullptr;
 		std::string path;
 		filestr >> path;
-		sourcePtr = gameHandle->GetAudioEngineHandle()->AddSource(path, name);
+		sourcePtr = new SoundSourceComponent(scene, name, gameHandle->GetAudioEngineHandle()->LoadBufferFromFile(path));
+		scene->GetAudioData()->AddSource(sourcePtr);
 
 		comp = sourcePtr;
 	}
@@ -228,11 +236,11 @@ void EngineDataLoader::LoadComponentData(GameManager* gameHandle, std::stringstr
 		std::string fontPath = multipleWordInput(filestr);
 		std::string content = multipleWordInput(filestr);
 
-		comp = TextComponent::Of(TextComponent(gameHandle, name, Transform(), content, fontPath)).get();
+		comp = TextComponent::Of(TextComponent(scene, name, Transform(), content, fontPath)).get();
 
 	}
 	else if (type == "empty")
-		comp = new Component(gameHandle, name, Transform());
+		comp = new Component(scene, name, Transform());
 	else
 		return;
 
@@ -257,7 +265,7 @@ void EngineDataLoader::LoadComponentData(GameManager* gameHandle, std::stringstr
 		std::cerr << "ERROR: There is no ''end'' after component's " << name << " definition! Detected word: " << lastWord << ".\n";
 }
 
-std::unique_ptr<CollisionObject> EngineDataLoader::LoadCollisionObject(std::string path, PhysicsEngineManager* physicsHandle, std::stringstream& filestr)
+std::unique_ptr<CollisionObject> EngineDataLoader::LoadCollisionObject(PhysicsEngineManager* physicsHandle, std::stringstream& filestr)
 {
 	std::unique_ptr<CollisionObject> obj = std::make_unique<CollisionObject>();
 
@@ -279,8 +287,6 @@ std::unique_ptr<CollisionObject> EngineDataLoader::LoadCollisionObject(std::stri
 			continue;
 		}
 
-		CollisionShape* shape = obj->AddShape(static_cast<CollisionShapeType>(shapeType));
-
 		if (shapeType == CollisionShapeType::COLLISION_TRIANGLE_MESH)
 		{
 			std::string path;
@@ -294,17 +300,31 @@ std::unique_ptr<CollisionObject> EngineDataLoader::LoadCollisionObject(std::stri
 				continue;
 			}
 
+			Transform shapesTransform;
+			LoadTransform(filestr, shapesTransform, transformLoadType);
 			for (int j = 0; j < static_cast<int>(scene->mNumMeshes); j++)
-				LoadMeshFromAi(nullptr, scene, scene->mMeshes[j], extractDirectory(path), false, nullptr, nullptr, &shape->VertData, &shape->IndicesData);
+				obj->AddShape(LoadTriangleMeshCollisionShape(physicsHandle, scene, *scene->mMeshes[i]))->ShapeTransform = shapesTransform;	//add new shape and set its transform to the loaded one
+				//LoadMeshFromAi(nullptr, scene, scene->mMeshes[j], extractDirectory(path), false, nullptr, nullptr, &shape->VertData, &shape->IndicesData);
 		}
-
-		LoadTransform(filestr, shape->ShapeTransform, transformLoadType);
+		else
+		{
+			CollisionShape* shape = obj->AddShape(static_cast<CollisionShapeType>(shapeType));
+			LoadTransform(filestr, shape->ShapeTransform, transformLoadType);
+		}
 	}
 
 	return obj;
 }
 
-void EngineDataLoader::LoadLightProbes(GameManager* gameHandle, std::stringstream& filestr)
+std::unique_ptr<CollisionShape> EngineDataLoader::LoadTriangleMeshCollisionShape(PhysicsEngineManager* physicsHandle, const aiScene* scene, aiMesh& mesh)
+{
+	std::unique_ptr<CollisionShape> shape = std::make_unique<CollisionShape>(CollisionShape(CollisionShapeType::COLLISION_TRIANGLE_MESH));
+	LoadMeshFromAi(nullptr, scene, &mesh, "", false, nullptr, nullptr, &shape->VertData, &shape->IndicesData);
+
+	return shape;
+}
+
+void EngineDataLoader::LoadLightProbes(GameScene* scene, std::stringstream& filestr)
 {
 	int probeCount;
 	filestr >> probeCount;
@@ -323,12 +343,12 @@ void EngineDataLoader::LoadLightProbes(GameManager* gameHandle, std::stringstrea
 			filestr >> shapeNr;
 			shape = static_cast<EngineBasicShape>(shapeNr);
 			LoadTransform(filestr, probeTransform);
-			gameHandle->GetRenderEngineHandle()->AddLightProbe(std::make_shared<LocalLightProbe>(LocalLightProbe(probeTransform, shape)));
+			scene->GetRenderData()->AddLightProbe(std::make_shared<LocalLightProbe>(LocalLightProbe(scene->GetRenderData(), probeTransform, shape)));
 		}
 		else
 		{
 			filestr >> path;
-			gameHandle->GetRenderEngineHandle()->AddLightProbe(LightProbeLoader::LightProbeFromFile(path));
+			scene->GetRenderData()->AddLightProbe(LightProbeLoader::LightProbeFromFile(scene->GetRenderData(), path));
 		}
 	}
 }
@@ -523,7 +543,7 @@ MeshSystem::MeshTree* EngineDataLoader::LoadCustomMeshTree(GameManager* gameHand
 	filestr >> treeName;
 
 	std::cout << "du[a";
-	MeshSystem::MeshTree* tree = ((loadPath) ? (LoadMeshTree(gameHandle, gameHandle->GetRenderEngineHandle(), gameHandle->GetSearchEngine(), treeName)) : (gameHandle->GetRenderEngineHandle()->CreateMeshTree(treeName)));
+	MeshSystem::MeshTree* tree = ((loadPath) ? (LoadMeshTree(gameHandle, gameHandle->GetRenderEngineHandle(), treeName)) : (gameHandle->GetRenderEngineHandle()->CreateMeshTree(treeName)));
 	std::cout << "du[a2";
 	LoadCustomMeshNode(gameHandle, filestr, &tree->GetRoot(), (loadPath) ? (gameHandle->GetRenderEngineHandle()->FindMeshTree(treeName)) : (nullptr));
 
@@ -562,7 +582,7 @@ void EngineDataLoader::LoadCustomMeshNode(GameManager* gameHandle, std::stringst
 		}
 
 		if (bCreateNodes)
-			treeToEdit = LoadMeshTree(gameHandle, gameHandle->GetRenderEngineHandle(), gameHandle->GetSearchEngine(), treeName);
+			treeToEdit = LoadMeshTree(gameHandle, gameHandle->GetRenderEngineHandle(), treeName);
 		MeshSystem::TemplateNode* foundNode = treeToEdit->FindNode(nodeName);
 		if (!foundNode)
 		{
@@ -582,7 +602,7 @@ void EngineDataLoader::LoadCustomMeshNode(GameManager* gameHandle, std::stringst
 			if (input == "material" && meshNodeCast)
 			{
 				input = multipleWordInput(filestr);	//get material name (could be a path, so multiple word input is possible)
-				Material* foundMaterial = gameHandle->GetSearchEngine()->FindMaterial(input);
+				Material* foundMaterial = gameHandle->GetRenderEngineHandle()->FindMaterial(input);
 
 				if (!foundMaterial) //if no material of this name was found, check if the input is of format: file.obj:name
 				{
@@ -593,7 +613,7 @@ void EngineDataLoader::LoadCustomMeshNode(GameManager* gameHandle, std::stringst
 						continue;
 					}
 
-					foundMaterial = LoadMeshTree(gameHandle, gameHandle->GetRenderEngineHandle(), gameHandle->GetSearchEngine(), input.substr(0, separatorPos))->FindMaterial(input.substr(separatorPos + 1));
+					foundMaterial = LoadMeshTree(gameHandle, gameHandle->GetRenderEngineHandle(), input.substr(0, separatorPos))->FindMaterial(input.substr(separatorPos + 1));
 				}
 				meshNodeCast->SetOverrideMaterial(foundMaterial);
 			}
@@ -606,7 +626,7 @@ void EngineDataLoader::LoadCustomMeshNode(GameManager* gameHandle, std::stringst
 			}
 
 			else if (input == "col")
-				targetNode.SetCollisionObject(LoadCollisionObject("", gameHandle->GetPhysicsHandle(), filestr));
+				targetNode.SetCollisionObject(LoadCollisionObject(gameHandle->GetPhysicsHandle(), filestr));
 		}
 
 		if (input == ":")
@@ -640,7 +660,18 @@ void EngineDataLoader::LoadMeshNodeFromAi(GameManager* gameHandle, const aiScene
 	for (unsigned int i = 0; i < node->mNumChildren; i++)
 	{	
 		if (node->mChildren[i]->mNumMeshes > 0)
-			LoadMeshNodeFromAi(gameHandle, scene, directory, matLoadingData, *meshSystemNode.AddChild<MeshSystem::MeshNode>(node->mChildren[i]->mName.C_Str()), node->mChildren[i], boneMapping);
+		{
+			std::string meshName = node->mChildren[i]->mName.C_Str();	//retrieve one of the children's meshes name to try and find out whether this child node only contains collision meshes. We do not want to render them so we leave them out of the meshtree
+
+			if (meshName.length() > 4 && meshName.substr(0, 4) == "GEEC")	//We are dealing with a collision node!
+			{
+				std::cout << "YEAH";
+				for (int j = 0; j < static_cast<int>(node->mChildren[i]->mNumMeshes); j++)
+					meshSystemNode.AddCollisionShape(LoadTriangleMeshCollisionShape(gameHandle->GetPhysicsHandle(), scene, *scene->mMeshes[node->mChildren[i]->mMeshes[j]]));
+			}
+			else
+				LoadMeshNodeFromAi(gameHandle, scene, directory, matLoadingData, *meshSystemNode.AddChild<MeshSystem::MeshNode>(node->mChildren[i]->mName.C_Str()), node->mChildren[i], boneMapping);
+		}
 		else if (aiBone* bone = CastAiNodeToBone(scene, node->mChildren[i])) // (isBone)
 			LoadMeshNodeFromAi(gameHandle, scene, directory, matLoadingData, *meshSystemNode.AddChild<MeshSystem::BoneNode>(node->mChildren[i]->mName.C_Str()), node->mChildren[i], boneMapping, bone);
 		else
@@ -648,7 +679,7 @@ void EngineDataLoader::LoadMeshNodeFromAi(GameManager* gameHandle, const aiScene
 	}
 }
 
-void EngineDataLoader::LoadComponentsFromMeshTree(GameManager* gameHandle, Component* comp, const MeshSystem::MeshTree& tree, const MeshSystem::TemplateNode* node, SkeletonInfo& skeletonInfo, Material* overrideMaterial)
+void EngineDataLoader::LoadComponentsFromMeshTree(Component* comp, const MeshSystem::MeshTree& tree, const MeshSystem::TemplateNode* node, SkeletonInfo& skeletonInfo, Material* overrideMaterial)
 {
 	const MeshSystem::MeshNode* meshNodeCast = dynamic_cast<const MeshSystem::MeshNode*>(node);
 	ModelComponent* modelCast = dynamic_cast<ModelComponent*>(comp);
@@ -681,27 +712,29 @@ void EngineDataLoader::LoadComponentsFromMeshTree(GameManager* gameHandle, Compo
 		
 		if (dynamic_cast<const MeshSystem::MeshNode*>(node->GetChild(i)))
 		{
-			ModelComponent* model = ModelComponent::Of(ModelComponent(gameHandle, node->GetChild(i)->GetName(), Transform(), &skeletonInfo)).get();
+			ModelComponent* model = ModelComponent::Of(ModelComponent(comp->GetScene(), node->GetChild(i)->GetName(), Transform(), &skeletonInfo)).get();
 			model->SetSkeletonInfo(&skeletonInfo);
 			child = model;
 		}
 		else if (dynamic_cast<const MeshSystem::BoneNode*>(node->GetChild(i)))
 		{
-			BoneComponent* bone = new BoneComponent(gameHandle, node->GetChild(i)->GetName(), Transform(), tree.GetBoneMapping()->GetBoneID(node->GetChild(i)->GetName()));
+			BoneComponent* bone = new BoneComponent(comp->GetScene(), node->GetChild(i)->GetName(), Transform(), tree.GetBoneMapping()->GetBoneID(node->GetChild(i)->GetName()));
 			skeletonInfo.AddBone(*bone);
 			child = bone;
 		}
 		else
-			child = new Component(gameHandle, node->GetChild(i)->GetName(), Transform());
+			child = new Component(comp->GetScene(), node->GetChild(i)->GetName(), Transform());
 		comp->AddComponent(child);
-		LoadComponentsFromMeshTree(gameHandle, child, tree, node->GetChild(i), skeletonInfo, overrideMaterial);
+		LoadComponentsFromMeshTree(child, tree, node->GetChild(i), skeletonInfo, overrideMaterial);
 	}
 }
 
-void EngineDataLoader::LoadLevelFile(GameManager* gameHandle, std::string path)
+std::unique_ptr<GameScene> EngineDataLoader::LoadSceneFromFile(GameManager* gameHandle, std::string path)
 {
+	std::unique_ptr<GameScene> scene = std::make_unique<GameScene>(GameScene(gameHandle));
 	std::ifstream file(path);
 	std::stringstream filestr;
+
 	filestr << file.rdbuf();
 
 	std::string type;
@@ -719,16 +752,16 @@ void EngineDataLoader::LoadLevelFile(GameManager* gameHandle, std::string path)
 			if (isNextWordEqual(filestr, "child"))
 			{
 				std::string parentName = multipleWordInput(filestr);
-				parent = gameHandle->GetSearchEngine()->FindActor(parentName);
+				parent = scene->FindActor(parentName);
 
 				if (!parent)
 					std::cerr << "ERROR! Can't find actor " + parentName + ", parent of " + actorName + " will be assigned automatically.\n";
 			}
 
 			if (typeName == "GunActor")
-				currentActor = std::make_shared<GunActor>(gameHandle, actorName);
+				currentActor = std::make_shared<GunActor>(GunActor(scene.get(), actorName));
 			else if (typeName == "Actor")
-				currentActor = std::make_shared<Actor>(gameHandle, actorName);
+				currentActor = std::make_shared<Actor>(Actor(scene.get(), actorName));
 			else
 			{
 				std::cerr << "ERROR! Unrecognized actor type " << typeName << ".\n";
@@ -738,7 +771,7 @@ void EngineDataLoader::LoadLevelFile(GameManager* gameHandle, std::string path)
 			if (parent)
 				parent->AddChild(currentActor);
 			else
-				gameHandle->AddActorToScene(currentActor);
+				scene->AddActorToRoot(currentActor);
 		}
 
 		else if (type == "newcomp")
@@ -748,7 +781,7 @@ void EngineDataLoader::LoadLevelFile(GameManager* gameHandle, std::string path)
 				std::cerr << "ERROR! Component defined without an actor\n";
 				break;
 			}
-			LoadComponentData(gameHandle, filestr, currentActor.get());
+			LoadComponentData(gameHandle, filestr, currentActor.get(), scene.get());
 		}
 
 		else if (type == "newtree")
@@ -758,7 +791,7 @@ void EngineDataLoader::LoadLevelFile(GameManager* gameHandle, std::string path)
 			LoadCustomMeshTree(gameHandle, filestr, true);
 
 		else if (type == "newprobes")
-			LoadLightProbes(gameHandle, filestr);
+			LoadLightProbes(scene.get(), filestr);
 
 		else if (type == "materialsfile")
 		{
@@ -767,7 +800,7 @@ void EngineDataLoader::LoadLevelFile(GameManager* gameHandle, std::string path)
 
 			directory = extractDirectory(path);
 
-			LoadMaterials(gameHandle->GetRenderEngineHandle(), gameHandle->GetSearchEngine(), path, directory);
+			LoadMaterials(gameHandle->GetRenderEngineHandle(), path, directory);
 		}
 
 		else if (type == "actorinfo" && currentActor)
@@ -785,14 +818,16 @@ void EngineDataLoader::LoadLevelFile(GameManager* gameHandle, std::string path)
 		}
 	}
 	std::cout << "Level loading finished.\n";
+
+	return scene;
 }
 
-void EngineDataLoader::LoadModel(GameManager* gameHandle, std::string path, Component* comp, MeshTreeInstancingType type, Material* overrideMaterial)
+void EngineDataLoader::LoadModel(std::string path, Component* comp, MeshTreeInstancingType type, Material* overrideMaterial)
 {
-	InstantiateTree(gameHandle, comp, *LoadMeshTree(gameHandle, gameHandle->GetRenderEngineHandle(), gameHandle->GetSearchEngine(), path), type, overrideMaterial);
+	InstantiateTree(comp, *LoadMeshTree(comp->GetScene()->GetGameHandle(), comp->GetScene()->GetGameHandle()->GetRenderEngineHandle(), path), type, overrideMaterial);
 }
 
-MeshSystem::MeshTree* EngineDataLoader::LoadMeshTree(GameManager* gameHandle, RenderEngineManager* renderHandle, SearchEngine* searcher, std::string path, MeshSystem::MeshTree* treePtr)
+MeshSystem::MeshTree* EngineDataLoader::LoadMeshTree(GameManager* gameHandle, RenderEngineManager* renderHandle, std::string path, MeshSystem::MeshTree* treePtr)
 {
 	if (path.empty())
 	{
@@ -826,7 +861,7 @@ MeshSystem::MeshTree* EngineDataLoader::LoadMeshTree(GameManager* gameHandle, Re
 	std::vector<ModelComponent*> modelsPtr;
 
 	LoadMeshNodeFromAi(gameHandle, scene, directory, &matLoadingData, treePtr->GetRoot(), scene->mRootNode, *treePtr->GetBoneMapping());
-	treePtr->GetRoot().DebugPrint();
+
 	if (scene->mNumAnimations > 0)
 	{
 		treePtr->animation = std::make_shared<Animation>(Animation(scene->mAnimations[0]));
@@ -844,14 +879,14 @@ MeshSystem::MeshTree* EngineDataLoader::LoadMeshTree(GameManager* gameHandle, Re
 	return treePtr;
 }
 
-void EngineDataLoader::InstantiateTree(GameManager* gameHandle, Component* comp, MeshSystem::MeshTree& tree, MeshTreeInstancingType type, Material* overrideMaterial)
+void EngineDataLoader::InstantiateTree(Component* comp, MeshSystem::MeshTree& tree, MeshTreeInstancingType type, Material* overrideMaterial)
 {
 	switch (type)
 	{
 	case MeshTreeInstancingType::ROOTTREE:
 	{
-		SkeletonInfo& skelInfo = *gameHandle->GetRenderEngineHandle()->AddSkeletonInfo();
-		LoadComponentsFromMeshTree(gameHandle, comp, tree, &tree.GetRoot(), skelInfo, overrideMaterial);
+		SkeletonInfo& skelInfo = *comp->GetScene()->GetRenderData()->AddSkeletonInfo();
+		LoadComponentsFromMeshTree(comp, tree, &tree.GetRoot(), skelInfo, overrideMaterial);
 		skelInfo.SetGlobalInverseTransformPtr(&comp->GetTransform());
 		skelInfo.SortBones();
 		if (tree.animation)
@@ -927,6 +962,24 @@ std::shared_ptr<Font> EngineDataLoader::LoadFont(std::string path)
 	return font;
 }
 
+template <class T> const T& EngineDataLoader::LoadSettingsFromFile(std::string path)
+{
+	T settings;
+	std::fstream file;	//wczytaj plik inicjalizujacy
+	file.open(path);
+	std::stringstream filestr;
+	filestr << file.rdbuf();
+
+	std::string settingName;
+
+	while (filestr >> settingName)	//wczytuj kolejne wyrazy w pliku inicjalzujacym
+	{								//jesli napotkasz na wyraz, ktory sygnalizuje rodzaj danych to wczytaj te dane (sposob jest rozny w przypadku roznych danych)
+		settings.LoadSetting(filestr, settingName);
+	}
+
+	return settings;
+}
+
 aiBone* CastAiNodeToBone(const aiScene* scene, aiNode* node, const aiMesh** ownerMesh)
 {
 	std::string dupa = std::string(node->mName.C_Str());
@@ -958,3 +1011,5 @@ glm::mat4 toGlm(const aiMatrix4x4& aiMat)
 					 aiMat.a3, aiMat.b3, aiMat.c3, aiMat.d3,
 				 	 aiMat.a4, aiMat.b4, aiMat.c4, aiMat.d4);
 }
+
+template const GameSettings& EngineDataLoader::LoadSettingsFromFile<GameSettings>(std::string path);

@@ -6,15 +6,16 @@
 #include "LightProbe.h"
 #include "RenderableVolume.h"
 #include "Font.h"
+#include "Actor.h"
 #include <random> //DO WYJEBANIA
 
-RenderEngine::RenderEngine(GameManager* gameHandle, const ShadingModel& shading) :
+RenderEngine::RenderEngine(GameManager* gameHandle) :
 	GameHandle(gameHandle),
-	Shading(shading),
 	PreviousFrameView(glm::mat4(1.0f)),
 	BoundSkeletonBatch(nullptr),
 	BoundMesh(nullptr),
-	BoundMaterial(nullptr)
+	BoundMaterial(nullptr),
+	CurrentTbCollection(nullptr)
 {
 	//configure some openGL settings
 	glEnable(GL_DEPTH_TEST);
@@ -23,11 +24,8 @@ RenderEngine::RenderEngine(GameManager* gameHandle, const ShadingModel& shading)
 	glFrontFace(GL_CCW);
 	glCullFace(GL_BACK);
 
-
 	//generate engine's empty texture
 	EmptyTexture = std::make_shared<Texture>(textureFromBuffer(glm::value_ptr(glm::vec3(0.5f, 0.5f, 1.0f)), 1, 1, GL_RGB, GL_RGB, GL_UNSIGNED_BYTE, GL_NEAREST, GL_NEAREST));
-
-	LightProbeLoader::RenderHandle = this;
 }
 
 void RenderEngine::Init(glm::uvec2 resolution)
@@ -52,13 +50,16 @@ void RenderEngine::Init(glm::uvec2 resolution)
 	for (int i = 0; i < 6; i++)
 		CubemapData.DefaultVP[i] = cubemapProj * CubemapData.DefaultV[i];
 
-	if (LightProbes.empty())
+	for (int i = 0; i < static_cast<int>(ScenesRenderData.size()); i++)
 	{
-		LightProbeLoader::LoadLightProbeTextureArrays();
-		LightProbeTextureArrays::IrradianceMapArr.Bind(12);
-		LightProbeTextureArrays::PrefilterMapArr.Bind(13);
-		LightProbeTextureArrays::BRDFLut.Bind(14);
-		glActiveTexture(GL_TEXTURE0);
+		if (ScenesRenderData[i]->LightProbes.empty() && GameHandle->GetGameSettings()->Video.Shading == ShadingModel::SHADING_PBR_COOK_TORRANCE)
+		{
+			LightProbeLoader::LoadLightProbeTextureArrays(ScenesRenderData[i]);
+			ScenesRenderData[i]->ProbeTexArrays->IrradianceMapArr.Bind(12);
+			ScenesRenderData[i]->ProbeTexArrays->PrefilterMapArr.Bind(13);
+			ScenesRenderData[i]->ProbeTexArrays->BRDFLut.Bind(14);
+			glActiveTexture(GL_TEXTURE0);
+		}
 	}
 }
 
@@ -166,37 +167,13 @@ void RenderEngine::GenerateEngineObjects()
 
 	CreateMeshTree("ENG_CUBE")->GetRoot().AddChild<MeshSystem::MeshNode>("Cube")->AddMesh("Cube").LoadFromGLBuffers(36, cubeVAO, cubeVBO);
 	CreateMeshTree("ENG_QUAD")->GetRoot().AddChild<MeshSystem::MeshNode>("Quad")->AddMesh("Quad_NoShadow").LoadFromGLBuffers(6, quadVAO, quadVBO, quadEBO);
-	EngineDataLoader::LoadMeshTree(GameHandle, this, GameHandle->GetSearchEngine(), "EngineObjects/sphere.obj", CreateMeshTree("ENG_SPHERE"))->FindMesh("Sphere");
-	EngineDataLoader::LoadMeshTree(GameHandle, this, GameHandle->GetSearchEngine(), "EngineObjects/cone.obj", CreateMeshTree("ENG_CONE"))->FindMesh("Cone");
+	EngineDataLoader::LoadMeshTree(GameHandle, this, "EngineObjects/sphere.obj", CreateMeshTree("ENG_SPHERE"))->FindMesh("Sphere");
+	EngineDataLoader::LoadMeshTree(GameHandle, this, "EngineObjects/cone.obj", CreateMeshTree("ENG_CONE"))->FindMesh("Cone");
 }
 
 void RenderEngine::LoadInternalShaders()
 {
-	std::string settingsDefines = GameHandle->GetGameSettings()->GetShaderDefines(Resolution);
-	switch (Shading)
-	{
-	case ShadingModel::SHADING_PHONG: settingsDefines += "#define PHONG_SHADING 1\n"; break;
-	case ShadingModel::SHADING_PBR_COOK_TORRANCE: settingsDefines += "#define PBR_SHADING 1\n"; break;
-	}
-	std::vector<std::pair<unsigned int, std::string>> gShaderTextureUnits = {
-		std::pair<unsigned int, std::string>(0, "albedo1"),
-		std::pair<unsigned int, std::string>(1, "specular1"),
-		std::pair<unsigned int, std::string>(2, "normal1"),
-		std::pair<unsigned int, std::string>(3, "depth1")
-	};
-	if (Shading == ShadingModel::SHADING_PBR_COOK_TORRANCE)
-	{
-		std::vector<std::pair<unsigned int, std::string>> pbrTextures = {
-			std::pair<unsigned int, std::string>(4, "roughness1"),
-			std::pair<unsigned int, std::string>(5, "metallic1"),
-			std::pair<unsigned int, std::string>(6, "ao1") };
-		gShaderTextureUnits.insert(gShaderTextureUnits.begin(), pbrTextures.begin(), pbrTextures.end());
-	}
-	
-	Shaders.push_back(ShaderLoader::LoadShadersWithInclData("Geometry", settingsDefines, "Shaders/geometry.vs", "Shaders/geometry.fs"));
-	Shaders.back()->UniformBlockBinding("BoneMatrices", 2);
-	Shaders.back()->SetTextureUnitNames(gShaderTextureUnits);
-	Shaders.back()->SetExpectedMatrices(std::vector<MatrixType>{MatrixType::MODEL, MatrixType::MVP, MatrixType::NORMAL});
+	std::string settingsDefines = GameHandle->GetGameSettings()->Video.GetShaderDefines(Resolution);
 
 	//load the default shader
 	std::vector<std::pair<unsigned int, std::string>> defaultShaderTextureUnits = {
@@ -205,20 +182,13 @@ void RenderEngine::LoadInternalShaders()
 		std::pair<unsigned int, std::string>(2, "normal1"),
 		std::pair<unsigned int, std::string>(3, "depth1")
 	};
-
-	Shaders.push_back(ShaderLoader::LoadShaders("Default", "Shaders/default.vs", "Shaders/default.fs"));
-	Shaders.back()->UniformBlockBinding("Matrices", 0);
-	Shaders.back()->UniformBlockBinding("Lights", 1);
-	Shaders.back()->SetExpectedMatrices(std::vector<MatrixType>{MatrixType::MODEL, MatrixType::MVP, MatrixType::NORMAL});
-	Shaders.back()->SetTextureUnitNames(defaultShaderTextureUnits);
-	Shaders.back()->Uniform1i("shadowMaps", 10);
-	Shaders.back()->Uniform1i("shadowCubeMaps", 11);
-
 	//load shadow shaders
 	Shaders.push_back(ShaderLoader::LoadShaders("Depth", "Shaders/depth.vs", "Shaders/depth.fs"));
 	Shaders.back()->SetExpectedMatrices(std::vector<MatrixType>{MatrixType::MVP});
+	Shaders.back()->UniformBlockBinding("BoneMatrices", 2);
 	Shaders.push_back(ShaderLoader::LoadShaders("DepthLinearize", "Shaders/depth_linearize.vs", "Shaders/depth_linearize.fs"));
 	Shaders.back()->SetExpectedMatrices(std::vector<MatrixType>{MatrixType::MODEL, MatrixType::MVP});
+	Shaders.back()->UniformBlockBinding("BoneMatrices", 2);
 
 	Shaders.push_back(ShaderLoader::LoadShaders("ErToCubemap", "Shaders/LightProbe/erToCubemap.vs", "Shaders/LightProbe/erToCubemap.fs"));
 	Shaders.back()->SetExpectedMatrices(std::vector<MatrixType>{MatrixType::VP});
@@ -237,82 +207,17 @@ void RenderEngine::LoadInternalShaders()
 	//load debug shaders
 	Shaders.push_back(ShaderLoader::LoadShaders("Debug", "Shaders/debug.vs", "Shaders/debug.fs"));
 	Shaders.back()->SetExpectedMatrices(std::vector<MatrixType>{MatrixType::MVP});
-
-	std::vector<std::string> lightShadersNames;
-	std::vector<std::string> lightShadersDefines;
-	std::pair<std::string, std::string> lightShadersPath;
-	switch (Shading)
-	{
-	case ShadingModel::SHADING_PHONG:
-		lightShadersNames = { "PhongDirectional", "PhongPoint", "PhongSpot" };
-		lightShadersDefines = { "#define DIRECTIONAL_LIGHT 1\n", "#define POINT_LIGHT 1\n", "#define SPOT_LIGHT 1\n" };
-		lightShadersPath = std::pair<std::string, std::string>("Shaders/phong.vs", "Shaders/phong.fs");
-		break;
-	case ShadingModel::SHADING_PBR_COOK_TORRANCE:
-		lightShadersNames = { "CookTorranceDirectional", "CookTorrancePoint", "CookTorranceSpot", "CookTorranceIBL" };
-		lightShadersDefines = { "#define DIRECTIONAL_LIGHT 1\n", "#define POINT_LIGHT 1\n", "#define SPOT_LIGHT 1\n", "#define IBL_PASS 1\n" };
-		lightShadersPath = std::pair<std::string, std::string>("Shaders/pbrCookTorrance.vs", "Shaders/pbrCookTorrance.fs");
-		break;
-	}
-
-	std::cout << settingsDefines << '\n';
-
-	for (int i = 0; i < static_cast<int>(lightShadersNames.size()); i++)
-	{
-		Shaders.push_back(ShaderLoader::LoadShadersWithInclData(lightShadersNames[i], settingsDefines + lightShadersDefines[i], lightShadersPath.first, lightShadersPath.second));
-		LightShaders.push_back(Shaders.back().get());
-		Shaders.back()->UniformBlockBinding("Lights", 1);
-		Shaders.back()->Use();
-		Shaders.back()->Uniform1i("gPosition", 0);
-		Shaders.back()->Uniform1i("gNormal", 1);
-		Shaders.back()->Uniform1i("gAlbedoSpec", 2);
-		Shaders.back()->Uniform1i("gAlphaMetalAo", 3);
-		if (GameHandle->GetGameSettings()->AmbientOcclusionSamples > 0)
-			Shaders.back()->Uniform1i("ssaoTex", 4);
-
-		Shaders.back()->Uniform1i("shadowMaps", 10);
-		Shaders.back()->Uniform1i("shadowCubemaps", 11);
-		Shaders.back()->Uniform1i("irradianceCubemaps", 12);
-		Shaders.back()->Uniform1i("prefilterCubemaps", 13);
-		Shaders.back()->Uniform1i("BRDFLutTex", 14);
-
-		Shaders.back()->Uniform1f("lightProbeNr", 3.0f);
-
-		if (i == (int)LightType::POINT || i == (int)LightType::SPOT || lightShadersNames[i] == "CookTorranceIBL")
-			Shaders.back()->SetExpectedMatrices(std::vector<MatrixType>{MatrixType::VIEW, MatrixType::MVP});
-	}
 }
 
 void RenderEngine::Resize(glm::uvec2 resolution)
 {
 	Resolution = resolution;
 	const GameSettings* settings = GameHandle->GetGameSettings();
-	std::shared_ptr<GEE_FB::FramebufferAttachment> sharedDepthStencil = GEE_FB::reserveDepthBuffer(Resolution, GL_DEPTH24_STENCIL8, GL_UNSIGNED_INT_24_8, GL_NEAREST, GL_NEAREST);	//we share this buffer between the geometry and main framebuffer - we want deferred-rendered objects depth to influence light volumes&forward rendered objects
-	std::shared_ptr<GEE_FB::FramebufferAttachment> velocityBuffer = GEE_FB::reserveColorBuffer(Resolution, GL_RGB16F, GL_FLOAT, GL_NEAREST, GL_NEAREST, GL_TEXTURE_2D, 0, "velocityTex");
-	std::vector<std::shared_ptr<GEE_FB::FramebufferAttachment>> gColorBuffers = {
-		GEE_FB::reserveColorBuffer(Resolution, GL_RGB16F, GL_FLOAT, GL_NEAREST, GL_NEAREST, GL_TEXTURE_2D, 0, "gPosition"),			//gPosition texture
-		GEE_FB::reserveColorBuffer(Resolution, GL_RGB16F, GL_FLOAT, GL_NEAREST, GL_NEAREST, GL_TEXTURE_2D, 0, "gNormal"),				//gNormal texture
-		GEE_FB::reserveColorBuffer(Resolution, GL_RGBA, GL_UNSIGNED_BYTE, GL_NEAREST, GL_NEAREST, GL_TEXTURE_2D, 0, "gAlbedoSpec")	//gAlbedoSpec texture
-	};
-
-	if (Shading == SHADING_PBR_COOK_TORRANCE)
-		gColorBuffers.push_back(GEE_FB::reserveColorBuffer(Resolution, GL_RGB, GL_UNSIGNED_BYTE, GL_NEAREST, GL_NEAREST, GL_TEXTURE_2D, 0, "gAlphaMetalAo")); //alpha, metallic, ao texture
-	if (settings->IsVelocityBufferNeeded())
-		gColorBuffers.push_back(velocityBuffer);
-
-	GFramebuffer.SetAttachments(Resolution, gColorBuffers, sharedDepthStencil);
-
-	std::vector<std::shared_ptr<GEE_FB::FramebufferAttachment>> colorBuffers;
-	colorBuffers.push_back(GEE_FB::reserveColorBuffer(Resolution, GL_RGBA16F, GL_FLOAT, GL_LINEAR, GL_LINEAR));	//add color buffer
-	if (settings->bBloom)
-		colorBuffers.push_back(GEE_FB::reserveColorBuffer(Resolution, GL_RGBA16F, GL_FLOAT, GL_LINEAR, GL_LINEAR));	//add blur buffer
-	if (settings->IsVelocityBufferNeeded())
-		colorBuffers.push_back(velocityBuffer);
-	MainFramebuffer.SetAttachments(Resolution, colorBuffers, sharedDepthStencil);	//color and blur buffers
 }
 
 void RenderEngine::SetupShadowmaps()
 {
+	/*
 	glm::uvec2 shadowMapSize(512);
 	switch (GameHandle->GetGameSettings()->ShadowLevel)
 	{
@@ -339,7 +244,12 @@ void RenderEngine::SetupShadowmaps()
 	ShadowCubemapArray->Bind();
 	glTexImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 0, GL_DEPTH_COMPONENT, shadowMapSize.x, shadowMapSize.y, 16 * 6, 0, GL_DEPTH_COMPONENT, GL_FLOAT, (void*)(nullptr));
 	glTexParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);*/
+}
+
+const ShadingModel& RenderEngine::GetShadingModel()
+{
+	return GameHandle->GetGameSettings()->Video.Shading;
 }
 
 const std::shared_ptr<Mesh> RenderEngine::GetBasicShapeMesh(EngineBasicShape type)
@@ -360,46 +270,31 @@ const std::shared_ptr<Mesh> RenderEngine::GetBasicShapeMesh(EngineBasicShape typ
 	return nullptr;
 }
 
-int RenderEngine::GetAvailableLightIndex()
+Shader* RenderEngine::GetLightShader(const RenderToolboxCollection& renderCol, LightType type)
 {
-	return LightData.GetAvailableLightIndex();
+	return renderCol.GetTb<DeferredShadingToolbox>()->LightShaders[static_cast<unsigned int>(type)];
 }
 
-Shader* RenderEngine::GetLightShader(LightType type)
+RenderToolboxCollection* RenderEngine::GetCurrentTbCollection()
 {
-	return LightShaders[static_cast<unsigned int>(type)];
+	return CurrentTbCollection;
 }
 
-
-std::shared_ptr<RenderableComponent> RenderEngine::AddRenderable(std::shared_ptr<RenderableComponent> renderable)
+RenderToolboxCollection& RenderEngine::AddRenderTbCollection(const RenderToolboxCollection& tbCollection, bool setupToolboxesAccordingToSettings)
 {
-	Renderables.push_back(renderable);
-	return Renderables.back();
+	RenderTbCollections.push_back(std::make_unique<RenderToolboxCollection>(tbCollection));
+	if (setupToolboxesAccordingToSettings)
+		RenderTbCollections.back()->AddTbsRequiredBySettings();
+
+	CurrentTbCollection = RenderTbCollections.back().get();
+
+	return *RenderTbCollections.back();
 }
 
-std::shared_ptr<LightProbe> RenderEngine::AddLightProbe(std::shared_ptr<LightProbe> probe)
+void RenderEngine::AddSceneRenderDataPtr(GameSceneRenderData* sceneRenderData)
 {
-	LightProbes.push_back(probe);
-	return LightProbes.back();
+	ScenesRenderData.push_back(sceneRenderData);
 }
-
-std::shared_ptr<LightComponent> RenderEngine::AddLight(std::shared_ptr<LightComponent> light)
-{
-	LightData.AddLight(light);
-	return light;
-}
-
-std::shared_ptr<SkeletonInfo> RenderEngine::AddSkeletonInfo()
-{
-	std::shared_ptr<SkeletonInfo> info = std::make_shared<SkeletonInfo>(SkeletonInfo());
-	if (SkeletonBatches.empty() || !SkeletonBatches.back()->AddSkeleton(info))
-	{
-		SkeletonBatches.push_back(std::make_shared<SkeletonBatch>());
-		SkeletonBatches.back()->AddSkeleton(info);
-	}
-	return info;
-}
-
 MeshSystem::MeshTree* RenderEngine::CreateMeshTree(std::string path)
 {
 	MeshTrees.push_back(std::make_unique<MeshSystem::MeshTree>(MeshSystem::MeshTree(path)));
@@ -440,24 +335,13 @@ void RenderEngine::BindSkeletonBatch(SkeletonBatch* batch)
 	BoundSkeletonBatch = batch;
 }
 
-void RenderEngine::BindSkeletonBatch(unsigned int index)
+void RenderEngine::BindSkeletonBatch(GameSceneRenderData* sceneRenderData, unsigned int index)
 {
-	if (index >= SkeletonBatches.size())
+	if (index >= sceneRenderData->SkeletonBatches.size())
 		return;
 
-	SkeletonBatches[index]->BindToUBO();
-	BoundSkeletonBatch = SkeletonBatches[index].get();
-}
-
-RenderableComponent* RenderEngine::FindRenderable(std::string name)
-{
-	auto renderableIt = std::find_if(Renderables.begin(), Renderables.end(), [name](std::shared_ptr<RenderableComponent>& renderable) { return renderable->GetName() == name; });
-
-	if (renderableIt != Renderables.end())
-		return renderableIt->get();
-
-	std::cerr << "ERROR! Can't find model " << name << "!\n";
-	return nullptr;
+	sceneRenderData->SkeletonBatches[index]->BindToUBO();
+	BoundSkeletonBatch = sceneRenderData->SkeletonBatches[index].get();
 }
 
 Material* RenderEngine::FindMaterial(std::string name)
@@ -494,32 +378,10 @@ Shader* RenderEngine::FindShader(std::string name)
 	return nullptr;
 }
 
-void RenderEngine::RenderBoundInDebug(RenderInfo& info, GLenum mode, GLint first, GLint count, glm::vec3 color)
+void RenderEngine::RenderShadowMaps(RenderToolboxCollection& tbCollection, GameSceneRenderData* sceneRenderData, std::vector <std::shared_ptr<LightComponent>> lights)
 {
-	Shader* debugShader = FindShader("Debug");
-	debugShader->Use();
-	debugShader->UniformMatrix4fv("MVP", *info.VP);
-	debugShader->Uniform3fv("color", color);
-	glDrawArrays(mode, first, count);
-}
-
-void RenderEngine::PreRenderPass()
-{
-	LightData.SetupLights();
-	RenderLightProbes();
-	LightShaders[3]->Use();
-	for (int i = 0; i < static_cast<int>(LightProbes.size()); i++)
-	{
-		LocalLightProbe* localProbeCast = dynamic_cast<LocalLightProbe*>(LightProbes[i].get());
-		if (!localProbeCast)
-			continue;
-		LightShaders[3]->Uniform3fv("lightProbePositions[" + std::to_string(i) + "]", localProbeCast->ProbeTransform.PositionRef);
-	}
-}
-
-void RenderEngine::RenderShadowMaps(std::vector <std::shared_ptr<LightComponent>> lights)
-{
-	ShadowFramebuffer.Bind(true);
+	ShadowMappingToolbox* shadowsTb = tbCollection.GetTb<ShadowMappingToolbox>();
+	shadowsTb->ShadowFramebuffer->Bind(true);
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_FRONT);
@@ -529,8 +391,10 @@ void RenderEngine::RenderShadowMaps(std::vector <std::shared_ptr<LightComponent>
 	float timeSum = 0.0f;
 	float time1;
 
-	ShadowMapArray->Bind(10);
-	ShadowCubemapArray->Bind(11);
+	shadowsTb->ShadowMapArray->Bind(10);
+	shadowsTb->ShadowCubemapArray->Bind(11);
+
+	BindSkeletonBatch(sceneRenderData, static_cast<unsigned int>(0));
 
 	for (unsigned int i = 0; i < lights.size(); i++)
 	{
@@ -556,9 +420,9 @@ void RenderEngine::RenderShadowMaps(std::vector <std::shared_ptr<LightComponent>
 			timeSum += (float)glfwGetTime() - time1;
 			
 			
-			RenderInfo info(&viewTranslation, &projection, nullptr, false, true, false);
-			ShadowFramebuffer.DepthBuffer = std::make_shared<GEE_FB::FramebufferAttachment>(*ShadowCubemapArray, GL_DEPTH_ATTACHMENT);
-			RenderCubemapFromScene(info, ShadowFramebuffer, *ShadowFramebuffer.DepthBuffer.get(), GL_DEPTH_ATTACHMENT, FindShader("DepthLinearize"), &cubemapFirst);
+			RenderInfo info(tbCollection, viewTranslation, projection, glm::mat4(1.0f), glm::vec3(0.0f), false, true, false);
+			shadowsTb->ShadowFramebuffer->DepthBuffer = std::make_shared<GEE_FB::FramebufferAttachment>(*shadowsTb->ShadowCubemapArray, GL_DEPTH_ATTACHMENT);
+			RenderCubemapFromScene(info, sceneRenderData, *shadowsTb->ShadowFramebuffer, *shadowsTb->ShadowFramebuffer->DepthBuffer, GL_DEPTH_ATTACHMENT, FindShader("DepthLinearize"), &cubemapFirst);
 		}
 		else
 		{
@@ -569,14 +433,16 @@ void RenderEngine::RenderShadowMaps(std::vector <std::shared_ptr<LightComponent>
 				bCubemapBound = false;
 			}
 
-			glm::mat4 VP = light->GetVP();
+			glm::mat4 view = light->GetTransform().GetWorldTransform().GetViewMatrix();
+			glm::mat4 projection = light->GetProjection();
+			glm::mat4 VP = projection * view;
 
 			timeSum += (float)glfwGetTime() - time1;
-			glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, ShadowMapArray->GetID(), 0, light->GetShadowMapNr());
+			glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, shadowsTb->ShadowMapArray->GetID(), 0, light->GetShadowMapNr());
 			glClear(GL_DEPTH_BUFFER_BIT);
 			
-			RenderInfo info(nullptr, nullptr, &VP, false, true, false);
-			RenderScene(info, FindShader("Depth"));
+			RenderInfo info(tbCollection, view, projection, VP, glm::vec3(0.0f), false, true, false);
+			RenderRawScene(info, sceneRenderData, FindShader("Depth"));
 		}
 	}
 
@@ -594,7 +460,7 @@ void RenderEngine::RenderVolume(RenderInfo& info, EngineBasicShape shape, Shader
 	shader.Use();
 	BoundMaterial = nullptr;
 	BoundMesh = nullptr;
-	Render(info, GetBasicShapeMesh(shape), (transform) ? (*transform) : (Transform()), &shader);
+	RenderStaticMesh(info, GetBasicShapeMesh(shape).get(), (transform) ? (*transform) : (Transform()), &shader);
 
 	if (shape == EngineBasicShape::QUAD)
 		glEnable(GL_CULL_FACE);
@@ -604,9 +470,9 @@ void RenderEngine::RenderVolume(RenderInfo& info, RenderableVolume* volume, Shad
 {
 	if (shadedRender)
 	{
-		if (boundShader != volume->GetRenderShader())
+		if (boundShader != volume->GetRenderShader(info.TbCollection))
 		{
-			boundShader = volume->GetRenderShader();
+			boundShader = volume->GetRenderShader(info.TbCollection);
 			boundShader->Use();
 		}
 
@@ -665,7 +531,7 @@ void RenderEngine::RenderVolumes(RenderInfo& info, const GEE_FB::Framebuffer& fr
 		glDisable(GL_CULL_FACE);
 		glDisable(GL_STENCIL_TEST);
 		FindShader("CookTorranceIBL")->Use();
-		Render(info, GetBasicShapeMesh(EngineBasicShape::QUAD), Transform(), FindShader("CookTorranceIBL"));
+		RenderStaticMesh(info, GetBasicShapeMesh(EngineBasicShape::QUAD).get(), Transform(), FindShader("CookTorranceIBL"));
 	}
 
 	glDisable(GL_BLEND);
@@ -677,11 +543,29 @@ void RenderEngine::RenderVolumes(RenderInfo& info, const GEE_FB::Framebuffer& fr
 	glDisable(GL_STENCIL_TEST);
 }
 
-void RenderEngine::RenderLightProbes()
+void RenderEngine::RenderLightProbes(GameSceneRenderData* sceneRenderData)
 {
+	if (sceneRenderData->LightProbes.empty())
+		return;
+
+	GameSettings::VideoSettings settings;
+	settings.AAType = AA_SMAA1X;
+	settings.AALevel = SettingLevel::SETTING_ULTRA;
+	settings.bBloom = true;
+	settings.AmbientOcclusionSamples = 64;
+	settings.POMLevel = SettingLevel::SETTING_ULTRA;
+	settings.ShadowLevel = SettingLevel::SETTING_ULTRA;
+	settings.Resolution = glm::uvec2(1024);
+	settings.Shading = ShadingModel::SHADING_PBR_COOK_TORRANCE;
+
 	std::cout << "Initting.\n";
-	Dispose();
-	Init(glm::uvec2(1024));
+	//Dispose();
+	//Init(glm::uvec2(1024));
+
+	RenderToolboxCollection probeRenderingCollection("LightProbeRendering", settings);
+	CurrentTbCollection = &probeRenderingCollection;
+	CurrentTbCollection->AddTbsRequiredBySettings();
+
 
 	//RenderInfo info;
 
@@ -693,35 +577,42 @@ void RenderEngine::RenderLightProbes()
 	framebuffer.SetAttachments(glm::uvec2(1024), GEE_FB::FramebufferAttachment(), nullptr);
 	framebuffer.Bind(true);
 
-	for (int i = 0; i < static_cast<int>(LightProbes.size()); i++)
+	Shader* gShader = probeRenderingCollection.GetTb<DeferredShadingToolbox>()->GeometryShader;
+
+	PrepareScene(probeRenderingCollection, sceneRenderData);
+
+	for (int i = 0; i < static_cast<int>(sceneRenderData->LightProbes.size()); i++)
 	{
-		LocalLightProbe* localProbeCast = dynamic_cast<LocalLightProbe*>(LightProbes[i].get());
+		LocalLightProbe* localProbeCast = dynamic_cast<LocalLightProbe*>(sceneRenderData->LightProbes[i].get());
 		if (!localProbeCast)
 			continue;
 		glm::vec3 camPos = localProbeCast->ProbeTransform.PositionRef;
 		glm::mat4 viewTranslation = glm::translate(glm::mat4(1.0f), -camPos);
 		glm::mat4 p = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 100.0f);
 
-		RenderInfo info;
-		info.view = &viewTranslation;
-		info.projection = &p;
-		info.camPos = &camPos;
-		FindShader("Geometry")->Use();
-		RenderCubemapFromScene(info, framebuffer, GEE_FB::FramebufferAttachment(LightProbes[i]->EnvironmentMap), GL_COLOR_ATTACHMENT0, FindShader("Geometry"), 0, true);
+		RenderInfo info(probeRenderingCollection);
+		info.view = viewTranslation;
+		info.projection = p;
+		info.camPos = camPos;
+		gShader->Use();
+		RenderCubemapFromScene(info, sceneRenderData, framebuffer, GEE_FB::FramebufferAttachment(sceneRenderData->LightProbes[i]->EnvironmentMap), GL_COLOR_ATTACHMENT0, gShader, 0, true);
 		
-		LightProbes[i]->EnvironmentMap.Bind();
+		sceneRenderData->LightProbes[i]->EnvironmentMap.Bind();
 		glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
 ;
-		LightProbeLoader::ConvoluteLightProbe(*LightProbes[i], &LightProbes[i]->EnvironmentMap); 
+		LightProbeLoader::ConvoluteLightProbe(sceneRenderData, *sceneRenderData->LightProbes[i], &sceneRenderData->LightProbes[i]->EnvironmentMap); 
 		if (PrimitiveDebugger::bDebugProbeLoading)
 			printVector(camPos, "Rendering probe");
 	}
 
-	Dispose();
-	Init(GameHandle->GetGameSettings()->WindowSize);
+	//Dispose();
+
+	//Init(glm::uvec2(GameHandle->GetGameSettings()->ViewportData.z, GameHandle->GetGameSettings()->ViewportData.w));
+	CurrentTbCollection = RenderTbCollections[0].get();
+	probeRenderingCollection.Dispose();
 }
 
-void RenderEngine::RenderScene(RenderInfo& info, Shader* shader)
+void RenderEngine::RenderRawScene(RenderInfo& info, GameSceneRenderData* sceneRenderData, Shader* shader)
 {
 	if (!shader)
 		shader = FindShader("Default");
@@ -730,85 +621,139 @@ void RenderEngine::RenderScene(RenderInfo& info, Shader* shader)
 	BoundMesh = nullptr;
 	BoundMaterial = nullptr;
 
-	for (unsigned int i = 0; i < Renderables.size(); i++)
+	for (unsigned int i = 0; i < sceneRenderData->Renderables.size(); i++)
 	{
-		Renderables[i]->Render(info, shader);
+		sceneRenderData->Renderables[i]->Render(info, shader);
 	}
 }
 
-void RenderEngine::FullRender(RenderInfo& info, GEE_FB::Framebuffer* framebuffer)
+void RenderEngine::RenderBoundInDebug(RenderInfo& info, GLenum mode, GLint first, GLint count, glm::vec3 color)
 {
-	const GameSettings* settings = GameHandle->GetGameSettings();
-	bool DebugMode = false;
-	bool DUPA = false;
-	glm::mat4 currentFrameView = *info.view;
-	info.previousFrameView = &PreviousFrameView;
+	Shader* debugShader = FindShader("Debug");
+	debugShader->Use();
+	debugShader->UniformMatrix4fv("MVP", info.VP);
+	debugShader->Uniform3fv("color", color);
+	glDrawArrays(mode, first, count);
+}
 
-	////////////////////1. Shadow maps pass
-	if (1 || (settings->ShadowLevel > SettingLevel::SETTING_MEDIUM))
+void RenderEngine::PreLoopPass()
+{
+	for (int sceneIndex = 0; sceneIndex < static_cast<int>(ScenesRenderData.size()); sceneIndex++)
 	{
-		RenderShadowMaps(LightData.Lights);
-		DUPA = true;
+		ScenesRenderData[sceneIndex]->SetupLights(sceneIndex);
+		RenderLightProbes(ScenesRenderData[sceneIndex]);
 	}
+}
 
-	LightData.LightsBuffer.SubData4fv(*info.camPos, 16);
+void RenderEngine::PrepareScene(RenderToolboxCollection& tbCollection, GameSceneRenderData* sceneRenderData)
+{
+	if (sceneRenderData->ContainsLights() && (1 || (GameHandle->GetGameSettings()->Video.ShadowLevel > SettingLevel::SETTING_MEDIUM)))
+		RenderShadowMaps(tbCollection, sceneRenderData, sceneRenderData->Lights);
+}
+
+void RenderEngine::FullSceneRender(RenderInfo& info, GameSceneRenderData* sceneRenderData, GEE_FB::Framebuffer* framebuffer, Viewport viewport)
+{
+	const GameSettings::VideoSettings& settings = info.TbCollection.Settings;
+	bool debugPhysics = false;
+	bool debugComponents = true;
+	bool useLightingAlgorithms = sceneRenderData->ContainsLights();
+	glm::mat4 currentFrameView = info.view;
+	info.previousFrameView = PreviousFrameView;
+
+	const GEE_FB::Framebuffer& target = ((framebuffer) ? (*framebuffer) : (GEE_FB::getDefaultFramebuffer(GameHandle->GetGameSettings()->WindowSize)));
+	if (viewport.GetSize() == glm::uvec2(0))
+		viewport = Viewport(glm::uvec2(0), target.GetSize());
+
+	sceneRenderData->LightsBuffer.SubData4fv(info.camPos, 16);
+
+	MainFramebufferToolbox* mainTb = info.TbCollection.GetTb<MainFramebufferToolbox>();
+	GEE_FB::Framebuffer& MainFramebuffer = *mainTb->MainFb;
 
 	////////////////////2. Geometry pass
-	GFramebuffer.Bind(true);
-	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_CULL_FACE);
-	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	info.MainPass = true;
-	info.CareAboutShader = true;
-
-
-	if (DebugMode)
-		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-
-	Shader* gShader = FindShader("Geometry");
-	gShader->Use();
-	gShader->Uniform3fv("camPos", *info.camPos);
-
-	RenderScene(info, gShader);
-	info.MainPass = false;
-	info.CareAboutShader = false;
-
-
-	if (DebugMode)
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-
-	////////////////////2.5 SSAO pass
-
-	const Texture* SSAOtex = nullptr;
-	if (settings->AmbientOcclusionSamples > 0)
-		SSAOtex = Postprocessing.SSAOPass(info, GFramebuffer.GetColorBuffer(0).get(), GFramebuffer.GetColorBuffer(1).get());	//pass gPosition and gNormal
-
-	////////////////////3. Lighting pass
-	LightData.UpdateLightUniforms();
-	MainFramebuffer.Bind();
-
-	glClearBufferfv(GL_COLOR, 0, glm::value_ptr(glm::vec3(0.0f, 0.0f, 0.0f)));
-	glClearBufferfv(GL_COLOR, 1, glm::value_ptr(glm::vec3(0.0f)));
-
-	for (int i = 0; i < 4; i++)
+	if (useLightingAlgorithms)
 	{
-		GFramebuffer.GetColorBuffer(i)->Bind(i);
+		DeferredShadingToolbox* deferredTb = info.TbCollection.GetTb<DeferredShadingToolbox>();
+		GEE_FB::Framebuffer& GFramebuffer = *deferredTb->GFb;
+
+		GFramebuffer.Bind(true);
+		glEnable(GL_DEPTH_TEST);
+		glEnable(GL_CULL_FACE);
+		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		info.MainPass = true;
+		info.CareAboutShader = true;
+
+
+		if (debugPhysics)
+			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
+		Shader* gShader = deferredTb->GeometryShader;
+		gShader->Use();
+		gShader->Uniform3fv("camPos", info.camPos);
+
+		RenderRawScene(info, sceneRenderData, gShader);
+		info.MainPass = false;
+		info.CareAboutShader = false;  
+
+
+		if (debugPhysics)
+			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+		////////////////////2.5 SSAO pass
+		const Texture* SSAOtex = nullptr;
+		if (settings.AmbientOcclusionSamples > 0)
+			SSAOtex = Postprocessing.SSAOPass(info, GFramebuffer.GetColorBuffer(0).get(), GFramebuffer.GetColorBuffer(1).get());	//pass gPosition and gNormal
+		
+		////////////////////3. Lighting pass
+		for (int i = 0; i < static_cast<int>(deferredTb->LightShaders.size()); i++)
+			deferredTb->LightShaders[i]->UniformBlockBinding("Lights", sceneRenderData->LightsBuffer.BlockBindingSlot);
+		sceneRenderData->UpdateLightUniforms();
+		MainFramebuffer.Bind();
+
+		glClearBufferfv(GL_COLOR, 0, glm::value_ptr(glm::vec3(0.0f, 0.0f, 0.0f)));
+		glClearBufferfv(GL_COLOR, 1, glm::value_ptr(glm::vec3(0.0f)));
+
+		for (int i = 0; i < 4; i++)
+		{
+			GFramebuffer.GetColorBuffer(i)->Bind(i);
+		}
+
+		if (SSAOtex)
+			SSAOtex->Bind(4);
+		std::vector<std::unique_ptr<RenderableVolume>> volumes;
+		volumes.resize(sceneRenderData->Lights.size());
+		std::transform(sceneRenderData->Lights.begin(), sceneRenderData->Lights.end(), volumes.begin(), [](const std::shared_ptr<LightComponent>& light) {return std::make_unique<LightVolume>(LightVolume(*light.get())); });
+		RenderVolumes(info, MainFramebuffer, volumes, false);// Shading == ShadingModel::SHADING_PBR_COOK_TORRANCE);
+
+		info.TbCollection.FindShader("CookTorranceIBL")->Use();
+		for (int i = 0; i < static_cast<int>(sceneRenderData->LightProbes.size()); i++)
+		{
+			LocalLightProbe* localProbeCast = dynamic_cast<LocalLightProbe*>(sceneRenderData->LightProbes[i].get());
+			if (!localProbeCast)
+				continue;
+
+			info.TbCollection.FindShader("CookTorranceIBL")->Uniform3fv("lightProbePositions[" + std::to_string(i) + "]", localProbeCast->ProbeTransform.PositionRef);
+		}
+
+		std::vector<std::unique_ptr<RenderableVolume>> probeVolumes;
+		probeVolumes.resize(sceneRenderData->LightProbes.size());
+		std::transform(sceneRenderData->LightProbes.begin(), sceneRenderData->LightProbes.end(), probeVolumes.begin(), [](const std::shared_ptr<LightProbe>& probe) {return std::make_unique<LightProbeVolume>(LightProbeVolume(*probe.get())); });
+		if (!probeVolumes.empty())	//TODO: DELETE. VERY NASTY!!!!!! ADD LOADING LIGHT PROBES FROM FILE AND DONT DELETE THE FIRST PROBE FOR NO REASON
+		{
+			probeVolumes.erase(probeVolumes.begin());
+			sceneRenderData->ProbeTexArrays->IrradianceMapArr.Bind(12);
+			sceneRenderData->ProbeTexArrays->PrefilterMapArr.Bind(13);
+			sceneRenderData->ProbeTexArrays->BRDFLut.Bind(14);
+			RenderVolumes(info, MainFramebuffer, probeVolumes, false);
+		}
 	}
-
-	if (SSAOtex)
-		SSAOtex->Bind(4);
-	std::vector<std::unique_ptr<RenderableVolume>> volumes;
-	volumes.resize(LightData.Lights.size());
-	std::transform(LightData.Lights.begin(), LightData.Lights.end(), volumes.begin(), [](const std::shared_ptr<LightComponent>& light) {return std::make_unique<LightVolume>(LightVolume(*light.get())); });
-	RenderVolumes(info, MainFramebuffer, volumes, false);// Shading == ShadingModel::SHADING_PBR_COOK_TORRANCE);
-
-	std::vector<std::unique_ptr<RenderableVolume>> probeVolumes;
-	probeVolumes.resize(LightProbes.size());
-	std::transform(LightProbes.begin(), LightProbes.end(), probeVolumes.begin(), [](const std::shared_ptr<LightProbe>& probe) {return std::make_unique<LightProbeVolume>(LightProbeVolume(*probe.get())); });
-	if (!probeVolumes.empty())	//TODO: DELETE. VERY NASTY!!!!!! ADD LOADING LIGHT PROBES FROM FILE AND DONT DELETE THE FIRST PROBE FOR NO REASON
-		probeVolumes.erase(probeVolumes.begin());
-	RenderVolumes(info, MainFramebuffer, probeVolumes, false);
+	else
+	{
+		MainFramebuffer.Bind(true, &viewport);
+		
+		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	}
 
 
 	////////////////////3.5 Forward rendering pass
@@ -818,38 +763,101 @@ void RenderEngine::FullRender(RenderInfo& info, GEE_FB::Framebuffer* framebuffer
 	info.CareAboutShader = true;
 
 	if (!framebuffer)
-		TestRenderCubemap(info);
+		TestRenderCubemap(info, sceneRenderData);
 
 	for (unsigned int i = 0; i < ForwardShaders.size(); i++)
-		RenderScene(info, ForwardShaders[i].get());
+		RenderRawScene(info, sceneRenderData, ForwardShaders[i].get());
 
-	if (DebugMode)
-		GameHandle->GetPhysicsHandle()->DebugRender(this, info);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glBlendEquation(GL_FUNC_ADD);
+
+	FindShader("Forward_NoLight")->Use();
+	FindShader("Forward_NoLight")->Uniform2fv("atlasData", glm::vec2(0.0f));
+	FindShader("Forward_NoLight")->Uniform2fv("atlasTexOffset", glm::vec2(0.0f));
+
+	glDisable(GL_BLEND);
+	glDisable(GL_DEPTH_TEST);
+
+	if (debugPhysics)
+		//GameHandle->GetPhysicsHandle()->DebugRender(this, info);
 	info.MainPass = false;
 	info.CareAboutShader = false;
 
 	////////////////////4. Postprocessing pass (Blur + Tonemapping & Gamma Correction)
-	Postprocessing.Render(MainFramebuffer.GetColorBuffer(0).get(), (settings->bBloom) ? (MainFramebuffer.GetColorBuffer(1).get()) : (nullptr), MainFramebuffer.DepthBuffer.get(), (settings->IsVelocityBufferNeeded()) ? (MainFramebuffer.GetColorBuffer("velocityTex").get()) : (nullptr), framebuffer);
+	Postprocessing.Render(info.TbCollection, target, &viewport, MainFramebuffer.GetColorBuffer(0).get(), (settings.bBloom) ? (MainFramebuffer.GetColorBuffer(1).get()) : (nullptr), MainFramebuffer.DepthBuffer.get(), (settings.IsVelocityBufferNeeded()) ? (MainFramebuffer.GetColorBuffer("velocityTex").get()) : (nullptr));
+
 	      
 	PreviousFrameView = currentFrameView;
 }
 
-void RenderEngine::TestRenderCubemap(RenderInfo& info)
+void RenderEngine::PrepareFrame()
 {
-	LightProbeTextureArrays::PrefilterMapArr.Bind(0);
+	BindSkeletonBatch(GameHandle->GetMainScene()->GetRenderData(), static_cast<unsigned int>(0));
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glDrawBuffer(GL_BACK);
+	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+}
+
+void RenderEngine::PostFrame()
+{
+	//Antialiasing();
+}
+
+void RenderEngine::RenderFrame(RenderInfo& info) 
+{
+	/*PreFrame();
+	for (int i = 0; i < Scenes.size(); i++)
+	{
+		FullSceneRender(Scene, Viewport, ...);
+	}
+	PostFrame();*/
+
+	PrepareFrame();
+
+	FullSceneRender(info, ScenesRenderData[0]);
+	info.view = glm::mat4(1.0f);
+	info.projection = glm::mat4(1.0f);
+	info.VP = glm::mat4(1.0f);
+
+	glViewport(0, 0, 800, 600);
+	info.MainPass = true;
+	info.CareAboutShader = true;
+	RenderRawScene(info, ScenesRenderData[1], FindShader("Forward_NoLight"));
+	RenderRawScene(info, ScenesRenderData[1], FindShader("TextShader"));
+
+	PostFrame();
+}
+
+void RenderEngine::TestRenderCubemap(RenderInfo& info, GameSceneRenderData* sceneRenderData)
+{
+	sceneRenderData->ProbeTexArrays->PrefilterMapArr.Bind(0);
 	//LightProbes[1]->EnvironmentMap.Bind(0);
 	FindShader("Cubemap")->Use();
 	FindShader("Cubemap")->Uniform1f("mipLevel", (float)std::fmod(glfwGetTime(), 4.0));
 
-	bool bCalcVelocity = GameHandle->GetGameSettings()->IsVelocityBufferNeeded() && info.MainPass;
-	bool jitter = info.MainPass && GameHandle->GetGameSettings()->IsTemporalReprojectionEnabled();
+	bool bCalcVelocity = GameHandle->GetGameSettings()->Video.IsVelocityBufferNeeded() && info.MainPass;
+	bool jitter = info.MainPass && GameHandle->GetGameSettings()->Video.IsTemporalReprojectionEnabled();
 
-	glm::mat4 previousJitteredVP = (jitter) ? (Postprocessing.GetJitterMat((Postprocessing.GetFrameIndex() - 1) % 2) * *info.VP) : (*info.VP);
+	glm::mat4 jitteredVP = (jitter) ? (Postprocessing.GetJitterMat(info.TbCollection.GetSettings(), Postprocessing.GetFrameIndex()) * info.VP) : (info.VP);
 
 	if (bCalcVelocity)
-		FindShader("Cubemap")->UniformMatrix4fv("prevVP", *info.projection * *info.previousFrameView);
+	{
+		FindShader("Cubemap")->UniformMatrix4fv("prevVP", info.projection * info.previousFrameView);
+		FindShader("Cubemap")->UniformMatrix4fv("flickerMat", Postprocessing.GetJitterMat(info.TbCollection.GetSettings(), Postprocessing.GetFrameIndex()));
+		FindShader("Cubemap")->UniformMatrix4fv("prevFlickerMat", Postprocessing.GetJitterMat(info.TbCollection.GetSettings(), (Postprocessing.GetFrameIndex() + 1) % 2));
+	}
+	else
+	{
+		FindShader("Cubemap")->UniformMatrix4fv("prevVP", glm::mat4(1.0f));
+		FindShader("Cubemap")->UniformMatrix4fv("flickerMat", glm::mat4(1.0f));
+		FindShader("Cubemap")->UniformMatrix4fv("prevFlickerMat", glm::mat4(1.0f));
+	}
 
-	Render(info, GetBasicShapeMesh(EngineBasicShape::CUBE), Transform(), FindShader("Cubemap"));
+
+	RenderStaticMesh(info, GetBasicShapeMesh(EngineBasicShape::CUBE).get(), Transform(), FindShader("Cubemap"));
 }
 
 void RenderEngine::RenderCubemapFromTexture(Texture targetTex, Texture tex, glm::uvec2 size, Shader& shader, int* layer, int mipLevel)
@@ -891,23 +899,22 @@ void RenderEngine::RenderCubemapFromTexture(Texture targetTex, Texture tex, glm:
 
 		tex.Bind();
 
-		RenderInfo info;
-		info.VP = &CubemapData.DefaultVP[i];
+		RenderInfo info(*CurrentTbCollection);
+		info.VP = CubemapData.DefaultVP[i];
 
-		Render(info, ModelComponent(GameHandle, *cubeNode), &shader);
+		RenderStaticMesh(info, GetBasicShapeMesh(EngineBasicShape::CUBE).get(), Transform(), &shader);
 	}
 
 	glEnable(GL_CULL_FACE);
 	glEnable(GL_DEPTH_TEST);
 }
 
-void RenderEngine::RenderCubemapFromScene(RenderInfo info, GEE_FB::Framebuffer target, GEE_FB::FramebufferAttachment targetTex, GLenum attachmentType, Shader* shader, int* layer, bool fullRender)
+void RenderEngine::RenderCubemapFromScene(RenderInfo info, GameSceneRenderData* sceneRenderData, GEE_FB::Framebuffer target, GEE_FB::FramebufferAttachment targetTex, GLenum attachmentType, Shader* shader, int* layer, bool fullRender)
 {
 	target.Bind(true);
 	glActiveTexture(GL_TEXTURE0);
 
-	glm::mat4 viewTranslation = (info.view) ? (*info.view) : (glm::mat4(1.0f));
-	glm::mat4 pCopy = *info.projection;
+	glm::mat4 viewTranslation = info.view;
 
 	for (int i = 0; i < 6; i++)
 	{
@@ -918,16 +925,13 @@ void RenderEngine::RenderCubemapFromScene(RenderInfo info, GEE_FB::Framebuffer t
 			case GL_TEXTURE_CUBE_MAP_ARRAY: glFramebufferTextureLayer(GL_FRAMEBUFFER, attachmentType, targetTex.GetID(), 0, *layer); *layer = *layer + 1; break;
 			default:						std::cerr << "ERROR: Can't render a scene to cubemap texture, when the texture's type is " << targetTex.GetType() << ".\n"; return;
 		}
+		glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+		info.view = CubemapData.DefaultV[i] * viewTranslation;
+		info.CalculateVP();
 
-		glm::mat4 view = CubemapData.DefaultV[i] * viewTranslation;
-		glm::mat4 proj = pCopy;
-		glm::mat4 VP = (info.projection) ? ((*info.projection) * view) : (view);
-		info.view = &view;
-		info.VP = &VP;
-		info.projection = &proj;
-		(fullRender) ? (FullRender(info, &target)) : (RenderScene(info, shader));
+		(fullRender) ? (FullSceneRender(info, sceneRenderData, &target)) : (RenderRawScene(info, sceneRenderData, shader));
 	}
 }
 
@@ -946,17 +950,13 @@ void RenderEngine::RenderText(RenderInfo info, const Font& font, std::string con
 	shader->Uniform3fv("color", color);
 	font.GetBitmapsArray().Bind(0);
 
-	glm::vec2 resolution = (glm::vec2)GameHandle->GetGameSettings()->WindowSize;
+	glm::vec2 resolution(GameHandle->GetGameSettings()->WindowSize);// (GameHandle->GetGameSettings()->ViewportData.z, GameHandle->GetGameSettings()->ViewportData.w);
 
-	info.projection = nullptr;
-	info.view = nullptr;
-	//info.VP = nullptr;
 	glm::mat4 pxConvertMatrix = (convertFromPx) ? (glm::ortho(0.0f, resolution.x, 0.0f, resolution.y)) : (glm::mat4(1.0f));
-	glm::mat4 identity(1.0f);
-	glm::mat4 proj = info.GetProjection();
-	glm::mat4 vp = info.GetVP() * pxConvertMatrix;
-	info.projection = &proj;
-	info.VP = &vp;
+	glm::mat4 proj = info.projection;
+	glm::mat4 vp = info.CalculateVP() * pxConvertMatrix;
+	info.projection = proj;
+	info.VP = vp;
 	info.CareAboutShader = true;
 	info.MainPass = false;
 	info.UseMaterials = true;
@@ -983,7 +983,7 @@ void RenderEngine::RenderText(RenderInfo info, const Font& font, std::string con
 		t.Move(glm::vec3((float)c.Bearing.x, (float)c.Bearing.y, 0.0f) * scale);
 		t.SetScale(glm::vec3(glm::vec2(64.0f), 0.0f) * scale);
 		//printVector(vp * t.GetWorldTransformMatrix() * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f), "Letter " + std::to_string(i));
-		Render(info, GetBasicShapeMesh(EngineBasicShape::QUAD), t, shader, &textMaterial);
+		RenderStaticMesh(info, GetBasicShapeMesh(EngineBasicShape::QUAD).get(), t, shader, nullptr, &textMaterial);
 		t.Move(-glm::vec3((float)c.Bearing.x, (float)c.Bearing.y, 0.0f) * scale);
 
 		t.Move(glm::vec3(c.Advance / 64.0f, 0.0f, 0.0f) * scale);
@@ -992,6 +992,15 @@ void RenderEngine::RenderText(RenderInfo info, const Font& font, std::string con
 	glDisable(GL_BLEND);
 }
 
+void RenderEngine::RenderStaticMesh(RenderInfo info, const MeshInstance& mesh, const Transform& transform, Shader* shader, glm::mat4* lastFrameMVP, Material* material, bool billboard)
+{
+	std::vector<std::unique_ptr<MeshInstance>> vec;
+	vec.push_back(std::make_unique<MeshInstance>(MeshInstance(mesh)));
+	RenderStaticMeshes(info, vec, transform, shader, lastFrameMVP, material, billboard);
+	vec.begin()->release();
+}
+
+/*
 void RenderEngine::Render(RenderInfo info, const ModelComponent& model, Shader* shader)
 {
 	if (model.GetMeshInstanceCount() == 0)
@@ -1007,11 +1016,16 @@ void RenderEngine::Render(RenderInfo info, const ModelComponent& model, Shader* 
 		shader->Uniform1i("boneIDOffset", skelInfo->GetIDOffset());
 	}
 
-	const glm::mat4& modelMat = model.GetTransform().GetWorldTransformMatrix();	//the ComponentTransform's world transform is cached
+	glm::mat4 multiply(1.0f);
+	if (model.GetName() == "Quad")
+		//multiply = glm::inverse(glm::mat4(glm::transpose(glm::inverse(glm::mat3(info.GetView())))));
+		multiply = glm::inverse(model.GetTransform().GetWorldTransform().GetRotationMatrix()) * glm::inverse(glm::mat3(info.GetView()));
+
+	const glm::mat4& modelMat = model.GetTransform().GetWorldTransformMatrix() * multiply;	//the ComponentTransform's world transform is cached
 	bool bCalcVelocity = GameHandle->GetGameSettings()->IsVelocityBufferNeeded() && info.MainPass;
 	bool jitter = info.MainPass && GameHandle->GetGameSettings()->IsTemporalReprojectionEnabled();
 
-	glm::mat4 jitteredVP = (info.VP) ? ((jitter) ? (Postprocessing.GetJitterMat() * *info.VP) : (*info.VP)) : (glm::mat4(1.0f));
+	glm::mat4 jitteredVP = (info.VP) ? ((jitter) ? (Postprocessing.GetJitterMat() * info.VP) : (info.VP)) : (glm::mat4(1.0f));
 	shader->BindMatrices(modelMat, info.view, info.projection, &jitteredVP);
 
 	if (bCalcVelocity)
@@ -1055,19 +1069,131 @@ void RenderEngine::Render(RenderInfo info, const ModelComponent& model, Shader* 
 void RenderEngine::Render(RenderInfo info, const std::shared_ptr<Mesh>& mesh, const Transform& transform, Shader* shader, Material* material)
 {
 	Render(info, ModelComponent(GameHandle, MeshSystem::MeshNode(mesh), "", transform, nullptr, material), shader);
+}*/
+
+void RenderEngine::RenderStaticMeshes(RenderInfo info, const std::vector<std::unique_ptr<MeshInstance>>& meshes, const Transform& transform, Shader* shader, glm::mat4* lastFrameMVP, Material* overrideMaterial, bool billboard)
+{
+	if (meshes.empty())
+		return;
+
+	glm::mat4 modelMat = transform.GetWorldTransformMatrix();	//the ComponentTransform's world transform is cached
+	if (billboard)
+		modelMat = modelMat * glm::mat4(glm::inverse(transform.GetWorldTransform().GetRotationMatrix()) * glm::inverse(glm::mat3(info.view)));
+
+	bool bCalcVelocity = GameHandle->GetGameSettings()->Video.IsVelocityBufferNeeded() && info.MainPass;
+	bool jitter = info.MainPass && GameHandle->GetGameSettings()->Video.IsTemporalReprojectionEnabled();
+
+	glm::mat4 jitteredVP = (jitter) ? (Postprocessing.GetJitterMat(info.TbCollection.GetSettings(), (Postprocessing.GetFrameIndex() + 1) % 2) * info.VP) : (info.VP);
+	shader->BindMatrices(modelMat, &info.view, &info.projection, &jitteredVP);
+
+	if (bCalcVelocity)
+	{
+		if (!lastFrameMVP)
+			;// std::cerr << "ERROR: Velocity buffer calculation is enabled, but no lastFrameMVP is passed to render call.\n";
+		else
+		{
+			shader->UniformMatrix4fv("prevMVP", Postprocessing.GetJitterMat(info.TbCollection.GetSettings(), (Postprocessing.GetFrameIndex() + 1) % 2) * *lastFrameMVP);
+			*lastFrameMVP = info.VP * modelMat;
+		}
+	}
+
+	std::unique_ptr<MaterialInstance> createdInstance = ((overrideMaterial) ? (std::make_unique<MaterialInstance>(MaterialInstance(overrideMaterial))) : (nullptr));
+
+	for (int i = 0; i < static_cast<int>(meshes.size()); i++)
+	{
+		const MeshInstance& meshInst = *meshes[i];
+		const Mesh& mesh = meshInst.GetMesh();
+		MaterialInstance* materialInst = ((overrideMaterial) ?  (createdInstance.get()) : (meshInst.GetMaterialInst()));
+		Material* material = ((overrideMaterial) ? (overrideMaterial) : (meshInst.GetMaterialPtr()));
+
+		if ((info.CareAboutShader && material && shader->GetName() != material->GetRenderShaderName()) || (info.OnlyShadowCasters && !mesh.CanCastShadow()) || !materialInst->ShouldBeDrawn())
+			continue;
+
+		if (BoundMesh != &mesh || i == 0)
+		{
+			mesh.Bind();
+			BoundMesh = &mesh;
+		}
+
+		if (info.UseMaterials && material)
+		{
+			if (BoundMaterial != material) //jesli zbindowany jest inny material niz potrzebny obecnie, musimy zmienic go w shaderze
+			{
+				materialInst->UpdateWholeUBOData(shader, *EmptyTexture);
+				BoundMaterial = material;
+			}
+			else if (BoundMaterial) //jesli ostatni zbindowany material jest taki sam, to nie musimy zmieniac wszystkich danych w shaderze; oszczedzmy sobie roboty
+				materialInst->UpdateInstanceUBOData(shader);
+		}
+
+		mesh.Render();
+	}
+}
+
+void RenderEngine::RenderSkeletalMeshes(RenderInfo info, const std::vector<std::unique_ptr<MeshInstance>>& meshes, const Transform& transform, Shader* shader, SkeletonInfo& skelInfo, Material* overrideMaterial)
+{
+	if (meshes.empty())
+		return;
+
+	if (skelInfo.GetBatchPtr() != BoundSkeletonBatch)
+		BindSkeletonBatch(skelInfo.GetBatchPtr());
+
+	shader->Uniform1i("boneIDOffset", skelInfo.GetIDOffset());
+
+	glm::mat4 modelMat = transform.GetWorldTransformMatrix();	//the ComponentTransform's world transform is cached
+	bool bCalcVelocity = GameHandle->GetGameSettings()->Video.IsVelocityBufferNeeded() && info.MainPass;
+	bool jitter = info.MainPass && GameHandle->GetGameSettings()->Video.IsTemporalReprojectionEnabled();
+
+	glm::mat4 jitteredVP = (jitter) ? (Postprocessing.GetJitterMat(info.TbCollection.GetSettings()) * info.VP) : (info.VP);
+	shader->BindMatrices(modelMat, &info.view, &info.projection, &jitteredVP);
+
+
+	//TODO: Pass the bone matrices from the last frame to fix velocity buffer calculation
+
+
+	std::unique_ptr<MaterialInstance> createdInstance = ((overrideMaterial) ? (std::make_unique<MaterialInstance>(MaterialInstance(overrideMaterial))) : (nullptr));
+
+	for (int i = 0; i < static_cast<int>(meshes.size()); i++)
+	{
+		const MeshInstance& meshInst = *meshes[i];
+		const Mesh& mesh = meshInst.GetMesh();
+		MaterialInstance* materialInst = ((overrideMaterial) ? (createdInstance.get()) : (meshInst.GetMaterialInst()));
+		Material* material = ((overrideMaterial) ? (overrideMaterial) : (meshInst.GetMaterialPtr()));
+
+		if ((info.CareAboutShader && material && shader->GetName() != material->GetRenderShaderName()) || (info.OnlyShadowCasters && !mesh.CanCastShadow()) || !materialInst->ShouldBeDrawn())
+			continue;
+
+		if (BoundMesh != &mesh || i == 0)
+		{
+			mesh.Bind();
+			BoundMesh = &mesh;
+		}
+
+		if (info.UseMaterials && material)
+		{
+			if (BoundMaterial != material) //jesli zbindowany jest inny material niz potrzebny obecnie, musimy zmienic go w shaderze
+			{
+				materialInst->UpdateWholeUBOData(shader, *EmptyTexture);
+				BoundMaterial = material;
+			}
+			else if (BoundMaterial) //jesli ostatni zbindowany material jest taki sam, to nie musimy zmieniac wszystkich danych w shaderze; oszczedzmy sobie roboty
+				materialInst->UpdateInstanceUBOData(shader);
+		}
+
+		mesh.Render();
+	}
 }
 
 void RenderEngine::Dispose()
 {
-	GFramebuffer.Dispose(true);
-	MainFramebuffer.Dispose(true);
+	RenderTbCollections.clear();
 	CubemapData.DefaultFramebuffer.Dispose();
 
 	Postprocessing.Dispose();
 	//ShadowFramebuffer.Dispose();
 
-	ShadowMapArray->Dispose();
-	ShadowCubemapArray->Dispose();
+	//CurrentTbCollection->ShadowsTb->ShadowMapArray->Dispose();
+	//CurrentTbCollection->ShadowsTb->ShadowCubemapArray->Dispose();
 	//EmptyTexture->Dispose();
 
 	for (auto i = Shaders.begin(); i != Shaders.end(); i++)

@@ -41,10 +41,9 @@ public:
 	const glm::vec3& ScaleRef;
 	const glm::vec3& FrontRef;
 
-	bool bConstrain;
-	bool bRotationLock;
-
-	explicit Transform(glm::vec3 pos = glm::vec3(0.0f), glm::quat rot = glm::quat(glm::vec3(0.0f)), glm::vec3 scale = glm::vec3(1.0f), glm::vec3 front = glm::vec3(0.0f), bool constrain = false, bool rotlock = false);
+	explicit Transform();
+	explicit Transform(glm::vec2 pos, glm::quat rot = glm::quat(glm::vec3(0.0f)), glm::vec2 scale = glm::vec2(1.0f), glm::vec3 front = glm::vec3(0.0f));
+	explicit Transform(glm::vec3 pos, glm::quat rot = glm::quat(glm::vec3(0.0f)), glm::vec3 scale = glm::vec3(1.0f), glm::vec3 front = glm::vec3(0.0f));
 	Transform(const Transform&);
 	Transform(Transform&&) noexcept;
 	static float test()

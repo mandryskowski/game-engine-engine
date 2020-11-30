@@ -63,7 +63,8 @@ std::shared_ptr<FramebufferAttachment> Framebuffer::GetColorBuffer(unsigned int 
 {
 	if (index >= ColorBuffers.size())
 	{
-		std::cerr << "Can't find colorbuffer " << index << '\n';
+		if (FBO != 0 || index != 0)
+			std::cerr << "Can't find colorbuffer " << index << '\n';
 		return nullptr;
 	}
 	return ColorBuffers[index];
@@ -154,23 +155,50 @@ void Framebuffer::BlitToFBO(unsigned int fbo2, int bufferCount)
 	}
 }
 
-void Framebuffer::Bind(bool changeViewportSize) const
+void Framebuffer::Bind(bool changeViewportSize, const Viewport* viewport) const
 {
 	glBindFramebuffer(GL_FRAMEBUFFER, FBO);
-	if (changeViewportSize)
-		glViewport(0, 0, RenderSize.x, RenderSize.y);
+	if (!changeViewportSize)
+		return;
+
+	if (viewport)
+	{
+		if (viewport->GetSize().x <= RenderSize.x && viewport->GetSize().y <= RenderSize.y)
+		{
+			viewport->SetOpenGLState();
+			return;
+		}
+
+		std::cerr << "ERROR! Cannot resize viewport to " << viewport->GetSize().x << ", " << viewport->GetSize().y << ". Framebuffer is too small.\n";
+	}
+
+	glViewport(0, 0, RenderSize.x, RenderSize.y);
+}
+
+void Framebuffer::SetDrawBuffer(unsigned int index) const
+{
+	if (FBO == 0)
+		glDrawBuffer(GL_BACK);
+	else if (ColorBuffers.empty() || ColorBuffers.size() <= index)
+		glDrawBuffer(GL_NONE);
+	else
+		glDrawBuffer(GL_COLOR_ATTACHMENT0 + index);
 }
 
 void GEE_FB::Framebuffer::SetDrawBuffers() const
 {
-	std::vector<GLenum> attachments;
-	for (unsigned int i = 0; i < ColorBuffers.size(); i++)
-		attachments.push_back(GL_COLOR_ATTACHMENT0 + i);
-
-	if (attachments.empty())
+	if (FBO == 0)
+		glDrawBuffer(GL_BACK);
+	else if (ColorBuffers.empty())
 		glDrawBuffer(GL_NONE);
 	else
+	{
+		std::vector<GLenum> attachments;
+		for (unsigned int i = 0; i < ColorBuffers.size(); i++)
+			attachments.push_back(GL_COLOR_ATTACHMENT0 + i);
+
 		glDrawBuffers(attachments.size(), &attachments[0]);
+	}
 }
 
 void Framebuffer::Dispose(bool disposeBuffers)
@@ -218,6 +246,15 @@ bool GEE_FB::containsStencil(GLenum internalformat)
 
 	//attachmentType = GL_DEPTH_ATTACHMENT;
 	return false;
+}
+
+Framebuffer GEE_FB::getDefaultFramebuffer(glm::uvec2 windowRes)
+{
+	Framebuffer fb;
+	fb.FBO = 0;
+	fb.RenderSize = windowRes;
+	
+	return fb;
 }
 
 std::shared_ptr<FramebufferAttachment> GEE_FB::reserveColorBuffer(glm::uvec2 size, GLenum internalformat, GLenum type, GLenum magFilter, GLenum minFilter, GLenum texType, unsigned int samples, std::string texName, GLenum format)

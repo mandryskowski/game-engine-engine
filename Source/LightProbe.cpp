@@ -1,19 +1,16 @@
 #include "LightProbe.h"
 #include "Framebuffer.h"
 #include "Shader.h"
+#include "RenderInfo.h"
 #include "Mesh.h"
+#include "RenderToolbox.h"
 
-Texture LightProbeTextureArrays::IrradianceMapArr = Texture();
-Texture LightProbeTextureArrays::PrefilterMapArr = Texture();
-Texture LightProbeTextureArrays::BRDFLut = Texture();
-unsigned int LightProbeTextureArrays::NextLightProbeNr = 0;
-RenderEngineManager* LightProbeLoader::RenderHandle = nullptr;
-
-LightProbe::LightProbe()
+LightProbe::LightProbe(GameSceneRenderData* sceneRenderData)
 {
-	ProbeNr = LightProbeTextureArrays::NextLightProbeNr++;
+	SceneRenderData = sceneRenderData;
+	ProbeNr = sceneRenderData->GetProbeTexArrays()->NextLightProbeNr++;
 	EnvironmentMap = *GEE_FB::reserveColorBuffer(glm::uvec2(1024, 1024), GL_RGB16F, GL_FLOAT, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR, GL_TEXTURE_CUBE_MAP, 0, "Environment cubemap");
-	RenderHandle = LightProbeLoader::RenderHandle;
+	RenderHandle = sceneRenderData->GetRenderHandle();
 }
 
 EngineBasicShape LightProbe::GetShape() const
@@ -26,75 +23,82 @@ Transform LightProbe::GetTransform() const
 	return Transform();
 }
 
-Shader* LightProbe::GetRenderShader() const
+Shader* LightProbe::GetRenderShader(const RenderToolboxCollection& renderCol) const
 {
-	return RenderHandle->FindShader("CookTorranceIBL");
+	return renderCol.FindShader("CookTorranceIBL");
 }
 
-std::shared_ptr<LightProbe> LightProbeLoader::LightProbeFromFile(std::string path)
+std::shared_ptr<LightProbe> LightProbeLoader::LightProbeFromFile(GameSceneRenderData* sceneRenderData, std::string path)
 {
-	std::shared_ptr<LightProbe> probe = std::make_shared<LightProbe>();
+	RenderEngineManager* renderHandle = sceneRenderData->GetRenderHandle();
+	std::shared_ptr<LightProbe> probe = std::make_shared<LightProbe>(sceneRenderData);
+
 	Texture erTexture = textureFromFile<float>(path, GL_RGBA16F, GL_LINEAR, GL_LINEAR, 1);	//load equirectangular hdr texture
 	int layer = probe->ProbeNr * 6;
 
-	RenderHandle->RenderCubemapFromTexture(probe->EnvironmentMap, erTexture, glm::uvec2(1024), *RenderHandle->FindShader("ErToCubemap"));
+	renderHandle->RenderCubemapFromTexture(probe->EnvironmentMap, erTexture, glm::uvec2(1024), *renderHandle->FindShader("ErToCubemap"));
 	probe->EnvironmentMap.Bind();
 	glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
 
-	ConvoluteLightProbe(*probe, &probe->EnvironmentMap);
+	ConvoluteLightProbe(sceneRenderData, *probe, &probe->EnvironmentMap);
 	
 
 	return probe;
 }
 
-void LightProbeLoader::ConvoluteLightProbe(const LightProbe& probe, Texture* envMap)
+void LightProbeLoader::ConvoluteLightProbe(GameSceneRenderData* sceneRenderData, const LightProbe& probe, Texture* envMap)
 {
+	RenderEngineManager* renderHandle = sceneRenderData->GetRenderHandle();
+	LightProbeTextureArrays* probeTexArrays = sceneRenderData->GetProbeTexArrays();
+
 	envMap->Bind();
 	if (PrimitiveDebugger::bDebugProbeLoading)
 	{
 		std::cout << "Convoluting probe " << probe.ProbeNr << ".\n";
 		std::cout << "Irradiancing\n";
 	}
-	RenderHandle->FindShader("CubemapToIrradiance")->Use();
+	renderHandle->FindShader("CubemapToIrradiance")->Use();
 	int layer = probe.ProbeNr * 6;
-	RenderHandle->RenderCubemapFromTexture(LightProbeTextureArrays::IrradianceMapArr, *envMap, glm::uvec2(16), *RenderHandle->FindShader("CubemapToIrradiance"), &layer);
+	renderHandle->RenderCubemapFromTexture(probeTexArrays->IrradianceMapArr, *envMap, glm::uvec2(16), *renderHandle->FindShader("CubemapToIrradiance"), &layer);
 
 	if (PrimitiveDebugger::bDebugProbeLoading)
 		std::cout << "Prefiltering\n";
-	RenderHandle->FindShader("CubemapToPrefilter")->Use();
-	RenderHandle->FindShader("CubemapToPrefilter")->Uniform1f("cubemapNr", static_cast<float>(probe.ProbeNr));
+	renderHandle->FindShader("CubemapToPrefilter")->Use();
+	renderHandle->FindShader("CubemapToPrefilter")->Uniform1f("cubemapNr", static_cast<float>(probe.ProbeNr));
 	for (int mipmap = 0; mipmap < 5; mipmap++)
 	{
 		layer = probe.ProbeNr * 6;
-		RenderHandle->FindShader("CubemapToPrefilter")->Uniform1f("roughness", static_cast<float>(mipmap) / 5.0f);
-		RenderHandle->RenderCubemapFromTexture(LightProbeTextureArrays::PrefilterMapArr, *envMap, glm::vec2(256.0f) / std::pow(2.0f, static_cast<float>(mipmap)), *RenderHandle->FindShader("CubemapToPrefilter"), &layer, mipmap);
+		renderHandle->FindShader("CubemapToPrefilter")->Uniform1f("roughness", static_cast<float>(mipmap) / 5.0f);
+		renderHandle->RenderCubemapFromTexture(probeTexArrays->PrefilterMapArr, *envMap, glm::vec2(256.0f) / std::pow(2.0f, static_cast<float>(mipmap)), *renderHandle->FindShader("CubemapToPrefilter"), &layer, mipmap);
 	}
 	if (PrimitiveDebugger::bDebugProbeLoading)
 		std::cout << "Ending\n";
 }
 
-void LightProbeLoader::LoadLightProbeTextureArrays()
+void LightProbeLoader::LoadLightProbeTextureArrays(GameSceneRenderData* sceneRenderData)
 {
-	LightProbeTextureArrays::IrradianceMapArr = *GEE_FB::reserveColorBuffer(glm::uvec3(16, 16, 8), GL_RGB16F, GL_FLOAT, GL_LINEAR, GL_LINEAR, GL_TEXTURE_CUBE_MAP_ARRAY, 0, "Irradiance cubemap array");
-	LightProbeTextureArrays::PrefilterMapArr = *GEE_FB::reserveColorBuffer(glm::uvec3(256, 256, 8), GL_RGB16F, GL_FLOAT, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR, GL_TEXTURE_CUBE_MAP_ARRAY, 0, "Prefilter cubemap array");
-	LightProbeTextureArrays::PrefilterMapArr.Bind();
+	RenderEngineManager* renderHandle = sceneRenderData->GetRenderHandle();
+	LightProbeTextureArrays* probeTexArrays = sceneRenderData->GetProbeTexArrays();
+	probeTexArrays->IrradianceMapArr = *GEE_FB::reserveColorBuffer(glm::uvec3(16, 16, 8), GL_RGB16F, GL_FLOAT, GL_LINEAR, GL_LINEAR, GL_TEXTURE_CUBE_MAP_ARRAY, 0, "Irradiance cubemap array");
+	probeTexArrays->PrefilterMapArr = *GEE_FB::reserveColorBuffer(glm::uvec3(256, 256, 8), GL_RGB16F, GL_FLOAT, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR, GL_TEXTURE_CUBE_MAP_ARRAY, 0, "Prefilter cubemap array");
+	probeTexArrays->PrefilterMapArr.Bind();
 	glGenerateMipmap(GL_TEXTURE_CUBE_MAP_ARRAY);
 
-	LightProbeTextureArrays::BRDFLut = *GEE_FB::reserveColorBuffer(glm::uvec2(512), GL_RGB16F, GL_FLOAT, GL_LINEAR, GL_LINEAR, GL_TEXTURE_2D);
+	probeTexArrays->BRDFLut = *GEE_FB::reserveColorBuffer(glm::uvec2(512), GL_RGB16F, GL_FLOAT, GL_LINEAR, GL_LINEAR, GL_TEXTURE_2D);
 
 	glDisable(GL_CULL_FACE);
 	glDisable(GL_DEPTH_TEST);
 	GEE_FB::Framebuffer framebuffer;
-	framebuffer.SetAttachments(glm::uvec2(512), GEE_FB::FramebufferAttachment(LightProbeTextureArrays::BRDFLut));
+	framebuffer.SetAttachments(glm::uvec2(512), GEE_FB::FramebufferAttachment(probeTexArrays->BRDFLut));
 	framebuffer.Bind(true);
-	LightProbeLoader::RenderHandle->FindShader("BRDFLutGeneration")->Use();
-	LightProbeLoader::RenderHandle->Render(RenderInfo(), LightProbeLoader::RenderHandle->GetBasicShapeMesh(EngineBasicShape::QUAD), Transform(), LightProbeLoader::RenderHandle->FindShader("BRDFLutGeneration"));
+	renderHandle->FindShader("BRDFLutGeneration")->Use();
+	renderHandle->RenderStaticMesh(RenderInfo(*renderHandle->GetCurrentTbCollection()), renderHandle->GetBasicShapeMesh(EngineBasicShape::QUAD).get(), Transform(), renderHandle->FindShader("BRDFLutGeneration"));
 
 	framebuffer.Dispose();
 }
 
-LocalLightProbe::LocalLightProbe(Transform transform, EngineBasicShape shape):
-	LightProbe(),
+LocalLightProbe::LocalLightProbe(GameSceneRenderData* sceneRenderData, Transform transform, EngineBasicShape shape):
+	LightProbe(sceneRenderData),
 	Shape(shape),
 	ProbeTransform(transform)
 {
@@ -125,12 +129,17 @@ Transform LightProbeVolume::GetRenderTransform() const
 	return ProbePtr->GetTransform();
 }
 
-Shader* LightProbeVolume::GetRenderShader() const
+Shader* LightProbeVolume::GetRenderShader(const RenderToolboxCollection& renderCol) const
 {
-	return ProbePtr->GetRenderShader();
+	return ProbePtr->GetRenderShader(renderCol);
 }
 
 void LightProbeVolume::SetupRenderUniforms(const Shader& shader) const
 {
 	shader.Uniform1f("lightProbeNr", ProbePtr->ProbeNr);
+}
+
+LightProbeTextureArrays::LightProbeTextureArrays():
+	NextLightProbeNr(0)
+{
 }

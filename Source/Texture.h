@@ -21,7 +21,7 @@ public:
 
 	void Bind(int texSlot = -1) const;
 
-	void Dispose();
+	virtual void Dispose();
 };
 
 class NamedTexture: public Texture
@@ -32,6 +32,7 @@ public:
 	NamedTexture(Texture tex, std::string name = "diffuse");
 
 	std::string GetShaderName();
+	void SetShaderName(std::string);
 };
 
 bool containsAlphaChannel(GLenum internalformat);

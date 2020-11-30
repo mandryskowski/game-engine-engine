@@ -7,6 +7,7 @@ Material::Material(std::string name, float shine, float depthScale, Shader* shad
 	Name = name;
 	Shininess = shine;
 	DepthScale = depthScale;
+	Color = glm::vec4(0.0f);
 	if (shader)
 		RenderShaderName = shader->GetName();
 }
@@ -33,6 +34,11 @@ void Material::SetShininess(float shine)
 void Material::SetRenderShaderName(std::string name)
 {
 	RenderShaderName = name;
+}
+
+void Material::SetColor(glm::vec4 color)
+{
+	Color = color;
 }
 
 void Material::AddTexture(NamedTexture* tex)
@@ -88,18 +94,6 @@ void Material::LoadAiTexturesOfType(aiMaterial* material, std::string directory,
 	case aiTextureType_SHININESS:
 		name = "aiTextureType_SHININESS"; break;
 	}
-	
-	if (directory == "doublebarrel/")
-	{
-		std::cout << name << ": " << material->GetTextureCount(type);
-		if (material->GetTextureCount(type) > 0)
-		{
-			aiString test;
-			material->GetTexture(type, 0, &test);
-			std::cout << test.C_Str();
-		}
-		std::cout << "\n";
-	}
 
 	bool sRGB = false;
 	if (type == aiTextureType_DIFFUSE)
@@ -143,6 +137,7 @@ void Material::UpdateWholeUBOData(Shader* shader, Texture& emptyTexture)
 {
 	shader->Uniform1f("material.shininess", Shininess);
 	shader->Uniform1f("material.depthScale", DepthScale);
+	shader->Uniform4fv("material.color", Color);
 
 	std::vector<std::pair<unsigned int, std::string>>* textureUnits = shader->GetMaterialTextureUnits();
 

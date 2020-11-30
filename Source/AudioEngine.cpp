@@ -68,29 +68,6 @@ void AudioEngine::SetListenerTransformPtr(Transform* transformPtr)
 	ListenerTransformPtr = transformPtr;
 }
 
-SoundSourceComponent* AudioEngine::AddSource(SoundSourceComponent* source)
-{
-	Sources.push_back(source);
-	return Sources.back();
-}
-
-SoundSourceComponent* AudioEngine::AddSource(std::string path, std::string name)
-{
-	Sources.push_back(new SoundSourceComponent(GameHandle, name, LoadBuffer(path)));
-	return Sources.back();
-}
-
-SoundSourceComponent* AudioEngine::FindSource(std::string name)
-{
-	auto sourceIt = std::find_if(Sources.begin(), Sources.end(), [name](SoundSourceComponent* source) { return source->GetName() == name; });
-
-	if (sourceIt != Sources.end())
-		return *sourceIt;
-
-	std::cerr << "ERROR! Can't find sound source " + name + ".\n";
-	return nullptr;
-}
-
 void AudioEngine::Update()
 {
 	////////////////// Update listener position & orientation
@@ -100,7 +77,7 @@ void AudioEngine::Update()
 	alListenerfv(AL_ORIENTATION, &orientationVecs[0].x);
 }
 
-SoundBuffer* AudioEngine::LoadBuffer(std::string path)
+SoundBuffer* AudioEngine::LoadBufferFromFile(std::string path)
 {
 	////////////////// Check our current buffers; if one was loaded from the same path as passed to this function just return its address and don't waste time
 	SoundBuffer* alreadyLoaded = SearchForAlreadyLoadedBuffer(path);

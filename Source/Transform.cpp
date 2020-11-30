@@ -20,7 +20,17 @@ void Transform::FlagWorldDirtiness()
 		Children[i]->FlagWorldDirtiness();
 }
 
-Transform::Transform(glm::vec3 pos, glm::quat rot, glm::vec3 scale, glm::vec3 front, bool constrain, bool rotLock) :
+Transform::Transform():
+	Transform(glm::vec3(0.0f))
+{
+}
+
+Transform::Transform(glm::vec2 pos, glm::quat rot, glm::vec2 scale, glm::vec3 front):
+	Transform(glm::vec3(pos, 0.0f), rot, glm::vec3(scale, 1.0f), front)
+{
+}
+
+Transform::Transform(glm::vec3 pos, glm::quat rot, glm::vec3 scale, glm::vec3 front) :
 	ParentTransform(nullptr),
 	WorldTransformCache(nullptr),
 	WorldTransformMatrixCache(glm::mat4(1.0f)),
@@ -31,8 +41,6 @@ Transform::Transform(glm::vec3 pos, glm::quat rot, glm::vec3 scale, glm::vec3 fr
 	Front(front),
 	DirtyFlags(3, true),
 	Empty(false),
-	bConstrain(constrain),
-	bRotationLock(rotLock),
 	PositionRef(Position),
 	RotationRef(Rotation),
 	ScaleRef(Scale),
@@ -44,14 +52,14 @@ Transform::Transform(glm::vec3 pos, glm::quat rot, glm::vec3 scale, glm::vec3 fr
 }
 
 Transform::Transform(const Transform& t):
-	Transform(t.Position, t.Rotation, t.Scale, t.Front, t.bConstrain, t.bRotationLock)
+	Transform(t.Position, t.Rotation, t.Scale, t.Front)
 {
 	/* if (t.ParentTransform)
 		t.ParentTransform->AddChild(this); */
 }
 
 Transform::Transform(Transform&& t) noexcept :
-	Transform(t.Position, t.Rotation, t.Scale, t.Front, t.bConstrain, t.bRotationLock)
+	Transform(t.Position, t.Rotation, t.Scale, t.Front)
 {
 	/*
 	if (t.ParentTransform)
@@ -69,11 +77,6 @@ glm::mat3 Transform::GetRotationMatrix(float scalar) const
 
 	return glm::mat4_cast(rot);
 
-	/*if (!bConstrain)
-		return (glm::mat3)glm::eulerAngleXYZ(glm::radians(rot.x), glm::radians(rot.y), glm::radians(rot.z));
-
-	return (glm::mat3)glm::eulerAngleYXZ(glm::radians(rot.y), glm::radians(rot.x), glm::radians(rot.z));
-	*/
 }
 
 glm::mat4 Transform::GetMatrix() const
@@ -90,11 +93,6 @@ glm::mat4 Transform::GetMatrix() const
 
 	MatrixCache = glm::translate(glm::mat4(1.0f), Position);
 
-	
-	/*if (bConstrain)
-		mat *= glm::eulerAngleYXZ(glm::radians(Rotation.y), glm::radians(Rotation.x), glm::radians(Rotation.z));
-	else
-		mat *= glm::eulerAngleXYZ(glm::radians(Rotation.x), glm::radians(Rotation.y), glm::radians(Rotation.z));*/
 	MatrixCache *= glm::mat4_cast(Rotation);
 
 	MatrixCache = glm::scale(MatrixCache, Scale);

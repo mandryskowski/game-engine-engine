@@ -15,7 +15,10 @@ class SoundSourceComponent : public Component
 
 public:
 
-	SoundSourceComponent(GameManager*, std::string, SoundBuffer* = nullptr, Transform = Transform());
+	SoundSourceComponent(GameScene*, std::string, SoundBuffer* = nullptr, Transform = Transform());
+
+	virtual void OnStart() override;
+
 	void GenAL(SoundBuffer* = nullptr);	//pass a pointer here only if you want to update it in the class
 
 	void SetLoop(bool);

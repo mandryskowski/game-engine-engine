@@ -1,29 +1,32 @@
 #include "ModelComponent.h"
 #include "MeshSystem.h"
+#include "GameScene.h"
+#include "RenderInfo.h"
 
 using namespace MeshSystem;
 
-ModelComponent::ModelComponent(GameManager* gameHandle, std::string name, const Transform& transform, SkeletonInfo* info, Material* overrideMat) :
-	RenderableComponent(gameHandle, name, transform),
+ModelComponent::ModelComponent(GameScene* scene, const std::string& name, const Transform& transform, SkeletonInfo* info, Material* overrideMat) :
+	RenderableComponent(scene, name, transform),
 	LastFrameMVP(glm::mat4(1.0f)),
-	SkelInfo(info)
+	SkelInfo(info),
+	RenderAsBillboard(false)
 {
 }
 
-ModelComponent::ModelComponent(GameManager* gameHandle, const MeshSystem::MeshNode& node, std::string name, const Transform& transform, SkeletonInfo* info, Material* overrideMat) :
-	ModelComponent(gameHandle, name, transform, info, overrideMat)
+ModelComponent::ModelComponent(GameScene* scene, const MeshSystem::MeshNode& node, const std::string& name, const Transform& transform, SkeletonInfo* info, Material* overrideMat) :
+	ModelComponent(scene, name, transform, info, overrideMat)
 {
 	GenerateFromNode(&node, overrideMat);
 }
 
 ModelComponent::ModelComponent(const ModelComponent& model) :
-	ModelComponent(model.GameHandle, model.Name, model.ComponentTransform)
+	ModelComponent(model.Scene, model.Name, model.ComponentTransform)
 {
 	*this = model;
 }
 
 ModelComponent::ModelComponent(ModelComponent&& model) :
-	ModelComponent(model.GameHandle, model.Name, model.ComponentTransform)
+	ModelComponent(model.Scene, model.Name, model.ComponentTransform)
 {
 	*this = model;
 }
@@ -42,6 +45,11 @@ void ModelComponent::SetLastFrameMVP(const glm::mat4& lastMVP) const
 void ModelComponent::SetSkeletonInfo(SkeletonInfo* info)
 {
 	SkelInfo = info;
+}
+
+void ModelComponent::SetRenderAsBillboard(bool billboard)
+{
+	RenderAsBillboard = billboard;
 }
 
 void ModelComponent::GenerateFromNode(const MeshSystem::TemplateNode* node, Material* overrideMaterial)
@@ -114,20 +122,25 @@ void ModelComponent::AddMeshInst(Mesh* mesh)
 std::shared_ptr<ModelComponent> ModelComponent::Of(const ModelComponent& constructorVal)
 {
 	std::shared_ptr<ModelComponent> createdObj = std::make_shared<ModelComponent>(ModelComponent(constructorVal));
-	constructorVal.GameHandle->GetRenderEngineHandle()->AddRenderable(createdObj);
+	createdObj->Scene->GetRenderData()->AddRenderable(createdObj);
+
 	return createdObj;
 }
 
 std::shared_ptr<ModelComponent> ModelComponent::Of(ModelComponent&& constructorVal)
 {
 	std::shared_ptr<ModelComponent> createdObj = std::make_shared<ModelComponent>(ModelComponent(constructorVal));
-	constructorVal.GameHandle->GetRenderEngineHandle()->AddRenderable(createdObj);
+	createdObj->Scene->GetRenderData()->AddRenderable(createdObj);
+
 	return createdObj;
 }
 
 void ModelComponent::Render(RenderInfo& info, Shader* shader)
 {
-	GameHandle->GetRenderEngineHandle()->Render(info, *this, shader);
+	if (SkelInfo && SkelInfo->GetBoneCount() > 0)
+		GameHandle->GetRenderEngineHandle()->RenderSkeletalMeshes(info, MeshInstances, GetTransform().GetWorldTransform(), shader, *SkelInfo);
+	else
+		GameHandle->GetRenderEngineHandle()->RenderStaticMeshes(info, MeshInstances, GetTransform().GetWorldTransform(), shader, &LastFrameMVP, nullptr, RenderAsBillboard);
 }
 
 

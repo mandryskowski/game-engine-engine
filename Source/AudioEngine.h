@@ -10,7 +10,6 @@ class AudioEngine: public AudioEngineManager
 	ALCcontext* Context;
 	std::vector <SoundBuffer*> ALBuffers;
 
-	std::vector <SoundSourceComponent*> Sources;
 	Transform* ListenerTransformPtr;
 
 	GameManager* GameHandle;
@@ -23,13 +22,10 @@ public:
 	void Init();
 
 	void SetListenerTransformPtr(Transform*);
-	virtual SoundSourceComponent* AddSource(SoundSourceComponent*) override;
-	virtual SoundSourceComponent* AddSource(std::string path, std::string name) override;
-	SoundSourceComponent* FindSource(std::string name);
 
 	void Update();
 
-	SoundBuffer* LoadBuffer(std::string path);
+	virtual SoundBuffer* LoadBufferFromFile(std::string path) override;
 	SoundBuffer* LoadBufferFromWav(std::string path);
 	SoundBuffer* LoadBufferFromOgg(std::string path);
 

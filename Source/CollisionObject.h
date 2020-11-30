@@ -1,6 +1,7 @@
 #pragma once
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
+#include <PhysX/PxPhysicsAPI.h>
 #include "Transform.h"
 
 #include <vector>
@@ -38,26 +39,30 @@ struct CollisionObject
 	physx::PxRigidActor* ActorPtr;
 	std::vector <std::shared_ptr<CollisionShape>> Shapes;
 	Transform* TransformPtr;
+	bool IgnoreRotation;
 
 	bool IsStatic;
 
 	CollisionObject(bool isStatic = true) :
 		ActorPtr(nullptr),
 		TransformPtr(nullptr),
-		IsStatic(isStatic)
+		IsStatic(isStatic),
+		IgnoreRotation(false)
 	{
 	}
 	CollisionObject(bool isStatic, CollisionShapeType type) :
 		ActorPtr(nullptr),
 		TransformPtr(nullptr),
-		IsStatic(isStatic)
+		IsStatic(isStatic),
+		IgnoreRotation(false)
 	{
 		AddShape(type);
 	}
 	CollisionObject(const CollisionObject& obj):
 		ActorPtr(nullptr),
 		Shapes(obj.Shapes),
-		IsStatic(obj.IsStatic)
+		IsStatic(obj.IsStatic),
+		IgnoreRotation(false)
 	{
 	}
 	CollisionObject(CollisionObject&& obj):
@@ -72,4 +77,19 @@ struct CollisionObject
 
 		return Shapes.back().get();
 	}
+
+	CollisionShape* AddShape(std::shared_ptr<CollisionShape> shape)
+	{
+		Shapes.push_back(shape);
+
+		return Shapes.back().get();
+	}
 };
+
+glm::vec3 toGlm(physx::PxVec3);
+glm::quat toGlm(physx::PxQuat);
+
+physx::PxVec3 toPx(glm::vec3);
+physx::PxQuat toPx(glm::quat);
+physx::PxTransform toPx(Transform);
+physx::PxTransform toPx(Transform*);

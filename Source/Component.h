@@ -1,6 +1,7 @@
 #pragma once
 #include "GameManager.h"
 #include "Transform.h"
+#include "GameScene.h"
 
 class Component
 {
@@ -11,13 +12,17 @@ protected:
 	std::vector <Component*> Children;
 	std::unique_ptr<CollisionObject> CollisionObj;
 
+	GameScene* Scene; //The scene that this Component is present in
 	GameManager* GameHandle;
 
-public:
-	Component(GameManager*, std::string name = "undefined", const Transform& t = Transform());
-	Component(GameManager*, std::string name = "undefined", glm::vec3 pos = glm::vec3(0.0f), glm::vec3 rot = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 scale = glm::vec3(1.0f));
+	Material* DebugRenderMaterial;
+	mutable glm::mat4 DebugRenderLastFrameMVP;
 
-	virtual void OnStart() {}
+public:
+	Component(GameScene*, const std::string& name = "undefined", const Transform& t = Transform());
+	Component(GameScene*, const std::string& name = "undefined", glm::vec3 pos = glm::vec3(0.0f), glm::vec3 rot = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 scale = glm::vec3(1.0f));
+
+	virtual void OnStart();
 	virtual void OnStartAll();
 
 	void DebugHierarchy(int nrTabs = 0)
@@ -34,6 +39,7 @@ public:
 	Transform& GetTransform();
 	const Transform& GetTransform() const;
 	std::vector<Component*> GetChildren();
+	GameScene* GetScene() const;
 
 	virtual void GenerateFromNode(const MeshSystem::TemplateNode*, Material* overrideMaterial = nullptr);
 
@@ -43,8 +49,8 @@ public:
 	void AddComponent(Component* component);
 	void AddComponents(std::vector<Component*> components);
 
-	virtual void HandleInputs(GLFWwindow*, float) {}
-	void HandleInputsAll(GLFWwindow* window, float deltaTime);
+	virtual void HandleInputs(GLFWwindow*) {}
+	void HandleInputsAll(GLFWwindow* window);
 
 	virtual void Update(float);
 	void UpdateAll(float dt);
@@ -52,7 +58,20 @@ public:
 	virtual void QueueAnimation(Animation*);
 	void QueueAnimationAll(Animation*);
 
+	virtual void DebugRender(RenderInfo info, Shader* shader) const; //this method should only be called to render the component as something (usually a textured billboard) to debug the project.
+	void DebugRenderAll(RenderInfo info, Shader* shader) const;
+
+	void LoadDebugRenderMaterial(GameManager* gameHandle, std::string materialName, std::string path);
+
 	Component* SearchForComponent(std::string name);
+	template <class CompClass = Component> CompClass* GetComponent(const std::string& name)
+	{
+		auto found = std::find_if(Children.begin(), Children.end(), [name](Component* child) { return child->GetName() == name; });
+		if (found != Children.end())
+			return dynamic_cast<CompClass*>(*found);
+
+		return nullptr;
+	}
 	template<class CompClass> void GetAllComponents(std::vector <CompClass*>* comps)	//this function returns every element further in the hierarchy tree (kids, kids' kids, ...) that is of CompClass type
 	{
 		if (!comps)

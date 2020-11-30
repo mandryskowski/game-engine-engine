@@ -1,10 +1,16 @@
 #include "SoundSourceComponent.h"
 
-SoundSourceComponent::SoundSourceComponent(GameManager* gameHandle, std::string name, SoundBuffer* buffer, Transform transform):
-	Component(gameHandle, name, transform), ALIndex(0), BufferPtr(buffer)
+SoundSourceComponent::SoundSourceComponent(GameScene* scene, std::string name, SoundBuffer* buffer, Transform transform):
+	Component(scene, name, transform), ALIndex(0), BufferPtr(buffer)
 {
 	if (buffer)
 		GenAL(buffer);
+}
+
+void SoundSourceComponent::OnStart()
+{
+	if (!DebugRenderMaterial)
+		LoadDebugRenderMaterial(GameHandle, "GEE_Mat_Default_Debug_SoundSourceComponent", "EditorAssets/SoundSourceComponentDebug.png");
 }
 
 void SoundSourceComponent::GenAL(SoundBuffer* buffer)

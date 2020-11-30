@@ -2,14 +2,24 @@
 #include "FileLoader.h"
 #include "BoneComponent.h"
 #include "MeshSystem.h"
+#include "RenderInfo.h"
+#include "Mesh.h"
+#include "Texture.h"
 
-Component::Component(GameManager* gameHandle, std::string name, const Transform& t):
-	Name(name), ComponentTransform(t), GameHandle(gameHandle), CollisionObj(nullptr)
+Component::Component(GameScene* scene, const std::string& name, const Transform& t):
+	Name(name), ComponentTransform(t), Scene(scene), GameHandle(scene->GetGameHandle()), CollisionObj(nullptr), DebugRenderMaterial(nullptr), DebugRenderLastFrameMVP(glm::mat4(1.0f))
 {
 }
-Component::Component(GameManager* gameHandle, std::string name, glm::vec3 pos, glm::vec3 rot, glm::vec3 scale):
-	Name(name), ComponentTransform(pos, rot, scale), GameHandle(gameHandle), CollisionObj(nullptr)
+Component::Component(GameScene* scene, const std::string& name, glm::vec3 pos, glm::vec3 rot, glm::vec3 scale):
+	Name(name), ComponentTransform(pos, rot, scale), Scene(scene), GameHandle(scene->GetGameHandle()), CollisionObj(nullptr), DebugRenderMaterial(nullptr), DebugRenderLastFrameMVP(glm::mat4(1.0f))
 {
+}
+
+void Component::OnStart()
+{
+	if (!DebugRenderMaterial)
+		LoadDebugRenderMaterial(GameHandle, "GEE_Mat_Default_Debug_Component", "EditorAssets/ComponentDebug.png");
+
 }
 
 void Component::OnStartAll()
@@ -87,6 +97,11 @@ std::vector<Component*> Component::GetChildren()
 	return Children;
 }
 
+GameScene* Component::GetScene() const
+{
+	return Scene;
+}
+
 void Component::GenerateFromNode(const MeshSystem::TemplateNode* node, Material* overrideMaterial)
 {
 	ComponentTransform *= node->GetTemplateTransform();
@@ -105,7 +120,6 @@ void Component::SetTransform(Transform transform)
 	ComponentTransform.SetRotation(transform.RotationRef);
 	ComponentTransform.SetScale(transform.ScaleRef);
 	ComponentTransform.SetFront(transform.FrontRef);
-	ComponentTransform.bConstrain = transform.bConstrain;
 }
 
 
@@ -115,7 +129,8 @@ CollisionObject* Component::SetCollisionObject(std::unique_ptr<CollisionObject>&
 		return nullptr;
 	obj.swap(CollisionObj);
 	CollisionObj->TransformPtr = &ComponentTransform;
-	GameHandle->GetPhysicsHandle()->AddCollisionObject(CollisionObj.get());
+	//Scene->GetPhysicsData()->AddCollisionObject(CollisionObj.get());
+	GameHandle->GetPhysicsHandle()->AddCollisionObject(Scene->GetPhysicsData(), CollisionObj.get());
 
 	return CollisionObj.get();
 }
@@ -133,11 +148,11 @@ void Component::AddComponents(std::vector<Component*> components)
 		Children.push_back(components[i]);
 	}
 }
-void Component::HandleInputsAll(GLFWwindow* window, float deltaTime)
+void Component::HandleInputsAll(GLFWwindow* window)
 {
-	HandleInputs(window, deltaTime);
+	HandleInputs(window);
 	for (int i = 0; i < static_cast<int>(Children.size()); i++)
-		Children[i]->HandleInputsAll(window, deltaTime);
+		Children[i]->HandleInputsAll(window);
 }
 void Component::Update(float deltaTime)
 {
@@ -174,6 +189,37 @@ void Component::QueueAnimationAll(Animation* animation)
 	for (int i = 0; i < static_cast<int>(Children.size()); i++)
 		Children[i]->QueueAnimationAll(animation);
 }
+
+void Component::DebugRender(RenderInfo info, Shader* shader) const
+{
+	Transform transform = GetTransform().GetWorldTransform();
+	transform.SetScale(glm::vec3(0.1f));
+	GameHandle->GetRenderEngineHandle()->RenderStaticMesh(info, GameHandle->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD).get(), transform, shader, &DebugRenderLastFrameMVP, DebugRenderMaterial, true);
+}
+
+void Component::DebugRenderAll(RenderInfo info, Shader* shader) const
+{
+	DebugRender(info, shader);
+
+	for (int i = 0; i < static_cast<int>(Children.size()); i++)
+		Children[i]->DebugRenderAll(info, shader);
+}
+
+void Component::LoadDebugRenderMaterial(GameManager* gameHandle, std::string materialName, std::string path)
+{
+	if (DebugRenderMaterial = gameHandle->GetRenderEngineHandle()->FindMaterial(materialName))
+		return;
+
+	DebugRenderMaterial = new Material(materialName);
+	NamedTexture* texture = new NamedTexture(textureFromFile(path, GL_RGBA));
+
+	texture->Bind();
+	texture->SetShaderName("albedo1");
+	DebugRenderMaterial->AddTexture(texture);
+	DebugRenderMaterial->SetRenderShaderName("Forward_NoLight");
+	gameHandle->GetRenderEngineHandle()->AddMaterial(DebugRenderMaterial);
+}
+
 Component* Component::SearchForComponent(std::string name)
 {
 	if (Name == name)

@@ -6,17 +6,18 @@
 #include "LightProbe.h"
 #include "Font.h"
 #include "Controller.h"
+#include "ButtonActor.h"
 #include <thread>
 
 bool PrimitiveDebugger::bDebugMeshTrees = false;
 bool PrimitiveDebugger::bDebugProbeLoading = false;
 bool PrimitiveDebugger::bDebugCubemapFromTex = false;
 bool PrimitiveDebugger::bDebugFramebuffers = false;
-bool PrimitiveDebugger::bDebugHierarchy = false;
+bool PrimitiveDebugger::bDebugHierarchy = true;
 
-CameraComponent* mouseContextCamera = nullptr;
-
-void APIENTRY debugOutput(GLenum source,
+Controller* mouseController = nullptr;  //there are 2 similiar camera variables: ActiveCamera and global MouseController. the first one is basically the camera we use to see the world (view mat); the second one is updated by mouse controls.
+										//this is a shitty comment that doesnt fit since a few months ago but i dont want to erase it
+void APIENTRY debugOutput(GLenum source,	//Copied from learnopengl.com - I don't think it's worth it to rewrite a bunch of couts.
 	GLenum type,
 	unsigned int id,
 	GLenum severity,
@@ -65,9 +66,10 @@ void APIENTRY debugOutput(GLenum source,
 	std::cout << std::endl;
 }
 
-Game::Game(const ShadingModel& shading) :
-	RootActor(static_cast<GameManager*>(this), "Root"), Settings(std::make_unique<GameSettings>("Settings.ini")), AudioEng(static_cast<GameManager*>(this)), RenderEng(static_cast<GameManager*>(this), shading), PhysicsEng(&DebugMode), Shading(shading), PreviousFrameView(glm::mat4(1.0f))
+Game::Game(const ShadingModel& shading, const GameSettings& settings) :
+	AudioEng(static_cast<GameManager*>(this)), RenderEng(static_cast<GameManager*>(this)), PhysicsEng(&DebugMode), Shading(shading), Settings(nullptr)
 {
+
 	glDisable(GL_MULTISAMPLE);
 	glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 	 
@@ -75,76 +77,76 @@ Game::Game(const ShadingModel& shading) :
 	glDebugMessageCallbackARB(debugOutput, nullptr);
 	glDebugMessageControlARB(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
 
-	ActiveCamera = nullptr;
-
 	DebugMode = true;
+	LoopBeginTime = 0.0f;
+	TimeAccumulator = 0.0f;
 	MyFont = EngineDataLoader::LoadFont("fonts/expressway rg.ttf");
+
+	GEE_FB::Framebuffer DefaultFramebuffer;
 }
 
 void Game::Init(GLFWwindow* window)
 {
 	Window = window;
 	glfwSetWindowSize(Window, Settings->WindowSize.x, Settings->WindowSize.y);
-	glfwSetWindowTitle(Window, Settings->WindowTitle.c_str());
+
 	if (Settings->bWindowFullscreen)
 		glfwSetWindowMonitor(Window, glfwGetPrimaryMonitor(), 0, 0, Settings->WindowSize.x, Settings->WindowSize.y, 60);
 
-	if (!Settings->bVSync)
+	if (!Settings->Video.bVSync)
 		glfwSwapInterval(0);
 
 	glfwSetInputMode(Window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	glfwSetCursorPos(Window, (double)Settings->WindowSize.x / 2.0, (double)Settings->WindowSize.y / 2.0);
 	glfwSetCursorPosCallback(Window, cursorPosCallback);
 
-
-	MatricesBuffer.Generate(0, sizeof(glm::mat4) * 2);
-
-	RenderEng.Init(Settings->WindowSize);
+	RenderEng.Init(glm::uvec2(Settings->Video.Resolution.x, Settings->Video.Resolution.y));
 	PhysicsEng.Init();
-	Searcher.Setup(&RenderEng, &AudioEng, &RootActor);
-	std::cout << "Search engine created.\n";
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void Game::LoadLevel(std::string path)
+void Game::LoadSceneFromFile(std::string path)
 {
-	std::cout << "Loading level.\n";
-	EngineDataLoader::LoadLevelFile(static_cast<GameManager*>(this), path);
+	AddScene(EngineDataLoader::LoadSceneFromFile(static_cast<GameManager*>(this), path));
+}
+
+void Game::AddScene(std::unique_ptr<GameScene> scene)
+{
+	Scenes.push_back(std::unique_ptr<GameScene>(scene.release()));
+	RenderEng.AddSceneRenderDataPtr(Scenes.back()->GetRenderData());
+	PhysicsEng.AddScenePhysicsDataPtr(Scenes.back()->GetPhysicsData());
 	std::cout << "level loaded.\n";
-	PhysicsEng.Setup();
+
+	std::cout << "Setting up collision\n";
+	PhysicsEng.SetupScene(Scenes.back()->GetPhysicsData());
 	std::cout << "Collision objects setup finished.\n";
 
-	RootActor.Setup(&Searcher);
-	std::cout << "Data loading finished.\n";
-
+	std::cout << "Setting up actors & components.\n";
+	Scenes.back()->RootActor->Setup();
 	if (PrimitiveDebugger::bDebugHierarchy)
-		RootActor.DebugHierarchy();
+		Scenes.back()->RootActor->DebugHierarchy();
+	std::cout << "Actors & components setup finished.\n";
+
+	std::cout << "Data loading finished.\n";
 }
 
-void Game::BindActiveCamera(CameraComponent* cam)
+void Game::BindAudioListenerTransformPtr(Transform* transform)
 {
-	if (!cam)
-		return;
-	ActiveCamera = cam;
-	MatricesBuffer.SubDataMatrix4fv(ActiveCamera->GetProjectionMat(), sizeof(glm::mat4));
-	AudioEng.SetListenerTransformPtr(&ActiveCamera->GetTransform());
+	AudioEng.SetListenerTransformPtr(transform);
 }
 
-void Game::PassMouseControl(CameraComponent* cam)
+void Game::PassMouseControl(Controller* controller)
 {
-	mouseContextCamera = cam;
-}
+	mouseController = controller;
 
-std::shared_ptr<Actor> Game::AddActorToScene(std::shared_ptr<Actor> actor)
-{
-	RootActor.AddChild(actor);
-	return actor;
-}
-
-SearchEngine* Game::GetSearchEngine()
-{
-	return &Searcher;
+	if (!mouseController)
+		glfwSetInputMode(Window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+	else
+	{
+		glfwSetInputMode(Window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+		glfwSetCursorPos(Window, (double)Settings->WindowSize.x / 2.0, (double)Settings->WindowSize.y / 2.0);
+	}
 }
 
 PhysicsEngineManager* Game::GetPhysicsHandle()
@@ -162,131 +164,120 @@ AudioEngineManager* Game::GetAudioEngineHandle()
 	return &AudioEng;
 }
 
-const GameSettings* Game::GetGameSettings()
+GameSettings* Game::GetGameSettings()
 {
 	return Settings.get();
+}
+
+GameScene* Game::GetMainScene()
+{
+	return Scenes[0].get();
+}
+
+Actor* Game::GetRootActor(GameScene* scene)
+{
+	if (!scene)
+		scene = GetMainScene();
+
+	return scene->RootActor.get();
 }
 
 unsigned int ticks = 1;
 bool wasSecondFPS = false;
 float timeSum = 0.0f;
-void Game::Run()
-{
-	if (!ActiveCamera)
-	{
-		std::cerr << "ERROR: Camera not bound!\n";
-		return;
-	}
 
+void Game::PreGameLoop()
+{
 	std::cout << "Render pass started.\n";
-	RenderEng.PreRenderPass();
+	RenderEng.PreLoopPass();
 	std::cout << "Render pass done.\n";
 
 	float lastUpdateTime = (float)glfwGetTime();
 	const float timeStep = 1.0f / 60.0f;
 	float deltaTime = 0.0f;
-	float timeAccumulator = 0.0f;
+	TimeAccumulator = 0.0f;
 
-	float beginning = (float)glfwGetTime();
+	LoopBeginTime = (float)glfwGetTime();
 
-	AddActorToScene(std::make_shared<Controller>(Controller(this, "MojTestowyController")));
-	RootActor.OnStartAll();
+	//AddActorToScene(std::make_shared<Controller>(Controller(this, "MojTestowyController")));
+	//Scenes[0]->AddActorToRoot(std::make_shared<ButtonActor>(ButtonActor(Scenes[0].get(), "MojTestowyButton")));
+	for (int i = 0; i < static_cast<int>(Scenes.size()); i++)
+		Scenes[i]->RootActor->OnStartAll();
+}
 
-	while (!glfwWindowShouldClose(Window))
+bool Game::GameLoopIteration(float timeStep, float deltaTime)
+{
+	if (glfwWindowShouldClose(Window))
+		return true;
+
+	glfwPollEvents();
+
+	if (glfwGetKey(Window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+		glfwSetWindowShouldClose(Window, true);
+
+	if (deltaTime > 0.25f)
+		deltaTime = 0.25f;
+
+	float fraction = fmod((float)glfwGetTime(), 1.0f);
+	if (fraction < 0.1f && !wasSecondFPS)
 	{
-		glfwPollEvents();
-
-		if (glfwGetKey(Window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-			glfwSetWindowShouldClose(Window, true);
-
-		deltaTime = (float)glfwGetTime() - lastUpdateTime;
-		lastUpdateTime = (float)glfwGetTime();
-
-		if (deltaTime > 0.25f)
-			deltaTime = 0.25f;
-
-		float fraction = fmod((float)glfwGetTime(), 1.0f);
-		if (fraction < 0.1f && !wasSecondFPS)
-		{
-			std::cout << "******Frames per second: " << (float)ticks / (glfwGetTime() - beginning) << "			Milliseconds per frame: " << (glfwGetTime() - beginning) * 1000.0f / (float)ticks << '\n';
-			std::cout << "Update%: " << timeSum / (glfwGetTime() - beginning) * 100.0f << "%\n";
-			std::cout << "Unstable ms/frame: " << deltaTime * 1000.0f << ".\n";
-			std::cout << "Badany: " << Transform::test() / (glfwGetTime() - beginning) * 100.0f << "%.\n";
-			wasSecondFPS = true;
-			ticks = 0;
-			timeSum = 0.0f;
-			beginning = glfwGetTime();
-		}
-		else if (fraction > 0.9f)
-			wasSecondFPS = false;
-
-		if (GLenum error = glGetError())
-		{
-			std::cout << "OpenGL Error: " << error << ".\n";
-		}
-
-		RootActor.HandleInputsAll(Window, deltaTime);
-
-		timeAccumulator += deltaTime;
-
-		while (timeAccumulator >= timeStep)
-		{
-			//RootActor.GetTransform()->Rotation.y += deltaTime;
-			Update(timeStep);
-			timeAccumulator -= timeStep;
-		}
-
-		//RenderEng.FindShader("Geometry")->Use();
-		//RenderEng.FindShader("Geometry")->Uniform1f("velocityScale", timeStep / deltaTime);
-		Render();
-		ticks++;
+		std::cout << "******Frames per second: " << (float)ticks / (glfwGetTime() - LoopBeginTime) << "			Milliseconds per frame: " << (glfwGetTime() - LoopBeginTime) * 1000.0f / (float)ticks << '\n';
+		std::cout << "Update%: " << timeSum / (glfwGetTime() - LoopBeginTime) * 100.0f << "%\n";
+		std::cout << "Unstable ms/frame: " << deltaTime * 1000.0f << ".\n";
+		std::cout << "Badany: " << Transform::test() / (glfwGetTime() - LoopBeginTime) * 100.0f << "%.\n";
+		wasSecondFPS = true;
+		ticks = 0;
+		timeSum = 0.0f;
+		LoopBeginTime = glfwGetTime();
 	}
+	else if (fraction > 0.9f)
+		wasSecondFPS = false;
+
+	if (GLenum error = glGetError())
+	{
+		std::cout << "OpenGL Error: " << error << ".\n";
+	}
+
+	for (int i = 0; i < static_cast<int>(Scenes.size()); i++)
+		Scenes[i]->RootActor->HandleInputsAll(Window);
+
+	TimeAccumulator += deltaTime;
+
+	while (TimeAccumulator >= timeStep)
+	{
+		Update(timeStep);
+		TimeAccumulator -= timeStep;
+	}
+
+	Render();
+	ticks++;
+
+	return false;
 }
 
 void Game::Update(float deltaTime)
 {
 	DUPA::AnimTime += deltaTime;
 	PhysicsEng.Update(deltaTime);
-	RootActor.UpdateAll(deltaTime);
-	MatricesBuffer.SubDataMatrix4fv(ActiveCamera->GetTransform().GetWorldTransform().GetViewMatrix(), 0);
+
+	for (int i = 0; i < static_cast<int>(Scenes.size()); i++)
+		Scenes[i]->RootActor->UpdateAll(deltaTime);
+	
 	AudioEng.Update();
 }
 float pBegin = 0.0f;
 bool DUPA = false;
-void Game::Render()
-{
-	Transform camWorld = ActiveCamera->GetTransform().GetWorldTransform();
-	glm::vec3 camPos = ActiveCamera->GetTransform().GetWorldTransform().PositionRef;
-	glm::mat4 view = camWorld.GetViewMatrix();
-	glm::mat4 projection = ActiveCamera->GetProjectionMat();
-	glm::mat4 VP = ActiveCamera->GetVP(&camWorld);
-	RenderInfo info(&view, &projection, &VP);
-
-	RenderEng.BindSkeletonBatch(static_cast<unsigned int>(0));
-
-	info.camPos = &camPos;
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	glDrawBuffer(GL_BACK);
-	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	RenderEng.FullRender(info);
-	//RenderEng.RenderText(*MyFont, "Time: " + std::to_string(glfwGetTime()));
-	RenderEng.RenderText(RenderInfo(), *MyFont, "(C) twoja babka studios", Transform(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f), glm::vec3(128.0f)), glm::pow(glm::vec3(0.0f, 0.73f, 0.84f), glm::vec3(1.0f / 2.2f)), nullptr, true);
-	
-	glfwSwapBuffers(Window);
-}
-
 
 void cursorPosCallback(GLFWwindow* window, double xpos, double ypos)
 {
-	if (!mouseContextCamera)
+	if (!mouseController)
 		return;
 
 	glm::ivec2 halfWindowSize;
 	glfwGetWindowSize(window, &halfWindowSize.x, &halfWindowSize.y);
 	halfWindowSize /= 2;
 	glfwSetCursorPos(window, (double)halfWindowSize.x, (double)halfWindowSize.y);
-	mouseContextCamera->RotateWithMouse(glm::vec2(xpos - (float)halfWindowSize.x, ypos - (float)halfWindowSize.y));
+	mouseController->RotateWithMouse(glm::vec2(xpos - (float)halfWindowSize.x, ypos - (float)halfWindowSize.y));
 }
 
 void loadTransform(std::stringstream& filestr, Transform* transform)

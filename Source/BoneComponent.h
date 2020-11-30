@@ -22,7 +22,7 @@ public:
 	glm::mat4 FinalMatrix;
 
 public:
-	BoneComponent(GameManager*, std::string name, Transform t, unsigned int boneID);
+	BoneComponent(GameScene*, std::string name, Transform t, unsigned int boneID);
 	virtual void Update(float deltaTime) override;
 	virtual void GenerateFromNode(const MeshSystem::TemplateNode* node, Material* overrideMaterial = nullptr) override;
 	unsigned int GetID() const;

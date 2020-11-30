@@ -5,15 +5,16 @@ UniformBuffer::UniformBuffer()
 	UBO = 0;
 	offsetCache = 0;
 }
-void UniformBuffer::Generate(unsigned int index, size_t size, float* data, GLenum usage)
+void UniformBuffer::Generate(unsigned int blockBindingSlot, size_t size, float* data, GLenum usage)
 {
 	glGenBuffers(1, &UBO);
 
 	glBindBuffer(GL_UNIFORM_BUFFER, UBO);
 	glBufferData(GL_UNIFORM_BUFFER, size, data, usage);
-	glBindBufferBase(GL_UNIFORM_BUFFER, index, UBO);
+	glBindBufferBase(GL_UNIFORM_BUFFER, blockBindingSlot, UBO);
 
 	offsetCache = 0;
+	BlockBindingSlot = blockBindingSlot;
 }
 void UniformBuffer::SubData1i(int data, size_t offset)
 {
@@ -134,6 +135,14 @@ void printVector(glm::vec3 vec, std::string title)
 		title.append(": ");	//if we want to draw a title, add something after it
 
 	std::cout << title << vec.x << ", " << vec.y << ", " << vec.z << '\n';
+}
+
+void printVector(glm::vec4 vec, std::string title)
+{
+	if (!title.empty())
+		title.append(": ");	//if we want to draw a title, add something after it
+
+	std::cout << title << vec.x << ", " << vec.y << ", " << vec.z << ", " << vec.w << '\n';
 }
 
 void printVector(glm::quat q, std::string title)

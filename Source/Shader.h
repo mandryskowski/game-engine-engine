@@ -23,6 +23,12 @@ enum MatrixType
 	MATRICES_NB
 };
 
+/*struct ShaderVariant
+{
+	unsigned int Program;
+	const GameSettings* Settings;
+};*/
+
 class Shader
 {
 	struct UniformLocation

@@ -5,61 +5,12 @@ GameSettings::GameSettings()
 	WindowSize = glm::uvec2(800, 600);
 	bWindowFullscreen = false;
 	WindowTitle = "kulki";
-	AmbientOcclusionSamples = 0;
-	bVSync = false;
-	bBloom = true;
-	AAType = AntiAliasingType::AA_NONE;
-	AALevel = SettingLevel::SETTING_NONE;
-	MonitorGamma = 2.2f;
-	POMLevel = SettingLevel::SETTING_NONE;
-	ShadowLevel = SettingLevel::SETTING_LOW;
 }
 
 GameSettings::GameSettings(std::string path) :
 	GameSettings()	//zainicjalizuj wszystkie zmienne - plik moze byc uszkodzony
 {
 	LoadFromFile(path);
-}
-
-bool GameSettings::IsVelocityBufferNeeded() const
-{
-	return AAType == AntiAliasingType::AA_SMAAT2X;
-}
-
-bool GameSettings::IsTemporalReprojectionEnabled() const
-{
-	return AAType == AntiAliasingType::AA_SMAAT2X;
-}
-
-std::string GameSettings::GetShaderDefines(glm::uvec2 resolution) const
-{
-	if (resolution == glm::uvec2(0))
-		resolution = WindowSize;
-	std::string shaderDefines = "#define SCR_WIDTH " + std::to_string(resolution.x) + 
-							  "\n#define SCR_HEIGHT " + std::to_string(resolution.y) + "\n";
-
-	if (bBloom)
-		shaderDefines += "#define ENABLE_BLOOM 1\n";
-	if (AmbientOcclusionSamples > 0)
-	{
-		shaderDefines += "#define ENABLE_SSAO 1\n";
-		shaderDefines += "#define SSAO_SAMPLES " + std::to_string(AmbientOcclusionSamples) + "\n";
-	}
-	if (IsVelocityBufferNeeded())
-		shaderDefines += "#define CALC_VELOCITY_BUFFER 1\n";
-	if (POMLevel != SETTING_NONE)
-	{
-		shaderDefines += "#define ENABLE_POM 1\n";
-		switch (POMLevel)
-		{
-		case SETTING_LOW: shaderDefines += "#define POM_PRESET_LOW 1\n"; break;
-		case SETTING_MEDIUM: shaderDefines += "#define POM_PRESET_MEDIUM 1\n"; break;
-		case SETTING_HIGH: shaderDefines += "#define POM_PRESET_HIGH 1\n"; break;
-		case SETTING_ULTRA: shaderDefines += "#define POM_PRESET_ULTRA 1\n"; break;
-		}
-	}
-
-	return shaderDefines;
 }
 
 void GameSettings::LoadFromFile(std::string path)	//TODO: zangielszczyc
@@ -85,7 +36,7 @@ np.	windowsize 800 600
 	//prosta, lecz stosunkowo odporna na bledy i szybka implementacja; moze sie wywalic kiedy podamy zle dane do okreslonego rodzaju, np po zasygnalizowaniu windowsize podany zostaje string
 }
 
-void GameSettings::LoadSetting(std::stringstream& filestr, std::string settingName)
+bool GameSettings::LoadSetting(std::stringstream& filestr, std::string settingName)
 {
 	if (settingName == "windowsize")
 		filestr >> WindowSize.x >> WindowSize.y;	//rozmiar okna jest dwuwymiarowy, wiec wczytaj 2 liczby (2 wymiary)
@@ -93,7 +44,80 @@ void GameSettings::LoadSetting(std::stringstream& filestr, std::string settingNa
 		filestr >> bWindowFullscreen;				//bool wczytujemy tak jak int - 0 jest falszywe a wieksza wartosc (1) prawdziwa
 	else if (settingName == "windowtitle")
 		getline(filestr.ignore(), WindowTitle);	//tytul moze skladac sie z wielu wyrazow, wczytaj wiec cala linie do konca oraz pomin jeden znak, gdyz jest to spacja
-	else if (settingName == "ssaosamples")
+	else
+		return Video.LoadSetting(filestr, settingName);
+
+	return true;
+}
+
+template <class T> void LoadEnum(std::stringstream& filestr, T& var)
+{
+	int varNr;
+	filestr >> varNr;
+	var = static_cast<T>(varNr);
+}
+
+template void LoadEnum<SettingLevel>(std::stringstream& filestr, SettingLevel& var);
+
+GameSettings::VideoSettings::VideoSettings()
+{
+	AmbientOcclusionSamples = 0;
+	bVSync = false;
+	bBloom = true;
+	AAType = AntiAliasingType::AA_NONE;
+	AALevel = SettingLevel::SETTING_NONE;
+	MonitorGamma = 2.2f;
+	POMLevel = SettingLevel::SETTING_NONE;
+	ShadowLevel = SettingLevel::SETTING_LOW;
+	Shading = ShadingModel::SHADING_FULL_LIT;
+}
+
+std::string GameSettings::VideoSettings::GetShaderDefines(glm::uvec2 resolution) const
+{
+	if (resolution == glm::uvec2(0))
+		resolution = glm::uvec2(Resolution);
+
+	//Cast width and height to float so the macro in shader is also float.
+	std::string shaderDefines = "#define SCR_WIDTH " + std::to_string(static_cast<float>(resolution.x)) +
+		"\n#define SCR_HEIGHT " + std::to_string(static_cast<float>(resolution.y)) + "\n";
+
+	if (bBloom)
+		shaderDefines += "#define ENABLE_BLOOM 1\n";
+	if (AmbientOcclusionSamples > 0)
+	{
+		shaderDefines += "#define ENABLE_SSAO 1\n";
+		shaderDefines += "#define SSAO_SAMPLES " + std::to_string(AmbientOcclusionSamples) + "\n";
+	}
+	if (IsVelocityBufferNeeded())
+		shaderDefines += "#define CALC_VELOCITY_BUFFER 1\n";
+	if (POMLevel != SETTING_NONE)
+	{
+		shaderDefines += "#define ENABLE_POM 1\n";
+		switch (POMLevel)
+		{
+		case SETTING_LOW: shaderDefines += "#define POM_PRESET_LOW 1\n"; break;
+		case SETTING_MEDIUM: shaderDefines += "#define POM_PRESET_MEDIUM 1\n"; break;
+		case SETTING_HIGH: shaderDefines += "#define POM_PRESET_HIGH 1\n"; break;
+		case SETTING_ULTRA: shaderDefines += "#define POM_PRESET_ULTRA 1\n"; break;
+		}
+	}
+
+	return shaderDefines;
+}
+
+bool GameSettings::VideoSettings::IsVelocityBufferNeeded() const
+{
+	return AAType == AntiAliasingType::AA_SMAAT2X;
+}
+
+bool GameSettings::VideoSettings::IsTemporalReprojectionEnabled() const
+{
+	return AAType == AntiAliasingType::AA_SMAAT2X;
+}
+
+bool GameSettings::VideoSettings::LoadSetting(std::stringstream& filestr, std::string settingName)
+{
+	if (settingName == "ssaosamples")
 		filestr >> AmbientOcclusionSamples;
 	else if (settingName == "vsync")
 		filestr >> bVSync;
@@ -116,13 +140,8 @@ void GameSettings::LoadSetting(std::stringstream& filestr, std::string settingNa
 	{
 		LoadEnum<SettingLevel>(filestr, ShadowLevel);
 	}
-}
+	else
+		return false;
 
-template <class T> void LoadEnum(std::stringstream& filestr, T& var)
-{
-	int varNr;
-	filestr >> varNr;
-	var = static_cast<T>(varNr);
+	return true;
 }
-
-template void LoadEnum<SettingLevel>(std::stringstream& filestr, SettingLevel& var);

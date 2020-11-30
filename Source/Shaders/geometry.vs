@@ -12,6 +12,7 @@ out VS_OUT
 {
 	vec3 worldPosition;
 	#ifdef CALC_VELOCITY_BUFFER
+	smooth vec4 currMVPPosition;
 	smooth vec4 prevMVPPosition;
 	#endif
 	
@@ -56,9 +57,12 @@ void main()
 	
 	vs_out.TBN = mat3(T, B, N);
 	
+	vec4 projCoords = MVP * bonePosition;
+	
 	#ifdef CALC_VELOCITY_BUFFER
+	vs_out.currMVPPosition = projCoords;
 	vs_out.prevMVPPosition = prevMVP * vec4(vPosition, 1.0);
 	#endif
 
-	gl_Position = MVP * bonePosition;
+	gl_Position = projCoords;
 }

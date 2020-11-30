@@ -82,6 +82,14 @@ void TemplateNode::SetTemplateTransform(Transform& t)
 	TemplateTransform = t;
 }
 
+void TemplateNode::AddCollisionShape(std::shared_ptr<CollisionShape> shape)
+{
+	if (!CollisionObjTemplate)
+		CollisionObjTemplate = std::make_unique<CollisionObject>(CollisionObject());
+
+	CollisionObjTemplate->AddShape(shape);
+}
+
 template <typename T> T* TemplateNode::AddChild(std::string name)
 {
 	Children.push_back(std::make_unique<T>(T(name)));
@@ -179,7 +187,7 @@ template BoneNode* TemplateNode::AddChild<BoneNode>(BoneNode&&);
 ///////////////////////////////////
 
 MeshNode::MeshNode(std::string name, std::shared_ptr<Mesh> optionalMesh) :
-	TemplateNode(name),
+	TemplateNode(name, Transform()),
 	OverrideMaterial(nullptr)
 {
 	if (optionalMesh)

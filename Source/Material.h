@@ -12,7 +12,9 @@ class NamedTexture;
 
 class Material
 {
-	std::vector <NamedTexture*> Textures;
+public:
+	std::vector <NamedTexture*> Textures;	//Often used; NamedTextures (NamedTexture is a child class of Texture) are bound to the samplers which names correspond to ShaderName of a NamedTexture.
+	glm::vec4 Color;	//Probably not often used; Used for some materials that only need a colour, e.g. for button materials - they can be monocolour
 	float Shininess;
 	float DepthScale;	//used in parallax mapping
 	std::string Name;
@@ -25,6 +27,7 @@ public:
 	void SetDepthScale(float);
 	void SetShininess(float);
 	void SetRenderShaderName(std::string);
+	void SetColor(glm::vec4 color); //Think twice before you use colours; you need a corresponding shader to make it work (one that has uniform vec4 color in it)
 	void AddTexture(NamedTexture* tex);
 
 	void LoadFromAiMaterial(aiMaterial*, std::string, MaterialLoadingData*);

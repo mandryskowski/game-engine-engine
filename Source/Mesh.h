@@ -20,45 +20,6 @@ struct Vertex
 	VertexBoneData BoneData;
 };
 
-
-struct RenderInfo
-{
-	glm::vec3* camPos;
-	glm::mat4* view;
-	glm::mat4* projection;
-	glm::mat4* VP;
-	glm::mat4* previousFrameView;
-	bool UseMaterials;
-	bool OnlyShadowCasters;
-	bool CareAboutShader;
-	bool MainPass;
-
-	RenderInfo(glm::mat4* v = nullptr, glm::mat4* p = nullptr, glm::mat4* vp = nullptr, bool materials = true, bool onlyshadow = false, bool careAboutShader = true, bool mainPass = false) :
-		camPos(nullptr),
-		view(v),
-		projection(p),
-		VP(vp),
-		previousFrameView(nullptr),
-		UseMaterials(materials),
-		OnlyShadowCasters(onlyshadow),
-		CareAboutShader(careAboutShader),
-		MainPass(mainPass)
-	{
-	}
-	const glm::mat4& GetView()
-	{
-		return (view) ? (*view) : (glm::mat4(1.0f));
-	}
-	const glm::mat4& GetProjection()
-	{
-		return (projection) ? (*projection) : (glm::mat4(1.0f));
-	}
-	const glm::mat4& GetVP()
-	{
-		return (VP) ? (*VP) : (glm::mat4(1.0f));
-	}
-};
-
 class Mesh
 {
 	friend class RenderEngine;	//TODO: usun te linijke po zmianie

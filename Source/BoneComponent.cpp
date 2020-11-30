@@ -2,8 +2,8 @@
 #include <assimp/scene.h>
 #include "MeshSystem.h"
 
-BoneComponent::BoneComponent(GameManager* gameHandle, std::string name, Transform transform, unsigned int boneID):
-	Component(gameHandle, name, transform),
+BoneComponent::BoneComponent(GameScene* scene, std::string name, Transform transform, unsigned int boneID):
+	Component(scene, name, transform),
 	BoneID(boneID),
 	BoneOffset(glm::mat4(1.0f))
 {

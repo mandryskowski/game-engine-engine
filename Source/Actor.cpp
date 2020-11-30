@@ -1,11 +1,14 @@
 #include "Actor.h"
 #include "Component.h"
+#include "Mesh.h"
+#include "RenderInfo.h"
 #include <vector>
 
-Actor::Actor(GameManager* gameHandle, std::string name)
+Actor::Actor(GameScene* scene, const std::string& name):
+	Scene(scene),
+	GameHandle(scene->GetGameHandle())
 {
-	GameHandle = gameHandle;
-	RootComponent = new Component(GameHandle, "root", Transform());
+	RootComponent = new Component(scene, name + "'s root", Transform());
 	Name = name;
 	SetupStream = nullptr;
 }
@@ -22,22 +25,22 @@ void Actor::OnStartAll()
 		Children[i]->OnStartAll();
 }
 
-Component* Actor::GetRoot()
+Component* Actor::GetRoot() const
 {
 	return RootComponent;
 }
 
-std::string Actor::GetName()
+std::string Actor::GetName() const
 {
 	return Name;
 }
 
-Transform* Actor::GetTransform()
+Transform* Actor::GetTransform() const
 {
 	return &RootComponent->GetTransform();
 }
 
-Actor* Actor::GetChild(unsigned int index)
+Actor* Actor::GetChild(unsigned int index) const
 {
 	return Children[index].get();
 }
@@ -79,7 +82,7 @@ void Actor::SetSetupStream(std::stringstream* stream)
 	std::cout << "Adding " << SetupStream << " to actor " + Name + ".\n";
 }
 
-void Actor::Setup(SearchEngine* searcher)
+void Actor::Setup()
 {
 	if (SetupStream)
 	{
@@ -88,19 +91,19 @@ void Actor::Setup(SearchEngine* searcher)
 	}
 
 	for (unsigned int i = 0; i < Children.size(); i++)
-		Children[i]->Setup(searcher);
+		Children[i]->Setup();
 }
 
-void Actor::HandleInputs(GLFWwindow* window, float deltaTime)
+void Actor::HandleInputs(GLFWwindow* window)
 {
-	RootComponent->HandleInputsAll(window, deltaTime);
+	RootComponent->HandleInputsAll(window);
 }
 
-void Actor::HandleInputsAll(GLFWwindow* window, float deltaTime)
+void Actor::HandleInputsAll(GLFWwindow* window)
 {
-	HandleInputs(window, deltaTime);
+	HandleInputs(window);
 	for (unsigned int i = 0; i < Children.size(); i++)
-		Children[i]->HandleInputsAll(window, deltaTime);
+		Children[i]->HandleInputsAll(window);
 }
 
 void Actor::Update(float deltaTime)
@@ -117,14 +120,41 @@ void Actor::UpdateAll(float deltaTime)
 		Children[i]->UpdateAll(deltaTime);
 }
 
-Actor* Actor::SearchForActor(std::string name)
+void Actor::DebugRender(RenderInfo info, Shader* shader) const
+{
+	RootComponent->DebugRenderAll(info, shader);
+}
+
+void Actor::DebugRenderAll(RenderInfo info, Shader* shader) const
+{
+	DebugRender(info, shader);
+	for (int i = 0; i < static_cast<int>(Children.size()); i++)
+		Children[i]->DebugRenderAll(info, shader);
+}
+
+Actor* Actor::FindActor(std::string name)
 {
 	if (Name == name)
 		return this;
 
 	for (int i = 0; i < static_cast<int>(Children.size()); i++)
 	{
-		Actor* found = Children[i]->SearchForActor(name);
+		Actor* found = Children[i]->FindActor(name);
+		if (found)
+			return found;
+	}
+
+	return nullptr;
+}
+
+const Actor* Actor::FindActor(std::string name) const
+{
+	if (Name == name)
+		return this;
+
+	for (int i = 0; i < static_cast<int>(Children.size()); i++)
+	{
+		Actor* found = Children[i]->FindActor(name);
 		if (found)
 			return found;
 	}
