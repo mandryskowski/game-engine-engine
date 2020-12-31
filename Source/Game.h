@@ -4,6 +4,7 @@
 #include "AudioEngine.h"
 #include "GameSettings.h"
 #include "GameScene.h"
+#include "Event.h"
 #include "Actor.h"
 
 class Font;
@@ -27,6 +28,7 @@ public:
 	void AddScene(std::unique_ptr <GameScene> scene);
 	virtual void BindAudioListenerTransformPtr(Transform*) override;
 	virtual void PassMouseControl(Controller* controller) override; //pass nullptr to unbind any controller and allow moving the mouse around freely
+	InputDevicesStateRetriever GetInputRetriever() override;
 
 	virtual PhysicsEngineManager* GetPhysicsHandle() override;
 	virtual RenderEngineManager* GetRenderEngineHandle() override;
@@ -47,6 +49,7 @@ protected:
 	GLFWwindow* Window;
 
 	std::vector <std::unique_ptr <GameScene>> Scenes;	//The first scene (Scenes[0]) is referred to as the Main Scene. If you only use 1 scene in your application, don't bother with passing arround GameScene pointers - the Main Scene will be chosen automatically.
+	EventHolder EventHolderObj;
 	Controller* MouseController;
 
 	std::unique_ptr<GameSettings> Settings;
@@ -61,5 +64,12 @@ protected:
 	float TimeAccumulator;
 };
 
-void cursorPosCallback(GLFWwindow*, double, double);
-void loadTransform(std::stringstream&, Transform*);	//load transform from a file (own format)
+struct GLFWEventProcessor
+{
+	static void CursorPosCallback(GLFWwindow*, double, double);
+	static void MouseButtonCallback(GLFWwindow*, int button, int action, int mods);
+	static void KeyPressedCallback(GLFWwindow*, int key, int scancode, int action, int mods);
+	static void ScrollCallback(GLFWwindow*, double xoffset, double yoffset);
+
+	static EventHolder* TargetHolder;
+};

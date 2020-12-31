@@ -4,7 +4,11 @@
 #include "TextComponent.h"
 #include "CameraComponent.h"
 #include "FileLoader.h"
+#include "UICanvasActor.h"
 #include <map>
+
+//Po 11 minutach i 7 sekundach crashuje przez C:\Users\48511\Desktop\PhysX-4.1\physx\source\foundation\include\PsBroadcast.h (199) : abort : User allocator returned NULL. Czemu?
+//ODPOWIEDZ MEMORY LEAKS!!!!! we leak about 3 MB/s
 
 class GameEngineEngineEditor : public Game
 {
@@ -49,12 +53,29 @@ public:
 	std::unique_ptr<GameScene> GetEditorScene()
 	{
 		std::unique_ptr<GameScene> editorScene = std::make_unique<GameScene>(GameScene(this));
-		editorScene->AddActorToRoot(std::make_shared<ButtonActor>(ButtonActor(editorScene.get(), "MojTestowyButton")))->SetTransform(Transform(glm::vec3(-0.6f, 0.0f, 0.0f), glm::vec3(0.0f), glm::vec3(1.0f)));
+		Actor* bigButtonActor = editorScene->AddActorToRoot(std::make_shared<ButtonActor>(ButtonActor(editorScene.get(), "MojTestowyButton")));
+		bigButtonActor->SetTransform(Transform(glm::vec3(0.0f, -0.5f, 0.0f), glm::vec3(0.0f), glm::vec3(0.5f)));
+		TextComponent* bigButtonText = TextComponent::Of(TextComponent(editorScene.get(), "BigButtonText", Transform(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f), glm::vec3(0.1f)), "big button", "fonts/expressway rg.ttf")).get();
+		bigButtonActor->AddComponent(bigButtonText);
+
 		editorScene->AddActorToRoot(std::make_shared<ButtonActor>(ButtonActor(editorScene.get(), "smol button")))->SetTransform(Transform(glm::vec3(-0.75f, -0.75f, 0.0f), glm::vec3(0.0f), glm::vec3(0.1f)));
 		
 		Actor* textActor = editorScene->AddActorToRoot(std::make_shared<Actor>(Actor(editorScene.get(), "ViewportText")));
 		TextComponent* textComp = TextComponent::Of(TextComponent(editorScene.get(), "ViewportTextComp", Transform(glm::vec3(0.0f, 0.75f, 0.0f), glm::vec3(0.0f), glm::vec3(0.1f)), "siemano", "fonts/expressway rg.ttf")).get();
 		textActor->AddComponent(textComp);
+
+		UICanvasActor* exampleCanvas = dynamic_cast<UICanvasActor*>(editorScene->AddActorToRoot(std::make_shared<UICanvasActor>(UICanvasActor(editorScene.get(), "ExampleCanvas"))));
+		exampleCanvas->SetTransform(Transform(glm::vec3(0.7f, -0.4f, 0.0f), glm::vec3(0.0f), glm::vec3(0.3f)));
+		auto lolBackgroundButton = std::make_shared<ButtonActor>(ButtonActor(editorScene.get(), "VeryImportantButton"));
+		lolBackgroundButton->SetTransform(Transform(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f), glm::vec3(2.0f)));
+		exampleCanvas->AddChild(lolBackgroundButton);
+		TextComponent* sampleText = TextComponent::Of(TextComponent(editorScene.get(), "SampleTextComp", Transform(glm::vec3(0.0f), glm::vec3(0.0f), glm::vec3(0.1f)), "Sample Text", "fonts/expressway rg.ttf")).get();
+		exampleCanvas->AddComponent(sampleText);
+		sampleText->AttachToCanvas(*exampleCanvas);
+		sampleText->AlignToCenter();
+		auto exampleButton = std::make_shared<ButtonActor>(ButtonActor(editorScene.get(), "VeryImportantButton"));
+		exampleButton->SetTransform(Transform(glm::vec3(0.0f, 0.3f, 0.0f), glm::vec3(0.0f), glm::vec3(2.0f, 0.2f, 2.0f)));
+		exampleCanvas->AddChild(exampleButton);
 
 		Actor* cameraActor = editorScene->AddActorToRoot(std::make_shared<Actor>(Actor(editorScene.get(), "OrthoCameraActor")));
 		CameraComponent* orthoCameraComp = new CameraComponent(editorScene.get(), "OrthoCameraComp");
@@ -84,7 +105,7 @@ public:
 		RenderEng.PrepareScene(*ViewportRenderCollection, Scenes[0]->GetRenderData());
 		RenderEng.FullSceneRender(Scenes[0]->ActiveCamera->GetRenderInfo(*ViewportRenderCollection), Scenes[0]->GetRenderData(), nullptr, Viewport((static_cast<glm::vec2>(Settings->WindowSize) - Settings->Video.Resolution) / glm::vec2(2.0f, 1.0f), glm::vec2(Settings->Video.Resolution.x, Settings->Video.Resolution.y)));
 		RenderEng.FindShader("Forward_NoLight")->Use();
-		Scenes[0]->GetRootActor()->DebugRenderAll(Scenes[0]->ActiveCamera->GetRenderInfo(*ViewportRenderCollection), RenderEng.FindShader("Forward_NoLight"));
+		//Scenes[0]->GetRootActor()->DebugRenderAll(Scenes[0]->ActiveCamera->GetRenderInfo(*ViewportRenderCollection), RenderEng.FindShader("Forward_NoLight"));
 
 		//RenderEng.RenderText(*MyFont, "Time: " + std::to_string(glfwGetTime()));
 		//RenderEng.RenderText(RenderInfo(*RenderEng.GetCurrentTbCollection()), *MyFont, "Viewport " + std::to_string(Settings->ViewportData.z) + "x" + std::to_string(Settings->ViewportData.w), Transform(glm::vec3(0.0f, 632.0f, 0.0f), glm::vec3(0.0f), glm::vec3(16.0f)), glm::pow(glm::vec3(0.0f, 0.73f, 0.84f), glm::vec3(1.0f / 2.2f)), nullptr, true);

@@ -39,7 +39,7 @@ public:
 	static void InstantiateTree(Component* comp, MeshSystem::MeshTree&, MeshTreeInstancingType type = MeshTreeInstancingType::ROOTTREE, Material* overrideMaterial = nullptr);
 
 	static std::shared_ptr<Font> LoadFont(std::string path);
-	template <class T = GameSettings> static const T& LoadSettingsFromFile(std::string path);
+	template <class T = GameSettings> static T LoadSettingsFromFile(std::string path);
 
 private:
 	static void LoadMaterials(RenderEngineManager*, std::string path, std::string directory);

@@ -134,9 +134,7 @@
     </ProjectReference>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\..\..\..\..\Dev\Source\glad.c">
-      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Default</CompileAs>
-    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\..\..\Dev\Include\glad4\src\glad.c" />
     <ClCompile Include="Actor.cpp" />
     <ClCompile Include="Animation.cpp" />
     <ClCompile Include="AudioEngine.cpp" />
@@ -146,6 +144,7 @@
     <ClCompile Include="CollisionObject.cpp" />
     <ClCompile Include="Component.cpp" />
     <ClCompile Include="Controller.cpp" />
+    <ClCompile Include="Event.cpp" />
     <ClCompile Include="FileLoader.cpp" />
     <ClCompile Include="Font.cpp" />
     <ClCompile Include="Framebuffer.cpp" />
@@ -154,6 +153,7 @@
     <ClCompile Include="GameSettings.cpp" />
     <ClCompile Include="GunActor.cpp" />
     <ClCompile Include="HUDModelComponent.cpp" />
+    <ClCompile Include="InputDevicesStateRetriever.cpp" />
     <ClCompile Include="LightComponent.cpp" />
     <ClCompile Include="LightProbe.cpp" />
     <ClCompile Include="main.cpp" />
@@ -173,7 +173,10 @@
     <ClCompile Include="TextComponent.cpp" />
     <ClCompile Include="Texture.cpp" />
     <ClCompile Include="Transform.cpp" />
+    <ClCompile Include="UICanvasActor.cpp" />
+    <ClCompile Include="UIModelComponent.cpp" />
     <ClCompile Include="Utility.cpp" />
+    <ClCompile Include="Viewport.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Actor.h" />
@@ -186,6 +189,7 @@
     <ClInclude Include="CollisionObject.h" />
     <ClInclude Include="Component.h" />
     <ClInclude Include="Controller.h" />
+    <ClInclude Include="Event.h" />
     <ClInclude Include="FileLoader.h" />
     <ClInclude Include="Font.h" />
     <ClInclude Include="Framebuffer.h" />
@@ -195,6 +199,7 @@
     <ClInclude Include="GameSettings.h" />
     <ClInclude Include="GunActor.h" />
     <ClInclude Include="HUDModelComponent.h" />
+    <ClInclude Include="InputDevicesStateRetriever.h" />
     <ClInclude Include="LightComponent.h" />
     <ClInclude Include="LightProbe.h" />
     <ClInclude Include="Material.h" />
@@ -213,7 +218,10 @@
     <ClInclude Include="TextComponent.h" />
     <ClInclude Include="Texture.h" />
     <ClInclude Include="Transform.h" />
+    <ClInclude Include="UICanvasActor.h" />
+    <ClInclude Include="UIModelComponent.h" />
     <ClInclude Include="Utility.h" />
+    <ClInclude Include="Viewport.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

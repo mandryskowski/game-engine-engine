@@ -12,22 +12,15 @@ namespace physx
 enum MovementDirections
 {
 	DIRECTION_FORWARD,
-	DIRECTION_RIGHT,
 	DIRECTION_BACKWARD,
 	DIRECTION_LEFT,
+	DIRECTION_RIGHT,
 	DIRECTION_UP,
 	DIRECTION_COUNT
 };
 
 class Controller : public Actor
 {
-	enum MovementDir
-	{
-		FORWARD,
-		LEFT,
-		RIGHT,
-		BACKWARD
-	};
 
 	struct MovementAxis
 	{
@@ -50,7 +43,8 @@ public:
 
 	virtual void OnStart() override;
 
-	virtual void HandleInputs(GLFWwindow* window) override;
+	virtual void HandleEvent(const Event& ev) override;
+	virtual void ReadMovementKeys();
 	virtual void Update(float deltaTime) override;
 	void RotateWithMouse(glm::vec2);	//rotates camera - you should pass the mouse offset from the center
 	void HandleMovementAxis(bool pressed, MovementAxis& axis);

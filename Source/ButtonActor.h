@@ -6,14 +6,22 @@ class ButtonActor : public Actor
 public:
 	ButtonActor(GameScene*, const std::string& name);
 
-	virtual void HandleInputs(GLFWwindow* window) override;
-
 	virtual void OnStart() override;
+
+	virtual void HandleEvent(const Event& ev) override;
+
 	virtual void OnHover();
 	virtual void OnUnhover();
 
+	virtual void OnClick();
+	virtual void OnUnclick();
+
 protected:
+	virtual void DeduceMaterial();
+
+
 	bool IsMouseHovering;
+	bool IsClicked;
 };
 
 struct CollisionTests

@@ -17,6 +17,6 @@ public:
 	bool CareAboutShader;
 	bool MainPass;
 
-	RenderInfo(RenderToolboxCollection& tbCollection, const glm::mat4& v = glm::mat4(1.0f), const glm::mat4& p = glm::mat4(1.0f), const glm::mat4& vp = glm::mat4(1.0f), const glm::vec3& camPos = glm::vec3(0.0f), bool materials = true, bool onlyshadow = false, bool careAboutShader = true, bool mainPass = false);
+	RenderInfo(RenderToolboxCollection& tbCollection, const glm::mat4& v = glm::mat4(1.0f), const glm::mat4& p = glm::mat4(1.0f), const glm::mat4& vp = glm::mat4(1.0f), const glm::vec3& camPos = glm::vec3(0.0f), bool materials = true, bool onlyshadow = false, bool careAboutShader = false, bool mainPass = false);
 	glm::mat4 CalculateVP();
 };

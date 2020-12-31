@@ -26,7 +26,7 @@ class Mesh
 	friend class ModelComponent;
 
 	unsigned int VAO, VBO, EBO;
-	unsigned int VertexCount;
+	unsigned int VertexCount, IndexCount;
 	Material* DefaultMeshMaterial;
 
 	std::string Name;
@@ -40,28 +40,29 @@ public:
 	unsigned int GetVertexCount() const;
 	std::string GetName() const;
 	Material* GetMaterial();
+	const Material* GetMaterial() const;
 	bool CanCastShadow() const;
 
 	void SetMaterial(Material*);
 
 	void Bind() const;
-	void LoadFromGLBuffers(unsigned int vertexCount, unsigned int VAO, unsigned int VBO, unsigned int EBO = 0);
+	void LoadFromGLBuffers(unsigned int vertexCount, unsigned int VAO, unsigned int VBO, unsigned int indexCount = 0, unsigned int EBO = 0);
 	void GenerateVAO(std::vector<Vertex>*, std::vector<unsigned int>*);
 	void Render() const;
 };
 
 class MeshInstance
 {
-	Mesh* MeshPtr;
+	const Mesh& MeshRef;
 	std::unique_ptr<MaterialInstance> MaterialInst;
 
 public:
-	MeshInstance(Mesh* mesh, Material* overrideMaterial = nullptr);
+	MeshInstance(const Mesh& mesh, Material* overrideMaterial = nullptr);
 	MeshInstance(const MeshInstance&);
 	MeshInstance(MeshInstance&&) noexcept;
 
 	const Mesh& GetMesh() const;
-	Material* GetMaterialPtr() const;
+	const Material* GetMaterialPtr() const;
 	MaterialInstance* GetMaterialInst() const;
 
 	void SetMaterial(Material*);

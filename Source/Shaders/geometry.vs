@@ -53,7 +53,7 @@ void main()
 	vec3 T = normalize(normalBoneMat * vTangent);
 	vec3 B = normalize(normalBoneMat * vBitangent);
 	vec3 N = normalize(normalBoneMat * vNormal);
-		B = normalize(normalBoneMat * cross(N, T));
+		 B = normalize(normalBoneMat * cross(N, T));
 	
 	vs_out.TBN = mat3(T, B, N);
 	

@@ -11,6 +11,7 @@ struct Material
 	sampler2D roughness1;
 	sampler2D metallic1;
 	sampler2D ao1;
+	sampler2D combined1;
 	#endif
 	
 	float shininess;
@@ -52,10 +53,10 @@ uniform Material material;
 
 vec2 ParallaxOcclusion(vec2 texCoord)	//Parallax Occlusion Mapping algorithm
 {
-	if (material.depthScale == 0.0)
+	if (material.depthScale == 0.0)	//this won't optimize anything but rather prevent any unnecessary texCoord change
 		return texCoord;
 
-	vec3 viewDir = transpose(frag.TBN) * normalize(camPos - frag.worldPosition);
+	vec3 viewDir = normalize(transpose(frag.TBN) * normalize(camPos - frag.worldPosition));
 	
 	#if defined(POM_PRESET_LOW)
 	float minSamples = 8.0;
@@ -70,7 +71,7 @@ vec2 ParallaxOcclusion(vec2 texCoord)	//Parallax Occlusion Mapping algorithm
 	float minSamples = 64.0;
 	float maxSamples = 128.0;
 	#else
-	#error No POM preset defined.
+	#error No POM preset defined. Define POM_PRESET_LOW/POM_PRESET_MEDIUM/POM_PRESET_HIGH/POM_PRESET_ULTRA.
 	#endif
 	
 	float samples = mix(maxSamples, minSamples, abs(dot(viewDir, vec3(0.0, 0.0, 1.0))));
@@ -89,9 +90,9 @@ vec2 ParallaxOcclusion(vec2 texCoord)	//Parallax Occlusion Mapping algorithm
 			float lastTestDepth = depth - depthOffset;
 			
 			float thisWeight = lastTestDepth - lastDepth;	//calculate delta from the last sample
-			thisWeight = thisWeight / (thisWeight + (mapDepth - depth));	//divide the delta from the last sample by a sum of last delta and this sample delta
+			thisWeight = thisWeight / (thisWeight + (mapDepth - depth));	//divide the delta from the last sample by the sum of last delta and this sample delta
 			
-			return (texCoord * thisWeight) + (lastTexCoord * (1.0 - thisWeight));	//this way you can interpolate between texture coordinates to smoothen the result.
+			return mix(lastTexCoord, texCoord, thisWeight);	//this way we can interpolate between texture coordinates to smoothen the result.
 		}
 		
 		texCoord -= unitOffset;
@@ -121,8 +122,13 @@ void main()
 	gAlbedoSpec.a = texture(material.specular1, texCoord).r;
 	#ifdef PBR_SHADING
 	gAlphaMetalAo.r = pow(texture(material.roughness1, texCoord).r, 2.0);
+	if (gAlphaMetalAo.r == 0.0)
+		gAlphaMetalAo.r = pow(texture(material.combined1, texCoord).g, 2.0);
 	gAlphaMetalAo.g = texture(material.metallic1, texCoord).r;
 	gAlphaMetalAo.b = texture(material.ao1, texCoord).r;
+	if (gAlphaMetalAo.g == 0.0)
+		gAlphaMetalAo.g = texture(material.combined1, texCoord).b;
+	
 	#endif
 	
 	#ifdef CALC_VELOCITY_BUFFER

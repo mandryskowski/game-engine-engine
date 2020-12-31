@@ -34,6 +34,12 @@ Material* Mesh::GetMaterial()
 	return DefaultMeshMaterial;
 }
 
+const Material* Mesh::GetMaterial() const
+{
+	return DefaultMeshMaterial;
+}
+
+
 bool Mesh::CanCastShadow() const
 {
 	return CastsShadow;
@@ -49,9 +55,10 @@ void Mesh::Bind() const
 	glBindVertexArray(VAO);
 }
 
-void Mesh::LoadFromGLBuffers(unsigned int vertexCount, unsigned int vao, unsigned int vbo, unsigned int ebo)
+void Mesh::LoadFromGLBuffers(unsigned int vertexCount, unsigned int vao, unsigned int vbo, unsigned int indexCount, unsigned int ebo)
 {
 	VertexCount = vertexCount;
+	IndexCount = indexCount;
 	VAO = vao;
 	VBO = vbo;
 	EBO = ebo;
@@ -91,12 +98,15 @@ void Mesh::GenerateVAO(std::vector <Vertex>* vertices, std::vector <unsigned int
 		glEnableVertexAttribArray(i);
 
 	VertexCount = (unsigned int)vertices->size();
+	IndexCount = (unsigned int)indices->size();
+
+	std::cout << Name + ": " << VertexCount << " " << IndexCount << "\n";
 }
 
 void Mesh::Render() const
 {
 	if (EBO)
-		glDrawElements(GL_TRIANGLES, VertexCount, GL_UNSIGNED_INT, nullptr);
+		glDrawElements(GL_TRIANGLES, IndexCount, GL_UNSIGNED_INT, nullptr);
 	else
 		glDrawArrays(GL_TRIANGLES, 0, VertexCount);
 }
@@ -108,34 +118,42 @@ void Mesh::Render() const
 */
 
 
-MeshInstance::MeshInstance(Mesh* mesh, Material* overrideMaterial):
-	MeshPtr(mesh)
+MeshInstance::MeshInstance(const Mesh& mesh, Material* overrideMaterial):
+	MeshRef(mesh),
+	MaterialInst(nullptr)
 {
-	Material* material = (overrideMaterial) ? (overrideMaterial) : (mesh->GetMaterial());
-	MaterialInst = std::make_unique<MaterialInstance>(material);
+	const Material* material = (overrideMaterial) ? (overrideMaterial) : (mesh.GetMaterial());
+	if (material)
+		MaterialInst = std::make_unique<MaterialInstance>(MaterialInstance(*material));
 }
 
-MeshInstance::MeshInstance(const MeshInstance& mesh)
+MeshInstance::MeshInstance(const MeshInstance& mesh):
+	MaterialInst(nullptr),
+	MeshRef(mesh.MeshRef)
 {
-	MeshPtr = mesh.MeshPtr;
-	MaterialInst = std::make_unique<MaterialInstance>(mesh.MaterialInst->GetMaterialPtr());	//create another instance of the same material
+	if (mesh.MaterialInst)
+		MaterialInst = std::make_unique<MaterialInstance>(mesh.MaterialInst->GetMaterialRef());	//create another instance of the same material
 }
 
 
-MeshInstance::MeshInstance(MeshInstance&& mesh) noexcept
+MeshInstance::MeshInstance(MeshInstance&& mesh) noexcept:
+	MeshRef(mesh.MeshRef)
 {
-	MeshPtr = mesh.MeshPtr;
-	MaterialInst = std::make_unique<MaterialInstance>(mesh.MaterialInst->GetMaterialPtr());	//create another instance of the same material
+	if (mesh.MaterialInst)
+		MaterialInst = std::make_unique<MaterialInstance>(mesh.MaterialInst->GetMaterialRef());	//create another instance of the same material
 }
 
 const Mesh& MeshInstance::GetMesh() const
 {
-	return *MeshPtr;
+	return MeshRef;
 }
 
-Material* MeshInstance::GetMaterialPtr() const
+const Material* MeshInstance::GetMaterialPtr() const
 {
-	return MaterialInst->GetMaterialPtr();
+	if (MaterialInst)
+		return &MaterialInst->GetMaterialRef();
+
+	return nullptr;
 }
 
 MaterialInstance* MeshInstance::GetMaterialInst() const
@@ -146,7 +164,7 @@ MaterialInstance* MeshInstance::GetMaterialInst() const
 void MeshInstance::SetMaterial(Material* mat)
 {
 	MaterialInst.release();
-	MaterialInst = std::make_unique<MaterialInstance>(mat);
+	MaterialInst = std::make_unique<MaterialInstance>(*mat);
 }
 
 /*

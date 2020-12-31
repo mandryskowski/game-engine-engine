@@ -155,7 +155,6 @@ void Shader::Use() const
 
 void Shader::BindMatrices(const glm::mat4& model, const glm::mat4* view, const glm::mat4* projection, const glm::mat4* VP) const
 {
-	Locations.clear();
 	if (ExpectedMatrices[MatrixType::MODEL])
 		UniformMatrix4fv("model", model);
 	if (ExpectedMatrices[MatrixType::VIEW])

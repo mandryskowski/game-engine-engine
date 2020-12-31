@@ -4,6 +4,8 @@
 #include <glm/glm.hpp>
 #include <memory>
 
+struct aiTexture;
+
 class Texture
 {
 protected:
@@ -36,9 +38,11 @@ public:
 };
 
 bool containsAlphaChannel(GLenum internalformat);
+GLenum nrChannelsToFormat(int nrChannels, bool bBGRA = false, GLenum* internalFormat = nullptr);
 
 GLenum internalFormatToAlpha(GLenum);
 template <class T = unsigned char> Texture textureFromFile(std::string path, GLenum internalformat, GLenum magFilter = GL_NEAREST, GLenum minFilter = GL_LINEAR_MIPMAP_LINEAR, bool flip = false);
+Texture textureFromAiEmbedded(const aiTexture&, bool bSRGB);
 Texture textureFromBuffer(const void* buffer, unsigned int width, unsigned int height, GLenum internalformat, GLenum format, GLenum type, GLenum magFilter = GL_NEAREST, GLenum minFilter = GL_LINEAR_MIPMAP_LINEAR);
 std::shared_ptr<Texture> reserveTexture(glm::uvec2 size, GLenum internalformat = GL_RGB, GLenum type = GL_UNSIGNED_BYTE, GLenum magFilter = GL_NEAREST, GLenum minFilter = GL_NEAREST, GLenum texType = GL_TEXTURE_2D, unsigned int samples = 0, std::string texName = "undefined2DTexture", GLenum format = GL_ZERO);	//Pass the last argument to override the default internalformat->format conversion
 std::shared_ptr<Texture> reserveTexture(glm::uvec3 size, GLenum internalformat = GL_RGB, GLenum type = GL_UNSIGNED_BYTE, GLenum magFilter = GL_NEAREST, GLenum minFilter = GL_NEAREST, GLenum texType = GL_TEXTURE_2D, unsigned int samples = 0, std::string texName = "undefined3DTexture", GLenum format = GL_ZERO);

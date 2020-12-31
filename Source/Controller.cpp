@@ -3,6 +3,7 @@
 #include "CameraComponent.h"
 #include "CollisionObject.h"
 #include "Animation.h"
+#include "InputDevicesStateRetriever.h"
 #include <PhysX/PxPhysicsAPI.h>
 
 Controller::Controller(GameScene* scene, std::string name):
@@ -22,12 +23,12 @@ Controller::Controller(GameScene* scene, std::string name):
 			dir.MovementInterpolator = std::make_unique<Interpolator<float>>(Interpolator<float>(0.0f, 0.15f, 0.0f, 1.0f, InterpolationType::LINEAR));
 			dir.Inversed = false;
 
-			switch (static_cast<MovementDir>(i))
+			switch (static_cast<MovementDirections>(i))
 			{
-			case FORWARD: dir.Direction = glm::vec3(0.0f, 0.0f, -1.0f); break;
-			case BACKWARD: dir.Direction = glm::vec3(0.0f, 0.0f, 1.0f); break;
-			case LEFT: dir.Direction = glm::vec3(-1.0f, 0.0f, 0.0f); break;
-			case RIGHT: dir.Direction = glm::vec3(1.0f, 0.0f, 0.0f); break;
+			case DIRECTION_FORWARD: dir.Direction = glm::vec3(0.0f, 0.0f, -1.0f); break;
+			case DIRECTION_BACKWARD: dir.Direction = glm::vec3(0.0f, 0.0f, 1.0f); break;
+			case DIRECTION_LEFT: dir.Direction = glm::vec3(-1.0f, 0.0f, 0.0f); break;
+			case DIRECTION_RIGHT: dir.Direction = glm::vec3(1.0f, 0.0f, 0.0f); break;
 			}
 			i++;
 			return dir;
@@ -47,7 +48,12 @@ void Controller::OnStart()
 	GameHandle->GetPhysicsHandle()->AddCollisionObject(Scene->GetPhysicsData(), colObject);
 }
 
-void Controller::HandleInputs(GLFWwindow* window)
+void Controller::HandleEvent(const Event& ev)
+{
+	// put shooting here
+}
+
+void Controller::ReadMovementKeys()
 {
 	if (!PossessedActor)
 		return;
@@ -55,27 +61,27 @@ void Controller::HandleInputs(GLFWwindow* window)
 	for (int i = 0; i < DIRECTION_COUNT; i++)
 		Directions[i] = false;
 
-	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+	if (GameHandle->GetInputRetriever().IsKeyPressed(Key::W))
 		Directions[DIRECTION_FORWARD] = true;
-	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+	if (GameHandle->GetInputRetriever().IsKeyPressed(Key::S))
 		Directions[DIRECTION_BACKWARD] = true;
-	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+	if (GameHandle->GetInputRetriever().IsKeyPressed(Key::A))
 		Directions[DIRECTION_LEFT] = true;
-	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+	if (GameHandle->GetInputRetriever().IsKeyPressed(Key::D))
 		Directions[DIRECTION_RIGHT] = true;
-	if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+	if (GameHandle->GetInputRetriever().IsKeyPressed(Key::SPACE))
 		Directions[DIRECTION_UP] = true;
-	if (glfwGetKey(window, GLFW_KEY_TAB) == GLFW_PRESS)
+	if (GameHandle->GetInputRetriever().IsKeyPressed(Key::TAB))
 	{
 		GameHandle->PassMouseControl(nullptr);
 	}
 	else
 		GameHandle->PassMouseControl(this);
 
-	HandleMovementAxis(glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS, MovementAxises[FORWARD]);
-	HandleMovementAxis(glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS, MovementAxises[BACKWARD]);
-	HandleMovementAxis(glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS, MovementAxises[LEFT]);
-	HandleMovementAxis(glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS, MovementAxises[RIGHT]);
+	HandleMovementAxis(Directions[DIRECTION_FORWARD], MovementAxises[DIRECTION_FORWARD]);
+	HandleMovementAxis(Directions[DIRECTION_BACKWARD], MovementAxises[DIRECTION_BACKWARD]);
+	HandleMovementAxis(Directions[DIRECTION_LEFT], MovementAxises[DIRECTION_LEFT]);
+	HandleMovementAxis(Directions[DIRECTION_RIGHT], MovementAxises[DIRECTION_RIGHT]);
 }
 
 void Controller::Update(float deltaTime)
@@ -83,10 +89,12 @@ void Controller::Update(float deltaTime)
 	if (!PossessedActor)
 		return;
 
+	ReadMovementKeys();
+
 	physx::PxRaycastBuffer dupa;
 	bool isOnGround = PxController->getActor()->getScene()->raycast(physx::toVec3(PxController->getFootPosition()), PxController->getScene()->getGravity().getNormalized(), 0.1f, dupa);
 	glm::vec3 movementVec(0.0f);
-
+	
 	for (int i = 0; i < 4; i++)
 	{
 		MovementAxises[i].MovementInterpolator->Update(deltaTime);
@@ -95,6 +103,7 @@ void Controller::Update(float deltaTime)
 		movementVec += dir * MovementAxises[i].MovementInterpolator->GetCurrentValue();
 	}
 
+	//PossessedActor->GetTransform()->Move(movementVec * deltaTime * 3.0f);
 	PxController->move(toPx(movementVec * deltaTime * 3.0f), 0.001f, deltaTime, physx::PxControllerFilters());
 
 	if (isOnGround)

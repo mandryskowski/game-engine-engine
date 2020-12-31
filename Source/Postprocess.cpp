@@ -255,7 +255,7 @@ const Texture* Postprocess::TonemapGammaPass(ComposedImageStorageToolbox& tb, co
 	writeFramebuffer.SetDrawBuffer(0);
 
 	glDisable(GL_DEPTH_TEST);
-	//glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+	//glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	//glClear(GL_COLOR_BUFFER_BIT);
 
 	tb.TonemapGammaShader->Use();
@@ -290,7 +290,8 @@ void Postprocess::Render(RenderToolboxCollection& tbCollection, const GEE_FB::Fr
 		unsigned int previousFrameIndex = (static_cast<int>(FrameIndex) - 1) % storageTb->StorageFb->GetNumberOfColorBuffers();
 		const Texture* SMAAresult = SMAAPass(*tbCollection.GetTb<SMAAToolbox>(), *storageTb->StorageFb, nullptr, compositedTex, depthTex, storageTb->StorageFb->GetColorBuffer(previousFrameIndex).get(), velocityTex, FrameIndex, true);
 
-		finalFramebuffer.Bind();
+		finalFramebuffer.Bind(true, viewport);
+		finalFramebuffer.SetDrawBuffer(0);
 		glEnable(GL_FRAMEBUFFER_SRGB);
 		QuadShader->Use();
 

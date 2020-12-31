@@ -165,10 +165,13 @@ void RenderEngine::GenerateEngineObjects()
 	//Add the engine objects to the tree collection. This way models loaded from the level file can simply use the internal engine meshes for stuff like particles
 	//Preferably, the engine objects should be added to the tree collection first, so searching for them takes less time and they'll possibly be used often.
 
-	CreateMeshTree("ENG_CUBE")->GetRoot().AddChild<MeshSystem::MeshNode>("Cube")->AddMesh("Cube").LoadFromGLBuffers(36, cubeVAO, cubeVBO);
-	CreateMeshTree("ENG_QUAD")->GetRoot().AddChild<MeshSystem::MeshNode>("Quad")->AddMesh("Quad_NoShadow").LoadFromGLBuffers(6, quadVAO, quadVBO, quadEBO);
+	//CreateMeshTree("ENG_CUBE")->GetRoot().AddChild<MeshSystem::MeshNode>("Cube")->AddMesh("Cube").LoadFromGLBuffers(36, cubeVAO, cubeVBO);
+	//CreateMeshTree("ENG_QUAD")->GetRoot().AddChild<MeshSystem::MeshNode>("Quad")->AddMesh("Quad_NoShadow").LoadFromGLBuffers(4, quadVAO, quadVBO, 6, quadEBO);
+	EngineDataLoader::LoadMeshTree(GameHandle, this, "EngineObjects/quad.obj", CreateMeshTree("ENG_QUAD"));
+	EngineDataLoader::LoadMeshTree(GameHandle, this, "EngineObjects/cube.obj", CreateMeshTree("ENG_CUBE"));
 	EngineDataLoader::LoadMeshTree(GameHandle, this, "EngineObjects/sphere.obj", CreateMeshTree("ENG_SPHERE"))->FindMesh("Sphere");
 	EngineDataLoader::LoadMeshTree(GameHandle, this, "EngineObjects/cone.obj", CreateMeshTree("ENG_CONE"))->FindMesh("Cone");
+	FindMeshTree("ENG_QUAD")->FindNode("Quad")->FindMesh("Quad")->Name = "Quad_NoShadow";
 }
 
 void RenderEngine::LoadInternalShaders()
@@ -180,7 +183,7 @@ void RenderEngine::LoadInternalShaders()
 		std::pair<unsigned int, std::string>(0, "albedo1"),
 		std::pair<unsigned int, std::string>(1, "specular1"),
 		std::pair<unsigned int, std::string>(2, "normal1"),
-		std::pair<unsigned int, std::string>(3, "depth1")
+		std::pair<unsigned int, std::string>(3, "depth1"),
 	};
 	//load shadow shaders
 	Shaders.push_back(ShaderLoader::LoadShaders("Depth", "Shaders/depth.vs", "Shaders/depth.fs"));
@@ -252,22 +255,21 @@ const ShadingModel& RenderEngine::GetShadingModel()
 	return GameHandle->GetGameSettings()->Video.Shading;
 }
 
-const std::shared_ptr<Mesh> RenderEngine::GetBasicShapeMesh(EngineBasicShape type)
+const Mesh& RenderEngine::GetBasicShapeMesh(EngineBasicShape type) const
 {
 	switch (type)
 	{
+	default:
+		std::cout << "ERROR! Enum value " << static_cast<int>(type) << " does not represent a basic shape mesh.\n";
 	case EngineBasicShape::QUAD:
-		return FindMeshTree("ENG_QUAD")->FindMeshPtr("Quad_NoShadow");
+		return *FindMeshTree("ENG_QUAD")->FindMeshPtr("Quad_NoShadow");
 	case EngineBasicShape::CUBE:
-		return FindMeshTree("ENG_CUBE")->FindMeshPtr("Cube");
+		return *FindMeshTree("ENG_CUBE")->FindMeshPtr("Cube");
 	case EngineBasicShape::SPHERE:
-		return FindMeshTree("ENG_SPHERE")->FindMeshPtr("Sphere");
+		return *FindMeshTree("ENG_SPHERE")->FindMeshPtr("Sphere");
 	case EngineBasicShape::CONE:
-		return FindMeshTree("ENG_CONE")->FindMeshPtr("Cone");
+		return *FindMeshTree("ENG_CONE")->FindMeshPtr("Cone");
 	}
-
-	std::cout << "ERROR! Type " << type << " does not represent a basic shape mesh.\n";
-	return nullptr;
 }
 
 Shader* RenderEngine::GetLightShader(const RenderToolboxCollection& renderCol, LightType type)
@@ -302,6 +304,15 @@ MeshSystem::MeshTree* RenderEngine::CreateMeshTree(std::string path)
 }
 
 MeshSystem::MeshTree* RenderEngine::FindMeshTree(std::string path, MeshSystem::MeshTree* ignore)
+{
+	auto found = std::find_if(MeshTrees.begin(), MeshTrees.end(), [path, ignore](const std::unique_ptr<MeshSystem::MeshTree>& tree) { return tree->GetPath() == path && tree.get() != ignore; });
+	if (found != MeshTrees.end())
+		return (*found).get();
+
+	return nullptr;
+}
+
+const MeshSystem::MeshTree* RenderEngine::FindMeshTree(std::string path, MeshSystem::MeshTree* ignore) const
 {
 	auto found = std::find_if(MeshTrees.begin(), MeshTrees.end(), [path, ignore](const std::unique_ptr<MeshSystem::MeshTree>& tree) { return tree->GetPath() == path && tree.get() != ignore; });
 	if (found != MeshTrees.end())
@@ -452,7 +463,7 @@ void RenderEngine::RenderShadowMaps(RenderToolboxCollection& tbCollection, GameS
 	//std::cout << "Wyczyscilem sobie " << timeSum * 1000.0f << "ms.\n";
 }
 
-void RenderEngine::RenderVolume(RenderInfo& info, EngineBasicShape shape, Shader& shader, const Transform* transform)
+void RenderEngine::RenderVolume(const RenderInfo& info, EngineBasicShape shape, Shader& shader, const Transform* transform)
 {
 	if (shape == EngineBasicShape::QUAD)
 		glDisable(GL_CULL_FACE);
@@ -460,13 +471,13 @@ void RenderEngine::RenderVolume(RenderInfo& info, EngineBasicShape shape, Shader
 	shader.Use();
 	BoundMaterial = nullptr;
 	BoundMesh = nullptr;
-	RenderStaticMesh(info, GetBasicShapeMesh(shape).get(), (transform) ? (*transform) : (Transform()), &shader);
+	RenderStaticMesh(info, GetBasicShapeMesh(shape), (transform) ? (*transform) : (Transform()), &shader);
 
 	if (shape == EngineBasicShape::QUAD)
 		glEnable(GL_CULL_FACE);
 }
 
-void RenderEngine::RenderVolume(RenderInfo& info, RenderableVolume* volume, Shader* boundShader, bool shadedRender)
+void RenderEngine::RenderVolume(const RenderInfo& info, RenderableVolume* volume, Shader* boundShader, bool shadedRender)
 {
 	if (shadedRender)
 	{
@@ -487,7 +498,7 @@ void RenderEngine::RenderVolume(RenderInfo& info, RenderableVolume* volume, Shad
 	RenderVolume(info, volume->GetShape(), *boundShader, &volume->GetRenderTransform());
 }
 
-void RenderEngine::RenderVolumes(RenderInfo& info, const GEE_FB::Framebuffer& framebuffer, const std::vector<std::unique_ptr<RenderableVolume>>& volumes, bool bIBLPass)
+void RenderEngine::RenderVolumes(const RenderInfo& info, const GEE_FB::Framebuffer& framebuffer, const std::vector<std::unique_ptr<RenderableVolume>>& volumes, bool bIBLPass)
 {
 	Shader* boundShader = nullptr;
 
@@ -499,39 +510,44 @@ void RenderEngine::RenderVolumes(RenderInfo& info, const GEE_FB::Framebuffer& fr
 	glBlendEquation(GL_FUNC_ADD);
 	glBlendFunc(GL_ONE, GL_ONE);
 	glEnable(GL_STENCIL_TEST);
-	glStencilOpSeparate(GL_FRONT, GL_KEEP, GL_INCR_WRAP, GL_KEEP);
-	glStencilOpSeparate(GL_BACK, GL_KEEP, GL_KEEP, GL_INCR_WRAP);
 	glStencilMask(0xFF);
+	glClear(GL_STENCIL_BUFFER_BIT);
 
 	for (unsigned int i = 0; i < volumes.size(); i++)
 	{
 		//1st pass: stencil
 		if (volumes[i]->GetShape() != EngineBasicShape::QUAD)		//if this is a quad everything will be in range; don't waste time
 		{
+			glStencilOpSeparate(GL_FRONT, GL_KEEP, GL_INVERT, GL_KEEP);
+			glStencilOpSeparate(GL_BACK, GL_KEEP, GL_KEEP, GL_INVERT);
 			glStencilMask(0xFF);
-			glClear(GL_STENCIL_BUFFER_BIT);
 			glDisable(GL_CULL_FACE);
-			glStencilFunc(GL_ALWAYS, 1, 0xFF);
+			glStencilFunc(GL_GREATER, 128, 0xFF);
 			glDepthFunc(GL_LEQUAL);
 			glDrawBuffer(GL_NONE);
 			RenderVolume(info, volumes[i].get(), boundShader, false);
 		}
 
 		//2nd pass: lighting
-		glStencilMask(0x00);
-		glStencilFunc(((volumes[i]->GetShape() == EngineBasicShape::QUAD) ? (GL_ALWAYS) : (GL_EQUAL)), 0, 0xFF);
+		glStencilOp(GL_INVERT, GL_INCR, GL_INCR);
+		if (volumes[i]->GetShape() == EngineBasicShape::QUAD)
+			glStencilMask(0x00);
+		if (bIBLPass)
+			glStencilFunc(GL_EQUAL, 0, 0xFF);
+		else
+		glStencilFunc(((volumes[i]->GetShape() == EngineBasicShape::QUAD) ? (GL_ALWAYS) : (GL_GREATER)), 128, 0xFF);
+
 		glEnable(GL_CULL_FACE);
 		glDepthFunc(GL_ALWAYS);
-		framebuffer.SetDrawBuffers();
-		RenderVolume(info, volumes[i].get(), boundShader, true);
-	}
 
-	if (bIBLPass)
-	{
-		glDisable(GL_CULL_FACE);
-		glDisable(GL_STENCIL_TEST);
-		FindShader("CookTorranceIBL")->Use();
-		RenderStaticMesh(info, GetBasicShapeMesh(EngineBasicShape::QUAD).get(), Transform(), FindShader("CookTorranceIBL"));
+		framebuffer.SetDrawBuffers();
+
+		RenderInfo xdCopy = info;
+		xdCopy.view = glm::mat4(1.0f);
+		xdCopy.projection = glm::ortho(-0.5f, 0.5f, -0.5f, 0.5f);
+		xdCopy.CalculateVP();
+		RenderVolume((volumes[i]->GetShape() == EngineBasicShape::QUAD) ? (xdCopy) : (info), volumes[i].get(), boundShader, true);
+		//RenderVolume(info, volumes[i].get(), boundShader, true);
 	}
 
 	glDisable(GL_BLEND);
@@ -549,7 +565,7 @@ void RenderEngine::RenderLightProbes(GameSceneRenderData* sceneRenderData)
 		return;
 
 	GameSettings::VideoSettings settings;
-	settings.AAType = AA_SMAA1X;
+	settings.AAType = AA_NONE;
 	settings.AALevel = SettingLevel::SETTING_ULTRA;
 	settings.bBloom = true;
 	settings.AmbientOcclusionSamples = 64;
@@ -610,9 +626,11 @@ void RenderEngine::RenderLightProbes(GameSceneRenderData* sceneRenderData)
 	//Init(glm::uvec2(GameHandle->GetGameSettings()->ViewportData.z, GameHandle->GetGameSettings()->ViewportData.w));
 	CurrentTbCollection = RenderTbCollections[0].get();
 	probeRenderingCollection.Dispose();
+
+	std::cout << "Initting done.\n";
 }
 
-void RenderEngine::RenderRawScene(RenderInfo& info, GameSceneRenderData* sceneRenderData, Shader* shader)
+void RenderEngine::RenderRawScene(const RenderInfo& info, GameSceneRenderData* sceneRenderData, Shader* shader)
 {
 	if (!shader)
 		shader = FindShader("Default");
@@ -641,7 +659,8 @@ void RenderEngine::PreLoopPass()
 	for (int sceneIndex = 0; sceneIndex < static_cast<int>(ScenesRenderData.size()); sceneIndex++)
 	{
 		ScenesRenderData[sceneIndex]->SetupLights(sceneIndex);
-		RenderLightProbes(ScenesRenderData[sceneIndex]);
+		for (int i = 0; i < 2; i++)
+			RenderLightProbes(ScenesRenderData[sceneIndex]);
 	}
 }
 
@@ -675,7 +694,10 @@ void RenderEngine::FullSceneRender(RenderInfo& info, GameSceneRenderData* sceneR
 		DeferredShadingToolbox* deferredTb = info.TbCollection.GetTb<DeferredShadingToolbox>();
 		GEE_FB::Framebuffer& GFramebuffer = *deferredTb->GFb;
 
-		GFramebuffer.Bind(true);
+		{
+			Viewport onlySizeViewport(glm::uvec2(0), viewport.GetSize());
+			GFramebuffer.Bind(true, &onlySizeViewport);
+		}
 		glEnable(GL_DEPTH_TEST);
 		glEnable(GL_CULL_FACE);
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -701,9 +723,10 @@ void RenderEngine::FullSceneRender(RenderInfo& info, GameSceneRenderData* sceneR
 
 		////////////////////2.5 SSAO pass
 		const Texture* SSAOtex = nullptr;
+
 		if (settings.AmbientOcclusionSamples > 0)
 			SSAOtex = Postprocessing.SSAOPass(info, GFramebuffer.GetColorBuffer(0).get(), GFramebuffer.GetColorBuffer(1).get());	//pass gPosition and gNormal
-		
+
 		////////////////////3. Lighting pass
 		for (int i = 0; i < static_cast<int>(deferredTb->LightShaders.size()); i++)
 			deferredTb->LightShaders[i]->UniformBlockBinding("Lights", sceneRenderData->LightsBuffer.BlockBindingSlot);
@@ -740,16 +763,20 @@ void RenderEngine::FullSceneRender(RenderInfo& info, GameSceneRenderData* sceneR
 		std::transform(sceneRenderData->LightProbes.begin(), sceneRenderData->LightProbes.end(), probeVolumes.begin(), [](const std::shared_ptr<LightProbe>& probe) {return std::make_unique<LightProbeVolume>(LightProbeVolume(*probe.get())); });
 		if (!probeVolumes.empty())	//TODO: DELETE. VERY NASTY!!!!!! ADD LOADING LIGHT PROBES FROM FILE AND DONT DELETE THE FIRST PROBE FOR NO REASON
 		{
-			probeVolumes.erase(probeVolumes.begin());
+			//if (framebuffer)
+				;// probeVolumes.pop_back();
 			sceneRenderData->ProbeTexArrays->IrradianceMapArr.Bind(12);
 			sceneRenderData->ProbeTexArrays->PrefilterMapArr.Bind(13);
 			sceneRenderData->ProbeTexArrays->BRDFLut.Bind(14);
-			RenderVolumes(info, MainFramebuffer, probeVolumes, false);
+			RenderVolumes(info, MainFramebuffer, probeVolumes, framebuffer == nullptr);
 		}
 	}
 	else
 	{
-		MainFramebuffer.Bind(true, &viewport);
+		{
+			Viewport onlySizeViewport(glm::uvec2(0), viewport.GetSize());
+			MainFramebuffer.Bind(true, &viewport);
+		}
 		
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -762,31 +789,28 @@ void RenderEngine::FullSceneRender(RenderInfo& info, GameSceneRenderData* sceneR
 	info.MainPass = true;
 	info.CareAboutShader = true;
 
-	if (!framebuffer)
-		TestRenderCubemap(info, sceneRenderData);
-
 	for (unsigned int i = 0; i < ForwardShaders.size(); i++)
 		RenderRawScene(info, sceneRenderData, ForwardShaders[i].get());
-
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glBlendEquation(GL_FUNC_ADD);
 
 	FindShader("Forward_NoLight")->Use();
 	FindShader("Forward_NoLight")->Uniform2fv("atlasData", glm::vec2(0.0f));
 	FindShader("Forward_NoLight")->Uniform2fv("atlasTexOffset", glm::vec2(0.0f));
 
-	glDisable(GL_BLEND);
-	glDisable(GL_DEPTH_TEST);
 
-	if (debugPhysics)
-		//GameHandle->GetPhysicsHandle()->DebugRender(this, info);
 	info.MainPass = false;
 	info.CareAboutShader = false;
 
+	//if (!framebuffer)
+		TestRenderCubemap(info, sceneRenderData);
+
+	glDisable(GL_DEPTH_TEST);
+
+
+	if (debugPhysics)
+		GameHandle->GetPhysicsHandle()->DebugRender(GameHandle->GetMainScene()->GetPhysicsData(), this, info);
+
 	////////////////////4. Postprocessing pass (Blur + Tonemapping & Gamma Correction)
 	Postprocessing.Render(info.TbCollection, target, &viewport, MainFramebuffer.GetColorBuffer(0).get(), (settings.bBloom) ? (MainFramebuffer.GetColorBuffer(1).get()) : (nullptr), MainFramebuffer.DepthBuffer.get(), (settings.IsVelocityBufferNeeded()) ? (MainFramebuffer.GetColorBuffer("velocityTex").get()) : (nullptr));
-
 	      
 	PreviousFrameView = currentFrameView;
 }
@@ -857,7 +881,7 @@ void RenderEngine::TestRenderCubemap(RenderInfo& info, GameSceneRenderData* scen
 	}
 
 
-	RenderStaticMesh(info, GetBasicShapeMesh(EngineBasicShape::CUBE).get(), Transform(), FindShader("Cubemap"));
+	RenderStaticMesh(info, GetBasicShapeMesh(EngineBasicShape::CUBE), Transform(), FindShader("Cubemap"));
 }
 
 void RenderEngine::RenderCubemapFromTexture(Texture targetTex, Texture tex, glm::uvec2 size, Shader& shader, int* layer, int mipLevel)
@@ -901,8 +925,9 @@ void RenderEngine::RenderCubemapFromTexture(Texture targetTex, Texture tex, glm:
 
 		RenderInfo info(*CurrentTbCollection);
 		info.VP = CubemapData.DefaultVP[i];
+		info.CareAboutShader = false;
 
-		RenderStaticMesh(info, GetBasicShapeMesh(EngineBasicShape::CUBE).get(), Transform(), &shader);
+		RenderStaticMesh(info, GetBasicShapeMesh(EngineBasicShape::CUBE), Transform(), &shader);
 	}
 
 	glEnable(GL_CULL_FACE);
@@ -935,7 +960,7 @@ void RenderEngine::RenderCubemapFromScene(RenderInfo info, GameSceneRenderData* 
 	}
 }
 
-void RenderEngine::RenderText(RenderInfo info, const Font& font, std::string content, Transform t, glm::vec3 color, Shader* shader, bool convertFromPx)
+void RenderEngine::RenderText(const RenderInfo& infoPreConvert, const Font& font, std::string content, Transform t, glm::vec3 color, Shader* shader, bool convertFromPx)
 {
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -950,16 +975,21 @@ void RenderEngine::RenderText(RenderInfo info, const Font& font, std::string con
 	shader->Uniform3fv("color", color);
 	font.GetBitmapsArray().Bind(0);
 
-	glm::vec2 resolution(GameHandle->GetGameSettings()->WindowSize);// (GameHandle->GetGameSettings()->ViewportData.z, GameHandle->GetGameSettings()->ViewportData.w);
+	glm::vec2 resolution(GameHandle->GetGameSettings()->WindowSize);// (GameHandle->GetGameSettings()->ViewportData.z, GameHandle->GetGameSettings()->ViewportData.w);s
 
-	glm::mat4 pxConvertMatrix = (convertFromPx) ? (glm::ortho(0.0f, resolution.x, 0.0f, resolution.y)) : (glm::mat4(1.0f));
-	glm::mat4 proj = info.projection;
-	glm::mat4 vp = info.CalculateVP() * pxConvertMatrix;
-	info.projection = proj;
-	info.VP = vp;
-	info.CareAboutShader = true;
-	info.MainPass = false;
-	info.UseMaterials = true;
+	RenderInfo info = infoPreConvert;
+	if (convertFromPx)
+	{
+		glm::mat4 pxConvertMatrix = glm::ortho(0.0f, resolution.x, 0.0f, resolution.y);
+		const glm::mat4& proj = info.projection;
+		glm::mat4 vp = info.CalculateVP() * pxConvertMatrix;
+		info.projection = proj;
+		info.VP = vp;
+
+		info.UseMaterials = true;
+		info.CareAboutShader = true;
+		info.MainPass = false;
+	}
 
 	glm::vec3 scale = t.ScaleRef / 64.0f;
 	t.Move(glm::vec3(0.0f, -t.ScaleRef.y + font.GetBaselineHeight() * scale.y, 0.0f));
@@ -971,7 +1001,8 @@ void RenderEngine::RenderText(RenderInfo info, const Font& font, std::string con
 	for (int i = 0; i < static_cast<int>(content.length()); i++)
 		advancesSum += (font.GetCharacter(content[i]).Advance / 64.0f) * scale.x / 2.0f;
 
-	//t.Move(glm::vec3(-advancesSum, -t.ScaleRef.y / 2.0f, 0.0f));
+	if (content == "big button")	//centre text
+	t.Move(glm::vec3(-advancesSum, -t.ScaleRef.y / 2.0f, 0.0f));
 
 	Material textMaterial("TextMaterial", 0.0f, 0.0f, FindShader("TextShader"));
 
@@ -983,7 +1014,7 @@ void RenderEngine::RenderText(RenderInfo info, const Font& font, std::string con
 		t.Move(glm::vec3((float)c.Bearing.x, (float)c.Bearing.y, 0.0f) * scale);
 		t.SetScale(glm::vec3(glm::vec2(64.0f), 0.0f) * scale);
 		//printVector(vp * t.GetWorldTransformMatrix() * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f), "Letter " + std::to_string(i));
-		RenderStaticMesh(info, GetBasicShapeMesh(EngineBasicShape::QUAD).get(), t, shader, nullptr, &textMaterial);
+		RenderStaticMesh(info, GetBasicShapeMesh(EngineBasicShape::QUAD), t, shader, nullptr, &textMaterial);
 		t.Move(-glm::vec3((float)c.Bearing.x, (float)c.Bearing.y, 0.0f) * scale);
 
 		t.Move(glm::vec3(c.Advance / 64.0f, 0.0f, 0.0f) * scale);
@@ -992,7 +1023,7 @@ void RenderEngine::RenderText(RenderInfo info, const Font& font, std::string con
 	glDisable(GL_BLEND);
 }
 
-void RenderEngine::RenderStaticMesh(RenderInfo info, const MeshInstance& mesh, const Transform& transform, Shader* shader, glm::mat4* lastFrameMVP, Material* material, bool billboard)
+void RenderEngine::RenderStaticMesh(const RenderInfo& info, const MeshInstance& mesh, const Transform& transform, Shader* shader, glm::mat4* lastFrameMVP, Material* material, bool billboard)
 {
 	std::vector<std::unique_ptr<MeshInstance>> vec;
 	vec.push_back(std::make_unique<MeshInstance>(MeshInstance(mesh)));
@@ -1071,7 +1102,7 @@ void RenderEngine::Render(RenderInfo info, const std::shared_ptr<Mesh>& mesh, co
 	Render(info, ModelComponent(GameHandle, MeshSystem::MeshNode(mesh), "", transform, nullptr, material), shader);
 }*/
 
-void RenderEngine::RenderStaticMeshes(RenderInfo info, const std::vector<std::unique_ptr<MeshInstance>>& meshes, const Transform& transform, Shader* shader, glm::mat4* lastFrameMVP, Material* overrideMaterial, bool billboard)
+void RenderEngine::RenderStaticMeshes(const RenderInfo& info, const std::vector<std::unique_ptr<MeshInstance>>& meshes, const Transform& transform, Shader* shader, glm::mat4* lastFrameMVP, Material* overrideMaterial, bool billboard)
 {
 	if (meshes.empty())
 		return;
@@ -1097,16 +1128,16 @@ void RenderEngine::RenderStaticMeshes(RenderInfo info, const std::vector<std::un
 		}
 	}
 
-	std::unique_ptr<MaterialInstance> createdInstance = ((overrideMaterial) ? (std::make_unique<MaterialInstance>(MaterialInstance(overrideMaterial))) : (nullptr));
+	std::unique_ptr<MaterialInstance> createdInstance = ((overrideMaterial) ? (std::make_unique<MaterialInstance>(MaterialInstance(*overrideMaterial))) : (nullptr));
 
 	for (int i = 0; i < static_cast<int>(meshes.size()); i++)
 	{
 		const MeshInstance& meshInst = *meshes[i];
 		const Mesh& mesh = meshInst.GetMesh();
 		MaterialInstance* materialInst = ((overrideMaterial) ?  (createdInstance.get()) : (meshInst.GetMaterialInst()));
-		Material* material = ((overrideMaterial) ? (overrideMaterial) : (meshInst.GetMaterialPtr()));
+		const Material* material = ((overrideMaterial) ? (overrideMaterial) : (meshInst.GetMaterialPtr()));
 
-		if ((info.CareAboutShader && material && shader->GetName() != material->GetRenderShaderName()) || (info.OnlyShadowCasters && !mesh.CanCastShadow()) || !materialInst->ShouldBeDrawn())
+		if ((info.CareAboutShader && material && shader->GetName() != material->GetRenderShaderName()) || (info.OnlyShadowCasters && !mesh.CanCastShadow()) || (materialInst && !materialInst->ShouldBeDrawn()))
 			continue;
 
 		if (BoundMesh != &mesh || i == 0)
@@ -1130,7 +1161,7 @@ void RenderEngine::RenderStaticMeshes(RenderInfo info, const std::vector<std::un
 	}
 }
 
-void RenderEngine::RenderSkeletalMeshes(RenderInfo info, const std::vector<std::unique_ptr<MeshInstance>>& meshes, const Transform& transform, Shader* shader, SkeletonInfo& skelInfo, Material* overrideMaterial)
+void RenderEngine::RenderSkeletalMeshes(const RenderInfo& info, const std::vector<std::unique_ptr<MeshInstance>>& meshes, const Transform& transform, Shader* shader, SkeletonInfo& skelInfo, Material* overrideMaterial)
 {
 	if (meshes.empty())
 		return;
@@ -1151,14 +1182,14 @@ void RenderEngine::RenderSkeletalMeshes(RenderInfo info, const std::vector<std::
 	//TODO: Pass the bone matrices from the last frame to fix velocity buffer calculation
 
 
-	std::unique_ptr<MaterialInstance> createdInstance = ((overrideMaterial) ? (std::make_unique<MaterialInstance>(MaterialInstance(overrideMaterial))) : (nullptr));
+	std::unique_ptr<MaterialInstance> createdInstance = ((overrideMaterial) ? (std::make_unique<MaterialInstance>(MaterialInstance(*overrideMaterial))) : (nullptr));
 
 	for (int i = 0; i < static_cast<int>(meshes.size()); i++)
 	{
 		const MeshInstance& meshInst = *meshes[i];
 		const Mesh& mesh = meshInst.GetMesh();
 		MaterialInstance* materialInst = ((overrideMaterial) ? (createdInstance.get()) : (meshInst.GetMaterialInst()));
-		Material* material = ((overrideMaterial) ? (overrideMaterial) : (meshInst.GetMaterialPtr()));
+		const Material* material = ((overrideMaterial) ? (overrideMaterial) : (meshInst.GetMaterialPtr()));
 
 		if ((info.CareAboutShader && material && shader->GetName() != material->GetRenderShaderName()) || (info.OnlyShadowCasters && !mesh.CanCastShadow()) || !materialInst->ShouldBeDrawn())
 			continue;

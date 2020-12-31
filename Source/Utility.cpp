@@ -129,7 +129,7 @@ std::string extractDirectory(std::string path)
 	return std::string();
 }
 
-void printVector(glm::vec3 vec, std::string title)
+void printVector(const glm::vec3& vec, std::string title)
 {
 	if (!title.empty())
 		title.append(": ");	//if we want to draw a title, add something after it
@@ -137,7 +137,7 @@ void printVector(glm::vec3 vec, std::string title)
 	std::cout << title << vec.x << ", " << vec.y << ", " << vec.z << '\n';
 }
 
-void printVector(glm::vec4 vec, std::string title)
+void printVector(const glm::vec4& vec, std::string title)
 {
 	if (!title.empty())
 		title.append(": ");	//if we want to draw a title, add something after it
@@ -145,7 +145,7 @@ void printVector(glm::vec4 vec, std::string title)
 	std::cout << title << vec.x << ", " << vec.y << ", " << vec.z << ", " << vec.w << '\n';
 }
 
-void printVector(glm::quat q, std::string title)
+void printVector(const glm::quat& q, std::string title)
 {
 	printVector(glm::degrees(glm::eulerAngles(q)), title);
 }

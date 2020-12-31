@@ -93,9 +93,6 @@
     <ClCompile Include="RenderableVolume.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\..\..\..\Dev\Source\glad.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="BoneComponent.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -127,6 +124,24 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="RenderToolbox.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\..\..\Dev\Include\glad4\src\glad.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Event.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="InputDevicesStateRetriever.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Viewport.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="UICanvasActor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="UIModelComponent.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -243,6 +258,21 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="RenderToolbox.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Event.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="InputDevicesStateRetriever.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Viewport.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="UICanvasActor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="UIModelComponent.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

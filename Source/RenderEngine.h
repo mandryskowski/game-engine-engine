@@ -18,7 +18,7 @@ public:
 	void Init(glm::uvec2 resolution);
 
 	virtual const ShadingModel& GetShadingModel() override;
-	virtual const std::shared_ptr<Mesh> GetBasicShapeMesh(EngineBasicShape) override;
+	virtual const Mesh& GetBasicShapeMesh(EngineBasicShape) const override;
 	virtual Shader* GetLightShader(const RenderToolboxCollection& renderCol, LightType type) override;
 	virtual RenderToolboxCollection* GetCurrentTbCollection() override;
 
@@ -26,6 +26,7 @@ public:
 	virtual void AddSceneRenderDataPtr(GameSceneRenderData*) override;
 	virtual MeshSystem::MeshTree* CreateMeshTree(std::string path) override;
 	virtual MeshSystem::MeshTree* FindMeshTree(std::string path, MeshSystem::MeshTree* ignore = nullptr) override;
+	virtual const MeshSystem::MeshTree* FindMeshTree(std::string path, MeshSystem::MeshTree* ignore = nullptr) const override;
 	virtual Material* AddMaterial(Material* material) override;
 	virtual std::shared_ptr<Shader> AddShader(std::shared_ptr<Shader> shader, bool bForwardShader = false) override;
 
@@ -37,11 +38,11 @@ public:
 
 
 	void RenderShadowMaps(RenderToolboxCollection& tbCollection, GameSceneRenderData* sceneRenderData, std::vector<std::shared_ptr<LightComponent>>);
-	void RenderVolume(RenderInfo&, EngineBasicShape, Shader&, const Transform* = nullptr);
-	void RenderVolume(RenderInfo&, RenderableVolume*, Shader* boundShader, bool shadedRender);
-	void RenderVolumes(RenderInfo&, const GEE_FB::Framebuffer& framebuffer, const std::vector<std::unique_ptr<RenderableVolume>>&, bool bIBLPass);
+	void RenderVolume(const RenderInfo&, EngineBasicShape, Shader&, const Transform* = nullptr);
+	void RenderVolume(const RenderInfo&, RenderableVolume*, Shader* boundShader, bool shadedRender);
+	void RenderVolumes(const RenderInfo&, const GEE_FB::Framebuffer& framebuffer, const std::vector<std::unique_ptr<RenderableVolume>>&, bool bIBLPass);
 	void RenderLightProbes(GameSceneRenderData* sceneRenderData);
-	void RenderRawScene(RenderInfo& info, GameSceneRenderData* sceneRenderData, Shader* shader = nullptr);
+	void RenderRawScene(const RenderInfo& info, GameSceneRenderData* sceneRenderData, Shader* shader = nullptr);
 
 	void RenderBoundInDebug(RenderInfo&, GLenum mode, GLint first, GLint count, glm::vec3 color = glm::vec3(1.0f));
 	void PreLoopPass();
@@ -56,10 +57,10 @@ public:
 	void TestRenderCubemap(RenderInfo& info, GameSceneRenderData* sceneRenderData);
 	virtual void RenderCubemapFromTexture(Texture targetTex, Texture tex, glm::uvec2 size, Shader& shader, int* layer = nullptr, int mipLevel = 0) override;
 	virtual void RenderCubemapFromScene(RenderInfo info, GameSceneRenderData* sceneRenderData, GEE_FB::Framebuffer target, GEE_FB::FramebufferAttachment targetTex, GLenum attachmentType, Shader* shader = nullptr, int* layer = nullptr, bool fullRender = false) override;
-	virtual void RenderText(RenderInfo info, const Font& font, std::string content, Transform t = Transform(), glm::vec3 color = glm::vec3(1.0f), Shader* shader = nullptr, bool convertFromPx = false) override; //Pass a shader if you do not want the default shader to be used.
-	virtual void RenderStaticMesh(RenderInfo info, const MeshInstance& mesh, const Transform& transform, Shader* shader, glm::mat4* lastFrameMVP = nullptr, Material* overrideMaterial = nullptr, bool billboard = false) override; //Note: this function does not call the Use method of passed Shader. Do it manually.
-	virtual void RenderStaticMeshes(RenderInfo info, const std::vector<std::unique_ptr<MeshInstance>>& meshes, const Transform& transform, Shader* shader, glm::mat4* lastFrameMVP = nullptr, Material* overrideMaterial = nullptr, bool billboard = false) override; //Note: this function does not call the Use method of passed Shader. Do it manually.
-	virtual void RenderSkeletalMeshes(RenderInfo info, const std::vector<std::unique_ptr<MeshInstance>>& meshes, const Transform& transform, Shader* shader, SkeletonInfo& skelInfo, Material* overrideMaterial = nullptr) override; //Note: this function does not call the Use method of passed Shader. Do it manually
+	virtual void RenderText(const RenderInfo& info, const Font& font, std::string content, Transform t = Transform(), glm::vec3 color = glm::vec3(1.0f), Shader* shader = nullptr, bool convertFromPx = false) override; //Pass a shader if you do not want the default shader to be used.
+	virtual void RenderStaticMesh(const RenderInfo& info, const MeshInstance& mesh, const Transform& transform, Shader* shader, glm::mat4* lastFrameMVP = nullptr, Material* overrideMaterial = nullptr, bool billboard = false) override; //Note: this function does not call the Use method of passed Shader. Do it manually.
+	virtual void RenderStaticMeshes(const RenderInfo& info, const std::vector<std::unique_ptr<MeshInstance>>& meshes, const Transform& transform, Shader* shader, glm::mat4* lastFrameMVP = nullptr, Material* overrideMaterial = nullptr, bool billboard = false) override; //Note: this function does not call the Use method of passed Shader. Do it manually.
+	virtual void RenderSkeletalMeshes(const RenderInfo& info, const std::vector<std::unique_ptr<MeshInstance>>& meshes, const Transform& transform, Shader* shader, SkeletonInfo& skelInfo, Material* overrideMaterial = nullptr) override; //Note: this function does not call the Use method of passed Shader. Do it manually
 
 	void Dispose();
 
@@ -85,7 +86,7 @@ private:
 	std::shared_ptr <Texture> EmptyTexture;
 
 	const Mesh* BoundMesh;
-	Material* BoundMaterial;
+	const Material* BoundMaterial;
 	SkeletonBatch* BoundSkeletonBatch;
 
 	std::vector <std::unique_ptr <RenderToolboxCollection>> RenderTbCollections;

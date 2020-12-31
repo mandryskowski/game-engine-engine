@@ -48,14 +48,14 @@ namespace MeshSystem
 		void AddCollisionShape(std::shared_ptr<CollisionShape> shape);
 
 		template<typename T> T* AddChild(std::string name);
-		template<typename T> T* AddChild(const T&);
-		template<typename T> T* AddChild(T&&);
+		TemplateNode& AddChild(const TemplateNode&);
+		TemplateNode& AddChild(TemplateNode&&);
 
 		TemplateNode* FindNode(std::string name);
 		TemplateNode* FindNode(int number, int&& currentNumber = 0);
 
 		virtual Mesh* FindMesh(std::string name);
-		virtual const std::shared_ptr<Mesh> FindMeshPtr(std::string name);
+		virtual const std::shared_ptr<Mesh> FindMeshPtr(std::string name) const;
 		virtual Material* FindMaterial(std::string name);
 
 		virtual void DebugPrint(int nrTabs = 0);
@@ -99,7 +99,7 @@ namespace MeshSystem
 		void AddMesh(std::shared_ptr<Mesh>);
 
 		virtual Mesh* FindMesh(std::string name) override;
-		virtual const std::shared_ptr<Mesh> FindMeshPtr(std::string name) override;
+		virtual const std::shared_ptr<Mesh> FindMeshPtr(std::string name) const override;
 		virtual Material* FindMaterial(std::string name) override;
 
 		void SetOverrideMaterial(Material*);
@@ -127,7 +127,7 @@ namespace MeshSystem
 		void SetPath(std::string);	//DOES NOT load from the path automatically. It's useful when you want to refer to this tree from the new name/path (f.e. used for engine objects, to keep their path as ENG_NAME instead of long file paths)
 
 		Mesh* FindMesh(std::string name);
-		const std::shared_ptr<Mesh> FindMeshPtr(std::string name);
+		const std::shared_ptr<Mesh> FindMeshPtr(std::string name) const;
 		Material* FindMaterial(std::string name);
 		TemplateNode* FindNode(std::string name);
 		TemplateNode* FindNode(int number);

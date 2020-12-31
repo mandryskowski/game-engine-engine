@@ -59,6 +59,7 @@ void LightProbeLoader::ConvoluteLightProbe(GameSceneRenderData* sceneRenderData,
 	}
 	renderHandle->FindShader("CubemapToIrradiance")->Use();
 	int layer = probe.ProbeNr * 6;
+
 	renderHandle->RenderCubemapFromTexture(probeTexArrays->IrradianceMapArr, *envMap, glm::uvec2(16), *renderHandle->FindShader("CubemapToIrradiance"), &layer);
 
 	if (PrimitiveDebugger::bDebugProbeLoading)
@@ -92,7 +93,7 @@ void LightProbeLoader::LoadLightProbeTextureArrays(GameSceneRenderData* sceneRen
 	framebuffer.SetAttachments(glm::uvec2(512), GEE_FB::FramebufferAttachment(probeTexArrays->BRDFLut));
 	framebuffer.Bind(true);
 	renderHandle->FindShader("BRDFLutGeneration")->Use();
-	renderHandle->RenderStaticMesh(RenderInfo(*renderHandle->GetCurrentTbCollection()), renderHandle->GetBasicShapeMesh(EngineBasicShape::QUAD).get(), Transform(), renderHandle->FindShader("BRDFLutGeneration"));
+	renderHandle->RenderStaticMesh(RenderInfo(*renderHandle->GetCurrentTbCollection()), renderHandle->GetBasicShapeMesh(EngineBasicShape::QUAD), Transform(), renderHandle->FindShader("BRDFLutGeneration"));
 
 	framebuffer.Dispose();
 }

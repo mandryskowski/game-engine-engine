@@ -31,9 +31,9 @@ void DeferredShadingToolbox::Setup(const GameSettings::VideoSettings& settings)
 
 	//2. Geometry framebuffer attachments
 	std::vector<std::shared_ptr<GEE_FB::FramebufferAttachment>> gColorBuffers = {
-		GEE_FB::reserveColorBuffer(settings.Resolution, GL_RGB16F, GL_FLOAT, GL_NEAREST, GL_NEAREST, GL_TEXTURE_2D, 0, "gPosition"),			//gPosition texture
-		GEE_FB::reserveColorBuffer(settings.Resolution, GL_RGB16F, GL_FLOAT, GL_NEAREST, GL_NEAREST, GL_TEXTURE_2D, 0, "gNormal"),				//gNormal texture
-		GEE_FB::reserveColorBuffer(settings.Resolution, GL_RGBA, GL_UNSIGNED_BYTE, GL_NEAREST, GL_NEAREST, GL_TEXTURE_2D, 0, "gAlbedoSpec")	//gAlbedoSpec texture
+		GEE_FB::reserveColorBuffer(settings.Resolution, GL_RGB32F, GL_FLOAT, GL_NEAREST, GL_NEAREST, GL_TEXTURE_2D, 0, "gPosition"),			//gPosition texture
+		GEE_FB::reserveColorBuffer(settings.Resolution, GL_RGB32F, GL_FLOAT, GL_NEAREST, GL_NEAREST, GL_TEXTURE_2D, 0, "gNormal"),				//gNormal texture
+		GEE_FB::reserveColorBuffer(settings.Resolution, GL_RGB, GL_UNSIGNED_BYTE, GL_NEAREST, GL_NEAREST, GL_TEXTURE_2D, 0, "gAlbedoSpec")	//gAlbedoSpec texture
 	};
 
 	gColorBuffers.push_back(GEE_FB::reserveColorBuffer(settings.Resolution, GL_RGB, GL_UNSIGNED_BYTE, GL_NEAREST, GL_NEAREST, GL_TEXTURE_2D, 0, "gAlphaMetalAo")); //alpha, metallic, ao texture
@@ -71,14 +71,15 @@ void DeferredShadingToolbox::Setup(const GameSettings::VideoSettings& settings)
 		std::pair<unsigned int, std::string>(0, "albedo1"),
 		std::pair<unsigned int, std::string>(1, "specular1"),
 		std::pair<unsigned int, std::string>(2, "normal1"),
-		std::pair<unsigned int, std::string>(3, "depth1")
+		std::pair<unsigned int, std::string>(3, "depth1"),
 	};
 	if (settings.Shading == ShadingModel::SHADING_PBR_COOK_TORRANCE)
 	{
 		std::vector<std::pair<unsigned int, std::string>> pbrTextures = {
 			std::pair<unsigned int, std::string>(4, "roughness1"),
 			std::pair<unsigned int, std::string>(5, "metallic1"),
-			std::pair<unsigned int, std::string>(6, "ao1") };
+			std::pair<unsigned int, std::string>(6, "ao1"),
+			std::pair<unsigned int, std::string>(7, "combined1") };
 		gShaderTextureUnits.insert(gShaderTextureUnits.begin(), pbrTextures.begin(), pbrTextures.end());
 	}
 

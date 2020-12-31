@@ -4,7 +4,7 @@
 #include "RenderInfo.h"
 #include <vector>
 
-Actor::Actor(GameScene* scene, const std::string& name):
+Actor::Actor(GameScene* scene, const std::string& name) :
 	Scene(scene),
 	GameHandle(scene->GetGameHandle())
 {
@@ -94,16 +94,11 @@ void Actor::Setup()
 		Children[i]->Setup();
 }
 
-void Actor::HandleInputs(GLFWwindow* window)
+void Actor::HandleEventAll(const Event& ev)
 {
-	RootComponent->HandleInputsAll(window);
-}
-
-void Actor::HandleInputsAll(GLFWwindow* window)
-{
-	HandleInputs(window);
+	HandleEvent(ev);
 	for (unsigned int i = 0; i < Children.size(); i++)
-		Children[i]->HandleInputsAll(window);
+		Children[i]->HandleEventAll(ev);
 }
 
 void Actor::Update(float deltaTime)

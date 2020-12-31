@@ -7,6 +7,7 @@
 #include "Font.h"
 #include "Controller.h"
 #include "ButtonActor.h"
+#include "InputDevicesStateRetriever.h"
 #include <thread>
 
 bool PrimitiveDebugger::bDebugMeshTrees = false;
@@ -17,6 +18,8 @@ bool PrimitiveDebugger::bDebugHierarchy = true;
 
 Controller* mouseController = nullptr;  //there are 2 similiar camera variables: ActiveCamera and global MouseController. the first one is basically the camera we use to see the world (view mat); the second one is updated by mouse controls.
 										//this is a shitty comment that doesnt fit since a few months ago but i dont want to erase it
+EventHolder* GLFWEventProcessor::TargetHolder = nullptr;
+
 void APIENTRY debugOutput(GLenum source,	//Copied from learnopengl.com - I don't think it's worth it to rewrite a bunch of couts.
 	GLenum type,
 	unsigned int id,
@@ -96,9 +99,15 @@ void Game::Init(GLFWwindow* window)
 	if (!Settings->Video.bVSync)
 		glfwSwapInterval(0);
 
+	GLFWEventProcessor::TargetHolder = &EventHolderObj;
+
 	glfwSetInputMode(Window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	glfwSetCursorPos(Window, (double)Settings->WindowSize.x / 2.0, (double)Settings->WindowSize.y / 2.0);
-	glfwSetCursorPosCallback(Window, cursorPosCallback);
+
+	glfwSetCursorPosCallback(Window, GLFWEventProcessor::CursorPosCallback);
+	glfwSetMouseButtonCallback(Window, GLFWEventProcessor::MouseButtonCallback);
+	glfwSetKeyCallback(Window, GLFWEventProcessor::KeyPressedCallback);
+	glfwSetScrollCallback(Window, GLFWEventProcessor::ScrollCallback);
 
 	RenderEng.Init(glm::uvec2(Settings->Video.Resolution.x, Settings->Video.Resolution.y));
 	PhysicsEng.Init();
@@ -147,6 +156,11 @@ void Game::PassMouseControl(Controller* controller)
 		glfwSetInputMode(Window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 		glfwSetCursorPos(Window, (double)Settings->WindowSize.x / 2.0, (double)Settings->WindowSize.y / 2.0);
 	}
+}
+
+InputDevicesStateRetriever Game::GetInputRetriever()
+{
+	return InputDevicesStateRetriever(*Window);
 }
 
 PhysicsEngineManager* Game::GetPhysicsHandle()
@@ -212,6 +226,7 @@ bool Game::GameLoopIteration(float timeStep, float deltaTime)
 
 	glfwPollEvents();
 
+
 	if (glfwGetKey(Window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 		glfwSetWindowShouldClose(Window, true);
 
@@ -238,8 +253,9 @@ bool Game::GameLoopIteration(float timeStep, float deltaTime)
 		std::cout << "OpenGL Error: " << error << ".\n";
 	}
 
-	for (int i = 0; i < static_cast<int>(Scenes.size()); i++)
-		Scenes[i]->RootActor->HandleInputsAll(Window);
+	while (std::shared_ptr<Event> polledEvent = EventHolderObj.PollEvent())
+		for (int i = 0; i < static_cast<int>(Scenes.size()); i++)
+			Scenes[i]->RootActor->HandleEventAll(*polledEvent);
 
 	TimeAccumulator += deltaTime;
 
@@ -268,9 +284,10 @@ void Game::Update(float deltaTime)
 float pBegin = 0.0f;
 bool DUPA = false;
 
-void cursorPosCallback(GLFWwindow* window, double xpos, double ypos)
+void GLFWEventProcessor::CursorPosCallback(GLFWwindow* window, double xpos, double ypos)
 {
-	if (!mouseController)
+	TargetHolder->Events.push(std::make_shared<CursorMoveEvent>(CursorMoveEvent(EventType::MOUSE_MOVED, glm::vec2(static_cast<float>(xpos), static_cast<float>(ypos)))));
+	if (!mouseController || !TargetHolder)
 		return;
 
 	glm::ivec2 halfWindowSize;
@@ -280,35 +297,18 @@ void cursorPosCallback(GLFWwindow* window, double xpos, double ypos)
 	mouseController->RotateWithMouse(glm::vec2(xpos - (float)halfWindowSize.x, ypos - (float)halfWindowSize.y));
 }
 
-void loadTransform(std::stringstream& filestr, Transform* transform)
+void GLFWEventProcessor::MouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
 {
-	std::string input;
+	TargetHolder->Events.push(std::make_shared<MouseButtonEvent>(MouseButtonEvent((action == GLFW_PRESS) ? (EventType::MOUSE_PRESSED) : (EventType::MOUSE_RELEASED), static_cast<MouseButton>(button), mods)));
+}
 
-	for (int transformField = 0; transformField < 4; transformField++)
-	{
-		glm::vec3 value(0.0f);
-		bool skipped = false;
+void GLFWEventProcessor::KeyPressedCallback(GLFWwindow*, int key, int scancode, int action, int mods)
+{
+	TargetHolder->Events.push(std::make_shared<KeyEvent>(KeyEvent((action == GLFW_PRESS) ? (EventType::KEY_PRESSED) : (EventType::KEY_RELEASED), static_cast<Key>(key), mods)));
+}
 
-		for (int i = 0; i < 3; i++)
-		{
-			size_t pos = (size_t)filestr.tellg();
-			filestr >> input;
-			if (input == "skip")
-			{
-				skipped = true;
-				break;
-			}
-
-			else if (input == "end")
-			{
-				filestr.seekg(pos);	//go back to the position before the component's end, so other functions aren't alarmed
-				return;
-			}
-
-			value[i] = (float)atof(input.c_str());
-		}
-
-		if (!skipped)	//be sure to not override the default value if we skip a field; f.e. scale default value is vec3(1.0), not vec3(0.0)
-			transform->Set(transformField, value);
-	}
+void GLFWEventProcessor::ScrollCallback(GLFWwindow*, double offsetX, double offsetY)
+{
+	std::cout << "Scrolled " << offsetX << ", " << offsetY << "\n";
+	TargetHolder->Events.push(std::make_shared<MouseScrollEvent>(MouseScrollEvent(EventType::MOUSE_SCROLLED, glm::vec2(static_cast<float>(offsetX), static_cast<float>(offsetY)))));
 }

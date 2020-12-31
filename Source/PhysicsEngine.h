@@ -50,7 +50,6 @@ public:
 	void AddScenePhysicsDataPtr(GameScenePhysicsData* scenePhysicsData);
 	virtual void AddCollisionObject(GameScenePhysicsData* scenePhysicsData, CollisionObject*) override;
 
-	virtual CollisionObject* CreateCollisionObject(GameScenePhysicsData* scenePhysicsData, glm::vec3 pos) override;
 	virtual physx::PxController* CreateController(GameScenePhysicsData* scenePhysicsData) override;
 
 	virtual void ApplyForce(CollisionObject*, glm::vec3 force) override;

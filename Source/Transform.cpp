@@ -143,8 +143,7 @@ const glm::mat4& Transform::GetWorldTransformMatrix() const
 	if (!DirtyFlags[2])
 		return WorldTransformMatrixCache;
 
-	Transform worldTransform = GetWorldTransform();
-	WorldTransformMatrixCache = worldTransform.GetMatrix();
+	WorldTransformMatrixCache = GetWorldTransform().GetMatrix();
 	DirtyFlags[2] = false;
 
 	return WorldTransformMatrixCache;
@@ -168,6 +167,11 @@ void Transform::SetPositionWorld(glm::vec3 worldPos)
 		localPos = glm::vec3(glm::inverse(ParentTransform->GetWorldTransformMatrix()) * glm::vec4(worldPos, 1.0f));
 
 	SetPosition(localPos);
+}
+
+void Transform::Move(glm::vec2 offset)
+{
+	Move(glm::vec3(offset, 0.0f));
 }
 
 void Transform::Move(glm::vec3 offset)

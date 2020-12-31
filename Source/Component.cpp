@@ -115,11 +115,8 @@ void Component::SetName(std::string name)
 }
 void Component::SetTransform(Transform transform)
 { 
-	//don't change the ParentTransform pointer; it's not needed in this case
-	ComponentTransform.SetPosition(transform.PositionRef);
-	ComponentTransform.SetRotation(transform.RotationRef);
-	ComponentTransform.SetScale(transform.ScaleRef);
-	ComponentTransform.SetFront(transform.FrontRef);
+	//Note that operator= doesn't change the ParentTransform pointer; it's not needed in this case
+	ComponentTransform = transform;
 }
 
 
@@ -148,12 +145,6 @@ void Component::AddComponents(std::vector<Component*> components)
 		Children.push_back(components[i]);
 	}
 }
-void Component::HandleInputsAll(GLFWwindow* window)
-{
-	HandleInputs(window);
-	for (int i = 0; i < static_cast<int>(Children.size()); i++)
-		Children[i]->HandleInputsAll(window);
-}
 void Component::Update(float deltaTime)
 {
 	ComponentTransform.Update(deltaTime);
@@ -174,13 +165,13 @@ void Component::QueueAnimation(Animation* animation)
 		AnimChannel& channel = *animation->Channels[i];
 
 		for (int j = 0; j < static_cast<int>(channel.PosKeys.size() - 1); j++)
-			ComponentTransform.AddInterpolator<glm::vec3>("position", (double)channel.PosKeys[j]->Time, (double)channel.PosKeys[j + 1]->Time - (double)channel.PosKeys[j]->Time, channel.PosKeys[j]->Value, channel.PosKeys[j + 1]->Value);
+			ComponentTransform.AddInterpolator<glm::vec3>("position", (float)channel.PosKeys[j]->Time, (float)channel.PosKeys[j + 1]->Time - (float)channel.PosKeys[j]->Time, channel.PosKeys[j]->Value, channel.PosKeys[j + 1]->Value);
 
 		for (int j = 0; j < static_cast<int>(channel.RotKeys.size() - 1); j++)
-			ComponentTransform.AddInterpolator<glm::quat>("rotation", (double)channel.RotKeys[j]->Time, (double)channel.RotKeys[j + 1]->Time - (double)channel.RotKeys[j]->Time, channel.RotKeys[j]->Value, channel.RotKeys[j + 1]->Value);
+			ComponentTransform.AddInterpolator<glm::quat>("rotation", (float)channel.RotKeys[j]->Time, (float)channel.RotKeys[j + 1]->Time - (float)channel.RotKeys[j]->Time, channel.RotKeys[j]->Value, channel.RotKeys[j + 1]->Value);
 
 		for (int j = 0; j < static_cast<int>(channel.ScaleKeys.size() - 1); j++)
-			ComponentTransform.AddInterpolator<glm::vec3>("scale", (double)channel.ScaleKeys[j]->Time, (double)channel.ScaleKeys[j + 1]->Time - (double)channel.ScaleKeys[j]->Time, channel.ScaleKeys[j]->Value, channel.ScaleKeys[j + 1]->Value);
+			ComponentTransform.AddInterpolator<glm::vec3>("scale", (float)channel.ScaleKeys[j]->Time, (float)channel.ScaleKeys[j + 1]->Time - (float)channel.ScaleKeys[j]->Time, channel.ScaleKeys[j]->Value, channel.ScaleKeys[j + 1]->Value);
 	}
 }
 void Component::QueueAnimationAll(Animation* animation)
@@ -194,7 +185,7 @@ void Component::DebugRender(RenderInfo info, Shader* shader) const
 {
 	Transform transform = GetTransform().GetWorldTransform();
 	transform.SetScale(glm::vec3(0.1f));
-	GameHandle->GetRenderEngineHandle()->RenderStaticMesh(info, GameHandle->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD).get(), transform, shader, &DebugRenderLastFrameMVP, DebugRenderMaterial, true);
+	GameHandle->GetRenderEngineHandle()->RenderStaticMesh(info, GameHandle->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD), transform, shader, &DebugRenderLastFrameMVP, DebugRenderMaterial, true);
 }
 
 void Component::DebugRenderAll(RenderInfo info, Shader* shader) const

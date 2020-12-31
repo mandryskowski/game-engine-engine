@@ -1,11 +1,9 @@
 #include "Texture.h"
-#ifndef STB_IMAGE_IMPLEMENTATION
-#define STB_IMAGE_IMPLEMENTATION
-#endif
 #include <stb/stb_image.h>
 #include <iostream>
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <assimp/texture.h>
 
 Texture::Texture(GLenum type, unsigned int id, std::string path):
 	Type(type),
@@ -86,6 +84,22 @@ bool containsAlphaChannel(GLenum internalformat)
 	return false;
 }
 
+GLenum nrChannelsToFormat(int nrChannels, bool bBGRA, GLenum* internalFormat)
+{
+	switch (nrChannels)
+	{
+	case 1: return ((bBGRA) ? (GL_BLUE) : (GL_RED));
+	default:
+		std::cout << "Info: Channel count " << nrChannels << " is not supported. Texture will be loaded as GL_RGB.\n";
+	case 3:
+		return ((bBGRA) ? (GL_BGR) : (GL_RGB));
+	case 4:
+		if (internalFormat)
+			*internalFormat = internalFormatToAlpha(*internalFormat);
+		return ((bBGRA) ? (GL_BGRA) : (GL_RGBA));
+	}
+}
+
 GLenum internalFormatToAlpha(GLenum internalformat)
 {
 	switch (internalformat)
@@ -94,6 +108,9 @@ GLenum internalFormatToAlpha(GLenum internalformat)
 	case GL_SRGB: return GL_SRGB_ALPHA;
 	case GL_RGB16F: return GL_RGBA16F;
 	case GL_RGB32F: return GL_RGBA32F;
+
+	case GL_BGR: return GL_BGRA;
+	case GL_BGR_INTEGER: return GL_BGRA_INTEGER;
 	}
 
 	return internalformat;
@@ -129,19 +146,7 @@ template <class T> Texture textureFromFile(std::string path, GLenum internalform
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		return Texture(GL_TEXTURE_2D, tex, path);
 	}
-	GLenum format = GL_RGB;
-	switch (nrChannels)
-	{
-	case 1: format = GL_RED; break;
-	case 3: format = GL_RGB; break;
-	case 4:
-		format = GL_RGBA;
-		internalformat = internalFormatToAlpha(internalformat);
-		break;
-	default:
-		format = GL_RGB;
-		std::cout << "Info: Channel count " << nrChannels << " of " << path << " is not supported. Texture will be loaded as GL_RGB.\n";
-	}
+	GLenum format = nrChannelsToFormat(nrChannels, false, &internalformat);
 
 	glTexImage2D(GL_TEXTURE_2D, 0, internalformat, width, height, 0, format, type, data);
 	if (path == "nanosuit/glass_dif.png")
@@ -164,6 +169,19 @@ template <class T> Texture textureFromFile(std::string path, GLenum internalform
 	stbi_image_free(data);
 
 	return Texture(GL_TEXTURE_2D, tex, path);
+}
+
+Texture textureFromAiEmbedded(const aiTexture& tex, bool bSRGB)
+{
+	std::cout << tex.mWidth << "   " << tex.mHeight << "!!!\n";
+	int width, height, nrChannels;
+
+	stbi_uc* data = stbi_load_from_memory(&tex.pcData[0].b, tex.mWidth, &width, &height, &nrChannels, 0);
+	std::cout << tex.mFilename.C_Str() << " Niby " << width << " " << height << "  |  " << nrChannels << "\n";
+
+
+
+	return textureFromBuffer(data, width, height, nrChannelsToFormat(nrChannels, false), nrChannelsToFormat(nrChannels, false), GL_UNSIGNED_BYTE);
 }
 
 Texture textureFromBuffer(const void* buffer, unsigned int width, unsigned int height, GLenum internalformat, GLenum format, GLenum type, GLenum magFilter, GLenum minFilter)

@@ -57,7 +57,7 @@ void ModelComponent::GenerateFromNode(const MeshSystem::TemplateNode* node, Mate
 	Component::GenerateFromNode(node, overrideMaterial);
 	const MeshSystem::MeshNode* meshNodeCast = dynamic_cast<const MeshSystem::MeshNode*>(node);
 	for (int i = 0; i < meshNodeCast->GetMeshCount(); i++)
-		AddMeshInst(meshNodeCast->GetMesh(i));
+		AddMeshInst(*meshNodeCast->GetMesh(i));
 
 	if (overrideMaterial)
 		OverrideInstancesMaterial(overrideMaterial);
@@ -114,9 +114,9 @@ MeshInstance* ModelComponent::FindMeshInstance(std::string name)
 	return nullptr;
 }
 
-void ModelComponent::AddMeshInst(Mesh* mesh)
+void ModelComponent::AddMeshInst(const MeshInstance& meshInst)
 {
-	MeshInstances.push_back(std::make_unique<MeshInstance>(MeshInstance(mesh)));
+	MeshInstances.push_back(std::make_unique<MeshInstance>(meshInst));
 }
 
 std::shared_ptr<ModelComponent> ModelComponent::Of(const ModelComponent& constructorVal)
@@ -135,7 +135,7 @@ std::shared_ptr<ModelComponent> ModelComponent::Of(ModelComponent&& constructorV
 	return createdObj;
 }
 
-void ModelComponent::Render(RenderInfo& info, Shader* shader)
+void ModelComponent::Render(const RenderInfo& info, Shader* shader)
 {
 	if (SkelInfo && SkelInfo->GetBoneCount() > 0)
 		GameHandle->GetRenderEngineHandle()->RenderSkeletalMeshes(info, MeshInstances, GetTransform().GetWorldTransform(), shader, *SkelInfo);
@@ -157,9 +157,4 @@ ModelComponent& ModelComponent::operator=(ModelComponent&&)
 {
 	std::cout << "DZIALA222222222222222!!!!!!!!!!!!!!!!!!!!!!\n";
 	return *this;
-}
-
-ModelComponent::~ModelComponent()
-{
-
 }

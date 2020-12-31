@@ -137,7 +137,7 @@ vec3 GetIrradiance(vec3 pos, vec3 n)
 }
 vec3 GetPrefilterColor(vec3 pos, vec3 r, float roughness)
 {
-	return textureLod(prefilterCubemaps, vec4(r, lightProbeNr), roughness * MAX_PREFILTER_MIPMAP).rgb;
+	return textureLod(prefilterCubemaps, vec4(r, lightProbeNr), 0.0 * roughness * MAX_PREFILTER_MIPMAP).rgb;
 	vec3 prefilterColor = vec3(0.0);
 	float minLength = 9999.0;
 	for (int i = 1; i < 5; i++)
@@ -146,19 +146,21 @@ vec3 GetPrefilterColor(vec3 pos, vec3 r, float roughness)
 		prefilterColor += textureLod(prefilterCubemaps, vec4(r, i), roughness * MAX_PREFILTER_MIPMAP).rgb / len;
 		minLength = min(minLength, len);
 	}   
-	return prefilterColor * minLength;
+	return prefilterColor * minLength;	
 }
 vec3 CalcAmbient(Fragment frag)
 {
+	if (frag.normal == vec3(0.0))
+		return vec3(0.0);
 	vec3 n = normalize(frag.normal);
 	vec3 v = normalize(camPos.xyz - frag.position);
-	float roughness = sqrt(frag.alphaMetalAo.r);
+	float roughness = pow(frag.alphaMetalAo.r, 1.0 / 2.2);
 	
 	float NdotV = max(dot(n, v), 0.001);
 	vec3 F = FresnelSchlickRoughness(NdotV, frag.F0, roughness);
 	vec2 brdfLutData = texture(BRDFLutTex, vec2(NdotV, roughness)).rg;
 	
-	vec3 diffuseAmbient = GetIrradiance(frag.position, n);
+	vec3 diffuseAmbient = GetIrradiance(frag.position, n) * frag.albedo;
 	vec3 specularAmbient = GetPrefilterColor(frag.position, reflect(-v, n), roughness) * (F * brdfLutData.x + brdfLutData.y);
 	
 	vec3 kDiffuse = mix((1.0 - F), vec3(0.0), frag.alphaMetalAo.g);

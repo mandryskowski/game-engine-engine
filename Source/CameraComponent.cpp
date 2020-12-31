@@ -70,14 +70,6 @@ void CameraComponent::RotateWithMouse(glm::vec2 mouseOffset)
 	*/
 }
 
-void CameraComponent::HandleInputs(GLFWwindow* window)
-{
-	if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS)
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-	if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS)
-		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-}
-
 void CameraComponent::Update(float deltaTime)
 {
 }

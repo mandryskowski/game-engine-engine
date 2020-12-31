@@ -1,5 +1,6 @@
 #include "Material.h"
 #include "Texture.h"
+#include <assimp/material.h>
 #include <assimp/pbrmaterial.h>
 
 Material::Material(std::string name, float shine, float depthScale, Shader* shader)
@@ -12,12 +13,12 @@ Material::Material(std::string name, float shine, float depthScale, Shader* shad
 		RenderShaderName = shader->GetName();
 }
 
-std::string Material::GetName()
+const std::string& Material::GetName() const
 {
 	return Name;
 }
 
-std::string Material::GetRenderShaderName()
+const std::string& Material::GetRenderShaderName() const
 {
 	return RenderShaderName;
 }
@@ -46,7 +47,7 @@ void Material::AddTexture(NamedTexture* tex)
 	Textures.push_back(tex);
 }
 
-void Material::LoadFromAiMaterial(aiMaterial* material, std::string directory, MaterialLoadingData* matLoadingData)
+void Material::LoadFromAiMaterial(const aiScene* scene, aiMaterial* material, std::string directory, MaterialLoadingData* matLoadingData)
 {
 	//Load material's name
 	aiString name;
@@ -62,24 +63,38 @@ void Material::LoadFromAiMaterial(aiMaterial* material, std::string directory, M
 		std::pair<aiTextureType, std::string>(aiTextureType_DIFFUSE, "albedo"),
 		std::pair<aiTextureType, std::string>(aiTextureType_SPECULAR, "specular"),
 		std::pair<aiTextureType, std::string>(aiTextureType_HEIGHT, "normal"),
+		std::pair<aiTextureType, std::string>(aiTextureType_NORMALS, "normal"),
 		std::pair<aiTextureType, std::string>(aiTextureType_DISPLACEMENT, "depth"),
 		std::pair<aiTextureType, std::string>(aiTextureType_SHININESS, "roughness"),
 		std::pair<aiTextureType, std::string>(aiTextureType_METALNESS, "metallic"),
+		std::pair<aiTextureType, std::string>(aiTextureType_NORMAL_CAMERA, "normal"),
 		std::pair<aiTextureType, std::string>(aiTextureType_UNKNOWN, "aaa"),
 		std::pair<aiTextureType, std::string>(aiTextureType_LIGHTMAP, "aaa"),
 	};
+
+	if (directory.find("Container") != std::string::npos)
+		for (int i = 0; i <= aiTextureType_UNKNOWN; i++)
+			std::cout << i << ": " << material->GetTextureCount(aiTextureType(i)) << "\n";
+
+	aiString fileBaseColor, fileMetallicRoughness;
+	material->GetTexture(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_BASE_COLOR_TEXTURE, &fileBaseColor);
+	material->GetTexture(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE, &fileMetallicRoughness);
+	std::cout << "Test " << fileBaseColor.C_Str() << ", " << fileMetallicRoughness.C_Str() << "\n";
 	
 	//Load textures by type
 	for (unsigned int i = 0; i < materialTypes.size(); i++)
-		LoadAiTexturesOfType(material, directory, materialTypes[i].first, materialTypes[i].second, matLoadingData);
+		LoadAiTexturesOfType(scene, material, directory, materialTypes[i].first, materialTypes[i].second, matLoadingData);
+
+	if (fileBaseColor.length > 0 && material->GetTextureCount(aiTextureType_DIFFUSE) == 0 && fileBaseColor.data[0] == '*')
+		AddTexture(new NamedTexture(textureFromAiEmbedded(*scene->mTextures[std::stoi(std::string(fileBaseColor.C_Str()).substr(1))], true), "albedo1"));
+	if (fileMetallicRoughness.length > 0 && fileMetallicRoughness.data[0] == '*')
+		AddTexture(new NamedTexture(textureFromAiEmbedded(*scene->mTextures[std::stoi(std::string(fileMetallicRoughness.C_Str()).substr(1))], true), "combined1"));
+	//if (fileMetallicRoughness.length > 0 && material->GetTextureCount(aiTextureType_SHININESS) == 0 && fileMetallicRoughness.data[0] == '*')
+		//AddTexture(new NamedTexture(textureFromAiEmbedded(*scene->mTextures[std::stoi(std::string(fileMetallicRoughness.C_Str()).substr(1))], true), "roughness1"));
 }
 
-void Material::LoadAiTexturesOfType(aiMaterial* material, std::string directory, aiTextureType type, std::string shaderName, MaterialLoadingData* matLoadingData)
+void Material::LoadAiTexturesOfType(const aiScene* scene, aiMaterial* material, std::string directory, aiTextureType type, std::string shaderName, MaterialLoadingData* matLoadingData)
 {
-	std::vector <NamedTexture*>* prevLoadedTextures = nullptr;
-	if (matLoadingData)
-		prevLoadedTextures = &matLoadingData->LoadedTextures;
-
 	std::string name;
 	switch (type)
 	{
@@ -93,11 +108,17 @@ void Material::LoadAiTexturesOfType(aiMaterial* material, std::string directory,
 		name = "aiTextureType_DISPLACEMENT"; break;
 	case aiTextureType_SHININESS:
 		name = "aiTextureType_SHININESS"; break;
+	case aiTextureType_NORMALS:
+		name = "aiTextureType_NORMALS"; break;
+	case aiTextureType_UNKNOWN:
+		name = "aiTextureType_UNKNOWN"; break;
 	}
 
 	bool sRGB = false;
 	if (type == aiTextureType_DIFFUSE)
 		sRGB = true;
+
+	
 
 	for (unsigned int i = 0; i < material->GetTextureCount(type); i++)	//for each texture of this type (there can be more than one)
 	{
@@ -106,34 +127,33 @@ void Material::LoadAiTexturesOfType(aiMaterial* material, std::string directory,
 		aiTextureMapping texMapping;	//TODO: maybe use this later?
 
 		material->GetTexture(type, i, &path, &texMapping);
-		pathStr = directory + path.C_Str();
+		pathStr = path.C_Str();
 
-		if (prevLoadedTextures)
+		if (!pathStr.empty() && *pathStr.begin() == '*')
 		{
-			bool bWasLoadedPreviously = false;
-			for (unsigned int j = 0; j < prevLoadedTextures->size(); j++)	//check if the texture was loaded in the past (saves a lot of time)
-			{
-				if ((*prevLoadedTextures)[j]->GetPath() == pathStr)
-				{
-					Textures.push_back((*prevLoadedTextures)[j]);
-					bWasLoadedPreviously = true;
-					break;
-				}
-			}
-
-			if (bWasLoadedPreviously)	//skip the costly loading if we already loaded this file
-				continue;
+			std::cout << "Znaleziono " + pathStr << " na aiTextureType " << type << "\n";
+			AddTexture(new NamedTexture(textureFromAiEmbedded(*scene->mTextures[std::stoi(pathStr.substr(1))], sRGB), shaderName + std::to_string(i + 1)));
+			continue;
 		}
 
+		pathStr = directory + pathStr;
+
+		if (matLoadingData)
+			if (NamedTexture* found = matLoadingData->FindTexture(pathStr))
+			{
+				Textures.push_back(found);
+				continue;
+			}
+	
+
 		NamedTexture* tex = new NamedTexture(textureFromFile(pathStr, (sRGB) ? (GL_SRGB) : (GL_RGB)), shaderName + std::to_string(i + 1));	//create a new Texture and pass the file path, the shader name (for example albedo1, roughness1, ...) and the sRGB info
-		
-		Textures.push_back(tex);
-		if (prevLoadedTextures)
-			prevLoadedTextures->push_back(tex);
+		AddTexture(tex);
+		if (matLoadingData)
+			matLoadingData->AddTexture(*tex);
 	}
 }
 
-void Material::UpdateWholeUBOData(Shader* shader, Texture& emptyTexture)
+void Material::UpdateWholeUBOData(Shader* shader, Texture& emptyTexture) const
 {
 	shader->Uniform1f("material.shininess", Shininess);
 	shader->Uniform1f("material.depthScale", DepthScale);
@@ -174,7 +194,7 @@ AtlasMaterial::AtlasMaterial(std::string name, glm::vec2 atlasSize, float shine,
 {
 }
 
-void AtlasMaterial::InterpolateInAnimation(Interpolation* interp)
+void AtlasMaterial::InterpolateInAnimation(Interpolation* interp) const
 {
 	if (!interp)
 	{
@@ -186,12 +206,12 @@ void AtlasMaterial::InterpolateInAnimation(Interpolation* interp)
 	//std::cout << "Uwaga: " << TextureID << '\n';
 }
 
-void AtlasMaterial::UpdateInstanceUBOData(Shader* shader)
+void AtlasMaterial::UpdateInstanceUBOData(Shader* shader) const
 {
 	shader->Uniform2fv("atlasData", glm::vec2(TextureID, AtlasSize.x));
 }
 
-void AtlasMaterial::UpdateWholeUBOData(Shader* shader, Texture& emptyTexture)
+void AtlasMaterial::UpdateWholeUBOData(Shader* shader, Texture& emptyTexture) const
 {
 	UpdateInstanceUBOData(shader);
 	Material::UpdateWholeUBOData(shader, emptyTexture);
@@ -205,20 +225,28 @@ void AtlasMaterial::UpdateWholeUBOData(Shader* shader, Texture& emptyTexture)
 ========================================================================================================================
 */
 
-MaterialInstance::MaterialInstance(Material* materialPtr,  Interpolation* interp, bool drawBefore, bool drawAfter):
-	MaterialPtr(materialPtr),
-	AnimationInterp(interp),
+MaterialInstance::MaterialInstance(const Material& materialRef):
+	MaterialRef(materialRef),
+	AnimationInterp(nullptr),
+	DrawBeforeAnim(false),
+	DrawAfterAnim(false)
+{
+}
+
+MaterialInstance::MaterialInstance(const Material& materialRef, Interpolation& interp, bool drawBefore, bool drawAfter):
+	MaterialRef(materialRef),
+	AnimationInterp(&interp),
 	DrawBeforeAnim(drawBefore),
 	DrawAfterAnim(drawAfter)
 {
 }
 
-Material* MaterialInstance::GetMaterialPtr()
+const Material& MaterialInstance::GetMaterialRef() const
 {
-	return MaterialPtr;
+	return MaterialRef;
 }
 
-bool MaterialInstance::ShouldBeDrawn()
+bool MaterialInstance::ShouldBeDrawn() const
 {
 	if ((!AnimationInterp) ||
 		((DrawBeforeAnim || AnimationInterp->GetT() > 0.0f) && (DrawAfterAnim || AnimationInterp->GetT() < 1.0f)))
@@ -245,14 +273,28 @@ void MaterialInstance::Update(float deltaTime)
 	AnimationInterp->UpdateT(deltaTime);
 }
 
-void MaterialInstance::UpdateInstanceUBOData(Shader* shader)
+void MaterialInstance::UpdateInstanceUBOData(Shader* shader) const
 {
-	MaterialPtr->InterpolateInAnimation(AnimationInterp);
-	MaterialPtr->UpdateInstanceUBOData(shader);
+	MaterialRef.InterpolateInAnimation(AnimationInterp);
+	MaterialRef.UpdateInstanceUBOData(shader);
 }
 
-void MaterialInstance::UpdateWholeUBOData(Shader* shader, Texture& emptyTexture)
+void MaterialInstance::UpdateWholeUBOData(Shader* shader, Texture& emptyTexture) const
 {
 	UpdateInstanceUBOData(shader);
-	MaterialPtr->UpdateWholeUBOData(shader, emptyTexture);
+	MaterialRef.UpdateWholeUBOData(shader, emptyTexture);
+}
+
+NamedTexture* MaterialLoadingData::FindTexture(const std::string& path) const
+{
+	auto found = std::find_if(LoadedTextures.begin(), LoadedTextures.end(), [path](NamedTexture* tex) { return tex->GetPath() == path; });
+	if (found != LoadedTextures.end())
+		return *found;
+
+	return nullptr;
+}
+
+void MaterialLoadingData::AddTexture(NamedTexture& tex)
+{
+	LoadedTextures.push_back(&tex);
 }

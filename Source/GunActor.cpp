@@ -1,6 +1,7 @@
 #include "GunActor.h"
 #include "SoundSourceComponent.h"
 #include "FileLoader.h"
+#include "Event.h"
 
 GunActor::GunActor(GameScene* scene, std::string name):
 	Actor(scene, name)
@@ -54,14 +55,19 @@ void GunActor::Update(float deltaTime)
 	Actor::Update(deltaTime);
 }
 
-void GunActor::HandleInputs(GLFWwindow* window)
+void GunActor::HandleEvent(const Event& ev)
 {
-	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS)
+	if (ev.GetType() != EventType::MOUSE_PRESSED)
+		return;
+
+	const MouseButtonEvent& pressedEv = *dynamic_cast<const MouseButtonEvent*>(&ev);
+	if (pressedEv.GetButton() == MouseButton::RIGHT)
 	{
 		printVector(GunModel->GetTransform().RotationRef, "Prawdziwa rotacja");
 		printVector(GunModel->GetTransform().GetWorldTransform().PositionRef, "Pozycja gracza");
+		printVector(GunModel->GetTransform().GetWorldTransform().FrontRef, "Front");
 	}
-	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS && CooldownLeft <= 0.0f)
+	if (pressedEv.GetButton() == MouseButton::LEFT && CooldownLeft <= 0.0f)
 	{
 		ParticleMeshInst->GetMaterialInst()->ResetAnimation();
 		GunBlast->Play();
@@ -70,7 +76,7 @@ void GunActor::HandleInputs(GLFWwindow* window)
 		GunModel->GetTransform().AddInterpolator<glm::quat>("rotation", 0.25f, 1.25f, glm::quat(glm::vec3(0.0f)), InterpolationType::QUADRATIC, true);
 
 		Actor* actor = Scene->AddActorToRoot(std::make_shared<Actor>(Scene, "Bullet" + std::to_string(FiredBullets)));
-		ModelComponent* bulletModel = ModelComponent::Of(ModelComponent(Scene, "BulletModel" + std::to_string(FiredBullets++), Transform(GetTransform()->GetWorldTransform().PositionRef, glm::vec3(0.0f), glm::vec3(0.1f)))).get();
+		ModelComponent* bulletModel = ModelComponent::Of(ModelComponent(Scene, "BulletModel" + std::to_string(FiredBullets++), Transform(GetTransform()->GetWorldTransform().PositionRef, glm::vec3(0.0f), glm::vec3(0.5f)))).get();
 		EngineDataLoader::LoadModel("hqSphere/hqSphere.obj", bulletModel, MeshTreeInstancingType::ROOTTREE, GameHandle->GetRenderEngineHandle()->FindMaterial("RustedIron"));
 
 		actor->ReplaceRoot(bulletModel);

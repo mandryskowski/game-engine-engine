@@ -160,16 +160,6 @@ void PhysicsEngine::AddCollisionObject(GameScenePhysicsData* scenePhysicsData, C
 		AddCollisionObjectToPx(scenePhysicsData, object);
 }
 
-CollisionObject* PhysicsEngine::CreateCollisionObject(GameScenePhysicsData* scenePhysicsData, glm::vec3 pos)
-{
-	CollisionObject* obj = new CollisionObject;
-	obj->ActorPtr = PxCreateDynamic(*Physics, PxTransform(toPx(pos)), PxSphereGeometry(0.1f), *DefaultMaterial, 100.0f);
-	scenePhysicsData->CollisionObjects.push_back(obj);
-	scenePhysicsData->PhysXScene->addActor(*obj->ActorPtr);
-
-	return obj;
-}
-
 PxController* PhysicsEngine::CreateController(GameScenePhysicsData* scenePhysicsData)
 {
 	PxCapsuleControllerDesc desc;

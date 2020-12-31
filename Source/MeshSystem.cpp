@@ -22,12 +22,7 @@ TemplateNode::TemplateNode(const TemplateNode& node, bool copyChildren):
 		return;
 
 	for (int i = 0; i < node.Children.size(); i++)
-	{
-		if (MeshNode* meshNodeCast = dynamic_cast<MeshNode*>(node.Children[i].get()))
-			Children.push_back(std::make_unique<MeshNode>(MeshNode(*meshNodeCast, true)));
-		else
-			Children.push_back(std::make_unique<TemplateNode>(TemplateNode(*node.Children[i])));
-	}
+		AddChild(*node.Children[i]);
 }
 
 TemplateNode::TemplateNode(TemplateNode&& node):
@@ -96,16 +91,28 @@ template <typename T> T* TemplateNode::AddChild(std::string name)
 	return dynamic_cast<T*>(Children.back().get());
 }
 
-template<typename T> T* MeshSystem::TemplateNode::AddChild(const T& node)
+TemplateNode& MeshSystem::TemplateNode::AddChild(const TemplateNode& node)
 {
-	Children.push_back(std::make_unique<T>(T(node)));
-	return dynamic_cast<T*>(Children.back().get());
+	if (const MeshNode* meshNodeCast = dynamic_cast<const MeshNode*>(&node))
+		Children.push_back(std::make_unique<MeshNode>(MeshNode(*meshNodeCast, true)));
+	else if (const BoneNode* boneNodeCast = dynamic_cast<const BoneNode*>(&node))
+		Children.push_back(std::make_unique<BoneNode>(BoneNode(*boneNodeCast, true)));
+	else
+		Children.push_back(std::make_unique<TemplateNode>(TemplateNode(node)));
+
+	return *Children.back().get();
 }
 
-template<typename T> T* MeshSystem::TemplateNode::AddChild(T&& node)
+TemplateNode& MeshSystem::TemplateNode::AddChild(TemplateNode&& node)
 {
-	Children.push_back(std::make_unique<T>(T(node)));
-	return dynamic_cast<T*>(Children.back().get());
+	if (const MeshNode* meshNodeCast = dynamic_cast<const MeshNode*>(&node))
+		Children.push_back(std::make_unique<MeshNode>(MeshNode(*meshNodeCast, true)));
+	else if (const BoneNode* boneNodeCast = dynamic_cast<const BoneNode*>(&node))
+		Children.push_back(std::make_unique<BoneNode>(BoneNode(*boneNodeCast, true)));
+	else
+		Children.push_back(std::make_unique<TemplateNode>(TemplateNode(node)));
+
+	return *Children.back().get();
 }
 
 TemplateNode* TemplateNode::FindNode(std::string name)
@@ -144,7 +151,7 @@ Mesh* TemplateNode::FindMesh(std::string name)
 	return nullptr;
 }
 
-const std::shared_ptr<Mesh> TemplateNode::FindMeshPtr(std::string name)
+const std::shared_ptr<Mesh> TemplateNode::FindMeshPtr(std::string name) const
 {
 	for (int i = 0; i < static_cast<int>(Children.size()); i++)
 		if (std::shared_ptr<Mesh> found = Children[i].get()->FindMeshPtr(name))
@@ -177,12 +184,6 @@ void TemplateNode::DebugPrint(int nrTabs)
 template TemplateNode* TemplateNode::AddChild<TemplateNode>(std::string name);
 template MeshNode* TemplateNode::AddChild<MeshNode>(std::string name);
 template BoneNode* TemplateNode::AddChild<BoneNode>(std::string name);
-template TemplateNode* TemplateNode::AddChild<TemplateNode>(const TemplateNode&);
-template MeshNode* TemplateNode::AddChild<MeshNode>(const MeshNode&);
-template BoneNode* TemplateNode::AddChild<BoneNode>(const BoneNode&);
-template TemplateNode* TemplateNode::AddChild<TemplateNode>(TemplateNode&&);
-template MeshNode* TemplateNode::AddChild<MeshNode>(MeshNode&&);
-template BoneNode* TemplateNode::AddChild<BoneNode>(BoneNode&&);
 
 ///////////////////////////////////
 
@@ -251,7 +252,7 @@ Mesh* MeshNode::FindMesh(std::string name)
 	return TemplateNode::FindMesh(name);
 }
 
-const std::shared_ptr<Mesh> MeshNode::FindMeshPtr(std::string name)
+const std::shared_ptr<Mesh> MeshNode::FindMeshPtr(std::string name) const
 {
 	auto found = std::find_if(Meshes.begin(), Meshes.end(), [name](const std::shared_ptr<Mesh>& mesh) { return mesh->GetName() == name; });
 	if (found != Meshes.end())
@@ -358,7 +359,7 @@ Mesh* MeshTree::FindMesh(std::string name)
 	return Root.FindMesh(name);
 }
 
-const std::shared_ptr<Mesh> MeshSystem::MeshTree::FindMeshPtr(std::string name)
+const std::shared_ptr<Mesh> MeshSystem::MeshTree::FindMeshPtr(std::string name) const
 {
 	return Root.FindMeshPtr(name);
 }

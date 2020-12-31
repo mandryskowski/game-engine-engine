@@ -1,5 +1,6 @@
 #pragma once
 #include "GameManager.h"
+#include "Event.h"
 #include <iostream>
 
 struct GLFWwindow;
@@ -36,8 +37,8 @@ public:
 
 	virtual void Setup();
 
-	virtual void HandleInputs(GLFWwindow*);
-	void HandleInputsAll(GLFWwindow*);
+	virtual void HandleEvent(const Event& ev) {}
+	void HandleEventAll(const Event& ev);
 	virtual void Update(float);
 	void UpdateAll(float);
 	virtual void DebugRender(RenderInfo info, Shader* shader) const; //this method should only be called to render the components as something (usually a textured billboard) to debug the project.

@@ -3,17 +3,17 @@ materialsfile EngineMaterials/Materials.fware
 collisionfile CollisionData.txt
 
 newprobes 5
-0 apartment.hdr
 1 1 0 0 0 skip 1.1 1.1 10.1 break
-1 1 2 0.7 -8 break
-1 1 0.147809 1.93476 -4.31168 break
+1 1 2 0.7 -8 skip 3 3 3 break
+1 1 0.147809 1.93476 -4.31168 skip 2 2 2 break
 1 1 -30 0 0 skip 10 10 10 break
+0 apartment.hdr
 
 
 edittree nanosuit/nanosuit.obj
 Body col 1 ps 0 0 11 0 2.5 5 2 transform skip 0 0 0 break , 
-Arms material doublebarrel/doublebarrel2.obj:Darkwood col 2 prs  0 -3 9 0 -10 0 0 2 5 1    0  3 9 0 -10 0 0 2 5 1 ,
-hands material doublebarrel/doublebarrel2.obj:Barrelmetal end
+Arms material doublebarrel/doublebarrel.fbx:Darkwood col 2 prs  0 -3 9 0 -10 0 0 2 5 1    0  3 9 0 -10 0 0 2 5 1 ,
+hands material doublebarrel/doublebarrel.fbx:Barrelmetal end
 
 edittree boblamp/boblampclean.md5mesh
 upperarm.R col 1 ps 0 0 0 0 5 10 5 ,
@@ -68,10 +68,11 @@ skip
 skip
 0.025 0.025 0.025
 break ,
-doublebarrel/doublebarrel2.obj:doublebarrel/doublebarrel2.obj :
-	doublebarrel/doublebarrel2.obj:Shotgun_Cube_NoShadow material Barrelmetal ,
-	doublebarrel/doublebarrel2.obj:Barrel+Release_NoShadow end
+doublebarrel/doublebarrel.fbx:doublebarrel/doublebarrel.fbx :
+	doublebarrel/doublebarrel.fbx:Shotgun_Cube material Barrelmetal ,
+	doublebarrel/doublebarrel.fbx:Barrel+Release end
 end
+
 newtree StupidSkybox
 tunnel/tunnel.obj:Tunnel material Marble 
 transform
@@ -79,6 +80,11 @@ skip
 skip
 50 50 5 end
 end
+
+newtree SuzanneModel
+alphamap/alphamap.fbx:Suzanne material BrickWall
+end
+
 
 newactor Actor CameraActor
 newcomp camera Camera root
@@ -96,24 +102,11 @@ skip
 skip
 0.3 0.3 0.3
 end
-newcomp light Bekalight child Camera spot
-0 0 0
-1 1 1
-0.5 0.5 0.5
-2 12.5 45
-transform
-0.08 -0.1 0
-skip
-skip
-0 0 -1
-end
 
-edittree doublebarrel/tescik.obj
-Barrel+Release.001_Cylinder.001 material VeryDamagedMetal end
 
 newactor GunActor Gun child CameraActor
-newcomp model MyDoubleBarrel root doublebarrel/doublebarrel.fbx
-edit doublebarrel/doublebarrel.fbx
+newcomp model MyDoubleBarrel root doublebarrel/doublebarrel.glb
+edit doublebarrel/doublebarrel.glb
 transform
 0.11 -0.1 -0.2
 skip
@@ -184,15 +177,15 @@ skip
 1 1 10
 end
 newcomp light Sun child Tunnel direction
-0.1 0.1 0.1
+0 0 0
 1 1 1
 0.5 0.5 0.5
 0 0 0
 transform
-0 3 -11
+8.1 1.5 5.7
 skip
 skip
-0 -3 11
+-0.80989 -0.15385 -0.56604
 end
 newcomp light Lamp point
 0.05 0.05 0.05
@@ -269,7 +262,7 @@ newactor Actor secondtunnel
 newcomp model SecondTunnel root tunnel/tunnel.obj
 edit Tunnel material RustedIron end
 transform
-5 0 0
+10 0 0
 end
 newcomp model SecondBall child SecondTunnel ENG_SPHERE
 edit Sphere
@@ -359,15 +352,17 @@ neacomp model Skybox root StupidSkybox
 end
 
 newactor Actor GameLevel
-newcomp model Warehouse root warehouse/warehouse.obj
+newcomp model Warehouse root warehouse/warehouse.fbx
+transform
+0 -0.5 0
 end
 
 newactor Actor GameLevel2
-newcomp model AlphaLevel root alphamap/alphamap.fbx
+newcomp model AlphaLevel root alphamap/alphamap.glb
 transform
--30 -0.1 0
+-30 -0.5 0
 skip
-0.5 0.5 0.5
+50 50 50
 end
 
 newactor Actor TextActor
@@ -375,4 +370,36 @@ newcomp text SampleText root "fonts/expressway rg.ttf" "twoj stary (lvl 50)"
 transform
 -0.3 0.1 0
 0 0 0
-0.1 0.1 1 end
+0.1 0.1 1
+end
+
+newactor Actor Decorations
+newcomp model Tree root christmas/tree.fbx
+transform
+-5 -0.5 2
+0 90 0
+0.3 0.3 0.3
+end
+
+newactor Actor ShippingContainer
+newcomp model ContainerModel root shippingContainer/kontener.glb
+transform
+-28 0.6 -13
+0 90 0
+end
+
+newactor Actor DoWyjebania
+newcomp model CSuzanne root SuzanneModel
+transform
+0 0 0
+skip
+1 1 1
+end
+
+newactor Actor DoubleBarrelActor
+newcomp model DoubleBarrelModel root doublebarrel/doublebarrel.glb
+transform
+-5 0.04 5
+skip
+0.24 0.24 0.18
+end

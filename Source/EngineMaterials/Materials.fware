@@ -49,9 +49,10 @@ Bricks
 Geometry
 64
 0.06
-3
+4
 bricks.jpg albedo1 true
 bricks_normal.jpg normal1 false
+bricks_roughness.jpg roughness1 false
 bricks_disp.jpg depth1 false
 
 RustedIron

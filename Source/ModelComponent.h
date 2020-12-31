@@ -9,6 +9,21 @@ namespace MeshSystem
 	class MeshNode;
 }
 
+//Todo: Usun SkeletonInfo z ModelComponent
+//Dodaj to do osobnej klasy SkeletalModelComponent ktora dziedziczy z ModelComponent
+
+class Model
+{
+public:
+
+	int GetMeshInstanceCount() const;
+	const MeshInstance& GetMeshInstance(int index) const;
+
+	MeshInstance* FindMeshInstance(std::string);
+	void AddMeshInst(Mesh*);
+protected:
+	std::vector<std::unique_ptr<MeshInstance>> MeshInstances;
+};
 
 
 class ModelComponent: public RenderableComponent
@@ -33,17 +48,15 @@ public:
 	SkeletonInfo* GetSkeletonInfo() const;
 
 	MeshInstance* FindMeshInstance(std::string);
-	void AddMeshInst(Mesh*);
+	void AddMeshInst(const MeshInstance&);
 
 	static std::shared_ptr<ModelComponent> Of(const ModelComponent&);
 	static std::shared_ptr<ModelComponent> Of(ModelComponent&&);
 
-	virtual void Render(RenderInfo&, Shader* shader) override;
+	virtual void Render(const RenderInfo&, Shader* shader) override;
 
 	ModelComponent& operator=(const ModelComponent&);
 	ModelComponent& operator=(ModelComponent&&);
-
-	~ModelComponent();
 
 protected:
 	std::vector<std::unique_ptr<MeshInstance>> MeshInstances;

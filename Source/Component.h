@@ -22,6 +22,9 @@ public:
 	Component(GameScene*, const std::string& name = "undefined", const Transform& t = Transform());
 	Component(GameScene*, const std::string& name = "undefined", glm::vec3 pos = glm::vec3(0.0f), glm::vec3 rot = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 scale = glm::vec3(1.0f));
 
+	Component(const Component&) = delete;
+	Component(Component&&) = delete;
+
 	virtual void OnStart();
 	virtual void OnStartAll();
 
@@ -48,9 +51,6 @@ public:
 	CollisionObject* SetCollisionObject(std::unique_ptr<CollisionObject>&);
 	void AddComponent(Component* component);
 	void AddComponents(std::vector<Component*> components);
-
-	virtual void HandleInputs(GLFWwindow*) {}
-	void HandleInputsAll(GLFWwindow* window);
 
 	virtual void Update(float);
 	void UpdateAll(float dt);

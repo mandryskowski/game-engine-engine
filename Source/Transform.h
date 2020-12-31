@@ -60,6 +60,7 @@ public:
 
 	void SetPosition(glm::vec3);
 	void SetPositionWorld(glm::vec3);
+	void Move(glm::vec2);
 	void Move(glm::vec3);
 	void SetRotation(glm::vec3 euler);
 	void SetRotation(glm::quat quat);

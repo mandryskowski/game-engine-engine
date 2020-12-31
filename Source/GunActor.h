@@ -18,5 +18,5 @@ public:
 	GunActor(GameScene* scene, std::string name);
 	virtual void Setup() override;
 	virtual void Update(float) override;
-	virtual void HandleInputs(GLFWwindow*) override;
+	virtual void HandleEvent(const Event& ev) override;
 };

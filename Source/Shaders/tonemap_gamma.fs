@@ -26,7 +26,5 @@ void main()
 	HDRcolor /= HDRcolor + vec3(1.0);
 	
 	fragColor = vec4(pow(HDRcolor, vec3(1.0 / gamma)), 1.0);
-	if (fragColor.rgb == vec3(0.0))
-		discard;
 	//fragColor = vec4(HDRcolor, 1.0);
 }

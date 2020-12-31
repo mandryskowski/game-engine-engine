@@ -31,8 +31,11 @@ class Material;
 class Shader;
 class LightProbe;
 class SkeletonInfo;
+
+
 struct GameSettings;
 struct VideoSettings;
+class InputDevicesStateRetriever;
 class RenderInfo;
 class RenderToolboxCollection;
 
@@ -41,7 +44,7 @@ struct LightProbeTextureArrays;
 class RenderEngine;
 
 enum LightType;
-enum EngineBasicShape;
+enum class EngineBasicShape;
 
 class Font;
 
@@ -79,7 +82,6 @@ class PhysicsEngineManager
 public:
 	virtual void AddCollisionObject(GameScenePhysicsData* scenePhysicsData, CollisionObject*) = 0;
 
-	virtual CollisionObject* CreateCollisionObject(GameScenePhysicsData* scenePhysicsData, glm::vec3 pos) = 0;
 	virtual physx::PxController* CreateController(GameScenePhysicsData* scenePhysicsData) = 0;
 
 	virtual void ApplyForce(CollisionObject*, glm::vec3 force) = 0;
@@ -92,7 +94,7 @@ class RenderEngineManager
 {
 public:
 	virtual const ShadingModel& GetShadingModel() = 0;
-	virtual const std::shared_ptr<Mesh> GetBasicShapeMesh(EngineBasicShape) = 0;
+	virtual const Mesh& GetBasicShapeMesh(EngineBasicShape) const = 0;
 	virtual Shader* GetLightShader(const RenderToolboxCollection& renderCol, LightType) = 0;
 	virtual RenderToolboxCollection* GetCurrentTbCollection() = 0;
 
@@ -101,16 +103,17 @@ public:
 	virtual void AddSceneRenderDataPtr(GameSceneRenderData*) = 0;
 	virtual MeshSystem::MeshTree* CreateMeshTree(std::string path) = 0;
 	virtual MeshSystem::MeshTree* FindMeshTree(std::string path, MeshSystem::MeshTree* ignore = nullptr) = 0;
+	virtual const MeshSystem::MeshTree* FindMeshTree(std::string path, MeshSystem::MeshTree* ignore = nullptr) const = 0;
 
 	virtual Shader* FindShader(std::string) = 0;
 	virtual Material* FindMaterial(std::string) = 0;
 
 	virtual void RenderCubemapFromTexture(Texture targetTex, Texture tex, glm::uvec2 size, Shader&, int* layer = nullptr, int mipLevel = 0) = 0;
 	virtual void RenderCubemapFromScene(RenderInfo info, GameSceneRenderData* sceneRenderData, GEE_FB::Framebuffer target, GEE_FB::FramebufferAttachment targetTex, GLenum attachmentType, Shader* shader = nullptr, int* layer = nullptr, bool fullRender = false) = 0;
-	virtual void RenderText(RenderInfo info, const Font& font, std::string content, Transform t, glm::vec3 color = glm::vec3(1.0f), Shader* shader = nullptr, bool convertFromPx = false) = 0; //Pass a shader if you do not want the default shader to be used.
-	virtual void RenderStaticMesh(RenderInfo info, const MeshInstance& mesh, const Transform& transform, Shader* shader, glm::mat4* lastFrameMVP = nullptr, Material* overrideMaterial = nullptr, bool billboard = false) = 0; //Note: this function does not call the Use method of passed Shader. Do it manually.
-	virtual void RenderStaticMeshes(RenderInfo info, const std::vector<std::unique_ptr<MeshInstance>>& meshes, const Transform& transform, Shader* shader, glm::mat4* lastFrameMVP = nullptr, Material* overrideMaterial = nullptr, bool billboard = false) = 0; //Note: this function does not call the Use method of passed Shader. Do it manually.
-	virtual void RenderSkeletalMeshes(RenderInfo info, const std::vector<std::unique_ptr<MeshInstance>>& meshes, const Transform& transform, Shader* shader, SkeletonInfo& skelInfo, Material* overrideMaterial = nullptr) = 0; //Note: this function does not call the Use method of passed Shader. Do it manually
+	virtual void RenderText(const RenderInfo& info, const Font& font, std::string content, Transform t, glm::vec3 color = glm::vec3(1.0f), Shader* shader = nullptr, bool convertFromPx = false) = 0; //Pass a shader if you do not want the default shader to be used.
+	virtual void RenderStaticMesh(const RenderInfo& info, const MeshInstance& mesh, const Transform& transform, Shader* shader, glm::mat4* lastFrameMVP = nullptr, Material* overrideMaterial = nullptr, bool billboard = false) = 0; //Note: this function does not call the Use method of passed Shader. Do it manually.
+	virtual void RenderStaticMeshes(const RenderInfo&, const std::vector<std::unique_ptr<MeshInstance>>& meshes, const Transform& transform, Shader* shader, glm::mat4* lastFrameMVP = nullptr, Material* overrideMaterial = nullptr, bool billboard = false) = 0; //Note: this function does not call the Use method of passed Shader. Do it manually.
+	virtual void RenderSkeletalMeshes(const RenderInfo& info, const std::vector<std::unique_ptr<MeshInstance>>& meshes, const Transform& transform, Shader* shader, SkeletonInfo& skelInfo, Material* overrideMaterial = nullptr) = 0; //Note: this function does not call the Use method of passed Shader. Do it manually
 };
 
 class AudioEngineManager
@@ -124,6 +127,7 @@ class GameManager
 public:
 	virtual void BindAudioListenerTransformPtr(Transform*) = 0;
 	virtual void PassMouseControl(Controller* controller) = 0;
+	virtual InputDevicesStateRetriever GetInputRetriever() = 0;
 
 	virtual Actor* GetRootActor(GameScene* = nullptr) = 0;
 	virtual GameScene* GetMainScene() = 0;

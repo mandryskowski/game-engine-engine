@@ -23,7 +23,7 @@ uniform samplerCubeArray cubemap;
 
 void main()
 {
-	fragColor = textureLod(cubemap, vec4(frag.localPosition, 0.0), 0.0);
+	fragColor = textureLod(cubemap, vec4(frag.localPosition, 4.0), 3.0);
 	
 	#ifdef CALC_VELOCITY_BUFFER
 	//vec2 currentPos = vec2(gl_FragCoord.xy) / vec2(SCR_WIDTH, SCR_HEIGHT);

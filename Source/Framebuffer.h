@@ -1,5 +1,6 @@
 #pragma once
 #include "Texture.h"
+#include "Viewport.h"
 #include <glm/glm.hpp>
 #include <vector>
 #include <string> 
@@ -8,29 +9,6 @@
 //TODO: Remont kapitalny calego systemu framebufferow
 //****	Wyjeb te 3 klasy i rozbij je na funkcje
 //****	Wyjeb funkcje Load z Framebuffer i rozbij to na: SetColorBuffers(vec<Texture>), AttachColorBuffer(Texture), SetDepthBuffer(Texture*), SetAttachments(vec<Texture>, Texture*) (pamietaj o glDrawBuffers zalezne od FBO!!!), argumenty tych funkcji to Texture zamiast tych zjebanych spaghetti attachment ja pierdole
-
-class Viewport
-{
-public:
-	Viewport(glm::uvec2 pos, glm::uvec2 size) :
-		Position(pos), Size(size)
-	{
-
-	}
-	const glm::uvec2& GetSize() const
-	{
-		return Size;
-	}
-	void SetOpenGLState() const
-	{
-		glViewport(Position.x, Position.y, Size.x, Size.y);
-	}
-
-
-private:
-	glm::uvec2 Position;
-	glm::uvec2 Size;
-};
 
 namespace GEE_FB
 {
