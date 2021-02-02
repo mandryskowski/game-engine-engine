@@ -23,7 +23,7 @@
 **TODO:**
 1. .ogg loading
 2. Fix calculating the velocity buffer by taking bone matrices from previous frame into account (applies to animated models). SMAA T2x is shaky because of this.
-3. Possibly add about some audio engine that is usable and affordable
+3. Add a normal audio engine that is actually useful in any game making process.
 4. Think of a more catchy name...
 
 
