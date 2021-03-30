@@ -1,4 +1,4 @@
-# My Game Engine Engine C++/OpenGL (26 Oct 2019 -> Now)
+# The "My Game Engine" Engine C++/OpenGL (26 Oct 2019 -> Now)
 
 #### Features
 - Actor & Component hierarchy
@@ -23,9 +23,12 @@
 **TODO:**
 1. .ogg loading
 2. Fix calculating the velocity buffer by taking bone matrices from previous frame into account (applies to animated models). SMAA T2x is shaky because of this.
-3. Possibly add about some audio engine that is usable and affordable
+3. Add a normal audio engine that is actually useful in any game making process.
+4. Think of a more catchy name...
 
 
 #### Made possible thanks to
 * Mirosław Zelent https://www.youtube.com/user/MiroslawZelent https://miroslawzelent.pl/
 * Joey De Vries https://learnopengl.com/ https://joeydevries.com/#home
+
+#### by Michał Andryskowski
