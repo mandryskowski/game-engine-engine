@@ -21,7 +21,7 @@ void main()
 	for (int i = 1; i < 4; i++)
 		boneMatrix += boneMatrices[vBoneIDs[i] + boneIDOffset] * vBoneWeights[i];
 		
-	if (vBoneIDs.x == 0 && vBoneIDs.y == 0)
+	if (vBoneIDs.x == 0 && vBoneWeights.x == 0.0)	//If no bones are bound to this vertex, ignore any bone matrices. Note: we also check the first vBoneWeight, because a bone can have index 0 (its also the default value of vBoneIDs - ivec4(0)).
 		boneMatrix = mat4(1.0);
 		
 	vec4 bonePosition = boneMatrix * vec4(vPosition, 1.0);

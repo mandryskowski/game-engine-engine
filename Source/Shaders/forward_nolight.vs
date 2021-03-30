@@ -14,7 +14,7 @@ uniform mat4 MVP;
 void main()
 {
 	gl_Position = MVP * vec4(vPosition, 1.0);
-	texCoord1 = vPosition.xy + vec2(0.5);
+	texCoord1 = (vPosition.xy + vec2(1.0)) / 2.0;
 	texCoord2 = texCoord1;
 	blend = 1.0;
 	

@@ -29,5 +29,10 @@ void main()
 	if (fragColor.a < 0.5)
 		discard;
 		
-	fragColor.rgb *= fragColor.rgb + 1.0;
+	//fragColor.rgb *= fragColor.rgb + 1.0;
+	//if (abs(textureSize(material.albedo1, 0).x - 546) < 2.0)
+	{
+		//fragColor = vec4(vec3(abs(textureSize(material.albedo1, 0).x)), 1.0);
+		//fragColor.rgb /= fragColor.rgb + vec3(1.0);
+		}
 }

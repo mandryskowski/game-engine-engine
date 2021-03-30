@@ -16,6 +16,6 @@ void main()
 	if (alpha == 0.0)
 		discard;
 		
-	fragColor = vec4(pow(color, vec3(2.2)), alpha);
+	fragColor = vec4(color, alpha);
 	blurColor = vec4(0.0);
 }

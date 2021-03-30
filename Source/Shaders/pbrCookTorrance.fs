@@ -137,7 +137,7 @@ vec3 GetIrradiance(vec3 pos, vec3 n)
 }
 vec3 GetPrefilterColor(vec3 pos, vec3 r, float roughness)
 {
-	return textureLod(prefilterCubemaps, vec4(r, lightProbeNr), 0.0 * roughness * MAX_PREFILTER_MIPMAP).rgb;
+	return textureLod(prefilterCubemaps, vec4(r, lightProbeNr), roughness * MAX_PREFILTER_MIPMAP).rgb;
 	vec3 prefilterColor = vec3(0.0);
 	float minLength = 9999.0;
 	for (int i = 1; i < 5; i++)
@@ -198,26 +198,26 @@ vec3 CalcLight(Light light, Fragment frag)
 	float visibility = 1.0 - CalcShadow2D(light, frag.position);
 	
 	vec3 radiance = light.diffuse.rgb * visibility;
-	vec3 ambient = light.ambient.rgb * frag.albedo;
+	vec3 ambient = light.ambient.rgb * frag.albedo * (1.0 - frag.alphaMetalAo.g);	//Ambient * Albedo * (1 - Metalness)
 	#elif defined(SPOT_LIGHT)
 	float visibility = 1.0 -  CalcShadow2D(light, frag.position);
 	
 	float dist = length(light.position.xyz - frag.position);
-	float attenuation = 1.0 / (dist * dist);
+	float attenuation = 1.0 / (dist * dist * light.attenuation);
 	
 	float LdotLDir = max(dot(l, -light.direction.xyz), 0.0);
 	float spotIntensity = (LdotLDir - light.outerCutOff) / max((light.cutOff - light.outerCutOff), 0.001);
 	
 	vec3 radiance = light.diffuse.rgb * attenuation * spotIntensity * visibility;
-	vec3 ambient = light.ambient.rgb * frag.albedo * attenuation;
+	vec3 ambient = light.ambient.rgb * frag.albedo * attenuation * (1.0 - frag.alphaMetalAo.g);	//Ambient * Albedo * Attenuation * (1 - Metalness)
 	#else
 	float visibility = 1.0 - CalcShadow3D(light, frag.position);
 	
 	float dist = length(light.position.xyz - frag.position);
-	float attenuation = 1.0 / (dist * dist);
+	float attenuation = 1.0 / (dist * dist * light.attenuation);
 	
 	vec3 radiance = light.diffuse.rgb * attenuation * visibility;
-	vec3 ambient = light.ambient.rgb * frag.albedo * attenuation;
+	vec3 ambient = light.ambient.rgb * frag.albedo * attenuation * (1.0 - frag.alphaMetalAo.g);	//Ambient * Albedo * Attenuation * (1 - Metalness)
 	#endif
 	
 	#ifdef ENABLE_SSAO

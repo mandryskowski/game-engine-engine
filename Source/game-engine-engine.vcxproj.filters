@@ -15,264 +15,318 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Actor.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Animation.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="AudioEngine.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="CameraComponent.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Component.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Game.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="GunActor.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="LightComponent.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Material.cpp">
+    <ClCompile Include="source\glad.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Mesh.cpp">
+    <ClCompile Include="source\UI\UICanvasActor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ModelComponent.cpp">
+    <ClCompile Include="source\UI\UIElement.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Postprocess.cpp">
+    <ClCompile Include="source\UI\UICanvas.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="RenderEngine.cpp">
+    <ClCompile Include="source\audio\AudioEngine.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Shader.cpp">
+    <ClCompile Include="source\scene\SoundSourceComponent.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SoundSourceComponent.cpp">
+    <ClCompile Include="source\scene\CameraComponent.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Transform.cpp">
+    <ClCompile Include="source\scene\LightComponent.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Utility.cpp">
+    <ClCompile Include="source\scene\ModelComponent.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="PhysicsEngine.cpp">
+    <ClCompile Include="source\scene\RenderableComponent.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="FileLoader.cpp">
+    <ClCompile Include="source\scene\TextComponent.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="MeshSystem.cpp">
+    <ClCompile Include="source\scene\BoneComponent.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Framebuffer.cpp">
+    <ClCompile Include="source\scene\Component.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="GameSettings.cpp">
+    <ClCompile Include="source\scene\Actor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Texture.cpp">
+    <ClCompile Include="source\scene\GunActor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="LightProbe.cpp">
+    <ClCompile Include="source\rendering\Viewport.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="RenderableVolume.cpp">
+    <ClCompile Include="source\rendering\Framebuffer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="BoneComponent.cpp">
+    <ClCompile Include="source\rendering\LightProbe.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="TextComponent.cpp">
+    <ClCompile Include="source\rendering\Material.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Font.cpp">
+    <ClCompile Include="source\rendering\Mesh.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="RenderableComponent.cpp">
+    <ClCompile Include="source\rendering\MeshSystem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Controller.cpp">
+    <ClCompile Include="source\rendering\Postprocess.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="CollisionObject.cpp">
+    <ClCompile Include="source\rendering\RenderableVolume.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ButtonActor.cpp">
+    <ClCompile Include="source\rendering\RenderEngine.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="HUDModelComponent.cpp">
+    <ClCompile Include="source\rendering\RenderInfo.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="GameScene.cpp">
+    <ClCompile Include="source\rendering\RenderToolbox.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="RenderInfo.cpp">
+    <ClCompile Include="source\rendering\Shader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="RenderToolbox.cpp">
+    <ClCompile Include="source\rendering\Texture.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\..\..\..\Dev\Include\glad4\src\glad.c">
+    <ClCompile Include="source\physics\PhysicsEngine.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Event.cpp">
+    <ClCompile Include="source\physics\CollisionObject.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="InputDevicesStateRetriever.cpp">
+    <ClCompile Include="source\math\Transform.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Viewport.cpp">
+    <ClCompile Include="source\math\Box.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="UICanvasActor.cpp">
+    <ClCompile Include="source\scene\Controller.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="UIModelComponent.cpp">
+    <ClCompile Include="source\UI\Font.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\utility\Utility.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\input\InputDevicesStateRetriever.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\input\Event.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\animation\Animation.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\game\GameSettings.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\game\GameScene.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\game\Game.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\assetload\FileLoader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\scene\UIListElement.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\scene\UIButtonActor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\scene\UIInputBoxActor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\game\GameManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="include\scene\UIWindowActor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\UI\UICanvasField.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\tinyfiledialogs\tinyfiledialogs.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\animation\AnimationManagerActor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\UI\UIListActor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Actor.h">
+    <ClInclude Include="include\UI\UICanvasActor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Animation.h">
+    <ClInclude Include="include\UI\UIElement.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="AudioEngine.h">
+    <ClInclude Include="include\UI\UICanvas.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="AudioFile.h">
+    <ClInclude Include="include\audio\AudioEngine.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="CameraComponent.h">
+    <ClInclude Include="include\audio\AudioFile.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Component.h">
+    <ClInclude Include="include\scene\SoundSourceComponent.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Game.h">
+    <ClInclude Include="include\scene\CameraComponent.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="GameSettings.h">
+    <ClInclude Include="include\scene\LightComponent.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="GunActor.h">
+    <ClInclude Include="include\scene\RenderableComponent.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="LightComponent.h">
+    <ClInclude Include="include\scene\ModelComponent.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Material.h">
+    <ClInclude Include="include\scene\TextComponent.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Mesh.h">
+    <ClInclude Include="include\scene\BoneComponent.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ModelComponent.h">
+    <ClInclude Include="include\scene\Component.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Postprocess.h">
+    <ClInclude Include="include\scene\Actor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="RenderEngine.h">
+    <ClInclude Include="include\scene\GunActor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Shader.h">
+    <ClInclude Include="include\rendering\Framebuffer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="SoundSourceComponent.h">
+    <ClInclude Include="include\rendering\LightProbe.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Transform.h">
+    <ClInclude Include="include\rendering\Material.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Utility.h">
+    <ClInclude Include="include\rendering\Mesh.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="PhysicsEngine.h">
+    <ClInclude Include="include\rendering\MeshSystem.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="GameManager.h">
+    <ClInclude Include="include\rendering\Postprocess.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="CollisionObject.h">
+    <ClInclude Include="include\rendering\RenderableVolume.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="FileLoader.h">
+    <ClInclude Include="include\rendering\RenderEngine.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="MeshSystem.h">
+    <ClInclude Include="include\rendering\RenderInfo.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Framebuffer.h">
+    <ClInclude Include="include\rendering\RenderToolbox.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Texture.h">
+    <ClInclude Include="include\rendering\Shader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="LightProbe.h">
+    <ClInclude Include="include\rendering\Texture.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="RenderableVolume.h">
+    <ClInclude Include="include\rendering\Viewport.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="BoneComponent.h">
+    <ClInclude Include="include\physics\CollisionObject.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="TextComponent.h">
+    <ClInclude Include="include\physics\PhysicsEngine.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Font.h">
+    <ClInclude Include="include\math\Transform.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="RenderableComponent.h">
+    <ClInclude Include="include\math\Box.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Controller.h">
+    <ClInclude Include="include\scene\Controller.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ButtonActor.h">
+    <ClInclude Include="include\UI\Font.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="HUDModelComponent.h">
+    <ClInclude Include="include\utility\Utility.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="GameScene.h">
+    <ClInclude Include="include\input\InputDevicesStateRetriever.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="RenderInfo.h">
+    <ClInclude Include="include\input\Event.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="RenderToolbox.h">
+    <ClInclude Include="include\animation\Animation.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Event.h">
+    <ClInclude Include="include\game\GameSettings.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="InputDevicesStateRetriever.h">
+    <ClInclude Include="include\game\GameScene.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Viewport.h">
+    <ClInclude Include="include\game\GameManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="UICanvasActor.h">
+    <ClInclude Include="include\game\Game.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="UIModelComponent.h">
+    <ClInclude Include="include\assetload\FileLoader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\scene\UIListElement.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\scene\UIButtonActor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\scene\UIInputBoxActor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\UI\UIActor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\scene\UIWindowActor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\editor\EditorManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\UI\UICanvasField.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\animation\AnimationManagerActor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\UI\UIListActor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

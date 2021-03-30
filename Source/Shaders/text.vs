@@ -9,7 +9,7 @@ uniform mat4 MVP;
 
 void main()
 {
-	gl_Position = MVP * vec4(vPosition + 0.5, 0.0, 1.0);
+	gl_Position = MVP * vec4(vPosition + 1.0, 0.0, 1.0);
 	texCoord = vTexCoord;
-	texCoord = vPosition + 0.5;
+	texCoord = (vPosition + 1.0) / 2.0;
 }

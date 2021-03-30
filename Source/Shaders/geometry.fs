@@ -3,6 +3,8 @@ struct Material
 	sampler2D albedo1;
 	sampler2D specular1;
 	sampler2D normal1;
+	
+	vec4 color;
 	#ifdef ENABLE_POM
 	sampler2D depth1;
 	float depthScale;
@@ -116,9 +118,14 @@ void main()
 	normal = normal * 2.0 - 1.0;
 	normal = normalize(frag.TBN * normal);
 	
+
 	gPosition = frag.worldPosition;
 	gNormal = normal;
 	gAlbedoSpec.rgb = texture(material.albedo1, texCoord).rgb;
+	if (gAlbedoSpec.rgb == vec3(0.0))
+		gAlbedoSpec.rgb = material.color.rgb;
+	//else if (texture(material.albedo1, texCoord).a < 0.5)
+		//discard;
 	gAlbedoSpec.a = texture(material.specular1, texCoord).r;
 	#ifdef PBR_SHADING
 	gAlphaMetalAo.r = pow(texture(material.roughness1, texCoord).r, 2.0);

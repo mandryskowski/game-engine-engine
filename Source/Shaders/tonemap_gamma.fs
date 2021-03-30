@@ -23,7 +23,9 @@ void main()
 	HDRcolor += brightColor;
 	#endif
 	
+	#ifdef TM_REINHARD
 	HDRcolor /= HDRcolor + vec3(1.0);
+	#endif
 	
 	fragColor = vec4(pow(HDRcolor, vec3(1.0 / gamma)), 1.0);
 	//fragColor = vec4(HDRcolor, 1.0);

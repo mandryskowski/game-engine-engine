@@ -2,11 +2,14 @@
 materialsfile EngineMaterials/Materials.fware
 collisionfile CollisionData.txt
 
-newprobes 5
-1 1 0 0 0 skip 1.1 1.1 10.1 break
-1 1 2 0.7 -8 skip 3 3 3 break
-1 1 0.147809 1.93476 -4.31168 skip 2 2 2 break
-1 1 -30 0 0 skip 10 10 10 break
+newaprobes 5
+1 1 0 0 0 skip 0.55 0.55 5.05 break
+1 1 2 0.7 -8 skip 1.5 1.5 1.5 break
+1 1 0.147809 1.93476 -4.31168 skip 1 1 1 break
+1 1 -30 0 0 skip 5 5 5 break
+0 apartment.hdr
+
+newprobes 1
 0 apartment.hdr
 
 
@@ -94,13 +97,12 @@ automousecontrol
 transform
 -6.000028 0 3.000007
 end
-newcomp collision BCameraSphere child Camera
-sphere
-false
+newcomp text CameraText child Camera "fonts/expressway rg.ttf" "plis zobacz ten tekst"
 transform
+0 0.4 -0.5
 skip
-skip
-0.3 0.3 0.3
+0.025 0.025 0.025
+end
 end
 
 
@@ -116,6 +118,12 @@ end
 newcomp empty GunTip child MyDoubleBarrel
 transform
 0 0.25 -3.2
+end
+newcomp light Flashlight child GunTip spot
+0 0 0
+1 1 1
+1 1 1
+0.5 27 30
 end
 newcomp soundsource DoubleBarrelBlast child GunTip Sounds/shotgun.wav
 end
@@ -183,15 +191,13 @@ newcomp light Sun child Tunnel direction
 0 0 0
 transform
 8.1 1.5 5.7
-skip
-skip
--0.80989 -0.15385 -0.56604
+-43.8409 54.0852 -34.1234
 end
 newcomp light Lamp point
 0.05 0.05 0.05
 5 4 0
 2.5 2 0
-16 0 0
+1 0 0
 transform
 0 0.3 -4.5
 end
@@ -202,15 +208,12 @@ newcomp light Flashlight spot
 0.5 27 30
 transform
 0 0 3.75
-skip
-skip
-0 0 -1
 end
 newcomp light EpicLight point
 0 0 0
 2 2 1
 1 1 0.5
-6 0 0
+1 0 0
 transform
 0 -0.35 -1
 end
@@ -218,7 +221,7 @@ newcomp light EpicLight2 point
 0 0 0
 2 1 2
 1 0.5 1
-6 0 0
+1 0 0
 transform
 0 -0.35 0
 end
@@ -226,7 +229,7 @@ newcomp light EpicLight3 point
 0 0 0
 1 2 2
 0.5 1 1
-6 0 0
+1 0 0
 transform
 0 -0.35 1
 end
@@ -284,56 +287,56 @@ transform
 0.01 0.01 0.01
 end
 
-newactor Actor boblamp2
-newcomp model BoblampModel root boblamp/boblampclean.md5mesh
+neawactor Actor boblamp2
+neawcomp model BoblampModel root boblamp/boblampclean.md5mesh
 transform
 0 -0.5 0
 -90 0 0
 0.01 0.01 0.01
 end
 
-newactor Actor boblamp3
-newcomp model BoblampModel root boblamp/boblampclean.md5mesh
+neawactor Actor boblamp3
+neawcomp model BoblampModel root boblamp/boblampclean.md5mesh
 transform
 0 -0.5 -1.3
 -90 0 0
 0.01 0.01 0.01
 end
 
-newactor Actor boblamp4
-newcomp model BoblampModel root boblamp/boblampclean.md5mesh
+neawactor Actor boblamp4
+neawcomp model BoblampModel root boblamp/boblampclean.md5mesh
 transform
 0 -0.5 -2.6
 -90 0 0
 0.01 0.01 0.01
 end
 
-newactor Actor boblamp5
-newcomp model BoblampModel root boblamp/boblampclean.md5mesh
+neawactor Actor boblamp5
+neawcomp model BoblampModel root boblamp/boblampclean.md5mesh
 transform
 0 -0.5 -3.9
 -90 180 0
 0.01 0.01 0.01
 end
 
-newactor Actor boblamp6
-newcomp model BoblampModel root boblamp/boblampclean.md5mesh
+neawactor Actor boblamp6
+neawcomp model BoblampModel root boblamp/boblampclean.md5mesh
 transform
 0 -0.5 -5.2
 -90 0 0
 0.01 0.01 0.01
 end
 
-newactor Actor boblamp7
-newcomp model BoblampModel root boblamp/boblampclean.md5mesh
+neawactor Actor boblamp7
+neawcomp model BoblampModel root boblamp/boblampclean.md5mesh
 transform
 0 -0.5 -6.5
 -90 180 0
 0.01 0.01 0.01
 end
 
-newactor Actor boblamp8
-newcomp model BoblampModel root boblamp/boblampclean.md5mesh
+neawactor Actor boblamp8
+neawcomp model BoblampModel root boblamp/boblampclean.md5mesh
 transform
 0 -0.5 -7.8
 -90 0 0
@@ -358,7 +361,7 @@ transform
 end
 
 newactor Actor GameLevel2
-newcomp model AlphaLevel root alphamap/alphamap.glb
+newcomp model AlphaLevel root alphamap/alphamap_inferior.glb
 transform
 -30 -0.5 0
 skip
@@ -370,7 +373,7 @@ newcomp text SampleText root "fonts/expressway rg.ttf" "twoj stary (lvl 50)"
 transform
 -0.3 0.1 0
 0 0 0
-0.1 0.1 1
+0.05 0.05 1
 end
 
 newactor Actor Decorations
@@ -402,4 +405,22 @@ transform
 -5 0.04 5
 skip
 0.24 0.24 0.18
+end
+
+newactor Actor Januszek
+newcomp model JanuszekModel root janusz/janusz.obj
+transform
+-15 -0.4 0
+skip
+0.2 0.2 0.2
+end
+end
+
+newactor Actor AStolenRevolver
+neawcomp model MStolenRevolver root Cerberus_by_Andrew_Maximov/cerberus.glb
+transform
+-4 0 3
+skip
+0.01 0.01 0.01
+end
 end
