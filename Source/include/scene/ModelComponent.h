@@ -24,7 +24,7 @@ public:
 	ModelComponent(ModelComponent&&);
 
 protected:
-	friend class HierarchyTemplate::ComponentTemplate<ModelComponent>;
+	friend class HierarchyTemplate::HierarchyNode<ModelComponent>;
 	ModelComponent& operator=(const ModelComponent&);
 public:
 	ModelComponent& operator=(ModelComponent&&) = delete;	//TODO: de-delete this, it should be written but i am too lazy

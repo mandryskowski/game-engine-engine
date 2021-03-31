@@ -40,6 +40,7 @@ public:
 	virtual GameScene* GetMainScene() override;
 	virtual Actor* GetRootActor(GameScene* scene = nullptr) override;
 
+	virtual HierarchyTemplate::HierarchyTreeT* FindHierarchyTree(const std::string& name, HierarchyTemplate::HierarchyTreeT* treeToIgnore = nullptr) override;
 	virtual std::shared_ptr<Font> FindFont(const std::string& path) override;
 
 	virtual void PreGameLoop();

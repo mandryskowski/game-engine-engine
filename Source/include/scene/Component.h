@@ -27,7 +27,7 @@ public:
 	Component(Component&&);
 
 protected:
-	friend class HierarchyTemplate::ComponentTemplate<Component>;
+	template <typename CompClass> friend class HierarchyTemplate::HierarchyNode;
 	Component& operator=(const Component&);
 public:
 	Component& operator=(Component&&);
@@ -50,6 +50,7 @@ public:
 	const Transform& GetTransform() const;
 	std::vector<Component*> GetChildren();
 	GameScene& GetScene() const;
+	CollisionObject* GetCollisionObj() const;
 
 	virtual void GenerateFromNode(const MeshSystem::TemplateNode&, Material* overrideMaterial = nullptr);
 

@@ -4,6 +4,7 @@
 #include <memory>
 #include <physics/CollisionObject.h>
 #include <scene/BoneComponent.h>
+#include <utility/Utility.h>
 class Mesh;
 struct CollisionObject;
 struct CollisionShape;
@@ -23,42 +24,132 @@ class Material;
 
 namespace HierarchyTemplate
 {
-	class ComponentTemplateBase
-	{
-
-	};
-
-	template <typename CompType = Component> class ComponentTemplate : public ComponentTemplateBase
+	template <typename CompType> class HierarchyNode;
+	class HierarchyNodeBase
 	{
 	public:
-		ComponentTemplate(CompType& compT) :
+		virtual Component& GetCompBaseType() = 0;
+		virtual unsigned int GetChildCount() const = 0;
+		virtual HierarchyNodeBase* GetChild(unsigned int index) const = 0;
+		virtual HierarchyNodeBase& AddChild(std::unique_ptr<HierarchyNodeBase> child) = 0;
+		virtual HierarchyNodeBase* FindNode(const std::string& name) = 0;
+		template <typename CompType> HierarchyNode<CompType>& CreateChild(HierarchyNode<CompType>&& node)
+		{
+			std::unique_ptr<HierarchyNode<CompType>> nodeSmartPtr = std::make_unique<HierarchyNode<CompType>>(std::move(node));
+			HierarchyNode<CompType>& nodeRef = *nodeSmartPtr;
+			AddChild(std::move(nodeSmartPtr));
+			
+			return nodeRef;
+		}
+
+		virtual void InstantiateToComp(Component& comp) const = 0;
+
+		virtual std::unique_ptr<HierarchyNodeBase> Copy(bool copyChildren = false) const = 0;
+	};
+
+	template <typename CompType = Component> class HierarchyNode : public HierarchyNodeBase
+	{
+	public:
+		HierarchyNode(CompType& compT) :
 			CompT(compT) {}
+		HierarchyNode(const HierarchyNode<CompType>& node, bool copyChildren = false):
+			CompT(node.CompT)
+		{
+			if (copyChildren)
+			{
+				Children.reserve(node.Children.size());
+				std::transform(node.Children.begin(), node.Children.end(), std::back_inserter(Children), [copyChildren](const std::unique_ptr<HierarchyNodeBase>& child) { return child->Copy(copyChildren); });
+			}
+		}
 		std::unique_ptr<CompType> Instantiate(Component& parent, const std::string& name) const
 		{
 			InstantiateToComp(parent.CreateComponent<CompType>(CompType(parent.GetScene(), name)));
 		}
-		void InstantiateToConp(CompType& comp) const
+		virtual	void InstantiateToComp(Component& comp) const override
 		{
 			comp = CompT;
 		}
+		virtual HierarchyNodeBase* GetChild(unsigned int index) const
+		{
+			if (index > Children.size() - 1)
+				return nullptr;
+
+			return Children[index].get();
+		}
+		virtual unsigned int GetChildCount() const
+		{
+			return Children.size();
+		}
+		CompType& GetCompT() const
+		{
+			return CompT;
+		}
+		virtual Component& GetCompBaseType() override
+		{
+			return CompT;
+		}
+		virtual HierarchyNodeBase& AddChild(std::unique_ptr<HierarchyNodeBase> child) override
+		{
+			Children.push_back(std::move(child));
+			return *Children.back().get();
+		}
+		virtual HierarchyNodeBase* FindNode(const std::string& name)
+		{
+			if (GetCompT().GetName() == name)
+				return this;
+
+			for (auto& it : Children)
+				if (auto found = it->FindNode(name))
+					return found;
+
+			return nullptr;
+		}
+		virtual std::unique_ptr<HierarchyNodeBase> Copy(bool copyChildren = false) const override
+		{
+			return static_unique_pointer_cast<HierarchyNodeBase>(std::make_unique<HierarchyNode<CompType>>(std::move(HierarchyNode<CompType>(*this, copyChildren))));
+		}
 	private:
 		//friend CompType& CompType::operator=(const ComponentTemplate<CompType>&);
-		std::vector<std::unique_ptr<ComponentTemplateBase>> Children;
+		std::vector<std::unique_ptr<HierarchyNodeBase>> Children;
 		CompType& CompT;
 	};
 
-	class CompHierarchyTree
+	class HierarchyTreeT
 	{
 	public:
-		CompHierarchyTree(GameScene& scene, const std::string& name):
+		HierarchyTreeT(GameScene& scene, const std::string& name):
 			Scene(scene),
 			Name(name),
 			Root(nullptr),
 			TreeBoneMapping(nullptr) {}
+		const std::string& GetName() const
+		{
+			return Name;
+		}
+		HierarchyNode<Component>& GetRoot()
+		{
+			return *Root;
+		}
+		BoneMapping& GetBoneMapping() const
+		{
+			return *TreeBoneMapping;
+		}
+		Animation& GetAnimation(unsigned int index)
+		{
+			return *TreeAnimations[index];
+		}
+		unsigned int GetAnimationCount()
+		{
+			return TreeAnimations.size();
+		}
+		void AddAnimation(const Animation& anim)
+		{
+			TreeAnimations.push_back(std::make_unique<Animation>(Animation(anim)));
+		}
 	private:
 		std::string Name;	//(Path)
 		GameScene& Scene;
-		std::unique_ptr<ComponentTemplate<Component>> Root;
+		std::unique_ptr<HierarchyNode<Component>> Root;
 
 		std::vector<std::unique_ptr<Animation>> TreeAnimations;
 		std::unique_ptr<BoneMapping> TreeBoneMapping;

@@ -143,6 +143,11 @@ GameScene& Component::GetScene() const
 	return Scene;
 }
 
+CollisionObject* Component::GetCollisionObj() const
+{
+	return CollisionObj.get();
+}
+
 std::unique_ptr<Component> Component::DetachChild(Component& soughtChild)
 {
 	for (auto& it = Children.begin(); it != Children.end(); it++)

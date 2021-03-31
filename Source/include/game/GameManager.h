@@ -71,8 +71,9 @@ namespace MeshSystem
 
 namespace HierarchyTemplate
 {
-	class ComponentTemplateBase;
-	template <typename CompType> class ComponentTemplate;
+	class HierarchyNodeBase;
+	template <typename CompType> class HierarchyNode;
+	class HierarchyTreeT;
 }
 
 enum class TextAlignment
@@ -162,6 +163,7 @@ public:
 
 	virtual GameSettings* GetGameSettings() = 0;
 
+	virtual HierarchyTemplate::HierarchyTreeT* FindHierarchyTree(const std::string& name, HierarchyTemplate::HierarchyTreeT* treeToIgnore = nullptr) = 0;
 	virtual std::shared_ptr<Font> FindFont(const std::string& path) = 0;
 };
 

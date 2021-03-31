@@ -206,6 +206,15 @@ Actor* Game::GetRootActor(GameScene* scene)
 	return scene->RootActor.get();
 }
 
+HierarchyTemplate::HierarchyTreeT* Game::FindHierarchyTree(const std::string& name, HierarchyTemplate::HierarchyTreeT* treeToIgnore)
+{
+	for (auto& it : Scenes)
+		if (auto found = it->FindHierarchyTree(name, treeToIgnore))
+			return found;
+
+	return nullptr;
+}
+
 std::shared_ptr<Font> Game::FindFont(const std::string& path)
 {
 	auto found = std::find_if(Fonts.begin(), Fonts.end(), [path](std::shared_ptr<Font> font) {return font->GetPath() == path; });

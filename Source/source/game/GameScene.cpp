@@ -6,6 +6,7 @@
 #include <scene/SoundSourceComponent.h>
 #include <game/GameScene.h>
 #include <physics/CollisionObject.h>
+#include <rendering/MeshSystem.h>
 
 GameScene::GameScene(GameManager& gameHandle) :
 	RenderData(std::make_unique<GameSceneRenderData>(GameSceneRenderData(gameHandle.GetRenderEngineHandle()))),
@@ -60,6 +61,21 @@ GameManager* GameScene::GetGameHandle()
 Actor& GameScene::AddActorToRoot(std::unique_ptr<Actor> actor)
 {
 	return RootActor->AddChild(std::move(actor));
+}
+
+HierarchyTemplate::HierarchyTreeT& GameScene::CreateHierarchyTree(const std::string& name)
+{
+	HierarchyTrees.push_back(std::make_unique<HierarchyTemplate::HierarchyTreeT>(HierarchyTemplate::HierarchyTreeT(*this, name)));
+	return *HierarchyTrees.back();
+}
+
+HierarchyTemplate::HierarchyTreeT* GameScene::FindHierarchyTree(const std::string& name, HierarchyTemplate::HierarchyTreeT* treeToIgnore)
+{
+	auto found = std::find_if(HierarchyTrees.begin(), HierarchyTrees.end(), [name, treeToIgnore](const std::unique_ptr<HierarchyTemplate::HierarchyTreeT>& tree) { return tree->GetName() == name && tree.get() != treeToIgnore; });
+	if (found != HierarchyTrees.end())
+		return (*found).get();
+
+	return nullptr;
 }
 
 void GameScene::BindActiveCamera(CameraComponent* cam)

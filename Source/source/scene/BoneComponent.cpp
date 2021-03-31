@@ -59,6 +59,16 @@ MaterialInstance BoneComponent::GetDebugMatInst(EditorIconState state)
 	return Component::GetDebugMatInst(state);
 }
 
+void BoneComponent::SetBoneOffset(const glm::mat4& boneOffset)
+{
+	BoneOffset = boneOffset;
+}
+
+void BoneComponent::SetID(unsigned int id)
+{
+	BoneID = id;
+}
+
 aiBone* FindAiBoneFromNode(const aiScene* scene, const aiNode* node)
 {
 	for (int i = 0; i < static_cast<int>(scene->mNumMeshes); i++)
@@ -93,7 +103,9 @@ unsigned int BoneMapping::GetBoneID(std::string name) const
 }
 
 SkeletonInfo::SkeletonInfo():
-	GlobalInverseTransformPtr(nullptr)
+	GlobalInverseTransformPtr(nullptr),
+	IDOffset(0),
+	BatchPtr(nullptr)
 {
 }
 
