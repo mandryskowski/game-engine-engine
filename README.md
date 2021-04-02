@@ -20,15 +20,16 @@
 - Interpolation system for simple animation
 - Some utility classes for future development
 
-**TODO:**
+**TO-DO:**
 1. .ogg loading
 2. Fix calculating the velocity buffer by taking bone matrices from previous frame into account (applies to animated models). SMAA T2x is shaky because of this.
 3. Add a normal audio engine that is actually useful in any game making process.
-4. Think of a more catchy name...
+4. Think of a more catchy name...  
+Full TO-DO list: https://trello.com/b/TgOo5G0b/game-engine-engine-roadmap
 
 
 #### Made possible thanks to
-* Mirosław Zelent https://www.youtube.com/user/MiroslawZelent https://miroslawzelent.pl/
-* Joey De Vries https://learnopengl.com/ https://joeydevries.com/#home
+* Mirosław Zelent https://www.youtube.com/user/MiroslawZelent or https://miroslawzelent.pl/
+* Joey De Vries https://learnopengl.com/ or https://joeydevries.com/#home
 
 #### by Michał Andryskowski
