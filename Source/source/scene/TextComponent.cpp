@@ -61,6 +61,21 @@ Box2f TextComponent::GetBoundingBox(bool world)
 	return Box2f(glm::vec2(transform.PositionRef) + alignmentOffset, glm::vec2(advancesSum, transform.ScaleRef.y));
 }
 
+float TextComponent::GetTextLength(bool world) const
+{
+	Transform transform = (world) ? (GetTransform().GetWorldTransform()) : (GetTransform());
+	if (CanvasPtr && world)
+		transform = CanvasPtr->ToCanvasSpace(transform);
+
+	glm::vec2 scale = transform.ScaleRef / 64.0f;
+
+	float advancesSum = 0.0f;
+	for (auto it : Content)
+		advancesSum += (UsedFont->GetCharacter(it).Advance / 64.0f) * scale.x;
+
+	return advancesSum;
+}
+
 void TextComponent::SetContent(const std::string& content)
 {
 	Content = content;

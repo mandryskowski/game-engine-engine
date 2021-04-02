@@ -18,7 +18,6 @@ class ModelComponent: public RenderableComponent, public UICanvasElement
 {
 public:
 	ModelComponent(GameScene&, const std::string& name = "undefinedModel", const Transform& = Transform(), SkeletonInfo* info = nullptr, Material* overrideMat = nullptr);
-	ModelComponent(GameScene&, const MeshSystem::MeshNode&, const std::string& name = "undefinedModel", const Transform& = Transform(), SkeletonInfo* info = nullptr, Material* overrideMat = nullptr);
 
 	ModelComponent(const ModelComponent&) = delete;
 	ModelComponent(ModelComponent&&);
@@ -35,7 +34,6 @@ public:
 	void SetSkeletonInfo(SkeletonInfo*);
 	void SetRenderAsBillboard(bool billboard);
 	void SetHide(bool hide);
-	virtual void GenerateFromNode(const MeshSystem::TemplateNode&, Material* overrideMaterial = nullptr) override;
 
 	void DRAWBATCH() const;
 

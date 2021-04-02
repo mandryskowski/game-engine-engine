@@ -210,7 +210,7 @@ template void UICanvasActor::UpdateScrollBarT<VecAxis::Y>();
 
 #include <UI/UICanvasField.h>
 
-UICanvasField& AddFieldToCanvas(const std::string& name, UICanvasElement& element)
+UICanvasField& AddFieldToCanvas(const std::string& name, UICanvasElement& element, std::function<glm::vec3()> getFieldOffsetFunc)
 {
-	return element.GetCanvasPtr()->AddField(name);
+	return element.GetCanvasPtr()->AddField(name, getFieldOffsetFunc);
 }

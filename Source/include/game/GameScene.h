@@ -85,10 +85,11 @@ private:
 class GameScene
 {
 public:
-	GameScene(GameManager&);
+	GameScene(GameManager&, const std::string& name);
 	GameScene(const GameScene&) = delete;
 	GameScene(GameScene&&);
 
+	const std::string& GetName() const;
 	const Actor* GetRootActor() const;
 	CameraComponent* GetActiveCamera();
 	GameSceneRenderData* GetRenderData();
@@ -107,6 +108,7 @@ public:
 	Actor* FindActor(std::string name);
 
 private:
+	std::string Name;
 	GameManager* GameHandle;
 
 	std::unique_ptr<Actor> RootActor;

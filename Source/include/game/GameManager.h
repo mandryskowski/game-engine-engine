@@ -123,9 +123,6 @@ public:
 	virtual Material* AddMaterial(Material*) = 0;
 	virtual std::shared_ptr<Shader> AddShader(std::shared_ptr<Shader>, bool bForwardShader = false) = 0;
 	virtual void AddSceneRenderDataPtr(GameSceneRenderData*) = 0;
-	virtual MeshSystem::MeshTree* CreateMeshTree(std::string path) = 0;
-	virtual MeshSystem::MeshTree* FindMeshTree(std::string path, MeshSystem::MeshTree* ignore = nullptr) = 0;
-	virtual const MeshSystem::MeshTree* FindMeshTree(std::string path, MeshSystem::MeshTree* ignore = nullptr) const = 0;
 
 	virtual Shader* FindShader(std::string) = 0;
 	virtual Material* FindMaterial(std::string) = 0;
@@ -148,6 +145,8 @@ public:
 class GameManager
 {
 public:
+	virtual GameScene& CreateScene(const std::string& name) = 0;
+
 	virtual void BindAudioListenerTransformPtr(Transform*) = 0;
 	virtual void PassMouseControl(Controller* controller) = 0;
 	virtual const Controller* GetCurrentMouseController() const = 0;
@@ -155,7 +154,7 @@ public:
 	virtual bool HasStarted() const = 0;
 
 	virtual Actor* GetRootActor(GameScene* = nullptr) = 0;
-	virtual GameScene* GetMainScene() = 0;
+	virtual GameScene* GetScene(const std::string& name) = 0;
 
 	virtual PhysicsEngineManager* GetPhysicsHandle() = 0;
 	virtual RenderEngineManager* GetRenderEngineHandle() = 0;
@@ -177,7 +176,7 @@ public:
 
 	virtual GameManager* GetGameHandle() = 0;
 
-	virtual void PreviewMeshNode(MeshSystem::MeshTree&) = 0;
+	virtual void PreviewHierarchyTree(HierarchyTemplate::HierarchyTreeT& tree) = 0;
 
 };
 

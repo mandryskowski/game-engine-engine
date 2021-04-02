@@ -15,6 +15,7 @@ public:
 
 	const std::string& GetContent() const;
 	virtual Box2f GetBoundingBox(bool world = true) override;	//Canvas space
+	float GetTextLength(bool world = true) const;
 
 	void SetContent(const std::string&);
 

@@ -31,6 +31,7 @@ Actor::Actor(Actor&& moved):
 
 void Actor::OnStart()
 {
+	Setup();
 //	if (!GameHandle->HasStarted())
 		RootComponent->OnStartAll();
 }
@@ -242,6 +243,6 @@ void Actor::GetEditorDescription(UIActor& editorParent, GameScene& editorScene)
 {
 	UIInputBoxActor& textActor = editorParent.CreateChild(UIInputBoxActor(editorScene, "ComponentsNameActor"));
 	textActor.SetOnInputFunc([this](const std::string& content) { SetName(content); }, [this]() -> std::string { return GetName(); });
-	textActor.DeleteButtonModel();
+	//textActor.DeleteButtonModel();
 	textActor.SetTransform(Transform(glm::vec2(0.0f, 3.0f), glm::vec2(0.125f, 0.5f / 0.04f * 0.125f)));
 }

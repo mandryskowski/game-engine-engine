@@ -145,6 +145,7 @@
     <ClCompile Include="source\audio\AudioEngine.cpp" />
     <ClCompile Include="source\scene\BoneComponent.cpp" />
     <ClCompile Include="source\math\Box.cpp" />
+    <ClCompile Include="source\scene\HierarchyTemplate.cpp" />
     <ClCompile Include="source\scene\UIButtonActor.cpp" />
     <ClCompile Include="source\scene\CameraComponent.cpp" />
     <ClCompile Include="source\physics\CollisionObject.cpp" />
@@ -167,7 +168,6 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="source\rendering\Material.cpp" />
     <ClCompile Include="source\rendering\Mesh.cpp" />
-    <ClCompile Include="source\rendering\MeshSystem.cpp" />
     <ClCompile Include="source\scene\ModelComponent.cpp" />
     <ClCompile Include="source\physics\PhysicsEngine.cpp" />
     <ClCompile Include="source\rendering\Postprocess.cpp" />
@@ -199,6 +199,8 @@
     <ClInclude Include="include\audio\AudioFile.h" />
     <ClInclude Include="include\scene\BoneComponent.h" />
     <ClInclude Include="include\math\Box.h" />
+    <ClInclude Include="include\scene\HierarchyTemplate.h" />
+    <ClInclude Include="include\scene\PawnActor.h" />
     <ClInclude Include="include\scene\UIButtonActor.h" />
     <ClInclude Include="include\scene\CameraComponent.h" />
     <ClInclude Include="include\physics\CollisionObject.h" />
@@ -225,7 +227,6 @@
     <ClInclude Include="include\rendering\LightProbe.h" />
     <ClInclude Include="include\rendering\Material.h" />
     <ClInclude Include="include\rendering\Mesh.h" />
-    <ClInclude Include="include\rendering\MeshSystem.h" />
     <ClInclude Include="include\scene\ModelComponent.h" />
     <ClInclude Include="include\physics\PhysicsEngine.h" />
     <ClInclude Include="include\rendering\Postprocess.h" />

@@ -26,12 +26,12 @@ public:
 	BoneComponent(BoneComponent&&);
 
 protected:
+	friend class HierarchyTemplate::HierarchyNode<BoneComponent>;
 	BoneComponent& operator=(const BoneComponent&);
 public:
 	BoneComponent& operator=(BoneComponent&&) = delete;	//TODO: de-delete this, it should be written but i am too lazy
 
 	virtual void Update(float deltaTime) override;
-	virtual void GenerateFromNode(const MeshSystem::TemplateNode& node, Material* overrideMaterial = nullptr) override;
 	unsigned int GetID() const;
 	const glm::mat4& GetFinalMatrix();
 

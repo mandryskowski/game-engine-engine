@@ -42,4 +42,4 @@ public:
 	UIScrollBarActor *ResizeBarX, *ResizeBarY;
 };
 
-UICanvasField& AddFieldToCanvas(const std::string& name, UICanvasElement& element);
+UICanvasField& AddFieldToCanvas(const std::string& name, UICanvasElement& element, std::function<glm::vec3()> getFieldOffsetFunc = nullptr);

@@ -1,7 +1,7 @@
 #pragma once
 #include "Postprocess.h"
 #include <game/GameManager.h>
-#include "MeshSystem.h"
+#include <scene/HierarchyTemplate.h>
 #include "RenderToolbox.h"
 
 class LightProbe;
@@ -24,9 +24,6 @@ public:
 
 	RenderToolboxCollection& AddRenderTbCollection(const RenderToolboxCollection&, bool setupToolboxesAccordingToSettings = true); //Pass false as the second argument to disable loading any toolboxes. By default, we load every toolbox that will be needed according to RenderToolboxCollection::Settings
 	virtual void AddSceneRenderDataPtr(GameSceneRenderData*) override;
-	virtual MeshSystem::MeshTree* CreateMeshTree(std::string path) override;
-	virtual MeshSystem::MeshTree* FindMeshTree(std::string path, MeshSystem::MeshTree* ignore = nullptr) override;
-	virtual const MeshSystem::MeshTree* FindMeshTree(std::string path, MeshSystem::MeshTree* ignore = nullptr) const override;
 	virtual Material* AddMaterial(Material* material) override;
 	virtual std::shared_ptr<Shader> AddShader(std::shared_ptr<Shader> shader, bool bForwardShader = false) override;
 
@@ -77,7 +74,6 @@ private:
 
 	std::vector <GameSceneRenderData*> ScenesRenderData;
 	std::vector <Material*> Materials;
-	std::vector <std::unique_ptr <MeshSystem::MeshTree>> MeshTrees;
 
 	std::vector <std::shared_ptr <Shader>> Shaders;
 	std::vector <std::shared_ptr <Shader>> ForwardShaders;		//We store forward shaders in a different vector to attempt rendering the scene at forward render stage. Putting non-forward-rendering shaders here will reduce performance.

@@ -21,7 +21,6 @@ class Component
 {
 public:
 	Component(GameScene&, const std::string& name = "undefined", const Transform& t = Transform());
-	Component(GameScene&, const std::string& name = "undefined", glm::vec3 pos = glm::vec3(0.0f), glm::vec3 rot = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 scale = glm::vec3(1.0f));
 
 	Component(const Component&) = delete;
 	Component(Component&&);
@@ -51,8 +50,6 @@ public:
 	std::vector<Component*> GetChildren();
 	GameScene& GetScene() const;
 	CollisionObject* GetCollisionObj() const;
-
-	virtual void GenerateFromNode(const MeshSystem::TemplateNode&, Material* overrideMaterial = nullptr);
 
 	void SetName(std::string name);
 	void SetTransform(Transform transform);

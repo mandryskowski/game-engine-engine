@@ -24,7 +24,8 @@ public:
 	Game(const ShadingModel&, const GameSettings&);
 	virtual void Init(GLFWwindow* window);
 
-	void LoadSceneFromFile(std::string path);
+	void LoadSceneFromFile(const std::string& path, const std::string& name = std::string());
+	virtual GameScene& CreateScene(const std::string& name) override;
 	void AddScene(std::unique_ptr <GameScene> scene);
 	virtual void BindAudioListenerTransformPtr(Transform*) override;
 	virtual void PassMouseControl(Controller* controller) override; //pass nullptr to unbind any controller and allow moving the mouse around freely
@@ -37,7 +38,7 @@ public:
 	virtual AudioEngineManager* GetAudioEngineHandle() override;
 
 	virtual GameSettings* GetGameSettings() override;
-	virtual GameScene* GetMainScene() override;
+	virtual GameScene* GetScene(const std::string& name) override;
 	virtual Actor* GetRootActor(GameScene* scene = nullptr) override;
 
 	virtual HierarchyTemplate::HierarchyTreeT* FindHierarchyTree(const std::string& name, HierarchyTemplate::HierarchyTreeT* treeToIgnore = nullptr) override;
