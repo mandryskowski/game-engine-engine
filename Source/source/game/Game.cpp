@@ -115,16 +115,21 @@ void Game::Init(GLFWwindow* window)
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void Game::LoadSceneFromFile(std::string path)
+void Game::LoadSceneFromFile(const std::string& path, const std::string& name)
 {
-	AddScene(EngineDataLoader::LoadSceneFromFile(static_cast<GameManager*>(this), path));
+	EngineDataLoader::SetupSceneFromFile(this, path, name);
+}
+
+GameScene& Game::CreateScene(const std::string& name)
+{
+	AddScene(std::make_unique<GameScene>(GameScene(*this, name)));
+	return *Scenes.back();
 }
 
 void Game::AddScene(std::unique_ptr<GameScene> scene)
 {
 	Scenes.push_back(std::unique_ptr<GameScene>(scene.release()));		//"scene" does not work anymore
 	RenderEng.AddSceneRenderDataPtr(Scenes.back()->GetRenderData());
-	PhysicsEng.AddScenePhysicsDataPtr(*Scenes.back()->GetPhysicsData());
 	std::cout << "level loaded.\n";
 
 	std::cout << "Setting up collision\n";
@@ -132,7 +137,6 @@ void Game::AddScene(std::unique_ptr<GameScene> scene)
 	std::cout << "Collision objects setup finished.\n";
 
 	std::cout << "Setting up actors & components.\n";
-	Scenes.back()->RootActor->Setup();
 	if (PrimitiveDebugger::bDebugHierarchy)
 		Scenes.back()->RootActor->DebugHierarchy();
 	std::cout << "Actors & components setup finished.\n";
@@ -193,17 +197,31 @@ GameSettings* Game::GetGameSettings()
 	return Settings.get();
 }
 
-GameScene* Game::GetMainScene()
+GameScene* Game::GetScene(const std::string& name)
 {
-	return Scenes[0].get();
+	for (auto& it : Scenes)
+		if (it->GetName() == name)
+			return it.get();
+
+	return nullptr;
 }
+
 
 Actor* Game::GetRootActor(GameScene* scene)
 {
 	if (!scene)
-		scene = GetMainScene();
+		scene = GetScene("GEE_Main");
 
 	return scene->RootActor.get();
+}
+
+HierarchyTemplate::HierarchyTreeT* Game::FindHierarchyTree(const std::string& name, HierarchyTemplate::HierarchyTreeT* treeToIgnore)
+{
+	for (auto& it : Scenes)
+		if (auto found = it->FindHierarchyTree(name, treeToIgnore))
+			return found;
+
+	return nullptr;
 }
 
 std::shared_ptr<Font> Game::FindFont(const std::string& path)
@@ -318,10 +336,6 @@ void GLFWEventProcessor::CursorPosCallback(GLFWwindow* window, double xpos, doub
 {
 	TargetHolder->Events.push(std::make_shared<CursorMoveEvent>(CursorMoveEvent(EventType::MOUSE_MOVED, glm::vec2(static_cast<float>(xpos), static_cast<float>(ypos)))));
 
-	glm::ivec2 KUPA;
-	glfwGetWindowSize(window, &KUPA.x, &KUPA.y);
-
-	//std::cout << "Mouse moved to " << xpos / float(KUPA.x) * 2.0f - 1.0f << ", " << -ypos / float(KUPA.y) * 2.0f + 1.0f << "\n";
 	if (!mouseController || !TargetHolder)
 		return;
 

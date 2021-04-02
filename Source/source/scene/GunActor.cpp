@@ -34,7 +34,7 @@ void GunActor::Setup()
 	ModelComponent* found = dynamic_cast<ModelComponent*>(Scene.GetRenderData()->FindRenderable("FireParticle"));
 	std::cout << "Wyszukalem se: " << found << ".\n";
 	dynamic_cast<ModelComponent*>(found->SearchForComponent("Quad"))->SetRenderAsBillboard(true);
-	ParticleMeshInst = found->FindMeshInstance("Quad");
+	ParticleMeshInst = found->FindMeshInstance("Quad_NoShadow");
 	ParticleMeshInst->GetMaterialInst()->SetInterp(&dynamic_cast<AtlasMaterial*>(&ParticleMeshInst->GetMaterialInst()->GetMaterialRef())->GetTextureIDInterpolatorTemplate(Interpolation(0.0f, 0.25f, InterpolationType::LINEAR), 0.0f, dynamic_cast<AtlasMaterial*>(&ParticleMeshInst->GetMaterialInst()->GetMaterialRef())->GetMaxTextureID()));
 	ParticleMeshInst->GetMaterialInst()->SetDrawBeforeAnim(false);
 	ParticleMeshInst->GetMaterialInst()->SetDrawAfterAnim(false);

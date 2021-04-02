@@ -1,5 +1,5 @@
 #include <scene/ModelComponent.h>
-#include <rendering/MeshSystem.h>
+#include <scene/HierarchyTemplate.h>
 #include <game/GameScene.h>
 #include <rendering/RenderInfo.h>
 #include <UI/UICanvasActor.h>
@@ -20,12 +20,6 @@ ModelComponent::ModelComponent(GameScene& scene, const std::string& name, const 
 {
 }
 
-ModelComponent::ModelComponent(GameScene& scene, const MeshSystem::MeshNode& node, const std::string& name, const Transform& transform, SkeletonInfo* info, Material* overrideMat) :
-	ModelComponent(scene, name, transform, info, overrideMat)
-{
-	GenerateFromNode(node, overrideMat);
-}
-
 ModelComponent::ModelComponent(ModelComponent&& model) :
 	RenderableComponent(std::move(model)),
 	UICanvasElement(std::move(model)),
@@ -41,8 +35,9 @@ ModelComponent& ModelComponent::operator=(const ModelComponent& compT)
 {
 	Component::operator=(compT);
 
+	std::cout << "GIT METODA\n";
 	for (int i = 0; i < compT.GetMeshInstanceCount(); i++)
-		AddMeshInst(compT.GetMeshInstance(i));
+		AddMeshInst(MeshInstance(const_cast<Mesh&>(compT.GetMeshInstance(i).GetMesh()), const_cast<Material*>(compT.GetMeshInstance(i).GetMaterialPtr())));
 
 	/*if (overrideMaterial)
 		OverrideInstancesMaterial(overrideMaterial);
@@ -83,19 +78,6 @@ void ModelComponent::SetHide(bool hide)
 	Hide = hide;
 }
 
-void ModelComponent::GenerateFromNode(const MeshSystem::TemplateNode& node, Material* overrideMaterial)
-{
-	Component::GenerateFromNode(node, overrideMaterial);
-	const MeshSystem::MeshNode* meshNodeCast = dynamic_cast<const MeshSystem::MeshNode*>(&node);
-	for (int i = 0; i < meshNodeCast->GetMeshCount(); i++)
-		AddMeshInst(*meshNodeCast->GetMesh(i));
-
-	if (overrideMaterial)
-		OverrideInstancesMaterial(overrideMaterial);
-	else if (meshNodeCast->GetOverrideMaterial())
-		OverrideInstancesMaterial(meshNodeCast->GetOverrideMaterial());
-}
-
 void ModelComponent::DRAWBATCH() const
 {
 	if (SkelInfo)
@@ -132,10 +114,15 @@ bool ModelComponent::GetHide() const
 
 MeshInstance* ModelComponent::FindMeshInstance(std::string name)
 {
-	auto found = std::find_if(MeshInstances.begin(), MeshInstances.end(), [name](const std::unique_ptr<MeshInstance>& meshInst) { return meshInst->GetMesh().GetName().find(name) != std::string::npos; });
+	for (std::unique_ptr<MeshInstance>& it : MeshInstances)
+	{
+		if (it->GetMesh().GetName() == name)
+			return it.get();
+	}
+	//auto found = std::find_if(MeshInstances.begin(), MeshInstances.end(), [name](const std::unique_ptr<MeshInstance>& meshInst) { return meshInst->GetMesh().GetName().find(name) != std::string::npos; });
 
-	if (found != MeshInstances.end())
-		return found->get();
+	//if (found != MeshInstances.end())
+	//	return found->get();
 
 
 	for (unsigned int i = 0; i < Children.size(); i++)
@@ -153,6 +140,7 @@ MeshInstance* ModelComponent::FindMeshInstance(std::string name)
 void ModelComponent::AddMeshInst(const MeshInstance& meshInst)
 {
 	MeshInstances.push_back(std::make_unique<MeshInstance>(meshInst));
+	std::cout << "Added mesh inst " << MeshInstances.back()->GetMesh().GetName() << '\n';
 }
 
 void ModelComponent::Update(float deltaTime)

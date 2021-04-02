@@ -21,13 +21,12 @@ class Component
 {
 public:
 	Component(GameScene&, const std::string& name = "undefined", const Transform& t = Transform());
-	Component(GameScene&, const std::string& name = "undefined", glm::vec3 pos = glm::vec3(0.0f), glm::vec3 rot = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 scale = glm::vec3(1.0f));
 
 	Component(const Component&) = delete;
 	Component(Component&&);
 
 protected:
-	friend class HierarchyTemplate::ComponentTemplate<Component>;
+	template <typename CompClass> friend class HierarchyTemplate::HierarchyNode;
 	Component& operator=(const Component&);
 public:
 	Component& operator=(Component&&);
@@ -50,8 +49,7 @@ public:
 	const Transform& GetTransform() const;
 	std::vector<Component*> GetChildren();
 	GameScene& GetScene() const;
-
-	virtual void GenerateFromNode(const MeshSystem::TemplateNode&, Material* overrideMaterial = nullptr);
+	CollisionObject* GetCollisionObj() const;
 
 	void SetName(std::string name);
 	void SetTransform(Transform transform);

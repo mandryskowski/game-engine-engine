@@ -78,9 +78,6 @@
     <ClCompile Include="source\rendering\Mesh.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="source\rendering\MeshSystem.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="source\rendering\Postprocess.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -171,6 +168,9 @@
     <ClCompile Include="source\UI\UIListActor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="source\scene\HierarchyTemplate.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\UI\UICanvasActor.h">
@@ -228,9 +228,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\rendering\Mesh.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="include\rendering\MeshSystem.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\rendering\Postprocess.h">
@@ -327,6 +324,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\UI\UIListActor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\scene\HierarchyTemplate.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\scene\PawnActor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

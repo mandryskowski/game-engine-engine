@@ -22,21 +22,23 @@ public:
 	glm::mat4 FinalMatrix;
 
 public:
-	BoneComponent(GameScene&, std::string name, Transform t, unsigned int boneID);
+	BoneComponent(GameScene&, std::string name, Transform t = Transform(), unsigned int boneID = 0);
 	BoneComponent(BoneComponent&&);
 
 protected:
-	friend class HierarchyTemplate::ComponentTemplate<BoneComponent>;
+	friend class HierarchyTemplate::HierarchyNode<BoneComponent>;
 	BoneComponent& operator=(const BoneComponent&);
 public:
 	BoneComponent& operator=(BoneComponent&&) = delete;	//TODO: de-delete this, it should be written but i am too lazy
 
 	virtual void Update(float deltaTime) override;
-	virtual void GenerateFromNode(const MeshSystem::TemplateNode& node, Material* overrideMaterial = nullptr) override;
 	unsigned int GetID() const;
 	const glm::mat4& GetFinalMatrix();
 
 	virtual MaterialInstance GetDebugMatInst(EditorIconState) override;
+
+	void SetBoneOffset(const glm::mat4&);
+	void SetID(unsigned int id);
 };
 
 class BoneMapping

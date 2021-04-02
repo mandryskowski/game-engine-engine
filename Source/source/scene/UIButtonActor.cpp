@@ -1,6 +1,6 @@
 #include <scene/UIButtonActor.h>
 #include <scene/ModelComponent.h>
-#include <rendering/MeshSystem.h>
+#include <scene/HierarchyTemplate.h>
 #include <game/GameSettings.h>
 #include <input/Event.h>
 #include <UI/UICanvas.h>

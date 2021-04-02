@@ -112,13 +112,13 @@ glm::vec3 UIManualListActor::GetListBegin()
 	if (Children.empty())
 		return glm::vec3(0.0f);
 
-	return ListElements.front().GetActorRef().GetTransform()->PositionRef - ListElements.front().GetElementOffset() / 2.0f;
+	return ListElements.front().GetActorRef().GetTransform()->PositionRef - ListElements.front().GetCenterOffset();
 }
 
 glm::vec3 UIManualListActor::MoveElement(UIListElement& element, glm::vec3 nextElementBegin, float level)
 {
 	const glm::vec3& elementOffset = element.GetElementOffset();
-	element.GetActorRef().GetTransform()->SetPosition(nextElementBegin + elementOffset / 2.0f);
+	element.GetActorRef().GetTransform()->SetPosition(nextElementBegin + element.GetCenterOffset());
 	return glm::vec3(nextElementBegin + elementOffset);
 }
 
@@ -157,19 +157,30 @@ void UIManualListActor::SetListElementOffset(int index, std::function<glm::vec3(
 	ListElements[index].SetGetElementOffsetFunc(getElementOffset);
 }
 
+void UIManualListActor::SetListCenterOffset(int index, std::function<glm::vec3()> getCenterOffset)
+{
+	if (index < 0 || index > ListElements.size() || !getCenterOffset)
+		return;
+
+	ListElements[index].SetGetCenterOffsetFunc(getCenterOffset);
+}
+
 int UIManualListActor::GetListElementCount()
 {
 	return static_cast<int>(ListElements.size());
 }
 
-UIListElement::UIListElement(Actor& actorRef, std::function<glm::vec3()> getElementOffset):
+UIListElement::UIListElement(Actor& actorRef, std::function<glm::vec3()> getElementOffset, std::function<glm::vec3()> getCenterOffset):
 	ActorRef(actorRef),
-	GetElementOffsetFunc(getElementOffset)
+	GetElementOffsetFunc(getElementOffset),
+	GetCenterOffsetFunc(getCenterOffset)
 {
+	if (!GetCenterOffsetFunc && GetElementOffsetFunc)
+		GetCenterOffsetFunc = [this]() -> glm::vec3 { return GetElementOffsetFunc() / 2.0f; };
 }
 
 UIListElement::UIListElement(Actor& actorRef, const glm::vec3& constElementOffset):
-	UIListElement(actorRef, [constElementOffset]() { return constElementOffset; })
+	UIListElement(actorRef, [constElementOffset]() { return constElementOffset; }, [constElementOffset]() { return constElementOffset / 2.0f; })
 {
 }
 
@@ -178,12 +189,22 @@ Actor& UIListElement::GetActorRef()
 	return ActorRef;
 }
 
-glm::vec3 UIListElement::GetElementOffset()
+glm::vec3 UIListElement::GetElementOffset() const
 {
 	return (GetElementOffsetFunc) ? (GetElementOffsetFunc()) : (glm::vec3(0.0f));
+}
+
+glm::vec3 UIListElement::GetCenterOffset() const
+{
+	return (GetCenterOffsetFunc) ? (GetCenterOffsetFunc()) : (glm::vec3(0.0f));
 }
 
 void UIListElement::SetGetElementOffsetFunc(std::function<glm::vec3()> getElementOffset)
 {
 	GetElementOffsetFunc = getElementOffset;
+}
+
+void UIListElement::SetGetCenterOffsetFunc(std::function<glm::vec3()> getCenterOffset)
+{
+	GetCenterOffsetFunc = getCenterOffset;
 }

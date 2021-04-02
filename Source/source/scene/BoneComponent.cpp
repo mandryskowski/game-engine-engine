@@ -1,12 +1,13 @@
 #include <scene/BoneComponent.h>
 #include <assimp/scene.h>
-#include <rendering/MeshSystem.h>
+#include <scene/HierarchyTemplate.h>
 #include <rendering/Material.h>
 
 BoneComponent::BoneComponent(GameScene& scene, std::string name, Transform transform, unsigned int boneID):
 	Component(scene, name, transform),
 	BoneID(boneID),
-	BoneOffset(glm::mat4(1.0f))
+	BoneOffset(glm::mat4(1.0f)),
+	FinalMatrix(glm::mat4(1.0f))
 {
 
 }
@@ -24,6 +25,7 @@ BoneComponent& BoneComponent::operator=(const BoneComponent& compT)
 	Component::operator=(compT);
 
 	BoneOffset = compT.BoneOffset;
+	BoneID = compT.BoneID;
 	return *this;
 }
 
@@ -34,13 +36,6 @@ void BoneComponent::Update(float deltaTime)
 	//ComponentTransform.Print(Name);
 
 	ComponentTransform.Update(deltaTime);
-}
-
-void BoneComponent::GenerateFromNode(const MeshSystem::TemplateNode& node, Material* overrideMaterial)
-{
-	Component::GenerateFromNode(node);
-	const MeshSystem::BoneNode* boneNodeCast = dynamic_cast<const MeshSystem::BoneNode*>(&node);
-	BoneOffset = boneNodeCast->GetBoneOffset();
 }
 
 unsigned int BoneComponent::GetID() const
@@ -57,6 +52,16 @@ MaterialInstance BoneComponent::GetDebugMatInst(EditorIconState state)
 {
 	LoadDebugRenderMaterial("GEE_Mat_Default_Debug_BoneComponent", "EditorAssets/bonecomponent_icon.png");
 	return Component::GetDebugMatInst(state);
+}
+
+void BoneComponent::SetBoneOffset(const glm::mat4& boneOffset)
+{
+	BoneOffset = boneOffset;
+}
+
+void BoneComponent::SetID(unsigned int id)
+{
+	BoneID = id;
 }
 
 aiBone* FindAiBoneFromNode(const aiScene* scene, const aiNode* node)
@@ -93,7 +98,9 @@ unsigned int BoneMapping::GetBoneID(std::string name) const
 }
 
 SkeletonInfo::SkeletonInfo():
-	GlobalInverseTransformPtr(nullptr)
+	GlobalInverseTransformPtr(nullptr),
+	IDOffset(0),
+	BatchPtr(nullptr)
 {
 }
 
@@ -132,9 +139,12 @@ void SkeletonInfo::FillMatricesVec(std::vector<glm::mat4>& boneMats)
 
 	glm::mat4 globalInverseMat = glm::inverse(GlobalInverseTransformPtr->GetWorldTransformMatrix());
 
+	//std::cout << "nr bones: " << Bones.size() << '\n';
+
 	for (int i = 0; i < static_cast<int>(Bones.size()); i++)
 	{
 		boneMats[Bones[i]->GetID() + IDOffset] = globalInverseMat * Bones[i]->GetTransform().GetWorldTransformMatrix() * Bones[i]->BoneOffset;
+		//std::cout << Bones[i]->GetName() << " " << Bones[i]->GetID() + IDOffset << '\n';
 	}
 }
 
@@ -153,7 +163,7 @@ SkeletonBatch::SkeletonBatch():
 {
 	std::array<glm::mat4, 1024> identities;
 	identities.fill(glm::mat4(1.0f));
-	BoneUBO.Generate(2, sizeof(glm::mat4) * 1024, &identities[0][0][0], GL_STREAM_DRAW);
+	BoneUBO.Generate(10, sizeof(glm::mat4) * 1024, &identities[0][0][0], GL_STREAM_DRAW);
 }
 
 unsigned int SkeletonBatch::GetRemainingCapacity()

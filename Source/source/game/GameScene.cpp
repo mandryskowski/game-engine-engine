@@ -6,11 +6,13 @@
 #include <scene/SoundSourceComponent.h>
 #include <game/GameScene.h>
 #include <physics/CollisionObject.h>
+#include <scene/HierarchyTemplate.h>
 
-GameScene::GameScene(GameManager& gameHandle) :
+GameScene::GameScene(GameManager& gameHandle, const std::string& name) :
 	RenderData(std::make_unique<GameSceneRenderData>(GameSceneRenderData(gameHandle.GetRenderEngineHandle()))),
 	PhysicsData(std::make_unique<GameScenePhysicsData>(GameScenePhysicsData(gameHandle.GetPhysicsHandle()))),
 	AudioData(std::make_unique<GameSceneAudioData>(GameSceneAudioData(gameHandle.GetAudioEngineHandle()))),
+	Name(name),
 	GameHandle(&gameHandle)
 {
 	RootActor = std::make_unique<Actor>(Actor(*this, "SceneRoot"));
@@ -22,9 +24,15 @@ GameScene::GameScene(GameScene&& scene):
 	PhysicsData(std::move(scene.PhysicsData)),
 	AudioData(std::move(scene.AudioData)),
 	ActiveCamera(scene.ActiveCamera),
+	Name(scene.Name),
 	GameHandle(scene.GameHandle)
 {
 	RootActor = std::make_unique<Actor>(Actor(*this, "SceneRoot"));
+}
+
+const std::string& GameScene::GetName() const
+{
+	return Name;
 }
 
 const Actor* GameScene::GetRootActor() const
@@ -62,6 +70,22 @@ Actor& GameScene::AddActorToRoot(std::unique_ptr<Actor> actor)
 	return RootActor->AddChild(std::move(actor));
 }
 
+HierarchyTemplate::HierarchyTreeT& GameScene::CreateHierarchyTree(const std::string& name)
+{
+	HierarchyTrees.push_back(std::make_unique<HierarchyTemplate::HierarchyTreeT>(HierarchyTemplate::HierarchyTreeT(*this, name)));
+	std::cout << "Utworzono drzewo z root " << &HierarchyTrees.back()->GetRoot() << " - " << HierarchyTrees.back()->GetName() << '\n';
+	return *HierarchyTrees.back();
+}
+
+HierarchyTemplate::HierarchyTreeT* GameScene::FindHierarchyTree(const std::string& name, HierarchyTemplate::HierarchyTreeT* treeToIgnore)
+{
+	auto found = std::find_if(HierarchyTrees.begin(), HierarchyTrees.end(), [name, treeToIgnore](const std::unique_ptr<HierarchyTemplate::HierarchyTreeT>& tree) { return tree->GetName() == name && tree.get() != treeToIgnore; });
+	if (found != HierarchyTrees.end())
+		return (*found).get();
+
+	return nullptr;
+}
+
 void GameScene::BindActiveCamera(CameraComponent* cam)
 {
 	ActiveCamera = cam;
@@ -80,7 +104,7 @@ GameSceneRenderData::GameSceneRenderData(RenderEngineManager* renderHandle) :
 {
 	if (LightProbes.empty() && RenderHandle->GetShadingModel() == ShadingModel::SHADING_PBR_COOK_TORRANCE)
 	{
-		LightProbeLoader::LoadLightProbeTextureArrays(this);
+		//LightProbeLoader::LoadLightProbeTextureArrays(this);
 		ProbeTexArrays->IrradianceMapArr.Bind(12);
 		ProbeTexArrays->PrefilterMapArr.Bind(13);
 		ProbeTexArrays->BRDFLut.Bind(14);

@@ -85,10 +85,11 @@ private:
 class GameScene
 {
 public:
-	GameScene(GameManager&);
+	GameScene(GameManager&, const std::string& name);
 	GameScene(const GameScene&) = delete;
 	GameScene(GameScene&&);
 
+	const std::string& GetName() const;
 	const Actor* GetRootActor() const;
 	CameraComponent* GetActiveCamera();
 	GameSceneRenderData* GetRenderData();
@@ -98,17 +99,24 @@ public:
 
 	Actor& AddActorToRoot(std::unique_ptr<Actor> actor);	//you use this function to make the game interact (update, draw...) with the actor; without adding it to the scene, the Actor instance isnt updated real-time by default. Pass nullptr to use the Main Scene.
 	template <class T> T& CreateActorAtRoot(T&&);
+
+	HierarchyTemplate::HierarchyTreeT& CreateHierarchyTree(const std::string& name);
+	HierarchyTemplate::HierarchyTreeT* FindHierarchyTree(const std::string& name, HierarchyTemplate::HierarchyTreeT* treeToIgnore = nullptr);
+
 	void BindActiveCamera(CameraComponent*);
 
 	Actor* FindActor(std::string name);
 
 private:
+	std::string Name;
 	GameManager* GameHandle;
 
 	std::unique_ptr<Actor> RootActor;
 	std::unique_ptr<GameSceneRenderData> RenderData;
 	std::unique_ptr<GameScenePhysicsData> PhysicsData;
 	std::unique_ptr<GameSceneAudioData> AudioData;
+
+	std::vector<std::unique_ptr<HierarchyTemplate::HierarchyTreeT>> HierarchyTrees;
 
 	CameraComponent* ActiveCamera;
 

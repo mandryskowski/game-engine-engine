@@ -2,14 +2,14 @@
 materialsfile EngineMaterials/Materials.fware
 collisionfile CollisionData.txt
 
-newaprobes 5
+newprobes 5
 1 1 0 0 0 skip 0.55 0.55 5.05 break
 1 1 2 0.7 -8 skip 1.5 1.5 1.5 break
 1 1 0.147809 1.93476 -4.31168 skip 1 1 1 break
 1 1 -30 0 0 skip 5 5 5 break
 0 apartment.hdr
 
-newprobes 1
+newaprobes 1
 0 apartment.hdr
 
 
@@ -345,7 +345,7 @@ end
 
 newactor Actor DUPAACTOR
 newcomp model Kupa root SubwayoCube
-edit Body material tunnel/tunnel.obj:Brickwall end
+edit Body material tunnel/tunnel.obj:Bricks end
 transform
 10 0 10
 end

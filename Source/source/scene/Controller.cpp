@@ -105,13 +105,19 @@ void Controller::Update(float deltaTime)
 
 	ReadMovementKeys();
 
+	//bool isOnGround = PxController->getActor()->getScene()->raycast(physx::toVec3(PxController->getFootPosition()), PxController->getScene()->getGravity().getNormalized(), 0.03f, dupa);
+
 	physx::PxRaycastBuffer dupa;
 	physx::PxSweepBuffer sweepBuffer;
-	bool isOnGround = PxController->getActor()->getScene()->raycast(physx::toVec3(PxController->getFootPosition()) + physx::PxVec3(0.0f, 0.01f, 0.0f), PxController->getScene()->getGravity().getNormalized(), 0.1f, dupa);
 	physx::PxShape** shapes = new physx::PxShape*[16];
 	PxController->getActor()->getShapes(shapes, 16);
-	//std::cout << "UWAGA: " << PxController->getScene()->sweep(shapes[0]->getGeometry().capsule(), shapes[0]->getLocalPose(), PxController->getScene()->getGravity().getNormalized(), 0.1f, sweepBuffer) << "\n";
-	//std::cout << sweepBuffer.block.distance << "<-- dystans toucha\n";
+	shapes[0]->acquireReference();
+	PxController->getActor()->detachShape(*shapes[0]);
+	bool groundSweep = PxController->getScene()->sweep(shapes[0]->getGeometry().capsule(), PxController->getActor()->getGlobalPose() * shapes[0]->getLocalPose(), PxController->getScene()->getGravity().getNormalized(), 0.5f, sweepBuffer, physx::PxHitFlag::eDEFAULT, physx::PxQueryFilterData(), nullptr);
+	bool isOnGround = (groundSweep) && ((PxController->getFootPosition().y - sweepBuffer.block.position.y) < 0.01f);
+	PxController->getActor()->attachShape(*shapes[0]);
+	shapes[0]->release();
+
 	Velocity.y -= 9.81f * deltaTime;
 
 	if (isOnGround && Directions[DIRECTION_UP])
@@ -161,9 +167,11 @@ void Controller::Update(float deltaTime)
 	float beforePxSpeed = glm::length(Velocity);
 	physx::PxExtendedVec3 prevPos = PxController->getPosition();
 	PxController->move(toPx(Velocity * deltaTime), 0.001f, deltaTime, physx::PxControllerFilters());
+	if (isOnGround)
+		PxController->move(toPx(glm::vec3(0.0f, -0.2f, 0.0f)), 0.001f, 0.0f, physx::PxControllerFilters());
 	Velocity = toGlm(PxController->getPosition() - prevPos) / deltaTime;
 
-	dynamic_cast<TextComponent*>(PossessedActor->GetRoot()->GetComponent("CameraText"))->SetContent("Velocity: " + std::to_string(glm::length(glm::vec3(Velocity.x, 0.0f, Velocity.z))) + ((isOnGround) ? (" ON-GROUND") : (" MID-AIR")));
+	dynamic_cast<TextComponent*>(PossessedActor->GetRoot()->GetComponent("CameraText"))->SetContent("Velocity: " + std::to_string(glm::length(glm::vec3(Velocity.x, 0.0f, Velocity.z))) + " " + std::to_string(Velocity.y) + ((isOnGround) ? (" ON-GROUND") : (" MID-AIR")));
 
 	/*physx::PxRaycastBuffer dupa;
 	bool isOnGround = PxController->getActor()->getScene()->raycast(physx::toVec3(PxController->getFootPosition()), PxController->getScene()->getGravity().getNormalized(), 0.1f, dupa);

@@ -39,9 +39,9 @@ void PhysicsEngine::Init()
 	Pvd = PxCreatePvd(*Foundation);
 
 	PxPvdTransport* transport = PxDefaultPvdSocketTransportCreate("localhost", 5425, 1000);
-	//PxPvdTransport* transport = PxDefaultPvdFileTransportCreate("plik.pxd2");
+	//PxPvdTransport* transport = PxDefaultPvdFileTransportCreate("plik.pvd");
 	Pvd = PxCreatePvd(*Foundation);
-	Pvd->connect(*transport, PxPvdInstrumentationFlag::eALL);
+	Pvd->connect(*transport, PxPvdInstrumentationFlag::eDEBUG);
 
 	Physics = PxCreatePhysics(PX_PHYSICS_VERSION, *Foundation, PxTolerancesScale(), true, Pvd);
 
@@ -120,7 +120,6 @@ void PhysicsEngine::AddCollisionObjectToPxPipeline(GameScenePhysicsData& scenePh
 		case CollisionShapeType::COLLISION_SPHERE:
 			pxShape = Physics->createShape(PxSphereGeometry(shapeScale.x), *DefaultMaterial);
 			break;
-
 		}
 
 		if (!pxShape)
@@ -158,15 +157,24 @@ void PhysicsEngine::AddScenePhysicsDataPtr(GameScenePhysicsData& scenePhysicsDat
 PxController* PhysicsEngine::CreateController(GameScenePhysicsData& scenePhysicsData)
 {
 	PxCapsuleControllerDesc desc;
-	desc.radius = 0.1f;
-	desc.height = 0.5f;
+	desc.radius = 0.12f;
+	desc.height = 0.6f;
 	desc.material = DefaultMaterial;
 	desc.position = PxExtendedVec3(0.0f, 0.0f, 0.0f);
 	desc.position = PxExtendedVec3(-3.0f, 1.0f, 8.0f);
 	//desc.maxJumpHeight = 0.5f;
 	//desc.invisibleWallHeight = 0.5f;
+	desc.contactOffset = desc.radius * 0.1f;
 	desc.stepOffset = 0.01f;
+	//desc.slopeLimit = glm::cos(glm::radians(90.0f));
+
 	PxController* controller = scenePhysicsData.PhysXControllerManager->createController(desc);
+
+	PxRigidDynamic* actor = controller->getActor();
+	PxShape* shapes[1]; //There is only one shape in this controller
+	actor->getShapes(shapes, 1, 0); //get that shape
+	PxShape* shape = shapes[0];
+	//shape->setLocalPose(physx::PxTransform(physx::PxVec3(0.0f), physx::PxQuat(physx::PxHalfPi, physx::PxVec3(0.0f, 0.0f, 1.0f))));	//rotate it so we get a vertical capsule (without this line the capsule would be oriented towards X+, I guess that's how physX defaults it)
 	return controller;
 }
 
@@ -181,6 +189,8 @@ void PhysicsEngine::ApplyForce(CollisionObject& obj, glm::vec3 force)
 
 void PhysicsEngine::SetupScene(GameScenePhysicsData& scenePhysicsData)
 {
+	if (!Physics)
+		return;
 	PxSceneDesc sceneDesc(Physics->getTolerancesScale());
 	Dispatcher = PxDefaultCpuDispatcherCreate(2);
 
@@ -215,6 +225,8 @@ void PhysicsEngine::SetupScene(GameScenePhysicsData& scenePhysicsData)
 	for (int i = 0; i < static_cast<int>(scenePhysicsData.CollisionObjects.size()); i++)
 		//if (!CollisionObjects[i]->ActorPtr)
 			AddCollisionObjectToPxPipeline(scenePhysicsData, *scenePhysicsData.CollisionObjects[i]);
+
+	AddScenePhysicsDataPtr(scenePhysicsData);
 }
 
 void PhysicsEngine::Update(float deltaTime)
@@ -263,7 +275,7 @@ void PhysicsEngine::UpdatePxTransforms()
 
 			const Transform& worldTransform = obj->TransformPtr->GetWorldTransform();
 
-			PxTransform pxTransform;
+			PxTransform pxTransform = obj->ActorPtr->getGlobalPose();
 			pxTransform.p = toPx(worldTransform.PositionRef);
 			if (!obj->IgnoreRotation)
 				pxTransform.q = toPx(worldTransform.RotationRef);

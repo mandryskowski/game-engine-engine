@@ -110,7 +110,7 @@ void DeferredShadingToolbox::Setup(const GameSettings::VideoSettings& settings)
 	}
 
 	GeometryShader = AddShader(ShaderLoader::LoadShadersWithInclData("Geometry", settingsDefines, "Shaders/geometry.vs", "Shaders/geometry.fs"));
-	GeometryShader->UniformBlockBinding("BoneMatrices", 2);
+	GeometryShader->UniformBlockBinding("BoneMatrices", 10);
 	GeometryShader->SetTextureUnitNames(gShaderTextureUnits);
 	GeometryShader->SetExpectedMatrices(std::vector<MatrixType>{MatrixType::MODEL, MatrixType::MVP, MatrixType::NORMAL});
 }

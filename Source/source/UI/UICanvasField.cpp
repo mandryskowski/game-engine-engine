@@ -105,9 +105,7 @@ void UICanvasField::OnStart()
 {
 	UIActor::OnStart();
 
-	CreateComponent(TextComponent(Scene, "ElementText", Transform(glm::vec2(-10.0f, 0.0f), glm::vec2(1.0f)), Name, "fonts/expressway rg.ttf", std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::CENTER)));
-
-
+	CreateComponent(TextComponent(Scene, "ElementText", Transform(glm::vec2(-3.0f, 0.0f), glm::vec2(1.0f)), Name, "fonts/expressway rg.ttf", std::pair<TextAlignment, TextAlignment>(TextAlignment::RIGHT, TextAlignment::CENTER)));
 }
 
 UIElementTemplates UICanvasField::GetTemplates()
@@ -139,8 +137,6 @@ void UIElementTemplates::TickBox(std::function<bool()> setFunc)
 	billboardTickModel.AddMeshInst(GameHandle.GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD));
 	billboardTickModel.SetHide(true);
 	billboardTickModel.OverrideInstancesMaterialInstances(std::make_shared<MaterialInstance>(MaterialInstance(*tickMaterial, tickMaterial->GetTextureIDInterpolatorTemplate(0.0f))));
-
-	billboardTickBoxActor.SetTransform(Transform(glm::vec3(5.0f, 0.0f, 0.0f), glm::vec3(0.0f), glm::vec3(1.0f)));
 
 	auto tickHideFunc = [&billboardTickModel, setFunc]() { billboardTickModel.SetHide(!setFunc()); };
 	billboardTickBoxActor.SetOnClickFunc(tickHideFunc);

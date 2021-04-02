@@ -100,10 +100,13 @@ void UICanvas::AddUIElement(Actor& actor)
 
 	std::vector<Actor*> children = actor.GetChildren();
 	for (auto& it : children)
+	{
 		if (UIActor* cast = dynamic_cast<UIActor*>(it))
 			(this->*static_cast<void(UICanvas::*)(UIActor&)>(&UICanvas::AddUIElement))(*cast);
 		else
 			(this->*static_cast<void(UICanvas::*)(Actor&)>(&UICanvas::AddUIElement))(*it);
+		
+	}
 }
 
 void UICanvas::AddUIElement(UIActor& actor)
