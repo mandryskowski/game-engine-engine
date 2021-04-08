@@ -20,7 +20,7 @@ struct EditorElementDesc
 class Component
 {
 public:
-	Component(GameScene&, const std::string& name = "A Component", const Transform& t = Transform());
+	Component(GameScene&, const std::string& name = "undefined", const Transform& t = Transform());
 
 	Component(const Component&) = delete;
 	Component(Component&&);

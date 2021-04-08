@@ -120,8 +120,6 @@ void PhysicsEngine::AddCollisionObjectToPxPipeline(GameScenePhysicsData& scenePh
 		case CollisionShapeType::COLLISION_SPHERE:
 			pxShape = Physics->createShape(PxSphereGeometry(shapeScale.x), *DefaultMaterial);
 			break;
-		case CollisionShapeType::COLLISION_CAPSULE:
-			pxShape = Physics->createShape(PxCapsuleGeometry(shapeScale.x, shapeScale.y / 2.0f), *DefaultMaterial);
 		}
 
 		if (!pxShape)

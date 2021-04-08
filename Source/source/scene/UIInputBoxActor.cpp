@@ -6,8 +6,7 @@
 UIInputBoxActor::UIInputBoxActor(GameScene& scene, const std::string& name):
 	UIActivableButtonActor(scene, name),
 	ValueGetter(nullptr),
-	ContentTextComp(nullptr),
-	RetrieveContentEachFrame(false)
+	ContentTextComp(nullptr)
 {
 }
 
@@ -20,7 +19,7 @@ UIInputBoxActor::UIInputBoxActor(GameScene& scene, const std::string& name):
 
 void UIInputBoxActor::OnStart()
 {
-	ContentTextComp = &CreateComponent(TextConstantSizeComponent(Scene, Name + "Text", Transform(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f), glm::vec3(1.0f)), "1.0", "fonts/expressway rg.ttf"));
+	ContentTextComp = &CreateComponent(TextComponent(Scene, Name + "Text", Transform(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f), glm::vec3(0.5f)), "1.0", "fonts/expressway rg.ttf"));
 	ContentTextComp->SetAlignment(TextAlignment::CENTER, TextAlignment::CENTER);
 }
 
@@ -66,19 +65,6 @@ void UIInputBoxActor::SetOnInputFunc(std::function<void(float)> inputFunc, std::
 
 	SetOnInputFunc([=](const std::string& content) { inputFunc((content.empty()) ? (0.0f) : (std::stof(content))); },
 			      valueGetterStr);
-}
-
-void UIInputBoxActor::SetRetrieveContentEachFrame(bool retrieveContent)
-{
-	RetrieveContentEachFrame = retrieveContent;
-}
-
-void UIInputBoxActor::Update(float deltaTime)
-{
-	UIActivableButtonActor::Update(deltaTime);
-
-	if (RetrieveContentEachFrame && ValueGetter && GetState() != EditorIconState::ACTIVATED)
-		ValueGetter();
 }
 
 void UIInputBoxActor::HandleEvent(const Event& ev)

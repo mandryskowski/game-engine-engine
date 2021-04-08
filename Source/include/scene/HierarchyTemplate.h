@@ -224,10 +224,6 @@ namespace HierarchyTemplate
 		{
 			return TreeAnimations.size();
 		}
-		void SetRoot(std::unique_ptr<HierarchyNodeBase> root)
-		{
-			Root = std::move(root);
-		}
 		void AddAnimation(const Animation& anim)
 		{
 			TreeAnimations.push_back(std::make_unique<Animation>(Animation(anim)));

@@ -40,6 +40,7 @@ Component& Component::operator=(Component&& comp)
 
 Component& Component::operator=(const Component& compT)
 {
+	std::cout << "BASIC METODA\n";
 	Name = compT.Name;
 	ComponentTransform *= compT.ComponentTransform;
 	CollisionObj = (compT.CollisionObj) ? (std::make_unique<CollisionObject>(CollisionObject(*compT.CollisionObj))) : (nullptr);
@@ -334,12 +335,12 @@ Component* Component::SearchForComponent(std::string name)
 void Component::GetEditorDescription(UIActor& editorParent, GameScene& editorScene)
 {
 	UIInputBoxActor& textActor = editorParent.CreateChild(UIInputBoxActor(editorScene, "ComponentsNameActor"));
+	textActor.SetOnInputFunc([this](const std::string& content) { SetName(content); }, [this]() -> std::string { return GetName(); });
 	textActor.SetTransform(Transform(glm::vec2(0.0f, 1.5f), glm::vec2(1.0f)));
 
 	ModelComponent& prettyQuad = textActor.CreateComponent(ModelComponent(editorScene, "PrettyQuad"));
 	prettyQuad.AddMeshInst(MeshInstance(GameHandle->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD), const_cast<Material*>(textActor.GetButtonModel()->GetMeshInstance(0).GetMaterialPtr())));
 	prettyQuad.SetTransform(Transform(glm::vec2(0.0f, -0.625f), glm::vec2(textActor.GetRoot()->GetComponent<TextComponent>("ComponentsNameActorText")->GetTextLength() * 4.0f, 0.025f)));	//Component name text has scale (0.5, 0.5), so pos (0, -0.625) equals to 125% text half extent.
-	textActor.SetOnInputFunc([this, &prettyQuad, &textActor](const std::string& content) { SetName(content); prettyQuad.SetTransform(Transform(glm::vec2(0.0f, -0.625f), glm::vec2(textActor.GetRoot()->GetComponent<TextComponent>("ComponentsNameActorText")->GetTextLength(), 0.025f))); }, [this]() -> std::string { return GetName(); });
 
 	textActor.DeleteButtonModel();
 	//TextComponent& textComp = textActor.CreateComponent(TextComponent(editorScene, "ComponentsNameActorTextComp", Transform(glm::vec2(0.0f, 0.75f), glm::vec3(0.0f), glm::vec2(0.25f)), comp->GetName(), "fonts/expressway rg.ttf", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER)));
@@ -372,11 +373,7 @@ void Component::GetEditorDescription(UIActor& editorParent, GameScene& editorSce
 	UIAutomaticListActor& shapesList = shapesListField.CreateChild(UIAutomaticListActor(editorScene, "ShapesList"));
 	dynamic_cast<UICanvasActor*>(shapesListField.GetCanvasPtr())->FieldsList->SetListElementOffset(dynamic_cast<UICanvasActor*>(shapesListField.GetCanvasPtr())->FieldsList->GetListElementCount() - 1, [&shapesListField, &shapesList]()-> glm::vec3 { return static_cast<glm::mat3>(shapesListField.GetTransform()->GetMatrix()) * (shapesList.GetListOffset());});
 	dynamic_cast<UICanvasActor*>(shapesListField.GetCanvasPtr())->FieldsList->SetListCenterOffset(dynamic_cast<UICanvasActor*>(shapesListField.GetCanvasPtr())->FieldsList->GetListElementCount() - 1, [&shapesListField]()-> glm::vec3 { return glm::vec3(0.0f, -shapesListField.GetTransform()->ScaleRef.y, 0.0f); });
-	UIButtonActor& colObjectPresenceButton = shapesList.CreateChild(UIButtonActor(editorScene, "CollisionObjectButton", (CollisionObj) ? ("V") : ("X")));
-
-	shapesListField.CreateChild(UIButtonActor(editorScene, "AddColShape", "+", [this, &shapesList, &colObjectPresenceButton]() { if (!CollisionObj) { this->SetCollisionObject(std::make_unique<CollisionObject>(CollisionObject(true, CollisionShapeType::COLLISION_BOX))); }  /*CollisionObj->AddShape(CollisionShapeType::COLLISION_BOX); */shapesList.Refresh();})).SetTransform(Transform(glm::vec2(3.0f, 0.0f), glm::vec2(0.25f)));
-
-
+	shapesList.CreateChild(UIButtonActor(editorScene, "CollisionObjectButton", (CollisionObj) ? ("V") : ("X")));
 	//shapesList.GetTransform()->Move(glm::vec2(0.0f, -0.2f));
 	if (CollisionObj)
 	{
@@ -390,9 +387,7 @@ void Component::GetEditorDescription(UIActor& editorParent, GameScene& editorSce
 				case CollisionShapeType::COLLISION_TRIANGLE_MESH: shapeTypeName = "Triangle Mesh"; break;
 				case CollisionShapeType::COLLISION_CAPSULE: shapeTypeName = "Capsule"; break;
 			}
-			Actor& shapeActor = shapesList.CreateChild(Actor(editorScene, "TextActor"));
-			shapeActor.CreateComponent(TextComponent(editorScene, "Text", Transform(), ">" + shapeTypeName + "<", "fonts/expressway rg.ttf", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER)));
-		
+			shapesList.CreateChild(Actor(editorScene, "TextActor")).CreateComponent(TextComponent(editorScene, "Text", Transform(), ">" + shapeTypeName + "<", "fonts/expressway rg.ttf", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER)));
 		}
 	}
 	//shapesList.GetTransform()->Move(-1.0f * static_cast<glm::mat3>(shapesListField.GetTransform()->GetMatrix()) * (shapesList.GetListBegin() + shapesList.GetListOffset()));

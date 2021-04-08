@@ -42,22 +42,4 @@ public:
 	UIScrollBarActor *ResizeBarX, *ResizeBarY;
 };
 
-
-class EditorDescriptionBuilder
-{
-public:
-	EditorDescriptionBuilder(EditorManager&, GameScene& editorScene, UICanvasActor&);
-	GameScene& GetEditorScene();
-	UICanvasActor& GetCanvas();
-	void AddField(const std::string& name, std::function<glm::vec3()> getFieldOffsetFunc = nullptr);	//equivalent to GetCanvasActor().AddField(...). I put it here for easier access.
-
-	void SelectComponent(Component*);
-	void SelectActor(Actor*);
-private:
-	EditorManager& EditorHandle;
-	GameScene& EditorScene;
-	UICanvasActor& DescriptionCanvas;
-};
-
-
 UICanvasField& AddFieldToCanvas(const std::string& name, UICanvasElement& element, std::function<glm::vec3()> getFieldOffsetFunc = nullptr);

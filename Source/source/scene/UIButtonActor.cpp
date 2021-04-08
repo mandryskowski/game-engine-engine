@@ -55,7 +55,7 @@ UIButtonActor::UIButtonActor(GameScene& scene, const std::string& name, std::fun
 UIButtonActor::UIButtonActor(GameScene& scene, const std::string& name, const std::string& buttonTextContent, std::function<void()> onClickFunc, std::function<void()> whileBeingClickedFunc):
 	UIButtonActor(scene, name, onClickFunc, whileBeingClickedFunc)
 {
-	CreateComponent(TextConstantSizeComponent(Scene, "ComponentsNameActorTextComp", Transform(glm::vec2(0.0f), glm::vec2(1.0f)), buttonTextContent, "fonts/expressway rg.ttf", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER)));
+	CreateComponent(TextComponent(Scene, "ComponentsNameActorTextComp", Transform(glm::vec2(0.0f), glm::vec2(1.0f)), buttonTextContent, "fonts/expressway rg.ttf", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER)));
 }
 
 ModelComponent* UIButtonActor::GetButtonModel()

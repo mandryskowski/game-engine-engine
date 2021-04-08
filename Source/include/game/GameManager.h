@@ -16,7 +16,6 @@ class ModelComponent;
 class CameraComponent;
 class BoneComponent;
 class SoundSourceComponent;
-class AnimationManagerComponent;
 class Transform;
 struct Animation;
 
@@ -171,8 +170,8 @@ class EditorManager
 {
 public:
 	virtual void SelectComponent(Component* comp, GameScene& editorScene) = 0;
-	virtual void SelectActor(Actor* actor, GameScene& editorScene) = 0;
-	virtual void SelectScene(GameScene* scene, GameScene& editorScene) = 0;
+	virtual void SelectActor(Actor* comp, GameScene& editorScene) = 0;
+	virtual void SelectScene(GameScene* comp, GameScene& editorScene) = 0;
 	template <typename T> void Select(T* obj, GameScene& editorScene);
 
 	virtual GameManager* GetGameHandle() = 0;

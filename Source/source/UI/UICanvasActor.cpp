@@ -182,6 +182,7 @@ inline void UICanvasActor::UpdateScrollBarT()
 	float viewMovePos = CanvasView.PositionRef[axisIndex] - glm::pow(CanvasView.ScaleRef[axisIndex], 2.0f) - ((barAxis == VecAxis::X) ? (canvasBBox.GetLeft()) : (canvasBBox.GetBottom()));
 	float viewMoveSize = (canvasBBox.Size[axisIndex] - glm::pow(CanvasView.ScaleRef[axisIndex], 2.0f)) * 2.0f;
 
+	std::cout << "ViewMovePos " << viewMovePos << " | ViewMoveSize " << viewMoveSize << '\n';
 	float barPos = 0.0F;
 	if (viewMoveSize > 0.0f)
 	{
@@ -212,34 +213,4 @@ template void UICanvasActor::UpdateScrollBarT<VecAxis::Y>();
 UICanvasField& AddFieldToCanvas(const std::string& name, UICanvasElement& element, std::function<glm::vec3()> getFieldOffsetFunc)
 {
 	return element.GetCanvasPtr()->AddField(name, getFieldOffsetFunc);
-}
-
-EditorDescriptionBuilder::EditorDescriptionBuilder(EditorManager& editorHandle, GameScene& editorScene, UICanvasActor& canvas):
-	EditorHandle(editorHandle), EditorScene(editorScene), DescriptionCanvas(canvas)
-{
-}
-
-GameScene& EditorDescriptionBuilder::GetEditorScene()
-{
-	return EditorScene;
-}
-
-UICanvasActor& EditorDescriptionBuilder::GetCanvas()
-{
-	return DescriptionCanvas;
-}
-
-void EditorDescriptionBuilder::AddField(const std::string& name, std::function<glm::vec3()> getFieldOffsetFunc)
-{
-	GetCanvas().AddField(name, getFieldOffsetFunc);
-}
-
-void EditorDescriptionBuilder::SelectComponent(Component* comp)
-{
-	EditorHandle.SelectComponent(comp, EditorScene);
-}
-
-void EditorDescriptionBuilder::SelectActor(Actor* actor)
-{
-	EditorHandle.SelectActor(actor, EditorScene);
 }

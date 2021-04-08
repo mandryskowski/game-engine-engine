@@ -6,9 +6,9 @@
 struct Character
 {
 	unsigned int ID;
-	glm::vec2 Size;
-	glm::vec2 Bearing;
-	float Advance;
+	glm::ivec2 Size;
+	glm::ivec2 Bearing;
+	unsigned int Advance;
 };
 
 class Font

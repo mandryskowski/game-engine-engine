@@ -56,11 +56,8 @@ public:
 	template <int vecSize> void VecInput(std::function<void(float, float)> setFunc, std::function<float(float)> getFunc);	//encapsulated
 	template <typename VecType> void VecInput(std::function<void(float, float)> setFunc, std::function<float(float)> getFunc);	//encapsulated
 	template <typename VecType> void VecInput(VecType& modifedVec);	//not encapsulated
-
-	template <typename ObjectBase, typename ObjectType> void ObjectInput(ObjectBase& hierarchyRoot, std::function<void(ObjectType*)> setFunc);	//encapsulated
-	template <typename ObjectBase, typename ObjectType> void ObjectInput(ObjectBase& hierarchyRoot, ObjectType*& inputTo);	//not encapsulated
-	template <typename CompType> void ComponentInput(Component& hierarchyRoot, std::function<void(CompType*)> setFunc);	//encapsulated
-	template <typename CompType> void ComponentInput(Component& hierarchyRoot, CompType*& inputTo);	//not encapsulated
+	template <typename CompType> void ComponentInput(std::function<void(CompType*)> setFunc, Component& hierarchyRoot);	//encapsulated
+	template <typename CompType> void ComponentInput(CompType*& inputTo, Component& hierarchyRoot);	//not encapsulated
 
 	void PathInput(std::function<void(const std::string&)> setFunc, std::function<std::string()> getFunc);	//encapsulated
 
@@ -70,6 +67,3 @@ private:
 	GameScene& Scene;
 	GameManager& GameHandle;
 };
-
-template <typename ObjectType> void GetAllObjects(Component& hierarchyRoot, std::vector<ObjectType*>&);
-template <typename ObjectType> void GetAllObjects(Actor& hierarchyRoot, std::vector<ObjectType*>&);

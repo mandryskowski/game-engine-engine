@@ -234,9 +234,8 @@ void GameScenePhysicsData::EraseCollisionObject(CollisionObject& object)
 	if (found != CollisionObjects.end())
 	{
 		std::cout << "Removed collision object " << &object << "\n";
-		if ((*found)->ActorPtr)
-			(*found)->ActorPtr->release();
-		CollisionObjects.erase(found);
+		(*found)->ActorPtr->release();
+		CollisionObjects.erase(found, CollisionObjects.end());
 	}
 }
 

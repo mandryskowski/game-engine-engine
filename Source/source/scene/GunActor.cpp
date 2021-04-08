@@ -80,7 +80,7 @@ void GunActor::FireWeapon()
 
 	Actor& actor = Scene.CreateActorAtRoot (Actor(Scene, "Bullet" + std::to_string(FiredBullets)));
 	//TODO: Change it so the bullet is fired at the barrel, not at the center
-	std::unique_ptr<ModelComponent> bulletModel = std::make_unique<ModelComponent>(ModelComponent(Scene, "BulletModel" + std::to_string(FiredBullets++), Transform(GetTransform()->GetWorldTransform().PositionRef, glm::vec3(0.0f), glm::vec3(0.2f))));
+	std::unique_ptr<ModelComponent> bulletModel = std::make_unique<ModelComponent>(ModelComponent(Scene, "BulletModel" + std::to_string(FiredBullets++), Transform(GetTransform()->GetWorldTransform().PositionRef, glm::vec3(0.0f), glm::vec3(0.5f))));
 	bulletModel->OnStart();
 	EngineDataLoader::LoadModel("hqSphere/hqSphere.obj", *bulletModel, MeshTreeInstancingType::ROOTTREE, GameHandle->GetRenderEngineHandle()->FindMaterial("RustedIron"));
 
@@ -107,17 +107,17 @@ void GunActor::GetEditorDescription(UIActor& editorParent, GameScene& editorScen
 	Actor::GetEditorDescription(editorParent, editorScene);
 
 	UICanvasField& gunModelField = AddFieldToCanvas("GunModel", editorParent);
-	gunModelField.GetTemplates().ComponentInput<ModelComponent>(*GetRoot(), GunModel);
+	gunModelField.GetTemplates().ComponentInput<ModelComponent>(GunModel, *RootComponent);
 	dynamic_cast<UICanvasActor*>(editorParent.GetCanvasPtr())->FieldsList->Refresh();
 	std::cout << "Second element pos: " << gunModelField.GetTransform()->PositionRef.y << '\n';
 	//gunModelField.GetTransform()->SetScale(gunModelField.GetTransform()->ScaleRef * glm::vec3(1.0f, 0.5f / 0.04f, 1.0f));
 
 	UICanvasField& blastField = AddFieldToCanvas("Blast sound", editorParent);
-	blastField.GetTemplates().ComponentInput<SoundSourceComponent>(*GetRoot(), GunBlast);
+	blastField.GetTemplates().ComponentInput<SoundSourceComponent>(GunBlast, *RootComponent);
 	//blastField.GetTransform()->SetScale(blastField.GetTransform()->ScaleRef * glm::vec3(1.0f, 0.5f / 0.04f, 1.0f));
 
 	UICanvasField& fireField = AddFieldToCanvas("Fire", editorParent);
-	fireField.CreateChild(UIButtonActor(editorScene, "FireButton", "Fire", [this]() { FireWeapon(); })).GetTransform()->Move(glm::vec2(1.0f, 0.0f));
+	fireField.CreateChild(UIButtonActor(editorScene, "FireButton", "Fire", [this]() { FireWeapon(); }));
 
 	//[this]() {}
 }

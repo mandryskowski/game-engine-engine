@@ -2,7 +2,6 @@
 #include <scene/UIButtonActor.h>
 
 class TextComponent;
-class TextConstantSizeComponent;
 
 class UIInputBoxActor : public UIActivableButtonActor
 {
@@ -16,9 +15,6 @@ public:
 
 	void SetOnInputFunc(std::function<void(const std::string&)> inputFunc, std::function<std::string()> valueGetter);
 	void SetOnInputFunc(std::function<void(float)> inputFunc, std::function<float()> valueGetter, bool fixNumberStr = true);
-	void SetRetrieveContentEachFrame(bool);
-
-	virtual void Update(float deltaTime) override;
 
 	virtual void HandleEvent(const Event& ev) override;
 	virtual void OnClick() override;	//On activation
@@ -26,6 +22,5 @@ public:
 private:
 
 	std::function<void()> ValueGetter;
-	TextConstantSizeComponent* ContentTextComp;
-	bool RetrieveContentEachFrame;
+	TextComponent* ContentTextComp;
 };

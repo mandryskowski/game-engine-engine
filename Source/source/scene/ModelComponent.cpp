@@ -35,6 +35,7 @@ ModelComponent& ModelComponent::operator=(const ModelComponent& compT)
 {
 	Component::operator=(compT);
 
+	std::cout << "GIT METODA\n";
 	for (int i = 0; i < compT.GetMeshInstanceCount(); i++)
 		AddMeshInst(MeshInstance(const_cast<Mesh&>(compT.GetMeshInstance(i).GetMesh()), const_cast<Material*>(compT.GetMeshInstance(i).GetMaterialPtr())));
 

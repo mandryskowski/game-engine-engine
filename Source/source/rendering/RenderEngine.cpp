@@ -980,16 +980,16 @@ void RenderEngine::RenderText(const RenderInfo& infoPreConvert, const Font& font
 		info.MainPass = false;
 	}
 
-	glm::vec2 halfExtent = static_cast<glm::vec2>(t.ScaleRef);
-	t.Move(glm::vec3(0.0f, -t.ScaleRef.y * 2.0f + font.GetBaselineHeight() * halfExtent.y * 2.0f, 0.0f));	//align to bottom (-t.ScaleRef.y), move down to the bottom of it (-t.ScaleRef.y), and then move up to baseline height (-t.ScaleRef.y * 2.0f + font.GetBaselineHeight() * halfExtent.y * 2.0f)
+	glm::vec3 scale = t.ScaleRef / 64.0f;
+	t.Move(glm::vec3(0.0f, -t.ScaleRef.y * 2.0f + font.GetBaselineHeight() * scale.y, 0.0f));
 
 	if (alignment.first != TextAlignment::LEFT)
 	{
 		float advancesSum = 0.0f;
 		for (int i = 0; i < static_cast<int>(content.length()); i++)
-			advancesSum += (font.GetCharacter(content[i]).Advance);
+			advancesSum += (font.GetCharacter(content[i]).Advance) * scale.x;
 
-		t.Move(t.RotationRef * glm::vec3(-advancesSum * halfExtent.x * (static_cast<float>(alignment.first) - static_cast<float>(TextAlignment::LEFT)), 0.0f, 0.0f));
+		t.Move(t.RotationRef * glm::vec3(-advancesSum / 64.0f * (static_cast<float>(alignment.first) - static_cast<float>(TextAlignment::LEFT)), 0.0f, 0.0f));
 	}
 
 	if (alignment.second != TextAlignment::BOTTOM)
@@ -998,7 +998,7 @@ void RenderEngine::RenderText(const RenderInfo& infoPreConvert, const Font& font
 	//t.Move(glm::vec3(0.0f, -64.0f, 0.0f));
 	//t.Move(glm::vec3(0.0f, 11.0f, 0.0f) / scale);
 
-	const glm::mat3& textRot = t.GetRotationMatrix();
+	const glm::mat3& charOffsetRotMat = t.GetRotationMatrix();
 
 	Material textMaterial("TextMaterial", 0.0f, 0.0f, FindShader("TextShader"));
 
@@ -1007,13 +1007,13 @@ void RenderEngine::RenderText(const RenderInfo& infoPreConvert, const Font& font
 		shader->Uniform1i("glyphNr", content[i]);
 		const Character& c = font.GetCharacter(content[i]);
 
-		t.Move(textRot * glm::vec3(static_cast<glm::vec2>(c.Bearing) * halfExtent, 0.0f) * 2.0f);
-		t.SetScale(halfExtent);
+		t.Move(charOffsetRotMat * glm::vec3((float)c.Bearing.x, (float)c.Bearing.y, 0.0f) * scale * 2.0f);
+		t.SetScale(glm::vec3(glm::vec2(64.0f), 0.0f) * scale);
 		//printVector(vp * t.GetWorldTransformMatrix() * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f), "Letter " + std::to_string(i));
 		RenderStaticMesh(info, GetBasicShapeMesh(EngineBasicShape::QUAD), t, shader, nullptr, &textMaterial);
-		t.Move(textRot * -glm::vec3(static_cast<glm::vec2>(c.Bearing) * halfExtent, 0.0f) * 2.0f);
+		t.Move(charOffsetRotMat * -glm::vec3((float)c.Bearing.x, (float)c.Bearing.y, 0.0f) * scale * 2.0f);
 
-		t.Move(textRot * glm::vec3(c.Advance * halfExtent.x, 0.0f, 0.0f) * 2.0f);
+		t.Move(charOffsetRotMat * glm::vec3(c.Advance / 64.0f, 0.0f, 0.0f) * scale * 2.0f);
 	}
 
 	glDisable(GL_BLEND);
