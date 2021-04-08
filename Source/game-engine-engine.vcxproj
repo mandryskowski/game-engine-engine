@@ -137,6 +137,7 @@
     </ProjectReference>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="include\scene\PawnActor.cpp" />
     <ClCompile Include="include\scene\UIWindowActor.cpp" />
     <ClCompile Include="source\animation\AnimationManagerActor.cpp" />
     <ClCompile Include="source\game\GameManager.cpp" />

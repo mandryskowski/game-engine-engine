@@ -17,6 +17,7 @@ class SkeletonBatch;
 class BoneComponent : public Component
 {
 	unsigned int BoneID;
+	SkeletonInfo* InfoPtr;
 public:
 	glm::mat4 BoneOffset;
 	glm::mat4 FinalMatrix;
@@ -39,6 +40,9 @@ public:
 
 	void SetBoneOffset(const glm::mat4&);
 	void SetID(unsigned int id);
+	void SetInfoPtr(SkeletonInfo*);
+
+	virtual ~BoneComponent();
 };
 
 class BoneMapping
@@ -67,6 +71,7 @@ public:
 	void SetBatchData(SkeletonBatch* batch, unsigned int idOffset);
 	void FillMatricesVec(std::vector<glm::mat4>&);
 	void AddBone(BoneComponent&);
+	void EraseBone(BoneComponent&);
 	void SortBones();	//Sorts bones by id. May improve performance
 	void DRAWBATCH() const
 	{

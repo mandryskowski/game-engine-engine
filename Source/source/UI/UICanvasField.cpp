@@ -2,10 +2,13 @@
 #include <UI/UIListActor.h>
 #include <scene/UIInputBoxActor.h>
 #include <scene/ModelComponent.h>
+#include <scene/BoneComponent.h>
 #include <scene/TextComponent.h>
 #include <rendering/Texture.h>
 #include <scene/UIWindowActor.h>
 #include <scene/SoundSourceComponent.h>
+#include <animation/AnimationManagerActor.h>
+#include <scene/GunActor.h>
 #include <UI/UICanvas.h>
 
 /*
@@ -132,6 +135,7 @@ void UIElementTemplates::TickBox(std::function<bool()> setFunc)
 	tickMaterial->AddTexture(new NamedTexture(textureFromFile("EditorAssets/tick_icon.png", GL_RGBA, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR, true), "albedo1"));
 
 	UIButtonActor& billboardTickBoxActor = TemplateParent.CreateChild(UIButtonActor(Scene, "BillboardTickBox"));
+	billboardTickBoxActor.GetTransform()->Move(glm::vec2(1.0f, 0.0f));
 
 	ModelComponent& billboardTickModel = billboardTickBoxActor.CreateComponent(ModelComponent(Scene, "TickModel"));
 	billboardTickModel.AddMeshInst(GameHandle.GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD));
@@ -148,10 +152,10 @@ void UIElementTemplates::TickBox(std::function<bool()> setFunc)
 void UIElementTemplates::PathInput(std::function<void(const std::string&)> setFunc, std::function<std::string()> getFunc)
 {
 	UIInputBoxActor& pathInputBox = TemplateParent.CreateChild(UIInputBoxActor(Scene, "PathInputBox"));
-	pathInputBox.SetTransform(Transform(glm::vec2(0.0f), glm::vec2(3.0f, 1.0f)));
+	pathInputBox.SetTransform(Transform(glm::vec2(3.0f, 0.0f), glm::vec2(3.0f, 1.0f)));
 	pathInputBox.SetOnInputFunc(setFunc, getFunc);
 	UIButtonActor& selectFileActor = TemplateParent.CreateChild(UIButtonActor(Scene, "SelectFileButton"));
-	selectFileActor.SetTransform(Transform(glm::vec2(4.0f, 0.0f), glm::vec2(1.0f, 1.0f)));
+	selectFileActor.SetTransform(Transform(glm::vec2(7.0f, 0.0f), glm::vec2(1.0f, 1.0f)));
 
 	//TextComponent& pathText = selectFileActor.CreateComponent(TextComponent(Scene, "Text", Transform(), "", "fonts/expressway rg.ttf", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER)));
 
@@ -162,8 +166,8 @@ template <int vecSize> void UIElementTemplates::VecInput(std::function<void(floa
 {
 	for (int x = 0; x < vecSize; x++)
 	{
-		UIInputBoxActor& inputBoxActor = TemplateParent.CreateChild(UIInputBoxActor(Scene, "Vec3Box"));
-		inputBoxActor.SetTransform(Transform(glm::vec2(-0.75f + float(x) * 2.0f, 0.0f), glm::vec2(1.0f)));
+		UIInputBoxActor& inputBoxActor = TemplateParent.CreateChild(UIInputBoxActor(Scene, "VecBox" + std::to_string(x)));
+		inputBoxActor.SetTransform(Transform(glm::vec2(1.0f + float(x) * 2.0f, 0.0f), glm::vec2(1.0f)));
 		inputBoxActor.SetOnInputFunc([x, setFunc](float val) {setFunc(x, val); }, [x, getFunc]() { return getFunc(x); }, true);
 	}
 }
@@ -174,8 +178,8 @@ template <typename VecType> void UIElementTemplates::VecInput(VecType& modifiedV
 }
 #include <scene/LightComponent.h>
 
-template<typename CompType>
-void UIElementTemplates::ComponentInput(std::function<void(CompType*)> setFunc, Component& hierarchyRoot)
+template<typename ObjectBase, typename ObjectType>
+void UIElementTemplates::ObjectInput(ObjectBase& hierarchyRoot, std::function<void(ObjectType*)> setFunc)
 {
 	GameScene* scenePtr = &Scene;
 	UIButtonActor& compNameButton = TemplateParent.CreateChild(UIButtonActor(Scene, "CompNameBox", "", [scenePtr, &hierarchyRoot, setFunc]() {
@@ -183,24 +187,37 @@ void UIElementTemplates::ComponentInput(std::function<void(CompType*)> setFunc, 
 		window.SetTransform(Transform(glm::vec2(0.0f, -0.7f), glm::vec2(0.25f)));
 
 		UIAutomaticListActor& list = window.CreateChild(UIAutomaticListActor(*scenePtr, "Available comp list"));
-		std::vector<CompType*> comps;
-		if (auto cast = dynamic_cast<CompType*>(&hierarchyRoot))
-			comps.push_back(cast);
-		hierarchyRoot.GetAllComponents<CompType>(&comps);
+		std::vector<ObjectType*> availableObjects;
+		if (auto cast = dynamic_cast<ObjectType*>(&hierarchyRoot))
+			availableObjects.push_back(cast);
 
-		for (auto& it : comps)
+		GetAllObjects<ObjectType>(hierarchyRoot, availableObjects);
+
+		for (auto& it : availableObjects)
 			window.AddUIElement(list.CreateChild(UIButtonActor(*scenePtr, it->GetName() + ", Matching component button", it->GetName(), [&window, setFunc, it]() { setFunc(it); window.MarkAsKilled(); })));
 		list.Refresh();
 
-		std::cout << comps.size() << " available models.\n";
+		std::cout << availableObjects.size() << " available objects.\n";
 		}));
-	compNameButton.SetTransform(Transform(glm::vec2(0.0f, 0.0f), glm::vec2(3.0f, 1.0f)));
+	compNameButton.SetTransform(Transform(glm::vec2(3.0f, 0.0f), glm::vec2(3.0f, 1.0f)));
+}
+
+template<typename ObjectBase, typename ObjectType>
+void UIElementTemplates::ObjectInput(ObjectBase& hierarchyRoot, ObjectType*& inputTo)
+{
+	ObjectInput<ObjectBase, ObjectType>(hierarchyRoot, [&inputTo](ObjectType* comp) { inputTo = comp; });
 }
 
 template<typename CompType>
-void UIElementTemplates::ComponentInput(CompType*& inputTo, Component& hierarchyRoot)
+void UIElementTemplates::ComponentInput(Component& hierarchyRoot, std::function<void(CompType*)> setFunc)
 {
-	ComponentInput<CompType>([&inputTo](CompType* comp) { inputTo = comp; }, hierarchyRoot);
+	ObjectInput<Component, CompType>(hierarchyRoot, setFunc);
+}
+
+template<typename CompType>
+void UIElementTemplates::ComponentInput(Component& hierarchyRoot, CompType*& inputTo)
+{
+	ComponentInput<CompType>(hierarchyRoot, [&inputTo](CompType* comp) { inputTo = comp; });
 }
 
 template <> void UIElementTemplates::VecInput<glm::vec2>(std::function<void(float, float)> setFunc, std::function<float(float)> getFunc)
@@ -223,16 +240,41 @@ template <> void UIElementTemplates::VecInput<glm::quat>(std::function<void(floa
 	VecInput<4>(setFunc, getFunc);
 }
 
+template <typename ObjectType> void GetAllObjects<Component>(Component& hierarchyRoot, std::vector<ObjectType*>& comps)
+{
+	hierarchyRoot.GetAllComponents<ObjectType>(&comps);
+}
+
+template <typename ObjectType> void GetAllObjects<Actor>(Actor& hierarchyRoot, std::vector<ObjectType*>& actors)
+{
+	hierarchyRoot.GetAllActors<ObjectType>(&actors);
+}
 
 template void UIElementTemplates::VecInput<glm::vec2>(glm::vec2&);
 template void UIElementTemplates::VecInput<glm::vec3>(glm::vec3&);
 template void UIElementTemplates::VecInput<glm::vec4>(glm::vec4&);
 template void UIElementTemplates::VecInput<glm::quat>(glm::quat&);
 
-template void UIElementTemplates::ComponentInput<ModelComponent>(std::function<void(ModelComponent*)>, Component&);
-template void UIElementTemplates::ComponentInput<LightComponent>(std::function<void(LightComponent*)>, Component&);
-template void UIElementTemplates::ComponentInput<SoundSourceComponent>(std::function<void(SoundSourceComponent*)>, Component&);
+template void UIElementTemplates::ObjectInput<Component, Component>(Component&, std::function<void(Component*)>);
+template void UIElementTemplates::ObjectInput<Component, ModelComponent>(Component&, std::function<void(ModelComponent*)>);
+template void UIElementTemplates::ObjectInput<Component, BoneComponent>(Component&, std::function<void(BoneComponent*)>);
+template void UIElementTemplates::ObjectInput<Component, LightComponent>(Component&, std::function<void(LightComponent*)>);
+template void UIElementTemplates::ObjectInput<Component, SoundSourceComponent>(Component&, std::function<void(SoundSourceComponent*)>);
+template void UIElementTemplates::ObjectInput<Component, AnimationManagerComponent>(Component&, std::function<void(AnimationManagerComponent*)>);
 
-template void UIElementTemplates::ComponentInput<ModelComponent>(ModelComponent*&, Component&);
-template void UIElementTemplates::ComponentInput<LightComponent>(LightComponent*&, Component&);
-template void UIElementTemplates::ComponentInput<SoundSourceComponent>(SoundSourceComponent*&, Component&);
+template void UIElementTemplates::ObjectInput<Actor, GunActor>(Actor&, std::function<void(GunActor*)>);
+template void UIElementTemplates::ObjectInput<Actor, GunActor>(Actor&, GunActor*&);
+
+template void UIElementTemplates::ComponentInput<Component>(Component&, std::function<void(Component*)>);
+template void UIElementTemplates::ComponentInput<ModelComponent>(Component&, std::function<void(ModelComponent*)>);
+template void UIElementTemplates::ComponentInput<BoneComponent>(Component&, std::function<void(BoneComponent*)>);
+template void UIElementTemplates::ComponentInput<LightComponent>(Component&, std::function<void(LightComponent*)>);
+template void UIElementTemplates::ComponentInput<SoundSourceComponent>(Component&, std::function<void(SoundSourceComponent*)>);
+template void UIElementTemplates::ComponentInput<AnimationManagerComponent>(Component&, std::function<void(AnimationManagerComponent*)>);
+
+template void UIElementTemplates::ComponentInput<Component>(Component&, Component*&);
+template void UIElementTemplates::ComponentInput<ModelComponent>(Component&, ModelComponent*&);
+template void UIElementTemplates::ComponentInput<BoneComponent>(Component&, BoneComponent*&);
+template void UIElementTemplates::ComponentInput<LightComponent>(Component&, LightComponent*&);
+template void UIElementTemplates::ComponentInput<SoundSourceComponent>(Component&, SoundSourceComponent*&);
+template void UIElementTemplates::ComponentInput<AnimationManagerComponent>(Component&, AnimationManagerComponent*&);

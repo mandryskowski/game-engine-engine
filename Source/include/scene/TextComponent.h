@@ -17,7 +17,7 @@ public:
 	virtual Box2f GetBoundingBox(bool world = true) override;	//Canvas space
 	float GetTextLength(bool world = true) const;
 
-	void SetContent(const std::string&);
+	virtual void SetContent(const std::string&);
 
 	virtual void Render(const RenderInfo& info, Shader* shader) override;
 
@@ -36,4 +36,18 @@ private:
 															  Note that Component::ComponentTransform::Position is not always at the bottom-left corner of the text.
 															  Use a function (that DOES NOT EXIST YET. TODO) to get the bottom-left corner of the text.
 															*/
+};
+
+class TextConstantSizeComponent: public TextComponent
+{
+public:
+	TextConstantSizeComponent(GameScene& scene, const std::string& name = std::string(), const Transform& transform = Transform(), std::string content = std::string(), std::shared_ptr<Font> font = nullptr, std::pair<TextAlignment, TextAlignment> = std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::BOTTOM));
+	TextConstantSizeComponent(GameScene& scene, const std::string& name = std::string(), const Transform& transform = Transform(), std::string content = std::string(), std::string fontPath = std::string(), std::pair<TextAlignment, TextAlignment> = std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::BOTTOM));
+	TextConstantSizeComponent(const TextConstantSizeComponent&) = delete;
+	TextConstantSizeComponent(TextConstantSizeComponent&&);
+	void SetMaxSize(const glm::vec2&);
+	virtual void SetContent(const std::string&) override;
+private:
+	glm::vec2 MaxSize;
+	glm::vec2 ScaleRatio;
 };
