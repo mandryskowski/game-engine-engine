@@ -7,7 +7,8 @@ BoneComponent::BoneComponent(GameScene& scene, std::string name, Transform trans
 	Component(scene, name, transform),
 	BoneID(boneID),
 	BoneOffset(glm::mat4(1.0f)),
-	FinalMatrix(glm::mat4(1.0f))
+	FinalMatrix(glm::mat4(1.0f)),
+	InfoPtr(nullptr)
 {
 
 }
@@ -16,7 +17,8 @@ BoneComponent::BoneComponent(BoneComponent&& bone):
 	Component(std::move(bone)),
 	BoneID(bone.BoneID),
 	BoneOffset(bone.BoneOffset),
-	FinalMatrix(bone.FinalMatrix)
+	FinalMatrix(bone.FinalMatrix),
+	InfoPtr(bone.InfoPtr)
 {
 }
 
@@ -25,7 +27,7 @@ BoneComponent& BoneComponent::operator=(const BoneComponent& compT)
 	Component::operator=(compT);
 
 	BoneOffset = compT.BoneOffset;
-	BoneID = compT.BoneID;
+
 	return *this;
 }
 
@@ -62,6 +64,18 @@ void BoneComponent::SetBoneOffset(const glm::mat4& boneOffset)
 void BoneComponent::SetID(unsigned int id)
 {
 	BoneID = id;
+}
+
+void BoneComponent::SetInfoPtr(SkeletonInfo* infoPtr)
+{
+	InfoPtr = infoPtr;
+}
+
+BoneComponent::~BoneComponent()
+{
+	std::cout << "I'm in the destructor\n";
+	if (InfoPtr)
+		InfoPtr->EraseBone(*this);
 }
 
 aiBone* FindAiBoneFromNode(const aiScene* scene, const aiNode* node)
@@ -151,6 +165,13 @@ void SkeletonInfo::FillMatricesVec(std::vector<glm::mat4>& boneMats)
 void SkeletonInfo::AddBone(BoneComponent& bone)
 {
 	Bones.push_back(&bone);
+	bone.SetInfoPtr(this);
+}
+
+void SkeletonInfo::EraseBone(BoneComponent& bone)
+{
+	std::cout << "Erasing bone " << bone.GetName() << '\n';
+	Bones.erase(std::remove_if(Bones.begin(), Bones.end(), [&bone](BoneComponent* boneVec) { if (boneVec == &bone) std::cout << "erased bone " << bone.GetName() << '\n'; return boneVec == &bone; }), Bones.end());
 }
 
 void SkeletonInfo::SortBones()

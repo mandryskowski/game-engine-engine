@@ -51,8 +51,8 @@ public:
 	const glm::vec3& ScaleRef;
 
 	explicit Transform();
-	explicit Transform(glm::vec2 pos, glm::vec2 scale = glm::vec2(1.0f), glm::quat rot = glm::quat(glm::vec3(0.0f)));
-	explicit Transform(glm::vec3 pos, glm::quat rot = glm::quat(glm::vec3(0.0f)), glm::vec3 scale = glm::vec3(1.0f));
+	explicit Transform(const glm::vec2& pos, const glm::vec2& scale = glm::vec2(1.0f), const glm::quat& rot = glm::quat(glm::vec3(0.0f)));
+	explicit Transform(const glm::vec3& pos, const glm::quat& rot = glm::quat(glm::vec3(0.0f)), const glm::vec3& scale = glm::vec3(1.0f));
 	Transform(const Transform&);
 	Transform(Transform&&) noexcept;
 
@@ -65,19 +65,22 @@ public:
 	const glm::mat4& GetWorldTransformMatrix() const; //calls this->GetWorldTransform().GetMatrix() and then stores the matrix in cache - you should call this method instead of 2 seperate ones (for sweet sweet FPS)
 	Transform* GetParentTransform() const;
 
-	void SetPosition(glm::vec2);
-	void SetPosition(glm::vec3);
-	void SetPositionWorld(glm::vec3);
-	void Move(glm::vec2);
-	void Move(glm::vec3);
-	void SetRotation(glm::vec3 euler);
-	void SetRotation(glm::quat quat);
-	void SetRotationWorld(glm::quat quat);
-	void Rotate(glm::vec3 euler);
-	void Rotate(glm::quat quat);
-	void SetScale(glm::vec2);
-	void SetScale(glm::vec3);
-	void Set(int, glm::vec3);
+	void SetPosition(const glm::vec2&);
+	void SetPosition(const glm::vec3&);
+	void SetPositionWorld(const glm::vec3&);
+	void Move(const glm::vec2&);
+	void Move(const glm::vec3&);
+	void SetRotation(const glm::vec3& euler);
+	void SetRotation(const glm::quat& quat);
+	void SetRotationWorld(const glm::quat& quat);
+	void Rotate(const glm::vec3& euler);
+	void Rotate(const glm::quat& quat);
+	void SetScale(const glm::vec2&);
+	void SetScale(const glm::vec3&);
+	void ApplyScale(float);
+	void ApplyScale(const glm::vec2&);
+	void ApplyScale(const glm::vec3&);
+	void Set(int, const glm::vec3&);
 	template <TVec vec, VecAxis axis> void SetVecAxis(float val)
 	{
 		unsigned int axisIndex = static_cast<unsigned int>(axis);
@@ -121,6 +124,7 @@ public:
 	Transform& operator*=(Transform&&);
 };
 
+glm::quat quatFromDirectionVec(const glm::vec3& dirVec, glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f));
 /*const Transform& operator*(const glm::mat4& mat, const Transform& t)
 {
 	glm::vec3 scale(0.0f);
