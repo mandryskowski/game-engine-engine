@@ -36,7 +36,8 @@ class AnimationInstance
 public:
 	AnimationInstance(Animation&, Component&);
 
-	Animation& GetAnimation();
+	Animation& GetAnimation() const;
+	bool HasFinished() const;
 	void Update(float);
 	void Stop();
 	void Restart();
@@ -49,6 +50,10 @@ class AnimationManagerComponent : public Component
 
 public:
 	AnimationManagerComponent(GameScene& scene, const std::string& name);
+
+	AnimationInstance* GetAnimInstance(int index);
+	int GetAnimInstancesCount() const;
+	AnimationInstance* GetCurrentAnim();
 
 	void AddAnimationInstance(AnimationInstance&&);
 

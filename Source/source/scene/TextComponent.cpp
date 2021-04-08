@@ -12,8 +12,7 @@ TextComponent::TextComponent(GameScene& scene, const std::string& name, const Tr
 	RenderableComponent(scene, name, transform),
 	UsedFont(font),
 	TextMatInst(nullptr),
-	Content(content),
-	Alignment(TextAlignment::LEFT, TextAlignment::BOTTOM)		//Set alignment at bottom-left so it's correctly aligned to alignment
+	Alignment(TextAlignment::LEFT, TextAlignment::BOTTOM)
 {
 	Material* mat = scene.GetGameHandle()->GetRenderEngineHandle()->AddMaterial(new Material("TextMaterial" + content));
 	if (content == "big button")
@@ -21,7 +20,8 @@ TextComponent::TextComponent(GameScene& scene, const std::string& name, const Tr
 	else
 		mat->SetColor(glm::vec4(0.0f, 0.607057f, 0.663284f, 1.0f));
 	TextMatInst = std::make_unique<MaterialInstance>(MaterialInstance(*mat));
-	SetAlignment(alignment);	//Align to alignment
+	SetAlignment(alignment);
+	SetContent(content);
 }
 
 TextComponent::TextComponent(GameScene& scene, const std::string& name, const Transform& transform, std::string content, std::string fontPath, std::pair<TextAlignment, TextAlignment> alignment) :
@@ -50,15 +50,11 @@ Box2f TextComponent::GetBoundingBox(bool world)
 	if (CanvasPtr && world)
 		transform = CanvasPtr->ToCanvasSpace(transform);
 
-	glm::vec2 scale = transform.ScaleRef / 64.0f;
+	float textLength = GetTextLength(world);
 
-	float advancesSum = 0.0f;
-	for (auto it : Content)
-		advancesSum += (UsedFont->GetCharacter(it).Advance / 64.0f) * scale.x;
+	glm::vec2 alignmentOffset((static_cast<float>(Alignment.first) - static_cast<float>(TextAlignment::CENTER)) * -textLength, (static_cast<float>(Alignment.second) - static_cast<float>(TextAlignment::CENTER)) * -transform.ScaleRef.y);
 
-	glm::vec2 alignmentOffset((static_cast<float>(Alignment.first) - static_cast<float>(TextAlignment::CENTER)) * -advancesSum, (static_cast<float>(Alignment.second) - static_cast<float>(TextAlignment::CENTER)) * -transform.ScaleRef.y);
-
-	return Box2f(glm::vec2(transform.PositionRef) + alignmentOffset, glm::vec2(advancesSum, transform.ScaleRef.y));
+	return Box2f(glm::vec2(transform.PositionRef) + alignmentOffset, glm::vec2(textLength, transform.ScaleRef.y));
 }
 
 float TextComponent::GetTextLength(bool world) const
@@ -67,13 +63,13 @@ float TextComponent::GetTextLength(bool world) const
 	if (CanvasPtr && world)
 		transform = CanvasPtr->ToCanvasSpace(transform);
 
-	glm::vec2 scale = transform.ScaleRef / 64.0f;
+	glm::vec2 scale = transform.ScaleRef;
 
 	float advancesSum = 0.0f;
 	for (auto it : Content)
-		advancesSum += (UsedFont->GetCharacter(it).Advance / 64.0f) * scale.x;
+		advancesSum += UsedFont->GetCharacter(it).Advance;
 
-	return advancesSum;
+	return advancesSum * scale.x;
 }
 
 void TextComponent::SetContent(const std::string& content)
@@ -97,4 +93,45 @@ void TextComponent::SetAlignment(const TextAlignment horizontal, const TextAlign
 void TextComponent::SetAlignment(const std::pair<TextAlignment, TextAlignment>& alignment)
 {
 	Alignment = alignment;
+}
+
+TextConstantSizeComponent::TextConstantSizeComponent(GameScene& scene, const std::string& name, const Transform& transform, std::string content, std::shared_ptr<Font> font, std::pair<TextAlignment, TextAlignment> alignment):
+	TextComponent(scene, name, transform, "", font, alignment),
+	MaxSize(glm::vec2(1.0f)),
+	ScaleRatio(glm::max(glm::vec2(1.0f), glm::vec2(transform.ScaleRef.x / transform.ScaleRef.y, transform.ScaleRef.y / transform.ScaleRef.x)))
+{
+	SetContent(content);
+}
+
+TextConstantSizeComponent::TextConstantSizeComponent(GameScene& scene, const std::string& name, const Transform& transform, std::string content, std::string fontPath, std::pair<TextAlignment, TextAlignment> alignment):
+	TextConstantSizeComponent(scene, name, transform, content, EngineDataLoader::LoadFont(*scene.GetGameHandle(), fontPath), alignment)
+{
+}
+
+TextConstantSizeComponent::TextConstantSizeComponent(TextConstantSizeComponent&& textComp):
+	TextComponent(std::move(textComp)),
+	MaxSize(textComp.MaxSize),
+	ScaleRatio(textComp.ScaleRatio)
+{
+}
+
+void TextConstantSizeComponent::SetMaxSize(const glm::vec2& maxSize)
+{
+	MaxSize = maxSize;
+}
+
+void TextConstantSizeComponent::SetContent(const std::string& content)
+{
+	if (GetContent() == content)
+		return;
+
+	TextComponent::SetContent(content);
+	
+	float textLength = glm::max(GetTextLength(false) / GetTransform().ScaleRef.x, 0.001f);
+	float scale = glm::min(MaxSize.y, MaxSize.x / textLength);
+
+	std::cout << "Length: " << textLength << " finalscale: " << scale << " scalex: " << GetTransform().ScaleRef.x << '\n';
+	printVector(ScaleRatio, "Scale ratio");
+
+	GetTransform().SetScale(glm::vec2(scale) * ScaleRatio);
 }

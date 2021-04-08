@@ -24,12 +24,12 @@ Transform::Transform():
 {
 }
 
-Transform::Transform(glm::vec2 pos, glm::vec2 scale, glm::quat rot):
+Transform::Transform(const glm::vec2& pos, const glm::vec2& scale, const glm::quat& rot):
 	Transform(glm::vec3(pos, 0.0f), rot, glm::vec3(scale, 1.0f))
 {
 }
 
-Transform::Transform(glm::vec3 pos, glm::quat rot, glm::vec3 scale) :
+Transform::Transform(const glm::vec3& pos, const glm::quat& rot, const glm::vec3& scale) :
 	ParentTransform(nullptr),
 	WorldTransformCache(nullptr),
 	WorldTransformMatrixCache(glm::mat4(1.0f)),
@@ -135,7 +135,7 @@ const glm::mat4& Transform::GetWorldTransformMatrix() const
 	WorldTransformMatrixCache = GetWorldTransform().GetMatrix();
 	DirtyFlags[2] = false;
 
-	return WorldTransformMatrixCache;
+	return WorldTransformMatrixCache; 
 }
 
 Transform* Transform::GetParentTransform() const
@@ -143,12 +143,12 @@ Transform* Transform::GetParentTransform() const
 	return ParentTransform;
 }
 
-void Transform::SetPosition(glm::vec2 pos)
+void Transform::SetPosition(const glm::vec2& pos)
 {
 	SetPosition(glm::vec3(pos, 0.0f));
 }
 
-void Transform::SetPosition(glm::vec3 pos)
+void Transform::SetPosition(const glm::vec3& pos)
 {
 	/*CacheVariableInterface<float>(PositionRef.x, *this) = 0.0f;
 	CacheVariableInterface<float> sX(PositionRef.x, *this);
@@ -161,35 +161,35 @@ void Transform::SetPosition(glm::vec3 pos)
 	FlagMyDirtiness();
 }
 
-void Transform::SetPositionWorld(glm::vec3 worldPos)
+void Transform::SetPositionWorld(const glm::vec3& worldPos)
 {
 	glm::vec3 localPos = (ParentTransform) ? (glm::vec3(glm::inverse(ParentTransform->GetWorldTransformMatrix()) * glm::vec4(worldPos, 1.0f))) : (worldPos);
 	SetPosition(localPos);
 }
 
-void Transform::Move(glm::vec2 offset)
+void Transform::Move(const glm::vec2& offset)
 {
 	Move(glm::vec3(offset, 0.0f));
 }
 
-void Transform::Move(glm::vec3 offset)
+void Transform::Move(const glm::vec3& offset)
 {
 	SetPosition(Position + offset);
 }
 
-void Transform::SetRotation(glm::vec3 euler)
+void Transform::SetRotation(const glm::vec3& euler)
 {
 	Rotation = toQuat(euler);
 	FlagMyDirtiness();
 }
 
-void Transform::SetRotation(glm::quat q)
+void Transform::SetRotation(const glm::quat& q)
 {
 	Rotation = q;
 	FlagMyDirtiness();
 }
 
-void Transform::SetRotationWorld(glm::quat q)
+void Transform::SetRotationWorld(const glm::quat& q)
 {
 	glm::quat localRot = q;
 	if (ParentTransform)
@@ -198,22 +198,22 @@ void Transform::SetRotationWorld(glm::quat q)
 	SetRotation(localRot);
 }
 
-void Transform::Rotate(glm::vec3 euler)
+void Transform::Rotate(const glm::vec3& euler)
 {
 	SetRotation(Rotation * toQuat(euler));
 }
 
-void Transform::Rotate(glm::quat q)
+void Transform::Rotate(const glm::quat& q)
 {
 	SetRotation(Rotation * q);
 }
 
-void Transform::SetScale(glm::vec2 scale)
+void Transform::SetScale(const glm::vec2& scale)
 {
 	SetScale(glm::vec3(scale, 1.0f));
 }
 
-void Transform::SetScale(glm::vec3 scale)
+void Transform::SetScale(const glm::vec3& scale)
 {/*
 	
 	CacheVariable<float, Transform> sX(ScaleRef.x, *this);
@@ -226,7 +226,22 @@ void Transform::SetScale(glm::vec3 scale)
 	FlagMyDirtiness();
 }
 
-void Transform::Set(int index, glm::vec3 vec)
+void Transform::ApplyScale(float scale)
+{
+	SetScale(ScaleRef * scale);
+}
+
+void Transform::ApplyScale(const glm::vec2& scale)
+{
+	SetScale(static_cast<glm::vec2>(ScaleRef) * scale);
+}
+
+void Transform::ApplyScale(const glm::vec3& scale)
+{
+	SetScale(ScaleRef * scale);
+}
+
+void Transform::Set(int index, const glm::vec3& vec)
 {
 	switch (index)
 	{
@@ -430,6 +445,14 @@ template void Transform::AddInterpolator<glm::vec3>(std::string, float, float, g
 
 template void Transform::AddInterpolator<glm::quat>(std::string, float, float, glm::quat, glm::quat, InterpolationType, bool, AnimBehaviour, AnimBehaviour);
 template void Transform::AddInterpolator<glm::quat>(std::string, float, float, glm::quat, InterpolationType, bool, AnimBehaviour, AnimBehaviour);
+
+glm::quat quatFromDirectionVec(const glm::vec3& dirVec, glm::vec3 up)
+{
+	glm::vec3 right = glm::normalize(glm::cross(up, dirVec));
+	up = glm::normalize(glm::cross(dirVec, right));
+
+	return glm::quat(glm::mat3(right, up, dirVec));
+}
 
 Transform decompose(const glm::mat4& mat)
 {

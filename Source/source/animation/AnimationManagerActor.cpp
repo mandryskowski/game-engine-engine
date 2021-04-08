@@ -160,9 +160,14 @@ AnimationInstance::AnimationInstance(Animation& anim, Component& animRootComp) :
 	boneFinderFunc(AnimRootComp);
 }
 
-Animation& AnimationInstance::GetAnimation()
+Animation& AnimationInstance::GetAnimation() const
 {
 	return Anim;
+}
+
+bool AnimationInstance::HasFinished() const
+{
+	return TimePassed > GetAnimation().Duration;
 }
 
 void AnimationInstance::Update(float deltaTime)
@@ -176,18 +181,19 @@ void AnimationInstance::Update(float deltaTime)
 
 	TimePassed += deltaTime;
 
-	if (TimePassed > GetAnimation().Duration)
+	/*if (HasFinished())
 	{
 		float nextIterationTime = TimePassed - GetAnimation().Duration;
 		Restart();
 		Update(nextIterationTime);
-	}
+	}*/
 }
 
 void AnimationInstance::Stop()
 {
 	for (auto& it : ChannelInstances)
 		it->Stop();
+	TimePassed = GetAnimation().Duration;
 }
 
 void AnimationInstance::Restart()
@@ -203,6 +209,24 @@ AnimationManagerComponent::AnimationManagerComponent(GameScene& scene, const std
 {
 }
 
+AnimationInstance* AnimationManagerComponent::GetAnimInstance(int index)
+{
+	if (index > GetAnimInstancesCount() - 1)
+		return nullptr;
+
+	return AnimInstances[index].get();
+}
+
+int AnimationManagerComponent::GetAnimInstancesCount() const
+{
+	return AnimInstances.size();
+}
+
+AnimationInstance* AnimationManagerComponent::GetCurrentAnim()
+{
+	return CurrentAnim;
+}
+
 void AnimationManagerComponent::AddAnimationInstance(AnimationInstance&& animInstance)
 {
 	AnimInstances.push_back(std::make_unique<AnimationInstance>(std::move(animInstance)));
@@ -213,7 +237,12 @@ void AnimationManagerComponent::Update(float deltaTime)
 	//for (std::unique_ptr<AnimationInstance>& it : AnimInstances)
 		//it->Update(deltaTime);
 	if (CurrentAnim)
+	{
 		CurrentAnim->Update(deltaTime);
+		if (CurrentAnim->HasFinished())
+			SelectAnimation(nullptr);
+	}
+
 }
 
 void AnimationManagerComponent::SelectAnimation(AnimationInstance* anim)
@@ -222,7 +251,10 @@ void AnimationManagerComponent::SelectAnimation(AnimationInstance* anim)
 		CurrentAnim->Stop();
 
 	CurrentAnim = anim;
-	std::cout << "Started anim " + CurrentAnim->GetAnimation().Name + ". Nr of channels: " << CurrentAnim->GetAnimation().Channels.size() << '\n';
+	if (CurrentAnim)
+		std::cout << "Started anim " + CurrentAnim->GetAnimation().Name + ". Nr of channels: " << CurrentAnim->GetAnimation().Channels.size() << '\n';
+	else
+		std::cout << "Selected nullptr animation.\n";
 
 	if (CurrentAnim)
 		CurrentAnim->Restart();
@@ -242,6 +274,7 @@ void AnimationManagerComponent::GetEditorDescription(UIActor& editorParent, Game
 	for (auto& it : AnimInstances)
 	{
 		UIButtonActor& button = field.CreateChild(UIButtonActor(editorScene, it->GetAnimation().Name, it->GetAnimation().Name, [this, &it]() { SelectAnimation(it.get()); }));
-		button.GetTransform()->SetPosition(glm::vec2(posX += 3.0f, 0.0f));
+		button.GetTransform()->SetPosition(glm::vec2(posX, 0.0f));
+		posX += 3.0f;
 	}
 }

@@ -67,7 +67,7 @@ public:
 
 	virtual void GetEditorDescription(UIActor& canvas, GameScene& editorScene);
 
-	template<class ActorClass> void GetAllChildren(std::vector <ActorClass*>* comps)	//this function returns every element further in the hierarchy tree (kids, kids' kids, ...) that is of ActorClass type
+	template<class ActorClass> void GetAllActors(std::vector <ActorClass*>* comps)	//this function returns every element further in the hierarchy tree (kids, kids' kids, ...) that is of ActorClass type
 	{
 		if (!comps)
 			return;
@@ -78,7 +78,7 @@ public:
 				comps->push_back(c);
 		}
 		for (unsigned int i = 0; i < Children.size(); i++)
-			Children[i]->GetAllChildren<ActorClass>(comps);	//do it reccurently in every child
+			Children[i]->GetAllActors<ActorClass>(comps);	//do it reccurently in every child
 	}
 
 protected:

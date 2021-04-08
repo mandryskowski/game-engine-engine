@@ -903,7 +903,8 @@ HierarchyTemplate::HierarchyTreeT* EngineDataLoader::LoadHierarchyTree(GameScene
 	std::vector<ModelComponent*> modelsPtr;
 
 	std::cout << "ROOT: " << &treePtr->GetRoot() << '\n';
-	LoadHierarchyNodeFromAi(gameHandle, assimpScene, directory, &matLoadingData, treePtr->GetRoot(), assimpScene->mRootNode, treePtr->GetBoneMapping());
+
+	LoadHierarchyNodeFromAi(gameHandle, assimpScene, directory, &matLoadingData, (assimpScene->mRootNode->mNumMeshes > 0) ? (treePtr->GetRoot().CreateChild(HierarchyTemplate::HierarchyNode<ModelComponent>(scene, treePtr->GetRoot().GetCompBaseType().GetName() + "RootMeshes"))) : (treePtr->GetRoot()), assimpScene->mRootNode, treePtr->GetBoneMapping());
 
 	for (int i = 0; i < static_cast<int>(assimpScene->mNumAnimations); i++)
 	{
@@ -970,8 +971,10 @@ std::shared_ptr<Font> EngineDataLoader::LoadFont(GameManager& gameHandle, const 
 
 	std::shared_ptr<Font> font = std::make_shared<Font>(Font(path));
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+	const float advanceUnit = 1.0f / 64.0f;
+	const float pixelScale = 1.0f / 64.0f;
 
-	font->SetBaselineHeight(face->ascender / 64.0f);
+	font->SetBaselineHeight(static_cast<float>(face->ascender) * pixelScale * advanceUnit);
 
 	for (int i = 0; i < 128; i++)
 	{
@@ -985,9 +988,9 @@ std::shared_ptr<Font> EngineDataLoader::LoadFont(GameManager& gameHandle, const 
 		glTexSubImage3D(font->GetBitmapsArray().GetType(), 0, 0, 0, i, face->glyph->bitmap.width, face->glyph->bitmap.rows, 1, GL_RED, GL_UNSIGNED_BYTE, face->glyph->bitmap.buffer);
 		Character character;
 		character.ID = i;
-		character.Size = glm::ivec2(face->glyph->bitmap.width, face->glyph->bitmap.rows);
-		character.Bearing = glm::ivec2(face->glyph->bitmap_left, face->glyph->bitmap_top);
-		character.Advance = face->glyph->advance.x;
+		character.Size = glm::vec2(face->glyph->bitmap.width, face->glyph->bitmap.rows) * pixelScale;
+		character.Bearing = glm::vec2(face->glyph->bitmap_left, face->glyph->bitmap_top) * pixelScale;
+		character.Advance = static_cast<float>(face->glyph->advance.x) * pixelScale * advanceUnit;
 
 		font->AddCharacter(character);
 	}

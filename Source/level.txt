@@ -417,10 +417,8 @@ end
 end
 
 newactor Actor AStolenRevolver
-neawcomp model MStolenRevolver root Cerberus_by_Andrew_Maximov/cerberus.glb
+newcomp model MStolenRevolver root Cerberus_by_Andrew_Maximov/cerberus.glb
 transform
 -4 0 3
-skip
-0.01 0.01 0.01
 end
 end

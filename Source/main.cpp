@@ -11,6 +11,7 @@
 #include <UI/UICanvasField.h>
 #include <UI/UIListActor.h>
 #include <scene/GunActor.h>
+#include <scene/PawnActor.h>
 #include <map>
 
 //Po 11 minutach i 7 sekundach crashuje przez C:\Users\48511\Desktop\PhysX-4.1\physx\source\foundation\include\PsBroadcast.h (199) : abort : User allocator returned NULL. Czemu?
@@ -157,7 +158,6 @@ public:
 		TextComponent& bigButtonText = bigButtonActor.CreateComponent(TextComponent(editorScene, "BigButtonText", Transform(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f), glm::vec3(0.1f)), "big button", "fonts/expressway rg.ttf", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER)));
 		window1.AddUIElement(bigButtonActor);
 
-
 		Actor& cameraActor = editorScene.CreateActorAtRoot(Actor(editorScene, "OrthoCameraActor"));
 		CameraComponent& orthoCameraComp = cameraActor.CreateComponent(CameraComponent(editorScene, "OrthoCameraComp"));
 
@@ -229,13 +229,14 @@ public:
 		UIActor& scaleActor = *canvas.GetScaleActor();
 		canvas.SetTransform(Transform(glm::vec3(-0.68f, 0.0f, 0.0f), glm::vec3(0.0f), glm::vec3(0.32f, 0.5f, 1.0f)));
 
-		scaleActor.GetTransform()->SetScale(glm::vec2(1.0f, 0.04f / 0.5f));
+		//scaleActor.GetTransform()->SetScale(glm::vec2(1.0f, 0.04f / 0.5f));
+		canvas.SetViewScale(glm::vec2(1.0f, glm::sqrt(0.5f / 0.32f)));
 
 		UICanvasField& componentsListField = canvas.AddField("List of components");
 		UIAutomaticListActor& listActor = componentsListField.CreateChild(UIAutomaticListActor(editorScene, "ListActor"));
 		canvas.FieldsList->SetListElementOffset(canvas.FieldsList->GetListElementCount() - 1, [&listActor, &componentsListField]() { std::cout << "List offset: " << (static_cast<glm::mat3>(componentsListField.GetTransform()->GetMatrix()) * listActor.GetListOffset()).y << '\n';  return static_cast<glm::mat3>(componentsListField.GetTransform()->GetMatrix()) * (listActor.GetListOffset()); });
 		canvas.FieldsList->SetListCenterOffset(canvas.FieldsList->GetListElementCount() - 1, [&componentsListField]() -> glm::vec3 { return glm::vec3(0.0f, -componentsListField.GetTransform()->ScaleRef.y, 0.0f); });
-	//	listActor.GetTransform()->SetScale(glm::vec3(0.5f));
+		listActor.GetTransform()->Move(glm::vec2(1.5f, 0.0f));
 
 		AddActorToList<Component>(editorScene, *actor->GetRoot(), listActor, canvas);
 
@@ -257,8 +258,8 @@ public:
 		UIButtonActor& refreshButton = scaleActor.CreateChild(UIButtonActor(editorScene, "GEE_E_Scene_Refresh_Button", [this, actor, &editorScene]() { this->SelectActor(actor, editorScene); }));
 
 	//	refreshButton.GetTransform()->SetPosition(glm::vec2(1.75f, 0.0f));
-		refreshButton.GetTransform()->SetPosition(glm::vec2(0.75f, 0.0f));
-		refreshButton.GetTransform()->SetScale(glm::vec2(0.125f, 1.0f));
+		refreshButton.GetTransform()->SetPosition(glm::vec2(6.0f, 0.0f));
+		refreshButton.GetTransform()->SetScale(glm::vec2(0.5f));
 
 		AtlasMaterial& refreshIconMat = *new AtlasMaterial("GEE_E_Refresh_Icon_Material", glm::ivec2(3, 1), 0.0f, 0.0f, RenderEng.FindShader("Forward_NoLight"));
 		refreshIconMat.AddTexture(new NamedTexture(textureFromFile("EditorAssets/refresh_icon.png", GL_RGB, GL_LINEAR, GL_NEAREST_MIPMAP_LINEAR), "albedo1"));
@@ -300,8 +301,8 @@ public:
 
 			}));
 
-		addActorButton.GetTransform()->SetPosition(glm::vec2(1.5f, 0.0f));
-		addActorButton.GetTransform()->SetScale(glm::vec2(0.125f, 1.0f));
+		addActorButton.GetTransform()->SetPosition(glm::vec2(8.0f, 0.0f));
+		addActorButton.GetTransform()->SetScale(glm::vec2(0.5f));
 
 		AtlasMaterial& addActorMat = *new AtlasMaterial("GEE_E_Add_Actor_Material", glm::ivec2(3, 1), 0.0f, 0.0f, RenderEng.FindShader("Forward_NoLight"));
 		addActorMat.AddTexture(new NamedTexture(textureFromFile("EditorAssets/add_icon.png", GL_RGB, GL_LINEAR, GL_NEAREST_MIPMAP_LINEAR), "albedo1"));
@@ -322,13 +323,14 @@ public:
 			return;
 
 		UICanvasActor& canvas = editorScene.CreateActorAtRoot(UICanvasActor(editorScene, "GEE_E_Scene_Actors_Canvas")); 
-		canvas.SetTransform(Transform(glm::vec3(0.68f, 0.1f, 0.0f), glm::vec3(0.0f), glm::vec3(0.32f, 0.04f, 1.0f)));
+		canvas.SetTransform(Transform(glm::vec2(0.68f, 0.1f), glm::vec2(0.32f, 0.04f)));
+		canvas.SetViewScale(glm::vec2(glm::sqrt(0.32f / 0.04f), 1.0f));
 		//std::shared_ptr<Actor> header = std::make_shared<Actor>(EditorScene.get(), "SelectedSceneHeaderActor");
 
 		UIButtonActor& refreshButton = canvas.CreateChild(UIButtonActor(editorScene, "GEE_E_Scene_Refresh_Button", [this, selectedScene, &editorScene]() { this->SelectScene(selectedScene, editorScene); }));
 
-		refreshButton.GetTransform()->SetPosition(glm::vec2(1.75f, 0.0f));
-		refreshButton.GetTransform()->SetScale(glm::vec2(0.125f, 1.0f));
+		refreshButton.GetTransform()->SetPosition(glm::vec2(6.0f, 0.0f));
+		refreshButton.GetTransform()->SetScale(glm::vec2(0.5f));
 
 		AtlasMaterial& refreshIconMat = *new AtlasMaterial("GEE_E_Refresh_Icon_Material", glm::ivec2(3, 1), 0.0f, 0.0f, RenderEng.FindShader("Forward_NoLight"));
 		refreshIconMat.AddTexture(new NamedTexture(textureFromFile("EditorAssets/refresh_icon.png", GL_RGB, GL_LINEAR, GL_NEAREST_MIPMAP_LINEAR), "albedo1"));
@@ -356,10 +358,11 @@ public:
 
 			func(0, [this, &editorScene, getSelectedActor]() -> Actor& { return getSelectedActor().CreateChild(Actor(getSelectedActor().GetScene(), "An Actor")); }, "Actor");
 			func(1, [this, &editorScene, getSelectedActor]() -> GunActor& { return getSelectedActor().CreateChild(GunActor(getSelectedActor().GetScene(), "A GunActor")); }, "GunActor");
+			func(2, [this, &editorScene, getSelectedActor]() -> PawnActor& { return getSelectedActor().CreateChild(PawnActor(getSelectedActor().GetScene(), "A PawnActor")); }, "PawnActor");
 			}));
 
-		addActorButton.GetTransform()->SetPosition(glm::vec2(1.5f, 0.0f));
-		addActorButton.GetTransform()->SetScale(glm::vec2(0.125f, 1.0f));
+		addActorButton.GetTransform()->SetPosition(glm::vec2(8.0f, 0.0f));
+		addActorButton.GetTransform()->SetScale(glm::vec2(0.5f));
 
 		AtlasMaterial& addActorMat = *new AtlasMaterial("GEE_E_Add_Actor_Material", glm::ivec2(3, 1), 0.0f, 0.0f, RenderEng.FindShader("Forward_NoLight"));
 		addActorMat.AddTexture(new NamedTexture(textureFromFile("EditorAssets/add_icon.png", GL_RGB, GL_LINEAR, GL_NEAREST_MIPMAP_LINEAR), "albedo1"));
@@ -370,7 +373,7 @@ public:
 		canvas.AddUIElement(addActorButton);
 
 		UIAutomaticListActor& listActor = canvas.CreateChild(UIAutomaticListActor(editorScene, "ListActor"));
-		listActor.GetTransform()->SetScale(glm::vec3(0.5f));
+		//listActor.GetTransform()->SetScale(glm::vec3(0.5f));
 
 		//refreshButton.CreateComponent(TextComponent(editorScene, "GEE_E_Scene_Refresh_Text", Transform(glm::vec2(0.0f), glm::vec3(0.0f), glm::vec2(1.0f / 8.0f, 1.0f)), "Refresh", "fonts/expressway rg.ttf", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER)));
 
@@ -411,7 +414,7 @@ public:
 
 
 			UIButtonActor& nodeButton = parent.CreateChild(UIButtonActor(editorScene, "OGAR"));//correspondingNode.GetName()));
-			TextComponent& nodeText = nodeButton.CreateComponent(TextComponent(editorScene, "TEXTTEXT", Transform(), correspondingNode.GetCompBaseType().GetName(), "fonts/expressway rg.ttf", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER)));
+			TextConstantSizeComponent& nodeText = nodeButton.CreateComponent(TextConstantSizeComponent(editorScene, "TEXTTEXT", Transform(), correspondingNode.GetCompBaseType().GetName(), "fonts/expressway rg.ttf", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER)));
 			nodeButton.SetTransform(Transform(glm::vec2(0.0f, -3.0f), glm::vec2(1.0f)));
 			nodesCanvas.AddUIElement(nodeButton);
 
@@ -419,9 +422,9 @@ public:
 
 			for (int i = 0; i < correspondingNode.GetChildCount(); i++)
 			{
-				UIAutomaticListActor& nodeChildrenList = parent.CreateChild(UIAutomaticListActor(editorScene, correspondingNode.GetCompBaseType().GetName() + "children list", glm::vec3(10.0f, 0.0f, 0.0f)));
+				UIAutomaticListActor& nodeChildrenList = parent.CreateChild(UIAutomaticListActor(editorScene, correspondingNode.GetCompBaseType().GetName() + "children list", glm::vec3(3.0f, 0.0f, 0.0f)));
 				if (i == 0)
-					nodeChildrenList.GetTransform()->Move(((float)correspondingNode.GetChildCount() - 1.0f) * -glm::vec3(10.0f, 0.0f, 0.0f) / 2.0f);
+					nodeChildrenList.GetTransform()->Move(((float)correspondingNode.GetChildCount() - 1.0f) * -glm::vec3(3.0f, 0.0f, 0.0f) / 2.0f);
 				parent.NestList(nodeChildrenList);
 				nodeCreatorFunc(nodeChildrenList, *correspondingNode.GetChild(i), level + 1);
 			}
@@ -429,7 +432,7 @@ public:
 			//nodeChildrenList.GetTransform()->Move(((float)correspondingNode.GetChildCount() - 1.0f) * -glm::vec3(10.0f, 0.0f, 0.0f) / 2.0f);
 		};
 
-		UIAutomaticListActor& rootList = previewWindow.CreateChild(UIAutomaticListActor(editorScene, "Root children list", glm::vec3(10.0f, 0.0f, 0.0f)));
+		UIAutomaticListActor& rootList = previewWindow.CreateChild(UIAutomaticListActor(editorScene, "Root children list", glm::vec3(3.0f, 0.0f, 0.0f)));
 		rootList.GetTransform()->SetScale(glm::vec2(0.1f));
 
 		nodeCreatorFunc(rootList, tree.GetRoot(), 0);
@@ -458,8 +461,7 @@ public:
 
 		for (int i = 0; i < tree.GetAnimationCount(); i++)
 		{
-			UIButtonActor& animationButton = previewWindow.CreateChild(UIButtonActor(editorScene, tree.GetAnimation(i).Name + " animation button"));
-			animationButton.CreateComponent(TextComponent(editorScene, tree.GetAnimation(i).Name + " text", Transform(), tree.GetAnimation(i).Name, "fonts/expressway rg.ttf", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER)));
+			UIButtonActor& animationButton = previewWindow.CreateChild(UIButtonActor(editorScene, tree.GetAnimation(i).Name + " animation button", tree.GetAnimation(i).Name));
 			animationButton.SetTransform(Transform(glm::vec2(-0.8f + static_cast<float>(i) * 0.3f, -0.8f), glm::vec2(0.1f)));
 		}
 
@@ -468,7 +470,10 @@ public:
 	template <typename T> void AddActorToList(GameScene& editorScene, T& obj, UIAutomaticListActor& listParent, UICanvas& canvas)
 	{
 		UIButtonActor& element = listParent.CreateChild<UIButtonActor>(UIButtonActor(editorScene, obj.GetName() + "'s Button", [this, &obj, &editorScene ]() {this->Select(&obj, editorScene); }));//*this, obj, &EditorManager::Select<T>));
-		TextComponent& elementText = element.CreateComponent(TextComponent(editorScene, obj.GetName() + "'s Text", Transform(glm::vec2(0.0f), glm::vec2(1.0f / 8.0f, 1.0f)), obj.GetName(), "fonts/expressway rg.ttf", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER)));
+		element.SetTransform(Transform(glm::vec2(1.5f, 0.0f), glm::vec2(3.0f, 1.0f)));
+		TextConstantSizeComponent& elementText = element.CreateComponent(TextConstantSizeComponent(editorScene, obj.GetName() + "'s Text", Transform(glm::vec2(0.0f), glm::vec2(0.4f / 3.0f, 0.4f)), obj.GetName(), "fonts/expressway rg.ttf", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER)));
+		elementText.SetMaxSize(glm::vec2(1.0f, 0.5f));
+		elementText.SetContent(obj.GetName());
 		canvas.AddUIElement(element);
 
 		std::vector<T*> children = obj.GetChildren();
@@ -645,6 +650,8 @@ int main()
 	float lastUpdateTime = glfwGetTime();
 	bool endGame = false;
 
+	const char* xDPath = "Argon/Argon.glb";
+	EditorEventProcessor::FileDropCallback(programWindow, 1, &xDPath);
 	do
 	{
 		deltaTime = glfwGetTime() - lastUpdateTime;
