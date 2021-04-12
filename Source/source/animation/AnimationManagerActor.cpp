@@ -5,7 +5,7 @@
 
 
 AnimationChannelInstance::AnimationChannelInstance(AnimationChannel& channelRef, Component& channelComp):
-	ChannelRef(channelRef), ChannelComp(channelComp)
+	ChannelRef(channelRef), ChannelComp(channelComp), IsValid(true)
 {
 }
 
@@ -72,6 +72,15 @@ template <typename T> void UpdateKeys(std::deque<std::unique_ptr<Interpolator<T>
 
 bool AnimationChannelInstance::Update(float deltaTime)
 {
+	if (!IsValid)
+		return false;
+	if (ChannelComp.IsBeingKilled())
+	{
+		IsValid = false;
+		Stop();
+		return false;
+	}
+
 	UpdateKeys<glm::vec3>(PosKeysLeft, deltaTime, [this](const glm::vec3& vec) {ChannelComp.GetTransform().SetPosition(vec); });
 	UpdateKeys<glm::quat>(RotKeysLeft, deltaTime, [this](const glm::quat& q) {ChannelComp.GetTransform().SetRotation(q); });
 	UpdateKeys<glm::vec3>(ScaleKeysLeft, deltaTime, [this](const glm::vec3& vec) {ChannelComp.GetTransform().SetScale(vec); });
@@ -146,7 +155,7 @@ bool AnimationChannelInstance::Update(float deltaTime)
 }
 
 AnimationInstance::AnimationInstance(Animation& anim, Component& animRootComp) :
-	Anim(anim), AnimRootComp(animRootComp), TimePassed(0.0f)
+	Anim(anim), AnimRootComp(animRootComp), TimePassed(0.0f), IsValid(true)
 {
 	std::function<void(Component&)> boneFinderFunc = [this, &boneFinderFunc](Component& comp) {
 		auto found = std::find_if(Anim.Channels.begin(), Anim.Channels.end(), [&comp](const std::shared_ptr<AnimationChannel>& channel) { return channel->Name == comp.GetName(); });
@@ -172,6 +181,15 @@ bool AnimationInstance::HasFinished() const
 
 void AnimationInstance::Update(float deltaTime)
 {
+	if (!IsValid)
+		return;
+	if (AnimRootComp.IsBeingKilled())
+	{
+		IsValid = false;
+		Stop();
+		return;
+	}
+	
 	bool finished = true;
 	float minT = 1.0f;
 
@@ -203,8 +221,8 @@ void AnimationInstance::Restart()
 	TimePassed = 0.0f;
 }
 
-AnimationManagerComponent::AnimationManagerComponent(GameScene& scene, const std::string& name):
-	Component(scene, name, Transform()),
+AnimationManagerComponent::AnimationManagerComponent(Actor& actor, Component* parentComp, const std::string& name):
+	Component(actor, parentComp, name, Transform()),
 	CurrentAnim(nullptr)
 {
 }
@@ -264,16 +282,16 @@ void AnimationManagerComponent::SelectAnimation(AnimationInstance* anim)
 #include <UI/UICanvasField.h>
 #include <scene/UIButtonActor.h>
 
-void AnimationManagerComponent::GetEditorDescription(UIActor& editorParent, GameScene& editorScene)
+void AnimationManagerComponent::GetEditorDescription(EditorDescriptionBuilder descBuilder)
 {
-	Component::GetEditorDescription(editorParent, editorScene);
+	Component::GetEditorDescription(descBuilder);
 
-	UICanvasField& field = AddFieldToCanvas("Animations", editorParent);
+	UICanvasField& animField = descBuilder.AddField("Animations");
 
 	float posX = 0.0f;
 	for (auto& it : AnimInstances)
 	{
-		UIButtonActor& button = field.CreateChild(UIButtonActor(editorScene, it->GetAnimation().Name, it->GetAnimation().Name, [this, &it]() { SelectAnimation(it.get()); }));
+		UIButtonActor& button = animField.CreateChild<UIButtonActor>(it->GetAnimation().Name, it->GetAnimation().Name, [this, &it]() { SelectAnimation(it.get()); });
 		button.GetTransform()->SetPosition(glm::vec2(posX, 0.0f));
 		posX += 3.0f;
 	}

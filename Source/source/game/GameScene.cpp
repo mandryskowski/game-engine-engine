@@ -132,11 +132,20 @@ bool GameSceneRenderData::ContainsLights() const
 	return !Lights.empty();
 }
 
+bool GameSceneRenderData::HasLightWithoutShadowMap() const
+{
+	for (auto& it : Lights)
+		if (!it.get().HasValidShadowMap())
+			return true;
+
+	return false;
+}
+
 
 void GameSceneRenderData::AddRenderable(RenderableComponent& renderable)
 {
 	Renderables.push_back(renderable);
-//	std::cout << "Adding renderable " << renderable.GetName() << " " << &renderable << "\n";
+	std::cout << "Adding renderable " << renderable.GetName() << " " << &renderable << "\n";
 }
 
 std::shared_ptr<LightProbe> GameSceneRenderData::AddLightProbe(std::shared_ptr<LightProbe> probe)
@@ -167,12 +176,14 @@ void GameSceneRenderData::AddLight(LightComponent& light)
 void GameSceneRenderData::EraseRenderable(RenderableComponent& renderable)
 {
 	Renderables.erase(std::remove_if(Renderables.begin(), Renderables.end(), [&renderable](std::reference_wrapper<RenderableComponent>& renderableVec) {return &renderableVec.get() == &renderable; }), Renderables.end());
-//	std::cout << "Erasing renderable " << renderable.GetName() << " " << &renderable << "\n";
+	std::cout << "Erasing renderable " << renderable.GetName() << " " << &renderable << "\n";
 }
 
 void GameSceneRenderData::EraseLight(LightComponent& light)
 {
 	Lights.erase(std::remove_if(Lights.begin(), Lights.end(), [&light](std::reference_wrapper<LightComponent>& lightVec) {return &lightVec.get() == &light; }), Lights.end());
+	for (int i = 0; i < static_cast<int>(Lights.size()); i++)
+		Lights[i].get().SetIndex(i);
 	if (LightBlockBindingSlot != -1)	//If light block was already set up, do it again because there isn't enough space for the new light.
 		SetupLights(LightBlockBindingSlot);
 }

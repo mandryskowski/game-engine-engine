@@ -65,7 +65,6 @@ private:
 	void GenerateEngineObjects();
 	void LoadInternalShaders();
 	void Resize(glm::uvec2 resolution);
-	void SetupShadowmaps();
 
 	GameManager* GameHandle;
 	glm::uvec2 Resolution;

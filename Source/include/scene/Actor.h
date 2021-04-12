@@ -14,6 +14,8 @@ template <typename SavedClass> class ClassSaveInfo
 	}
 };
 
+class EditorDescriptionBuilder;
+
 class Actor
 {
 public:
@@ -30,7 +32,7 @@ public:
 	Actor* GetChild(unsigned int) const;
 	std::vector<Actor*> GetChildren();
 	GameScene& GetScene();
-	bool IsBeingKilled();
+	bool IsBeingKilled() const;
 
 	void SetName(const std::string&);
 
@@ -42,9 +44,9 @@ public:
 	void SetTransform(Transform);
 	void AddComponent(std::unique_ptr<Component>);
 	virtual Actor& AddChild(std::unique_ptr<Actor>);
-	template <class T> T& CreateChild(T&&);
-	template <class T> T& CreateComponent(T&&);	//Adds a new component that is a child of RootComponent.
-	template <class T> T& CreateComponent(T&&, Component* parent);	//Adds a new component that is a child of parent. Pass nullptr as the second argument to make this created component the new RootComponent.
+	template <typename ChildClass, typename... Args> ChildClass& CreateChild(Args&&...);
+	template <typename CompClass, typename... Args> CompClass& CreateComponent(Args&&...);	//Adds a new component that is a child of RootComponent.
+	template <typename CompClass, typename... Args> CompClass& CreateComponent(CompClass&&, Component* parent);	//Adds a new component that is a child of parent. Pass nullptr as the second argument to make this created component the new RootComponent.
 	void SetSetupStream(std::stringstream* stream);
 
 	virtual void Setup();
@@ -65,7 +67,7 @@ public:
 	Actor* FindActor(const std::string& name);
 	const Actor* FindActor(const std::string& name) const;
 
-	virtual void GetEditorDescription(UIActor& canvas, GameScene& editorScene);
+	virtual void GetEditorDescription(EditorDescriptionBuilder);
 
 	template<class ActorClass> void GetAllActors(std::vector <ActorClass*>* comps)	//this function returns every element further in the hierarchy tree (kids, kids' kids, ...) that is of ActorClass type
 	{
@@ -134,7 +136,7 @@ public:
 private:
 };
 
-template<class T>
+/*template<class T>
 inline T& Actor::CreateChild(T&& actorCRef)
 {
 	std::unique_ptr<T> createdChild = std::make_unique<T>(std::move(actorCRef));
@@ -153,5 +155,25 @@ inline T& Actor::CreateComponent(T&& compCRef)
 	T& comp = RootComponent->CreateComponent(std::move(compCRef));
 	if (comp.GameHandle->HasStarted())
 		comp.OnStartAll();
+	return comp;
+}*/
+
+template <typename ChildClass, typename... Args>
+inline ChildClass& Actor::CreateChild(Args&&... args)
+{
+	std::unique_ptr<ChildClass> createdChild = std::make_unique<ChildClass>(Scene, std::forward<Args>(args)...);
+	ChildClass& childRef = *createdChild.get();
+	AddChild(std::move(createdChild));
+
+	if (GameHandle->HasStarted())
+		childRef.OnStartAll();
+
+	return childRef;
+}
+
+template <typename CompClass, typename... Args>
+inline CompClass& Actor::CreateComponent(Args&&... args)
+{
+	CompClass& comp = RootComponent->CreateComponent<CompClass>(std::forward<Args>(args)...);
 	return comp;
 }

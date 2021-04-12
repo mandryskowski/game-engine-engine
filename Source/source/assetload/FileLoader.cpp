@@ -48,7 +48,7 @@ void EngineDataLoader::LoadMaterials(RenderEngineManager* renderHandle, std::str
 
 		if (isNextWordEqual(filestr, "atlas"))
 		{
-			glm::vec2 size;
+			glm::vec2 size(0.0f);
 			filestr >> size.x >> size.y;
 			material = new AtlasMaterial(materialName, size);
 		}
@@ -159,7 +159,7 @@ void EngineDataLoader::LoadComponentData(GameManager* gameHandle, std::stringstr
 
 		path = multipleWordInput(filestr);
 
-		ModelComponent& model = parent->CreateComponent(ModelComponent(scene, name, Transform()));
+		ModelComponent& model = parent->CreateComponent<ModelComponent>(name, Transform());
 
 		HierarchyTemplate::HierarchyTreeT* tree = LoadHierarchyTree(scene, path);
 		if (tree)
@@ -167,7 +167,7 @@ void EngineDataLoader::LoadComponentData(GameManager* gameHandle, std::stringstr
 			std::unique_ptr<HierarchyTemplate::HierarchyTreeT> tempTreeCopyForEdit = nullptr;
 			if (isNextWordEqual(filestr, "edit"))
 			{
-				tempTreeCopyForEdit = std::make_unique<HierarchyTemplate::HierarchyTreeT>(HierarchyTemplate::HierarchyTreeT(*tree));
+				tempTreeCopyForEdit = std::make_unique<HierarchyTemplate::HierarchyTreeT>(*tree);
 				tree = tempTreeCopyForEdit.get();
 				LoadCustomHierarchyNode(scene, filestr, nullptr, tree);
 			}
@@ -191,7 +191,7 @@ void EngineDataLoader::LoadComponentData(GameManager* gameHandle, std::stringstr
 			projection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 1.0f, 10.0f);
 
 
-		LightComponent& light = parent->CreateComponent(LightComponent(scene, name, toLightType(lightType), scene.GetRenderData()->GetAvailableLightIndex(), scene.GetRenderData()->GetAvailableLightIndex(), 10.0f, projection));
+		LightComponent& light = parent->CreateComponent<LightComponent>(name, toLightType(lightType), scene.GetRenderData()->GetAvailableLightIndex(), scene.GetRenderData()->GetAvailableLightIndex(), 10.0f, projection);
 		for (unsigned int vector = 0; vector < 3; vector++)
 			for (unsigned int axis = 0; axis < 3; axis++)
 				filestr >> (light)[vector][axis];	//TODO: sprawdzic czy sie wywala
@@ -209,12 +209,12 @@ void EngineDataLoader::LoadComponentData(GameManager* gameHandle, std::stringstr
 		float speedPerSec;
 		filestr >> speedPerSec;
 
-		CameraComponent& cam = parent->CreateComponent(CameraComponent(scene, name, glm::perspective(glm::radians(90.0f), ((float)scene.GetGameHandle()->GetGameSettings()->Video.Resolution.x / (float)scene.GetGameHandle()->GetGameSettings()->Video.Resolution.y), 0.01f, 100.0f)));
+		CameraComponent& cam = parent->CreateComponent<CameraComponent>(name, glm::perspective(glm::radians(90.0f), ((float)scene.GetGameHandle()->GetGameSettings()->Video.Resolution.x / (float)scene.GetGameHandle()->GetGameSettings()->Video.Resolution.y), 0.01f, 100.0f));
 		if (isNextWordEqual(filestr, "active"))
 			scene.BindActiveCamera(&cam);
 		if (isNextWordEqual(filestr, "automousecontrol"))
 		{
-			ShootingController& controller = scene.CreateActorAtRoot(ShootingController(scene, "MojTestowyController"));
+			ShootingController& controller = scene.CreateActorAtRoot<ShootingController>("MojTestowyController");
 			gameHandle->PassMouseControl(&controller);
 		}
 
@@ -225,7 +225,7 @@ void EngineDataLoader::LoadComponentData(GameManager* gameHandle, std::stringstr
 		std::string path;
 		filestr >> path;
 
-		SoundSourceComponent& source = parent->CreateComponent(SoundSourceComponent(scene, name, gameHandle->GetAudioEngineHandle()->LoadBufferFromFile(path)));
+		SoundSourceComponent& source = parent->CreateComponent<SoundSourceComponent>(name, gameHandle->GetAudioEngineHandle()->LoadBufferFromFile(path));
 		scene.GetAudioData()->AddSource(source);
 
 		comp = &source;
@@ -235,11 +235,11 @@ void EngineDataLoader::LoadComponentData(GameManager* gameHandle, std::stringstr
 		std::string fontPath = multipleWordInput(filestr);
 		std::string content = multipleWordInput(filestr);
 
-		comp = &parent->CreateComponent(TextComponent(scene, name, Transform(), content, fontPath));
+		comp = &parent->CreateComponent<TextComponent>(name, Transform(), content, fontPath);
 
 	}
 	else if (type == "empty")
-		comp = &parent->CreateComponent(Component(scene, name, Transform()));
+		comp = &parent->CreateComponent<Component>(name, Transform());
 	else
 		return;
 
@@ -248,7 +248,7 @@ void EngineDataLoader::LoadComponentData(GameManager* gameHandle, std::stringstr
 	if (isNextWordEqual(filestr, "transform"))
 		LoadTransform(filestr, comp->GetTransform());
 
-	///////////////////////////////5. Replace root if user defined it as the root component
+	///////////////////////////////5. Replace root if the user defined it as the root component
 	std::cout << "Component loading ended\n";
 	if (replaceRoot)
 		currentActor->MoveCompToRoot(*comp);
@@ -548,7 +548,7 @@ void EngineDataLoader::LoadTransform(std::stringstream& filestr, Transform& tran
 			return;
 		}
 
-		glm::vec3 data;
+		glm::vec3 data(0.0f);
 		for (int j = 0; j < 3; j++)
 			filestr >> data[j];
 
@@ -577,7 +577,7 @@ void EngineDataLoader::LoadCustomHierarchyNode(GameScene& scene, std::stringstre
 	{
 		filestr >> input;	//get node path
 
-		std::string treeName, nodeName;
+		std::string nodeName;
 		if (bCreateNodes)
 		{
 			size_t nodeNamePos = input.find_first_of(':');
@@ -586,8 +586,10 @@ void EngineDataLoader::LoadCustomHierarchyNode(GameScene& scene, std::stringstre
 				std::cerr << "ERROR! No node name in node path. String data: " << input + "\n";
 				return;
 			}
-			treeName = input.substr(0, nodeNamePos);
+			std::string treeName = input.substr(0, nodeNamePos);
 			nodeName = input.substr(nodeNamePos + 1);
+
+			treeToEdit = LoadHierarchyTree(scene, treeName);
 
 			if (PrimitiveDebugger::bDebugMeshTrees)
 				std::cout << "Laduje " << treeName << ", a w nim " << nodeName << ".\n";
@@ -599,25 +601,23 @@ void EngineDataLoader::LoadCustomHierarchyNode(GameScene& scene, std::stringstre
 				std::cout << "Edytuje " << treeToEdit->GetName() << ", a w nim " << nodeName << ".\n";
 		}
 
-		if (bCreateNodes)
-			treeToEdit = LoadHierarchyTree(scene, treeName);
 		HierarchyTemplate::HierarchyNodeBase* foundNode = treeToEdit->GetRoot().FindNode(nodeName);
 		if (!foundNode)
 		{
-			std::cerr << "ERROR! Can't load " << input << ".\n";
+			std::cerr << "ERROR! Can't find " << input << " in tree " << treeToEdit->GetName() << ".\n";
 			return;
 		}
 		if (PrimitiveDebugger::bDebugMeshTrees)
 			std::cout << "Znalazlem node " << foundNode->GetCompBaseType().GetName() << ".\n";
 
-		HierarchyTemplate::HierarchyNodeBase& targetNode = (bCreateNodes) ? (parent->AddChild(foundNode->Copy())) : (*foundNode);
-		HierarchyTemplate::HierarchyNode<ModelComponent>* meshNodeCast = dynamic_cast<HierarchyTemplate::HierarchyNode<ModelComponent>*>(&targetNode);
+		HierarchyTemplate::HierarchyNodeBase& targetNode = (bCreateNodes) ? (parent->AddChild(foundNode->Copy(parent->GetCompBaseType().ActorRef))) : (*foundNode);
+		HierarchyTemplate::HierarchyNode<ModelComponent>* modelNodeCast = dynamic_cast<HierarchyTemplate::HierarchyNode<ModelComponent>*>(&targetNode);
 
 		while (input != ":" && input != "," && input != "end")
 		{
 			filestr >> input;
 
-			if (input == "material" && meshNodeCast)
+			if (input == "material" && modelNodeCast)
 			{
 				input = multipleWordInput(filestr);	//get material name (could be a path, so multiple word input is possible)
 				Material* foundMaterial = gameHandle.GetRenderEngineHandle()->FindMaterial(input);
@@ -658,8 +658,8 @@ void EngineDataLoader::LoadCustomHierarchyNode(GameScene& scene, std::stringstre
 					
 					std::cout << "Found material " << foundMaterial->GetName() << ". The previous error message is not an error lol.\n";
 				}
-				std::cout << "Overriding " << meshNodeCast->GetCompT().GetName() << " material with " << foundMaterial->GetName() << '\n';
-				meshNodeCast->GetCompT().OverrideInstancesMaterial(foundMaterial);
+				std::cout << "Overriding " << modelNodeCast->GetCompT().GetName() << " material with " << foundMaterial->GetName() << '\n';
+				modelNodeCast->GetCompT().OverrideInstancesMaterial(foundMaterial);
 			}
 
 			else if (input == "transform")
@@ -716,12 +716,12 @@ void EngineDataLoader::LoadHierarchyNodeFromAi(GameManager& gameHandle, const ai
 					hierarchyNode.AddCollisionShape(LoadTriangleMeshCollisionShape(gameHandle.GetPhysicsHandle(), assimpScene, *assimpScene->mMeshes[node->mChildren[i]->mMeshes[j]]));
 			}
 			else
-				LoadHierarchyNodeFromAi(gameHandle, assimpScene, directory, matLoadingData, hierarchyNode.CreateChild(HierarchyTemplate::HierarchyNode<ModelComponent>(hierarchyNode.GetCompBaseType().GetScene(), node->mChildren[i]->mName.C_Str())), node->mChildren[i], boneMapping, nullptr);
+				LoadHierarchyNodeFromAi(gameHandle, assimpScene, directory, matLoadingData, hierarchyNode.CreateChild<ModelComponent>(node->mChildren[i]->mName.C_Str()), node->mChildren[i], boneMapping, nullptr);
 		}
 		else if (aiBone* bone = CastAiNodeToBone(assimpScene, node->mChildren[i])) // (isBone)
-			LoadHierarchyNodeFromAi(gameHandle, assimpScene, directory, matLoadingData, hierarchyNode.CreateChild(HierarchyTemplate::HierarchyNode<BoneComponent>(hierarchyNode.GetCompBaseType().GetScene(), node->mChildren[i]->mName.C_Str())), node->mChildren[i], boneMapping, bone);
+			LoadHierarchyNodeFromAi(gameHandle, assimpScene, directory, matLoadingData, hierarchyNode.CreateChild<BoneComponent>(node->mChildren[i]->mName.C_Str()), node->mChildren[i], boneMapping, bone);
 		else
-			LoadHierarchyNodeFromAi(gameHandle, assimpScene, directory, matLoadingData, hierarchyNode.CreateChild(HierarchyTemplate::HierarchyNode<Component>(hierarchyNode.GetCompBaseType().GetScene(), node->mChildren[i]->mName.C_Str())), node->mChildren[i], boneMapping, nullptr);
+			LoadHierarchyNodeFromAi(gameHandle, assimpScene, directory, matLoadingData, hierarchyNode.CreateChild<Component>(node->mChildren[i]->mName.C_Str()), node->mChildren[i], boneMapping, nullptr);
 	}
 }
 
@@ -746,18 +746,18 @@ void EngineDataLoader::LoadComponentsFromHierarchyTree(Component& comp, const Hi
 
 		if (dynamic_cast<const HierarchyTemplate::HierarchyNode<ModelComponent>*>(node.GetChild(i)))
 		{
-			ModelComponent& model = comp.CreateComponent(ModelComponent(comp.GetScene(), node.GetChild(i)->GetCompBaseType().GetName(), Transform(), &skeletonInfo));
+			ModelComponent& model = comp.CreateComponent<ModelComponent>(node.GetChild(i)->GetCompBaseType().GetName(), Transform(), &skeletonInfo);
 			model.SetSkeletonInfo(&skeletonInfo);
 			child = &model;
 		}
 		else if (dynamic_cast<const HierarchyTemplate::HierarchyNode<BoneComponent>*>(node.GetChild(i)))
 		{
-			BoneComponent& bone = comp.CreateComponent(BoneComponent(comp.GetScene(), node.GetChild(i)->GetCompBaseType().GetName(), Transform(), tree.GetBoneMapping().GetBoneID(node.GetChild(i)->GetCompBaseType().GetName())));
+			BoneComponent& bone = comp.CreateComponent<BoneComponent>(node.GetChild(i)->GetCompBaseType().GetName(), Transform(), tree.GetBoneMapping().GetBoneID(node.GetChild(i)->GetCompBaseType().GetName()));
 			skeletonInfo.AddBone(bone);
 			child = &bone;
 		}
 		else
-			child = &comp.CreateComponent(Component(comp.GetScene(), node.GetChild(i)->GetCompBaseType().GetName(), Transform()));
+			child = &comp.CreateComponent<Component>(node.GetChild(i)->GetCompBaseType().GetName(), Transform());
 
 		LoadComponentsFromHierarchyTree(*child, tree, *node.GetChild(i), skeletonInfo, overrideMaterial);
 	}
@@ -904,7 +904,7 @@ HierarchyTemplate::HierarchyTreeT* EngineDataLoader::LoadHierarchyTree(GameScene
 
 	std::cout << "ROOT: " << &treePtr->GetRoot() << '\n';
 
-	LoadHierarchyNodeFromAi(gameHandle, assimpScene, directory, &matLoadingData, (assimpScene->mRootNode->mNumMeshes > 0) ? (treePtr->GetRoot().CreateChild(HierarchyTemplate::HierarchyNode<ModelComponent>(scene, treePtr->GetRoot().GetCompBaseType().GetName() + "RootMeshes"))) : (treePtr->GetRoot()), assimpScene->mRootNode, treePtr->GetBoneMapping());
+	LoadHierarchyNodeFromAi(gameHandle, assimpScene, directory, &matLoadingData, (assimpScene->mRootNode->mNumMeshes > 0) ? (treePtr->GetRoot().CreateChild<ModelComponent>(treePtr->GetRoot().GetCompBaseType().GetName() + "RootMeshes")) : (treePtr->GetRoot()), assimpScene->mRootNode, treePtr->GetBoneMapping());
 
 	for (int i = 0; i < static_cast<int>(assimpScene->mNumAnimations); i++)
 	{
@@ -932,7 +932,7 @@ void EngineDataLoader::InstantiateTree(Component& comp, HierarchyTemplate::Hiera
 	skelInfo.SortBones();
 	if (tree.GetAnimationCount() > 0)
 	{
-		AnimationManagerComponent& animManager = comp.CreateComponent(AnimationManagerComponent(comp.GetScene(), "animmanageractor"));
+		AnimationManagerComponent& animManager = comp.CreateComponent<AnimationManagerComponent>("animmanageractor");
 		for (int i = 0; i < tree.GetAnimationCount(); i++)
 			animManager.AddAnimationInstance(AnimationInstance(tree.GetAnimation(i), comp));
 
@@ -986,7 +986,7 @@ std::shared_ptr<Font> EngineDataLoader::LoadFont(GameManager& gameHandle, const 
 
 		font->GetBitmapsArray().Bind(0);
 		glTexSubImage3D(font->GetBitmapsArray().GetType(), 0, 0, 0, i, face->glyph->bitmap.width, face->glyph->bitmap.rows, 1, GL_RED, GL_UNSIGNED_BYTE, face->glyph->bitmap.buffer);
-		Character character;
+		Character character = Character();
 		character.ID = i;
 		character.Size = glm::vec2(face->glyph->bitmap.width, face->glyph->bitmap.rows) * pixelScale;
 		character.Bearing = glm::vec2(face->glyph->bitmap_left, face->glyph->bitmap_top) * pixelScale;

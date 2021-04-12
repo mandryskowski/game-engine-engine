@@ -8,6 +8,8 @@ struct AnimationChannelInstance
 	AnimationChannel& ChannelRef;
 	Component& ChannelComp;
 
+	bool IsValid;
+
 	std::deque<std::unique_ptr<Interpolator<glm::vec3>>> PosKeysLeft, ScaleKeysLeft;
 	std::deque<std::unique_ptr<Interpolator<glm::quat>>> RotKeysLeft;
 
@@ -33,6 +35,8 @@ class AnimationInstance
 	std::vector<std::unique_ptr<AnimationChannelInstance>> ChannelInstances;
 	float TimePassed;
 
+	bool IsValid;
+
 public:
 	AnimationInstance(Animation&, Component&);
 
@@ -49,7 +53,7 @@ class AnimationManagerComponent : public Component
 	AnimationInstance* CurrentAnim;
 
 public:
-	AnimationManagerComponent(GameScene& scene, const std::string& name);
+	AnimationManagerComponent(Actor&, Component* parentComp, const std::string& name);
 
 	AnimationInstance* GetAnimInstance(int index);
 	int GetAnimInstancesCount() const;
@@ -60,5 +64,5 @@ public:
 	virtual void Update(float) override;
 	void SelectAnimation(AnimationInstance*);
 
-	virtual void GetEditorDescription(UIActor& canvas, GameScene& editorScene) override;
+	virtual void GetEditorDescription(EditorDescriptionBuilder) override;
 };

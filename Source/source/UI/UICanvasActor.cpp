@@ -35,7 +35,7 @@ void UICanvasActor::OnStart()
 {
 	Actor::OnStart();
 	CreateScrollBars();
-	ScaleActor = &CreateChild(UIActor(Scene, Name + " scale actor"));
+	ScaleActor = &CreateChild<UIActor>(Name + " scale actor");
 	AddUIElement(*ScaleActor);
 }
 
@@ -76,9 +76,9 @@ void UICanvasActor::HideScrollBars()
 UICanvasField& UICanvasActor::AddField(const std::string& name, std::function<glm::vec3()> getElementOffset)
 {
 	if (!FieldsList)
-		FieldsList = &ScaleActor->CreateChild(UIManualListActor(Scene, Name + "_Fields_List"));
+		FieldsList = &ScaleActor->CreateChild<UIManualListActor>(Name + "_Fields_List");
 
-	UICanvasField& field = FieldsList->CreateChild(UICanvasField(Scene, name));
+	UICanvasField& field = FieldsList->CreateChild<UICanvasField>(name);
 	(getElementOffset) ? (FieldsList->AddElement(UIListElement(field, getElementOffset))) : (FieldsList->AddElement(UIListElement(field, glm::vec3(0.0f, -FieldSize.y * 2.0f, 0.0f))));
 
 	field.SetTransform(Transform(glm::vec2(0.0f), glm::vec2(FieldSize)));	//position doesn't matter if this is not the first field
@@ -128,11 +128,11 @@ void UICanvasActor::CreateScrollBars()
 {
 	Material* markerMaterial = new Material("MarkerMaterial", 0.0f, 0.0f, GameHandle->GetRenderEngineHandle()->FindShader("Forward_NoLight"));
 	markerMaterial->SetColor(glm::vec4(1.0f, 1.0f, 0.1f, 1.0f));
-	Actor& marker = CreateChild(Actor(Scene, "Gowno"));
-	ModelComponent& markerModel = marker.CreateComponent(ModelComponent(Scene, "Gownomodel"));
+	Actor& marker = CreateChild<Actor>("Gowno");
+	ModelComponent& markerModel = marker.CreateComponent<ModelComponent>("Gownomodel");
 	//markerModel.AddMeshInst(MeshInstance(GameHandle->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD), markerMaterial));
 
-	ScrollBarX = &CreateChild(UIScrollBarActor(Scene, "ScrollBarX"));
+	ScrollBarX = &CreateChild<UIScrollBarActor>("ScrollBarX");
 	ScrollBarX->SetTransform(Transform(glm::vec2(0.0f, -1.10f), glm::vec2(0.05f, 0.1f)));
 	ScrollBarX->SetWhileBeingClickedFunc([this]() {
 		ScrollView(glm::vec2((glm::inverse(GetCanvasT()->GetWorldTransformMatrix()) * glm::vec4(static_cast<float>(GameHandle->GetInputRetriever().GetMousePositionNDC().x) - ScrollBarX->GetClickPosNDC().x, 0.0f, 0.0f, 0.0f)).x * GetBoundingBox().Size.x, 0.0f));
@@ -140,7 +140,7 @@ void UICanvasActor::CreateScrollBars()
 		ScrollBarX->SetClickPosNDC(GameHandle->GetInputRetriever().GetMousePositionNDC());
 		});
 
-	ScrollBarY = &CreateChild(UIScrollBarActor(Scene, "ScrollBarY"));
+	ScrollBarY = &CreateChild<UIScrollBarActor>("ScrollBarY");
 	ScrollBarY->SetTransform(Transform(glm::vec2(1.10f, 0.0f), glm::vec2(0.1f, 0.05f)));
 	ScrollBarY->SetWhileBeingClickedFunc([this]() {
 		ScrollView(glm::vec2(0.0f, (glm::inverse(GetCanvasT()->GetWorldTransformMatrix()) * glm::vec4(0.0f, static_cast<float>(GameHandle->GetInputRetriever().GetMousePositionNDC().y) - ScrollBarY->GetClickPosNDC().y, 0.0f, 0.0f)).y * GetBoundingBox().Size.y));
@@ -148,13 +148,13 @@ void UICanvasActor::CreateScrollBars()
 		ScrollBarY->SetClickPosNDC(GameHandle->GetInputRetriever().GetMousePositionNDC());
 		});
 
-	BothScrollBarsButton = &CreateChild(UIScrollBarActor(Scene, "BothScrollBarsButton", nullptr, [this]() {
+	BothScrollBarsButton = &CreateChild<UIScrollBarActor>("BothScrollBarsButton", nullptr, [this]() {
 		if (ScrollBarX->GetState() == EditorIconState::IDLE)	ScrollBarX->OnBeingClicked();
 		if (ScrollBarY->GetState() == EditorIconState::IDLE)	ScrollBarY->OnBeingClicked();
 
 		ScrollBarX->WhileBeingClicked();
 		ScrollBarY->WhileBeingClicked();
-		}));
+		});
 	BothScrollBarsButton->SetTransform(Transform(glm::vec2(1.10f, -1.10f), glm::vec2(0.1f)));
 
 
@@ -162,7 +162,7 @@ void UICanvasActor::CreateScrollBars()
 	UpdateScrollBarT<VecAxis::Y>();
 
 
-	ResizeBarX = &CreateChild(UIScrollBarActor(Scene, "ResizeBarX"));
+	ResizeBarX = &CreateChild<UIScrollBarActor>("ResizeBarX");
 	ResizeBarX->SetTransform(Transform(glm::vec2(0.0f, -1.2625f), glm::vec2(1.0f, 0.0375f)));
 	ResizeBarX->SetWhileBeingClickedFunc([this]() {
 		float scale = ResizeBarX->GetClickPosNDC().y - GameHandle->GetInputRetriever().GetMousePositionNDC().y;
@@ -214,8 +214,8 @@ UICanvasField& AddFieldToCanvas(const std::string& name, UICanvasElement& elemen
 	return element.GetCanvasPtr()->AddField(name, getFieldOffsetFunc);
 }
 
-EditorDescriptionBuilder::EditorDescriptionBuilder(EditorManager& editorHandle, GameScene& editorScene, UICanvasActor& canvas):
-	EditorHandle(editorHandle), EditorScene(editorScene), DescriptionCanvas(canvas)
+EditorDescriptionBuilder::EditorDescriptionBuilder(EditorManager& editorHandle, GameScene& editorScene, UIActor& descriptionParent):
+	EditorHandle(editorHandle), EditorScene(editorScene), DescriptionParent(descriptionParent)
 {
 }
 
@@ -224,14 +224,19 @@ GameScene& EditorDescriptionBuilder::GetEditorScene()
 	return EditorScene;
 }
 
-UICanvasActor& EditorDescriptionBuilder::GetCanvas()
+UICanvas& EditorDescriptionBuilder::GetCanvas()
 {
-	return DescriptionCanvas;
+	return *DescriptionParent.GetCanvasPtr();
 }
 
-void EditorDescriptionBuilder::AddField(const std::string& name, std::function<glm::vec3()> getFieldOffsetFunc)
+UIActor& EditorDescriptionBuilder::GetDescriptionParent()
 {
-	GetCanvas().AddField(name, getFieldOffsetFunc);
+	return DescriptionParent;
+}
+
+UICanvasField& EditorDescriptionBuilder::AddField(const std::string& name, std::function<glm::vec3()> getFieldOffsetFunc)
+{
+	return GetCanvas().AddField(name, getFieldOffsetFunc);
 }
 
 void EditorDescriptionBuilder::SelectComponent(Component* comp)
@@ -242,4 +247,15 @@ void EditorDescriptionBuilder::SelectComponent(Component* comp)
 void EditorDescriptionBuilder::SelectActor(Actor* actor)
 {
 	EditorHandle.SelectActor(actor, EditorScene);
+}
+
+void EditorDescriptionBuilder::RefreshScene()
+{
+	EditorHandle.SelectScene(EditorHandle.GetSelectedScene(), EditorScene);
+}
+
+void EditorDescriptionBuilder::DeleteDescription()
+{
+	for (auto& it : DescriptionParent.GetChildren())
+		it->MarkAsKilled();
 }

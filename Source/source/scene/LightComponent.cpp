@@ -3,8 +3,8 @@
 #include <scene/UIInputBoxActor.h>
 #include <UI/UICanvasActor.h>
 
-LightComponent::LightComponent(GameScene& scene, std::string name, LightType type, unsigned int index, unsigned int shadowNr, float far, glm::mat4 projection, glm::vec3 amb, glm::vec3 diff, glm::vec3 spec, glm::vec3 settings):
-	Component(scene, name, Transform()),
+LightComponent::LightComponent(Actor& actor, Component* parentComp, std::string name, LightType type, unsigned int index, unsigned int shadowNr, float far, glm::mat4 projection, glm::vec3 amb, glm::vec3 diff, glm::vec3 spec, glm::vec3 settings):
+	Component(actor, parentComp, name, Transform()),
 	Type(type),
 	Ambient(amb),
 	Diffuse(diff),
@@ -14,7 +14,8 @@ LightComponent::LightComponent(GameScene& scene, std::string name, LightType typ
 	ShadowMapNr(shadowNr),
 	Far(far),
 	Projection(projection),
-	DirtyFlag(true)
+	DirtyFlag(true),
+	bHasValidShadowMap(false)
 {
 	CutOff = glm::cos(glm::radians(settings.y));
 	OuterCutOffBeforeCos = glm::radians(settings.z);
@@ -41,7 +42,8 @@ LightComponent::LightComponent(LightComponent&& comp):
 	Far(comp.Far),
 	Projection(comp.Projection),
 	DirtyFlag(comp.DirtyFlag),
-	ShadowMapNr(comp.ShadowMapNr)
+	ShadowMapNr(comp.ShadowMapNr),
+	bHasValidShadowMap(comp.bHasValidShadowMap)
 {
 	TransformDirtyFlagIndex = ComponentTransform.AddDirtyFlag();
 	Scene.GetRenderData()->AddLight(*this);
@@ -94,6 +96,16 @@ Shader* LightComponent::GetRenderShader(const RenderToolboxCollection& renderCol
 	return GameHandle->GetRenderEngineHandle()->GetLightShader(renderCol, Type);
 }
 
+bool LightComponent::HasValidShadowMap() const
+{
+	return bHasValidShadowMap;
+}
+
+void LightComponent::MarkValidShadowMap()
+{
+	bHasValidShadowMap = true;
+}
+
 void LightComponent::InvalidateCache()
 {
 	DirtyFlag = true;
@@ -136,11 +148,16 @@ void LightComponent::CalculateLightRadius()
 
 void LightComponent::SetAdditionalData(glm::vec3 data)
 {
-	DirtyFlag = true;
-	Attenuation = data.x;
+	float prevCutOff = CutOff, prevOuterCutOff = OuterCutOff;
+
+	SetAttenuation(data.x);
 	CutOff = glm::cos(glm::radians(data.y));
 	OuterCutOffBeforeCos = glm::radians(data.z);
 	OuterCutOff = glm::cos(OuterCutOffBeforeCos);
+
+	DirtyFlag = true;
+	if (prevCutOff != CutOff || prevOuterCutOff != OuterCutOff)
+		bHasValidShadowMap = false;
 }
 
 void LightComponent::SetAttenuation(float attenuation)
@@ -151,7 +168,19 @@ void LightComponent::SetAttenuation(float attenuation)
 
 void LightComponent::SetType(LightType type)
 {
+	if (Type != type)
+		bHasValidShadowMap = false;
+
 	Type = type;
+	DirtyFlag = true;
+}
+
+void LightComponent::SetIndex(unsigned int index)
+{
+	if (ShadowMapNr != index)
+		bHasValidShadowMap = false;
+	LightIndex = index;
+	ShadowMapNr = index;
 	DirtyFlag = true;
 }
 
@@ -228,20 +257,20 @@ MaterialInstance LightComponent::GetDebugMatInst(EditorIconState state)
 #include <UI/UICanvasActor.h>
 #include <UI/UICanvasField.h>
 
-void LightComponent::GetEditorDescription(UIActor& editorParent, GameScene& editorScene)
+void LightComponent::GetEditorDescription(EditorDescriptionBuilder descBuilder)
 {
-	Component::GetEditorDescription(editorParent, editorScene);
+	Component::GetEditorDescription(descBuilder);
 
-	AddFieldToCanvas("Ambient", editorParent).GetTemplates().VecInput(Ambient);
-	AddFieldToCanvas("Diffuse", editorParent).GetTemplates().VecInput(Diffuse);
-	AddFieldToCanvas("Specular", editorParent).GetTemplates().VecInput(Specular);
-	UIInputBoxActor& inputBox = AddFieldToCanvas("Attenuation", editorParent).CreateChild(UIInputBoxActor(editorScene, "Attenuation"));
+	descBuilder.AddField("Ambient").GetTemplates().VecInput(Ambient);
+	descBuilder.AddField("Diffuse").GetTemplates().VecInput(Diffuse);
+	descBuilder.AddField("Specular").GetTemplates().VecInput(Specular);
+	UIInputBoxActor& inputBox = descBuilder.AddField("Attenuation").CreateChild<UIInputBoxActor>("Attenuation");
 	inputBox.SetOnInputFunc([this](float val) { SetAttenuation(val); }, [this]() { return Attenuation; }, true);
 
-	UICanvasField& typeField = AddFieldToCanvas("Type", editorParent);
+	UICanvasField& typeField = descBuilder.AddField("Type");
 	const std::string types[] = { "Directional", "Point", "Spot" };
 	for (int i = 0; i < 3; i++)
-		typeField.CreateChild(UIButtonActor(editorScene, types[i] + "TypeButton", types[i], [this, i]() {SetType(static_cast<LightType>(i)); CalculateLightRadius(); })).GetTransform()->Move(glm::vec2(static_cast<float>(i) * 2.0f, 0.0f));
+		typeField.CreateChild<UIButtonActor>(types[i] + "TypeButton", types[i], [this, i]() {SetType(static_cast<LightType>(i)); CalculateLightRadius(); }).GetTransform()->Move(glm::vec2(static_cast<float>(i) * 2.0f, 0.0f));
 }
 
 LightComponent::~LightComponent()

@@ -20,7 +20,7 @@ UIInputBoxActor::UIInputBoxActor(GameScene& scene, const std::string& name):
 
 void UIInputBoxActor::OnStart()
 {
-	ContentTextComp = &CreateComponent(TextConstantSizeComponent(Scene, Name + "Text", Transform(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f), glm::vec3(1.0f)), "1.0", "fonts/expressway rg.ttf"));
+	ContentTextComp = &CreateComponent<TextConstantSizeComponent>(Name + "Text", Transform(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f), glm::vec3(1.0f)), "1.0", "fonts/expressway rg.ttf");
 	ContentTextComp->SetAlignment(TextAlignment::CENTER, TextAlignment::CENTER);
 }
 

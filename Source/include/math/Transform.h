@@ -23,6 +23,15 @@ enum class TVec	//TransformVector
 	ROTATION_EULER
 };
 
+/*class Vec3f : public glm::vec3
+{
+	using glm::vec3::vec3;
+	template <typename Archive> void Serialize(Archive& archive)
+	{
+		archive(x, y, z);
+	}
+};*/
+
 class Transform
 {
 	bool KUPA;
@@ -55,6 +64,8 @@ public:
 	explicit Transform(const glm::vec3& pos, const glm::quat& rot = glm::quat(glm::vec3(0.0f)), const glm::vec3& scale = glm::vec3(1.0f));
 	Transform(const Transform&);
 	Transform(Transform&&) noexcept;
+
+	bool IsEmpty() const;
 
 	glm::vec3 Transform::GetFrontVec() const;
 	Transform GetInverse() const;
@@ -110,6 +121,11 @@ public:
 	template <class T> void AddInterpolator(std::string fieldName, float begin, float end, T min, T max, InterpolationType interpType = InterpolationType::LINEAR, bool fadeAway = false, AnimBehaviour before = AnimBehaviour::STOP, AnimBehaviour after = AnimBehaviour::STOP);
 	template <class T> void AddInterpolator(std::string fieldName, float begin, float end, T max, InterpolationType interpType = InterpolationType::LINEAR, bool fadeAway = false, AnimBehaviour before = AnimBehaviour::STOP, AnimBehaviour after = AnimBehaviour::STOP);
 	void Update(float deltaTime);
+
+	template <typename Archive> void Serialize(Archive& archive)
+	{
+		archive(Position.x, Position.y, Position.z);
+	}
 
 	void Print(std::string name = "unnamed") const;
 	

@@ -3,8 +3,8 @@
 #include <iostream>
 #include <glm/gtc/type_ptr.hpp>
 
-SoundSourceComponent::SoundSourceComponent(GameScene& scene, std::string name, SoundBuffer* buffer, Transform transform):
-	Component(scene, name, transform), ALIndex(0), BufferPtr(buffer)
+SoundSourceComponent::SoundSourceComponent(Actor& actor, Component* parentComp, std::string name, SoundBuffer* buffer, Transform transform):
+	Component(actor, parentComp, name, transform), ALIndex(0), BufferPtr(buffer)
 {
 	if (buffer)
 		GenAL(buffer);
@@ -31,11 +31,15 @@ void SoundSourceComponent::GenAL(SoundBuffer* buffer)
 
 void SoundSourceComponent::SetLoop(bool loop)
 {
-	alSourcei(ALIndex, AL_LOOPING, (loop) ? (AL_TRUE) : (AL_FALSE));
+	if (ALIndex != 0)
+		alSourcei(ALIndex, AL_LOOPING, (loop) ? (AL_TRUE) : (AL_FALSE));
 }
 
 bool SoundSourceComponent::IsPlaying()
 {
+	if (ALIndex == 0)
+		return false;
+
 	ALint state;
 	alGetSourcei(ALIndex, AL_SOURCE_STATE, &state);
 	if (state == AL_PLAYING)
@@ -63,17 +67,20 @@ void SoundSourceComponent::Play()
 
 void SoundSourceComponent::Pause()
 {
-	alSourcePause(ALIndex);
+	if (ALIndex != 0)
+		alSourcePause(ALIndex);
 }
 
 void SoundSourceComponent::Stop()
 {
-	alSourceStop(ALIndex);
+	if (ALIndex != 0)
+		alSourceStop(ALIndex);
 }
 
 void SoundSourceComponent::Update(float deltaTime)
 {
-	alSourcefv(ALIndex, AL_POSITION, glm::value_ptr(ComponentTransform.GetWorldTransform().PositionRef));
+	if (ALIndex != 0)
+		alSourcefv(ALIndex, AL_POSITION, glm::value_ptr(ComponentTransform.GetWorldTransform().PositionRef));
 }
 
 MaterialInstance SoundSourceComponent::GetDebugMatInst(EditorIconState state)
@@ -86,11 +93,11 @@ MaterialInstance SoundSourceComponent::GetDebugMatInst(EditorIconState state)
 #include <UI/UICanvasField.h>
 #include <assetload/FileLoader.h>
 
-void SoundSourceComponent::GetEditorDescription(UIActor& editorParent, GameScene& editorScene)
+void SoundSourceComponent::GetEditorDescription(EditorDescriptionBuilder descBuilder)
 {
-	Component::GetEditorDescription(editorParent, editorScene);
+	Component::GetEditorDescription(descBuilder);
 
-	AddFieldToCanvas("Path", editorParent).GetTemplates().PathInput([this](const std::string& path) {GameHandle->GetAudioEngineHandle()->CheckError(); GenAL(GameHandle->GetAudioEngineHandle()->LoadBufferFromFile(path)); GameHandle->GetAudioEngineHandle()->CheckError(); }, [this]()->std::string { if (BufferPtr) return BufferPtr->Path; return std::string(); });
+	descBuilder.AddField("Path").GetTemplates().PathInput([this](const std::string& path) {GameHandle->GetAudioEngineHandle()->CheckError(); GenAL(GameHandle->GetAudioEngineHandle()->LoadBufferFromFile(path)); GameHandle->GetAudioEngineHandle()->CheckError(); }, [this]()->std::string { if (BufferPtr) return BufferPtr->Path; return std::string(); });
 }
 
 void SoundSourceComponent::Dispose()
@@ -98,5 +105,11 @@ void SoundSourceComponent::Dispose()
 	if (IsPlaying())
 		alSourceStop(ALIndex);
 
-	alDeleteSources(1, &ALIndex);
+	if (ALIndex != 0)
+		alDeleteSources(1, &ALIndex);
+}
+
+SoundSourceComponent::~SoundSourceComponent()
+{
+	Dispose();
 }

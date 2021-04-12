@@ -115,19 +115,19 @@ void PhysicsEngine::AddCollisionObjectToPxPipeline(GameScenePhysicsData& scenePh
 			pxShape = CreateTriangleMeshShape(object.Shapes[i].get(), shapeScale);
 			break;
 		case CollisionShapeType::COLLISION_BOX:
-			pxShape = Physics->createShape(PxBoxGeometry(toPx(shapeScale * 0.5f)), *DefaultMaterial);
+			pxShape = Physics->createShape(PxBoxGeometry(toPx(shapeScale)), *DefaultMaterial);
 			break;
 		case CollisionShapeType::COLLISION_SPHERE:
 			pxShape = Physics->createShape(PxSphereGeometry(shapeScale.x), *DefaultMaterial);
 			break;
 		case CollisionShapeType::COLLISION_CAPSULE:
-			pxShape = Physics->createShape(PxCapsuleGeometry(shapeScale.x, shapeScale.y / 2.0f), *DefaultMaterial);
+			pxShape = Physics->createShape(PxCapsuleGeometry(shapeScale.x, shapeScale.y), *DefaultMaterial);
 		}
 
 		if (!pxShape)
 			continue;
 
-		pxShape->setLocalPose(PxTransform(toPx(object.TransformPtr->GetWorldTransform().ScaleRef * shapeT.PositionRef), (object.IgnoreRotation) ? (physx::PxQuat()) : (toPx(shapeT.RotationRef))));
+		pxShape->setLocalPose(PxTransform(toPx(static_cast<glm::mat3>(object.TransformPtr->GetWorldTransformMatrix()) * shapeT.PositionRef), (object.IgnoreRotation) ? (physx::PxQuat()) : (toPx(shapeT.RotationRef))));
 		if (i == 0)
 		{
 			object.ActorPtr = (object.IsStatic) ?
@@ -137,7 +137,7 @@ void PhysicsEngine::AddCollisionObjectToPxPipeline(GameScenePhysicsData& scenePh
 		else
 			object.ActorPtr->attachShape(*pxShape);
 
-		pxShape->userData = new glm::vec3(object.Shapes[i]->ShapeTransform.ScaleRef);
+		pxShape->userData = &object.Shapes[i]->ShapeTransform;
 		object.TransformDirtyFlag = object.TransformPtr->AddDirtyFlag();
 	}
 
@@ -291,12 +291,9 @@ void PhysicsEngine::UpdatePxTransforms()
 				if (!shapes[j])
 					continue;
 
-				glm::vec3 shapeScale(1.0f);
-				float* scaleData = (float*)shapes[j]->userData;
-				if (scaleData)
-					for (int i = 0; i < 3; i++)
-						shapeScale[i] = scaleData[i];
-				shapeScale = glm::max(shapeScale, glm::vec3(0.001f));
+				Transform* shapeTransform = (Transform*)shapes[j]->userData;
+				if (!shapeTransform)
+					continue;
 
 				switch (shapes[j]->getGeometryType())
 				{
@@ -304,7 +301,7 @@ void PhysicsEngine::UpdatePxTransforms()
 				{
 					physx::PxTriangleMeshGeometry meshGeom;
 					shapes[j]->getTriangleMeshGeometry(meshGeom);
-					meshGeom.scale = toPx(worldTransform.ScaleRef * shapeScale);
+					meshGeom.scale = toPx(worldTransform.ScaleRef * shapeTransform->ScaleRef);
 
 					obj->ActorPtr->detachShape(*shapes[j]);
 					shapes[j]->setGeometry(meshGeom);
@@ -314,7 +311,7 @@ void PhysicsEngine::UpdatePxTransforms()
 				{
 					physx::PxBoxGeometry boxGeom;
 					shapes[j]->getBoxGeometry(boxGeom);
-					boxGeom.halfExtents = toPx(worldTransform.ScaleRef * shapeScale * 0.5f);
+					boxGeom.halfExtents = toPx(worldTransform.ScaleRef * shapeTransform->ScaleRef);
 
 					obj->ActorPtr->detachShape(*shapes[j]);
 					shapes[j]->setGeometry(boxGeom);
@@ -324,13 +321,13 @@ void PhysicsEngine::UpdatePxTransforms()
 				{
 					physx::PxSphereGeometry sphereGeom;
 					shapes[j]->getSphereGeometry(sphereGeom);
-					sphereGeom.radius = worldTransform.ScaleRef.x * shapeScale.x;
+					sphereGeom.radius = worldTransform.ScaleRef.x * shapeTransform->ScaleRef.x;
 
 					obj->ActorPtr->detachShape(*shapes[j]);
 					shapes[j]->setGeometry(sphereGeom);
 					break;
 				}
-				case PxGeometryType::eCAPSULE:
+				case PxGeometryType::eCAPSULE: 
 					continue;
 				default:
 					std::cout << "Geometry type " << shapes[j]->getGeometryType() << " not supported.\n";
@@ -338,7 +335,9 @@ void PhysicsEngine::UpdatePxTransforms()
 					obj->ActorPtr->detachShape(*shapes[j]);
 				}
 
+				shapes[j]->setLocalPose(PxTransform(toPx(static_cast<glm::mat3>(worldTransform.GetMatrix()) * shapeTransform->PositionRef), (obj->IgnoreRotation) ? (physx::PxQuat()) : (toPx(shapeTransform->RotationRef))));
 				obj->ActorPtr->attachShape(*shapes[j]);
+				
 			}
 
 			obj->ActorPtr->setGlobalPose(pxTransform);

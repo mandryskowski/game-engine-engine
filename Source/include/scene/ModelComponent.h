@@ -17,7 +17,7 @@ namespace MeshSystem
 class ModelComponent: public RenderableComponent, public UICanvasElement
 {
 public:
-	ModelComponent(GameScene&, const std::string& name = "undefinedModel", const Transform& = Transform(), SkeletonInfo* info = nullptr, Material* overrideMat = nullptr);
+	ModelComponent(Actor&, Component* parentComp, const std::string& name = "undefinedModel", const Transform& = Transform(), SkeletonInfo* info = nullptr, Material* overrideMat = nullptr);
 
 	ModelComponent(const ModelComponent&) = delete;
 	ModelComponent(ModelComponent&&);
@@ -50,7 +50,7 @@ public:
 
 	virtual void Render(const RenderInfo&, Shader* shader) override;
 
-	virtual void GetEditorDescription(UIActor& canvas, GameScene& editorScene);
+	virtual void GetEditorDescription(EditorDescriptionBuilder);
 
 
 protected:

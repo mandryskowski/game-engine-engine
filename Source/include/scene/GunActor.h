@@ -20,5 +20,5 @@ public:
 	virtual void Update(float) override;
 	virtual void HandleEvent(const Event& ev) override;
 	void FireWeapon();	//try to fire held weapon (if exists & it's not on cooldown)
-	virtual void GetEditorDescription(UIActor& editorParent, GameScene& editorScene) override;
+	virtual void GetEditorDescription(EditorDescriptionBuilder) override;
 };

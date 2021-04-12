@@ -52,6 +52,11 @@ void GunActor::Setup()
 
 void GunActor::Update(float deltaTime)
 {
+	if (GunModel && GunModel->IsBeingKilled())
+		GunModel = nullptr;
+	if (GunBlast && GunBlast->IsBeingKilled())
+		GunBlast = nullptr;
+
 	if (GunModel)
 		GunModel->GetTransform().Update(deltaTime);
 	CooldownLeft -= deltaTime;
@@ -78,9 +83,9 @@ void GunActor::FireWeapon()
 		GunModel->GetTransform().AddInterpolator<glm::quat>("rotation", 0.25f, 1.25f, glm::quat(glm::vec3(0.0f)), InterpolationType::QUADRATIC, true);
 	}
 
-	Actor& actor = Scene.CreateActorAtRoot (Actor(Scene, "Bullet" + std::to_string(FiredBullets)));
+	Actor& actor = Scene.CreateActorAtRoot<Actor>("Bullet" + std::to_string(FiredBullets));
 	//TODO: Change it so the bullet is fired at the barrel, not at the center
-	std::unique_ptr<ModelComponent> bulletModel = std::make_unique<ModelComponent>(ModelComponent(Scene, "BulletModel" + std::to_string(FiredBullets++), Transform(GetTransform()->GetWorldTransform().PositionRef, glm::vec3(0.0f), glm::vec3(0.2f))));
+	std::unique_ptr<ModelComponent> bulletModel = std::make_unique<ModelComponent>(ModelComponent(actor, nullptr, "BulletModel" + std::to_string(FiredBullets++), Transform(GetTransform()->GetWorldTransform().PositionRef, glm::vec3(0.0f), glm::vec3(0.2f))));
 	bulletModel->OnStart();
 	EngineDataLoader::LoadModel("hqSphere/hqSphere.obj", *bulletModel, MeshTreeInstancingType::ROOTTREE, GameHandle->GetRenderEngineHandle()->FindMaterial("RustedIron"));
 
@@ -102,22 +107,19 @@ void GunActor::FireWeapon()
 #include <UI/UICanvasField.h>
 #include <scene/UIButtonActor.h>
 #include <UI/UIListActor.h>
-void GunActor::GetEditorDescription(UIActor& editorParent, GameScene& editorScene)
+void GunActor::GetEditorDescription(EditorDescriptionBuilder descBuilder)
 {
-	Actor::GetEditorDescription(editorParent, editorScene);
+	Actor::GetEditorDescription(descBuilder);
 
-	UICanvasField& gunModelField = AddFieldToCanvas("GunModel", editorParent);
+	UICanvasField& gunModelField = descBuilder.AddField("GunModel");
 	gunModelField.GetTemplates().ComponentInput<ModelComponent>(*GetRoot(), GunModel);
-	dynamic_cast<UICanvasActor*>(editorParent.GetCanvasPtr())->FieldsList->Refresh();
 	std::cout << "Second element pos: " << gunModelField.GetTransform()->PositionRef.y << '\n';
-	//gunModelField.GetTransform()->SetScale(gunModelField.GetTransform()->ScaleRef * glm::vec3(1.0f, 0.5f / 0.04f, 1.0f));
 
-	UICanvasField& blastField = AddFieldToCanvas("Blast sound", editorParent);
+	UICanvasField& blastField = descBuilder.AddField("Blast sound");
 	blastField.GetTemplates().ComponentInput<SoundSourceComponent>(*GetRoot(), GunBlast);
-	//blastField.GetTransform()->SetScale(blastField.GetTransform()->ScaleRef * glm::vec3(1.0f, 0.5f / 0.04f, 1.0f));
 
-	UICanvasField& fireField = AddFieldToCanvas("Fire", editorParent);
-	fireField.CreateChild(UIButtonActor(editorScene, "FireButton", "Fire", [this]() { FireWeapon(); })).GetTransform()->Move(glm::vec2(1.0f, 0.0f));
+	UICanvasField& fireField = descBuilder.AddField("Fire");
+	fireField.CreateChild<UIButtonActor>("FireButton", "Fire", [this]() { FireWeapon(); }).GetTransform()->Move(glm::vec2(1.0f, 0.0f));
 
 	//[this]() {}
 }

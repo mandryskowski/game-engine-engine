@@ -12,7 +12,7 @@ Actor::Actor(GameScene& scene, const std::string& name) :
 	bKillingProcessStarted(false),
 	SetupStream(nullptr)
 {
-	RootComponent = std::make_unique<Component>(scene, name + "'s root", Transform());
+	RootComponent = std::make_unique<Component>(*this, nullptr, Name + "'s root", Transform());
 	if (GameHandle->HasStarted())
 		RootComponent->OnStartAll();
 }
@@ -27,6 +27,9 @@ Actor::Actor(Actor&& moved):
 	GameHandle(moved.GameHandle),
 	bKillingProcessStarted(moved.bKillingProcessStarted)
 {
+	std::cout << "ERROR: MOVE CONSTRUCTOR NIE DZIALA.\n";
+	RootComponent = std::make_unique<Component>(*this, nullptr, Name + "'s root", Transform());
+	//exit(-1);
 }
 
 void Actor::OnStart()
@@ -67,6 +70,7 @@ std::vector<Actor*> Actor::GetChildren()
 {
 	std::vector<Actor*> children;
 	children.reserve(Children.size());
+	std::cout << "Dzieci: " << Children.size() << '\n';
 	std::transform(Children.begin(), Children.end(), std::back_inserter(children), [](std::unique_ptr<Actor>& child) -> Actor*{ return child.get(); });
 
 	return children;
@@ -77,7 +81,7 @@ GameScene& Actor::GetScene()
 	return Scene;
 }
 
-bool Actor::IsBeingKilled()
+bool Actor::IsBeingKilled() const
 {
 	return bKillingProcessStarted;
 }
@@ -123,7 +127,9 @@ void Actor::ReplaceRoot(std::unique_ptr<Component> component)
 
 void Actor::MoveCompToRoot(Component& comp)
 {
+	std::cout << "Moveuje compa " + comp.GetName() + " do roota. ActorRef do tej pory: " << &RootComponent->ActorRef << ". ActorRef teraz: " << &comp.ActorRef << '\n';
 	ReplaceRoot(std::move(RootComponent->DetachChild(comp)));
+	RootComponent->ParentComponent = nullptr;
 }
 
 void Actor::SetTransform(Transform transform)
@@ -131,7 +137,7 @@ void Actor::SetTransform(Transform transform)
 	RootComponent->SetTransform(transform);
 }
 
-void Actor::AddComponent(std::unique_ptr<Component> component)
+void Actor::AddComponent(std::unique_ptr<Component> component) 
 {
 	RootComponent->AddComponent(std::move(component));
 }
@@ -174,12 +180,6 @@ void Actor::HandleEventAll(const Event& ev)
 
 void Actor::Update(float deltaTime)
 {
-	if (IsBeingKilled())
-	{
-		Delete();
-		return;
-	}
-
 	RootComponent->UpdateAll(deltaTime);
 	if (Name == "CubeActor")
 		;//RootComponent->GetTransform().SetScale(glm::vec3(1.0f + glfwGetTime() * 0.05f));
@@ -190,6 +190,11 @@ void Actor::UpdateAll(float deltaTime)
 	Update(deltaTime);
 	for (unsigned int i = 0; i < Children.size(); i++)
 		Children[i]->UpdateAll(deltaTime);
+
+	if (IsBeingKilled())
+	{
+		Delete();
+	}
 }
 
 void Actor::MarkAsKilled()
@@ -203,6 +208,11 @@ void Actor::Delete()
 {
 	if (RootComponent)
 		RootComponent = nullptr;
+	if (!ParentActor)
+	{
+		std::cout << "ERROR! Cannot delete actor " + GetName() + " because it doesn't have a parent (root?)\n";
+		return;
+	}
 
 	ParentActor->Children.erase(std::remove_if(ParentActor->Children.begin(), ParentActor->Children.end(), [this](std::unique_ptr<Actor>& child) { return child.get() == this; }), ParentActor->Children.end());
 }
@@ -240,13 +250,16 @@ const Actor* Actor::FindActor(const std::string& name) const
 #include <UI/UICanvasActor.h>
 #include <scene/UIInputBoxActor.h>
 #include <UI/UICanvasField.h>
-void Actor::GetEditorDescription(UIActor& editorParent, GameScene& editorScene)
+void Actor::GetEditorDescription(EditorDescriptionBuilder descBuilder)
 {
-	UIInputBoxActor& textActor = editorParent.CreateChild(UIInputBoxActor(editorScene, "ComponentsNameActor"));
+	UIInputBoxActor& textActor = descBuilder.CreateActor<UIInputBoxActor>("ComponentsNameActor");
 	textActor.SetOnInputFunc([this](const std::string& content) { SetName(content); }, [this]() -> std::string { return GetName(); });
 	textActor.DeleteButtonModel();
 	textActor.SetTransform(Transform(glm::vec2(0.0f, 1.5f), glm::vec2(1.0f)));
 
-	UICanvasField& deleteField = AddFieldToCanvas("Delete", editorParent);
-	deleteField.CreateChild(UIButtonActor(editorScene, "DeleteButton", "Delete", [this]() { MarkAsKilled(); }));
+	UICanvasField& deleteField = descBuilder.AddField("Delete");
+	deleteField.CreateChild<UIButtonActor>("DeleteButton", "Delete", [this, descBuilder]() mutable { 
+		MarkAsKilled();
+		descBuilder.RefreshScene();	//Actor will be deselected automatically - SelectActor(nullptr) is always called in SelectScene(...).
+		}).GetTransform()->Move(glm::vec2(1.0f, 0.0f));
 }

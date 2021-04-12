@@ -8,8 +8,8 @@ class Font;
 class TextComponent: public RenderableComponent, public UICanvasElement
 {
 public:
-	TextComponent(GameScene& scene, const std::string& name = std::string(), const Transform &transform = Transform(), std::string content = std::string(), std::shared_ptr<Font> font = nullptr, std::pair<TextAlignment, TextAlignment> = std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::BOTTOM));
-	TextComponent(GameScene& scene, const std::string& name = std::string(), const Transform &transform = Transform(), std::string content = std::string(), std::string fontPath = std::string(), std::pair<TextAlignment, TextAlignment> = std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::BOTTOM));
+	TextComponent(Actor&, Component* parentComp, const std::string& name = std::string(), const Transform &transform = Transform(), std::string content = std::string(), std::shared_ptr<Font> font = nullptr, std::pair<TextAlignment, TextAlignment> = std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::BOTTOM));
+	TextComponent(Actor&, Component* parentComp, const std::string& name = std::string(), const Transform &transform = Transform(), std::string content = std::string(), std::string fontPath = std::string(), std::pair<TextAlignment, TextAlignment> = std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::BOTTOM));
 	TextComponent(const TextComponent&) = delete;
 	TextComponent(TextComponent&&);
 
@@ -23,6 +23,8 @@ public:
 
 	void SetAlignment(const TextAlignment horizontal, const TextAlignment vertical = TextAlignment::TOP);	//Change what Component::ComponentTransform::Position
 	void SetAlignment(const std::pair<TextAlignment, TextAlignment>& alignment);	//Change what Component::ComponentTransform::Position
+
+	virtual void GetEditorDescription(EditorDescriptionBuilder) override;
 
 private:
 	std::string Content;
@@ -41,8 +43,8 @@ private:
 class TextConstantSizeComponent: public TextComponent
 {
 public:
-	TextConstantSizeComponent(GameScene& scene, const std::string& name = std::string(), const Transform& transform = Transform(), std::string content = std::string(), std::shared_ptr<Font> font = nullptr, std::pair<TextAlignment, TextAlignment> = std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::BOTTOM));
-	TextConstantSizeComponent(GameScene& scene, const std::string& name = std::string(), const Transform& transform = Transform(), std::string content = std::string(), std::string fontPath = std::string(), std::pair<TextAlignment, TextAlignment> = std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::BOTTOM));
+	TextConstantSizeComponent(Actor&, Component* parentComp, const std::string& name = std::string(), const Transform& transform = Transform(), std::string content = std::string(), std::shared_ptr<Font> font = nullptr, std::pair<TextAlignment, TextAlignment> = std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::BOTTOM));
+	TextConstantSizeComponent(Actor&, Component* parentComp, const std::string& name = std::string(), const Transform& transform = Transform(), std::string content = std::string(), std::string fontPath = std::string(), std::pair<TextAlignment, TextAlignment> = std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::BOTTOM));
 	TextConstantSizeComponent(const TextConstantSizeComponent&) = delete;
 	TextConstantSizeComponent(TextConstantSizeComponent&&);
 	void SetMaxSize(const glm::vec2&);

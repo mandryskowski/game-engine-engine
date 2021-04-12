@@ -36,7 +36,7 @@ void main()
 	#endif
 	);
 
-	fragColor = vec4(pow(fragColor.rgb, vec3(2.2)), fragColor.a);
+	//fragColor = vec4(pow(fragColor.rgb, vec3(2.2)), fragColor.a);
 }
 
 /**

@@ -32,7 +32,8 @@ public:
 	void SetDepthScale(float);
 	void SetShininess(float);
 	void SetRenderShaderName(std::string);
-	void SetColor(glm::vec4 color); //Think twice before you use colours; you need a corresponding shader to make it work (one that has uniform vec4 color in it)
+	void SetColor(const glm::vec3& color);
+	void SetColor(const glm::vec4& color); //Think twice before you use colours; you need a corresponding shader to make it work (one that has uniform vec4 color in it)
 	void AddTexture(NamedTexture* tex);
 
 	void LoadFromAiMaterial(const aiScene* scene, aiMaterial*, std::string, MaterialLoadingData*);

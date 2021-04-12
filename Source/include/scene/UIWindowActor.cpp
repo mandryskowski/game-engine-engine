@@ -17,7 +17,7 @@ UIWindowActor::UIWindowActor(UIWindowActor&& actor):
 void UIWindowActor::OnStart()
 {
 	UICanvasActor::OnStart();
-	UIButtonActor& closeButton = CreateChild(UIButtonActor(Scene, Name + "'s close button", [this]() {this->MarkAsKilled(); }));
+	UIButtonActor& closeButton = CreateChild<UIButtonActor>(Name + "'s close button", [this]() {this->MarkAsKilled(); });
 	closeButton.SetTransform(Transform(glm::vec2(1.15f, 1.15f), glm::vec2(0.15f)));
 
 	AtlasMaterial& closeIconMat = *new AtlasMaterial("GEE_Close_Icon_Material", glm::ivec2(3, 1), 0.0f, 0.0f, GameHandle->GetRenderEngineHandle()->FindShader("Forward_NoLight"));
@@ -26,7 +26,7 @@ void UIWindowActor::OnStart()
 	closeButton.SetMatHover(MaterialInstance(closeIconMat, closeIconMat.GetTextureIDInterpolatorTemplate(1.0f)));
 	closeButton.SetMatClick(MaterialInstance(closeIconMat, closeIconMat.GetTextureIDInterpolatorTemplate(2.0f)));
 
-	UIScrollBarActor& dragButton = CreateChild(UIScrollBarActor(Scene, "DragButton"));
+	UIScrollBarActor& dragButton = CreateChild<UIScrollBarActor>("DragButton");
 	dragButton.SetWhileBeingClickedFunc([&dragButton, this]() { this->GetTransform()->Move(static_cast<glm::vec2>(GameHandle->GetInputRetriever().GetMousePositionNDC()) - dragButton.GetClickPosNDC()); dragButton.SetClickPosNDC(GameHandle->GetInputRetriever().GetMousePositionNDC());});
 	dragButton.SetTransform(Transform(glm::vec2(0.0f, 1.15f), glm::vec2(1.0f, 0.15f)));
 

@@ -42,8 +42,12 @@ SoundBuffer* AudioEngine::LoadALBuffer(ALenum format, ALvoid* data, ALsizei size
 {
 	SoundBuffer* buffer = new SoundBuffer;
 
+	std::cout << "SPRAWDZAM 1\n";
+	CheckError();
 	alGenBuffers(1, &buffer->ALIndex);
 	alBufferData(buffer->ALIndex, format, data, size - size % 4, freq);
+	std::cout << "SPRAWDZAM 2\n";
+	CheckError();
 
 	buffer->Path = path;
 
@@ -86,7 +90,7 @@ SoundBuffer* AudioEngine::LoadBufferFromFile(std::string path)
 		return alreadyLoaded;
 
 
-	////////////////// If we have to load, call appropriate method based on path's file format
+	////////////////// If we have to load, call the appropriate method based on path's file format
 	std::string format = path.substr(path.find('.') + 1);
 	SoundBuffer* buffer = nullptr;
 
@@ -137,8 +141,8 @@ SoundBuffer* AudioEngine::LoadBufferFromWav(std::string path)
 
 	//////////////// Create an OpenAL buffer using our loaded data.
 	std::vector <char> charSamples;
-	//TODO: USE STL HERE!!!!
 	charSamples.reserve(file.samples[0].size());
+
 	std::transform(file.samples[0].begin(), file.samples[0].end(), std::back_inserter(charSamples), [path](const float& sample) { return static_cast<char>(sample * 128.0f); });
 
 	std::cout << path << ": " << charSamples.size() << ",  samplerate: " << file.getSampleRate() / 2 << ",  bitdepth: " << file.getBitDepth() << ",  length[s]: " << file.getLengthInSeconds() << '\n';

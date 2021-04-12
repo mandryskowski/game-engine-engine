@@ -8,13 +8,13 @@
 #include <rendering/Mesh.h>
 #include <iostream>
 
-TextComponent::TextComponent(GameScene& scene, const std::string& name, const Transform& transform, std::string content, std::shared_ptr<Font> font, std::pair<TextAlignment, TextAlignment> alignment):
-	RenderableComponent(scene, name, transform),
+TextComponent::TextComponent(Actor& actor, Component* parentComp, const std::string& name, const Transform& transform, std::string content, std::shared_ptr<Font> font, std::pair<TextAlignment, TextAlignment> alignment):
+	RenderableComponent(actor, parentComp, name, transform),
 	UsedFont(font),
 	TextMatInst(nullptr),
 	Alignment(TextAlignment::LEFT, TextAlignment::BOTTOM)
 {
-	Material* mat = scene.GetGameHandle()->GetRenderEngineHandle()->AddMaterial(new Material("TextMaterial" + content));
+	Material* mat = GameHandle->GetRenderEngineHandle()->AddMaterial(new Material("TextMaterial" + content));
 	if (content == "big button")
 		mat->SetColor(glm::vec4(0.7f, 0.2f, 0.6f, 1.0f));
 	else
@@ -24,8 +24,9 @@ TextComponent::TextComponent(GameScene& scene, const std::string& name, const Tr
 	SetContent(content);
 }
 
-TextComponent::TextComponent(GameScene& scene, const std::string& name, const Transform& transform, std::string content, std::string fontPath, std::pair<TextAlignment, TextAlignment> alignment) :
-	TextComponent(scene, name, transform, content, EngineDataLoader::LoadFont(*scene.GetGameHandle(), fontPath), alignment)
+#include <scene/Actor.h>
+TextComponent::TextComponent(Actor& actor, Component* parentComp, const std::string& name, const Transform& transform, std::string content, std::string fontPath, std::pair<TextAlignment, TextAlignment> alignment) :
+	TextComponent(actor, parentComp, name, transform, content, EngineDataLoader::LoadFont(*actor.GetScene().GetGameHandle(), fontPath), alignment)
 {
 }
 
@@ -95,16 +96,28 @@ void TextComponent::SetAlignment(const std::pair<TextAlignment, TextAlignment>& 
 	Alignment = alignment;
 }
 
-TextConstantSizeComponent::TextConstantSizeComponent(GameScene& scene, const std::string& name, const Transform& transform, std::string content, std::shared_ptr<Font> font, std::pair<TextAlignment, TextAlignment> alignment):
-	TextComponent(scene, name, transform, "", font, alignment),
+#include <UI/UICanvasActor.h>
+#include <UI/UICanvasField.h>
+#include <scene/UIInputBoxActor.h>
+void TextComponent::GetEditorDescription(EditorDescriptionBuilder descBuilder)
+{
+	RenderableComponent::GetEditorDescription(descBuilder);
+
+	UIInputBoxActor& contentInputBox = descBuilder.AddField("Content").CreateChild<UIInputBoxActor>("ContentInputBox");
+	contentInputBox.SetOnInputFunc([this](const std::string& content) { SetContent(content); }, [this]() ->std::string { return GetContent(); });
+}
+
+TextConstantSizeComponent::TextConstantSizeComponent(Actor& actor, Component* parentComp, const std::string& name, const Transform& transform, std::string content, std::shared_ptr<Font> font, std::pair<TextAlignment, TextAlignment> alignment):
+	TextComponent(actor, parentComp, name, transform, "", font, alignment),
 	MaxSize(glm::vec2(1.0f)),
 	ScaleRatio(glm::max(glm::vec2(1.0f), glm::vec2(transform.ScaleRef.x / transform.ScaleRef.y, transform.ScaleRef.y / transform.ScaleRef.x)))
 {
 	SetContent(content);
 }
 
-TextConstantSizeComponent::TextConstantSizeComponent(GameScene& scene, const std::string& name, const Transform& transform, std::string content, std::string fontPath, std::pair<TextAlignment, TextAlignment> alignment):
-	TextConstantSizeComponent(scene, name, transform, content, EngineDataLoader::LoadFont(*scene.GetGameHandle(), fontPath), alignment)
+#include <scene/Actor.h>
+TextConstantSizeComponent::TextConstantSizeComponent(Actor& actor, Component* parentComp, const std::string& name, const Transform& transform, std::string content, std::string fontPath, std::pair<TextAlignment, TextAlignment> alignment):
+	TextConstantSizeComponent(actor, parentComp, name, transform, content, EngineDataLoader::LoadFont(*actor.GetScene().GetGameHandle(), fontPath), alignment)
 {
 }
 

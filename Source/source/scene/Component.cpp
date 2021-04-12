@@ -8,8 +8,8 @@
 #include <UI/UICanvasActor.h>
 #include <scene/UIInputBoxActor.h>
 
-Component::Component(GameScene& scene, const std::string& name, const Transform& t):
-	Name(name), ComponentTransform(t), Scene(scene), GameHandle(scene.GetGameHandle()), CollisionObj(nullptr), DebugRenderMat(nullptr), DebugRenderMatInst(nullptr), DebugRenderLastFrameMVP(glm::mat4(1.0f))
+Component::Component(Actor& actor, Component* parentComp, const std::string& name, const Transform& t):
+	Name(name), ComponentTransform(t), Scene(actor.GetScene()), ActorRef(actor), ParentComponent(parentComp), GameHandle(actor.GetScene().GetGameHandle()), CollisionObj(nullptr), DebugRenderMat(nullptr), DebugRenderMatInst(nullptr), DebugRenderLastFrameMVP(glm::mat4(1.0f)), bKillingProcessStarted(false)
 {
 }
 
@@ -19,11 +19,15 @@ Component::Component(Component&& comp) :
 	Children(std::move(comp.Children)),
 	CollisionObj(std::move(comp.CollisionObj)),
 	Scene(comp.Scene),
+	ActorRef(comp.ActorRef),
+	ParentComponent(comp.ParentComponent),
 	GameHandle(comp.GameHandle),
 	DebugRenderMat(comp.DebugRenderMat),
 	DebugRenderMatInst(comp.DebugRenderMatInst),
-	DebugRenderLastFrameMVP(comp.DebugRenderLastFrameMVP)
+	DebugRenderLastFrameMVP(comp.DebugRenderLastFrameMVP),
+	bKillingProcessStarted(comp.bKillingProcessStarted)
 {
+	std::cout << "Komponentowy move...\n";
 }
 
 Component& Component::operator=(Component&& comp)
@@ -146,6 +150,11 @@ CollisionObject* Component::GetCollisionObj() const
 	return CollisionObj.get();
 }
 
+bool Component::IsBeingKilled() const
+{
+	return bKillingProcessStarted;
+}
+
 std::unique_ptr<Component> Component::DetachChild(Component& soughtChild)
 {
 	for (auto& it = Children.begin(); it != Children.end(); it++)
@@ -167,6 +176,12 @@ void Component::MoveChildren(Component& comp)
 {
 	std::for_each(Children.begin(), Children.end(), [&comp](std::unique_ptr<Component>& child) { comp.AddComponent(std::move(child)); });
 	Children.clear();
+}
+
+void Component::Delete()
+{
+	if (ParentComponent)
+		ParentComponent->Children.erase(std::remove_if(ParentComponent->Children.begin(), ParentComponent->Children.end(), [this](std::unique_ptr<Component>& child) { return child.get() == this; }), ParentComponent->Children.end());
 }
 
 void Component::SetName(std::string name)
@@ -215,6 +230,12 @@ void Component::UpdateAll(float dt)
 	Update(dt);
 	for (int i = 0; i < static_cast<int>(Children.size()); i++)
 		Children[i]->UpdateAll(dt);
+
+	if (IsBeingKilled())
+	{
+		Delete();
+		return;
+	}
 }
 
 void Component::QueueAnimation(Animation* animation)
@@ -260,10 +281,46 @@ void Component::QueueKeyFrameAll(AnimationChannel&)
 {
 }
 
+void CollisionObjRendering(RenderInfo& info, GameManager& gameHandle, CollisionObject& obj, const Transform& t, const glm::vec3& color)
+{
+	RenderEngineManager& renderEngHandle = *gameHandle.GetRenderEngineHandle();
+	Shader* shader = renderEngHandle.FindShader("Forward_NoLight");
+	shader->Use();
+	Material material("CollisionShapeDebugMaterial\n");
+	material.SetColor(color);
+	if (!shader)
+		return;
+
+	for (auto& shape : obj.Shapes)
+	{
+		EngineBasicShape geomShape;
+		switch (shape->Type)
+		{
+			case CollisionShapeType::COLLISION_BOX:	default: geomShape = EngineBasicShape::CUBE; break;
+			case CollisionShapeType::COLLISION_SPHERE: geomShape = EngineBasicShape::SPHERE; break;
+			case CollisionShapeType::COLLISION_CAPSULE:	continue;
+			case CollisionShapeType::COLLISION_TRIANGLE_MESH: continue;
+		}
+
+		const Transform& shapeTransform = shape->ShapeTransform;
+
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		renderEngHandle.RenderStaticMesh(info, MeshInstance(renderEngHandle.GetBasicShapeMesh(geomShape), &material), t * shapeTransform, shader);
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	}
+}
+
+#include <input/InputDevicesStateRetriever.h>
 void Component::DebugRender(RenderInfo info, Shader* shader) const
 {
+	if (GameHandle->GetInputRetriever().IsKeyPressed(Key::P))
+		return;
 	if (!DebugRenderMatInst)
 		return;
+
+	if (CollisionObj)
+		CollisionObjRendering(info, *GameHandle, *CollisionObj, GetTransform().GetWorldTransform());
+
 	Transform transform = GetTransform().GetWorldTransform();
 	transform.SetScale(glm::vec3(0.05f));
 	GameHandle->GetRenderEngineHandle()->RenderStaticMesh(info, MeshInstance(GameHandle->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD), DebugRenderMatInst), transform, shader, &DebugRenderLastFrameMVP, nullptr, true);
@@ -331,18 +388,18 @@ Component* Component::SearchForComponent(std::string name)
 #include <UI/UICanvasActor.h>
 #include <UI/UIListActor.h>
 #include <scene/TextComponent.h>
-void Component::GetEditorDescription(UIActor& editorParent, GameScene& editorScene)
+void Component::GetEditorDescription(EditorDescriptionBuilder descBuilder)
 {
-	UIInputBoxActor& textActor = editorParent.CreateChild(UIInputBoxActor(editorScene, "ComponentsNameActor"));
+	UIInputBoxActor& textActor = descBuilder.CreateActor<UIInputBoxActor>("ComponentsNameActor");
 	textActor.SetTransform(Transform(glm::vec2(0.0f, 1.5f), glm::vec2(1.0f)));
 
-	ModelComponent& prettyQuad = textActor.CreateComponent(ModelComponent(editorScene, "PrettyQuad"));
+	ModelComponent& prettyQuad = textActor.CreateComponent<ModelComponent>("PrettyQuad");
 	prettyQuad.AddMeshInst(MeshInstance(GameHandle->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD), const_cast<Material*>(textActor.GetButtonModel()->GetMeshInstance(0).GetMaterialPtr())));
 	prettyQuad.SetTransform(Transform(glm::vec2(0.0f, -0.625f), glm::vec2(textActor.GetRoot()->GetComponent<TextComponent>("ComponentsNameActorText")->GetTextLength() * 4.0f, 0.025f)));	//Component name text has scale (0.5, 0.5), so pos (0, -0.625) equals to 125% text half extent.
 	textActor.SetOnInputFunc([this, &prettyQuad, &textActor](const std::string& content) { SetName(content); prettyQuad.SetTransform(Transform(glm::vec2(0.0f, -0.625f), glm::vec2(textActor.GetRoot()->GetComponent<TextComponent>("ComponentsNameActorText")->GetTextLength(), 0.025f))); }, [this]() -> std::string { return GetName(); });
 
 	textActor.DeleteButtonModel();
-	//TextComponent& textComp = textActor.CreateComponent(TextComponent(editorScene, "ComponentsNameActorTextComp", Transform(glm::vec2(0.0f, 0.75f), glm::vec3(0.0f), glm::vec2(0.25f)), comp->GetName(), "fonts/expressway rg.ttf", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER)));
+	//TextComponent& textComp = textActor.NowyCreate<TextComponent>("ComponentsNameActorTextComp", Transform(glm::vec2(0.0f, 0.75f), glm::vec3(0.0f), glm::vec2(0.25f)), comp->GetName(), "fonts/expressway rg.ttf", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
 
 	/*for (int x = 0, y = 0; !(y == 2 && x == 3); x++)
 	{
@@ -354,7 +411,7 @@ void Component::GetEditorDescription(UIActor& editorParent, GameScene& editorSce
 		UIInputBoxActor& inputBoxActor = editorParent.CreateChild(UIInputBoxActor(editorScene, "TransformBox" + std::to_string(x) + ":" + std::to_string(y)));
 		inputBoxActor.SetTransform(Transform(glm::vec3(-0.75f + float(x) * 0.505f, 0.25f - float(y) * 0.505f, 0.0f), glm::vec3(0.0f), glm::vec3(0.25f)));
 
-		switch (y)
+		switch (y)  
 		{
 		case 0: inputBoxActor.SetOnInputFunc([this, x](float val) {glm::vec3 pos = GetTransform().PositionRef; pos[x] = val; GetTransform().SetPosition(pos); }, [this, x]() { return GetTransform().PositionRef[x]; }, true); break;
 		case 1: inputBoxActor.SetOnInputFunc([this, x](float val) {glm::quat rot = GetTransform().RotationRef; rot[x] = val; GetTransform().SetRotation(glm::normalize(rot)); }, [this, x]() { return GetTransform().RotationRef[x]; }, true); break;
@@ -362,19 +419,28 @@ void Component::GetEditorDescription(UIActor& editorParent, GameScene& editorSce
 		}
 	}*/
 
-	AddFieldToCanvas("Position", editorParent).GetTemplates().VecInput<glm::vec3>([this](float x, float val) {glm::vec3 pos = GetTransform().PositionRef; pos[x] = val; GetTransform().SetPosition(pos); }, [this](float x) { return GetTransform().PositionRef[x]; });
-	AddFieldToCanvas("Rotation", editorParent).GetTemplates().VecInput<glm::quat>([this](float x, float val) {glm::quat rot = GetTransform().RotationRef; rot[x] = val; GetTransform().SetRotation(glm::normalize(rot)); }, [this](float x) { return GetTransform().RotationRef[x]; });
-	AddFieldToCanvas("Scale", editorParent).GetTemplates().VecInput<glm::vec3>([this](float x, float val) {glm::vec3 scale = GetTransform().ScaleRef; scale[x] = val; GetTransform().SetScale(scale); }, [this](float x) { return GetTransform().ScaleRef[x]; });
+	descBuilder.AddField("Position").GetTemplates().VecInput<glm::vec3>([this](float x, float val) {glm::vec3 pos = GetTransform().PositionRef; pos[x] = val; GetTransform().SetPosition(pos); }, [this](float x) { return GetTransform().PositionRef[x]; });
+	descBuilder.AddField("Rotation").GetTemplates().VecInput<glm::quat>([this](float x, float val) {glm::quat rot = GetTransform().RotationRef; rot[x] = val; GetTransform().SetRotation(glm::normalize(rot)); }, [this](float x) { return GetTransform().RotationRef[x]; });
+	descBuilder.AddField("Scale").GetTemplates().VecInput<glm::vec3>([this](float x, float val) {glm::vec3 scale = GetTransform().ScaleRef; scale[x] = val; GetTransform().SetScale(scale); }, [this](float x) { return GetTransform().ScaleRef[x]; });
 
-	AddFieldToCanvas("Delete", editorParent).CreateChild(UIButtonActor(editorScene, "DeleteButton", "Delete", [this]() {}));
+	descBuilder.AddField("Delete").CreateChild<UIButtonActor>("DeleteButton", "Delete", [this, descBuilder]() mutable 
+		{
+			MarkAsKilled();
 
-	UICanvasField& shapesListField = AddFieldToCanvas("Collision Object", editorParent);
-	UIAutomaticListActor& shapesList = shapesListField.CreateChild(UIAutomaticListActor(editorScene, "ShapesList"));
+			if (!ParentComponent)	//If this is the root component, refresh the scene (to remove the killed actor)
+				descBuilder.RefreshScene();
+
+			descBuilder.SelectActor(&ActorRef); //Refresh the actor (to remove the killed component). Component will be deselected automatically - SelectComponent(nullptr) is always called inside SelectActor(...).
+		}).GetTransform()->Move(glm::vec2(1.0f, 0.0f));
+
+	UICanvasField& shapesListField = descBuilder.AddField("Collision Object");
+	shapesListField.GetTransform()->Move(glm::vec2(1.0f, 0.0f));
+	UIAutomaticListActor& shapesList = shapesListField.CreateChild<UIAutomaticListActor>("ShapesList");
 	dynamic_cast<UICanvasActor*>(shapesListField.GetCanvasPtr())->FieldsList->SetListElementOffset(dynamic_cast<UICanvasActor*>(shapesListField.GetCanvasPtr())->FieldsList->GetListElementCount() - 1, [&shapesListField, &shapesList]()-> glm::vec3 { return static_cast<glm::mat3>(shapesListField.GetTransform()->GetMatrix()) * (shapesList.GetListOffset());});
 	dynamic_cast<UICanvasActor*>(shapesListField.GetCanvasPtr())->FieldsList->SetListCenterOffset(dynamic_cast<UICanvasActor*>(shapesListField.GetCanvasPtr())->FieldsList->GetListElementCount() - 1, [&shapesListField]()-> glm::vec3 { return glm::vec3(0.0f, -shapesListField.GetTransform()->ScaleRef.y, 0.0f); });
-	UIButtonActor& colObjectPresenceButton = shapesList.CreateChild(UIButtonActor(editorScene, "CollisionObjectButton", (CollisionObj) ? ("V") : ("X")));
+	UIButtonActor& colObjectPresenceButton = shapesList.CreateChild<UIButtonActor>("CollisionObjectButton", (CollisionObj) ? ("V") : ("X"));
 
-	shapesListField.CreateChild(UIButtonActor(editorScene, "AddColShape", "+", [this, &shapesList, &colObjectPresenceButton]() { if (!CollisionObj) { this->SetCollisionObject(std::make_unique<CollisionObject>(CollisionObject(true, CollisionShapeType::COLLISION_BOX))); }  /*CollisionObj->AddShape(CollisionShapeType::COLLISION_BOX); */shapesList.Refresh();})).SetTransform(Transform(glm::vec2(3.0f, 0.0f), glm::vec2(0.25f)));
+	shapesListField.CreateChild<UIButtonActor>("AddColShape", "+", [this, &shapesList, &colObjectPresenceButton]() { if (!CollisionObj) { this->SetCollisionObject(std::make_unique<CollisionObject>(CollisionObject(true, CollisionShapeType::COLLISION_BOX))); }  /*CollisionObj->AddShape(CollisionShapeType::COLLISION_BOX); */shapesList.Refresh();}).SetTransform(Transform(glm::vec2(3.0f, 0.0f), glm::vec2(0.25f)));
 
 
 	//shapesList.GetTransform()->Move(glm::vec2(0.0f, -0.2f));
@@ -390,13 +456,22 @@ void Component::GetEditorDescription(UIActor& editorParent, GameScene& editorSce
 				case CollisionShapeType::COLLISION_TRIANGLE_MESH: shapeTypeName = "Triangle Mesh"; break;
 				case CollisionShapeType::COLLISION_CAPSULE: shapeTypeName = "Capsule"; break;
 			}
-			Actor& shapeActor = shapesList.CreateChild(Actor(editorScene, "TextActor"));
-			shapeActor.CreateComponent(TextComponent(editorScene, "Text", Transform(), ">" + shapeTypeName + "<", "fonts/expressway rg.ttf", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER)));
+			Actor& shapeActor = shapesList.CreateChild<Actor>("TextActor");
+			shapeActor.CreateComponent<TextComponent>("Text", Transform(), ">" + shapeTypeName + "<", "fonts/expressway rg.ttf", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
 		
 		}
 	}
 	//shapesList.GetTransform()->Move(-1.0f * static_cast<glm::mat3>(shapesListField.GetTransform()->GetMatrix()) * (shapesList.GetListBegin() + shapesList.GetListOffset()));
 	shapesList.Refresh();
+}
+
+void Component::MarkAsKilled()
+{
+	bKillingProcessStarted = true;
+	if (!ParentComponent)	//If this is the root component of an Actor, kill the Actor as well.
+		ActorRef.MarkAsKilled();
+	for (auto& it : Children)
+		it->MarkAsKilled();
 }
 
 Component::~Component()

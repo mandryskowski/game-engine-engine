@@ -176,6 +176,7 @@ public:
 	template <typename T> void Select(T* obj, GameScene& editorScene);
 
 	virtual GameManager* GetGameHandle() = 0;
+	virtual GameScene* GetSelectedScene() = 0;
 
 	virtual void PreviewHierarchyTree(HierarchyTemplate::HierarchyTreeT& tree) = 0;
 

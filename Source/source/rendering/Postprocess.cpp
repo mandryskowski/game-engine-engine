@@ -200,21 +200,11 @@ const Texture* Postprocess::SMAAPass(SMAAToolbox& tb, const GEE_FB::Framebuffer&
 	}
 	else
 	{
-		//if (writeFramebuffer)
-		//{
-			writeFramebuffer.Bind(true, viewport);
-			writeFramebuffer.SetDrawBuffer(writeColorBuffer);
-		//}
-		/*
-		else
-		{
-			glBindFramebuffer(GL_FRAMEBUFFER, 0);
-			glDrawBuffer(GL_BACK);
-			glViewport(0, 0, Settings->Video.Resolution.x, Settings->Video.Resolution.y);
-		}*/
+		writeFramebuffer.Bind(true, viewport);
+		writeFramebuffer.SetDrawBuffer(writeColorBuffer);
 	}
 
-	glEnable(GL_FRAMEBUFFER_SRGB);
+	//glEnable(GL_FRAMEBUFFER_SRGB);
 
 	tb.SMAAShaders[2]->Use();
 
@@ -227,10 +217,12 @@ const Texture* Postprocess::SMAAPass(SMAAToolbox& tb, const GEE_FB::Framebuffer&
 	}
 
 	glDrawArrays(GL_TRIANGLES, 0, 6);
-	glDisable(GL_FRAMEBUFFER_SRGB);
+	//glDisable(GL_FRAMEBUFFER_SRGB);
 
 	if (!bT2x)
-		return 0;
+		return nullptr;
+	if (!velocityTex)
+		return nullptr;
 
 	///////////////4. Temporal resolve (optional)
 	writeFramebuffer.Bind(true);

@@ -46,18 +46,31 @@ public:
 class EditorDescriptionBuilder
 {
 public:
-	EditorDescriptionBuilder(EditorManager&, GameScene& editorScene, UICanvasActor&);
+	EditorDescriptionBuilder(EditorManager&, GameScene& editorScene, UIActor&);
 	GameScene& GetEditorScene();
-	UICanvasActor& GetCanvas();
-	void AddField(const std::string& name, std::function<glm::vec3()> getFieldOffsetFunc = nullptr);	//equivalent to GetCanvasActor().AddField(...). I put it here for easier access.
+	UICanvas& GetCanvas();
+	UIActor& GetDescriptionParent();
+
+	UICanvasField& AddField(const std::string& name, std::function<glm::vec3()> getFieldOffsetFunc = nullptr);	//equivalent to GetCanvasActor().AddField(...). I put it here for easier access.
+	template <typename ChildClass, typename... Args> ChildClass& CreateActor(Args&&...);
 
 	void SelectComponent(Component*);
 	void SelectActor(Actor*);
+	void RefreshScene();
+
+	void DeleteDescription();
 private:
 	EditorManager& EditorHandle;
 	GameScene& EditorScene;
-	UICanvasActor& DescriptionCanvas;
+	UIActor& DescriptionParent;
 };
+
+template <typename ChildClass, typename... Args>
+inline ChildClass& EditorDescriptionBuilder::CreateActor(Args&&... args)
+{
+	return DescriptionParent.CreateChild<ChildClass>(std::forward<Args>(args)...);
+}
+
 
 
 UICanvasField& AddFieldToCanvas(const std::string& name, UICanvasElement& element, std::function<glm::vec3()> getFieldOffsetFunc = nullptr);
