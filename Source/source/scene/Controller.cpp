@@ -61,20 +61,11 @@ void Controller::HandleEvent(const Event& ev)
 
 void Controller::ReadMovementKeys()
 {
-	if (GameHandle->GetInputRetriever().IsKeyPressed(Key::TAB))
-	{
-		GameHandle->PassMouseControl(nullptr);
-		for (int i = 0; i < DIRECTION_COUNT; i++)
-			Directions[i] = false;
-	}
-	else
-		GameHandle->PassMouseControl(this);
+	for (int i = 0; i < DIRECTION_COUNT; i++)
+		Directions[i] = false;
 
 	if (!PossessedActor || GameHandle->GetCurrentMouseController() != this)
 		return;
-
-	for (int i = 0; i < DIRECTION_COUNT; i++)
-		Directions[i] = false;
 
 	if (GameHandle->GetInputRetriever().IsKeyPressed(Key::E))
 		Scene.FindActor("GameLevel")->GetRoot()->GetComponent("Forklift.001")->GetTransform().SetParentTransform(PossessedActor->GetTransform(), true);

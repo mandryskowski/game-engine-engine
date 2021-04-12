@@ -18,7 +18,7 @@ UIButtonActor::UIButtonActor(GameScene& scene, const std::string& name, std::fun
 	PrevDeducedMaterial(nullptr),
 	State(EditorIconState::IDLE)
 {
-	ButtonModel = &RootComponent->CreateComponent(ModelComponent(Scene, Name + "'s_Button_Model"));
+	ButtonModel = &RootComponent->CreateComponent<ModelComponent>(Name + "'s_Button_Model");
 
 	Material *matIdle, *matHover, *matClick;
 	if ((matIdle = GameHandle->GetRenderEngineHandle()->FindMaterial("GEE_Button_Idle")) == nullptr)
@@ -55,7 +55,7 @@ UIButtonActor::UIButtonActor(GameScene& scene, const std::string& name, std::fun
 UIButtonActor::UIButtonActor(GameScene& scene, const std::string& name, const std::string& buttonTextContent, std::function<void()> onClickFunc, std::function<void()> whileBeingClickedFunc):
 	UIButtonActor(scene, name, onClickFunc, whileBeingClickedFunc)
 {
-	CreateComponent(TextConstantSizeComponent(Scene, "ComponentsNameActorTextComp", Transform(glm::vec2(0.0f), glm::vec2(1.0f)), buttonTextContent, "fonts/expressway rg.ttf", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER)));
+	CreateComponent<TextConstantSizeComponent>("ComponentsNameActorTextComp", Transform(glm::vec2(0.0f), glm::vec2(1.0f)), buttonTextContent, "fonts/expressway rg.ttf", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
 }
 
 ModelComponent* UIButtonActor::GetButtonModel()

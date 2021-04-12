@@ -10,8 +10,8 @@
 
 using namespace MeshSystem;
 
-ModelComponent::ModelComponent(GameScene& scene, const std::string& name, const Transform& transform, SkeletonInfo* info, Material* overrideMat) :
-	RenderableComponent(scene, name, transform),
+ModelComponent::ModelComponent(Actor& actor, Component* parentComp, const std::string& name, const Transform& transform, SkeletonInfo* info, Material* overrideMat) :
+	RenderableComponent(actor, parentComp, name, transform),
 	UICanvasElement(),
 	LastFrameMVP(glm::mat4(1.0f)),
 	SkelInfo(info),
@@ -166,80 +166,23 @@ void ModelComponent::Render(const RenderInfo& info, Shader* shader)
 
 #include <UI/UIListActor.h>
 
-void ModelComponent::GetEditorDescription(UIActor& editorParent, GameScene& editorScene)
+void ModelComponent::GetEditorDescription(EditorDescriptionBuilder descBuilder)
 {
-	RenderableComponent::GetEditorDescription(editorParent, editorScene);
+	RenderableComponent::GetEditorDescription(descBuilder);
 
 	Material* tickMaterial = new Material("TickMaterial", 0.0f, 0.0f, GameHandle->GetRenderEngineHandle()->FindShader("Forward_NoLight"));
 	tickMaterial->AddTexture(new NamedTexture(textureFromFile("EditorAssets/tick_icon.png", GL_SRGB_ALPHA, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR, true), "albedo1"));
 
-	//canvas.AddField("Position").GetTemplates().Vec3Input([this](int i, float val) {glm::vec3 pos = GetTransform().PositionRef; pos[i] = val; GetTransform().SetPosition(pos); });
+	descBuilder.AddField("Render as billboard").GetTemplates().TickBox(RenderAsBillboard);
+	descBuilder.AddField("Hide").GetTemplates().TickBox(Hide);
 
-	AddFieldToCanvas("Render as billboard", editorParent).GetTemplates().TickBox(RenderAsBillboard);
-	AddFieldToCanvas("Hide", editorParent).GetTemplates().TickBox(Hide);
-
-	UICanvasField& testField = AddFieldToCanvas("TEST", editorParent);
-	UIAutomaticListActor& testList = testField.CreateChild(UIAutomaticListActor(editorScene, "TESTHELP"));
-	Actor& testTextAc = testList.CreateChild(Actor(editorScene, "TESTTEXTAC"));
+	UICanvasField& testField = descBuilder.AddField("TEST");
+	UIAutomaticListActor& testList = testField.CreateChild<UIAutomaticListActor>("TESTHELP");
+	Actor& testTextAc = testList.CreateChild<Actor>("TESTTEXTAC");
 	testTextAc.SetTransform(Transform(glm::vec2(0.0f), glm::vec2(0.1f)));
-	testTextAc.CreateComponent(TextComponent(editorScene, "ElementText", Transform(glm::vec2(-10.0f, 0.0f), glm::vec2(1.0f)), "Lorem ipsum test 123", "fonts/expressway rg.ttf", std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::CENTER)));
+	testTextAc.CreateComponent<TextComponent>("ElementText", Transform(glm::vec2(-10.0f, 0.0f), glm::vec2(1.0f)), "Lorem ipsum test 123", "fonts/expressway rg.ttf", std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::CENTER));
 
-//	Actor& testTextAc11 = testTextAc.CreateChild(Actor(editorScene, "TESTTEXTAC"));
-//	testTextAc11.SetTransform(Transform(glm::vec2(0.0f, -10.0f), glm::vec3(0.0f), glm::vec2(1.0f)));
-//	testTextAc11.CreateComponent(TextComponent(editorScene, "ElementText", Transform(glm::vec2(-10.0f, 0.0f), glm::vec3(0.0f), glm::vec2(1.0f)), "Dziecko lorem", "fonts/expressway rg.ttf", std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::CENTER)));
-
-	Actor& testTextAc2 = testList.CreateChild(Actor(editorScene, "TESTTEXTAC"));
+	Actor& testTextAc2 = testList.CreateChild<Actor>("TESTTEXTAC");
 	testTextAc2.SetTransform(Transform(glm::vec2(0.0f, -10.0f), glm::vec2(0.1f)));
-	testTextAc2.CreateComponent(TextComponent(editorScene, "ElementText", Transform(glm::vec2(-10.0f, 0.0f), glm::vec2(1.0f)), "Kolejny ipsum lorem test 456", "fonts/expressway rg.ttf", std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::CENTER)));
-//	canvas.AddField("Hide").GetTemplates().TickBox(&Hide);
-	//	EditorFieldTemplates::TickBox(canvas, "Render as billboard", &RenderAsBillboard);																									//identico
-	//	EditorFieldTemplates::TickBox(canvas, [this](ModelComponent& tickModel) { RenderAsBillboard = !RenderAsBillboard; tickModel.SetHide(!RenderAsBillboard);});	//identico
-
-	//	canvas.AddField(billboardTickBox);
-	/*{
-		Actor& elementActor = canvas.CreateChild(Actor(editorScene, "ElementActor"));
-		elementActor.SetTransform(Transform(glm::vec2(0.0f, -3.0f), glm::vec3(0.0f), glm::vec2(0.1F)));
-		elementActor.CreateComponent(TextComponent(editorScene, "ElementText", Transform(glm::vec2(-10.0f, 0.0f), glm::vec3(0.0f), glm::vec2(1.0f)), "Render as billboard", "fonts/expressway rg.ttf", std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::CENTER)));
-
-
-		UIButtonActor& billboardTickBoxActor = elementActor.CreateChild(UIButtonActor(editorScene, "BillboardTickBox"));
-
-		ModelComponent& billboardTickModel = billboardTickBoxActor.CreateComponent(ModelComponent(editorScene, "TickModel"));
-		billboardTickModel.AddMeshInst(GameHandle->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD));
-		billboardTickModel.SetHide(true);
-		billboardTickModel.OverrideInstancesMaterial(tickMaterial);
-
-		billboardTickBoxActor.SetTransform(Transform(glm::vec3(5.0f, 0.0f, 0.0f), glm::vec3(0.0f), glm::vec3(1.0f)));
-		billboardTickBoxActor.SetOnClickFunc([this, &billboardTickBoxActor, &billboardTickModel]() { RenderAsBillboard = !RenderAsBillboard; billboardTickModel.SetHide(!billboardTickModel.GetHide()); });
-		canvas.AddUIElement(elementActor);
-	}
-
-	{
-		Actor& elementActor = canvas.CreateChild(Actor(editorScene, "ElementActor"));
-		elementActor.SetTransform(Transform(glm::vec2(0.0f, -3.3f), glm::vec3(0.0f), glm::vec2(0.1f)));
-		elementActor.CreateComponent(TextComponent(editorScene, "ElementText", Transform(glm::vec2(-10.0f, 0.0f), glm::vec3(0.0f), glm::vec2(1.0f)), "Hide", "fonts/expressway rg.ttf", std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::CENTER)));
-
-
-		UIButtonActor& hideTickBoxActor = elementActor.CreateChild(UIButtonActor(editorScene, "HideTickBox"));
-
-		ModelComponent& hideTickModel = hideTickBoxActor.CreateComponent(ModelComponent(editorScene, "TickModel"));
-		hideTickModel.AddMeshInst(GameHandle->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD));
-		hideTickModel.SetHide(true);
-		hideTickModel.OverrideInstancesMaterial(tickMaterial);
-
-		hideTickBoxActor.SetTransform(Transform(glm::vec3(5.0f, 0.0f, 0.0f), glm::vec3(0.0f), glm::vec3(1.0f)));
-		hideTickBoxActor.SetOnClickFunc([this, &hideTickBoxActor, &hideTickModel]() { Hide = !Hide; hideTickModel.SetHide(!hideTickModel.GetHide()); });
-		canvas.AddUIElement(elementActor);
-	}
-
-	/*UIButtonActor& hideTickBoxActor = canvas.CreateChild(UIButtonActor(editorScene, "HideTickBox"));
-
-	ModelComponent& hideTickModel = hideTickBoxActor.CreateComponent(ModelComponent(editorScene, "TickModel"));
-	hideTickModel.AddMeshInst(GameHandle->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD));
-	hideTickModel.SetHide(true);
-	hideTickModel.OverrideInstancesMaterial(tickMaterial);
-
-	canvas.AddUIElement(hideTickBoxActor);
-	hideTickBoxActor.SetTransform(Transform(glm::vec3(-0.75f, -3.5f, 0.0f), glm::vec3(0.0f), glm::vec3(0.25f)));
-	hideTickBoxActor.SetOnClickFunc([this, &hideTickBoxActor, &hideTickModel]() { Hide = !Hide; hideTickModel.SetHide(!hideTickModel.GetHide()); });*/
+	testTextAc2.CreateComponent<TextComponent>("ElementText", Transform(glm::vec2(-10.0f, 0.0f), glm::vec2(1.0f)), "Kolejny ipsum lorem test 456", "fonts/expressway rg.ttf", std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::CENTER));
 }

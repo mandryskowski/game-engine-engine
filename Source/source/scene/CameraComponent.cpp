@@ -2,8 +2,8 @@
 #include <rendering/RenderInfo.h>
 #include <rendering/Material.h>
 
-CameraComponent::CameraComponent(GameScene& scene, std::string name, const glm::mat4& projectionMatrix) :
-	Component(scene, name, Transform(glm::vec3(0.0f), glm::vec3(0.0f), glm::vec3(1.0f))),
+CameraComponent::CameraComponent(Actor& actor, Component* parentComp, std::string name, const glm::mat4& projectionMatrix) :
+	Component(actor, parentComp, name, Transform(glm::vec3(0.0f), glm::vec3(0.0f), glm::vec3(1.0f))),
 	RotationEuler(0.0f),
 	Projection(projectionMatrix)
 {

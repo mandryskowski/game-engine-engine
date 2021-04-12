@@ -15,7 +15,7 @@ class SoundSourceComponent : public Component
 
 public:
 
-	SoundSourceComponent(GameScene&, std::string, SoundBuffer* = nullptr, Transform = Transform());
+	SoundSourceComponent(Actor&, Component* parentComp, std::string, SoundBuffer* = nullptr, Transform = Transform());
 
 	void GenAL(SoundBuffer* = nullptr);	//pass a pointer here only if you want to update it in the class
 
@@ -30,8 +30,8 @@ public:
 
 	virtual	MaterialInstance GetDebugMatInst(EditorIconState) override;
 
-	virtual void GetEditorDescription(UIActor& canvas, GameScene& editorScene) override;
+	virtual void GetEditorDescription(EditorDescriptionBuilder) override;
 
 	void Dispose();
-
+	~SoundSourceComponent();
 };

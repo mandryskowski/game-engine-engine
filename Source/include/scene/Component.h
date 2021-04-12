@@ -17,13 +17,16 @@ struct EditorElementDesc
 
 };
 
+class EditorDescriptionBuilder;
+
 class Component
 {
 public:
-	Component(GameScene&, const std::string& name = "A Component", const Transform& t = Transform());
+	Component(Actor&, Component* parentComp, const std::string& name = "A Component", const Transform& t = Transform());
 
 	Component(const Component&) = delete;
-	Component(Component&&);
+	Component(Component&&);// = delete;
+	//Component(Actor&, Component&&);
 
 protected:
 	template <typename CompClass> friend class HierarchyTemplate::HierarchyNode;
@@ -51,12 +54,16 @@ public:
 	GameScene& GetScene() const;
 	CollisionObject* GetCollisionObj() const;
 
+	bool IsBeingKilled() const;
+
 	void SetName(std::string name);
 	void SetTransform(Transform transform);
 	CollisionObject* SetCollisionObject(std::unique_ptr<CollisionObject>&);
 	void AddComponent(std::unique_ptr<Component> component);
 	void AddComponents(std::vector<std::unique_ptr<Component>> components);
-	template <typename ChildClass> ChildClass& CreateComponent(ChildClass&& objectConstructor);
+
+	template<typename ChildClass, typename... Args> ChildClass& CreateComponent(Args&&... args);
+
 
 	virtual void Update(float);
 	void UpdateAll(float dt);
@@ -112,7 +119,14 @@ public:
 			Children[i]->GetAllComponents<CastToClass, CheckClass>(comps);	//robimy to samo we wszystkich "dzieciach"
 	}
 
-	virtual void GetEditorDescription(UIActor& editorParent, GameScene& editorScene);
+	virtual void GetEditorDescription(EditorDescriptionBuilder);
+
+	void MarkAsKilled();
+
+	template <typename Archive> void Serialize(Archive& archive)
+	{
+		archive(Name, ComponentTransform);
+	}
 
 	virtual ~Component();
 
@@ -120,6 +134,7 @@ public:
 	friend class Actor;
 	std::unique_ptr<Component> DetachChild(Component& soughtChild);	//Find child in hierarchy and detach it from its parent
 	void MoveChildren(Component& moveTo);
+	void Delete();
 
 	std::string Name;
 
@@ -128,14 +143,18 @@ public:
 	std::unique_ptr<CollisionObject> CollisionObj;
 
 	GameScene& Scene; //The scene that this Component is present in
+	Actor& ActorRef;
+	Component* ParentComponent;
 	GameManager* GameHandle;
+
+	bool bKillingProcessStarted;
 
 	AtlasMaterial* DebugRenderMat;
 	std::shared_ptr<MaterialInstance> DebugRenderMatInst;
 	mutable glm::mat4 DebugRenderLastFrameMVP;
 };
 
-template<typename ChildClass>
+/*template<typename ChildClass>
 inline ChildClass& Component::CreateComponent(ChildClass&& objectCRef)
 {
 	std::unique_ptr<ChildClass> createdChild = std::make_unique<ChildClass>(std::move(objectCRef));
@@ -143,4 +162,19 @@ inline ChildClass& Component::CreateComponent(ChildClass&& objectCRef)
 	AddComponent(std::move(createdChild));
 
 	return (ChildClass&)childRef;
+}*/
+
+
+template<typename ChildClass, typename... Args>
+inline ChildClass& Component::CreateComponent(Args&&... args)
+{
+	std::unique_ptr<ChildClass> createdChild = std::make_unique<ChildClass>(ActorRef, this, std::forward<Args>(args)...);
+	ChildClass& childRef = *createdChild;
+	AddComponent(std::move(createdChild));
+
+	if (GameHandle->HasStarted())
+		childRef.OnStartAll();
+
+	return (ChildClass&)childRef;
 }
+void CollisionObjRendering(RenderInfo& info, GameManager& gameHandle, CollisionObject& obj, const Transform& t, const glm::vec3& color = glm::vec3(0.1f, 0.6f, 0.3f));

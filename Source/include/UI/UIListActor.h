@@ -42,7 +42,12 @@ class UIListElement
 public:
 	UIListElement(Actor& actorRef, std::function<glm::vec3()> getElementOffset, std::function<glm::vec3()> getCenterOffset = nullptr);
 	UIListElement(Actor& actorRef, const glm::vec3& constElementOffset);
+	UIListElement(const UIListElement&);
+	UIListElement(UIListElement&&);
+	UIListElement& operator=(const UIListElement&);
+	UIListElement& operator=(UIListElement&&);
 	Actor& GetActorRef();
+	const Actor& GetActorRef() const;
 	glm::vec3 GetElementOffset() const;
 	glm::vec3 GetCenterOffset() const;
 	void SetGetElementOffsetFunc(std::function<glm::vec3()>);

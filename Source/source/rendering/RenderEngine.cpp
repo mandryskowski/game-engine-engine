@@ -33,7 +33,6 @@ void RenderEngine::Init(glm::uvec2 resolution)
 
 	LoadInternalShaders();
 	GenerateEngineObjects();
-	SetupShadowmaps();
 
 	Postprocessing.Init(GameHandle, Resolution);
 
@@ -177,13 +176,6 @@ void RenderEngine::LoadInternalShaders()
 {
 	std::string settingsDefines = GameHandle->GetGameSettings()->Video.GetShaderDefines(Resolution);
 
-	//load the default shader
-	std::vector<std::pair<unsigned int, std::string>> defaultShaderTextureUnits = {
-		std::pair<unsigned int, std::string>(0, "albedo1"),
-		std::pair<unsigned int, std::string>(1, "specular1"),
-		std::pair<unsigned int, std::string>(2, "normal1"),
-		std::pair<unsigned int, std::string>(3, "depth1"),
-	};
 	//load shadow shaders
 	Shaders.push_back(ShaderLoader::LoadShaders("Depth", "Shaders/depth.vs", "Shaders/depth.fs"));
 	Shaders.back()->SetExpectedMatrices(std::vector<MatrixType>{MatrixType::MVP});
@@ -215,38 +207,6 @@ void RenderEngine::Resize(glm::uvec2 resolution)
 {
 	Resolution = resolution;
 	const GameSettings* settings = GameHandle->GetGameSettings();
-}
-
-void RenderEngine::SetupShadowmaps()
-{
-	/*
-	glm::uvec2 shadowMapSize(512);
-	switch (GameHandle->GetGameSettings()->ShadowLevel)
-	{
-	case SETTING_LOW: shadowMapSize = glm::vec2(1024); break;
-	case SETTING_MEDIUM: shadowMapSize = glm::vec2(2048); break;
-	case SETTING_HIGH: shadowMapSize = glm::vec2(512); break;
-	case SETTING_ULTRA: shadowMapSize = glm::vec2(1024); break;
-	}
-	ShadowFramebuffer.SetAttachments(shadowMapSize);
-
-
-	ShadowMapArray = std::make_shared<Texture>();
-	ShadowMapArray->GenerateID(GL_TEXTURE_2D_ARRAY);
-	ShadowMapArray->Bind();
-	glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_DEPTH_COMPONENT, shadowMapSize.x, shadowMapSize.y, 16, 0, GL_DEPTH_COMPONENT, GL_FLOAT, (void*)(nullptr));
-	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-	glTexParameterfv(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_BORDER_COLOR, glm::value_ptr(glm::vec4(1.0f)));
-
-	ShadowCubemapArray = std::make_shared<Texture>();
-	ShadowCubemapArray->GenerateID(GL_TEXTURE_CUBE_MAP_ARRAY);
-	ShadowCubemapArray->Bind();
-	glTexImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 0, GL_DEPTH_COMPONENT, shadowMapSize.x, shadowMapSize.y, 16 * 6, 0, GL_DEPTH_COMPONENT, GL_FLOAT, (void*)(nullptr));
-	glTexParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);*/
 }
 
 const ShadingModel& RenderEngine::GetShadingModel()
@@ -368,6 +328,7 @@ Shader* RenderEngine::FindShader(std::string name)
 void RenderEngine::RenderShadowMaps(RenderToolboxCollection& tbCollection, GameSceneRenderData* sceneRenderData, std::vector <std::reference_wrapper<LightComponent>> lights)
 {
 	ShadowMappingToolbox* shadowsTb = tbCollection.GetTb<ShadowMappingToolbox>();
+	bool dynamicShadowRender = tbCollection.GetSettings().ShadowLevel > SettingLevel::SETTING_MEDIUM;
 	shadowsTb->ShadowFramebuffer->Bind(true);
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
@@ -383,9 +344,12 @@ void RenderEngine::RenderShadowMaps(RenderToolboxCollection& tbCollection, GameS
 
 	BindSkeletonBatch(sceneRenderData, static_cast<unsigned int>(0));
 
-	for (unsigned int i = 0; i < lights.size(); i++)
+	for (int i = 0; i < static_cast<int>(lights.size()); i++)
 	{
 		LightComponent& light = lights[i].get();
+		if (!dynamicShadowRender && light.HasValidShadowMap())
+			continue;
+
 		if (light.GetType() == LightType::POINT)
 		{
 			time1 = (float)glfwGetTime();
@@ -431,6 +395,9 @@ void RenderEngine::RenderShadowMaps(RenderToolboxCollection& tbCollection, GameS
 			RenderInfo info(tbCollection, view, projection, VP, glm::vec3(0.0f), false, true, false);
 			RenderRawScene(info, sceneRenderData, FindShader("Depth"));
 		}
+
+		if (!dynamicShadowRender)
+			light.MarkValidShadowMap();
 	}
 
 	glActiveTexture(GL_TEXTURE0);
@@ -648,14 +615,15 @@ void RenderEngine::PreLoopPass()
 
 void RenderEngine::PrepareScene(RenderToolboxCollection& tbCollection, GameSceneRenderData* sceneRenderData)
 {
-	if (sceneRenderData->ContainsLights() && (1 || (GameHandle->GetGameSettings()->Video.ShadowLevel > SettingLevel::SETTING_MEDIUM)))
+	if (sceneRenderData->ContainsLights() && (GameHandle->GetGameSettings()->Video.ShadowLevel > SettingLevel::SETTING_MEDIUM || sceneRenderData->HasLightWithoutShadowMap()))
 		RenderShadowMaps(tbCollection, sceneRenderData, sceneRenderData->Lights);
 }
 
+#include <input/InputDevicesStateRetriever.h>
 void RenderEngine::FullSceneRender(RenderInfo& info, GameSceneRenderData* sceneRenderData, GEE_FB::Framebuffer* framebuffer, Viewport viewport)
 {
 	const GameSettings::VideoSettings& settings = info.TbCollection.Settings;
-	bool debugPhysics = false;
+	bool debugPhysics = GameHandle->GetInputRetriever().IsKeyPressed(Key::P);
 	bool debugComponents = true;
 	bool useLightingAlgorithms = sceneRenderData->ContainsLights();
 	glm::mat4 currentFrameView = info.view;

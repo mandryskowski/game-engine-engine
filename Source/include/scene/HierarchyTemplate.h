@@ -7,6 +7,8 @@
 #include <utility/Utility.h>
 #include <functional>	//move
 #include <scene/ModelComponent.h>	//move
+#include <scene/Actor.h>
+
 class Mesh;
 struct CollisionObject;
 struct CollisionShape;
@@ -36,9 +38,9 @@ namespace HierarchyTemplate
 		virtual HierarchyNodeBase* GetChild(unsigned int index) const = 0;
 		virtual HierarchyNodeBase& AddChild(std::unique_ptr<HierarchyNodeBase> child) = 0;
 		virtual HierarchyNodeBase* FindNode(const std::string& name) = 0;
-		template <typename CompType> HierarchyNode<CompType>& CreateChild(HierarchyNode<CompType>&& node)
+		template <typename CompType> HierarchyNode<CompType>& CreateChild(const std::string& name)
 		{
-			std::unique_ptr<HierarchyNode<CompType>> nodeSmartPtr = std::make_unique<HierarchyNode<CompType>>(std::move(node));
+			std::unique_ptr<HierarchyNode<CompType>> nodeSmartPtr = std::make_unique<HierarchyNode<CompType>>(GetCompBaseType().ActorRef, name);
 			HierarchyNode<CompType>& nodeRef = *nodeSmartPtr;
 			AddChild(std::move(nodeSmartPtr));
 
@@ -47,7 +49,7 @@ namespace HierarchyTemplate
 
 		virtual void InstantiateToComp(Component& comp) const = 0;
 
-		virtual std::unique_ptr<HierarchyNodeBase> Copy(bool copyChildren = false) const = 0;
+		virtual std::unique_ptr<HierarchyNodeBase> Copy(Actor& tempActor, bool copyChildren = false) const = 0;
 
 		virtual void SetCollisionObject(std::unique_ptr<CollisionObject>) = 0;
 		virtual void AddCollisionShape(std::shared_ptr<CollisionShape> shape) = 0;
@@ -56,25 +58,26 @@ namespace HierarchyTemplate
 	template <typename CompType = Component> class HierarchyNode : public HierarchyNodeBase
 	{
 	public:
-		HierarchyNode(GameScene& scene, const std::string& name) :
-			CompT(CompType(scene, name)) { }
-		HierarchyNode(const HierarchyNode<CompType>& node, bool copyChildren = false) :
-			CompT(CompType(node.GetCompT().GetScene(), node.GetCompT().GetName()))
+		HierarchyNode(Actor& tempActor, const std::string& name) :
+			CompT(CompType(tempActor, nullptr, name)) { }
+		HierarchyNode(const HierarchyNode<CompType>& node, Actor& tempActor, bool copyChildren = false) :
+			CompT(CompType(tempActor, nullptr, node.GetCompT().GetName()))
 		{
-			std::cout << "Copying node " << GetCompT().GetName() << '\n';
 			CompT = node.CompT;
 			if (node.CollisionObj)
 				CollisionObj = std::make_unique<CollisionObject>(*node.CollisionObj);
 			if (copyChildren)
 			{
 				Children.reserve(node.Children.size());
-				std::transform(node.Children.begin(), node.Children.end(), std::back_inserter(Children), [copyChildren](const std::unique_ptr<HierarchyNodeBase>& child) { return child->Copy(copyChildren); });
+				std::transform(node.Children.begin(), node.Children.end(), std::back_inserter(Children), [&tempActor, copyChildren](const std::unique_ptr<HierarchyNodeBase>& child) { return child->Copy(tempActor, copyChildren); });
 			}
 		}
-		HierarchyNode(HierarchyNode<CompType>&& node, bool copyChildren = true) :
-			HierarchyNode(static_cast<const HierarchyNode<CompType>&>(node), copyChildren)
+		HierarchyNode(HierarchyNode<CompType>&& node, Actor& tempActor, bool copyChildren = true) :
+			HierarchyNode(static_cast<const HierarchyNode<CompType>&>(node), tempActor, copyChildren)
 		{
 		}
+		HierarchyNode(const HierarchyNode<CompType>&) = delete;
+		HierarchyNode(HierarchyNode<CompType>&&) = delete;
 		std::unique_ptr<CompType> Instantiate(Component& parent, const std::string& name) const
 		{
 			InstantiateToComp(parent.CreateComponent<CompType>(CompType(parent.GetScene(), name)));
@@ -116,7 +119,7 @@ namespace HierarchyTemplate
 		}
 		virtual const Component& GetCompBaseType() const override
 		{
-			return CompT;
+			return static_cast<const Component&>(CompT);
 		}
 		virtual HierarchyNodeBase& AddChild(std::unique_ptr<HierarchyNodeBase> child) override
 		{
@@ -125,7 +128,7 @@ namespace HierarchyTemplate
 		}
 		virtual HierarchyNodeBase* FindNode(const std::string& name)
 		{
-			if (GetCompT().GetName() == name)
+			if (GetCompBaseType().GetName() == name)
 				return this;
 
 			for (auto& it : Children)
@@ -134,9 +137,9 @@ namespace HierarchyTemplate
 
 			return nullptr;
 		}
-		virtual std::unique_ptr<HierarchyNodeBase> Copy(bool copyChildren = false) const override
+		virtual std::unique_ptr<HierarchyNodeBase> Copy(Actor& tempActor, bool copyChildren = false) const override
 		{
-			return static_unique_pointer_cast<HierarchyNodeBase>(std::make_unique<HierarchyNode<CompType>>(HierarchyNode<CompType>(*this, copyChildren)));
+			return static_unique_pointer_cast<HierarchyNodeBase>(std::make_unique<HierarchyNode<CompType>>(*this, tempActor, copyChildren));
 		}
 
 		virtual void SetCollisionObject(std::unique_ptr<CollisionObject> collisionObj) override
@@ -158,23 +161,27 @@ namespace HierarchyTemplate
 		std::unique_ptr<CollisionObject> CollisionObj;
 	};
 
-	template <> HierarchyNode<ModelComponent>::HierarchyNode(GameScene& scene, const std::string& name) :
-		CompT(ModelComponent(scene, name))
+	template <> HierarchyNode<ModelComponent>::HierarchyNode(Actor& tempActor, const std::string& name) :
+		CompT(ModelComponent(tempActor, nullptr, name))
 	{
-		scene.GetRenderData()->EraseRenderable(CompT);
+		tempActor.GetScene().GetRenderData()->EraseRenderable(CompT);
 	}
-	template <> HierarchyNode<ModelComponent>::HierarchyNode(HierarchyNode<ModelComponent>&& node, bool copyChildren) :
-		CompT(ModelComponent(node.GetCompT().GetScene(), node.GetCompT().GetName()))
+	template <> HierarchyNode<ModelComponent>::HierarchyNode(const HierarchyNode<ModelComponent>& node, Actor& tempActor, bool copyChildren) :
+		CompT(ModelComponent(tempActor, nullptr, node.GetCompT().GetName()))
 	{
-		std::cout << "Copying node " << GetCompT().GetName() << '\n';
 		CompT = node.CompT;
 		if (node.CollisionObj)
 			CollisionObj = std::make_unique<CollisionObject>(*node.CollisionObj);
 		if (copyChildren)
 		{
 			Children.reserve(node.Children.size());
-			std::transform(node.Children.begin(), node.Children.end(), std::back_inserter(Children), [copyChildren](const std::unique_ptr<HierarchyNodeBase>& child) { return child->Copy(copyChildren); });
+			std::transform(node.Children.begin(), node.Children.end(), std::back_inserter(Children), [&tempActor, copyChildren](const std::unique_ptr<HierarchyNodeBase>& child) { return child->Copy(tempActor, copyChildren); });
 		}
+		CompT.GetScene().GetRenderData()->EraseRenderable(CompT);
+	}
+	template <> HierarchyNode<ModelComponent>::HierarchyNode(HierarchyNode<ModelComponent>&& node, Actor& tempActor, bool copyChildren) :
+		HierarchyNode(static_cast<const HierarchyNode<ModelComponent>&>(node), tempActor, copyChildren)
+	{
 		CompT.GetScene().GetRenderData()->EraseRenderable(CompT);
 	}
 
@@ -184,23 +191,35 @@ namespace HierarchyTemplate
 		HierarchyTreeT(GameScene& scene, const std::string& name) :
 			Scene(scene),
 			Name(name),
-			Root(static_unique_pointer_cast<HierarchyNodeBase>(std::make_unique<HierarchyNode<Component>>(HierarchyNode<Component>(scene, name)))),	//root has the same name as the tree
-			TreeBoneMapping(nullptr) {}
+			Root(nullptr),
+			TempActor(std::make_unique<Actor>(scene, name + "TempActor")),
+			TreeBoneMapping(nullptr)
+		{
+			Root = static_unique_pointer_cast<HierarchyNodeBase>(std::make_unique<HierarchyNode<Component>>(*TempActor, name));	//root has the same name as the tree
+		}
 		HierarchyTreeT(const HierarchyTreeT& tree) :
 			Scene(tree.Scene),
 			Name(tree.Name),
-			Root((tree.Root) ? (tree.Root->Copy(true)) : (nullptr)),
+			Root(nullptr),
+			TempActor(std::make_unique<Actor>(tree.Scene, tree.Name + "TempActor")),
 			TreeBoneMapping((tree.TreeBoneMapping) ? (std::make_unique<BoneMapping>(*tree.TreeBoneMapping)) : (nullptr))
 		{
-
+			if (tree.Root)
+				Root = tree.Root->Copy(*TempActor, true);
+			else
+				Root = static_unique_pointer_cast<HierarchyNodeBase>(std::make_unique<HierarchyNode<Component>>(*TempActor, Name));	//root has the same name as the tree
 		}
 		HierarchyTreeT(HierarchyTreeT&& tree) :
 			Scene(tree.Scene),
 			Name(tree.Name),
-			Root((tree.Root) ? (std::move(tree.Root)) : (nullptr)),
+			Root(std::move(tree.Root)),
+			TempActor(std::move(tree.TempActor)),
 			TreeBoneMapping((tree.TreeBoneMapping) ? (std::move(tree.TreeBoneMapping)) : (nullptr))
 		{
-
+			if (!Root)
+				Root = static_unique_pointer_cast<HierarchyNodeBase>(std::make_unique<HierarchyNode<Component>>(*TempActor, Name));	//root has the same name as the tree
+			if (!TempActor)
+				TempActor = std::make_unique<Actor>(Scene, Name + "TempActor");
 		}
 		const std::string& GetName() const
 		{
@@ -255,6 +274,7 @@ namespace HierarchyTemplate
 		std::string Name;	//(Path)
 		GameScene& Scene;
 		std::unique_ptr<HierarchyNodeBase> Root;
+		std::unique_ptr<Actor> TempActor;
 
 		std::vector<std::unique_ptr<Animation>> TreeAnimations;
 		mutable std::unique_ptr<BoneMapping> TreeBoneMapping;

@@ -108,7 +108,7 @@ void UICanvasField::OnStart()
 {
 	UIActor::OnStart();
 
-	CreateComponent(TextComponent(Scene, "ElementText", Transform(glm::vec2(-3.0f, 0.0f), glm::vec2(1.0f)), Name, "fonts/expressway rg.ttf", std::pair<TextAlignment, TextAlignment>(TextAlignment::RIGHT, TextAlignment::CENTER)));
+	CreateComponent<TextComponent>("ElementText", Transform(glm::vec2(-1.0f, 0.0f), glm::vec2(1.0f)), Name, "fonts/expressway rg.ttf", std::pair<TextAlignment, TextAlignment>(TextAlignment::RIGHT, TextAlignment::CENTER));
 }
 
 UIElementTemplates UICanvasField::GetTemplates()
@@ -134,10 +134,10 @@ void UIElementTemplates::TickBox(std::function<bool()> setFunc)
 	AtlasMaterial* tickMaterial = new AtlasMaterial("TickMaterial", glm::ivec2(3, 1), 0.0f, 0.0f, GameHandle.GetRenderEngineHandle()->FindShader("Forward_NoLight"));
 	tickMaterial->AddTexture(new NamedTexture(textureFromFile("EditorAssets/tick_icon.png", GL_RGBA, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR, true), "albedo1"));
 
-	UIButtonActor& billboardTickBoxActor = TemplateParent.CreateChild(UIButtonActor(Scene, "BillboardTickBox"));
+	UIButtonActor& billboardTickBoxActor = TemplateParent.CreateChild<UIButtonActor>("BillboardTickBox");
 	billboardTickBoxActor.GetTransform()->Move(glm::vec2(1.0f, 0.0f));
 
-	ModelComponent& billboardTickModel = billboardTickBoxActor.CreateComponent(ModelComponent(Scene, "TickModel"));
+	ModelComponent& billboardTickModel = billboardTickBoxActor.CreateComponent<ModelComponent>("TickModel");
 	billboardTickModel.AddMeshInst(GameHandle.GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD));
 	billboardTickModel.SetHide(true);
 	billboardTickModel.OverrideInstancesMaterialInstances(std::make_shared<MaterialInstance>(MaterialInstance(*tickMaterial, tickMaterial->GetTextureIDInterpolatorTemplate(0.0f))));
@@ -151,13 +151,13 @@ void UIElementTemplates::TickBox(std::function<bool()> setFunc)
 #include <tinyfiledialogs/tinyfiledialogs.h>
 void UIElementTemplates::PathInput(std::function<void(const std::string&)> setFunc, std::function<std::string()> getFunc)
 {
-	UIInputBoxActor& pathInputBox = TemplateParent.CreateChild(UIInputBoxActor(Scene, "PathInputBox"));
+	UIInputBoxActor& pathInputBox = TemplateParent.CreateChild<UIInputBoxActor>("PathInputBox");
 	pathInputBox.SetTransform(Transform(glm::vec2(3.0f, 0.0f), glm::vec2(3.0f, 1.0f)));
 	pathInputBox.SetOnInputFunc(setFunc, getFunc);
-	UIButtonActor& selectFileActor = TemplateParent.CreateChild(UIButtonActor(Scene, "SelectFileButton"));
+	UIButtonActor& selectFileActor = TemplateParent.CreateChild<UIButtonActor>("SelectFileButton");
 	selectFileActor.SetTransform(Transform(glm::vec2(7.0f, 0.0f), glm::vec2(1.0f, 1.0f)));
 
-	//TextComponent& pathText = selectFileActor.CreateComponent(TextComponent(Scene, "Text", Transform(), "", "fonts/expressway rg.ttf", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER)));
+	//TextComponent& pathText = selectFileActor.NowyCreateComponent<TextComponent>("Text", Transform(), "", "fonts/expressway rg.ttf", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
 
 	selectFileActor.SetOnClickFunc([&pathInputBox]() { const char* patterns[] = { "*.wav" }; const char* path = tinyfd_openFileDialog("Select audio file", "C:\\", 1, patterns, nullptr, 0); if (path) pathInputBox.PutString(path); });
 }
@@ -166,7 +166,7 @@ template <int vecSize> void UIElementTemplates::VecInput(std::function<void(floa
 {
 	for (int x = 0; x < vecSize; x++)
 	{
-		UIInputBoxActor& inputBoxActor = TemplateParent.CreateChild(UIInputBoxActor(Scene, "VecBox" + std::to_string(x)));
+		UIInputBoxActor& inputBoxActor = TemplateParent.CreateChild<UIInputBoxActor>("VecBox" + std::to_string(x));
 		inputBoxActor.SetTransform(Transform(glm::vec2(1.0f + float(x) * 2.0f, 0.0f), glm::vec2(1.0f)));
 		inputBoxActor.SetOnInputFunc([x, setFunc](float val) {setFunc(x, val); }, [x, getFunc]() { return getFunc(x); }, true);
 	}
@@ -182,23 +182,24 @@ template<typename ObjectBase, typename ObjectType>
 void UIElementTemplates::ObjectInput(ObjectBase& hierarchyRoot, std::function<void(ObjectType*)> setFunc)
 {
 	GameScene* scenePtr = &Scene;
-	UIButtonActor& compNameButton = TemplateParent.CreateChild(UIButtonActor(Scene, "CompNameBox", "", [scenePtr, &hierarchyRoot, setFunc]() {
-		UIWindowActor& window = scenePtr->CreateActorAtRoot(UIWindowActor(*scenePtr, "CompInputWindow"));
+	UIButtonActor& compNameButton = TemplateParent.CreateChild<UIButtonActor>("CompNameBox", "", [scenePtr, &hierarchyRoot, setFunc]() {
+		UIWindowActor& window = scenePtr->CreateActorAtRoot<UIWindowActor>("CompInputWindow");
 		window.SetTransform(Transform(glm::vec2(0.0f, -0.7f), glm::vec2(0.25f)));
 
-		UIAutomaticListActor& list = window.CreateChild(UIAutomaticListActor(*scenePtr, "Available comp list"));
+		UIAutomaticListActor& list = window.CreateChild<UIAutomaticListActor>("Available comp list");
 		std::vector<ObjectType*> availableObjects;
 		if (auto cast = dynamic_cast<ObjectType*>(&hierarchyRoot))
 			availableObjects.push_back(cast);
 
 		GetAllObjects<ObjectType>(hierarchyRoot, availableObjects);
 
+		window.AddUIElement(list.CreateChild<UIButtonActor>("Nullptr object button", "Nullptr", [&window, setFunc]() { setFunc(nullptr); window.MarkAsKilled(); }));
 		for (auto& it : availableObjects)
-			window.AddUIElement(list.CreateChild(UIButtonActor(*scenePtr, it->GetName() + ", Matching component button", it->GetName(), [&window, setFunc, it]() { setFunc(it); window.MarkAsKilled(); })));
+			window.AddUIElement(list.CreateChild<UIButtonActor>(it->GetName() + ", Matching object button", it->GetName(), [&window, setFunc, it]() { setFunc(it); window.MarkAsKilled(); }));
 		list.Refresh();
 
 		std::cout << availableObjects.size() << " available objects.\n";
-		}));
+		});
 	compNameButton.SetTransform(Transform(glm::vec2(3.0f, 0.0f), glm::vec2(3.0f, 1.0f)));
 }
 

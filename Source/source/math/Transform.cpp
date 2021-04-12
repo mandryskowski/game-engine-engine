@@ -66,6 +66,11 @@ Transform::Transform(Transform&& t) noexcept :
 	}  */
 }
 
+bool Transform::IsEmpty() const
+{
+	return Empty;
+}
+
 glm::vec3 Transform::GetFrontVec() const
 {
 	return Rotation * glm::vec3(0.0f, 0.0f, -1.0f);

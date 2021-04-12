@@ -11,14 +11,18 @@ public:
 class RenderableComponent: public Component, public Renderable
 {
 public:
-	RenderableComponent::RenderableComponent(GameScene& scene, const std::string name, const Transform& transform) :
-		Component(scene, name, transform)
+	RenderableComponent::RenderableComponent(Actor& actor, Component* parentComp, const std::string name, const Transform& transform) :
+		Component(actor, parentComp, name, transform)
 	{
-		scene.GetRenderData()->AddRenderable(*this);
+		if (Name == "Tunnel")
+			std::cout << "Dodaje z constructora\n";
+		Scene.GetRenderData()->AddRenderable(*this);
 	}
 	RenderableComponent(RenderableComponent&& comp) :
 		Component(std::move(comp))
 	{
+		if (Name == "Tunnel")
+			std::cout << "Dodaje z move\n";
 		Scene.GetRenderData()->AddRenderable(*this);
 	}
 	virtual void DebugRender(RenderInfo info, Shader* shader) const override {}

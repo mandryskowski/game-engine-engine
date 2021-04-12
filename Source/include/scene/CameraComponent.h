@@ -11,7 +11,7 @@ class CameraComponent: public Component
 	glm::mat4 Projection;	
 
 public:
-	CameraComponent(GameScene&, std::string name, const glm::mat4& projectionMatrix = glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f));
+	CameraComponent(Actor&, Component* parentComp, std::string name, const glm::mat4& projectionMatrix = glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f));
 	CameraComponent(CameraComponent&&);
 	glm::mat4 GetProjectionMat();		//returns the camera projection matrix - i've decided that each camera should have their own projection mat, because just as in the real world each cam has its own FoV and aspect ratio
 	RenderInfo GetRenderInfo(RenderToolboxCollection& renderCollection);

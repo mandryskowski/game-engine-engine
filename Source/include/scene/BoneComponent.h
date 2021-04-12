@@ -23,7 +23,7 @@ public:
 	glm::mat4 FinalMatrix;
 
 public:
-	BoneComponent(GameScene&, std::string name, Transform t = Transform(), unsigned int boneID = 0);
+	BoneComponent(Actor&, Component* parentComp, std::string name, Transform t = Transform(), unsigned int boneID = 0);
 	BoneComponent(BoneComponent&&);
 
 protected:

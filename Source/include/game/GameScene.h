@@ -14,6 +14,7 @@ public:
 	LightProbeTextureArrays* GetProbeTexArrays();
 	int GetAvailableLightIndex();
 	bool ContainsLights() const;
+	bool HasLightWithoutShadowMap() const;
 
 	void AddRenderable(RenderableComponent&);
 	std::shared_ptr<LightProbe> AddLightProbe(std::shared_ptr<LightProbe> probe);
@@ -98,7 +99,7 @@ public:
 	GameManager* GetGameHandle();
 
 	Actor& AddActorToRoot(std::unique_ptr<Actor> actor);	//you use this function to make the game interact (update, draw...) with the actor; without adding it to the scene, the Actor instance isnt updated real-time by default. Pass nullptr to use the Main Scene.
-	template <class T> T& CreateActorAtRoot(T&&);
+	template <typename ActorClass, typename... Args> ActorClass& CreateActorAtRoot(Args&&...);
 
 	HierarchyTemplate::HierarchyTreeT& CreateHierarchyTree(const std::string& name);
 	HierarchyTemplate::HierarchyTreeT* FindHierarchyTree(const std::string& name, HierarchyTemplate::HierarchyTreeT* treeToIgnore = nullptr);
@@ -124,8 +125,8 @@ private:
 	friend class GameEngineEngineEditor;
 };
 
-template<class T>
-inline T& GameScene::CreateActorAtRoot(T&& actorCRef)
+template<typename ActorClass, typename... Args>
+inline ActorClass& GameScene::CreateActorAtRoot(Args&&... args)
 {
-	return RootActor->CreateChild<T>(std::move(actorCRef));
+	return RootActor->CreateChild<ActorClass>(std::forward<Args>(args)...);
 }

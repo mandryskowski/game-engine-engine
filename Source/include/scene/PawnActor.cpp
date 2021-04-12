@@ -33,6 +33,14 @@ void PawnActor::Update(float deltaTime)
 	if (IsBeingKilled() || !AnimManager)
 		return;
 
+	if (AnimManager->IsBeingKilled())
+	{
+		AnimManager = nullptr;
+		return;
+	}
+	if (Gun && Gun->IsBeingKilled())
+		Gun = nullptr;
+
 
 	/*		glm::vec3 velocity = RootBone->GetTransform().GetWorldTransform().RotationRef * glm::abs(RootBone->GetTransform().PositionRef - PreAnimBonePos);
 		velocity.y = 0.0f;
@@ -77,29 +85,33 @@ void PawnActor::Update(float deltaTime)
 	MoveAlongPath();
 }
 #include <scene/UIInputBoxActor.h>
-void PawnActor::GetEditorDescription(UIActor& actor, GameScene& editorScene)
+void PawnActor::GetEditorDescription(EditorDescriptionBuilder descBuilder)
 {
-	Actor::GetEditorDescription(actor, editorScene);
+	Actor::GetEditorDescription(descBuilder);
 
-	AddFieldToCanvas("AnimManager", actor).GetTemplates().ComponentInput<AnimationManagerComponent>(*GetRoot(), [this](AnimationManagerComponent* animManager) {AnimManager = animManager; UpdateAnimsListInEditor(animManager); });
-	AddFieldToCanvas("Target", actor).GetTemplates().VecInput(CurrentTargetPos);
-	dynamic_cast<UIInputBoxActor*>(actor.FindActor("VecBox0"))->SetRetrieveContentEachFrame(true);
-	dynamic_cast<UIInputBoxActor*>(actor.FindActor("VecBox1"))->SetRetrieveContentEachFrame(true);
-	dynamic_cast<UIInputBoxActor*>(actor.FindActor("VecBox2"))->SetRetrieveContentEachFrame(true);
+	descBuilder.AddField("Anim Manager").GetTemplates().ComponentInput<AnimationManagerComponent>(*GetRoot(), [this](AnimationManagerComponent* animManager) {AnimManager = animManager; UpdateAnimsListInEditor(animManager); });
+	descBuilder.AddField("Target").GetTemplates().VecInput(CurrentTargetPos);
+	dynamic_cast<UIInputBoxActor*>(descBuilder.GetDescriptionParent().FindActor("VecBox0"))->SetRetrieveContentEachFrame(true);
+	dynamic_cast<UIInputBoxActor*>(descBuilder.GetDescriptionParent().FindActor("VecBox1"))->SetRetrieveContentEachFrame(true);
+	dynamic_cast<UIInputBoxActor*>(descBuilder.GetDescriptionParent().FindActor("VecBox2"))->SetRetrieveContentEachFrame(true);
 
-	AddFieldToCanvas("Gun", actor).GetTemplates().ObjectInput<Actor, GunActor>(*this, Gun);
+	descBuilder.AddField("Gun").GetTemplates().ObjectInput<Actor, GunActor>(*this, Gun);
 
-	UIInputBoxActor& speedInputBox = AddFieldToCanvas("Speed", actor).CreateChild(UIInputBoxActor(editorScene, "SpeedInputBox"));
+	UIInputBoxActor& speedInputBox = descBuilder.AddField("Speed").CreateChild<UIInputBoxActor>("SpeedInputBox");
 	speedInputBox.SetOnInputFunc([this](float val) { SpeedPerSec = val; }, [this]()->float { return SpeedPerSec; });
 	speedInputBox.GetTransform()->Move(glm::vec2(1.0f, 0.0f));
 
-	UICanvasField& animsField = AddFieldToCanvas("AnimList", actor);
-	UIAutomaticListActor& animsList = animsField.CreateChild(UIAutomaticListActor(editorScene, "Animations list", glm::vec3(3.0f, 0.0f, 0.0f)));
+	UICanvasField& animsField = descBuilder.AddField("Anim List");
+	UIAutomaticListActor& animsList = animsField.CreateChild<UIAutomaticListActor>("Animations list", glm::vec3(3.0f, 0.0f, 0.0f));
 	animsList.GetTransform()->Move(glm::vec2(1.0f, 0.0f));
 
-	UpdateAnimsListInEditor = [this, &actor, &animsList, &editorScene](AnimationManagerComponent* animManager) {
-		for (int i = 0; i < animManager->GetAnimInstancesCount(); i++)
-			actor.GetCanvasPtr()->AddUIElement(animsList.CreateChild(UIButtonActor(editorScene, "Anim button", animManager->GetAnimInstance(i)->GetAnimation().Name, [this, i]() {AnimIndex = i; })));
+	UpdateAnimsListInEditor = [this, &animsList, descBuilder](AnimationManagerComponent* animManager) mutable {
+		for (auto& it : animsList.GetChildren())
+			it->MarkAsKilled();
+
+		if (animManager)
+			for (int i = 0; i < animManager->GetAnimInstancesCount(); i++)
+				descBuilder.GetCanvas().AddUIElement(animsList.CreateChild<UIButtonActor>("Anim button", animManager->GetAnimInstance(i)->GetAnimation().Name, [this, i]() {AnimIndex = i; }));
 		animsList.Refresh();
 	};
 

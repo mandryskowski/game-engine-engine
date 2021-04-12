@@ -9,7 +9,7 @@ public:
 	PawnActor(GameScene&, const std::string& name);
 	virtual void OnStart() override;
 	virtual void Update(float deltaTime);
-	virtual void GetEditorDescription(UIActor& actor, GameScene& editorScene) override;
+	virtual void GetEditorDescription(EditorDescriptionBuilder) override;
 	void MoveToPosition(const glm::vec3& worldPos);
 	void MoveAlongPath();
 private:

@@ -37,7 +37,12 @@ void Material::SetRenderShaderName(std::string name)
 	RenderShaderName = name;
 }
 
-void Material::SetColor(glm::vec4 color)
+void Material::SetColor(const glm::vec3& color)
+{
+	SetColor(glm::vec4(color, 1.0f));
+}
+
+void Material::SetColor(const glm::vec4& color)
 {
 	Color = color;
 }

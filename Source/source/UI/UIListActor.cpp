@@ -20,6 +20,7 @@ Actor& UIListActor::AddChild(std::unique_ptr<Actor> actor)
 
 void UIListActor::Refresh()
 {
+	NestedLists.erase(std::remove_if(NestedLists.begin(), NestedLists.end(), [](UIListActor* list) {return list->IsBeingKilled(); }), NestedLists.end());
 	MoveElements(0);
 }
 
@@ -78,6 +79,8 @@ glm::vec3 UIAutomaticListActor::MoveElements(unsigned int level)
 	glm::vec3 nextElementBegin = GetListBegin();
 	for (auto& element : Children)
 	{
+		if (element.get()->IsBeingKilled())
+			continue;
 		if (element->GetName() == "OGAR")
 			continue;
 		nextElementBegin = MoveElement(*element, nextElementBegin, level);
@@ -124,6 +127,7 @@ glm::vec3 UIManualListActor::MoveElement(UIListElement& element, glm::vec3 nextE
 
 glm::vec3 UIManualListActor::MoveElements(unsigned int level)
 {
+	ListElements.erase(std::remove_if(ListElements.begin(), ListElements.end(), [](const UIListElement& element) { return element.GetActorRef().IsBeingKilled(); }), ListElements.end());
 	glm::vec3 nextElementBegin = GetListBegin();
 
 	for (auto& element : ListElements)
@@ -184,7 +188,34 @@ UIListElement::UIListElement(Actor& actorRef, const glm::vec3& constElementOffse
 {
 }
 
+UIListElement::UIListElement(const UIListElement& element):
+	ActorRef(element.ActorRef), GetElementOffsetFunc(element.GetElementOffsetFunc), GetCenterOffsetFunc(element.GetCenterOffsetFunc)
+{
+}
+
+UIListElement::UIListElement(UIListElement&& element):
+	UIListElement(static_cast<const UIListElement&>(element))
+{
+}
+
+UIListElement& UIListElement::operator=(const UIListElement& element)
+{
+	GetElementOffsetFunc = element.GetElementOffsetFunc;
+	GetCenterOffsetFunc = element.GetCenterOffsetFunc;
+	return *this;
+}
+
+UIListElement& UIListElement::operator=(UIListElement&& element)
+{
+	return (*this = static_cast<const UIListElement&>(element));
+}
+
 Actor& UIListElement::GetActorRef()
+{
+	return ActorRef;
+}
+
+const Actor& UIListElement::GetActorRef() const
 {
 	return ActorRef;
 }

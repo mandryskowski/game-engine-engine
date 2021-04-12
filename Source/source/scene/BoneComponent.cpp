@@ -3,8 +3,8 @@
 #include <scene/HierarchyTemplate.h>
 #include <rendering/Material.h>
 
-BoneComponent::BoneComponent(GameScene& scene, std::string name, Transform transform, unsigned int boneID):
-	Component(scene, name, transform),
+BoneComponent::BoneComponent(Actor& actor, Component* parentComp, std::string name, Transform transform, unsigned int boneID):
+	Component(actor, parentComp, name, transform),
 	BoneID(boneID),
 	BoneOffset(glm::mat4(1.0f)),
 	FinalMatrix(glm::mat4(1.0f)),
@@ -73,7 +73,6 @@ void BoneComponent::SetInfoPtr(SkeletonInfo* infoPtr)
 
 BoneComponent::~BoneComponent()
 {
-	std::cout << "I'm in the destructor\n";
 	if (InfoPtr)
 		InfoPtr->EraseBone(*this);
 }
@@ -170,7 +169,6 @@ void SkeletonInfo::AddBone(BoneComponent& bone)
 
 void SkeletonInfo::EraseBone(BoneComponent& bone)
 {
-	std::cout << "Erasing bone " << bone.GetName() << '\n';
 	Bones.erase(std::remove_if(Bones.begin(), Bones.end(), [&bone](BoneComponent* boneVec) { if (boneVec == &bone) std::cout << "erased bone " << bone.GetName() << '\n'; return boneVec == &bone; }), Bones.end());
 }
 
