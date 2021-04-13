@@ -6,6 +6,9 @@
 #include <memory>
 
 class Actor;
+class GunActor;
+class PawnActor;
+class ShootingController;
 class UIActor;
 class UICanvasActor;
 class Controller;
@@ -13,6 +16,7 @@ class Component;
 class RenderableComponent;
 class LightComponent;
 class ModelComponent;
+class TextComponent;
 class CameraComponent;
 class BoneComponent;
 class SoundSourceComponent;

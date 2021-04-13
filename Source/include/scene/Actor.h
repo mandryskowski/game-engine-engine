@@ -3,6 +3,7 @@
 #include <input/Event.h>
 #include <iostream>
 #include <map>
+#include <cereal/access.hpp>
 
 struct GLFWwindow;
 
@@ -83,6 +84,32 @@ public:
 			Children[i]->GetAllActors<ActorClass>(comps);	//do it reccurently in every child
 	}
 
+	template <typename Archive> void Save(Archive& archive) const
+	{
+		archive(CEREAL_NVP(Name), CEREAL_NVP(RootComponent), CEREAL_NVP(Children));
+	}
+	template <typename Archive> void Load(Archive& archive)
+	{
+		cereal::LoadAndConstruct<Component>::ActorRef = this;	//For constructing the root component and its children
+		cereal::LoadAndConstruct<Component>::ParentComp = nullptr;	//The root component doesn't have a parent
+		RootComponent = nullptr;
+		archive(CEREAL_NVP(Name), CEREAL_NVP(RootComponent)); 
+		std::cout << "Serializing actor " << Name << '\n';
+
+		if (GameHandle->HasStarted())
+			OnStartAll();
+
+		//LoadAndConstruct<Actor>::ParentActor = this;
+		Children.clear();
+		archive(CEREAL_NVP(Children));
+		//LoadAndConstruct<Actor>::ParentActor = ParentActor;
+		for (auto& it : Children)
+		{
+			it->ParentActor = this;
+			it->GetTransform()->SetParentTransform(GetTransform());
+		}
+	}
+
 protected:
 	std::unique_ptr<Component> RootComponent;
 	std::vector<std::unique_ptr<Actor>> Children;
@@ -93,70 +120,8 @@ protected:
 	GameManager* GameHandle;
 
 	bool bKillingProcessStarted;
-
-	friend std::ostream& operator<<(std::ostream& os, const Actor& actor);
 };
 
-/*std::ostream& operator<<(std::ostream& os, const Actor& actor)
-{
-	os << "newactor Actor " << actor.Name;
-	//os << *RootComponent;
-	for (auto& it : actor.Children)
-		os << *it;
-
-	return os;
-}*/
-
-class ActorFactory
-{
-	typedef std::unique_ptr<Actor>(*ActorCreateFunc)(void);
-	typedef std::map<std::string, ActorCreateFunc> FactoryMap;
-	FactoryMap FuncMap;
-public:
-	ActorFactory()
-	{
-		//Register("Actor", Actor::Get);
-	}
-	static ActorFactory& Get()
-	{
-		static ActorFactory factory;
-		return factory;
-	}
-	std::unique_ptr<Actor> Create(const std::string& tName)
-	{
-		FactoryMap::iterator it = FuncMap.find(tName);
-		if (it != FuncMap.end())
-			return (*it->second)();
-		return nullptr;
-	}
-	void Register(std::string name, ActorCreateFunc func)
-	{
-		FuncMap[name] = func;
-	}
-private:
-};
-
-/*template<class T>
-inline T& Actor::CreateChild(T&& actorCRef)
-{
-	std::unique_ptr<T> createdChild = std::make_unique<T>(std::move(actorCRef));
-	T& childRef = *createdChild.get();
-	AddChild(std::move(createdChild));
-
-	if (childRef.GameHandle->HasStarted())
-		childRef.OnStartAll();
-
-	return childRef;
-}
-
-template<class T>
-inline T& Actor::CreateComponent(T&& compCRef)
-{
-	T& comp = RootComponent->CreateComponent(std::move(compCRef));
-	if (comp.GameHandle->HasStarted())
-		comp.OnStartAll();
-	return comp;
-}*/
 
 template <typename ChildClass, typename... Args>
 inline ChildClass& Actor::CreateChild(Args&&... args)
@@ -176,4 +141,59 @@ inline CompClass& Actor::CreateComponent(Args&&... args)
 {
 	CompClass& comp = RootComponent->CreateComponent<CompClass>(std::forward<Args>(args)...);
 	return comp;
+}
+
+namespace cereal
+{
+	template <> struct LoadAndConstruct<Actor>
+	{
+		static GameScene* ScenePtr;
+	//	static Actor* ParentActor;
+		template <class Archive>
+		static void load_and_construct(Archive& ar, cereal::construct<Actor>& construct)
+		{
+			std::cout << "trying to construct actor " << ScenePtr << '\n';
+			if (!ScenePtr)
+				return;
+
+			construct(*ScenePtr, "undefined actor");
+			construct->Load(ar);
+		}
+	};
+	template <> struct LoadAndConstruct<GunActor>
+	{
+		template <class Archive>
+		static void load_and_construct(Archive& ar, cereal::construct<GunActor>& construct)
+		{
+			if (!LoadAndConstruct<Actor>::ScenePtr)
+				return;
+
+			construct(*LoadAndConstruct<Actor>::ScenePtr, "undefined gunactor");
+			construct->Load(ar);
+		}
+	};
+	template <> struct LoadAndConstruct<PawnActor>
+	{
+		template <class Archive>
+		static void load_and_construct(Archive& ar, cereal::construct<PawnActor>& construct)
+		{
+			if (!LoadAndConstruct<Actor>::ScenePtr)
+				return;
+
+			construct(*LoadAndConstruct<Actor>::ScenePtr, "undefined pawnactor");
+			construct->Load(ar);
+		}
+	};
+	template <> struct LoadAndConstruct<ShootingController>
+	{
+		template <class Archive>
+		static void load_and_construct(Archive& ar, cereal::construct<ShootingController>& construct)
+		{
+			if (!LoadAndConstruct<Actor>::ScenePtr)
+				return;
+
+			construct(*LoadAndConstruct<Actor>::ScenePtr, "undefined controller");
+			construct->Load(ar);
+		}
+	};
 }

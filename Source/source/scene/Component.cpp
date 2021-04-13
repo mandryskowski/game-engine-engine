@@ -8,6 +8,9 @@
 #include <UI/UICanvasActor.h>
 #include <scene/UIInputBoxActor.h>
 
+Actor* cereal::LoadAndConstruct<Component>::ActorRef = nullptr;
+Component* cereal::LoadAndConstruct<Component>::ParentComp = nullptr;
+
 Component::Component(Actor& actor, Component* parentComp, const std::string& name, const Transform& t):
 	Name(name), ComponentTransform(t), Scene(actor.GetScene()), ActorRef(actor), ParentComponent(parentComp), GameHandle(actor.GetScene().GetGameHandle()), CollisionObj(nullptr), DebugRenderMat(nullptr), DebugRenderMatInst(nullptr), DebugRenderLastFrameMVP(glm::mat4(1.0f)), bKillingProcessStarted(false)
 {

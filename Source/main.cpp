@@ -1,4 +1,7 @@
 #define STB_IMAGE_IMPLEMENTATION
+#define CEREAL_LOAD_FUNCTION_NAME Load
+#define CEREAL_SAVE_FUNCTION_NAME Save
+#define CEREAL_SERIALIZE_FUNCTION_NAME Serialize
 #include <game/Game.h>
 #include <scene/TextComponent.h>
 #include <scene/CameraComponent.h>
@@ -14,9 +17,8 @@
 #include <scene/PawnActor.h>
 #include <scene/Controller.h>
 #include <input/InputDevicesStateRetriever.h>
-#define CEREAL_LOAD_FUNCTION_NAME Load
-#define CEREAL_SAVE_FUNCTION_NAME Save
-#define CEREAL_SERIALIZE_FUNCTION_NAME Serialize
+#include <cereal/archives/binary.hpp>
+#include <cereal/archives/xml.hpp>
 #include <cereal/archives/json.hpp>
 #include <map>
 
@@ -84,8 +86,6 @@ public:
 
 		SetupEditorScene();
 		EditorScene = GetScene("GEE_Editor");
-
-		BindAudioListenerTransformPtr(&GetScene("GEE_Main")->GetActiveCamera()->GetTransform());
 
 		GameSettings::VideoSettings& renderSettings = EditorSettings.Video;
 		renderSettings.AAType = AA_NONE;
@@ -530,6 +530,14 @@ public:
 		if (!GetScene("GEE_Main")->ActiveCamera || !EditorScene->ActiveCamera)
 		{
 			std::cerr << "ERROR! Camera not bound in one of the scenes.\n";
+			if (auto camActor = GetScene("GEE_Main")->FindActor("CameraActor"))
+				if (auto comp = camActor->GetRoot()->GetComponent<CameraComponent>("Camera"))
+					GetScene("GEE_Main")->BindActiveCamera(comp);
+			if (auto camActor = EditorScene->FindActor("OrthoCameraActor"))
+				if (auto comp = camActor->GetRoot()->GetComponent<CameraComponent>("OrthoCameraComp"))
+					EditorScene->BindActiveCamera(comp);
+
+			const_cast<Actor*>(GetScene("GEE_Main")->GetRootActor())->DebugHierarchy();
 			return;
 		}
 
@@ -651,6 +659,29 @@ public:
 	}
 private:
 };
+
+CEREAL_REGISTER_TYPE(GunActor)
+CEREAL_REGISTER_POLYMORPHIC_RELATION(Actor, GunActor)
+CEREAL_REGISTER_TYPE(PawnActor)
+CEREAL_REGISTER_POLYMORPHIC_RELATION(Actor, PawnActor)
+CEREAL_REGISTER_TYPE(ShootingController)
+CEREAL_REGISTER_POLYMORPHIC_RELATION(Actor, ShootingController)
+
+CEREAL_REGISTER_TYPE(CameraComponent)
+CEREAL_REGISTER_POLYMORPHIC_RELATION(Component, CameraComponent)
+CEREAL_REGISTER_TYPE(ModelComponent)
+CEREAL_REGISTER_POLYMORPHIC_RELATION(Component, ModelComponent)
+CEREAL_REGISTER_TYPE(TextComponent)
+CEREAL_REGISTER_POLYMORPHIC_RELATION(Component, TextComponent)
+CEREAL_REGISTER_TYPE(BoneComponent)
+CEREAL_REGISTER_POLYMORPHIC_RELATION(Component, BoneComponent)
+CEREAL_REGISTER_TYPE(LightComponent)
+CEREAL_REGISTER_POLYMORPHIC_RELATION(Component, LightComponent)
+CEREAL_REGISTER_TYPE(SoundSourceComponent)
+CEREAL_REGISTER_POLYMORPHIC_RELATION(Component, SoundSourceComponent)
+CEREAL_REGISTER_TYPE(AnimationManagerComponent)
+CEREAL_REGISTER_POLYMORPHIC_RELATION(Component, AnimationManagerComponent)
+
 int main()
 {
 	Different(BaseAndInheritingFactory::Get().CreateBase("Inheriting"));
@@ -697,6 +728,26 @@ int main()
 
 	GameEngineEngineEditor editor(programWindow, settings);
 
+	std::ifstream deserializationStream("zjebany.json");
+
+	std::cout << "Serializing...\n";
+	if (deserializationStream.good())
+	{
+		try
+		{
+			cereal::JSONInputArchive archive(deserializationStream);
+			cereal::LoadAndConstruct<Actor>::ScenePtr = editor.GetScene("GEE_Main");
+			const_cast<Actor*>(editor.GetScene("GEE_Main")->GetRootActor())->Load(archive);
+		}
+		catch (cereal::RapidJSONException& ex)
+		{
+			std::cout << "ERROR: While loading scene: " << ex.what() << '\n';
+		}
+	}
+	deserializationStream.close();
+	const_cast<Actor*>(editor.GetScene("GEE_Main")->GetRootActor())->DebugHierarchy();
+	editor.SelectScene(editor.GetSelectedScene(), *editor.GetScene("GEE_Editor"));
+
 	editor.PreGameLoop();
 
 	float deltaTime = 0.0f;
@@ -711,17 +762,22 @@ int main()
 		lastUpdateTime = glfwGetTime();
 
 		endGame = editor.GameLoopIteration(1.0f / 60.0f, deltaTime);
-		const char* path = "Argon/Argon.glb";
-		//EditorEventProcessor::FileDropCallback(programWindow, 1, &path);
 	} while (!endGame);
 	//game.Run();
 
-	std::ofstream serializationStream("tescik.json");
-
+	std::ofstream serializationStream("zjebany.json");
 	{
 		cereal::JSONOutputArchive archive(serializationStream);
-		const_cast<Actor*>(editor.GetScene("GEE_Main")->GetRootActor())->GetRoot()->Serialize(archive);
+		try
+		{
+			const_cast<Actor*>(editor.GetScene("GEE_Main")->GetRootActor())->Save(archive);
+		}
+		catch (cereal::Exception& ex)
+		{
+			std::cout << "ERROR While saving scene: " << ex.what() << '\n';
+		}
 	}
+	serializationStream.close();
 	return 0;
 }
 

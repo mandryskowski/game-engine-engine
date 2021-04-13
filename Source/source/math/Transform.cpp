@@ -20,7 +20,7 @@ void Transform::FlagWorldDirtiness() const
 }
 
 Transform::Transform():
-	Transform(glm::vec3(0.0f))
+	Transform(Vec3f(0.0f))
 {
 }
 
@@ -428,8 +428,8 @@ Transform& Transform::operator*=(const Transform& t)
 {
 	FlagMyDirtiness();
 	Position += static_cast<glm::mat3>(GetMatrix()) * t.Position;
-	Rotation *= t.Rotation;
-	Scale *= t.Scale;
+	Rotation *= (glm::quat)t.Rotation;
+	Scale *= (glm::vec3)t.Scale;
 	return *(this);
 }
 

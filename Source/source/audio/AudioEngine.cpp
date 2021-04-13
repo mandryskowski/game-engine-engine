@@ -76,7 +76,10 @@ void AudioEngine::SetListenerTransformPtr(Transform* transformPtr)
 void AudioEngine::Update()
 {
 	////////////////// Update listener position & orientation
-	alListenerfv(AL_POSITION, glm::value_ptr(ListenerTransformPtr->GetWorldTransform().PositionRef));
+	if (!ListenerTransformPtr)
+		return;
+
+	alListenerfv(AL_POSITION, glm::value_ptr((glm::vec3)ListenerTransformPtr->GetWorldTransform().PositionRef));
 
 	glm::vec3 orientationVecs[2] = { ListenerTransformPtr->GetWorldTransform().GetFrontVec(), glm::vec3(0.0f, 1.0f, 0.0f) };
 	alListenerfv(AL_ORIENTATION, &orientationVecs[0].x);

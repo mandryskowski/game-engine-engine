@@ -4,6 +4,8 @@
 #include <rendering/RenderInfo.h>
 #include <vector>
 
+GameScene* cereal::LoadAndConstruct<Actor>::ScenePtr = nullptr;
+
 Actor::Actor(GameScene& scene, const std::string& name) :
 	Scene(scene),
 	Name(name),
@@ -93,6 +95,11 @@ void Actor::SetName(const std::string& name)
 
 void Actor::DebugHierarchy(int nrTabs)
 {
+	std::string tabs;
+	for (int i = 0; i < nrTabs; i++)
+		tabs += "	";
+
+	std::cout << tabs + Name + " (Actor)\n";
 	RootComponent->DebugHierarchy(nrTabs);
 	for (int i = 0; i < static_cast<int>(Children.size()); i++)
 		Children[i]->DebugHierarchy(nrTabs + 1);

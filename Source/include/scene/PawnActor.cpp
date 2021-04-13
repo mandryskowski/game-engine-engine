@@ -65,7 +65,7 @@ void PawnActor::Update(float deltaTime)
 		posDir = glm::normalize(posDir);
 
 		glm::vec3 playerDir = glm::normalize(Scene.FindActor("CameraActor")->GetTransform()->GetWorldTransform().PositionRef - GetTransform()->GetWorldTransform().PositionRef);
-		float distance = glm::distance(Scene.FindActor("CameraActor")->GetTransform()->GetWorldTransform().PositionRef, GetTransform()->GetWorldTransform().PositionRef);
+		float distance = glm::distance((glm::vec3)Scene.FindActor("CameraActor")->GetTransform()->GetWorldTransform().PositionRef, GetTransform()->GetWorldTransform().PositionRef);
 		std::cout << "Dot: " << glm::dot(playerDir, GetTransform()->RotationRef * glm::vec3(0.0f, 0.0f, -1.0f)) << '\n';
 		if (Gun && glm::dot(playerDir, GetTransform()->RotationRef * glm::vec3(0.0f, 0.0f, -1.0f)) > glm::cos(glm::radians(30.0f)) && distance < 3.0f)
 		{ 

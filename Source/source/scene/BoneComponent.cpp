@@ -169,7 +169,7 @@ void SkeletonInfo::AddBone(BoneComponent& bone)
 
 void SkeletonInfo::EraseBone(BoneComponent& bone)
 {
-	Bones.erase(std::remove_if(Bones.begin(), Bones.end(), [&bone](BoneComponent* boneVec) { if (boneVec == &bone) std::cout << "erased bone " << bone.GetName() << '\n'; return boneVec == &bone; }), Bones.end());
+	Bones.erase(std::remove_if(Bones.begin(), Bones.end(), [&bone](BoneComponent* boneVec) { /*if (boneVec == &bone) std::cout << "erased bone " << bone.GetName() << '\n';*/ return boneVec == &bone; }), Bones.end());
 }
 
 void SkeletonInfo::SortBones()

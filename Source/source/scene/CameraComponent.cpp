@@ -7,6 +7,9 @@ CameraComponent::CameraComponent(Actor& actor, Component* parentComp, std::strin
 	RotationEuler(0.0f),
 	Projection(projectionMatrix)
 {
+	Scene.BindActiveCamera(this);
+	if (Scene.GetName() == "GEE_Main")
+		GameHandle->BindAudioListenerTransformPtr(&ComponentTransform);
 }
 
 CameraComponent::CameraComponent(CameraComponent&& comp):
@@ -14,6 +17,9 @@ CameraComponent::CameraComponent(CameraComponent&& comp):
 	RotationEuler(comp.RotationEuler),
 	Projection(comp.Projection)
 {
+	Scene.BindActiveCamera(this);
+	if (Scene.GetName() == "GEE_Main")
+		GameHandle->BindAudioListenerTransformPtr(&ComponentTransform);
 }
 
 glm::mat4 CameraComponent::GetProjectionMat()
@@ -85,4 +91,10 @@ MaterialInstance CameraComponent::GetDebugMatInst(EditorIconState state)
 {
 	LoadDebugRenderMaterial("GEE_Mat_Default_Debug_CameraComponent", "EditorAssets/cameracomponent_icon.png");
 	return Component::GetDebugMatInst(state);
+}
+
+CameraComponent::~CameraComponent()
+{
+	GameHandle->BindAudioListenerTransformPtr(nullptr);
+	Scene.BindActiveCamera(nullptr);
 }

@@ -12,6 +12,7 @@
 Controller::Controller(GameScene& scene, std::string name):
 	Actor(scene, name),
 	PxController(nullptr),
+	PossessedActor(nullptr),
 	Directions{false, false, false, false, false},
 	Velocity(glm::vec3(0.0f)),
 	PreviousFramePos(glm::vec3(0.0f)),
@@ -44,6 +45,8 @@ void Controller::OnStart()
 
 	PxController = GameHandle->GetPhysicsHandle()->CreateController(*Scene.GetPhysicsData());
 	PossessedActor = GameHandle->GetRootActor()->FindActor("CameraActor");
+	if (!PossessedActor)
+		return;
 	std::cout << "Tworze kontroler.\n";
 
 	CollisionObject* colObject = new CollisionObject(false, CollisionShapeType::COLLISION_CAPSULE);

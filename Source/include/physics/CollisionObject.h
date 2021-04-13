@@ -89,7 +89,7 @@ struct CollisionObject
 	}
 	~CollisionObject()
 	{
-		std::cout << "attempting to remove collision object " << this << "\n";
+		//std::cout << "attempting to remove collision object " << this << "\n";
 		if (ScenePhysicsData)
 			ScenePhysicsData->EraseCollisionObject(*this);
 	}

@@ -2,6 +2,7 @@
 #include <rendering/Material.h>
 #include <iostream>
 #include <glm/gtc/type_ptr.hpp>
+#include <math/Transform.h>
 
 SoundSourceComponent::SoundSourceComponent(Actor& actor, Component* parentComp, std::string name, SoundBuffer* buffer, Transform transform):
 	Component(actor, parentComp, name, transform), ALIndex(0), BufferPtr(buffer)
@@ -80,7 +81,7 @@ void SoundSourceComponent::Stop()
 void SoundSourceComponent::Update(float deltaTime)
 {
 	if (ALIndex != 0)
-		alSourcefv(ALIndex, AL_POSITION, glm::value_ptr(ComponentTransform.GetWorldTransform().PositionRef));
+		alSourcefv(ALIndex, AL_POSITION, glm::value_ptr((glm::vec3)ComponentTransform.GetWorldTransform().PositionRef));
 }
 
 MaterialInstance SoundSourceComponent::GetDebugMatInst(EditorIconState state)

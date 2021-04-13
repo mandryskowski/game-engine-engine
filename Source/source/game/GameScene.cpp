@@ -145,7 +145,7 @@ bool GameSceneRenderData::HasLightWithoutShadowMap() const
 void GameSceneRenderData::AddRenderable(RenderableComponent& renderable)
 {
 	Renderables.push_back(renderable);
-	std::cout << "Adding renderable " << renderable.GetName() << " " << &renderable << "\n";
+	//std::cout << "Adding renderable " << renderable.GetName() << " " << &renderable << "\n";
 }
 
 std::shared_ptr<LightProbe> GameSceneRenderData::AddLightProbe(std::shared_ptr<LightProbe> probe)
@@ -176,7 +176,7 @@ void GameSceneRenderData::AddLight(LightComponent& light)
 void GameSceneRenderData::EraseRenderable(RenderableComponent& renderable)
 {
 	Renderables.erase(std::remove_if(Renderables.begin(), Renderables.end(), [&renderable](std::reference_wrapper<RenderableComponent>& renderableVec) {return &renderableVec.get() == &renderable; }), Renderables.end());
-	std::cout << "Erasing renderable " << renderable.GetName() << " " << &renderable << "\n";
+	//std::cout << "Erasing renderable " << renderable.GetName() << " " << &renderable << "\n";
 }
 
 void GameSceneRenderData::EraseLight(LightComponent& light)
@@ -241,10 +241,8 @@ void GameScenePhysicsData::AddCollisionObject(CollisionObject& object, Transform
 void GameScenePhysicsData::EraseCollisionObject(CollisionObject& object)
 {
 	auto found = std::find(CollisionObjects.begin(), CollisionObjects.end(), &object);
-	std::cout << "Removing collision object " << &object << "\n";
 	if (found != CollisionObjects.end())
 	{
-		std::cout << "Removed collision object " << &object << "\n";
 		if ((*found)->ActorPtr)
 			(*found)->ActorPtr->release();
 		CollisionObjects.erase(found);

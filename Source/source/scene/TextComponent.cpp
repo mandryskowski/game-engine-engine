@@ -80,6 +80,8 @@ void TextComponent::SetContent(const std::string& content)
 
 void TextComponent::Render(const RenderInfo& info, Shader* shader)
 {
+	if (!UsedFont)
+		return;
 	GameHandle->GetRenderEngineHandle()->RenderText((CanvasPtr) ? (CanvasPtr->BindForRender(info, GameHandle->GetGameSettings()->WindowSize)) : (info), *UsedFont, Content, GetTransform().GetWorldTransform(), TextMatInst->GetMaterialRef().Color, shader, false, Alignment);
 //	GameHandle->GetRenderEngineHandle()->RenderStaticMesh(RenderInfo(*GameHandle->GetRenderEngineHandle()->GetCurrentTbCollection()), MeshInstance(GameHandle->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD)), Transform(), GameHandle->GetRenderEngineHandle()->FindShader("Debug")));
 	if (CanvasPtr)

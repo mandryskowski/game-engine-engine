@@ -21,4 +21,5 @@ public:
 	virtual void Update(float);		//controls the component
 
 	virtual MaterialInstance GetDebugMatInst(EditorIconState) override;
+	~CameraComponent();
 };

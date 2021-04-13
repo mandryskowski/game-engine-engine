@@ -3,6 +3,8 @@
 #include <glfw/glfw3.h>
 #include <glm/gtx/euler_angles.hpp>
 #include <string>
+#include <cereal/access.hpp>
+#include <cereal/archives/json.hpp>
 
 struct PhysicsInput
 {
@@ -23,14 +25,26 @@ enum class TVec	//TransformVector
 	ROTATION_EULER
 };
 
-/*class Vec3f : public glm::vec3
+class Vec3f : public glm::vec3
 {
 	using glm::vec3::vec3;
+public:
 	template <typename Archive> void Serialize(Archive& archive)
 	{
-		archive(x, y, z);
+		archive(CEREAL_NVP(x), CEREAL_NVP(y), CEREAL_NVP(z));
 	}
-};*/
+};
+
+class Quatf : public glm::quat
+{
+	using glm::quat::quat;
+public:
+	template <typename Archive> void Serialize(Archive& archive)
+	{
+		archive(CEREAL_NVP(x), CEREAL_NVP(y), CEREAL_NVP(z), CEREAL_NVP(w));
+	}
+};
+
 
 class Transform
 {
@@ -42,9 +56,9 @@ class Transform
 
 	std::vector <Transform*> Children;
 
-	glm::vec3 Position;
-	glm::quat Rotation;
-	glm::vec3 Scale;
+	Vec3f Position;
+	Quatf Rotation;
+	Vec3f Scale;
 
 	mutable std::vector <bool> DirtyFlags;
 	mutable bool Empty;	//true if the Transform object has never been changed. Allows for a simple optimization - we skip it during world transform calculation
@@ -55,9 +69,9 @@ public:
 	void FlagWorldDirtiness() const;
 
 public:
-	const glm::vec3& PositionRef;		//read-only for optimization purposes
-	const glm::quat& RotationRef;
-	const glm::vec3& ScaleRef;
+	const Vec3f& PositionRef;		//read-only for optimization purposes
+	const Quatf& RotationRef;
+	const Vec3f& ScaleRef;
 
 	explicit Transform();
 	explicit Transform(const glm::vec2& pos, const glm::vec2& scale = glm::vec2(1.0f), const glm::quat& rot = glm::quat(glm::vec3(0.0f)));
@@ -124,7 +138,8 @@ public:
 
 	template <typename Archive> void Serialize(Archive& archive)
 	{
-		archive(Position.x, Position.y, Position.z);
+		archive(CEREAL_NVP(Position), CEREAL_NVP(Rotation), CEREAL_NVP(Scale));
+		FlagMyDirtiness();
 	}
 
 	void Print(std::string name = "unnamed") const;
