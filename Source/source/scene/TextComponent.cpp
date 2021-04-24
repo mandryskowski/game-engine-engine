@@ -14,7 +14,7 @@ TextComponent::TextComponent(Actor& actor, Component* parentComp, const std::str
 	TextMatInst(nullptr),
 	Alignment(TextAlignment::LEFT, TextAlignment::BOTTOM)
 {
-	Material* mat = GameHandle->GetRenderEngineHandle()->AddMaterial(new Material("TextMaterial" + content));
+	Material* mat = GameHandle->GetRenderEngineHandle()->AddMaterial(std::make_shared<Material>("TextMaterial" + content));
 	if (content == "big button")
 		mat->SetColor(glm::vec4(0.7f, 0.2f, 0.6f, 1.0f));
 	else
@@ -45,7 +45,7 @@ const std::string& TextComponent::GetContent() const
 	return Content;
 }
 
-Box2f TextComponent::GetBoundingBox(bool world) 
+Boxf<Vec2f> TextComponent::GetBoundingBox(bool world)
 {
 	Transform transform = (world) ? (GetTransform().GetWorldTransform()) : (GetTransform());
 	if (CanvasPtr && world)
@@ -55,7 +55,7 @@ Box2f TextComponent::GetBoundingBox(bool world)
 
 	glm::vec2 alignmentOffset((static_cast<float>(Alignment.first) - static_cast<float>(TextAlignment::CENTER)) * -textLength, (static_cast<float>(Alignment.second) - static_cast<float>(TextAlignment::CENTER)) * -transform.ScaleRef.y);
 
-	return Box2f(glm::vec2(transform.PositionRef) + alignmentOffset, glm::vec2(textLength, transform.ScaleRef.y));
+	return Boxf<Vec2f>(glm::vec2(transform.PositionRef) + alignmentOffset, glm::vec2(textLength, transform.ScaleRef.y));
 }
 
 float TextComponent::GetTextLength(bool world) const
@@ -88,9 +88,20 @@ void TextComponent::Render(const RenderInfo& info, Shader* shader)
 		CanvasPtr->UnbindForRender(GameHandle->GetGameSettings()->WindowSize);
 }
 
+void TextComponent::SetHorizontalAlignment(const TextAlignment horizontal)
+{
+	Alignment.first = horizontal;
+}
+
+void TextComponent::SetVerticalAlignment(const TextAlignment horizontal)
+{
+	Alignment.second = horizontal;
+}
+
 void TextComponent::SetAlignment(const TextAlignment horizontal, const TextAlignment vertical)
 {
-	SetAlignment(std::pair<TextAlignment, TextAlignment>(horizontal, vertical));
+	SetHorizontalAlignment(horizontal);
+	SetVerticalAlignment(vertical);
 }
 
 void TextComponent::SetAlignment(const std::pair<TextAlignment, TextAlignment>& alignment)
@@ -106,7 +117,21 @@ void TextComponent::GetEditorDescription(EditorDescriptionBuilder descBuilder)
 	RenderableComponent::GetEditorDescription(descBuilder);
 
 	UIInputBoxActor& contentInputBox = descBuilder.AddField("Content").CreateChild<UIInputBoxActor>("ContentInputBox");
+	contentInputBox.GetTransform()->Move(Vec2f(1.0f, 0.0f));
 	contentInputBox.SetOnInputFunc([this](const std::string& content) { SetContent(content); }, [this]() ->std::string { return GetContent(); });
+
+	for (int i = 0; i < 2; i++)
+	{
+		UICanvasField& alignmentField = descBuilder.AddField(std::string((i == 0) ? ("Horizontal") : ("Vertical")) + " alignment");
+		const std::string hAlignmentsStr[] = { "Left", "Center", "Right" };
+		const std::string vAlignmentsStr[] = { "Bottom", "Center", "Top" };
+
+		for (int j = 0; j < 3; j++)
+			if (i == 0)
+				alignmentField.CreateChild<UIButtonActor>(hAlignmentsStr[j] + "Button", hAlignmentsStr[j], [this, j]() {this->SetHorizontalAlignment(static_cast<TextAlignment>(j)); }).GetTransform()->Move(Vec2f(1.0f + static_cast<float>(j) * 2.0f, 0.0f));
+			else
+				alignmentField.CreateChild<UIButtonActor>(vAlignmentsStr[j] + "Button", vAlignmentsStr[j], [this, j]() {this->SetVerticalAlignment(static_cast<TextAlignment>(j)); }).GetTransform()->Move(Vec2f(1.0f + static_cast<float>(j) * 2.0f, 0.0f));
+	}
 }
 
 TextConstantSizeComponent::TextConstantSizeComponent(Actor& actor, Component* parentComp, const std::string& name, const Transform& transform, std::string content, std::shared_ptr<Font> font, std::pair<TextAlignment, TextAlignment> alignment):

@@ -20,12 +20,30 @@ enum CollisionShapeType
 struct CollisionShape
 {
 	CollisionShapeType Type;
+	std::string OptionalFilePath, OptionalMeshName;
 	Transform ShapeTransform;
 	std::vector<glm::vec3> VertData;
 	std::vector<unsigned int> IndicesData;
-	CollisionShape(CollisionShapeType type = CollisionShapeType::COLLISION_BOX)
+	CollisionShape(CollisionShapeType type = CollisionShapeType::COLLISION_BOX):
+		Type(type)
 	{
-		Type = type;
+	}
+	template <typename Archive> void Save(Archive& archive) const
+	{
+		archive(CEREAL_NVP(Type), CEREAL_NVP(ShapeTransform), CEREAL_NVP(OptionalFilePath), CEREAL_NVP(OptionalMeshName));
+	}
+	template <typename Archive> void Load(Archive& archive)
+	{
+		archive(CEREAL_NVP(Type), CEREAL_NVP(ShapeTransform), CEREAL_NVP(OptionalFilePath), CEREAL_NVP(OptionalMeshName));
+		if (Type == CollisionShapeType::COLLISION_TRIANGLE_MESH)
+		{
+			if (OptionalFilePath.empty() || OptionalMeshName.empty())
+				std::cout << "ERROR: While serializing Triangle Mesh CollisionShape - No file path or no mesh name detected. Shape will not be added to the physics scene. Nr of verts: " << VertData.size() << "\n";
+			else if (auto found = EngineDataLoader::LoadHierarchyTree(*GameManager::DefaultScene, OptionalFilePath)->FindTriangleMeshCollisionShape(OptionalMeshName))
+				*this = *found;
+			else
+				std::cout << "ERROR: Could not load " << OptionalMeshName << " from " << OptionalFilePath << '\n';
+		}
 	}
 };
 
@@ -69,23 +87,34 @@ struct CollisionObject
 		IgnoreRotation(obj.IgnoreRotation),
 		IsStatic(obj.IsStatic)
 	{
+
 	}
 	CollisionObject(CollisionObject&& obj):
 		CollisionObject(static_cast<const CollisionObject&>(obj))
 	{
 	}
-	CollisionShape* AddShape(CollisionShapeType type)
+	CollisionShape& AddShape(CollisionShapeType type)
 	{
 		Shapes.push_back(std::make_shared<CollisionShape>(type));
-
-		return Shapes.back().get();
+		return *Shapes.back();
 	}
 
-	CollisionShape* AddShape(std::shared_ptr<CollisionShape> shape)
+	CollisionShape& AddShape(std::shared_ptr<CollisionShape> shape)
 	{
 		Shapes.push_back(shape);
+		return *Shapes.back();
+	}
+	CollisionShape* FindTriangleMeshCollisionShape(const std::string& meshName)
+	{
+		for (auto& it : Shapes)
+			if (it->OptionalMeshName == meshName)
+				return it.get();
 
-		return Shapes.back().get();
+		return nullptr;
+	}
+	template <typename Archive> void Serialize(Archive& archive)
+	{
+		archive(CEREAL_NVP(IsStatic), CEREAL_NVP(IgnoreRotation), CEREAL_NVP(Shapes));
 	}
 	~CollisionObject()
 	{
@@ -98,7 +127,8 @@ struct CollisionObject
 glm::vec3 toGlm(physx::PxVec3);
 glm::quat toGlm(physx::PxQuat);
 
-physx::PxVec3 toPx(glm::vec3);
-physx::PxQuat toPx(glm::quat);
-physx::PxTransform toPx(Transform);
-physx::PxTransform toPx(Transform*);
+physx::PxVec3 toPx(const glm::vec3&);
+physx::PxQuat toPx(const glm::quat&);
+physx::PxTransform toPx(const Transform&);
+
+Transform toTransform(const physx::PxTransform&);

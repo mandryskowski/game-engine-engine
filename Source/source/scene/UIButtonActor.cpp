@@ -20,24 +20,24 @@ UIButtonActor::UIButtonActor(GameScene& scene, const std::string& name, std::fun
 {
 	ButtonModel = &RootComponent->CreateComponent<ModelComponent>(Name + "'s_Button_Model");
 
-	Material *matIdle, *matHover, *matClick;
+	std::shared_ptr<Material> matIdle, matHover, matClick;
 	if ((matIdle = GameHandle->GetRenderEngineHandle()->FindMaterial("GEE_Button_Idle")) == nullptr)
 	{
-		matIdle = new Material("GEE_Button_Idle");
+		matIdle = std::make_shared<Material>("GEE_Button_Idle");
 		matIdle->SetColor(glm::vec4(0.520841f, 0.680359f, 0.773018f, 1.0f));
 		matIdle->SetRenderShaderName("Forward_NoLight");
 		GameHandle->GetRenderEngineHandle()->AddMaterial(matIdle);
 	}
 	if ((matHover = GameHandle->GetRenderEngineHandle()->FindMaterial("GEE_Button_Hover")) == nullptr)
 	{
-		matHover = new Material("GEE_Button_Hover");
+		matHover = std::make_shared<Material>("GEE_Button_Hover");
 		matHover->SetColor(glm::vec4(0.831684f, 0.2f, 0.2f, 1.0f));
 		matHover->SetRenderShaderName("Forward_NoLight");
 		GameHandle->GetRenderEngineHandle()->AddMaterial(matHover);
 	}
 	if ((matClick = GameHandle->GetRenderEngineHandle()->FindMaterial("GEE_Button_Click")) == nullptr)
 	{
-		matClick = new Material("GEE_Button_Click");
+		matClick = std::make_shared<Material>("GEE_Button_Click");
 		matClick->SetColor(glm::vec4(0.773018f, 0.773018f, 0.773018f, 1.0f));
 		matClick->SetRenderShaderName("Forward_NoLight");
 		GameHandle->GetRenderEngineHandle()->AddMaterial(matClick);
@@ -63,19 +63,19 @@ ModelComponent* UIButtonActor::GetButtonModel()
 	return ButtonModel;
 }
 
-Box2f UIButtonActor::GetBoundingBox(bool world)
+Boxf<Vec2f> UIButtonActor::GetBoundingBox(bool world)
 {
 	if (!GetTransform())
-		return Box2f(glm::vec2(0.0f), glm::vec2(0.0f));
+		return Boxf<Vec2f>(glm::vec2(0.0f), glm::vec2(0.0f));
 
 	if (!world)
-		return Box2f(GetTransform()->PositionRef, GetTransform()->ScaleRef);
+		return Boxf<Vec2f>(GetTransform()->PositionRef, GetTransform()->ScaleRef);
 
 	if (!CanvasPtr)
-		return Box2f(GetTransform()->GetWorldTransform().PositionRef, GetTransform()->GetWorldTransform().ScaleRef);
+		return Boxf<Vec2f>(GetTransform()->GetWorldTransform().PositionRef, GetTransform()->GetWorldTransform().ScaleRef);
 
 	Transform canvasSpaceTransform = CanvasPtr->ToCanvasSpace(GetTransform()->GetWorldTransform());	//world == true, CanvasPtr isn't nullptr and this actor has got a Transform.
-	return Box2f(canvasSpaceTransform.PositionRef, canvasSpaceTransform.ScaleRef);
+	return Boxf<Vec2f>(canvasSpaceTransform.PositionRef, canvasSpaceTransform.ScaleRef);
 }
 
 void UIButtonActor::SetMatIdle(MaterialInstance&& mat)
@@ -244,10 +244,10 @@ UIActivableButtonActor::UIActivableButtonActor(GameScene& scene, const std::stri
 	OnDeactivationFunc(onDeactivationFunc)
 {
 
-	Material* matActive;
+	std::shared_ptr<Material> matActive;
 	if ((matActive = GameHandle->GetRenderEngineHandle()->FindMaterial("GEE_Button_Active")) == nullptr)
 	{
-		matActive = new Material("GEE_Button_Active");
+		matActive = std::make_shared<Material>("GEE_Button_Active");
 		matActive->SetColor(glm::vec4(1.0f));
 		matActive->SetRenderShaderName("Forward_NoLight");
 		GameHandle->GetRenderEngineHandle()->AddMaterial(matActive);

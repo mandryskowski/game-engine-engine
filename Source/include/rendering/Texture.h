@@ -3,27 +3,42 @@
 #include <glad/glad.h>
 #include <glm/glm.hpp>
 #include <memory>
+#include <cereal/access.hpp>
+#include <cereal/macros.hpp>
 
 struct aiTexture;
 
 class Texture
 {
 protected:
-	GLenum Type;
+	GLenum Type, InternalFormat;
 	unsigned int ID;
 	std::string Path;
 
 public:
-	Texture(GLenum type = GL_TEXTURE_2D, unsigned int id = 0, std::string path = "");
+	Texture(GLenum type = GL_TEXTURE_2D, GLenum internalFormat = GL_RGB, unsigned int id = 0, std::string path = "");
 	unsigned int GenerateID(GLenum type = GL_ZERO);
 
 	GLenum GetType() const;
 	unsigned int GetID() const;
 	std::string GetPath() const;
 
+	void SetPath(const std::string&);
+
 	void Bind(int texSlot = -1) const;
 
 	virtual void Dispose();
+	template <typename Archive> void Save(Archive& archive) const
+	{
+		archive(cereal::make_nvp("Type", Type), cereal::make_nvp("InternalFormat", InternalFormat), cereal::make_nvp("Path", Path));
+	}
+	template <typename Archive> void Load(Archive& archive)
+	{
+		archive(cereal::make_nvp("Type", Type), cereal::make_nvp("InternalFormat", InternalFormat), cereal::make_nvp("Path", Path));
+		//if (!Path.empty() && Path.front() == '*')
+		//else
+		*this = textureFromFile(Path, InternalFormat);
+	}
 };
 
 class NamedTexture: public Texture
@@ -31,11 +46,21 @@ class NamedTexture: public Texture
 	std::string ShaderName;
 
 public:
-	NamedTexture(Texture tex, std::string name = "diffuse");
+	NamedTexture(Texture tex = Texture(), std::string name = "diffuse");
 
 	std::string GetShaderName();
 	void SetShaderName(std::string);
+	template <typename Archive> void Serialize(Archive& archive)
+	{
+		archive(cereal::make_nvp("ShaderName", ShaderName), cereal::make_nvp("Texture", cereal::base_class<Texture>(this)));
+	}
 };
+
+namespace cereal
+{
+	template <class Archive>
+	struct specialize<Archive, NamedTexture, cereal::specialization::member_serialize> {};
+}
 
 bool containsAlphaChannel(GLenum internalformat);
 GLenum nrChannelsToFormat(int nrChannels, bool bBGRA = false, GLenum* internalFormat = nullptr);

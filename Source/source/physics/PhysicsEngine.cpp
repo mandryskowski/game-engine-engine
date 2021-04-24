@@ -55,7 +55,10 @@ void PhysicsEngine::Init()
 PxShape* PhysicsEngine::CreateTriangleMeshShape(CollisionShape* colShape, glm::vec3 scale)
 {
 	if (colShape->VertData.empty() || colShape->IndicesData.empty())
+	{
+		std::cout << "ERROR: No VertData or IndicesData present in a triangle mesh collision shape. Vert count: " << colShape->VertData.size() << ". Index count: " << colShape->IndicesData.size() << "\n";
 		return nullptr;
+	}
 
 	PxTriangleMeshDesc desc;
 	desc.points.count = colShape->VertData.size();
@@ -131,8 +134,8 @@ void PhysicsEngine::AddCollisionObjectToPxPipeline(GameScenePhysicsData& scenePh
 		if (i == 0)
 		{
 			object.ActorPtr = (object.IsStatic) ?
-				(static_cast<PxRigidActor*>(PxCreateStatic(*Physics, toPx(object.TransformPtr), *pxShape))) :
-				(static_cast<PxRigidActor*>(PxCreateDynamic(*Physics, toPx(object.TransformPtr), *pxShape, 10.0f)));
+				(static_cast<PxRigidActor*>(PxCreateStatic(*Physics, toPx(*object.TransformPtr), *pxShape))) :
+				(static_cast<PxRigidActor*>(PxCreateDynamic(*Physics, toPx(*object.TransformPtr), *pxShape, 10.0f)));
 		}
 		else
 			object.ActorPtr->attachShape(*pxShape);
@@ -143,7 +146,7 @@ void PhysicsEngine::AddCollisionObjectToPxPipeline(GameScenePhysicsData& scenePh
 
 	if (!object.ActorPtr)
 	{
-		std::cerr << "ERROR! Can't create PxActor.\n";
+		std::cerr << "ERROR! Can't create PxActor. Number of shapes: " << object.Shapes.size() << ".\n";
 		return;
 	}
 

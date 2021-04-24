@@ -50,6 +50,7 @@ public:
 			Children[i]->DebugHierarchy(nrTabs + 1);
 	}
 
+	Actor& GetActor() const;
 	const std::string& GetName() const;
 	Transform& GetTransform();
 	const Transform& GetTransform() const;
@@ -80,7 +81,7 @@ public:
 	virtual void DebugRender(RenderInfo info, Shader* shader) const; //this method should only be called to render the component as something (usually a textured billboard) to debug the project.
 	void DebugRenderAll(RenderInfo info, Shader* shader) const;
 
-	virtual AtlasMaterial& LoadDebugRenderMaterial(const std::string& materialName, const std::string& path);
+	virtual std::shared_ptr<AtlasMaterial> LoadDebugRenderMaterial(const std::string& materialName, const std::string& path);
 	virtual MaterialInstance GetDebugMatInst(EditorIconState);
 
 	Component* SearchForComponent(std::string name);
@@ -128,12 +129,15 @@ public:
 
 	template <typename Archive> void Save(Archive& archive)	 const
 	{
-		archive(CEREAL_NVP(Name), CEREAL_NVP(ComponentTransform));
+		archive(CEREAL_NVP(Name), CEREAL_NVP(ComponentTransform), CEREAL_NVP(CollisionObj));
 		archive(CEREAL_NVP(Children));
 	}
 	template <typename Archive> void Load(Archive& archive)
 	{
-		archive(CEREAL_NVP(Name), CEREAL_NVP(ComponentTransform));
+		archive(CEREAL_NVP(Name), CEREAL_NVP(ComponentTransform), CEREAL_NVP(CollisionObj));
+		if (CollisionObj)
+			Scene.GetPhysicsData()->AddCollisionObject(*CollisionObj, ComponentTransform);
+
 		std::cout << "Serializing comp " << Name << '\n';
 		if (GameHandle->HasStarted())
 			OnStartAll();
@@ -144,12 +148,23 @@ public:
 			Furthermore, if an Actor/Component is not at the root of hierarchy (of a scene/an actor) we should always pass the pointer to the parent to the constructor, since users might wrongly assume that an Actor/Component is the root if the parent pointer passed to the constructor is nullptr.
 			This might lead to bugs, so we avoid that.
 		*/
-
+		
 		cereal::LoadAndConstruct<Component>::ParentComp = this;	//Set the static parent pointer to this
 		archive(CEREAL_NVP(Children));	//We want all children to be constructed using the pointer. IMPORTANT: The first child will be serialized (the Load method will be called) before the next child is constructed! So the ParentComp pointer will be changed to the address of the new child when we construct its children. We counteract that in the next line.
 		cereal::LoadAndConstruct<Component>::ParentComp = ParentComponent;	//There are no more children of this to serialize, so we "move up" the hierarchy and change the parent pointer to the parent of this, to allow brothers (other children of parent of this) to be constructed.
-	}
 
+		for (auto& it : Children)
+			it->GetTransform().SetParentTransform(&ComponentTransform);
+	}
+	/*template <class Archive>
+	static void load_and_construct(Archive& ar, cereal::construct<Component>& construct)
+	{
+		if (!LoadAndConstruct<Component>::ActorRef)
+			return;
+		construct(*LoadAndConstruct<Component>::ActorRef, LoadAndConstruct<Component>::ParentComp, "");
+		construct->Load(ar);
+	}
+	*/
 	virtual ~Component();
 
 public:
@@ -171,7 +186,7 @@ public:
 
 	bool bKillingProcessStarted;
 
-	AtlasMaterial* DebugRenderMat;
+	std::shared_ptr<AtlasMaterial> DebugRenderMat;
 	std::shared_ptr<MaterialInstance> DebugRenderMatInst;
 	mutable glm::mat4 DebugRenderLastFrameMVP;
 };
@@ -218,6 +233,7 @@ namespace cereal
 			construct(*ActorRef, ParentComp);
 			//ar(base_class<Component>(construct.ptr()));
 			construct->Load(ar);
+			//ar(*construct.ptr());
 		}
 	};
 	
@@ -226,12 +242,10 @@ namespace cereal
 		template <class Archive>
 		static void load_and_construct(Archive& ar, cereal::construct<CameraComponent>& construct)
 		{
-			std::cout << "PROBOWALEM OKEJ\n";
 			if (!LoadAndConstruct<Component>::ActorRef)
 				return;
-			std::cout << "UDALO SIE NAWEKS\n";
 			construct(*LoadAndConstruct<Component>::ActorRef, LoadAndConstruct<Component>::ParentComp, "");
-			construct->Load(ar);
+			construct->Serialize(ar);
 		}
 	};
 
@@ -254,6 +268,7 @@ namespace cereal
 		{
 			if (!LoadAndConstruct<Component>::ActorRef)
 				return;
+
 			construct(*LoadAndConstruct<Component>::ActorRef, LoadAndConstruct<Component>::ParentComp, "", Transform(), "", "");
 			construct->Load(ar);
 		}
@@ -279,7 +294,7 @@ namespace cereal
 			if (!LoadAndConstruct<Component>::ActorRef)
 				return;
 			construct(*LoadAndConstruct<Component>::ActorRef, LoadAndConstruct<Component>::ParentComp, "");
-			construct->Load(ar);
+			construct->Load(ar);	
 		}
 	};
 
@@ -291,7 +306,7 @@ namespace cereal
 			if (!LoadAndConstruct<Component>::ActorRef)
 				return;
 			construct(*LoadAndConstruct<Component>::ActorRef, LoadAndConstruct<Component>::ParentComp, "");
-			construct->Load(ar);
+			construct->SoundSourceComponent::Load(ar);
 		}
 	};
 	template <> struct LoadAndConstruct<AnimationManagerComponent>

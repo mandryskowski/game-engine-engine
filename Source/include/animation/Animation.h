@@ -130,10 +130,19 @@ struct AnimationChannel
 struct Animation
 {
 	std::vector<std::shared_ptr<AnimationChannel>> Channels;
-	std::string Name;
+	struct AnimationLoc	//exact localization of the animation
+	{
+		std::string HierarchyTreePath;
+		std::string Name;
+		AnimationLoc(const std::string& path, const std::string& name) : HierarchyTreePath(path), Name(name) {}
+		bool operator==(const AnimationLoc& rhs) const
+		{
+			return (HierarchyTreePath == rhs.HierarchyTreePath) && (Name == rhs.Name);
+		}
+	} Localization;
 	float Duration;
 
-	Animation(aiAnimation*);
+	Animation(const std::string& hierarchyTreePath, aiAnimation*);
 };
 
 glm::vec3 aiToGlm(const aiVector3D&);

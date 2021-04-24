@@ -98,7 +98,7 @@ public:
 
 		if (GameHandle->HasStarted())
 			OnStartAll();
-
+			
 		//LoadAndConstruct<Actor>::ParentActor = this;
 		Children.clear();
 		archive(CEREAL_NVP(Children));

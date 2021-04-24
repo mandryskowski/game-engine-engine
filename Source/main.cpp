@@ -104,20 +104,17 @@ public:
 		HUDRenderCollection = &RenderEng.AddRenderTbCollection(RenderToolboxCollection("HUDRenderCollection", renderSettings));
 
 		ActiveScene = GetScene("GEE_Main");
+		GameManager::DefaultScene = GetScene("GEE_Main"); 
 
 		SelectScene(ActiveScene, *EditorScene);
 
 		EditorScene->FindActor("SceneViewportActor")->GetRoot()->GetComponent<ModelComponent>("SceneViewportQuad")->AddMeshInst(GetGameHandle()->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD));
 		EditorScene->FindActor("SceneViewportActor")->GetRoot()->GetComponent<ModelComponent>("SceneViewportQuad")->SetTransform(Transform(glm::vec2(0.0f, 0.4f), glm::vec2(0.4f, 0.6f)));
 
-		Material* scenePreviewMaterial = new Material("GEE_3D_SCENE_PREVIEW_MATERIAL", 0.0f, 0.0f, GetGameHandle()->GetRenderEngineHandle()->FindShader("Forward_NoLight"));
+		std::shared_ptr<Material> scenePreviewMaterial = std::make_shared<Material>("GEE_3D_SCENE_PREVIEW_MATERIAL", 0.0f, GetGameHandle()->GetRenderEngineHandle()->FindShader("Forward_NoLight"));
 		RenderEng.AddMaterial(scenePreviewMaterial);
-		//scenePreviewMaterial->AddTexture(new NamedTexture(Texture(GL_TEXTURE_2D, ViewportRenderCollection->GetTb<FinalRenderTargetToolbox>()->GetFinalFramebuffer().GetColorBuffer(0)->GetID()), "albedo1"));
-		//scenePreviewMaterial->AddTexture(new NamedTexture(*reserveTexture(Settings->Video.Resolution, GL_RGB, GL_UNSIGNED_BYTE, GL_LINEAR, GL_LINEAR, GL_TEXTURE_2D, 0, "albedo1"), "albedo1"));
-		NamedTexture* zjeb = new NamedTexture(/**reserveTexture(Settings->Video.Resolution, GL_RGB, GL_UNSIGNED_BYTE, GL_LINEAR, GL_LINEAR, GL_TEXTURE_2D, 0, "albedo1")*/*ViewportRenderCollection->GetTb<FinalRenderTargetToolbox>()->GetFinalFramebuffer().GetColorBuffer(0), "albedo1");
-		std::cout << "ZJEBANA TEKSTURA: " << zjeb->GetID() << '\n';
-		scenePreviewMaterial->AddTexture(new NamedTexture(/**reserveTexture(Settings->Video.Resolution, GL_RGB, GL_UNSIGNED_BYTE, GL_LINEAR, GL_LINEAR, GL_TEXTURE_2D, 0, "albedo1")*/*ViewportRenderCollection->GetTb<FinalRenderTargetToolbox>()->GetFinalFramebuffer().GetColorBuffer(0), "albedo1"));
-		EditorScene->FindActor("SceneViewportActor")->GetRoot()->GetComponent<ModelComponent>("SceneViewportQuad")->OverrideInstancesMaterial(scenePreviewMaterial);
+		scenePreviewMaterial->AddTexture(std::make_shared<NamedTexture>(*ViewportRenderCollection->GetTb<FinalRenderTargetToolbox>()->GetFinalFramebuffer().GetColorBuffer(0), "albedo1"));
+		EditorScene->FindActor("SceneViewportActor")->GetRoot()->GetComponent<ModelComponent>("SceneViewportQuad")->OverrideInstancesMaterial(scenePreviewMaterial.get());
 		//SelectComponent(GetScene("GEE_Main")->FindActor("Januszek")->GetRoot());
 		//SelectComponent(GetScene("GEE_Main")->FindActor("AStolenRevolver")->GetRoot());
 
@@ -126,6 +123,14 @@ public:
 		RenderTbCollections.back()->AddTb<MainFramebufferToolbox>(MainFramebufferToolbox(settings, Shading, glm::vec2(resolution), RenderTbCollections.back()->GetTb<DeferredShadingToolbox>()));
 
 		CurrentTbCollection = RenderTbCollections[0].get();*/
+	}
+	void UpdateSettings()
+	{
+		ViewportRenderCollection->AddTbsRequiredBySettings();
+
+		Material* previewMaterial = RenderEng.FindMaterial("GEE_3D_SCENE_PREVIEW_MATERIAL").get();
+		previewMaterial->Textures.clear();
+		RenderEng.FindMaterial("GEE_3D_SCENE_PREVIEW_MATERIAL")->AddTexture(std::make_shared<NamedTexture>(*ViewportRenderCollection->GetTb<FinalRenderTargetToolbox>()->GetFinalFramebuffer().GetColorBuffer(0), "albedo1"));
 	}
 	void SetupEditorScene()
 	{
@@ -136,7 +141,7 @@ public:
 		Actor& scenePreviewActor = editorScene.CreateActorAtRoot<Actor>("SceneViewportActor");
 		ModelComponent& scenePreviewQuad = scenePreviewActor.CreateComponent<ModelComponent>("SceneViewportQuad");
 		 
-		UICanvasActor& exampleCanvas = editorScene.CreateActorAtRoot<UICanvasActor>("ExampleCanvas");
+		/*UICanvasActor& exampleCanvas = editorScene.CreateActorAtRoot<UICanvasActor>("ExampleCanvas");
 		exampleCanvas.SetTransform(Transform(glm::vec3(0.7f, -0.4f, 0.0f), glm::vec3(0.0f), glm::vec3(0.3f)));
 		UIButtonActor& lolBackgroundButton = exampleCanvas.CreateChild<UIButtonActor>("VeryImportantButton");
 		lolBackgroundButton.SetTransform(Transform(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f), glm::vec3(1.0f)));
@@ -159,7 +164,7 @@ public:
 				exampleCanvas.AddUIElement(gridSampleText);
 				gridSampleText.SetAlignment(TextAlignment::RIGHT, TextAlignment::TOP);
 			}
-		}
+		}*/
 
 		UIWindowActor& window1 = editorScene.CreateActorAtRoot<UIWindowActor>("MyTestWindow");
 		window1.SetTransform(Transform(glm::vec2(0.0, -0.5f), glm::vec2(0.2f)));
@@ -168,7 +173,65 @@ public:
 		bigButtonActor.SetTransform(Transform(glm::vec2(0.0f, 1.5f), glm::vec2(0.4f)));
 		TextComponent& bigButtonText = bigButtonActor.CreateComponent<TextComponent>("BigButtonText", Transform(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f), glm::vec3(0.1f)), "big button", "fonts/expressway rg.ttf", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
 		window1.AddUIElement(bigButtonActor);
-		
+
+		editorScene.CreateActorAtRoot<UIButtonActor>("MeshTreesButton", "MeshTrees", [this, &editorScene]() {
+			UIWindowActor& window = editorScene.CreateActorAtRoot<UIWindowActor>("MeshTreesWindow");
+			window.GetTransform()->SetScale(glm::vec2(0.5f));
+
+			UIAutomaticListActor& meshTreesList = window.CreateChild<UIAutomaticListActor>("MeshTreesList");
+			for (auto& scene : Scenes)
+				for (auto& meshTree : scene->HierarchyTrees)
+					meshTreesList.CreateChild<UIButtonActor>("MeshTreeButton", meshTree->GetName(), [this, &meshTree]() { PreviewHierarchyTree(*meshTree); });
+
+			window.AddUIElement(meshTreesList);
+			meshTreesList.Refresh();
+
+			}).SetTransform(Transform(Vec2f(-0.8f, -0.8f), Vec2f(0.1f)));
+
+		editorScene.CreateActorAtRoot<UIButtonActor>("MaterialsButton", "Materials", [this, &editorScene]() {
+			UIWindowActor& window = editorScene.CreateActorAtRoot<UIWindowActor>("MaterialsPreviewWindow");
+			window.GetTransform()->SetScale(glm::vec2(0.5f));
+			UIAutomaticListActor& list = window.CreateChild<UIAutomaticListActor>("MaterialsList");
+
+			for (auto& it : RenderEng.Materials)
+			{
+				std::string name = (it) ? (it->GetLocalization().GetStr()) : ("NULLPTR???");
+				UIButtonActor& button = list.CreateChild<UIButtonActor>(name + "Button", name);
+				window.AddUIElement(button);
+			}
+
+			list.Refresh();
+
+			}).SetTransform(Transform(Vec2f(-0.5f, -0.8f), Vec2f(0.1f)));
+
+		editorScene.CreateActorAtRoot<UIButtonActor>("SettingsButton", "Settings", [this, &editorScene]() {
+			UIWindowActor& window = editorScene.CreateActorAtRoot<UIWindowActor>("MainSceneSettingsWindow");
+			window.GetTransform()->SetScale(glm::vec2(0.5f));
+			window.AddField("Bloom").GetTemplates().TickBox([this]() -> bool { bool updated = (GetGameSettings()->Video.bBloom = !GetGameSettings()->Video.bBloom); UpdateSettings(); return updated; });
+			UIInputBoxActor& gammaInputBox = window.AddField("Gamma").CreateChild<UIInputBoxActor>("GammaInputBox");
+			gammaInputBox.SetOnInputFunc([this](float val) { GetGameSettings()->Video.MonitorGamma = val; UpdateSettings(); }, [this]()->float { return GetGameSettings()->Video.MonitorGamma; });
+			gammaInputBox.GetTransform()->Move(glm::vec2(1.0f, 0.0f));
+
+			window.AddUIElement(*window.GetScaleActor());
+			window.FieldsList->Refresh();
+			
+		}).SetTransform(Transform(Vec2f(-0.2f, -0.8f), Vec2f(0.1f)));
+
+		editorScene.CreateActorAtRoot<UIButtonActor>("ShadersButton", "Shaders", [this, &editorScene]() {
+			UIWindowActor& window = editorScene.CreateActorAtRoot<UIWindowActor>("ShadersPreviewWindow");
+			window.GetTransform()->SetScale(glm::vec2(0.5f));
+
+			UIButtonActor& addShaderButton = window.CreateChild<UIButtonActor>("AddShaderButton");
+			AtlasMaterial& addIconMat = *dynamic_cast<AtlasMaterial*>(GetRenderEngineHandle()->FindMaterial("GEE_E_Add_Actor_Material").get());
+			addShaderButton.SetMatIdle(MaterialInstance(addIconMat, addIconMat.GetTextureIDInterpolatorTemplate(0.0f)));
+			addShaderButton.SetMatHover(MaterialInstance(addIconMat, addIconMat.GetTextureIDInterpolatorTemplate(1.0f)));
+			addShaderButton.SetMatClick(MaterialInstance(addIconMat, addIconMat.GetTextureIDInterpolatorTemplate(2.0f)));
+
+			window.AddUIElement(addShaderButton);
+
+			}).SetTransform(Transform(Vec2f(0.1f, -0.8f), Vec2f(0.1f)));
+
+
 		Actor& cameraActor = editorScene.CreateActorAtRoot<Actor>("OrthoCameraActor");
 		CameraComponent& orthoCameraComp = cameraActor.CreateComponent<CameraComponent>("OrthoCameraComp");
 
@@ -286,11 +349,12 @@ public:
 		refreshButton.GetTransform()->SetPosition(glm::vec2(6.0f, 0.0f));
 		refreshButton.GetTransform()->SetScale(glm::vec2(0.5f));
 
-		AtlasMaterial& refreshIconMat = *new AtlasMaterial("GEE_E_Refresh_Icon_Material", glm::ivec2(3, 1), 0.0f, 0.0f, RenderEng.FindShader("Forward_NoLight"));
-		refreshIconMat.AddTexture(new NamedTexture(textureFromFile("EditorAssets/refresh_icon.png", GL_RGB, GL_LINEAR, GL_NEAREST_MIPMAP_LINEAR), "albedo1"));
-		refreshButton.SetMatIdle(MaterialInstance(refreshIconMat));
-		refreshButton.SetMatHover(MaterialInstance(refreshIconMat, refreshIconMat.GetTextureIDInterpolatorTemplate(1.0f)));
-		refreshButton.SetMatClick(MaterialInstance(refreshIconMat, refreshIconMat.GetTextureIDInterpolatorTemplate(2.0f)));
+		std::shared_ptr<AtlasMaterial> refreshIconMat = std::make_shared<AtlasMaterial>(Material("GEE_E_Refresh_Icon_Material", 0.0f, RenderEng.FindShader("Forward_NoLight")), glm::ivec2(3, 1));
+		GetRenderEngineHandle()->AddMaterial(refreshIconMat);
+		refreshIconMat->AddTexture(std::make_shared<NamedTexture>(textureFromFile("EditorAssets/refresh_icon.png", GL_RGB, GL_LINEAR, GL_NEAREST_MIPMAP_LINEAR), "albedo1"));
+		refreshButton.SetMatIdle(MaterialInstance(*refreshIconMat));
+		refreshButton.SetMatHover(MaterialInstance(*refreshIconMat, refreshIconMat->GetTextureIDInterpolatorTemplate(1.0f)));
+		refreshButton.SetMatClick(MaterialInstance(*refreshIconMat, refreshIconMat->GetTextureIDInterpolatorTemplate(2.0f)));
 
 		canvas.AddUIElement(refreshButton);
 
@@ -329,11 +393,12 @@ public:
 		addActorButton.GetTransform()->SetPosition(glm::vec2(8.0f, 0.0f));
 		addActorButton.GetTransform()->SetScale(glm::vec2(0.5f));
 
-		AtlasMaterial& addActorMat = *new AtlasMaterial("GEE_E_Add_Actor_Material", glm::ivec2(3, 1), 0.0f, 0.0f, RenderEng.FindShader("Forward_NoLight"));
-		addActorMat.AddTexture(new NamedTexture(textureFromFile("EditorAssets/add_icon.png", GL_RGB, GL_LINEAR, GL_NEAREST_MIPMAP_LINEAR), "albedo1"));
-		addActorButton.SetMatIdle(MaterialInstance(addActorMat));
-		addActorButton.SetMatHover(MaterialInstance(addActorMat, addActorMat.GetTextureIDInterpolatorTemplate(1.0f)));
-		addActorButton.SetMatClick(MaterialInstance(addActorMat, addActorMat.GetTextureIDInterpolatorTemplate(2.0f)));
+		std::shared_ptr<AtlasMaterial> addIconMat = std::make_shared<AtlasMaterial>(Material("GEE_E_Add_Actor_Material", 0.0f, RenderEng.FindShader("Forward_NoLight")), glm::ivec2(3, 1));
+		GetRenderEngineHandle()->AddMaterial(addIconMat);
+		addIconMat->AddTexture(std::make_shared<NamedTexture>(textureFromFile("EditorAssets/add_icon.png", GL_RGB, GL_LINEAR, GL_NEAREST_MIPMAP_LINEAR), "albedo1"));
+		addActorButton.SetMatIdle(MaterialInstance(*addIconMat));
+		addActorButton.SetMatHover(MaterialInstance(*addIconMat, addIconMat->GetTextureIDInterpolatorTemplate(1.0f)));
+		addActorButton.SetMatClick(MaterialInstance(*addIconMat, addIconMat->GetTextureIDInterpolatorTemplate(2.0f)));
 
 		canvas.AddUIElement(addActorButton);
 
@@ -367,8 +432,8 @@ public:
 		refreshButton.GetTransform()->SetPosition(glm::vec2(6.0f, 0.0f));
 		refreshButton.GetTransform()->SetScale(glm::vec2(0.5f));
 
-		AtlasMaterial& refreshIconMat = *new AtlasMaterial("GEE_E_Refresh_Icon_Material", glm::ivec2(3, 1), 0.0f, 0.0f, RenderEng.FindShader("Forward_NoLight"));
-		refreshIconMat.AddTexture(new NamedTexture(textureFromFile("EditorAssets/refresh_icon.png", GL_RGB, GL_LINEAR, GL_NEAREST_MIPMAP_LINEAR), "albedo1"));
+		AtlasMaterial& refreshIconMat = *new AtlasMaterial(Material("GEE_E_Refresh_Icon_Material", 0.0f, RenderEng.FindShader("Forward_NoLight")), glm::ivec2(3, 1));
+		refreshIconMat.AddTexture(std::make_shared<NamedTexture>(textureFromFile("EditorAssets/refresh_icon.png", GL_RGB, GL_LINEAR, GL_NEAREST_MIPMAP_LINEAR), "albedo1"));
 		refreshButton.SetMatIdle(MaterialInstance(refreshIconMat));
 		refreshButton.SetMatHover(MaterialInstance(refreshIconMat, refreshIconMat.GetTextureIDInterpolatorTemplate(1.0f)));
 		refreshButton.SetMatClick(MaterialInstance(refreshIconMat, refreshIconMat.GetTextureIDInterpolatorTemplate(2.0f)));
@@ -399,8 +464,8 @@ public:
 		addActorButton.GetTransform()->SetPosition(glm::vec2(8.0f, 0.0f));
 		addActorButton.GetTransform()->SetScale(glm::vec2(0.5f));
 
-		AtlasMaterial& addActorMat = *new AtlasMaterial("GEE_E_Add_Actor_Material", glm::ivec2(3, 1), 0.0f, 0.0f, RenderEng.FindShader("Forward_NoLight"));
-		addActorMat.AddTexture(new NamedTexture(textureFromFile("EditorAssets/add_icon.png", GL_RGB, GL_LINEAR, GL_NEAREST_MIPMAP_LINEAR), "albedo1"));
+		AtlasMaterial& addActorMat = *new AtlasMaterial(Material("GEE_E_Add_Actor_Material", 0.0f, RenderEng.FindShader("Forward_NoLight")), glm::ivec2(3, 1));
+		addActorMat.AddTexture(std::make_shared<NamedTexture>(textureFromFile("EditorAssets/add_icon.png", GL_RGB, GL_LINEAR, GL_NEAREST_MIPMAP_LINEAR), "albedo1"));
 		addActorButton.SetMatIdle(MaterialInstance(addActorMat));
 		addActorButton.SetMatHover(MaterialInstance(addActorMat, addActorMat.GetTextureIDInterpolatorTemplate(1.0f)));
 		addActorButton.SetMatClick(MaterialInstance(addActorMat, addActorMat.GetTextureIDInterpolatorTemplate(2.0f)));
@@ -497,7 +562,7 @@ public:
 
 		for (int i = 0; i < tree.GetAnimationCount(); i++)
 		{
-			UIButtonActor& animationButton = previewWindow.CreateChild<UIButtonActor>(tree.GetAnimation(i).Name + " animation button", tree.GetAnimation(i).Name);
+			UIButtonActor& animationButton = previewWindow.CreateChild<UIButtonActor>(tree.GetAnimation(i).Localization.Name + " animation button", tree.GetAnimation(i).Localization.Name);
 			animationButton.SetTransform(Transform(glm::vec2(-0.8f + static_cast<float>(i) * 0.3f, -0.8f), glm::vec2(0.1f)));
 		}
 
@@ -551,7 +616,7 @@ public:
 		RenderEng.FindShader("Forward_NoLight")->Use();
 		GetScene("GEE_Main")->GetRootActor()->DebugRenderAll(GetScene("GEE_Main")->ActiveCamera->GetRenderInfo(*ViewportRenderCollection), RenderEng.FindShader("Forward_NoLight"));
 
-		Material* scenePreviewMaterial = new Material("GEE_3D_SCENE_PREVIEW_MATERIAL", 0.0f, 0.0f, GetGameHandle()->GetRenderEngineHandle()->FindShader("Forward_NoLight"));
+		Material* scenePreviewMaterial = new Material("GEE_3D_SCENE_PREVIEW_MATERIAL", 0.0f, GetGameHandle()->GetRenderEngineHandle()->FindShader("Forward_NoLight"));
 
 		if (SelectedActor && !GetInputRetriever().IsKeyPressed(Key::P))
 		{
@@ -666,7 +731,6 @@ CEREAL_REGISTER_TYPE(PawnActor)
 CEREAL_REGISTER_POLYMORPHIC_RELATION(Actor, PawnActor)
 CEREAL_REGISTER_TYPE(ShootingController)
 CEREAL_REGISTER_POLYMORPHIC_RELATION(Actor, ShootingController)
-
 CEREAL_REGISTER_TYPE(CameraComponent)
 CEREAL_REGISTER_POLYMORPHIC_RELATION(Component, CameraComponent)
 CEREAL_REGISTER_TYPE(ModelComponent)
@@ -681,6 +745,9 @@ CEREAL_REGISTER_TYPE(SoundSourceComponent)
 CEREAL_REGISTER_POLYMORPHIC_RELATION(Component, SoundSourceComponent)
 CEREAL_REGISTER_TYPE(AnimationManagerComponent)
 CEREAL_REGISTER_POLYMORPHIC_RELATION(Component, AnimationManagerComponent)
+
+CEREAL_REGISTER_TYPE(Material)
+CEREAL_REGISTER_TYPE(AtlasMaterial)
 
 int main()
 {
@@ -737,9 +804,14 @@ int main()
 		{
 			cereal::JSONInputArchive archive(deserializationStream);
 			cereal::LoadAndConstruct<Actor>::ScenePtr = editor.GetScene("GEE_Main");
+			editor.GetScene("GEE_Main")->GetRenderData()->LoadSkeletonBatches(archive);
 			const_cast<Actor*>(editor.GetScene("GEE_Main")->GetRootActor())->Load(archive);
+
+			archive.serializeDeferments();
+
+			editor.GetScene("GEE_Main")->Load();
 		}
-		catch (cereal::RapidJSONException& ex)
+		catch (cereal::Exception& ex)
 		{
 			std::cout << "ERROR: While loading scene: " << ex.what() << '\n';
 		}
@@ -754,8 +826,6 @@ int main()
 	float lastUpdateTime = glfwGetTime();
 	bool endGame = false;
 
-	const char* xDPath = "Argon/Argon.glb";
-	EditorEventProcessor::FileDropCallback(programWindow, 1, &xDPath);
 	do
 	{
 		deltaTime = glfwGetTime() - lastUpdateTime;
@@ -767,10 +837,12 @@ int main()
 
 	std::ofstream serializationStream("zjebany.json");
 	{
-		cereal::JSONOutputArchive archive(serializationStream);
 		try
 		{
+			cereal::JSONOutputArchive archive(serializationStream);
+			editor.GetScene("GEE_Main")->GetRenderData()->SaveSkeletonBatches(archive);
 			const_cast<Actor*>(editor.GetScene("GEE_Main")->GetRootActor())->Save(archive);
+			archive.serializeDeferments();
 		}
 		catch (cereal::Exception& ex)
 		{

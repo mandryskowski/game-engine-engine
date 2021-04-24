@@ -1,6 +1,10 @@
 #pragma once
 #include "GameManager.h"
 #include <utility/Utility.h>
+#include <cereal/access.hpp>
+#include <cereal/types/vector.hpp>
+#include <cereal/types/memory.hpp>
+#include <cereal/types/polymorphic.hpp>
 
 class SkeletonBatch;
 class GameScene;
@@ -25,11 +29,22 @@ public:
 	void EraseLight(LightComponent&);
 
 	void SetupLights(unsigned int blockBindingSlot);
-
 	void UpdateLightUniforms();
 
+	int GetBatchID(SkeletonBatch&) const;
+	SkeletonBatch* GetBatch(int ID);
 
 	RenderableComponent* FindRenderable(std::string name);
+
+	template<typename Archive> void SaveSkeletonBatches(Archive& archive) const
+	{
+		archive(CEREAL_NVP(SkeletonBatches));
+	}
+	template<typename Archive> void LoadSkeletonBatches(Archive& archive)
+	{
+		SkeletonBatches.clear();
+		archive(CEREAL_NVP(SkeletonBatches));
+	}
 
 	friend class RenderEngine;
 
@@ -98,6 +113,8 @@ public:
 	GameSceneAudioData* GetAudioData();
 	GameManager* GetGameHandle();
 
+	void AddPostLoadLambda(std::function<void()>);	//Pass a function that you want to be called after this GameScene has been loaded. Warning: Using Archive in the lambda will not work unless you really know what you're doing.
+
 	Actor& AddActorToRoot(std::unique_ptr<Actor> actor);	//you use this function to make the game interact (update, draw...) with the actor; without adding it to the scene, the Actor instance isnt updated real-time by default. Pass nullptr to use the Main Scene.
 	template <typename ActorClass, typename... Args> ActorClass& CreateActorAtRoot(Args&&...);
 
@@ -107,6 +124,12 @@ public:
 	void BindActiveCamera(CameraComponent*);
 
 	Actor* FindActor(std::string name);
+	
+	void Load()
+	{
+		for (auto& it : PostLoadLambdas)
+			it();
+	}
 
 private:
 	std::string Name;
@@ -118,6 +141,8 @@ private:
 	std::unique_ptr<GameSceneAudioData> AudioData;
 
 	std::vector<std::unique_ptr<HierarchyTemplate::HierarchyTreeT>> HierarchyTrees;
+
+	std::vector<std::function<void()>> PostLoadLambdas;
 
 	CameraComponent* ActiveCamera;
 

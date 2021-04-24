@@ -90,7 +90,7 @@ UICanvasField& UICanvasActor::AddField(const std::string& name, std::function<gl
 
 void UICanvasActor::HandleEvent(const Event& ev)
 {
-	if (ev.GetType() != EventType::MOUSE_SCROLLED || !Box2f(GetTransform()->GetWorldTransform()).Contains(GameHandle->GetInputRetriever().GetMousePositionNDC()))
+	if (ev.GetType() != EventType::MOUSE_SCROLLED || !Boxf<Vec2f>(GetTransform()->GetWorldTransform()).Contains(GameHandle->GetInputRetriever().GetMousePositionNDC()))
 		return;
 
 	const MouseScrollEvent& scrolledEv = dynamic_cast<const MouseScrollEvent&>(ev);
@@ -126,7 +126,7 @@ void UICanvasActor::UnbindForRender(const glm::uvec2& res)
 
 void UICanvasActor::CreateScrollBars()
 {
-	Material* markerMaterial = new Material("MarkerMaterial", 0.0f, 0.0f, GameHandle->GetRenderEngineHandle()->FindShader("Forward_NoLight"));
+	Material* markerMaterial = new Material("MarkerMaterial", 0.0f, GameHandle->GetRenderEngineHandle()->FindShader("Forward_NoLight"));
 	markerMaterial->SetColor(glm::vec4(1.0f, 1.0f, 0.1f, 1.0f));
 	Actor& marker = CreateChild<Actor>("Gowno");
 	ModelComponent& markerModel = marker.CreateComponent<ModelComponent>("Gownomodel");
@@ -175,7 +175,7 @@ template<VecAxis barAxis>
 inline void UICanvasActor::UpdateScrollBarT()
 {
 	unsigned int axisIndex = static_cast<unsigned int>(barAxis);
-	Box2f canvasBBox = GetBoundingBox();
+	Boxf<Vec2f> canvasBBox = GetBoundingBox();
 
 	float barSize = glm::min(1.0f, glm::pow(CanvasView.ScaleRef[axisIndex], 2.0f) / canvasBBox.Size[axisIndex]);
 

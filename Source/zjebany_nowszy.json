@@ -44,15 +44,15 @@
                                 "Name": "Camera",
                                 "ComponentTransform": {
                                     "Position": {
-                                        "x": -2.5281312465667726,
-                                        "y": -0.06799983978271485,
-                                        "z": 5.400453090667725
+                                        "x": -3.0,
+                                        "y": -0.06799980998039246,
+                                        "z": 8.0
                                     },
                                     "Rotation": {
-                                        "x": -0.05421614274382591,
-                                        "y": -0.16264939308166505,
-                                        "z": -0.008951123803853989,
-                                        "w": 0.9851526021957398
+                                        "x": 0.013947295024991036,
+                                        "y": -0.4597530961036682,
+                                        "z": 0.00722182122990489,
+                                        "w": 0.8879079222679138
                                     },
                                     "Scale": {
                                         "x": 1.0,
@@ -4916,6 +4916,197 @@
                                             "valid": 1,
                                             "data": {
                                                 "Name": "Cerberus_by_Andrew_Maximov/cerberus.glbRootMeshes",
+                                                "ComponentTransform": {
+                                                    "Position": {
+                                                        "x": 0.0,
+                                                        "y": 0.0,
+                                                        "z": 0.0
+                                                    },
+                                                    "Rotation": {
+                                                        "x": 0.0,
+                                                        "y": 0.0,
+                                                        "z": 0.0,
+                                                        "w": 1.0
+                                                    },
+                                                    "Scale": {
+                                                        "x": 1.0,
+                                                        "y": 1.0,
+                                                        "z": 1.0
+                                                    }
+                                                },
+                                                "Children": []
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "Children": []
+                }
+            }
+        },
+        {
+            "polymorphic_id": 1073741824,
+            "ptr_wrapper": {
+                "valid": 1,
+                "data": {
+                    "Name": "hm wow",
+                    "RootComponent": {
+                        "polymorphic_id": 1073741824,
+                        "ptr_wrapper": {
+                            "valid": 1,
+                            "data": {
+                                "Name": "roocix",
+                                "ComponentTransform": {
+                                    "Position": {
+                                        "x": 0.0,
+                                        "y": 0.0,
+                                        "z": 0.0
+                                    },
+                                    "Rotation": {
+                                        "x": 0.0,
+                                        "y": 0.0,
+                                        "z": 0.0,
+                                        "w": 1.0
+                                    },
+                                    "Scale": {
+                                        "x": 1.0,
+                                        "y": 1.0,
+                                        "z": 1.0
+                                    }
+                                },
+                                "Children": [
+                                    {
+                                        "polymorphic_id": 5,
+                                        "ptr_wrapper": {
+                                            "valid": 1,
+                                            "data": {
+                                                "Name": "A LightComponent",
+                                                "ComponentTransform": {
+                                                    "Position": {
+                                                        "x": 0.0,
+                                                        "y": 0.0,
+                                                        "z": 0.0
+                                                    },
+                                                    "Rotation": {
+                                                        "x": 0.0,
+                                                        "y": 0.0,
+                                                        "z": 0.0,
+                                                        "w": 1.0
+                                                    },
+                                                    "Scale": {
+                                                        "x": 7.085196018218994,
+                                                        "y": 7.085196018218994,
+                                                        "z": 7.085196018218994
+                                                    }
+                                                },
+                                                "Children": [
+                                                    {
+                                                        "polymorphic_id": 6,
+                                                        "ptr_wrapper": {
+                                                            "valid": 1,
+                                                            "data": {
+                                                                "Name": "A SoundSourceComponent",
+                                                                "ComponentTransform": {
+                                                                    "Position": {
+                                                                        "x": 0.0,
+                                                                        "y": 0.0,
+                                                                        "z": 0.0
+                                                                    },
+                                                                    "Rotation": {
+                                                                        "x": 0.0,
+                                                                        "y": 0.0,
+                                                                        "z": 0.0,
+                                                                        "w": 1.0
+                                                                    },
+                                                                    "Scale": {
+                                                                        "x": 1.0,
+                                                                        "y": 1.0,
+                                                                        "z": 1.0
+                                                                    }
+                                                                },
+                                                                "Children": []
+                                                            }
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "polymorphic_id": 1073741824,
+                                        "ptr_wrapper": {
+                                            "valid": 1,
+                                            "data": {
+                                                "Name": "A Component",
+                                                "ComponentTransform": {
+                                                    "Position": {
+                                                        "x": 0.0,
+                                                        "y": 0.0,
+                                                        "z": 0.0
+                                                    },
+                                                    "Rotation": {
+                                                        "x": 0.0,
+                                                        "y": 0.0,
+                                                        "z": 0.0,
+                                                        "w": 1.0
+                                                    },
+                                                    "Scale": {
+                                                        "x": 1.0,
+                                                        "y": 1.0,
+                                                        "z": 1.0
+                                                    }
+                                                },
+                                                "Children": []
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "Children": []
+                }
+            }
+        },
+        {
+            "polymorphic_id": 1073741824,
+            "ptr_wrapper": {
+                "valid": 1,
+                "data": {
+                    "Name": "Bullet2",
+                    "RootComponent": {
+                        "polymorphic_id": 4,
+                        "ptr_wrapper": {
+                            "valid": 1,
+                            "data": {
+                                "Name": "hqSphere/hqSphere.obj",
+                                "ComponentTransform": {
+                                    "Position": {
+                                        "x": -2.749950647354126,
+                                        "y": -0.2999996840953827,
+                                        "z": 8.1660737991333
+                                    },
+                                    "Rotation": {
+                                        "x": -0.02850530296564102,
+                                        "y": -0.0015215373132377864,
+                                        "z": -0.04005691409111023,
+                                        "w": 0.9987896084785461
+                                    },
+                                    "Scale": {
+                                        "x": 0.20000000298023225,
+                                        "y": 0.20000000298023225,
+                                        "z": 0.20000000298023225
+                                    }
+                                },
+                                "Children": [
+                                    {
+                                        "polymorphic_id": 4,
+                                        "ptr_wrapper": {
+                                            "valid": 1,
+                                            "data": {
+                                                "Name": "Sphere",
                                                 "ComponentTransform": {
                                                     "Position": {
                                                         "x": 0.0,

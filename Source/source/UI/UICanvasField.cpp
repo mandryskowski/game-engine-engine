@@ -131,8 +131,8 @@ void UIElementTemplates::TickBox(bool& modifiedBool)
 
 void UIElementTemplates::TickBox(std::function<bool()> setFunc)
 {
-	AtlasMaterial* tickMaterial = new AtlasMaterial("TickMaterial", glm::ivec2(3, 1), 0.0f, 0.0f, GameHandle.GetRenderEngineHandle()->FindShader("Forward_NoLight"));
-	tickMaterial->AddTexture(new NamedTexture(textureFromFile("EditorAssets/tick_icon.png", GL_RGBA, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR, true), "albedo1"));
+	AtlasMaterial* tickMaterial = new AtlasMaterial(Material("TickMaterial", 0.0f, GameHandle.GetRenderEngineHandle()->FindShader("Forward_NoLight")), glm::ivec2(3, 1));
+	tickMaterial->AddTexture(std::make_shared<NamedTexture>(textureFromFile("EditorAssets/tick_icon.png", GL_RGBA, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR, true), "albedo1"));
 
 	UIButtonActor& billboardTickBoxActor = TemplateParent.CreateChild<UIButtonActor>("BillboardTickBox");
 	billboardTickBoxActor.GetTransform()->Move(glm::vec2(1.0f, 0.0f));
@@ -231,6 +231,11 @@ template <> void UIElementTemplates::VecInput<glm::vec3>(std::function<void(floa
 	VecInput<3>(setFunc, getFunc);
 }
 
+template <> void UIElementTemplates::VecInput<Vec3f>(std::function<void(float, float)> setFunc, std::function<float(float)> getFunc)
+{
+	VecInput<3>(setFunc, getFunc);
+}
+
 template <> void UIElementTemplates::VecInput<glm::vec4>(std::function<void(float, float)> setFunc, std::function<float(float)> getFunc) 
 {
 	VecInput<4>(setFunc, getFunc);
@@ -253,6 +258,7 @@ template <typename ObjectType> void GetAllObjects<Actor>(Actor& hierarchyRoot, s
 
 template void UIElementTemplates::VecInput<glm::vec2>(glm::vec2&);
 template void UIElementTemplates::VecInput<glm::vec3>(glm::vec3&);
+template void UIElementTemplates::VecInput<Vec3f>(Vec3f&);
 template void UIElementTemplates::VecInput<glm::vec4>(glm::vec4&);
 template void UIElementTemplates::VecInput<glm::quat>(glm::quat&);
 

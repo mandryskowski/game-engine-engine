@@ -125,12 +125,12 @@ public:
 	virtual Shader* GetLightShader(const RenderToolboxCollection& renderCol, LightType) = 0;
 	virtual RenderToolboxCollection* GetCurrentTbCollection() = 0;
 
-	virtual Material* AddMaterial(Material*) = 0;
+	virtual Material* AddMaterial(std::shared_ptr<Material>) = 0;
 	virtual std::shared_ptr<Shader> AddShader(std::shared_ptr<Shader>, bool bForwardShader = false) = 0;
 	virtual void AddSceneRenderDataPtr(GameSceneRenderData*) = 0;
 
 	virtual Shader* FindShader(std::string) = 0;
-	virtual Material* FindMaterial(std::string) = 0;
+	virtual std::shared_ptr<Material> FindMaterial(std::string) = 0;
 
 	virtual void RenderCubemapFromTexture(Texture targetTex, Texture tex, glm::uvec2 size, Shader&, int* layer = nullptr, int mipLevel = 0) = 0;
 	virtual void RenderCubemapFromScene(RenderInfo info, GameSceneRenderData* sceneRenderData, GEE_FB::Framebuffer target, GEE_FB::FramebufferAttachment targetTex, GLenum attachmentType, Shader* shader = nullptr, int* layer = nullptr, bool fullRender = false) = 0;
@@ -150,6 +150,7 @@ public:
 class GameManager
 {
 public:
+	static GameScene* DefaultScene;
 	virtual GameScene& CreateScene(const std::string& name) = 0;
 
 	virtual void BindAudioListenerTransformPtr(Transform*) = 0;

@@ -111,23 +111,21 @@ bool ModelComponent::GetHide() const
 }
 
 
-MeshInstance* ModelComponent::FindMeshInstance(std::string name)
+MeshInstance* ModelComponent::FindMeshInstance(const Mesh::MeshLoc& meshLoc)
 {
-	for (std::unique_ptr<MeshInstance>& it : MeshInstances)
+	for (int i = 0; i < 2; i++)	//Search 2 times; first look at the specific names and then at node names.
 	{
-		if (it->GetMesh().GetName() == name)
-			return it.get();
+		std::function<bool(const std::string&, const std::string&)> checkEqual = [](const std::string& str1, const std::string& str2) -> bool { return !str1.empty() && str1 == str2; };
+		for (std::unique_ptr<MeshInstance>& it : MeshInstances)
+			if ((i == 0 && checkEqual(meshLoc.SpecificName, it->GetMesh().GetLocalization().SpecificName)) ||
+				(i == 1 && checkEqual(meshLoc.NodeName, it->GetMesh().GetLocalization().NodeName)))
+				return it.get();
 	}
-	//auto found = std::find_if(MeshInstances.begin(), MeshInstances.end(), [name](const std::unique_ptr<MeshInstance>& meshInst) { return meshInst->GetMesh().GetName().find(name) != std::string::npos; });
 
-	//if (found != MeshInstances.end())
-	//	return found->get();
-
-
-	for (unsigned int i = 0; i < Children.size(); i++)
+	for (auto& it: Children)
 	{
-		ModelComponent* modelCast = dynamic_cast<ModelComponent*>(Children[i].get());
-		MeshInstance* meshInst = modelCast->FindMeshInstance(name);
+		ModelComponent* modelCast = dynamic_cast<ModelComponent*>(it.get());
+		MeshInstance* meshInst = modelCast->FindMeshInstance(meshLoc);
 		if (meshInst)
 			return meshInst;
 	}
@@ -139,7 +137,7 @@ MeshInstance* ModelComponent::FindMeshInstance(std::string name)
 void ModelComponent::AddMeshInst(const MeshInstance& meshInst)
 {
 	MeshInstances.push_back(std::make_unique<MeshInstance>(meshInst));
-	std::cout << "Added mesh inst " << MeshInstances.back()->GetMesh().GetName() << '\n';
+	std::cout << "Added mesh inst " << MeshInstances.back()->GetMesh().GetLocalization().NodeName << '\n';
 }
 
 void ModelComponent::Update(float deltaTime)
@@ -170,8 +168,8 @@ void ModelComponent::GetEditorDescription(EditorDescriptionBuilder descBuilder)
 {
 	RenderableComponent::GetEditorDescription(descBuilder);
 
-	Material* tickMaterial = new Material("TickMaterial", 0.0f, 0.0f, GameHandle->GetRenderEngineHandle()->FindShader("Forward_NoLight"));
-	tickMaterial->AddTexture(new NamedTexture(textureFromFile("EditorAssets/tick_icon.png", GL_SRGB_ALPHA, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR, true), "albedo1"));
+	Material* tickMaterial = new Material("TickMaterial", 0.0f, GameHandle->GetRenderEngineHandle()->FindShader("Forward_NoLight"));
+	tickMaterial->AddTexture(std::make_shared<NamedTexture>(textureFromFile("EditorAssets/tick_icon.png", GL_SRGB_ALPHA, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR, true), "albedo1"));
 
 	descBuilder.AddField("Render as billboard").GetTemplates().TickBox(RenderAsBillboard);
 	descBuilder.AddField("Hide").GetTemplates().TickBox(Hide);

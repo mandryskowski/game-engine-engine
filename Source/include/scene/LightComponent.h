@@ -39,15 +39,39 @@ public:
 
 	virtual	MaterialInstance GetDebugMatInst(EditorIconState) override;
 	virtual void GetEditorDescription(EditorDescriptionBuilder) override;
+	
+	template <typename Archive> void Save(Archive& archive) const
+	{
+		archive(cereal::make_nvp("Lighttype", Type), CEREAL_NVP(Ambient), CEREAL_NVP(Diffuse), CEREAL_NVP(Specular), CEREAL_NVP(Attenuation), CEREAL_NVP(CutOff), CEREAL_NVP(OuterCutOff), CEREAL_NVP(Far), cereal::make_nvp("Component", cereal::base_class<Component>(this)));
+	}
+	template <typename Archive> void Load(Archive& archive)
+	{		
+		LightType type;
+		Vec3f ambient, diffuse, specular;
+		float attenuation, cutOff, outerCutOff, far;
+
+		archive(cereal::make_nvp("Lighttype", type), cereal::make_nvp("Ambient", ambient), cereal::make_nvp("Diffuse", diffuse), cereal::make_nvp("Specular", specular), cereal::make_nvp("Attenuation", attenuation), cereal::make_nvp("CutOff", cutOff), cereal::make_nvp("OuterCutOff", outerCutOff), cereal::make_nvp("Far", far), cereal::base_class<Component>(this));
+
+		SetType(type);
+		Ambient = ambient;
+		Diffuse = diffuse;
+		Specular = specular;
+		
+		SetAttenuation(attenuation);
+		CutOff = cutOff;
+		OuterCutOff = outerCutOff;
+
+		CalculateLightRadius();
+	}
 
 	virtual ~LightComponent();
 
 private:
 	LightType Type;
 
-	glm::vec3 Ambient;
-	glm::vec3 Diffuse;
-	glm::vec3 Specular;
+	Vec3f Ambient;
+	Vec3f Diffuse;
+	Vec3f Specular;
 
 	float Attenuation;
 	float CutOff;			//"additional data"

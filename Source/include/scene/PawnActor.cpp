@@ -111,7 +111,7 @@ void PawnActor::GetEditorDescription(EditorDescriptionBuilder descBuilder)
 
 		if (animManager)
 			for (int i = 0; i < animManager->GetAnimInstancesCount(); i++)
-				descBuilder.GetCanvas().AddUIElement(animsList.CreateChild<UIButtonActor>("Anim button", animManager->GetAnimInstance(i)->GetAnimation().Name, [this, i]() {AnimIndex = i; }));
+				descBuilder.GetCanvas().AddUIElement(animsList.CreateChild<UIButtonActor>("Anim button", animManager->GetAnimInstance(i)->GetAnimation().Localization.Name, [this, i]() {AnimIndex = i; }));
 		animsList.Refresh();
 	};
 

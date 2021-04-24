@@ -173,7 +173,7 @@ void SSAOToolbox::Setup(const GameSettings::VideoSettings& settings)
 	Shaders.push_back(ShaderLoader::LoadShadersWithInclData("SSAO", settings.GetShaderDefines(), "Shaders/ssao.vs", "Shaders/ssao.fs"));
 	SSAOShader = Shaders.back().get();
 
-	SSAOShader->SetExpectedMatrices(std::vector<MatrixType> {MatrixType::PROJECTION});
+	SSAOShader->SetExpectedMatrices(std::vector<MatrixType> {MatrixType::VIEW, MatrixType::PROJECTION});
 	SSAOShader->Use();
 	SSAOShader->Uniform1f("radius", 0.5f);
 	SSAOShader->Uniform1i("gPosition", 0);

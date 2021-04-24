@@ -63,113 +63,18 @@ void RenderEngine::Init(glm::uvec2 resolution)
 
 void RenderEngine::GenerateEngineObjects()
 {
-	/*
-	glm::vec3 quadVertices[] = {
-		glm::vec3(-0.5f, -0.5f, 0.0f),
-		glm::vec3( 0.5f, -0.5f, 0.0f),
-		glm::vec3( 0.5f,  0.5f, 0.0f),
-		glm::vec3(-0.5f,  0.5f, 0.0f)
-	};
-
-	unsigned int quadEBOBuffer[] =
-	{
-		0, 1, 2,
-		2, 3, 0
-	};
-
-	glm::vec3 cubeVertices[] = {
-		//FRONT
-		glm::vec3(0.5f, -0.5f, -0.5f),
-		glm::vec3(-0.5f, -0.5f, -0.5f),
-		glm::vec3(-0.5f,  0.5f, -0.5f),
-
-		glm::vec3(-0.5f,  0.5f, -0.5f),
-		glm::vec3(0.5f,  0.5f, -0.5f),
-		glm::vec3(0.5f, -0.5f, -0.5f),
-
-		//BACK
-		glm::vec3(-0.5f, -0.5f,  0.5f),
-		glm::vec3(0.5f, -0.5f,  0.5f),
-		glm::vec3(0.5f,  0.5f,  0.5f),
-
-		glm::vec3(0.5f,  0.5f,  0.5f),
-		glm::vec3(-0.5f,  0.5f,  0.5f),
-		glm::vec3(-0.5f, -0.5f,  0.5f),
-
-		//LEFT
-		glm::vec3(-0.5f, -0.5f, -0.5f),
-		glm::vec3(-0.5f, -0.5f,  0.5f),
-		glm::vec3(-0.5f,  0.5f,  0.5f),
-
-		glm::vec3(-0.5f,  0.5f,  0.5f),
-		glm::vec3(-0.5f,  0.5f, -0.5f),
-		glm::vec3(-0.5f, -0.5f, -0.5f),
-
-		//RIGHT
-		glm::vec3(0.5f, -0.5f,  0.5f),
-		glm::vec3(0.5f, -0.5f, -0.5f),
-		glm::vec3(0.5f,  0.5f, -0.5f),
-
-		glm::vec3(0.5f,  0.5f, -0.5f),
-		glm::vec3(0.5f,  0.5f,  0.5f),
-		glm::vec3(0.5f, -0.5f,  0.5f),
-
-		//TOP
-		glm::vec3(-0.5f,  0.5f,  0.5f),
-		glm::vec3(0.5f,  0.5f,  0.5f),
-		glm::vec3(0.5f,  0.5f, -0.5f),
-
-		glm::vec3(0.5f,  0.5f, -0.5f),
-		glm::vec3(-0.5f,  0.5f, -0.5f),
-		glm::vec3(-0.5f,  0.5f,  0.5f),
-
-		//BOTTOM
-		glm::vec3(-0.5f, -0.5f, -0.5f),
-		glm::vec3(0.5f, -0.5f, -0.5f),
-		glm::vec3(0.5f, -0.5f,  0.5f),
-
-		glm::vec3(0.5f, -0.5f,  0.5f),
-		glm::vec3(-0.5f, -0.5f,  0.5f),
-		glm::vec3(-0.5f, -0.5f, -0.5f)
-	};
-
-	unsigned int quadVBO;
-	unsigned int quadVAO;
-	unsigned int quadEBO;
-	glGenVertexArrays(1, &quadVAO);
-	glGenBuffers(1, &quadVBO);
-	glGenBuffers(1, &quadEBO);
-
-	glBindVertexArray(quadVAO);
-	glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), quadVertices, GL_STATIC_DRAW);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, quadEBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(quadEBOBuffer), quadEBOBuffer, GL_STATIC_DRAW);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void*)(nullptr));
-	glEnableVertexAttribArray(0);
-	
-
-	unsigned int cubeVBO;
-	unsigned int cubeVAO;
-	glGenVertexArrays(1, &cubeVAO);
-	glGenBuffers(1, &cubeVBO);
-
-	glBindVertexArray(cubeVAO);
-	glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVertices), cubeVertices, GL_STATIC_DRAW);
-
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 3, (void*)(nullptr));
-	glEnableVertexAttribArray(0);*/
-
 	//Add the engine objects to the tree collection. This way models loaded from the level file can simply use the internal engine meshes for stuff like particles
-	//Preferably, the engine objects should be added to the tree collection first, so searching for them takes less time and they'll possibly be used often.
+	//Preferably, the engine objects should be added to the tree collection first, so searching for them takes less time as they'll possibly be used often.
 
 	GameScene& engineObjScene = GameHandle->CreateScene("GEE_Engine_Objects");
+
 	EngineDataLoader::LoadHierarchyTree(engineObjScene, "EngineObjects/quad.obj", &engineObjScene.CreateHierarchyTree("ENG_QUAD"));
 	EngineDataLoader::LoadHierarchyTree(engineObjScene, "EngineObjects/cube.obj", &engineObjScene.CreateHierarchyTree("ENG_CUBE"));
 	EngineDataLoader::LoadHierarchyTree(engineObjScene, "EngineObjects/sphere.obj", &engineObjScene.CreateHierarchyTree("ENG_SPHERE"));
 	EngineDataLoader::LoadHierarchyTree(engineObjScene, "EngineObjects/cone.obj", &engineObjScene.CreateHierarchyTree("ENG_CONE"));
-	GameHandle->FindHierarchyTree("ENG_QUAD")->FindMesh("Quad")->Name = "Quad_NoShadow";
+
+	GameHandle->FindHierarchyTree("ENG_QUAD")->FindMesh(Mesh::MeshLoc::FromNodeName("Quad"))->Localization.HierarchyTreePath = "ENG_QUAD";
+	GameHandle->FindHierarchyTree("ENG_QUAD")->FindMesh(Mesh::MeshLoc::FromNodeName("Quad"))->Localization.SpecificName = "Quad_NoShadow";
 }
 
 void RenderEngine::LoadInternalShaders()
@@ -198,6 +103,13 @@ void RenderEngine::LoadInternalShaders()
 
 	Shaders.push_back(ShaderLoader::LoadShaders("BRDFLutGeneration", "Shaders/brdfLutGeneration.vs", "Shaders/brdfLutGeneration.fs"));
 
+	AddShader(ShaderLoader::LoadShaders("Forward_NoLight", "Shaders/forward_nolight.vs", "Shaders/forward_nolight.fs"), true);
+	Shaders.back()->SetExpectedMatrices(std::vector<MatrixType>{MatrixType::MVP});
+	Shaders.back()->AddTextureUnit(0, "albedo1");
+
+	AddShader(ShaderLoader::LoadShaders("TextShader", "Shaders/text.vs", "Shaders/text.fs"), true);
+	Shaders.back()->SetExpectedMatrices(std::vector<MatrixType>{MatrixType::MVP});
+
 	//load debug shaders
 	Shaders.push_back(ShaderLoader::LoadShaders("Debug", "Shaders/debug.vs", "Shaders/debug.fs"));
 	Shaders.back()->SetExpectedMatrices(std::vector<MatrixType>{MatrixType::MVP});
@@ -221,13 +133,13 @@ Mesh& RenderEngine::GetBasicShapeMesh(EngineBasicShape type)
 	default:
 		std::cout << "ERROR! Enum value " << static_cast<int>(type) << " does not represent a basic shape mesh.\n";
 	case EngineBasicShape::QUAD:
-		return *GameHandle->FindHierarchyTree("ENG_QUAD")->FindMesh("Quad_NoShadow");
+		return *GameHandle->FindHierarchyTree("ENG_QUAD")->FindMesh(Mesh::MeshLoc::FromNodeName("Quad"));
 	case EngineBasicShape::CUBE:
-		return *GameHandle->FindHierarchyTree("ENG_CUBE")->FindMesh("Cube");
+		return *GameHandle->FindHierarchyTree("ENG_CUBE")->FindMesh(Mesh::MeshLoc::FromNodeName("Cube"));
 	case EngineBasicShape::SPHERE:
-		return *GameHandle->FindHierarchyTree("ENG_SPHERE")->FindMesh("Sphere");
+		return *GameHandle->FindHierarchyTree("ENG_SPHERE")->FindMesh(Mesh::MeshLoc::FromNodeName("Sphere"));
 	case EngineBasicShape::CONE:
-		return *GameHandle->FindHierarchyTree("ENG_CONE")->FindMesh("Cone");
+		return *GameHandle->FindHierarchyTree("ENG_CONE")->FindMesh(Mesh::MeshLoc::FromNodeName("Cone"));
 	}
 }
 
@@ -257,10 +169,13 @@ void RenderEngine::AddSceneRenderDataPtr(GameSceneRenderData* sceneRenderData)
 	ScenesRenderData.push_back(sceneRenderData);
 }
 
-Material* RenderEngine::AddMaterial(Material* material)
+Material* RenderEngine::AddMaterial(std::shared_ptr<Material>  material)
 {
+	std::cout << "Adding material " << Materials.size() << " (" << material << ")";
+	if (material)
+		std::cout << " (" << material->GetLocalization().Name << ")\n";
 	Materials.push_back(material);
-	return Materials.back();
+	return Materials.back().get();
 }
 
 std::shared_ptr<Shader> RenderEngine::AddShader(std::shared_ptr<Shader> shader, bool bForwardShader)
@@ -291,12 +206,12 @@ void RenderEngine::BindSkeletonBatch(GameSceneRenderData* sceneRenderData, unsig
 	BoundSkeletonBatch = sceneRenderData->SkeletonBatches[index].get();
 }
 
-Material* RenderEngine::FindMaterial(std::string name)
+std::shared_ptr<Material> RenderEngine::FindMaterial(std::string name)
 {
 	if (name.empty())
 		return nullptr;
 
-	auto materialIt = std::find_if(Materials.begin(), Materials.end(), [name](Material* material) {	return material->GetName() == name; });
+	auto materialIt = std::find_if(Materials.begin(), Materials.end(), [name](const std::shared_ptr<Material>& material) {	return material->GetLocalization().Name == name; });
 
 	if (materialIt != Materials.end())
 		return *materialIt;
@@ -773,6 +688,10 @@ void RenderEngine::PrepareFrame()
 {
 	BindSkeletonBatch(GameHandle->GetScene("GEE_Main")->GetRenderData(), static_cast<unsigned int>(0));
 
+	//std::cout << "***Shaders deubg***\n";
+	//for (auto& it : Shaders)
+	//	std::cout << it->GetName() << '\n';
+
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glDrawBuffer(GL_BACK);
 	glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
@@ -968,7 +887,7 @@ void RenderEngine::RenderText(const RenderInfo& infoPreConvert, const Font& font
 
 	const glm::mat3& textRot = t.GetRotationMatrix();
 
-	Material textMaterial("TextMaterial", 0.0f, 0.0f, FindShader("TextShader"));
+	Material textMaterial("TextMaterial", 0.0f, FindShader("TextShader"));
 
 	for (int i = 0; i < static_cast<int>(content.length()); i++)
 	{
@@ -1084,10 +1003,8 @@ void RenderEngine::RenderSkeletalMeshes(const RenderInfo& info, const std::vecto
 		if (!handledShader)
 		{
 			handledShader = true;
-			if (skelInfo.GetBatchPtr() != BoundSkeletonBatch)
-				BindSkeletonBatch(skelInfo.GetBatchPtr());
 
-			shader->Uniform1i("boneIDOffset", skelInfo.GetIDOffset());
+			shader->Uniform1i("boneIDOffset", skelInfo.GetBoneIDOffset());
 
 			glm::mat4 modelMat = transform.GetWorldTransformMatrix();	//the ComponentTransform's world transform is cached
 			bool bCalcVelocity = GameHandle->GetGameSettings()->Video.IsVelocityBufferNeeded() && info.MainPass;
@@ -1096,6 +1013,10 @@ void RenderEngine::RenderSkeletalMeshes(const RenderInfo& info, const std::vecto
 			glm::mat4 jitteredVP = (jitter) ? (Postprocessing.GetJitterMat(info.TbCollection.GetSettings()) * info.VP) : (info.VP);
 			shader->BindMatrices(modelMat, &info.view, &info.projection, &jitteredVP);
 		}
+		if (skelInfo.GetBatchPtr() != BoundSkeletonBatch)
+			BindSkeletonBatch(skelInfo.GetBatchPtr());
+
+		shader->Uniform1i("boneIDOffset", skelInfo.GetBoneIDOffset());
 
 		if (BoundMesh != &mesh || i == 0)
 		{

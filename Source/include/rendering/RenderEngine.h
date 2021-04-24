@@ -24,13 +24,13 @@ public:
 
 	RenderToolboxCollection& AddRenderTbCollection(const RenderToolboxCollection&, bool setupToolboxesAccordingToSettings = true); //Pass false as the second argument to disable loading any toolboxes. By default, we load every toolbox that will be needed according to RenderToolboxCollection::Settings
 	virtual void AddSceneRenderDataPtr(GameSceneRenderData*) override;
-	virtual Material* AddMaterial(Material* material) override;
+	virtual Material* AddMaterial(std::shared_ptr<Material> material) override;
 	virtual std::shared_ptr<Shader> AddShader(std::shared_ptr<Shader> shader, bool bForwardShader = false) override;
 
 	void BindSkeletonBatch(SkeletonBatch* batch);
 	void BindSkeletonBatch(GameSceneRenderData* sceneRenderData, unsigned int index);
 
-	virtual Material* FindMaterial(std::string) override;
+	virtual std::shared_ptr<Material> FindMaterial(std::string) override;
 	virtual Shader* FindShader(std::string) override;
 
 
@@ -72,9 +72,11 @@ private:
 	Postprocess Postprocessing;
 
 	std::vector <GameSceneRenderData*> ScenesRenderData;
-	std::vector <Material*> Materials;
+public:
+	std::vector <std::shared_ptr <Material>> Materials;
 
 	std::vector <std::shared_ptr <Shader>> Shaders;
+	std::vector <std::shared_ptr <Shader>> UserShaders;
 	std::vector <std::shared_ptr <Shader>> ForwardShaders;		//We store forward shaders in a different vector to attempt rendering the scene at forward render stage. Putting non-forward-rendering shaders here will reduce performance.
 	//std::vector <std::shared_ptr <Shader>> SettingIndependentShaders;		//TODO: Put setting independent shaders here. When the user asks for a shader, search in CurrentTbCollection first. Then check here.
 	std::vector <Shader*> LightShaders;		//Same with light shaders

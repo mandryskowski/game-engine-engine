@@ -35,14 +35,14 @@ glm::mat4 UICanvas::GetProjection() const
 	return glm::ortho(-size.x, size.x, -size.y, size.y);
 }
 
-Box2f UICanvas::GetBoundingBox() const
+Boxf<Vec2f> UICanvas::GetBoundingBox() const
 {
 	glm::vec2 canvasRightUpMax(0.0f);
 	glm::vec2 canvasLeftDownMin(0.0f);
 
 	for (int i = 0; i < UIElements.size(); i++)
 	{
-		Box2f bBox = UIElements[i].get().GetBoundingBox();
+		Boxf<Vec2f> bBox = UIElements[i].get().GetBoundingBox();
 		if (bBox.Size == glm::vec2(0.0f))
 			continue;
 
@@ -60,12 +60,12 @@ Box2f UICanvas::GetBoundingBox() const
 //	std::cout << UIElements.size() << "\n";
 //	std::cout << canvasLeftDownMin.x << ", " << canvasLeftDownMin.y << " --> " << canvasRightUpMax.x << ", " << canvasRightUpMax.y << "\n";
 
-	return Box2f(center, canvasRightUpMax - center);
+	return Boxf<Vec2f>(center, canvasRightUpMax - center);
 }
 
 void UICanvas::ClampViewToElements()
 {
-	Box2f bBox = GetBoundingBox();
+	Boxf<Vec2f> bBox = GetBoundingBox();
 	glm::vec2 canvasRightUp = bBox.Position + bBox.Size - glm::pow(static_cast<glm::vec2>(CanvasView.ScaleRef), glm::vec2(2.0f));	//Canvas space
 	glm::vec2 canvasLeftDown = bBox.Position - bBox.Size + glm::pow(static_cast<glm::vec2>(CanvasView.ScaleRef), glm::vec2(2.0f));	//Canvas space
 

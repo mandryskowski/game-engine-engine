@@ -19,10 +19,10 @@ Controller::Controller(GameScene& scene, std::string name):
 	RotationEuler(glm::vec3(0.0f))
 {
 
+	int i = 0;
 	std::generate(MovementAxises.begin(), MovementAxises.end(),
-		[]()
+		[&i]()
 		{
-			static int i = 0;
 			MovementAxis dir;
 			dir.MovementInterpolator = nullptr;// std::make_unique<Interpolator<float>>(Interpolator<float>(0.0f, 0.15f, 0.0f, 1.0f, InterpolationType::LINEAR));
 			dir.Inversed = false;
@@ -43,6 +43,8 @@ void Controller::OnStart()
 {
 	Actor::OnStart();
 
+	if (PxController)
+		PxController->release();
 	PxController = GameHandle->GetPhysicsHandle()->CreateController(*Scene.GetPhysicsData());
 	PossessedActor = GameHandle->GetRootActor()->FindActor("CameraActor");
 	if (!PossessedActor)
@@ -94,7 +96,7 @@ void Controller::ReadMovementKeys()
 
 void Controller::Update(float deltaTime)
 {
-	if (!PossessedActor)
+	if (!PossessedActor || PxController->getActor()->getNbShapes() == 0)
 		return;
 
 	ReadMovementKeys();
@@ -105,8 +107,10 @@ void Controller::Update(float deltaTime)
 	physx::PxSweepBuffer sweepBuffer;
 	physx::PxShape** shapes = new physx::PxShape*[16];
 	PxController->getActor()->getShapes(shapes, 16);
+
 	shapes[0]->acquireReference();
 	PxController->getActor()->detachShape(*shapes[0]);
+	//toTransform(PxController->getActor()->getGlobalPose() * shapes[0]->getLocalPose()).Print("pose");
 	bool groundSweep = PxController->getScene()->sweep(shapes[0]->getGeometry().capsule(), PxController->getActor()->getGlobalPose() * shapes[0]->getLocalPose(), PxController->getScene()->getGravity().getNormalized(), 0.5f, sweepBuffer, physx::PxHitFlag::eDEFAULT, physx::PxQueryFilterData(), nullptr);
 	bool isOnGround = (groundSweep) && ((PxController->getFootPosition().y - sweepBuffer.block.position.y) < 0.01f);
 	PxController->getActor()->attachShape(*shapes[0]);

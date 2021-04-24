@@ -31,6 +31,22 @@ public:
 	virtual	MaterialInstance GetDebugMatInst(EditorIconState) override;
 
 	virtual void GetEditorDescription(EditorDescriptionBuilder) override;
+	template <typename Archive> void Save(Archive& archive) const
+	{
+		std::string emptyStr = "";
+		if (BufferPtr)
+			archive(cereal::make_nvp("Path", BufferPtr->Path), cereal::make_nvp("Component", cereal::base_class<Component>(this)));
+		else
+			archive(cereal::make_nvp("Path", emptyStr), cereal::make_nvp("Component", cereal::base_class<Component>(this)));
+	}
+	template <typename Archive> void Load(Archive& archive)
+	{
+		std::cout << "Began loading sound\n";
+		std::string path;
+		archive(cereal::make_nvp("Path", path), cereal::make_nvp("Component", cereal::base_class<Component>(this)));
+		GenAL(GameHandle->GetAudioEngineHandle()->LoadBufferFromFile(path));
+		std::cout << "Finished loading sound\n";
+	}
 
 	void Dispose();
 	~SoundSourceComponent();

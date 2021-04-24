@@ -1,16 +1,16 @@
 #include <rendering/Mesh.h>
 #include <assetload/FileLoader.h>
 
-Mesh::Mesh(std::string name):
+Mesh::Mesh(const MeshLoc& name):
 	VAO(0),
 	VBO(0),
 	EBO(0),
 	VertexCount(0),
 	DefaultMeshMaterial(nullptr),
-	Name(name),
+	Localization(name),
 	CastsShadow(true)
 {
-	if (Name.find("_NoShadow") != std::string::npos)
+	if (Localization.NodeName.find("_NoShadow") != std::string::npos || Localization.SpecificName.find("_NoShadow") != std::string::npos)
 		CastsShadow = false;
 }
 
@@ -24,9 +24,9 @@ unsigned int Mesh::GetVertexCount() const
 	return VertexCount;
 }
 
-std::string Mesh::GetName() const
+Mesh::MeshLoc Mesh::GetLocalization() const
 {
-	return Name;
+	return Localization;
 }
 
 Material* Mesh::GetMaterial()

@@ -43,7 +43,7 @@ public:
 	SkeletonInfo* GetSkeletonInfo() const;
 	bool GetHide() const;
 
-	MeshInstance* FindMeshInstance(std::string);
+	MeshInstance* FindMeshInstance(const Mesh::MeshLoc&);
 	void AddMeshInst(const MeshInstance&);
 
 	virtual void Update(float deltaTime) override;
@@ -51,6 +51,21 @@ public:
 	virtual void Render(const RenderInfo&, Shader* shader) override;
 
 	virtual void GetEditorDescription(EditorDescriptionBuilder);
+
+	template <typename Archive> void Save(Archive& archive) const
+	{
+		archive(CEREAL_NVP(RenderAsBillboard), CEREAL_NVP(Hide), CEREAL_NVP(MeshInstances), cereal::make_nvp("SkelInfoBatchID", (SkelInfo) ? (SkelInfo->GetBatchPtr()->GetBatchID()) : (0)), cereal::make_nvp("SkelInfoID", (SkelInfo) ? (SkelInfo->GetInfoID()) : (0)), cereal::make_nvp("Component", cereal::base_class<Component>(this)));
+	}
+	template <typename Archive> void Load(Archive& archive)	//Assumptions: Order of batches and their Skeletons is not changed during loading.
+	{
+		int skelInfoBatchID, skelInfoID;
+		archive(CEREAL_NVP(RenderAsBillboard), CEREAL_NVP(Hide), CEREAL_NVP(MeshInstances), cereal::make_nvp("SkelInfoBatchID", skelInfoBatchID), cereal::make_nvp("SkelInfoID", skelInfoID), cereal::make_nvp("Component", cereal::base_class<Component>(this)));
+		if (skelInfoID >= 0)
+		{
+			SkelInfo = Scene.GetRenderData()->GetBatch(skelInfoBatchID)->GetInfo(skelInfoID);
+			std::cout << "Setting skelinfo of " << Name << " to " << skelInfoBatchID << ", " << skelInfoID << '\n';
+		}
+	}
 
 
 protected:
@@ -62,3 +77,10 @@ protected:
 	mutable glm::mat4 LastFrameMVP;	//for velocity buffer; this field is only updated when velocity buffer is needed (for temporal AA/motion blur), in any other case it will be set to an identity matrix
 
 };
+
+
+namespace cereal
+{
+	//template <class Archive>
+	//struct specialize<Archive, ModelComponent, cereal::specialization::member_serialize> {};
+}

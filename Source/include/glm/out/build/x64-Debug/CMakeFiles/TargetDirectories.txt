@@ -1,0 +1,2 @@
+C:/Users/48511/source/repos/swetroniusz/game-engine-engine/Source/include/glm/out/build/x64-Debug/CMakeFiles/edit_cache.dir
+C:/Users/48511/source/repos/swetroniusz/game-engine-engine/Source/include/glm/out/build/x64-Debug/CMakeFiles/rebuild_cache.dir

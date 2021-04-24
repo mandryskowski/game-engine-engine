@@ -286,6 +286,8 @@ void Transform::SetParentTransform(Transform* parent, bool relocate)
 	
 	ParentTransform = parent;
 	ParentTransform->AddChild(this);
+
+	FlagWorldDirtiness();
 }
 
 void Transform::AddChild(Transform* t)

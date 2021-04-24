@@ -24,7 +24,7 @@ public:
 
 	virtual glm::mat4 GetProjection() const;
 
-	Box2f GetBoundingBox() const;	//Canvas space
+	Boxf<Vec2f> GetBoundingBox() const;	//Canvas space
 
 	void ClampViewToElements();
 

@@ -65,6 +65,11 @@ GameManager* GameScene::GetGameHandle()
 	return GameHandle;
 }
 
+void GameScene::AddPostLoadLambda(std::function<void()> postLoadLambda)
+{
+	PostLoadLambdas.push_back(postLoadLambda);
+}
+
 Actor& GameScene::AddActorToRoot(std::unique_ptr<Actor> actor)
 {
 	return RootActor->AddChild(std::move(actor));
@@ -169,6 +174,8 @@ std::shared_ptr<SkeletonInfo> GameSceneRenderData::AddSkeletonInfo()
 void GameSceneRenderData::AddLight(LightComponent& light)
 {
 	Lights.push_back(light);
+	for (int i = 0; i < static_cast<int>(Lights.size()); i++)
+		Lights[i].get().SetIndex(i);
 	if (LightBlockBindingSlot != -1)	//If light block was already set up, do it again because there isn't enough space for the new light.
 		SetupLights(LightBlockBindingSlot);
 }
@@ -211,6 +218,23 @@ void GameSceneRenderData::UpdateLightUniforms()
 		light.get().InvalidateCache();
 		light.get().UpdateUBOData(&LightsBuffer);
 	}
+}
+
+int GameSceneRenderData::GetBatchID(SkeletonBatch& batch) const
+{
+	for (int i = 0; i < static_cast<int>(SkeletonBatches.size()); i++)
+		if (SkeletonBatches[i].get() == &batch)
+			return i;
+
+	return -1;	//batch not found; return invalid ID
+}
+
+SkeletonBatch* GameSceneRenderData::GetBatch(int ID)
+{
+	if (ID < 0 || ID > SkeletonBatches.size() - 1)
+		return nullptr;
+
+	return SkeletonBatches[ID].get();
 }
 
 RenderableComponent* GameSceneRenderData::FindRenderable(std::string name)

@@ -111,8 +111,9 @@ unsigned int BoneMapping::GetBoneID(std::string name) const
 }
 
 SkeletonInfo::SkeletonInfo():
-	GlobalInverseTransformPtr(nullptr),
-	IDOffset(0),
+	GlobalInverseTransformCompPtr(nullptr),
+	
+	BoneIDOffset(0),
 	BatchPtr(nullptr)
 {
 }
@@ -127,21 +128,26 @@ SkeletonBatch* SkeletonInfo::GetBatchPtr()
 	return BatchPtr;
 }
 
-unsigned int SkeletonInfo::GetIDOffset()
+unsigned int SkeletonInfo::GetBoneIDOffset()
 {
-	return IDOffset;
+	return BoneIDOffset;
+}
+
+int SkeletonInfo::GetInfoID()
+{
+	return (BatchPtr) ? (BatchPtr->GetInfoID(*this)) : (-1);
 }
 
 
-void SkeletonInfo::SetGlobalInverseTransformPtr(const Transform* transformPtr)
+void SkeletonInfo::SetGlobalInverseTransformCompPtr(const Component* comp)
 {
-	GlobalInverseTransformPtr = transformPtr;
+	GlobalInverseTransformCompPtr = comp;
 }
 
 void SkeletonInfo::SetBatchData(SkeletonBatch* batch, unsigned int offset)
 {
 	BatchPtr = batch;
-	IDOffset = offset;
+	BoneIDOffset = offset;
 }
 
 void SkeletonInfo::FillMatricesVec(std::vector<glm::mat4>& boneMats)
@@ -150,13 +156,13 @@ void SkeletonInfo::FillMatricesVec(std::vector<glm::mat4>& boneMats)
 	if (Bones.size() == 0)
 		return;
 
-	glm::mat4 globalInverseMat = glm::inverse(GlobalInverseTransformPtr->GetWorldTransformMatrix());
+	glm::mat4 globalInverseMat = glm::inverse(GlobalInverseTransformCompPtr->GetTransform().GetWorldTransformMatrix());
 
 	//std::cout << "nr bones: " << Bones.size() << '\n';
 
 	for (int i = 0; i < static_cast<int>(Bones.size()); i++)
 	{
-		boneMats[Bones[i]->GetID() + IDOffset] = globalInverseMat * Bones[i]->GetTransform().GetWorldTransformMatrix() * Bones[i]->BoneOffset;
+		boneMats[Bones[i]->GetID() + BoneIDOffset] = globalInverseMat * Bones[i]->GetTransform().GetWorldTransformMatrix() * Bones[i]->BoneOffset;
 		//std::cout << Bones[i]->GetName() << " " << Bones[i]->GetID() + IDOffset << '\n';
 	}
 }
@@ -188,6 +194,28 @@ SkeletonBatch::SkeletonBatch():
 unsigned int SkeletonBatch::GetRemainingCapacity()
 {
 	return (MaxUBOSize / sizeof(glm::mat4)) - BoneCount;
+}
+
+int SkeletonBatch::GetInfoID(SkeletonInfo& info)
+{
+	for (int i = 0; i < static_cast<int>(Skeletons.size()); i++)
+		if (Skeletons[i].get() == &info)
+			return static_cast<unsigned int>(i);
+
+	return -1;	//info not found; return invalid ID
+}
+
+SkeletonInfo* SkeletonBatch::GetInfo(int ID)
+{
+	if (ID < 0 || ID > Skeletons.size() - 1)
+		return nullptr;
+
+	return Skeletons[ID].get();
+}
+
+int SkeletonBatch::GetBatchID()
+{
+	return GameManager::DefaultScene->GetRenderData()->GetBatchID(*this);
 }
 
 void SkeletonBatch::RecalculateBoneCount()
