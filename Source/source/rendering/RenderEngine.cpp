@@ -4,6 +4,7 @@
 #include <scene/LightComponent.h>
 #include <scene/ModelComponent.h>
 #include <rendering/LightProbe.h>
+#include <scene/LightProbeComponent.h>
 #include <rendering/RenderableVolume.h>
 #include <UI/Font.h>
 #include <random> //DO WYJEBANIA
@@ -61,6 +62,17 @@ void RenderEngine::Init(glm::uvec2 resolution)
 	}
 }
 
+void RenderEngine::AddSceneRenderDataPtr(GameSceneRenderData& sceneRenderData)
+{
+	ScenesRenderData.push_back(&sceneRenderData);
+}
+
+void RenderEngine::RemoveSceneRenderDataPtr(GameSceneRenderData& sceneRenderData)
+{
+	ScenesRenderData.push_back(&sceneRenderData);
+	ScenesRenderData.erase(std::remove_if(ScenesRenderData.begin(), ScenesRenderData.end(), [&sceneRenderData](GameSceneRenderData* sceneRenderDataVec) { return sceneRenderDataVec == &sceneRenderData; }), ScenesRenderData.end());
+}
+
 void RenderEngine::GenerateEngineObjects()
 {
 	//Add the engine objects to the tree collection. This way models loaded from the level file can simply use the internal engine meshes for stuff like particles
@@ -73,8 +85,9 @@ void RenderEngine::GenerateEngineObjects()
 	EngineDataLoader::LoadHierarchyTree(engineObjScene, "EngineObjects/sphere.obj", &engineObjScene.CreateHierarchyTree("ENG_SPHERE"));
 	EngineDataLoader::LoadHierarchyTree(engineObjScene, "EngineObjects/cone.obj", &engineObjScene.CreateHierarchyTree("ENG_CONE"));
 
-	GameHandle->FindHierarchyTree("ENG_QUAD")->FindMesh(Mesh::MeshLoc::FromNodeName("Quad"))->Localization.HierarchyTreePath = "ENG_QUAD";
-	GameHandle->FindHierarchyTree("ENG_QUAD")->FindMesh(Mesh::MeshLoc::FromNodeName("Quad"))->Localization.SpecificName = "Quad_NoShadow";
+	//GameHandle->FindHierarchyTree("ENG_QUAD")->FindMesh("Quad")->Localization.HierarchyTreePath = "ENG_QUAD";
+	GameHandle->FindHierarchyTree("ENG_QUAD")->FindMesh("Quad")->Localization.SpecificName = "Quad_NoShadow";
+	//GameHandle->FindHierarchyTree("ENG_QUAD")->FindMesh("Quad")->Localization.HierarchyTreePath = "ENG_QUAD";
 }
 
 void RenderEngine::LoadInternalShaders()
@@ -133,13 +146,13 @@ Mesh& RenderEngine::GetBasicShapeMesh(EngineBasicShape type)
 	default:
 		std::cout << "ERROR! Enum value " << static_cast<int>(type) << " does not represent a basic shape mesh.\n";
 	case EngineBasicShape::QUAD:
-		return *GameHandle->FindHierarchyTree("ENG_QUAD")->FindMesh(Mesh::MeshLoc::FromNodeName("Quad"));
+		return *GameHandle->FindHierarchyTree("ENG_QUAD")->FindMesh("Quad");
 	case EngineBasicShape::CUBE:
-		return *GameHandle->FindHierarchyTree("ENG_CUBE")->FindMesh(Mesh::MeshLoc::FromNodeName("Cube"));
+		return *GameHandle->FindHierarchyTree("ENG_CUBE")->FindMesh("Cube");
 	case EngineBasicShape::SPHERE:
-		return *GameHandle->FindHierarchyTree("ENG_SPHERE")->FindMesh(Mesh::MeshLoc::FromNodeName("Sphere"));
+		return *GameHandle->FindHierarchyTree("ENG_SPHERE")->FindMesh("Sphere");
 	case EngineBasicShape::CONE:
-		return *GameHandle->FindHierarchyTree("ENG_CONE")->FindMesh(Mesh::MeshLoc::FromNodeName("Cone"));
+		return *GameHandle->FindHierarchyTree("ENG_CONE")->FindMesh("Cone");
 	}
 }
 
@@ -162,11 +175,6 @@ RenderToolboxCollection& RenderEngine::AddRenderTbCollection(const RenderToolbox
 	CurrentTbCollection = RenderTbCollections.back().get();
 
 	return *RenderTbCollections.back();
-}
-
-void RenderEngine::AddSceneRenderDataPtr(GameSceneRenderData* sceneRenderData)
-{
-	ScenesRenderData.push_back(sceneRenderData);
 }
 
 Material* RenderEngine::AddMaterial(std::shared_ptr<Material>  material)
@@ -216,7 +224,7 @@ std::shared_ptr<Material> RenderEngine::FindMaterial(std::string name)
 	if (materialIt != Materials.end())
 		return *materialIt;
 
-	std::cerr << "ERROR! Can't find material " << name << "!\n";
+	std::cerr << "INFO: Can't find material " << name << "!\n";
 	return nullptr;
 }
 
@@ -264,6 +272,11 @@ void RenderEngine::RenderShadowMaps(RenderToolboxCollection& tbCollection, GameS
 		LightComponent& light = lights[i].get();
 		if (!dynamicShadowRender && light.HasValidShadowMap())
 			continue;
+
+		if (light.ShouldCullFrontsForShadowMap())
+			glCullFace(GL_FRONT);
+		else
+			glCullFace(GL_BACK);
 
 		if (light.GetType() == LightType::POINT)
 		{
@@ -370,6 +383,7 @@ void RenderEngine::RenderVolumes(const RenderInfo& info, const GEE_FB::Framebuff
 	glEnable(GL_STENCIL_TEST);
 	glStencilMask(0xFF);
 	glClear(GL_STENCIL_BUFFER_BIT);
+	//glClearStencil(0);	//my AMD gpu forces me to call it...
 
 	for (unsigned int i = 0; i < volumes.size(); i++)
 	{
@@ -457,10 +471,10 @@ void RenderEngine::RenderLightProbes(GameSceneRenderData* sceneRenderData)
 
 	for (int i = 0; i < static_cast<int>(sceneRenderData->LightProbes.size()); i++)
 	{
-		LocalLightProbe* localProbeCast = dynamic_cast<LocalLightProbe*>(sceneRenderData->LightProbes[i].get());
-		if (!localProbeCast)
+		LightProbeComponent* probe = sceneRenderData->LightProbes[i];
+		if (probe->GetShape() == EngineBasicShape::QUAD)
 			continue;
-		glm::vec3 camPos = localProbeCast->ProbeTransform.PositionRef;
+		glm::vec3 camPos = probe->GetTransform().GetWorldTransform().PositionRef;
 		glm::mat4 viewTranslation = glm::translate(glm::mat4(1.0f), -camPos);
 		glm::mat4 p = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 100.0f);
 
@@ -469,12 +483,12 @@ void RenderEngine::RenderLightProbes(GameSceneRenderData* sceneRenderData)
 		info.projection = p;
 		info.camPos = camPos;
 		gShader->Use();
-		RenderCubemapFromScene(info, sceneRenderData, framebuffer, GEE_FB::FramebufferAttachment(sceneRenderData->LightProbes[i]->EnvironmentMap), GL_COLOR_ATTACHMENT0, gShader, 0, true);
+		RenderCubemapFromScene(info, sceneRenderData, framebuffer, GEE_FB::FramebufferAttachment(sceneRenderData->LightProbes[i]->GetEnvironmentMap()), GL_COLOR_ATTACHMENT0, gShader, 0, true);
 		
-		sceneRenderData->LightProbes[i]->EnvironmentMap.Bind();
+		sceneRenderData->LightProbes[i]->GetEnvironmentMap().Bind();
 		glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
 ;
-		LightProbeLoader::ConvoluteLightProbe(sceneRenderData, *sceneRenderData->LightProbes[i], &sceneRenderData->LightProbes[i]->EnvironmentMap); 
+		LightProbeLoader::ConvoluteLightProbe(*sceneRenderData->LightProbes[i], &sceneRenderData->LightProbes[i]->GetEnvironmentMap()); 
 		if (PrimitiveDebugger::bDebugProbeLoading)
 			printVector(camPos, "Rendering probe");
 	}
@@ -535,12 +549,12 @@ void RenderEngine::PrepareScene(RenderToolboxCollection& tbCollection, GameScene
 }
 
 #include <input/InputDevicesStateRetriever.h>
-void RenderEngine::FullSceneRender(RenderInfo& info, GameSceneRenderData* sceneRenderData, GEE_FB::Framebuffer* framebuffer, Viewport viewport)
+void RenderEngine::FullSceneRender(RenderInfo& info, GameSceneRenderData* sceneRenderData, GEE_FB::Framebuffer* framebuffer, Viewport viewport, bool clearMainFB)
 {
 	const GameSettings::VideoSettings& settings = info.TbCollection.Settings;
 	bool debugPhysics = GameHandle->GetInputRetriever().IsKeyPressed(Key::P);
 	bool debugComponents = true;
-	bool useLightingAlgorithms = sceneRenderData->ContainsLights();
+	bool useLightingAlgorithms = sceneRenderData->ContainsLights() || sceneRenderData->ContainsLightProbes();
 	glm::mat4 currentFrameView = info.view;
 	info.previousFrameView = PreviousFrameView;
 
@@ -548,14 +562,17 @@ void RenderEngine::FullSceneRender(RenderInfo& info, GameSceneRenderData* sceneR
 	if (viewport.GetSize() == glm::uvec2(0))
 		viewport = Viewport(glm::uvec2(0), target.GetSize());
 
-	sceneRenderData->LightsBuffer.SubData4fv(info.camPos, 16);
+	//sceneRenderData->LightsBuffer.SubData4fv(info.camPos, 16); TO BYLO TU...
 
 	MainFramebufferToolbox* mainTb = info.TbCollection.GetTb<MainFramebufferToolbox>();
 	GEE_FB::Framebuffer& MainFramebuffer = *mainTb->MainFb;
 
+	glDepthFunc(GL_LEQUAL);
+
 	////////////////////2. Geometry pass
 	if (useLightingAlgorithms)
 	{
+		sceneRenderData->LightsBuffer.SubData4fv(info.camPos, 16); //TODO: BUGCHECK A TERAZ JEST TU.
 		DeferredShadingToolbox* deferredTb = info.TbCollection.GetTb<DeferredShadingToolbox>();
 		GEE_FB::Framebuffer& GFramebuffer = *deferredTb->GFb;
 
@@ -617,16 +634,19 @@ void RenderEngine::FullSceneRender(RenderInfo& info, GameSceneRenderData* sceneR
 		info.TbCollection.FindShader("CookTorranceIBL")->Use();
 		for (int i = 0; i < static_cast<int>(sceneRenderData->LightProbes.size()); i++)
 		{
-			LocalLightProbe* localProbeCast = dynamic_cast<LocalLightProbe*>(sceneRenderData->LightProbes[i].get());
-			if (!localProbeCast)
+			LightProbeComponent* probe = sceneRenderData->LightProbes[i];
+			Shader* shader = probe->GetRenderShader(info.TbCollection);
+			shader->Uniform1f("lightProbes[" + std::to_string(i) + "].intensity", probe->GetProbeIntensity());
+		
+			if (probe->GetShape() == EngineBasicShape::QUAD)
 				continue;
 
-			info.TbCollection.FindShader("CookTorranceIBL")->Uniform3fv("lightProbePositions[" + std::to_string(i) + "]", localProbeCast->ProbeTransform.PositionRef);
+			shader->Uniform3fv("lightProbes[" + std::to_string(i) + "].position", probe->GetTransform().GetWorldTransform().PositionRef);
 		}
 
 		std::vector<std::unique_ptr<RenderableVolume>> probeVolumes;
 		probeVolumes.resize(sceneRenderData->LightProbes.size());
-		std::transform(sceneRenderData->LightProbes.begin(), sceneRenderData->LightProbes.end(), probeVolumes.begin(), [](const std::shared_ptr<LightProbe>& probe) {return std::make_unique<LightProbeVolume>(LightProbeVolume(*probe.get())); });
+		std::transform(sceneRenderData->LightProbes.begin(), sceneRenderData->LightProbes.end(), probeVolumes.begin(), [](LightProbeComponent* probe) {return std::make_unique<LightProbeVolume>(LightProbeVolume(*probe)); });
 		if (!probeVolumes.empty())	//TODO: DELETE. VERY NASTY!!!!!! ADD LOADING LIGHT PROBES FROM FILE AND DONT DELETE THE FIRST PROBE FOR NO REASON
 		{
 			//if (framebuffer)
@@ -644,15 +664,19 @@ void RenderEngine::FullSceneRender(RenderInfo& info, GameSceneRenderData* sceneR
 			MainFramebuffer.Bind(true, &viewport);
 		}
 		
-		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		if (clearMainFB)
+		{
+			glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		}
 	}
 
 	////////////////////3.25 Render global cubemap
 	info.MainPass = false;
 	info.CareAboutShader = false;
 
-	TestRenderCubemap(info, sceneRenderData);
+	if (useLightingAlgorithms)
+		TestRenderCubemap(info, sceneRenderData);
 
 
 	////////////////////3.5 Forward rendering pass
@@ -675,8 +699,8 @@ void RenderEngine::FullSceneRender(RenderInfo& info, GameSceneRenderData* sceneR
 	glDisable(GL_DEPTH_TEST);
 
 
-	if (debugPhysics)
-		GameHandle->GetPhysicsHandle()->DebugRender(*GameHandle->GetScene("GEE_Main")->GetPhysicsData(), *this, info);
+	if (debugPhysics && GameHandle->GetMainScene())
+		GameHandle->GetPhysicsHandle()->DebugRender(*GameHandle->GetMainScene()->GetPhysicsData(), *this, info);
 
 	////////////////////4. Postprocessing pass (Blur + Tonemapping & Gamma Correction)
 	Postprocessing.Render(info.TbCollection, target, &viewport, MainFramebuffer.GetColorBuffer(0).get(), (settings.bBloom) ? (MainFramebuffer.GetColorBuffer(1).get()) : (nullptr), MainFramebuffer.DepthBuffer.get(), (settings.IsVelocityBufferNeeded()) ? (MainFramebuffer.GetColorBuffer("velocityTex").get()) : (nullptr));
@@ -686,7 +710,8 @@ void RenderEngine::FullSceneRender(RenderInfo& info, GameSceneRenderData* sceneR
 
 void RenderEngine::PrepareFrame()
 {
-	BindSkeletonBatch(GameHandle->GetScene("GEE_Main")->GetRenderData(), static_cast<unsigned int>(0));
+	if (GameHandle->GetMainScene())
+		BindSkeletonBatch(GameHandle->GetMainScene()->GetRenderData(), static_cast<unsigned int>(0));
 
 	//std::cout << "***Shaders deubg***\n";
 	//for (auto& it : Shaders)
@@ -730,7 +755,8 @@ void RenderEngine::RenderFrame(RenderInfo& info)
 
 void RenderEngine::TestRenderCubemap(RenderInfo& info, GameSceneRenderData* sceneRenderData)
 {
-	sceneRenderData->ProbeTexArrays->PrefilterMapArr.Bind(0);
+	sceneRenderData->LightProbes.back()->GetEnvironmentMap().Bind(0);
+	//sceneRenderData->ProbeTexArrays->PrefilterMapArr.Bind(0);
 	//LightProbes[1]->EnvironmentMap.Bind(0);
 	FindShader("Cubemap")->Use();
 	FindShader("Cubemap")->Uniform1f("mipLevel", (float)std::fmod(glfwGetTime(), 4.0));
@@ -868,7 +894,8 @@ void RenderEngine::RenderText(const RenderInfo& infoPreConvert, const Font& font
 	}
 
 	glm::vec2 halfExtent = static_cast<glm::vec2>(t.ScaleRef);
-	t.Move(glm::vec3(0.0f, -t.ScaleRef.y * 2.0f + font.GetBaselineHeight() * halfExtent.y * 2.0f, 0.0f));	//align to bottom (-t.ScaleRef.y), move down to the bottom of it (-t.ScaleRef.y), and then move up to baseline height (-t.ScaleRef.y * 2.0f + font.GetBaselineHeight() * halfExtent.y * 2.0f)
+	//	halfExtent.y *= 1.0f - font.GetBaselineHeight() / 4.0f;	//Account for baseline height (we move the character quads by the height in the next line, so we have to shrink them a bit so that the text fits within halfExtent)
+	t.Move(glm::vec3(0.0f, -t.ScaleRef.y * 2.0f + font.GetBaselineHeight() * t.ScaleRef.y * 2.0f, 0.0f));	//align to bottom (-t.ScaleRef.y), move down to the bottom of it (-t.ScaleRef.y), and then move up to baseline height (-t.ScaleRef.y * 2.0f + font.GetBaselineHeight() * halfExtent.y * 2.0f)
 
 	if (alignment.first != TextAlignment::LEFT)
 	{
@@ -889,8 +916,16 @@ void RenderEngine::RenderText(const RenderInfo& infoPreConvert, const Font& font
 
 	Material textMaterial("TextMaterial", 0.0f, FindShader("TextShader"));
 
+	Transform initialT = t;
+
 	for (int i = 0; i < static_cast<int>(content.length()); i++)
 	{
+		if (content[i] == '\n')
+		{
+			initialT.Move(Vec2f(0.0f, -halfExtent.y * 2.0f));
+			t = initialT;
+			continue;
+		}
 		shader->Uniform1i("glyphNr", content[i]);
 		const Character& c = font.GetCharacter(content[i]);
 

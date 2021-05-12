@@ -103,7 +103,7 @@
     <ClCompile>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <WarningLevel>Level3</WarningLevel>
+      <WarningLevel>Level1</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <CompileAs>Default</CompileAs>
       <LanguageStandard>stdcpp17</LanguageStandard>
@@ -141,6 +141,7 @@
     <ClCompile Include="include\scene\PawnActor.cpp" />
     <ClCompile Include="include\scene\UIWindowActor.cpp" />
     <ClCompile Include="source\animation\AnimationManagerActor.cpp" />
+    <ClCompile Include="source\animation\SkeletonInfo.cpp" />
     <ClCompile Include="source\game\GameManager.cpp" />
     <ClCompile Include="source\scene\Actor.cpp" />
     <ClCompile Include="source\animation\Animation.cpp" />
@@ -148,6 +149,7 @@
     <ClCompile Include="source\scene\BoneComponent.cpp" />
     <ClCompile Include="source\math\Box.cpp" />
     <ClCompile Include="source\scene\HierarchyTemplate.cpp" />
+    <ClCompile Include="source\scene\LightProbeComponent.cpp" />
     <ClCompile Include="source\scene\UIButtonActor.cpp" />
     <ClCompile Include="source\scene\CameraComponent.cpp" />
     <ClCompile Include="source\physics\CollisionObject.cpp" />
@@ -194,6 +196,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\animation\AnimationManagerActor.h" />
+    <ClInclude Include="include\animation\SkeletonInfo.h" />
     <ClInclude Include="include\editor\EditorManager.h" />
     <ClInclude Include="include\scene\Actor.h" />
     <ClInclude Include="include\animation\Animation.h" />
@@ -202,6 +205,7 @@
     <ClInclude Include="include\scene\BoneComponent.h" />
     <ClInclude Include="include\math\Box.h" />
     <ClInclude Include="include\scene\HierarchyTemplate.h" />
+    <ClInclude Include="include\scene\LightProbeComponent.h" />
     <ClInclude Include="include\scene\PawnActor.h" />
     <ClInclude Include="include\scene\UIButtonActor.h" />
     <ClInclude Include="include\scene\CameraComponent.h" />

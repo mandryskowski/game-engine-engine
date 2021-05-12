@@ -80,7 +80,7 @@ PxShape* PhysicsEngine::CreateTriangleMeshShape(CollisionShape* colShape, glm::v
 
 	switch (result)
 	{
-		case PxTriangleMeshCookingResult::Enum::eSUCCESS: break;
+		case PxTriangleMeshCookingResult::Enum::eSUCCESS: std::cout << "INFO: Succesfully cooked a mesh with " << desc.points.count << " vertices.\n"; break;
 		case PxTriangleMeshCookingResult::Enum::eLARGE_TRIANGLE: std::cout << "INFO: Triangles are too large in a cooked mesh!\n"; break;
 		case PxTriangleMeshCookingResult::Enum::eFAILURE: std::cout << "ERROR! Can't cook a mesh\n"; return nullptr;
 	}
@@ -104,45 +104,10 @@ void PhysicsEngine::AddCollisionObjectToPxPipeline(GameScenePhysicsData& scenePh
 		std::cerr << "ERROR! The given CollisionObject does not have a pointer to any Transform object.\n";
 		return;
 	}
-	glm::vec3 worldObjectScale = object.TransformPtr->GetWorldTransform().ScaleRef;
+	Vec3f worldObjectScale = object.TransformPtr->GetWorldTransform().ScaleRef;
 
 	for (int i = 0; i < static_cast<int>(object.Shapes.size()); i++)
-	{
-		PxShape* pxShape = nullptr;
-		const Transform& shapeT = object.Shapes[i]->ShapeTransform;
-		glm::vec3 shapeScale = shapeT.ScaleRef * worldObjectScale;
-
-		switch (object.Shapes[i]->Type)
-		{
-		case CollisionShapeType::COLLISION_TRIANGLE_MESH:
-			pxShape = CreateTriangleMeshShape(object.Shapes[i].get(), shapeScale);
-			break;
-		case CollisionShapeType::COLLISION_BOX:
-			pxShape = Physics->createShape(PxBoxGeometry(toPx(shapeScale)), *DefaultMaterial);
-			break;
-		case CollisionShapeType::COLLISION_SPHERE:
-			pxShape = Physics->createShape(PxSphereGeometry(shapeScale.x), *DefaultMaterial);
-			break;
-		case CollisionShapeType::COLLISION_CAPSULE:
-			pxShape = Physics->createShape(PxCapsuleGeometry(shapeScale.x, shapeScale.y), *DefaultMaterial);
-		}
-
-		if (!pxShape)
-			continue;
-
-		pxShape->setLocalPose(PxTransform(toPx(static_cast<glm::mat3>(object.TransformPtr->GetWorldTransformMatrix()) * shapeT.PositionRef), (object.IgnoreRotation) ? (physx::PxQuat()) : (toPx(shapeT.RotationRef))));
-		if (i == 0)
-		{
-			object.ActorPtr = (object.IsStatic) ?
-				(static_cast<PxRigidActor*>(PxCreateStatic(*Physics, toPx(*object.TransformPtr), *pxShape))) :
-				(static_cast<PxRigidActor*>(PxCreateDynamic(*Physics, toPx(*object.TransformPtr), *pxShape, 10.0f)));
-		}
-		else
-			object.ActorPtr->attachShape(*pxShape);
-
-		pxShape->userData = &object.Shapes[i]->ShapeTransform;
-		object.TransformDirtyFlag = object.TransformPtr->AddDirtyFlag();
-	}
+		CreatePxShape(*object.Shapes[i], object);
 
 	if (!object.ActorPtr)
 	{
@@ -154,19 +119,64 @@ void PhysicsEngine::AddCollisionObjectToPxPipeline(GameScenePhysicsData& scenePh
 	//Scene->addActor(*object->ActorPtr);
 }
 
+void PhysicsEngine::CreatePxShape(CollisionShape& shape, CollisionObject& object)
+{
+	Vec3f worldObjectScale = object.TransformPtr->GetWorldTransform().ScaleRef;
+
+	PxShape* pxShape = nullptr;
+	const Transform& shapeT = shape.ShapeTransform;
+	Vec3f shapeScale = shapeT.ScaleRef * worldObjectScale;
+
+	switch (shape.Type)
+	{
+	case CollisionShapeType::COLLISION_TRIANGLE_MESH:
+		pxShape = CreateTriangleMeshShape(&shape, shapeScale);
+		break;
+	case CollisionShapeType::COLLISION_BOX:
+		pxShape = Physics->createShape(PxBoxGeometry(toPx(shapeScale)), *DefaultMaterial);
+		break;
+	case CollisionShapeType::COLLISION_SPHERE:
+		pxShape = Physics->createShape(PxSphereGeometry(shapeScale.x), *DefaultMaterial);
+		break;
+	case CollisionShapeType::COLLISION_CAPSULE:
+		pxShape = Physics->createShape(PxCapsuleGeometry(shapeScale.x, shapeScale.y), *DefaultMaterial);
+	}
+
+	if (!pxShape)
+		return;
+
+	pxShape->setLocalPose(PxTransform(toPx(static_cast<glm::mat3>(object.TransformPtr->GetWorldTransformMatrix()) * shapeT.PositionRef), (object.IgnoreRotation) ? (physx::PxQuat()) : (toPx(shapeT.RotationRef))));
+	pxShape->userData = &shape.ShapeTransform;
+
+	if (!object.ActorPtr)
+	{
+		object.ActorPtr = (object.IsStatic) ?
+			(static_cast<PxRigidActor*>(PxCreateStatic(*Physics, toPx(*object.TransformPtr), *pxShape))) :
+			(static_cast<PxRigidActor*>(PxCreateDynamic(*Physics, toPx(*object.TransformPtr), *pxShape, 10.0f)));
+		object.TransformDirtyFlag = object.TransformPtr->AddDirtyFlag();
+	}
+	else
+		object.ActorPtr->attachShape(*pxShape);
+}
+
 void PhysicsEngine::AddScenePhysicsDataPtr(GameScenePhysicsData& scenePhysicsData)
 {
 	ScenesPhysicsData.push_back(&scenePhysicsData);
 }
 
-PxController* PhysicsEngine::CreateController(GameScenePhysicsData& scenePhysicsData)
+void PhysicsEngine::RemoveScenePhysicsDataPtr(GameScenePhysicsData& scenePhysicsData)
+{
+	ScenesPhysicsData.erase(std::remove_if(ScenesPhysicsData.begin(), ScenesPhysicsData.end(), [&scenePhysicsData](GameScenePhysicsData* scenePhysicsDataVec) { return scenePhysicsDataVec == &scenePhysicsData; }), ScenesPhysicsData.end());
+}
+
+PxController* PhysicsEngine::CreateController(GameScenePhysicsData& scenePhysicsData, const Transform& t)
 {
 	PxCapsuleControllerDesc desc;
 	desc.radius = 0.12f;
 	desc.height = 0.6f;
 	desc.material = DefaultMaterial;
 	desc.position = PxExtendedVec3(0.0f, 0.0f, 0.0f);
-	desc.position = PxExtendedVec3(-3.0f, 1.0f, 8.0f);
+	desc.position = PxExtendedVec3(t.PositionRef.x, t.PositionRef.y, t.PositionRef.z);
 	//desc.maxJumpHeight = 0.5f;
 	//desc.invisibleWallHeight = 0.5f;
 	desc.contactOffset = desc.radius * 0.1f;

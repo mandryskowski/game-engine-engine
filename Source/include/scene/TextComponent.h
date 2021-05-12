@@ -17,6 +17,7 @@ public:
 	float GetTextLength(bool world = true) const;
 
 	virtual void SetContent(const std::string&);
+	void SetMaterialInst(MaterialInstance&&);
 
 	virtual void Render(const RenderInfo& info, Shader* shader) override;
 
@@ -26,6 +27,7 @@ public:
 	void SetAlignment(const std::pair<TextAlignment, TextAlignment>& alignment);	//Change what Component::ComponentTransform::Position
 
 	virtual void GetEditorDescription(EditorDescriptionBuilder) override;
+	virtual MaterialInstance GetDebugMatInst(EditorIconState) override;
 
 	template <typename Archive> void Save(Archive& archive) const
 	{
@@ -66,6 +68,7 @@ public:
 	TextConstantSizeComponent(TextConstantSizeComponent&&);
 	void SetMaxSize(const glm::vec2&);
 	virtual void SetContent(const std::string&) override;
+	void UpdateSize();
 private:
 	glm::vec2 MaxSize;
 	glm::vec2 ScaleRatio;

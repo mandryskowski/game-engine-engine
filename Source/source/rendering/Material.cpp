@@ -13,11 +13,6 @@ Material::Material(MaterialLoc loc, float depthScale, Shader* shader):
 		RenderShaderName = shader->GetName();
 }
 
-Material::Material(const std::string& name, float depthScale, Shader* shader):
-	Material(MaterialLoc(name, ""), depthScale, shader)
-{
-}
-
 const Material::MaterialLoc& Material::GetLocalization() const
 {
 	return Localization;
@@ -235,11 +230,6 @@ AtlasMaterial::AtlasMaterial(Material&& material, glm::ivec2 atlasSize) :
 
 AtlasMaterial::AtlasMaterial(Material::MaterialLoc loc, glm::ivec2 atlasSize) :
 	AtlasMaterial(Material(loc), atlasSize)
-{
-}
-
-AtlasMaterial::AtlasMaterial(const std::string& name, glm::ivec2 atlasSize):
-	AtlasMaterial(Material(name), atlasSize)
 {
 }
 

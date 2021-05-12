@@ -11,7 +11,7 @@ struct Light
 	vec4 position;
 	vec4 direction;
 	
-	vec4 ambient;
+	vec4 ambientAndShadowBias;
 	vec4 diffuse;
 	vec4 specular;
 	
@@ -41,6 +41,12 @@ struct Fragment
 	#endif
 };
 
+struct LightProbe
+{
+	vec3 position;
+	float intensity;
+};
+
 //out
 layout (location = 0) out vec4 fragColor;
 #ifdef ENABLE_BLOOM
@@ -57,7 +63,7 @@ uniform sampler2D gAlphaMetalAo;
 uniform samplerCubeArray shadowCubemaps;
 uniform sampler2DArray shadowMaps;
 uniform float lightProbeNr;
-uniform vec3 lightProbePositions[5];
+uniform LightProbe lightProbes[5];
 uniform samplerCubeArray irradianceCubemaps;
 uniform samplerCubeArray prefilterCubemaps;
 uniform sampler2D BRDFLutTex;
@@ -83,7 +89,7 @@ float CalcShadow3D(Light light, vec3 fragPosition)
 {
 	vec3 lightToFrag = fragPosition - light.position.xyz;
 
-	return ((length(lightToFrag) / light.far > texture(shadowCubemaps, vec4(lightToFrag, light.shadowMapNr)).r) ? (1.0) : (0.0));
+	return ((length(lightToFrag) / light.far > texture(shadowCubemaps, vec4(lightToFrag, light.shadowMapNr)).r + light.ambientAndShadowBias.a) ? (1.0) : (0.0));
 }
 #else
 float CalcShadow2D(Light light, vec3 fragPosition)
@@ -92,7 +98,7 @@ float CalcShadow2D(Light light, vec3 fragPosition)
 	vec3 lightCoords = lightProj.xyz /= lightProj.w;
 	lightCoords = lightCoords * 0.5 + 0.5;
 	
-	return (lightCoords.z > texture(shadowMaps, vec3(lightCoords.xy, light.shadowMapNr)).r) ? (1.0) : (0.0);
+	return (lightCoords.z > texture(shadowMaps, vec3(lightCoords.xy, light.shadowMapNr)).r + light.ambientAndShadowBias.a) ? (1.0) : (0.0);
 }
 #endif
 
@@ -113,37 +119,37 @@ float GeometrySmith(float NdotL, float NdotV, float k)
 
 vec3 FresnelSchlick(float HdotV, vec3 F0)
 {
-	return F0 + (1.0 - F0) * pow((1.0 - HdotV), 5.0);
+	return F0 + (1.0 - F0) * pow(max(1.0 - HdotV, 0.0), 5.0);	//Note: 1.0 - HdotV must be positive (or 0) because pow() is undefined if the first argument is negative. Due to precision errors, HdotV might actually be a bit larger than 1.
 }
 
 vec3 FresnelSchlickRoughness(float HdotV, vec3 F0, float roughness)
 {
-	return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow((1.0 - HdotV), 5.0);
+	return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(max(1.0 - HdotV, 0.0), 5.0);
 }
 
 #ifdef IBL_PASS
 vec3 GetIrradiance(vec3 pos, vec3 n)
 {
-	return texture(irradianceCubemaps, vec4(n, lightProbeNr)).rgb;
+	return texture(irradianceCubemaps, vec4(n, lightProbeNr)).rgb * lightProbes[int(lightProbeNr)].intensity;
 	vec3 irradiance = vec3(0.0);
 	float minLength = 9999.0;
-	for (int i = 1; i < 5; i++)
+	for (int i = 0; i < 5; i++)
 	{
-		float len = length(lightProbePositions[i] - pos);
-		irradiance += texture(irradianceCubemaps, vec4(n, i)).rgb / len;
+		float len = length(lightProbes[i].position - pos);
+		irradiance += texture(irradianceCubemaps, vec4(n, i)).rgb * lightProbes[i].intensity / len;
 		minLength = min(minLength, len);
 	}
 	return irradiance * minLength;
 }
 vec3 GetPrefilterColor(vec3 pos, vec3 r, float roughness)
 {
-	return textureLod(prefilterCubemaps, vec4(r, lightProbeNr), roughness * MAX_PREFILTER_MIPMAP).rgb;
+	return textureLod(prefilterCubemaps, vec4(r, lightProbeNr), roughness * MAX_PREFILTER_MIPMAP).rgb * lightProbes[int(lightProbeNr)].intensity;
 	vec3 prefilterColor = vec3(0.0);
 	float minLength = 9999.0;
-	for (int i = 1; i < 5; i++)
+	for (int i = 0; i < 5; i++)
 	{
-		float len = length(lightProbePositions[i] - pos);
-		prefilterColor += textureLod(prefilterCubemaps, vec4(r, i), roughness * MAX_PREFILTER_MIPMAP).rgb / len;
+		float len = length(lightProbes[i].position - pos);
+		prefilterColor += textureLod(prefilterCubemaps, vec4(r, i), roughness * MAX_PREFILTER_MIPMAP).rgb * lightProbes[i].intensity / len;
 		minLength = min(minLength, len);
 	}   
 	return prefilterColor * minLength;	
@@ -198,18 +204,18 @@ vec3 CalcLight(Light light, Fragment frag)
 	float visibility = 1.0 - CalcShadow2D(light, frag.position);
 	
 	vec3 radiance = light.diffuse.rgb * visibility;
-	vec3 ambient = light.ambient.rgb * frag.albedo * (1.0 - frag.alphaMetalAo.g);	//Ambient * Albedo * (1 - Metalness)
+	vec3 ambient = light.ambientAndShadowBias.rgb * frag.albedo * (1.0 - frag.alphaMetalAo.g);	//Ambient * Albedo * (1 - Metalness)
 	#elif defined(SPOT_LIGHT)
 	float visibility = 1.0 -  CalcShadow2D(light, frag.position);
 	
 	float dist = length(light.position.xyz - frag.position);
-	float attenuation = 1.0 / (dist * dist * light.attenuation);
+	float attenuation = 1.0 / max((dist * dist * light.attenuation), 0.001);
 	
 	float LdotLDir = max(dot(l, -light.direction.xyz), 0.0);
-	float spotIntensity = (LdotLDir - light.outerCutOff) / max((light.cutOff - light.outerCutOff), 0.001);
+	float spotIntensity = clamp((LdotLDir - light.outerCutOff) / max((light.cutOff - light.outerCutOff), 0.001), 0.0, 1.0);
 	
 	vec3 radiance = light.diffuse.rgb * attenuation * spotIntensity * visibility;
-	vec3 ambient = light.ambient.rgb * frag.albedo * attenuation * (1.0 - frag.alphaMetalAo.g);	//Ambient * Albedo * Attenuation * (1 - Metalness)
+	vec3 ambient = light.ambientAndShadowBias.rgb * frag.albedo * attenuation * (1.0 - frag.alphaMetalAo.g);	//Ambient * Albedo * Attenuation * (1 - Metalness)
 	#else
 	float visibility = 1.0 - CalcShadow3D(light, frag.position);
 	
@@ -217,13 +223,13 @@ vec3 CalcLight(Light light, Fragment frag)
 	float attenuation = 1.0 / (dist * dist * light.attenuation);
 	
 	vec3 radiance = light.diffuse.rgb * attenuation * visibility;
-	vec3 ambient = light.ambient.rgb * frag.albedo * attenuation * (1.0 - frag.alphaMetalAo.g);	//Ambient * Albedo * Attenuation * (1 - Metalness)
+	vec3 ambient = light.ambientAndShadowBias.rgb * frag.albedo * attenuation * (1.0 - frag.alphaMetalAo.g);	//Ambient * Albedo * Attenuation * (1 - Metalness)
 	#endif
 	
 	#ifdef ENABLE_SSAO
 	ambient *= frag.ambient;
 	#endif
-
+	
 	return ((kDiffuse * frag.albedo / M_PI) + ((D * F * G) / (4.0 * NdotL * NdotV))) * radiance * NdotL + ambient;
 }
 #endif

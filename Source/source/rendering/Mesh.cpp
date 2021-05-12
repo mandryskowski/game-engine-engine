@@ -6,6 +6,8 @@ Mesh::Mesh(const MeshLoc& name):
 	VBO(0),
 	EBO(0),
 	VertexCount(0),
+	VertsData(nullptr),
+	IndicesData(nullptr),
 	DefaultMeshMaterial(nullptr),
 	Localization(name),
 	CastsShadow(true)
@@ -39,6 +41,22 @@ const Material* Mesh::GetMaterial() const
 	return DefaultMeshMaterial;
 }
 
+std::vector<Vertex>* Mesh::GetVertsData() const
+{
+	return VertsData.get();
+}
+
+std::vector<unsigned int>* Mesh::GetIndicesData() const
+{
+	return IndicesData.get();
+}
+
+void Mesh::RemoveVertsAndIndicesData() const
+{
+	VertsData = nullptr;
+	IndicesData = nullptr;
+}
+
 
 bool Mesh::CanCastShadow() const
 {
@@ -65,7 +83,7 @@ void Mesh::LoadFromGLBuffers(unsigned int vertexCount, unsigned int vao, unsigne
 	DefaultMeshMaterial = nullptr;
 }
 
-void Mesh::GenerateVAO(std::vector <Vertex>* vertices, std::vector <unsigned int>* indices)
+void Mesh::GenerateVAO(const std::vector <Vertex>& vertices, const std::vector <unsigned int>& indices, bool keepVerts)
 {
 	glGenVertexArrays(1, &VAO);
 	glGenBuffers(1, &VBO);
@@ -73,14 +91,14 @@ void Mesh::GenerateVAO(std::vector <Vertex>* vertices, std::vector <unsigned int
 	glBindVertexArray(VAO);
 
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * vertices->size(), &(*vertices)[0], GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * vertices.size(), &(vertices)[0], GL_STATIC_DRAW);
 
-	if (!indices->empty())
+	if (!indices.empty())
 	{
 		glGenBuffers(1, &EBO);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
 		//std::cout << "uwagaaa: " + std::to_string(indices->size()) + "\n";
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * indices->size(), &(*indices)[0], GL_STATIC_DRAW);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * indices.size(), &(indices)[0], GL_STATIC_DRAW);
 		//std::cout << "po uwadze\n";
 	}
 
@@ -97,8 +115,15 @@ void Mesh::GenerateVAO(std::vector <Vertex>* vertices, std::vector <unsigned int
 	for (int i = 0; i < 7; i++)
 		glEnableVertexAttribArray(i);
 
-	VertexCount = (unsigned int)vertices->size();
-	IndexCount = (unsigned int)indices->size();
+	VertexCount = (unsigned int)vertices.size();
+	IndexCount = (unsigned int)indices.size();
+
+	if (keepVerts)
+	{
+		VertsData = std::make_shared<std::vector<Vertex>>(vertices);	//copy all vertices to heap
+		IndicesData = std::make_shared<std::vector<unsigned int>>(indices);	//copy all indices to heap
+		std::cout << "Keeping vertices for a mesh that has verts and index count: " << VertexCount << " " << IndexCount << '\n';
+	}
 }
 
 void Mesh::Render() const

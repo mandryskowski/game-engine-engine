@@ -18,14 +18,15 @@ enum MaterialData
 class Material
 {
 public:
-	struct MaterialLoc
+	struct MaterialLoc : public HTreeObjectLoc
 	{
 		std::string Name;
-		std::string OptionalPath;
-		MaterialLoc(const std::string& name, const std::string& optionalPath = std::string()) : Name(name), OptionalPath(optionalPath) {}
-		std::string GetStr() const
+		MaterialLoc(HTreeObjectLoc treeObjectLoc, const std::string& name = std::string()) : HTreeObjectLoc(treeObjectLoc), Name(name)  {}
+		MaterialLoc(const char* name) : HTreeObjectLoc(), Name(name)  {}	//allows implicit conversion from const char*
+		MaterialLoc(const std::string& name) : HTreeObjectLoc(), Name(name)  {}	//allows implicit conversion from const std::string&
+		std::string GetFullStr() const
 		{
-			return (!OptionalPath.empty()) ? (OptionalPath + ":" + Name) : (Name);
+			return (!GetTreeName().empty()) ? (GetTreeName() + ":" + Name) : (Name);
 		}
 	} Localization;
 	std::vector <std::shared_ptr<NamedTexture>> Textures;	//Often used; NamedTextures (NamedTexture is a child class of Texture) are bound to the samplers which names correspond to ShaderName of a NamedTexture.
@@ -36,7 +37,6 @@ public:
 
 public:
 	Material(MaterialLoc, float depthScale = 0.0f, Shader* shader = nullptr);
-	Material(const std::string& name, float depthScale = 0.0f, Shader* shader = nullptr);
 	const MaterialLoc& GetLocalization() const;
 	const std::string& GetRenderShaderName() const;
 	void SetDepthScale(float);
@@ -55,7 +55,7 @@ public:
 
 	template <typename Archive> void Save(Archive& archive) const
 	{
-		archive(cereal::make_nvp("Name", Localization.Name), cereal::make_nvp("OptionalPath", Localization.OptionalPath), CEREAL_NVP(Textures), CEREAL_NVP(Color), CEREAL_NVP(Shininess), CEREAL_NVP(DepthScale), CEREAL_NVP(RenderShaderName));
+		archive(cereal::make_nvp("Name", GetLocalization().Name), CEREAL_NVP(Textures), CEREAL_NVP(Color), CEREAL_NVP(Shininess), CEREAL_NVP(DepthScale), CEREAL_NVP(RenderShaderName));
 	}
 	template <typename Archive> void Load(Archive& archive)
 	{
@@ -95,7 +95,6 @@ class AtlasMaterial : public Material
 public:
 	AtlasMaterial(Material&& mat, glm::ivec2 atlasSize = glm::ivec2(0));
 	AtlasMaterial(MaterialLoc loc, glm::ivec2 atlasSize = glm::ivec2(0));
-	AtlasMaterial(const std::string& name, glm::ivec2 atlasSize = glm::ivec2(0));
 	float GetMaxTextureID() const;
 	virtual void UpdateInstanceUBOData(Shader* shader, bool setValuesToDefault = false) const override;
 	virtual void UpdateWholeUBOData(Shader* shader, Texture& emptyTexture) const override;
@@ -155,17 +154,64 @@ public:
 	template <typename Archive> void Save(Archive& archive) const
 	{
 		std::shared_ptr<Material> mat = GameManager::DefaultScene->GetGameHandle()->GetRenderEngineHandle()->FindMaterial(MaterialRef.GetLocalization().Name);
-		archive(cereal::make_nvp("MaterialRef", mat), CEREAL_NVP(DrawBeforeAnim), CEREAL_NVP(DrawAfterAnim));
+		if (!mat)
+		{
+			std::cout << "ERROR! Cannot save materialinstance of " << MaterialRef.GetLocalization().Name << ". The most likely cause of this is that the material has not been added to the RenderEngine, and thus cannot be found.\n";
+			return;
+		}
+		std::string name = mat->Localization.Name, treeName = mat->Localization.GetTreeName();
+		archive(cereal::make_nvp("MaterialName", name), cereal::make_nvp("MaterialOptionalPath", treeName));
+		if (treeName.empty())
+			archive(cereal::make_nvp("ExternalMaterial", mat));
+		archive(CEREAL_NVP(DrawBeforeAnim), CEREAL_NVP(DrawAfterAnim));
 	}
 	template <typename Archive> static void load_and_construct(Archive& archive, cereal::construct<MaterialInstance>& construct)
 	{
-		std::shared_ptr<Material> mat;
-		bool drawBeforeAnim, drawAfterAnim;
-		archive(cereal::make_nvp("MaterialRef", mat), cereal::make_nvp("DrawBeforeAnim", drawBeforeAnim), cereal::make_nvp("DrawAfterAnim", drawAfterAnim));
+		std::string materialName, materialPath;
+		archive(cereal::make_nvp("MaterialName", materialName), cereal::make_nvp("MaterialOptionalPath", materialPath));
+		std::shared_ptr<Material> mat = GameManager::DefaultScene->GetGameHandle()->GetRenderEngineHandle()->FindMaterial(materialName);
+		if (!mat)
+		{
+			if (materialPath.empty())
+			{
+				archive(cereal::make_nvp("ExternalMaterial", mat));
+				GameManager::DefaultScene->GetGameHandle()->GetRenderEngineHandle()->AddMaterial(mat);
+			}
+			else
+			{
+				std::cout << "ERROR: Could not find material " << materialName << " (path - " + materialPath + ")\n";
+				exit(42069);
+			}
+		}
 
-		GameManager::DefaultScene->GetGameHandle()->GetRenderEngineHandle()->AddMaterial(mat);
+		bool drawBeforeAnim, drawAfterAnim;
+		archive(cereal::make_nvp("DrawBeforeAnim", drawBeforeAnim), cereal::make_nvp("DrawAfterAnim", drawAfterAnim));
 		
 
 		construct(*mat);// , drawBeforeAnim, drawAfterAnim);
+
+		//GameManager::DefaultScene->AddPostLoadLambda([mat]() { std::cout << "uwaga robie " << mat << '\n'; GameManager::DefaultScene->GetGameHandle()->GetRenderEngineHandle()->AddMaterial(mat); });
 	}
 };
+
+constexpr Vec3f hsvToRgb(Vec3f hsvColor)
+{
+	float C = hsvColor.z * hsvColor.y;	//V * S
+	float X = C * (1.0f - glm::abs(glm::mod(hsvColor.x / 60.0f, 2.0f) - 1.0f));	// C * ( 1 - | (H / 60) % 2 - 1| )
+	float m = hsvColor.z - C;	//V * C
+
+	Vec3f rgbPrime(0.0f);
+	int hueCirclePart = floorConstexpr(hsvColor.x / 60.0f);	// floor( H / 60 )
+
+	switch (hueCirclePart)
+	{
+	case 0: rgbPrime = Vec3f(C, X, 0.0f); break;	// 0 <= H < 60
+	case 1: rgbPrime = Vec3f(X, C, 0.0f); break;	// 60 <= H < 120
+	case 2: rgbPrime = Vec3f(0.0f, C, X); break;	// 120 <= H < 180
+	case 3: rgbPrime = Vec3f(0.0f, X, C); break;	// 180 <= H < 240
+	case 4: rgbPrime = Vec3f(X, 0.0f, C); break;	// 240 <= H < 300
+	case 5: rgbPrime = Vec3f(C, 0.0f, X); break;	// 300 <= H < 360
+	}
+
+	return rgbPrime + m;
+}

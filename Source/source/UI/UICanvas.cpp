@@ -79,6 +79,12 @@ void UICanvas::ClampViewToElements()
 	CanvasView.SetPosition(adjustedViewPos);
 }
 
+void UICanvas::AutoClampView(bool trueHorizontalFalseVertical)
+{
+	float size = (trueHorizontalFalseVertical) ? (GetBoundingBox().Size.x) : (GetBoundingBox().Size.y);
+	SetViewScale(Vec2f(glm::sqrt(size)));
+}
+
 void UICanvas::AddUIElement(UICanvasElement& element)
 {
 	UIElements.push_back(element);
@@ -120,7 +126,7 @@ void UICanvas::RemoveUIElement(UICanvasElement* element)
 	UIElements.erase(std::remove_if(UIElements.begin(), UIElements.end(), [element](std::reference_wrapper<UICanvasElement>& vecElement) { return element == &vecElement.get(); }), UIElements.end());
 }
 
-void UICanvas::ScrollView(glm::vec2 offset)
+void UICanvas::ScrollView(Vec2f offset)
 {
 	CanvasView.Move(offset);
 	ClampViewToElements();

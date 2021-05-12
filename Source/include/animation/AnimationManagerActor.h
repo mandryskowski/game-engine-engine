@@ -49,7 +49,7 @@ public:
 
 	template <typename Archive> void Save(Archive& archive) const
 	{
-		archive(cereal::make_nvp("AnimHierarchyTreePath", GetLocalization().HierarchyTreePath), cereal::make_nvp("AnimName", GetLocalization().Name), cereal::make_nvp("RootCompName", AnimRootComp.GetName()), cereal::make_nvp("RootCompActorName", AnimRootComp.GetActor().GetName()));
+		archive(cereal::make_nvp("AnimHierarchyTreePath", GetLocalization().GetTreeName()), cereal::make_nvp("AnimName", GetLocalization().Name), cereal::make_nvp("RootCompName", AnimRootComp.GetName()), cereal::make_nvp("RootCompActorName", AnimRootComp.GetActor().GetName()));
 	}
 	template <typename Archive> static void load_and_construct(Archive& archive, cereal::construct<AnimationInstance>& construct)
 	{

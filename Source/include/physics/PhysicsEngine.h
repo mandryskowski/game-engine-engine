@@ -47,9 +47,11 @@ private:
 	virtual void AddCollisionObjectToPxPipeline(GameScenePhysicsData& scenePhysicsData, CollisionObject&) override;
 
 public:
+	virtual void CreatePxShape(CollisionShape&, CollisionObject&) override;
 	void AddScenePhysicsDataPtr(GameScenePhysicsData& scenePhysicsData);
+	virtual void RemoveScenePhysicsDataPtr(GameScenePhysicsData& scenePhysicsData) override;
 
-	virtual physx::PxController* CreateController(GameScenePhysicsData& scenePhysicsData) override;
+	virtual physx::PxController* CreateController(GameScenePhysicsData& scenePhysicsData, const Transform& t) override;
 
 	virtual void ApplyForce(CollisionObject&, glm::vec3 force) override;
 	void SetupScene(GameScenePhysicsData& scenePhysicsData);

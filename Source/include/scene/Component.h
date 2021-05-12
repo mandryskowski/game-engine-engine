@@ -22,6 +22,17 @@ struct EditorElementDesc
 
 class EditorDescriptionBuilder;
 
+class Killable
+{
+public:
+	virtual bool IsBeingKilled();
+	template <typename FieldType> void AddReference(FieldType&);
+	template <typename FieldType> void RemoveReference(FieldType&);
+protected:
+	virtual void MarkAsKilled();
+
+};
+
 class Component
 {
 public:
@@ -34,6 +45,8 @@ public:
 protected:
 	template <typename CompClass> friend class HierarchyTemplate::HierarchyNode;
 	Component& operator=(const Component&);
+
+	template <typename FieldType> void AddToGarbageCollector(FieldType*& field);
 public:
 	Component& operator=(Component&&);
 
@@ -62,7 +75,7 @@ public:
 
 	void SetName(std::string name);
 	void SetTransform(Transform transform);
-	CollisionObject* SetCollisionObject(std::unique_ptr<CollisionObject>&);
+	CollisionObject* SetCollisionObject(std::unique_ptr<CollisionObject>);
 	void AddComponent(std::unique_ptr<Component> component);
 	void AddComponents(std::vector<std::unique_ptr<Component>> components);
 
@@ -245,7 +258,7 @@ namespace cereal
 			if (!LoadAndConstruct<Component>::ActorRef)
 				return;
 			construct(*LoadAndConstruct<Component>::ActorRef, LoadAndConstruct<Component>::ParentComp, "");
-			construct->Serialize(ar);
+			construct->Load(ar);
 		}
 	};
 
@@ -294,7 +307,7 @@ namespace cereal
 			if (!LoadAndConstruct<Component>::ActorRef)
 				return;
 			construct(*LoadAndConstruct<Component>::ActorRef, LoadAndConstruct<Component>::ParentComp, "");
-			construct->Load(ar);	
+			construct->LightComponent::Load(ar);	
 		}
 	};
 
@@ -313,6 +326,17 @@ namespace cereal
 	{
 		template <class Archive>
 		static void load_and_construct(Archive& ar, cereal::construct<AnimationManagerComponent>& construct)
+		{
+			if (!LoadAndConstruct<Component>::ActorRef)
+				return;
+			construct(*LoadAndConstruct<Component>::ActorRef, LoadAndConstruct<Component>::ParentComp, "");
+			construct->Load(ar);
+		}
+	};
+	template <> struct LoadAndConstruct<LightProbeComponent>
+	{
+		template <class Archive>
+		static void load_and_construct(Archive& ar, cereal::construct<LightProbeComponent>& construct)
 		{
 			if (!LoadAndConstruct<Component>::ActorRef)
 				return;

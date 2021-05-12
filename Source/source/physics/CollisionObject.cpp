@@ -3,6 +3,18 @@
 
 using namespace physx;
 
+std::string collisionShapeTypeToString(CollisionShapeType type)
+{
+	switch (type)
+	{
+	case CollisionShapeType::COLLISION_BOX: return "Box";
+	case CollisionShapeType::COLLISION_SPHERE: return "Sphere";
+	case CollisionShapeType::COLLISION_TRIANGLE_MESH: return "Triangle Mesh";
+	case CollisionShapeType::COLLISION_CAPSULE: return "Capsule";
+	}
+	return "CannotCastCollisionShapeToString";
+}
+
 glm::vec3 toGlm(PxVec3 pxVec)
 {
 	return glm::vec3(pxVec.x, pxVec.y, pxVec.z);

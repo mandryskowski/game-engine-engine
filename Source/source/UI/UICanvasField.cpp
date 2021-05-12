@@ -108,12 +108,73 @@ void UICanvasField::OnStart()
 {
 	UIActor::OnStart();
 
-	CreateComponent<TextComponent>("ElementText", Transform(glm::vec2(-1.0f, 0.0f), glm::vec2(1.0f)), Name, "fonts/expressway rg.ttf", std::pair<TextAlignment, TextAlignment>(TextAlignment::RIGHT, TextAlignment::CENTER));
+	CreateComponent<TextComponent>("ElementText", Transform(glm::vec2(-2.0f, 0.0f), glm::vec2(1.0f)), Name, "", std::pair<TextAlignment, TextAlignment>(TextAlignment::RIGHT, TextAlignment::CENTER));
 }
 
 UIElementTemplates UICanvasField::GetTemplates()
 {
 	return UIElementTemplates(*this, CanvasPtr);
+}
+
+UICanvasFieldCategory::UICanvasFieldCategory(GameScene& scene, const std::string& name) :
+	UIListActor(scene, name),
+	OnExpansionFunc(nullptr),
+	ExpandButton(nullptr)
+{
+	ExpandButton = &CreateChild<UIButtonActor>(name + "ExpandButton", [this]()
+		{
+			std::vector<Actor*> actors;
+			std::vector<RenderableComponent*> renderables;
+			for (auto& it : ListElements)
+			{
+				it.GetActorRef().GetRoot()->GetAllComponents<RenderableComponent>(&renderables);
+				it.GetActorRef().GetAllActors(&actors);
+			}
+			for (auto& it : actors)
+				it->GetRoot()->GetAllComponents<RenderableComponent>(&renderables);
+
+			bExpanded = !bExpanded;
+			for (auto& it : renderables)
+				it->SetHide(!bExpanded);
+
+			if (OnExpansionFunc)
+				OnExpansionFunc();
+		});
+	ExpandButton->SetTransform(Transform(Vec2f(0.0f, 2.0f), Vec2f(1.0f)));
+}
+
+UICanvasField& UICanvasFieldCategory::AddField(const std::string& name, std::function<glm::vec3()> getElementOffset)
+{
+	UICanvasField& field = CreateChild<UICanvasField>(name);
+	(getElementOffset) ? (AddElement(UIListElement(field, getElementOffset))) : (AddElement(UIListElement(field, glm::vec3(0.0f, -2.0f, 0.0f))));
+
+	field.SetTransform(Transform(glm::vec2(0.0f), glm::vec2(1.0f)));	//position doesn't matter if this is not the first field
+	std::cout << "CANVASPTR: " << GetCanvasPtr() << '\n';
+	(GetCanvasPtr()->*static_cast<void(UICanvas::*)(UIActor&)>(&UICanvas::AddUIElement))(field);
+
+	return field;
+}
+
+glm::vec3 UICanvasFieldCategory::GetListOffset()
+{
+	return (bExpanded) ? (UIListActor::GetListOffset() + Vec3f(0.0f, -1.0f, 0.0f)) : (Vec3f(0.0f, -1.0f, 0.0f));
+}
+
+#include <input/InputDevicesStateRetriever.h>
+void UICanvasFieldCategory::SetOnExpansionFunc(std::function<void()> onExpansionFunc)
+{
+	OnExpansionFunc = [this, onExpansionFunc]() { if (onExpansionFunc) onExpansionFunc(); for (auto& it : Children) it->HandleEventAll(CursorMoveEvent(EventType::MOUSE_MOVED, GameHandle->GetInputRetriever().GetMousePositionNDC())); };
+}
+
+void UICanvasFieldCategory::HandleEventAll(const Event& ev)
+{
+	HandleEvent(ev);
+	ExpandButton->HandleEvent(ev);
+
+	if (bExpanded)
+		for (auto& it : Children)
+			if (it.get() != ExpandButton)
+				it->HandleEventAll(ev);
 }
 
 UIElementTemplates::UIElementTemplates(Actor& templateParent, UICanvas* canvas) :
@@ -135,7 +196,6 @@ void UIElementTemplates::TickBox(std::function<bool()> setFunc)
 	tickMaterial->AddTexture(std::make_shared<NamedTexture>(textureFromFile("EditorAssets/tick_icon.png", GL_RGBA, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR, true), "albedo1"));
 
 	UIButtonActor& billboardTickBoxActor = TemplateParent.CreateChild<UIButtonActor>("BillboardTickBox");
-	billboardTickBoxActor.GetTransform()->Move(glm::vec2(1.0f, 0.0f));
 
 	ModelComponent& billboardTickModel = billboardTickBoxActor.CreateComponent<ModelComponent>("TickModel");
 	billboardTickModel.AddMeshInst(GameHandle.GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD));
@@ -148,27 +208,92 @@ void UIElementTemplates::TickBox(std::function<bool()> setFunc)
 	tickHideFunc();	//little hack that allows us to set tick hide accordingly
 	tickHideFunc();	//notice that we don't have any getFunc here, so the only way to show the tick correctly is to click this button twice here - it won't alter the boolean, but will repair our tick icon.																															
 }
+
+void UIElementTemplates::TickBox(std::function<void(bool)> setFunc, std::function<bool()> getFunc)
+{
+	AtlasMaterial* tickMaterial = new AtlasMaterial(Material("TickMaterial", 0.0f, GameHandle.GetRenderEngineHandle()->FindShader("Forward_NoLight")), glm::ivec2(3, 1));
+	tickMaterial->AddTexture(std::make_shared<NamedTexture>(textureFromFile("EditorAssets/tick_icon.png", GL_RGBA, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR, true), "albedo1"));
+
+	UIButtonActor& billboardTickBoxActor = TemplateParent.CreateChild<UIButtonActor>("BillboardTickBox");
+	
+	ModelComponent& billboardTickModel = billboardTickBoxActor.CreateComponent<ModelComponent>("TickModel");
+	billboardTickModel.AddMeshInst(GameHandle.GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD));
+	billboardTickModel.SetHide(!getFunc());
+	billboardTickModel.OverrideInstancesMaterialInstances(std::make_shared<MaterialInstance>(MaterialInstance(*tickMaterial, tickMaterial->GetTextureIDInterpolatorTemplate(0.0f))));
+
+	auto clickFunc = [&billboardTickModel, setFunc, getFunc]() { bool updatedVal = !getFunc(); setFunc(updatedVal); billboardTickModel.SetHide(!updatedVal);  };
+	billboardTickBoxActor.SetOnClickFunc(clickFunc);
+}
+
 #include <tinyfiledialogs/tinyfiledialogs.h>
-void UIElementTemplates::PathInput(std::function<void(const std::string&)> setFunc, std::function<std::string()> getFunc)
+#include <scene/HierarchyTemplate.h>
+void UIElementTemplates::HierarchyTreeInput(UIAutomaticListActor& list, GameScene& scene, std::function<void(HierarchyTemplate::HierarchyTreeT&)> setFunc)
+{
+	for (int i = 0; i < scene.GetHierarchyTreeCount(); i++)
+	{
+		HierarchyTemplate::HierarchyTreeT* tree = scene.GetHierarchyTree(i);
+		UIButtonActor& treeButton = list.CreateChild<UIButtonActor>("TreeButton" + std::to_string(i), tree->GetName(), [tree, setFunc]() { setFunc(*tree); });
+		Canvas->AddUIElement(treeButton);
+	}
+
+}
+void UIElementTemplates::HierarchyTreeInput(GameScene& scene, std::function<void(HierarchyTemplate::HierarchyTreeT&)> setFunc)
+{
+	UIAutomaticListActor& treesList = TemplateParent.CreateChild<UIAutomaticListActor>("HierarchyTreesList");
+	HierarchyTreeInput(treesList, scene, setFunc);
+
+	treesList.Refresh();
+}
+
+void UIElementTemplates::HierarchyTreeInput(GameManager& gameHandle, std::function<void(HierarchyTemplate::HierarchyTreeT&)> setFunc)
+{
+	UIAutomaticListActor& treesList = TemplateParent.CreateChild<UIAutomaticListActor>("HierarchyTreesList");
+	for (GameScene* scene : gameHandle.GetScenes())
+		HierarchyTreeInput(treesList, *scene, setFunc);
+
+	treesList.Refresh();
+}
+
+void UIElementTemplates::PathInput(std::function<void(const std::string&)> setFunc, std::function<std::string()> getFunc, std::vector<const char*> extensions)
 {
 	UIInputBoxActor& pathInputBox = TemplateParent.CreateChild<UIInputBoxActor>("PathInputBox");
-	pathInputBox.SetTransform(Transform(glm::vec2(3.0f, 0.0f), glm::vec2(3.0f, 1.0f)));
+	pathInputBox.SetTransform(Transform(glm::vec2(2.0f, 0.0f), glm::vec2(3.0f, 1.0f)));
 	pathInputBox.SetOnInputFunc(setFunc, getFunc);
 	UIButtonActor& selectFileActor = TemplateParent.CreateChild<UIButtonActor>("SelectFileButton");
-	selectFileActor.SetTransform(Transform(glm::vec2(7.0f, 0.0f), glm::vec2(1.0f, 1.0f)));
 
-	//TextComponent& pathText = selectFileActor.NowyCreateComponent<TextComponent>("Text", Transform(), "", "fonts/expressway rg.ttf", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
+	selectFileActor.SetTransform(Transform(glm::vec2(6.0f, 0.0f), glm::vec2(1.0f, 1.0f)));
 
-	selectFileActor.SetOnClickFunc([&pathInputBox]() { const char* patterns[] = { "*.wav" }; const char* path = tinyfd_openFileDialog("Select audio file", "C:\\", 1, patterns, nullptr, 0); if (path) pathInputBox.PutString(path); });
+	//TextComponent& pathText = selectFileActor.NowyCreateComponent<TextComponent>("Text", Transform(), "", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
+	selectFileActor.SetOnClickFunc([&pathInputBox, extensions]() { const char* path = tinyfd_openFileDialog("Select file", "C:\\", extensions.size(), (extensions.empty()) ? (nullptr) : (&extensions[0]), nullptr, 0); if (path) pathInputBox.PutString(path); });
+}
+
+void UIElementTemplates::FolderInput(std::function<void(const std::string&)> setFunc, std::function<std::string()> getFunc)
+{
+	UIInputBoxActor& pathInputBox = TemplateParent.CreateChild<UIInputBoxActor>("PathInputBox");
+	pathInputBox.SetTransform(Transform(glm::vec2(2.0f, 0.0f), glm::vec2(3.0f, 1.0f)));
+	pathInputBox.SetOnInputFunc(setFunc, getFunc);
+	UIButtonActor& selectFileActor = TemplateParent.CreateChild<UIButtonActor>("SelectFolderButton");
+
+	selectFileActor.SetTransform(Transform(glm::vec2(6.0f, 0.0f), glm::vec2(1.0f, 1.0f)));
+	selectFileActor.SetOnClickFunc([&pathInputBox]() { const char* path = tinyfd_selectFolderDialog("Select folder", "C:\\"); if (path) pathInputBox.PutString(path); });
 }
 
 template <int vecSize> void UIElementTemplates::VecInput(std::function<void(float, float)> setFunc, std::function<float(float)> getFunc)
 {
-	for (int x = 0; x < vecSize; x++)
+	const std::string materialNames[] = {
+		"GEE_Default_X_Axis", "GEE_Default_Y_Axis", "GEE_Default_Z_Axis", "GEE_Default_W_Axis"
+	};
+
+	static_assert(vecSize <= 4);
+
+	for (int axis = 0; axis < vecSize; axis++)
 	{
-		UIInputBoxActor& inputBoxActor = TemplateParent.CreateChild<UIInputBoxActor>("VecBox" + std::to_string(x));
-		inputBoxActor.SetTransform(Transform(glm::vec2(1.0f + float(x) * 2.0f, 0.0f), glm::vec2(1.0f)));
-		inputBoxActor.SetOnInputFunc([x, setFunc](float val) {setFunc(x, val); }, [x, getFunc]() { return getFunc(x); }, true);
+		UIInputBoxActor& inputBoxActor = TemplateParent.CreateChild<UIInputBoxActor>("VecBox" + std::to_string(axis));
+		inputBoxActor.SetTransform(Transform(glm::vec2(float(axis) * 2.0f, 0.0f), glm::vec2(1.0f)));
+		inputBoxActor.SetOnInputFunc([axis, setFunc](float val) {setFunc(axis, val); }, [axis, getFunc]() { return getFunc(axis); }, true);
+
+		if (Material* found = GameHandle.GetRenderEngineHandle()->FindMaterial(materialNames[axis]).get())
+			inputBoxActor.SetMatIdle(*found);
 	}
 }
 
@@ -177,6 +302,27 @@ template <typename VecType> void UIElementTemplates::VecInput(VecType& modifiedV
 	VecInput<VecType>([&modifiedVec](float x, float val) { modifiedVec[x] = val; }, [&modifiedVec](float x) { return modifiedVec[x]; });
 }
 #include <scene/LightComponent.h>
+
+template<typename ObjectBase, typename ObjectType>
+void UIElementTemplates::ObjectInput(std::function<std::vector<ObjectBase*>()> getObjectsFunc, std::function<void(ObjectType*)> setFunc)
+{
+	GameScene* scenePtr = &Scene;
+	UIButtonActor& compNameButton = TemplateParent.CreateChild<UIButtonActor>("CompNameBox", "", [scenePtr, getObjectsFunc, setFunc]() {
+		UIWindowActor& window = scenePtr->CreateActorAtRoot<UIWindowActor>("CompInputWindow");
+		window.SetTransform(Transform(glm::vec2(0.0f, -0.7f), glm::vec2(0.25f)));
+
+		UIAutomaticListActor& list = window.CreateChild<UIAutomaticListActor>("Available comp list");
+		std::vector<ObjectType*> availableObjects = getObjectsFunc();
+
+		window.AddUIElement(list.CreateChild<UIButtonActor>("Nullptr object button", "Nullptr", [&window, setFunc]() { setFunc(nullptr); window.MarkAsKilled(); }));
+		for (auto& it : availableObjects)
+			window.AddUIElement(list.CreateChild<UIButtonActor>(it->GetName() + ", Matching object button", it->GetName(), [&window, setFunc, it]() { setFunc(it); window.MarkAsKilled(); }));
+		list.Refresh();
+
+		std::cout << availableObjects.size() << " available objects.\n";
+		});
+	compNameButton.SetTransform(Transform(glm::vec2(2.0f, 0.0f), glm::vec2(3.0f, 1.0f)));
+}
 
 template<typename ObjectBase, typename ObjectType>
 void UIElementTemplates::ObjectInput(ObjectBase& hierarchyRoot, std::function<void(ObjectType*)> setFunc)
@@ -200,7 +346,7 @@ void UIElementTemplates::ObjectInput(ObjectBase& hierarchyRoot, std::function<vo
 
 		std::cout << availableObjects.size() << " available objects.\n";
 		});
-	compNameButton.SetTransform(Transform(glm::vec2(3.0f, 0.0f), glm::vec2(3.0f, 1.0f)));
+	compNameButton.SetTransform(Transform(glm::vec2(2.0f, 0.0f), glm::vec2(3.0f, 1.0f)));
 }
 
 template<typename ObjectBase, typename ObjectType>
@@ -213,6 +359,19 @@ template<typename CompType>
 void UIElementTemplates::ComponentInput(Component& hierarchyRoot, std::function<void(CompType*)> setFunc)
 {
 	ObjectInput<Component, CompType>(hierarchyRoot, setFunc);
+}
+
+template<typename CompType>
+void UIElementTemplates::ComponentInput(GameScene& scene, std::function<void(CompType*)> setFunc)
+{
+	std::vector<Actor*> allActors;
+	const_cast<Actor*>(scene.GetRootActor())->GetAllActors(&allActors);
+
+	std::vector<CompType*> allComponents;
+	allComponents.resize(allActors.size());
+
+	for (auto& it : allActors)
+		it->GetRoot()->GetAllComponents<CompType>(&allComponents);
 }
 
 template<typename CompType>
@@ -271,6 +430,8 @@ template void UIElementTemplates::ObjectInput<Component, AnimationManagerCompone
 
 template void UIElementTemplates::ObjectInput<Actor, GunActor>(Actor&, std::function<void(GunActor*)>);
 template void UIElementTemplates::ObjectInput<Actor, GunActor>(Actor&, GunActor*&);
+
+template void UIElementTemplates::ObjectInput<Actor, Actor>(std::function<std::vector<Actor*>()>, std::function<void(Actor*)>);
 
 template void UIElementTemplates::ComponentInput<Component>(Component&, std::function<void(Component*)>);
 template void UIElementTemplates::ComponentInput<ModelComponent>(Component&, std::function<void(ModelComponent*)>);

@@ -1,9 +1,14 @@
+#define CEREAL_LOAD_FUNCTION_NAME Load
+#define CEREAL_SAVE_FUNCTION_NAME Save
+#define CEREAL_SERIALIZE_FUNCTION_NAME Serialize
 #include <rendering/Mesh.h>
 #include <assimp/scene.h>
 #include <scene/GunActor.h>
 #include <scene/CameraComponent.h>
 #include <scene/BoneComponent.h>
+#include <animation/SkeletonInfo.h>
 #include <scene/LightComponent.h>
+#include <scene/LightProbeComponent.h>
 #include <scene/HierarchyTemplate.h>
 #include <assetload/FileLoader.h>
 #include <rendering/Texture.h>
@@ -16,6 +21,7 @@
 #include <ft2build.h>
 #include FT_FREETYPE_H
 #include <functional>
+#include <cereal/archives/json.hpp>
 
 FT_Library* EngineDataLoader::FTLib = nullptr;
 
@@ -264,7 +270,7 @@ void EngineDataLoader::LoadComponentData(GameManager* gameHandle, std::stringstr
 		std::cerr << "ERROR: There is no ''end'' after component's " << name << " definition! Detected word: " << lastWord << ".\n";
 }
 
-std::unique_ptr<CollisionObject> EngineDataLoader::LoadCollisionObject(PhysicsEngineManager* physicsHandle, std::stringstream& filestr)
+std::unique_ptr<CollisionObject> EngineDataLoader::LoadCollisionObject(GameScene& scene, std::stringstream& filestr)
 {
 	std::unique_ptr<CollisionObject> obj = std::make_unique<CollisionObject>();
 
@@ -291,22 +297,18 @@ std::unique_ptr<CollisionObject> EngineDataLoader::LoadCollisionObject(PhysicsEn
 			std::string path;
 			filestr >> path;
 
-			Assimp::Importer importer;
-			const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate);
-			if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
-			{
-				std::cerr << "Can't load col obj scene " << path << ".\n";
-				continue;
-			}
-
+			//const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate);
+			std::cout << "PROBUJE ZALADOWAC STARY COLLISION OBJECT Z PATHA " + path << '\n';
+			HierarchyTemplate::HierarchyTreeT* tree = LoadHierarchyTree(scene, path, nullptr, true);
+			
 			Transform shapesTransform;
 			LoadTransform(filestr, shapesTransform, transformLoadType);
-			for (int j = 0; j < static_cast<int>(scene->mNumMeshes); j++)
+
+			std::vector<Mesh> meshes = tree->GetMeshes();
+			for (Mesh& mesh : meshes)
 			{
-				CollisionShape& shape = obj->AddShape(LoadTriangleMeshCollisionShape(physicsHandle, scene, *scene->mMeshes[i]));
+				CollisionShape& shape = obj->AddShape(LoadTriangleMeshCollisionShape(scene.GetGameHandle()->GetPhysicsHandle(), mesh));
 				shape.ShapeTransform = shapesTransform;	//add new shape and set its transform to the loaded one
-				shape.OptionalFilePath = path;
-				shape.OptionalMeshName = scene->mMeshes[j]->mName.C_Str();
 			}
 		}
 		else
@@ -319,36 +321,31 @@ std::unique_ptr<CollisionObject> EngineDataLoader::LoadCollisionObject(PhysicsEn
 	return obj;
 }
 
-std::shared_ptr<CollisionShape> EngineDataLoader::LoadTriangleMeshCollisionShape(PhysicsEngineManager* physicsHandle, const aiScene* scene, aiMesh& mesh)
+std::shared_ptr<CollisionShape> EngineDataLoader::LoadTriangleMeshCollisionShape(PhysicsEngineManager* physicsHandle, const Mesh& mesh)
 {
 	std::shared_ptr<CollisionShape> shape = std::make_shared<CollisionShape>(CollisionShape(CollisionShapeType::COLLISION_TRIANGLE_MESH));
-	LoadMeshFromAi(nullptr, scene, &mesh, "", "", false, nullptr, nullptr, &shape->VertData, &shape->IndicesData);
+	shape->SetOptionalLocalization(mesh.GetLocalization());
+
+	if (!mesh.GetVertsData() || !mesh.GetIndicesData())
+	{
+		std::cout << "ERROR: Mesh does not contain verts data or indices data. Cannot load triangle mesh collision shape.\n";
+		return nullptr;
+	}
+	std::vector<Vertex>& vertsData = *mesh.GetVertsData();
+	std::vector<unsigned int>& indicesData = *mesh.GetIndicesData();
+
+	shape->VertData.resize(vertsData.size());
+	std::cout << "Laduje triangle mesh col shape ktory ma " << vertsData.size() << " wierzcholkow i " << mesh.GetIndicesData()->size() << " indexow.\n";
+
+	std::transform(vertsData.begin(), vertsData.end(), shape->VertData.begin(), [](const Vertex& vertex) { return vertex.Position; });
+	shape->IndicesData = indicesData;
 
 	return shape;
 }
 
-std::shared_ptr<CollisionShape> EngineDataLoader::LoadTriangleMeshCollisionShape(PhysicsEngineManager* physicsHandle, const std::string& filePath, const std::string& meshName)
+std::shared_ptr<CollisionShape> EngineDataLoader::LoadTriangleMeshCollisionShape(PhysicsEngineManager* physicsHandle, const aiScene* scene, aiMesh& mesh)
 {
-	Assimp::Importer importer;
-	const aiScene* scene = importer.ReadFile(filePath, aiProcess_Triangulate);
-	if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
-	{
-		std::cerr << "ERROR: Can't load col obj scene " << filePath << ".\n";
-		return nullptr;
-	}
-
-	aiMesh* foundMesh = nullptr;
-	for (int i = 0; i < static_cast<int>(scene->mNumMeshes); i++)
-		if (scene->mMeshes[i]->mName.C_Str() == meshName)
-			foundMesh = scene->mMeshes[i];
-
-	if (!foundMesh)
-	{
-		std::cout << "ERROR: Couldn't find col mesh " + meshName + " in " + filePath << '\n';
-		return nullptr;
-	}
-
-	return LoadTriangleMeshCollisionShape(physicsHandle, scene, *foundMesh);
+	return std::shared_ptr<CollisionShape>();
 }
 
 void EngineDataLoader::LoadLightProbes(GameScene& scene, std::stringstream& filestr)
@@ -371,27 +368,25 @@ void EngineDataLoader::LoadLightProbes(GameScene& scene, std::stringstream& file
 			filestr >> shapeNr;
 			shape = static_cast<EngineBasicShape>(shapeNr);
 			LoadTransform(filestr, probeTransform);
-			scene.GetRenderData()->AddLightProbe(std::make_shared<LocalLightProbe>(LocalLightProbe(scene.GetRenderData(), probeTransform, shape)));
+			LightProbeComponent& probe = scene.GetRootActor()->CreateComponent<LightProbeComponent>("A LightProbeComponent", shape);
+			probe.SetTransform(probeTransform);
 		}
 		else
 		{
 			filestr >> path;
-			scene.GetRenderData()->AddLightProbe(LightProbeLoader::LightProbeFromFile(scene.GetRenderData(), path));
+			LightProbeComponent& probe = scene.GetRootActor()->CreateComponent<LightProbeComponent>("A LightProbeComponent", EngineBasicShape::QUAD);
+			LightProbeLoader::LoadLightProbeFromFile(probe, path);
 		}
 	}
 }
 
-void EngineDataLoader::LoadMeshFromAi(Mesh* meshPtr, const aiScene* scene, aiMesh* mesh, const std::string& path, const std::string& directory, bool bLoadMaterial, MaterialLoadingData* matLoadingData, BoneMapping* boneMapping, std::vector<glm::vec3>* vertsPosPtr, std::vector<unsigned int>* indicesPtr, std::vector<Vertex>* verticesPtr)
+void EngineDataLoader::LoadMeshFromAi(Mesh* meshPtr, const aiScene* scene, aiMesh* mesh, const HTreeObjectLoc& treeObjLoc, const std::string& directory, bool bLoadMaterial, MaterialLoadingData* matLoadingData, BoneMapping* boneMapping, bool keepVertsData)
 {
 	std::vector <Vertex> vertices;
 	std::vector <unsigned int> indices;
 
-	if (!verticesPtr)	verticesPtr = &vertices;
-	if (!indicesPtr)	indicesPtr = &indices;
-
-	if (vertsPosPtr) vertsPosPtr->reserve(mesh->mNumVertices);
-	verticesPtr->reserve(mesh->mNumVertices);
-	indicesPtr->reserve(mesh->mNumFaces * 3);
+	vertices.reserve(mesh->mNumVertices);
+	indices.reserve(mesh->mNumFaces * 3);
 
 	bool bNormals = mesh->HasNormals();
 	bool bTexCoords = mesh->mTextureCoords[0];
@@ -405,9 +400,6 @@ void EngineDataLoader::LoadMeshFromAi(Mesh* meshPtr, const aiScene* scene, aiMes
 		vert.Position.x = pos.x;
 		vert.Position.y = pos.y;
 		vert.Position.z = pos.z;
-
-		if (vertsPosPtr)
-			vertsPosPtr->push_back(vert.Position);
 
 		if (bNormals)
 		{
@@ -438,14 +430,14 @@ void EngineDataLoader::LoadMeshFromAi(Mesh* meshPtr, const aiScene* scene, aiMes
 			vert.Bitangent.z = bitangent.z;
 		}
 
-		verticesPtr->push_back(vert);
+		vertices.push_back(vert);
 	}
 	
 	for (int i = 0; i < static_cast<int>(mesh->mNumFaces); i++)
 	{
 		aiFace face = mesh->mFaces[i];
 		for (unsigned int j = 0; j < face.mNumIndices; j++)
-			indicesPtr->push_back(face.mIndices[j]);
+			indices.push_back(face.mIndices[j]);
 	}
 
 	if (boneMapping)
@@ -470,9 +462,9 @@ void EngineDataLoader::LoadMeshFromAi(Mesh* meshPtr, const aiScene* scene, aiMes
 
 	if (meshPtr)
 	{
-		meshPtr->GenerateVAO(verticesPtr, indicesPtr);
+		meshPtr->GenerateVAO(vertices, indices, keepVertsData);
 
-		std::cout << meshPtr->GetLocalization().NodeName + "   Vertices:" << verticesPtr->size() << "    Indices:" << indicesPtr->size() << "    Bones: " << mesh->mNumBones;
+		std::cout << meshPtr->GetLocalization().NodeName + "   Vertices:" << vertices.size() << "    Indices:" << indices.size() << "    Bones: " << mesh->mNumBones;
 		if (mesh->mNumBones > 0)
 		{
 			std::cout << " (";
@@ -507,7 +499,7 @@ void EngineDataLoader::LoadMeshFromAi(Mesh* meshPtr, const aiScene* scene, aiMes
 		}
 
 
-		std::shared_ptr<Material> material = std::make_shared<Material>(Material::MaterialLoc(materialName.C_Str(), path));	//we name all materials "undefined" by default; their name should be contained in the files
+		std::shared_ptr<Material> material = std::make_shared<Material>(Material::MaterialLoc(treeObjLoc, materialName.C_Str()));	//we name all materials "undefined" by default; their name should be contained in the files
 		material->LoadFromAiMaterial(scene, assimpMaterial, directory, matLoadingData);
 
 		if (meshPtr)
@@ -698,7 +690,7 @@ void EngineDataLoader::LoadCustomHierarchyNode(GameScene& scene, std::stringstre
 			}
 
 			else if (input == "col")
-				targetNode.SetCollisionObject(LoadCollisionObject(gameHandle.GetPhysicsHandle(), filestr));
+				targetNode.SetCollisionObject(LoadCollisionObject(scene, filestr));
 		}
 
 		if (input == ":")
@@ -706,15 +698,15 @@ void EngineDataLoader::LoadCustomHierarchyNode(GameScene& scene, std::stringstre
 	}
 }
 
-void EngineDataLoader::LoadHierarchyNodeFromAi(GameManager& gameHandle, const aiScene* assimpScene, const std::string& path, const std::string& directory, MaterialLoadingData* matLoadingData, HierarchyTemplate::HierarchyNodeBase& hierarchyNode, aiNode* node, BoneMapping& boneMapping, aiBone* bone, const Transform& parentTransform)
+void EngineDataLoader::LoadHierarchyNodeFromAi(GameManager& gameHandle, const aiScene* assimpScene, const std::string& directory, MaterialLoadingData* matLoadingData, const HTreeObjectLoc& treeObjLoc, HierarchyTemplate::HierarchyNodeBase& hierarchyNode, aiNode* node, BoneMapping& boneMapping, aiBone* bone, const Transform& parentTransform, bool keepVertsData)
 {
 	std::cout << "NUM MESHES: " << node->mNumMeshes << '\n';
 	for (unsigned int i = 0; i < node->mNumMeshes; i++)
 	{
 		aiMesh* assimpMesh = assimpScene->mMeshes[node->mMeshes[i]];
-		Mesh* mesh = new Mesh(Mesh::MeshLoc(path, node->mName.C_Str(), assimpScene->mMeshes[node->mMeshes[i]]->mName.C_Str()));
+		Mesh* mesh = new Mesh(Mesh::MeshLoc(treeObjLoc, node->mName.C_Str(), assimpScene->mMeshes[node->mMeshes[i]]->mName.C_Str()));
 
-		LoadMeshFromAi(mesh, assimpScene, assimpMesh, path, directory, true, matLoadingData, &boneMapping);
+		LoadMeshFromAi(mesh, assimpScene, assimpMesh, treeObjLoc, directory, true, matLoadingData, &boneMapping, keepVertsData);
 		dynamic_cast<HierarchyTemplate::HierarchyNode<ModelComponent>*>(&hierarchyNode)->GetCompT().AddMeshInst(*mesh);
 	}
 
@@ -741,23 +733,24 @@ void EngineDataLoader::LoadHierarchyNodeFromAi(GameManager& gameHandle, const ai
 				std::cout << "found GEEC: " << meshName << "\n";
 				for (int j = 0; j < static_cast<int>(node->mChildren[i]->mNumMeshes); j++)
 				{
-					std::shared_ptr<CollisionShape> shape = LoadTriangleMeshCollisionShape(gameHandle.GetPhysicsHandle(), assimpScene, *assimpScene->mMeshes[node->mChildren[i]->mMeshes[j]]);
-					shape->OptionalFilePath = path;
-					shape->OptionalMeshName = meshName;
+					Mesh mesh(Mesh::MeshLoc(treeObjLoc, meshName, meshName));
+					LoadMeshFromAi(&mesh, assimpScene, assimpScene->mMeshes[node->mChildren[i]->mMeshes[j]], treeObjLoc, directory, false, nullptr, nullptr, true);
+					std::shared_ptr<CollisionShape> shape = LoadTriangleMeshCollisionShape(gameHandle.GetPhysicsHandle(), mesh);
 
 
 					hierarchyNode.AddCollisionShape(shape);
+					shape->GetOptionalLocalization()->OptionalCorrespondingMesh = mesh;
 
-					std::cout << "GEEC: " + hierarchyNode.GetCollisionObject()->Shapes.back()->OptionalFilePath + " " + hierarchyNode.GetCollisionObject()->Shapes.back()->OptionalMeshName << '\n';
+					std::cout << "GEEC: " + hierarchyNode.GetCollisionObject()->Shapes.back()->GetOptionalLocalization()->GetTreeName() + " " + hierarchyNode.GetCollisionObject()->Shapes.back()->GetOptionalLocalization()->ShapeMeshLoc.NodeName + hierarchyNode.GetCollisionObject()->Shapes.back()->GetOptionalLocalization()->ShapeMeshLoc.SpecificName << '\n';
 				}
 			}
 			else
-				LoadHierarchyNodeFromAi(gameHandle, assimpScene, path, directory, matLoadingData, hierarchyNode.CreateChild<ModelComponent>(node->mChildren[i]->mName.C_Str()), node->mChildren[i], boneMapping, nullptr);
+				LoadHierarchyNodeFromAi(gameHandle, assimpScene, directory, matLoadingData, treeObjLoc, hierarchyNode.CreateChild<ModelComponent>(node->mChildren[i]->mName.C_Str()), node->mChildren[i], boneMapping, nullptr, Transform(), keepVertsData);
 		}
 		else if (aiBone* bone = CastAiNodeToBone(assimpScene, node->mChildren[i])) // (isBone)
-			LoadHierarchyNodeFromAi(gameHandle, assimpScene, path, directory, matLoadingData, hierarchyNode.CreateChild<BoneComponent>(node->mChildren[i]->mName.C_Str()), node->mChildren[i], boneMapping, bone);
+			LoadHierarchyNodeFromAi(gameHandle, assimpScene, directory, matLoadingData, treeObjLoc, hierarchyNode.CreateChild<BoneComponent>(node->mChildren[i]->mName.C_Str()), node->mChildren[i], boneMapping, bone, Transform(), keepVertsData);
 		else
-			LoadHierarchyNodeFromAi(gameHandle, assimpScene, path, directory, matLoadingData, hierarchyNode.CreateChild<Component>(node->mChildren[i]->mName.C_Str()), node->mChildren[i], boneMapping, nullptr);
+			LoadHierarchyNodeFromAi(gameHandle, assimpScene, directory, matLoadingData, treeObjLoc, hierarchyNode.CreateChild<Component>(node->mChildren[i]->mName.C_Str()), node->mChildren[i], boneMapping, nullptr, Transform(), keepVertsData);
 	}
 }
 
@@ -799,95 +792,128 @@ void EngineDataLoader::LoadComponentsFromHierarchyTree(Component& comp, const Hi
 	}
 }
 
-void EngineDataLoader::SetupSceneFromFile(GameManager* gameHandle, const std::string& path, const std::string& name)
+void EngineDataLoader::SetupSceneFromFile(GameManager* gameHandle, const std::string& filepath, const std::string& name)
 {
-	GameScene& scene = gameHandle->CreateScene((name.empty()) ? (path) : (name));
-	std::ifstream file(path);
+	GameScene& scene = gameHandle->CreateScene((name.empty()) ? (filepath) : (name));
+	std::ifstream file(filepath);
+	std::string fileExtension = getFilepathExtension(filepath);
 	std::stringstream filestr;
 
 	filestr << file.rdbuf();
+	file.close();
 
-	std::string type;
-	Actor* currentActor = nullptr;
-	std::unique_ptr<Actor> currentActorUniquePtr = nullptr;
-
-	while (filestr >> type)
+	if (fileExtension != ".geeprojectold")
 	{
-		if (type == "newactor")
+
+		std::cout << "Serializing...\n";
+		GameManager::DefaultScene = &scene;
+		if (filestr.good())
 		{
-			std::string actorName, typeName;
-			Actor* parent = nullptr;
-
-			filestr >> typeName;
-			actorName = multipleWordInput(filestr);
-			if (isNextWordEqual(filestr, "child"))
+			try
 			{
-				std::string parentName = multipleWordInput(filestr);
-				parent = scene.FindActor(parentName);
+				cereal::JSONInputArchive archive(filestr);
+				cereal::LoadAndConstruct<Actor>::ScenePtr = &scene;
+				scene.GetRenderData()->LoadSkeletonBatches(archive);
+				LightProbeLoader::LoadLightProbeTextureArrays(scene.GetRenderData());
+				const_cast<Actor*>(scene.GetRootActor())->Load(archive);
 
-				if (!parent)
-					std::cerr << "ERROR! Can't find actor " + parentName + ", parent of " + actorName + " will be assigned automatically.\n";
+				archive.serializeDeferments();
+
+				scene.Load();
 			}
-
-			if (typeName == "GunActor")
-				currentActor = (currentActorUniquePtr = std::make_unique<GunActor>(GunActor(scene, actorName))).get();
-			else if (typeName == "Actor")
-				currentActor = (currentActorUniquePtr = std::make_unique<Actor>(Actor(scene, actorName))).get();
-			else
+			catch (cereal::Exception& ex)
 			{
-				std::cerr << "ERROR! Unrecognized actor type " << typeName << ".\n";
-				continue;
+				std::cout << "ERROR: While loading scene: " << ex.what() << '\n';
 			}
-
-			if (parent)
-				parent->AddChild(std::move(currentActorUniquePtr));
-			else
-				scene.AddActorToRoot(std::move(currentActorUniquePtr));
+			const_cast<Actor*>(scene.GetRootActor())->DebugHierarchy();
 		}
+		GameManager::DefaultScene = nullptr;
+	}
+	else
+	{
+		std::string type;
+		Actor* currentActor = nullptr;
+		std::unique_ptr<Actor> currentActorUniquePtr = nullptr;
 
-		else if (type == "newcomp")
+		while (filestr >> type)
 		{
-			if (!currentActor)
+			if (type == "newactor")
 			{
-				std::cerr << "ERROR! Component defined without an actor\n";
-				break;
+				std::string actorName, typeName;
+				Actor* parent = nullptr;
+
+				filestr >> typeName;
+				actorName = multipleWordInput(filestr);
+				if (isNextWordEqual(filestr, "child"))
+				{
+					std::string parentName = multipleWordInput(filestr);
+					parent = scene.FindActor(parentName);
+
+					if (!parent)
+						std::cerr << "ERROR! Can't find actor " + parentName + ", parent of " + actorName + " will be assigned automatically.\n";
+				}
+
+				if (typeName == "GunActor")
+					currentActor = (currentActorUniquePtr = std::make_unique<GunActor>(GunActor(scene, actorName))).get();
+				else if (typeName == "Actor")
+					currentActor = (currentActorUniquePtr = std::make_unique<Actor>(Actor(scene, actorName))).get();
+				else
+				{
+					std::cerr << "ERROR! Unrecognized actor type " << typeName << ".\n";
+					continue;
+				}
+
+				if (parent)
+					parent->AddChild(std::move(currentActorUniquePtr));
+				else
+					scene.AddActorToRoot(std::move(currentActorUniquePtr));
 			}
-			LoadComponentData(gameHandle, filestr, currentActor, scene);
-		}
 
-		else if (type == "newtree")
-			LoadCustomHierarchyTree(scene, filestr);
-
-		else if (type == "edittree")
-			LoadCustomHierarchyTree(scene, filestr, true);
-
-		else if (type == "newprobes")
-			LoadLightProbes(scene, filestr);
-
-		else if (type == "materialsfile")
-		{
-			std::string path, directory;
-			filestr >> path;
-
-			directory = extractDirectory(path);
-
-			LoadMaterials(gameHandle->GetRenderEngineHandle(), path, directory);
-		}
-
-		else if (type == "actorinfo" && currentActor)
-		{
-			std::stringstream* stream = new std::stringstream;
-			std::string data;
-
-			while (data != "end")
+			else if (type == "newcomp")
 			{
-				filestr >> data;
-				(*stream) << data;
+				if (!currentActor)
+				{
+					std::cerr << "ERROR! Component defined without an actor\n";
+					break;
+				}
+				LoadComponentData(gameHandle, filestr, currentActor, scene);
 			}
 
-			currentActor->SetSetupStream(stream);
+			else if (type == "newtree")
+				LoadCustomHierarchyTree(scene, filestr);
+
+			else if (type == "edittree")
+				LoadCustomHierarchyTree(scene, filestr, true);
+
+			else if (type == "newprobes")
+				LoadLightProbes(scene, filestr);
+
+			else if (type == "materialsfile")
+			{
+				std::string path, directory;
+				filestr >> path;
+
+				directory = extractDirectory(path);
+
+				LoadMaterials(gameHandle->GetRenderEngineHandle(), path, directory);
+			}
+
+			else if (type == "actorinfo" && currentActor)
+			{
+				std::stringstream* stream = new std::stringstream;
+				std::string data;
+
+				while (data != "end")
+				{
+					filestr >> data;
+					(*stream) << data;
+				}
+
+				currentActor->SetSetupStream(stream);
+			}
 		}
 	}
+
 	std::cout << "Level loading finished.\n";
 }
 
@@ -897,7 +923,7 @@ void EngineDataLoader::LoadModel(std::string path, Component& comp, MeshTreeInst
 }
 
 
-HierarchyTemplate::HierarchyTreeT* EngineDataLoader::LoadHierarchyTree(GameScene& scene, std::string path, HierarchyTemplate::HierarchyTreeT* treePtr)
+HierarchyTemplate::HierarchyTreeT* EngineDataLoader::LoadHierarchyTree(GameScene& scene, std::string path, HierarchyTemplate::HierarchyTreeT* treePtr, bool keepVertsData)
 {
 	GameManager& gameHandle = *scene.GetGameHandle();
 	if (path.empty())
@@ -940,11 +966,11 @@ HierarchyTemplate::HierarchyTreeT* EngineDataLoader::LoadHierarchyTree(GameScene
 
 	std::cout << "ROOT: " << &treePtr->GetRoot() << '\n';
 
-	LoadHierarchyNodeFromAi(gameHandle, assimpScene, path, directory, &matLoadingData, (assimpScene->mRootNode->mNumMeshes > 0) ? (treePtr->GetRoot().CreateChild<ModelComponent>(treePtr->GetRoot().GetCompBaseType().GetName() + "RootMeshes")) : (treePtr->GetRoot()), assimpScene->mRootNode, treePtr->GetBoneMapping());
+	LoadHierarchyNodeFromAi(gameHandle, assimpScene, directory, &matLoadingData, *treePtr, (assimpScene->mRootNode->mNumMeshes > 0) ? (treePtr->GetRoot().CreateChild<ModelComponent>(treePtr->GetRoot().GetCompBaseType().GetName() + "RootMeshes")) : (treePtr->GetRoot()), assimpScene->mRootNode, treePtr->GetBoneMapping(), nullptr, Transform(), keepVertsData);
 
 	for (int i = 0; i < static_cast<int>(assimpScene->mNumAnimations); i++)
 	{
-		treePtr->AddAnimation(Animation(path, assimpScene->mAnimations[i]));
+		treePtr->AddAnimation(Animation(*treePtr, assimpScene->mAnimations[i]));
 		int animIndex = assimpScene->mNumAnimations - 1;
 		std::cout << assimpScene->mAnimations[animIndex]->mDuration / assimpScene->mAnimations[animIndex]->mTicksPerSecond << "<- czas; " << assimpScene->mAnimations[animIndex]->mTicksPerSecond << "<- tps\n";
 	}

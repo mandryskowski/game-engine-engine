@@ -33,7 +33,7 @@ public:
 	{
 		archive(CEREAL_NVP(x), CEREAL_NVP(y));
 	}
-	const glm::vec2& GetGlmType() const
+	glm::vec2 GetGlmType() const
 	{
 		return static_cast<glm::vec2>(*this);
 	}
@@ -47,7 +47,7 @@ public:
 	{
 		archive(CEREAL_NVP(x), CEREAL_NVP(y), CEREAL_NVP(z));
 	}
-	const glm::vec3& GetGlmType() const
+	glm::vec3 GetGlmType() const
 	{
 		return static_cast<glm::vec3>(*this);
 	}
@@ -61,7 +61,7 @@ public:
 	{
 		archive(CEREAL_NVP(x), CEREAL_NVP(y), CEREAL_NVP(z), CEREAL_NVP(w));
 	}
-	const glm::vec4& GetGlmType() const
+	glm::vec4 GetGlmType() const
 	{
 		return static_cast<glm::vec4>(*this);
 	}
@@ -97,6 +97,8 @@ public:
 
 	}
 };
+
+namespace Math = glm;
 
 
 class Transform
@@ -194,6 +196,8 @@ public:
 		archive(CEREAL_NVP(Position), CEREAL_NVP(Rotation), CEREAL_NVP(Scale));
 		FlagMyDirtiness();
 	}
+
+	void GetEditorDescription(EditorDescriptionBuilder);
 
 	void Print(std::string name = "unnamed") const;
 	

@@ -1,5 +1,7 @@
 #include <math/Transform.h>
 #include <glm/gtx/matrix_decompose.hpp>
+#include <UI/UICanvasActor.h> // for EditorDescriptionBuilder
+#include <UI/UICanvasField.h> // for EditorDescriptionBuilder
 
 float beginning;
 
@@ -393,6 +395,14 @@ void Transform::Update(float deltaTime)
 
 	if (dirty)
 		FlagMyDirtiness();
+}
+
+
+void Transform::GetEditorDescription(EditorDescriptionBuilder descBuilder)
+{
+	descBuilder.AddField("Position").GetTemplates().VecInput<glm::vec3>([this](float x, float val) {glm::vec3 pos = PositionRef; pos[x] = val; SetPosition(pos); }, [this](float x) { return PositionRef[x]; });
+	descBuilder.AddField("Rotation").GetTemplates().VecInput<glm::quat>([this](float x, float val) {glm::quat rot = RotationRef; rot[x] = val; SetRotation(glm::normalize(rot)); }, [this](float x) { return RotationRef[x]; });
+	descBuilder.AddField("Scale").GetTemplates().VecInput<glm::vec3>([this](float x, float val) {glm::vec3 scale = ScaleRef; scale[x] = val; SetScale(scale); }, [this](float x) { return ScaleRef[x]; });
 }
 
 void Transform::Print(std::string name) const

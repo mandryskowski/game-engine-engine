@@ -70,6 +70,7 @@ glm::vec3 toEuler(const glm::quat& quat);
 glm::quat toQuat(const glm::vec3& euler);
 
 std::string extractDirectory(std::string path);
+void extractDirectoryAndFilename(const std::string& fullPath, std::string& filename, std::string& directory);
 
 void printVector(const glm::vec2&, std::string title = std::string());
 void printVector(const glm::vec3&, std::string title = std::string());
@@ -90,3 +91,11 @@ ChildClass& creator(std::unique_ptr<BaseClass>& objectOwner, ChildClass&& object
 	objectOwner = static_unique_pointer_cast<BaseClass>(std::make_unique<ChildClass>(std::move(objectConstructor)));
 	return dynamic_cast<ChildClass>(*objectOwner);
 }
+
+constexpr int32_t floorConstexpr(float num)
+{
+	return static_cast<float>(static_cast<int32_t>(num));
+}
+
+std::string toValidFilepath(std::string);
+std::string getFilepathExtension(const std::string& filepath);

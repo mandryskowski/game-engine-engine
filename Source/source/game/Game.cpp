@@ -67,7 +67,7 @@ void APIENTRY debugOutput(GLenum source,	//Copied from learnopengl.com - I don't
 }
 
 Game::Game(const ShadingModel& shading, const GameSettings& settings) :
-	AudioEng(static_cast<GameManager*>(this)), RenderEng(static_cast<GameManager*>(this)), PhysicsEng(&DebugMode), Shading(shading), Settings(nullptr), GameStarted(false)
+	AudioEng(static_cast<GameManager*>(this)), RenderEng(static_cast<GameManager*>(this)), PhysicsEng(&DebugMode), Shading(shading), Settings(nullptr), GameStarted(false), DefaultFont(nullptr), MainScene(nullptr)
 {
 
 	glDisable(GL_MULTISAMPLE);
@@ -80,8 +80,6 @@ Game::Game(const ShadingModel& shading, const GameSettings& settings) :
 	DebugMode = true;
 	LoopBeginTime = 0.0f;
 	TimeAccumulator = 0.0f;
-
-	Fonts.push_back(EngineDataLoader::LoadFont(*this, "fonts/expressway rg.ttf"));
 
 	GEE_FB::Framebuffer DefaultFramebuffer;
 }
@@ -112,11 +110,14 @@ void Game::Init(GLFWwindow* window)
 	RenderEng.Init(glm::uvec2(Settings->Video.Resolution.x, Settings->Video.Resolution.y));
 	PhysicsEng.Init();
 
+	DefaultFont = EngineDataLoader::LoadFont(*this, "fonts/Atkinson-Hyperlegible-Regular-102.otf");
+
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 void Game::LoadSceneFromFile(const std::string& path, const std::string& name)
 {
+	std::cout << "Loading scene " + name + " from filepath " + path + "\n";
 	EngineDataLoader::SetupSceneFromFile(this, path, name);
 }
 
@@ -129,7 +130,7 @@ GameScene& Game::CreateScene(const std::string& name)
 void Game::AddScene(std::unique_ptr<GameScene> scene)
 {
 	Scenes.push_back(std::unique_ptr<GameScene>(scene.release()));		//"scene" does not work anymore
-	RenderEng.AddSceneRenderDataPtr(Scenes.back()->GetRenderData());
+	RenderEng.AddSceneRenderDataPtr(*Scenes.back()->GetRenderData());
 	std::cout << "level loaded.\n";
 
 	std::cout << "Setting up collision\n";
@@ -167,6 +168,11 @@ const Controller* Game::GetCurrentMouseController() const
 	return mouseController;
 }
 
+std::shared_ptr<Font> Game::GetDefaultFont()
+{
+	return DefaultFont;
+}
+
 bool Game::HasStarted() const
 {
 	return GameStarted;
@@ -200,17 +206,22 @@ GameSettings* Game::GetGameSettings()
 GameScene* Game::GetScene(const std::string& name)
 {
 	for (auto& it : Scenes)
-		if (it->GetName() == name)
+		if (!it->IsBeingKilled() && it->GetName() == name)
 			return it.get();
 
 	return nullptr;
+}
+
+GameScene* Game::GetMainScene()
+{
+	return MainScene;
 }
 
 
 Actor* Game::GetRootActor(GameScene* scene)
 {
 	if (!scene)
-		scene = GetScene("GEE_Main");
+		scene = GetMainScene();
 
 	return scene->RootActor.get();
 }
@@ -301,6 +312,7 @@ bool Game::GameLoopIteration(float timeStep, float deltaTime)
 	while (TimeAccumulator >= timeStep)
 	{
 		Update(timeStep);
+
 		TimeAccumulator -= timeStep;
 	}
 
@@ -325,10 +337,21 @@ void Game::Update(float deltaTime)
 	PhysicsEng.Update(deltaTime);
 
 	for (int i = 0; i < static_cast<int>(Scenes.size()); i++)
-		Scenes[i]->RootActor->UpdateAll(deltaTime);
+		Scenes[i]->Update(deltaTime);
 	
 	AudioEng.Update();
 }
+void Game::SetMainScene(GameScene* scene)
+{
+	MainScene = scene;
+	GameManager::DefaultScene = MainScene;
+}
+void Game::DeleteScene(GameScene& scene)
+{
+	std::cout << "Deleting scene " << scene.GetName() << '\n';
+	Scenes.erase(std::remove_if(Scenes.begin(), Scenes.end(), [&scene](std::unique_ptr<GameScene>& sceneVec) { return sceneVec.get() == &scene; }), Scenes.end());
+}
+
 float pBegin = 0.0f;
 bool DUPA = false;
 

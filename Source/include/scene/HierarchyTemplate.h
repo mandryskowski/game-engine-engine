@@ -256,41 +256,58 @@ namespace HierarchyTemplate
 		{
 			TreeAnimations.push_back(std::make_unique<Animation>(Animation(anim)));
 		}
-		Mesh* FindMesh(const Mesh::MeshLoc& meshLoc)
+		Mesh* FindMesh(const std::string& nodeName, const std::string& specificMeshName = std::string())	//pass empty string to ignore one of the names
 		{
-			std::function<Mesh* (HierarchyNodeBase&, const Mesh::MeshLoc&)> findMeshFunc = [&findMeshFunc](HierarchyNodeBase& node, const Mesh::MeshLoc& meshLoc) -> Mesh* {
+			std::function<Mesh* (HierarchyNodeBase&, const std::string&, const std::string&)> findMeshFunc = [&findMeshFunc](HierarchyNodeBase& node, const std::string& nodeName, const std::string& specificMeshName) -> Mesh* {
 				if (auto cast = dynamic_cast<HierarchyNode<ModelComponent>*>(&node))
 				{
-					if (MeshInstance* found = cast->GetCompT().FindMeshInstance(meshLoc))
+					if (MeshInstance* found = cast->GetCompT().FindMeshInstance(nodeName, specificMeshName))
 						return const_cast<Mesh*>(&found->GetMesh());
 				}
 
 				for (int i = 0; i < static_cast<int>(node.GetChildCount()); i++)
-					if (auto found = findMeshFunc(*node.GetChild(i), meshLoc))
+					if (auto found = findMeshFunc(*node.GetChild(i), nodeName, specificMeshName))
 						return found;
 
 				return nullptr;
 			};
 
+			Mesh* found = findMeshFunc(*Root, nodeName, specificMeshName);
+			if (!found)	//If no mesh was found, perhaps the specific mesh name was put into the node name or vice versa. Search again.
+			{
+				if (nodeName.empty())
+					findMeshFunc(*Root, specificMeshName, specificMeshName);
+				else if (specificMeshName.empty())
+					findMeshFunc(*Root, nodeName, nodeName);
+			}
 
-			return findMeshFunc(*Root, meshLoc);
+			return found;
 		}
-		CollisionShape* FindTriangleMeshCollisionShape(const std::string& meshName)
+		CollisionShape* FindTriangleMeshCollisionShape(const std::string& nodeName, const std::string& specificMeshName = std::string())
 		{
-			std::function<CollisionShape* (HierarchyNodeBase&, const std::string&)> findShape = [&findShape](HierarchyNodeBase& node, const std::string& meshName) -> CollisionShape* {
+			std::function<CollisionShape* (HierarchyNodeBase&, const std::string&, const std::string&)> findShape = [&findShape](HierarchyNodeBase& node, const std::string& meshNodeName, const std::string& meshSpecificName) -> CollisionShape* {
 				if (CollisionObject* colObject = node.GetCollisionObject())
-					if (CollisionShape* found = colObject->FindTriangleMeshCollisionShape(meshName))
+					if (CollisionShape* found = colObject->FindTriangleMeshCollisionShape(meshNodeName, meshSpecificName))
 						return found;
 
 				for (int i = 0; i < static_cast<int>(node.GetChildCount()); i++)
-					if (auto found = findShape(*node.GetChild(i), meshName))
+					if (auto found = findShape(*node.GetChild(i), meshNodeName, meshSpecificName))
 						return found;
 
 				return nullptr;
 			};
 
 
-			return findShape(*Root, meshName);
+			CollisionShape* found = findShape(*Root, nodeName, specificMeshName);
+			if (!found)	//If no mesh was found, perhaps the specific mesh name was put into the node name or vice versa. Search again.
+			{
+				if (nodeName.empty())
+					findShape(*Root, specificMeshName, specificMeshName);
+				else if (specificMeshName.empty())
+					findShape(*Root, nodeName, nodeName);
+			}
+
+			return found;
 		}
 		Animation* FindAnimation(const std::string& animLoc)
 		{
@@ -299,6 +316,39 @@ namespace HierarchyTemplate
 					return it.get();
 
 			return nullptr;
+		}
+		void RemoveVertsData()
+		{
+			std::function<void(HierarchyNodeBase&)> removeVertsFunc = [&removeVertsFunc](HierarchyNodeBase& node) {
+				if (auto cast = dynamic_cast<HierarchyNode<ModelComponent>*>(&node))
+				{
+					for (int i = 0; i < cast->GetCompT().GetMeshInstanceCount(); i++)
+						cast->GetCompT().GetMeshInstance(i).GetMesh().RemoveVertsAndIndicesData();
+				}
+
+				for (int i = 0; i < static_cast<int>(node.GetChildCount()); i++)
+					removeVertsFunc(*node.GetChild(i));
+			};
+
+			removeVertsFunc(*Root);
+		}
+		std::vector<Mesh> GetMeshes()
+		{
+			std::function<void (HierarchyNodeBase&, std::vector<Mesh>&)> getMeshesFunc = [&getMeshesFunc](HierarchyNodeBase& node, std::vector<Mesh>& meshes) {
+				if (auto cast = dynamic_cast<HierarchyNode<ModelComponent>*>(&node))
+				{
+					for (int i = 0; i < cast->GetCompT().GetMeshInstanceCount(); i++)
+						meshes.push_back(cast->GetCompT().GetMeshInstance(i).GetMesh());
+				}
+
+				for (int i = 0; i < static_cast<int>(node.GetChildCount()); i++)
+					getMeshesFunc(*node.GetChild(i), meshes);
+			};
+
+			std::vector<Mesh> meshes;
+			getMeshesFunc(*Root, meshes);
+
+			return meshes;
 		}
 	private:
 		std::string Name;	//(Path)

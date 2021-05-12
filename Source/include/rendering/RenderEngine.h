@@ -23,7 +23,6 @@ public:
 	virtual RenderToolboxCollection* GetCurrentTbCollection() override;
 
 	RenderToolboxCollection& AddRenderTbCollection(const RenderToolboxCollection&, bool setupToolboxesAccordingToSettings = true); //Pass false as the second argument to disable loading any toolboxes. By default, we load every toolbox that will be needed according to RenderToolboxCollection::Settings
-	virtual void AddSceneRenderDataPtr(GameSceneRenderData*) override;
 	virtual Material* AddMaterial(std::shared_ptr<Material> material) override;
 	virtual std::shared_ptr<Shader> AddShader(std::shared_ptr<Shader> shader, bool bForwardShader = false) override;
 
@@ -45,7 +44,7 @@ public:
 	void PreLoopPass();
 
 	void PrepareScene(RenderToolboxCollection& tbCollection, GameSceneRenderData* sceneRenderData);	//Call this method once per frame for each scene that will be rendered in order to prepare stuff like shadow maps
-	void FullSceneRender(RenderInfo& info, GameSceneRenderData* sceneRenderData, GEE_FB::Framebuffer* framebuffer = nullptr, Viewport = Viewport(glm::vec2(0.0f), glm::vec2(0.0f)));	//This method renders a scene with lighting and some postprocessing that improve the visual quality (e.g. SSAO, if enabled).
+	void FullSceneRender(RenderInfo& info, GameSceneRenderData* sceneRenderData, GEE_FB::Framebuffer* framebuffer = nullptr, Viewport = Viewport(glm::vec2(0.0f), glm::vec2(0.0f)), bool clearMainFB = true);	//This method renders a scene with lighting and some postprocessing that improve the visual quality (e.g. SSAO, if enabled).
 
 	void PrepareFrame();
 	void PostFrame();	//This method completes the postprocessing after everything has been rendered. Call it at the end of your frame rendering function to minimize overhead. Algorithms like anti-aliasing don't need to run multiple times.
@@ -62,6 +61,9 @@ public:
 	void Dispose();
 
 private:
+	virtual void AddSceneRenderDataPtr(GameSceneRenderData&) override;
+	friend class Game;
+	virtual void RemoveSceneRenderDataPtr(GameSceneRenderData&) override;
 	void GenerateEngineObjects();
 	void LoadInternalShaders();
 	void Resize(glm::uvec2 resolution);

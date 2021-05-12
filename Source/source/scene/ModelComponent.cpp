@@ -15,8 +15,7 @@ ModelComponent::ModelComponent(Actor& actor, Component* parentComp, const std::s
 	UICanvasElement(),
 	LastFrameMVP(glm::mat4(1.0f)),
 	SkelInfo(info),
-	RenderAsBillboard(false),
-	Hide(false)
+	RenderAsBillboard(false)
 {
 }
 
@@ -26,8 +25,7 @@ ModelComponent::ModelComponent(ModelComponent&& model) :
 	MeshInstances(std::move(model.MeshInstances)),
 	SkelInfo(model.SkelInfo),
 	RenderAsBillboard(model.RenderAsBillboard),
-	LastFrameMVP(model.LastFrameMVP),
-	Hide(model.Hide)
+	LastFrameMVP(model.LastFrameMVP)
 {
 }
 
@@ -72,16 +70,11 @@ void ModelComponent::SetRenderAsBillboard(bool billboard)
 	RenderAsBillboard = billboard;
 }
 
-void ModelComponent::SetHide(bool hide)
-{
-	Hide = hide;
-}
-
 void ModelComponent::DRAWBATCH() const
 {
 	if (SkelInfo)
 	{
-		SkelInfo->DRAWBATCH();
+		;// SkelInfo->DRAWBATCH();
 	}
 }
 
@@ -105,27 +98,29 @@ SkeletonInfo* ModelComponent::GetSkeletonInfo() const
 	return SkelInfo;
 }
 
-bool ModelComponent::GetHide() const
+MeshInstance* ModelComponent::FindMeshInstance(const std::string& nodeName, const std::string& specificMeshName)
 {
-	return Hide;
-}
-
-
-MeshInstance* ModelComponent::FindMeshInstance(const Mesh::MeshLoc& meshLoc)
-{
-	for (int i = 0; i < 2; i++)	//Search 2 times; first look at the specific names and then at node names.
+	/*for (int i = 0; i < 2; i++)	//Search 2 times; first look at the specific names and then at node names.
 	{
 		std::function<bool(const std::string&, const std::string&)> checkEqual = [](const std::string& str1, const std::string& str2) -> bool { return !str1.empty() && str1 == str2; };
 		for (std::unique_ptr<MeshInstance>& it : MeshInstances)
-			if ((i == 0 && checkEqual(meshLoc.SpecificName, it->GetMesh().GetLocalization().SpecificName)) ||
-				(i == 1 && checkEqual(meshLoc.NodeName, it->GetMesh().GetLocalization().NodeName)))
+			if ((i == 0 && (checkEqual(specificMeshName, it->GetMesh().GetLocalization().SpecificName)) || checkEqual(specificMeshName, it->GetMesh().GetLocalization().NodeName) ||
+				(i == 1 && (checkEqual(nodeName, it->GetMesh().GetLocalization().SpecificName)) || checkEqual(nodeName, it->GetMesh().GetLocalization().NodeName))))
 				return it.get();
-	}
+	}*/
+
+	if (nodeName.empty() && specificMeshName.empty())
+		return nullptr;
+
+	std::function<bool(const std::string&, const std::string&)> checkEqual = [](const std::string& str1, const std::string& str2) -> bool { return str1.empty() || str1 == str2; };
+	for (std::unique_ptr<MeshInstance>& it : MeshInstances)
+		if ((checkEqual(nodeName, it->GetMesh().GetLocalization().NodeName)) && checkEqual(specificMeshName, it->GetMesh().GetLocalization().SpecificName))
+			return it.get();
 
 	for (auto& it: Children)
 	{
 		ModelComponent* modelCast = dynamic_cast<ModelComponent*>(it.get());
-		MeshInstance* meshInst = modelCast->FindMeshInstance(meshLoc);
+		MeshInstance* meshInst = modelCast->FindMeshInstance(nodeName, specificMeshName);
 		if (meshInst)
 			return meshInst;
 	}
@@ -137,7 +132,6 @@ MeshInstance* ModelComponent::FindMeshInstance(const Mesh::MeshLoc& meshLoc)
 void ModelComponent::AddMeshInst(const MeshInstance& meshInst)
 {
 	MeshInstances.push_back(std::make_unique<MeshInstance>(meshInst));
-	std::cout << "Added mesh inst " << MeshInstances.back()->GetMesh().GetLocalization().NodeName << '\n';
 }
 
 void ModelComponent::Update(float deltaTime)
@@ -149,8 +143,15 @@ void ModelComponent::Update(float deltaTime)
 
 void ModelComponent::Render(const RenderInfo& info, Shader* shader)
 {
-	if (Hide)
+	if (GetHide())
 		return;
+
+	std::shared_ptr<AtlasMaterial> found = std::dynamic_pointer_cast<AtlasMaterial>(GameHandle->GetRenderEngineHandle()->FindMaterial("Kopec"));
+	if (Name == "KOPEC")
+	{
+		OverrideInstancesMaterialInstances(std::make_shared<MaterialInstance>(*found, found->GetTextureIDInterpolatorTemplate(Interpolation(0.0f, 0.2f, InterpolationType::LINEAR, true, AnimBehaviour::STOP, AnimBehaviour::REPEAT), 0.0f, 1.0f)));
+		Name = "Kopec";
+	}
 
 	if (SkelInfo && SkelInfo->GetBoneCount() > 0)
 		GameHandle->GetRenderEngineHandle()->RenderSkeletalMeshes(info, MeshInstances, GetTransform().GetWorldTransform(), shader, *SkelInfo);
@@ -178,9 +179,9 @@ void ModelComponent::GetEditorDescription(EditorDescriptionBuilder descBuilder)
 	UIAutomaticListActor& testList = testField.CreateChild<UIAutomaticListActor>("TESTHELP");
 	Actor& testTextAc = testList.CreateChild<Actor>("TESTTEXTAC");
 	testTextAc.SetTransform(Transform(glm::vec2(0.0f), glm::vec2(0.1f)));
-	testTextAc.CreateComponent<TextComponent>("ElementText", Transform(glm::vec2(-10.0f, 0.0f), glm::vec2(1.0f)), "Lorem ipsum test 123", "fonts/expressway rg.ttf", std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::CENTER));
+	testTextAc.CreateComponent<TextComponent>("ElementText", Transform(glm::vec2(-10.0f, 0.0f), glm::vec2(1.0f)), "Lorem ipsum test 123", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::CENTER));
 
 	Actor& testTextAc2 = testList.CreateChild<Actor>("TESTTEXTAC");
 	testTextAc2.SetTransform(Transform(glm::vec2(0.0f, -10.0f), glm::vec2(0.1f)));
-	testTextAc2.CreateComponent<TextComponent>("ElementText", Transform(glm::vec2(-10.0f, 0.0f), glm::vec2(1.0f)), "Kolejny ipsum lorem test 456", "fonts/expressway rg.ttf", std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::CENTER));
+	testTextAc2.CreateComponent<TextComponent>("ElementText", Transform(glm::vec2(-10.0f, 0.0f), glm::vec2(1.0f)), "Kolejny ipsum lorem test 456", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::CENTER));
 }

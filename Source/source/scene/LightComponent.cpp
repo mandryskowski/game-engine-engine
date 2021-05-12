@@ -10,6 +10,8 @@ LightComponent::LightComponent(Actor& actor, Component* parentComp, std::string 
 	Diffuse(diff),
 	Specular(spec),
 	Attenuation(settings.x),
+	ShadowBias(0.0f),
+	bShadowMapCullFronts(true),
 	LightIndex(index),
 	ShadowMapNr(shadowNr),
 	Far(far),
@@ -18,8 +20,7 @@ LightComponent::LightComponent(Actor& actor, Component* parentComp, std::string 
 	bHasValidShadowMap(false)
 {
 	CutOff = glm::cos(glm::radians(settings.y));
-	OuterCutOffBeforeCos = glm::radians(settings.z);
-	OuterCutOff = glm::cos(OuterCutOffBeforeCos);
+	OuterCutOff = glm::cos(glm::radians(settings.z));
 
 	std::cout << "WAZNE! ASSIGNING LIGHT INDEX " << index << "\n";
 
@@ -35,9 +36,10 @@ LightComponent::LightComponent(LightComponent&& comp):
 	Diffuse(comp.Diffuse),
 	Specular(comp.Specular),
 	Attenuation(comp.Attenuation),
+	ShadowBias(comp.ShadowBias),
+	bShadowMapCullFronts(comp.bShadowMapCullFronts),
 	CutOff(comp.CutOff),
 	OuterCutOff(comp.OuterCutOff),
-	OuterCutOffBeforeCos(comp.OuterCutOffBeforeCos),
 	LightIndex(comp.LightIndex),
 	Far(comp.Far),
 	Projection(comp.Projection),
@@ -106,9 +108,15 @@ void LightComponent::MarkValidShadowMap()
 	bHasValidShadowMap = true;
 }
 
+bool LightComponent::ShouldCullFrontsForShadowMap() const
+{
+	return bShadowMapCullFronts;
+}
+
 void LightComponent::InvalidateCache()
 {
 	DirtyFlag = true;
+	bHasValidShadowMap = false;
 	ComponentTransform.FlagMyDirtiness();
 }
 
@@ -125,11 +133,11 @@ void LightComponent::CalculateLightRadius()
 	float constant = 1.0f;
 	float linear = 0.0f;
 	float quadratic = Attenuation;
-	float lightMax = std::fmax(std::fmax(Diffuse.r, Diffuse.g), Diffuse.b);
+	float lightMax = glm::max(glm::max(Diffuse.r, Diffuse.g), Diffuse.b);
 
 	float radius = 10.0f;
 	if (Attenuation > 0.0f)
-		radius = (-linear + std::sqrtf(linear * linear - 4.0f * quadratic * (constant - lightMax * (256.0f / 5.0f)))) / (2.0f * quadratic);
+		radius = (-linear + glm::sqrt(linear * linear - 4.0f * quadratic * (constant - lightMax * (256.0f / 5.0f)))) / (2.0f * quadratic);
 
 	Far = radius;
 	Projection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, Far);
@@ -141,7 +149,7 @@ void LightComponent::CalculateLightRadius()
 
 	if (Type == LightType::SPOT && Ambient == glm::vec3(0.0f))	//If we are a spotlight and we don't emit any ambient light, we can set the light volume to a cone instead of a sphere - more sweet FPS
 	{
-		float scale = radius * tan(OuterCutOffBeforeCos);	//radius == height in our code
+		float scale = radius * glm::tan(glm::acos(OuterCutOff));	//radius == height in our code
 		ComponentTransform.SetScale(glm::vec3(scale, scale, radius));
 	}
 }
@@ -152,8 +160,7 @@ void LightComponent::SetAdditionalData(glm::vec3 data)
 
 	SetAttenuation(data.x);
 	CutOff = glm::cos(glm::radians(data.y));
-	OuterCutOffBeforeCos = glm::radians(data.z);
-	OuterCutOff = glm::cos(OuterCutOffBeforeCos);
+	OuterCutOff = glm::cos(glm::radians(data.z));
 
 	DirtyFlag = true;
 	if (prevCutOff != CutOff || prevOuterCutOff != OuterCutOff)
@@ -162,7 +169,29 @@ void LightComponent::SetAdditionalData(glm::vec3 data)
 
 void LightComponent::SetAttenuation(float attenuation)
 {
+	if (Attenuation == attenuation)
+		return;
+
 	Attenuation = attenuation;
+	DirtyFlag = true;
+	CalculateLightRadius();
+}
+
+void LightComponent::SetCutOff(float cutoff)
+{
+	CutOff = cutoff;
+	DirtyFlag = true;
+}
+
+void LightComponent::SetOuterCutOff(float outercutoff)
+{
+	OuterCutOff = outercutoff;
+	CalculateLightRadius();
+}
+
+void LightComponent::SetShadowBias(float bias)
+{
+	ShadowBias = bias;
 	DirtyFlag = true;
 }
 
@@ -191,7 +220,7 @@ void LightComponent::UpdateUBOData(UniformBuffer* lightsUBO, size_t offset)
 
 	const Transform& worldTransform = ComponentTransform.GetWorldTransform();
  	bool transformDirtyFlag = ComponentTransform.GetDirtyFlag(TransformDirtyFlagIndex);
-
+	
 	if (transformDirtyFlag)
 	{
 		switch (Type)
@@ -212,7 +241,7 @@ void LightComponent::UpdateUBOData(UniformBuffer* lightsUBO, size_t offset)
 	
 	if (DirtyFlag)
 	{
-		lightsUBO->SubData4fv(std::vector <glm::vec3> {Ambient, Diffuse, Specular}, lightsUBO->offsetCache);
+		lightsUBO->SubData4fv(std::vector <glm::vec4> {Vec4f(Ambient, ShadowBias), Vec4f(Diffuse, 0.0f), Vec4f(Specular, 0.0f)}, lightsUBO->offsetCache);
 		float additionalData[3] = { Attenuation, CutOff, OuterCutOff };
 		lightsUBO->SubData(12, additionalData, lightsUBO->offsetCache);
 		lightsUBO->SubData1f(Type, lightsUBO->offsetCache);
@@ -264,8 +293,16 @@ void LightComponent::GetEditorDescription(EditorDescriptionBuilder descBuilder)
 	descBuilder.AddField("Ambient").GetTemplates().VecInput(Ambient);
 	descBuilder.AddField("Diffuse").GetTemplates().VecInput(Diffuse);
 	descBuilder.AddField("Specular").GetTemplates().VecInput(Specular);
-	UIInputBoxActor& inputBox = descBuilder.AddField("Attenuation").CreateChild<UIInputBoxActor>("Attenuation");
-	inputBox.SetOnInputFunc([this](float val) { SetAttenuation(val); }, [this]() { return Attenuation; }, true);
+	UIInputBoxActor& attenuationInputBox = descBuilder.AddField("Attenuation").CreateChild<UIInputBoxActor>("Attenuation");
+	attenuationInputBox.SetOnInputFunc([this](float val) { SetAttenuation(val); }, [this]() { return Attenuation; }, true);
+	UIInputBoxActor& cutOffInputBox = descBuilder.AddField("Cutoff angle").CreateChild<UIInputBoxActor>("CutoffAngle");
+	cutOffInputBox.SetOnInputFunc([this](float val) { SetCutOff(glm::cos(glm::radians(val))); }, [this]() { return glm::degrees(glm::acos(CutOff)); }, true);
+	UIInputBoxActor& outerCutOffInputBox = descBuilder.AddField("Outer cutoff angle").CreateChild<UIInputBoxActor>("OuterCutoffAngle");
+	outerCutOffInputBox.SetOnInputFunc([this](float val) { SetOuterCutOff(glm::cos(glm::radians(val))); }, [this]() { return glm::degrees(glm::acos(OuterCutOff)); }, true);
+	UIInputBoxActor& shadowBiasInputBox = descBuilder.AddField("Shadow bias").CreateChild<UIInputBoxActor>("ShadowBias");
+	shadowBiasInputBox.SetOnInputFunc([this](float val) { SetShadowBias(val); }, [this]() -> float { return ShadowBias; });
+	descBuilder.AddField("Cull fronts in shadow maps").GetTemplates().TickBox(bShadowMapCullFronts);
+
 
 	UICanvasField& typeField = descBuilder.AddField("Type");
 	const std::string types[] = { "Directional", "Point", "Spot" };

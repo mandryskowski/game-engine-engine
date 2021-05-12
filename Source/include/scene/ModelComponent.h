@@ -33,7 +33,6 @@ public:
 	void SetLastFrameMVP(const glm::mat4& lastMVP) const;
 	void SetSkeletonInfo(SkeletonInfo*);
 	void SetRenderAsBillboard(bool billboard);
-	void SetHide(bool hide);
 
 	void DRAWBATCH() const;
 
@@ -41,9 +40,8 @@ public:
 	const MeshInstance& GetMeshInstance(int index) const;
 	const glm::mat4& GetLastFrameMVP() const;
 	SkeletonInfo* GetSkeletonInfo() const;
-	bool GetHide() const;
 
-	MeshInstance* FindMeshInstance(const Mesh::MeshLoc&);
+	MeshInstance* FindMeshInstance(const std::string& nodeName, const std::string& specificMeshName = std::string());
 	void AddMeshInst(const MeshInstance&);
 
 	virtual void Update(float deltaTime) override;
@@ -54,7 +52,7 @@ public:
 
 	template <typename Archive> void Save(Archive& archive) const
 	{
-		archive(CEREAL_NVP(RenderAsBillboard), CEREAL_NVP(Hide), CEREAL_NVP(MeshInstances), cereal::make_nvp("SkelInfoBatchID", (SkelInfo) ? (SkelInfo->GetBatchPtr()->GetBatchID()) : (0)), cereal::make_nvp("SkelInfoID", (SkelInfo) ? (SkelInfo->GetInfoID()) : (0)), cereal::make_nvp("Component", cereal::base_class<Component>(this)));
+		archive(CEREAL_NVP(RenderAsBillboard), CEREAL_NVP(Hide), CEREAL_NVP(MeshInstances), cereal::make_nvp("SkelInfoBatchID", (SkelInfo) ? (SkelInfo->GetBatchPtr()->GetBatchID()) : (-1)), cereal::make_nvp("SkelInfoID", (SkelInfo) ? (SkelInfo->GetInfoID()) : (-1)), cereal::make_nvp("Component", cereal::base_class<Component>(this)));
 	}
 	template <typename Archive> void Load(Archive& archive)	//Assumptions: Order of batches and their Skeletons is not changed during loading.
 	{
@@ -72,7 +70,6 @@ protected:
 	std::vector<std::unique_ptr<MeshInstance>> MeshInstances;
 	SkeletonInfo* SkelInfo;
 	bool RenderAsBillboard;
-	bool Hide;
 
 	mutable glm::mat4 LastFrameMVP;	//for velocity buffer; this field is only updated when velocity buffer is needed (for temporal AA/motion blur), in any other case it will be set to an identity matrix
 

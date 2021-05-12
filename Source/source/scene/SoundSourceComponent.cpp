@@ -93,12 +93,14 @@ MaterialInstance SoundSourceComponent::GetDebugMatInst(EditorIconState state)
 #include <UI/UICanvasActor.h>
 #include <UI/UICanvasField.h>
 #include <assetload/FileLoader.h>
+#include <scene/UIButtonActor.h>
 
 void SoundSourceComponent::GetEditorDescription(EditorDescriptionBuilder descBuilder)
 {
 	Component::GetEditorDescription(descBuilder);
 
-	descBuilder.AddField("Path").GetTemplates().PathInput([this](const std::string& path) {GameHandle->GetAudioEngineHandle()->CheckError(); GenAL(GameHandle->GetAudioEngineHandle()->LoadBufferFromFile(path)); GameHandle->GetAudioEngineHandle()->CheckError(); }, [this]()->std::string { if (BufferPtr) return BufferPtr->Path; return std::string(); });
+	descBuilder.AddField("Path").GetTemplates().PathInput([this](const std::string& path) {GameHandle->GetAudioEngineHandle()->CheckError(); GenAL(GameHandle->GetAudioEngineHandle()->LoadBufferFromFile(path)); GameHandle->GetAudioEngineHandle()->CheckError(); }, [this]()->std::string { if (BufferPtr) return BufferPtr->Path; return std::string(); }, { "*.wav" });
+	descBuilder.AddField("Play").CreateChild<UIButtonActor>("PlayButton", "Play", [this]() { Play(); });
 }
 
 void SoundSourceComponent::Dispose()

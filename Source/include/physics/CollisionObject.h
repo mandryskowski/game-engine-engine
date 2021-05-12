@@ -4,6 +4,8 @@
 #include <PhysX/PxPhysicsAPI.h>
 #include <math/Transform.h>
 #include <game/GameScene.h>
+#include <rendering/Mesh.h>
+#include <assetload/FileLoader.h>
 
 #include <vector>
 
@@ -17,32 +19,72 @@ enum CollisionShapeType
 	COLLISION_LAST = COLLISION_TRIANGLE_MESH
 };
 
+std::string collisionShapeTypeToString(CollisionShapeType type);
+
 struct CollisionShape
 {
 	CollisionShapeType Type;
-	std::string OptionalFilePath, OptionalMeshName;
+	struct ColShapeLoc : public HTreeObjectLoc
+	{
+		Mesh::MeshLoc ShapeMeshLoc;
+		Mesh OptionalCorrespondingMesh;
+		ColShapeLoc(Mesh::MeshLoc shapeMeshLoc) : HTreeObjectLoc(shapeMeshLoc), ShapeMeshLoc(shapeMeshLoc), OptionalCorrespondingMesh(Mesh::MeshLoc(shapeMeshLoc)) {}
+	};
+	std::shared_ptr<ColShapeLoc> OptionalLocalization;
 	Transform ShapeTransform;
 	std::vector<glm::vec3> VertData;
 	std::vector<unsigned int> IndicesData;
-	CollisionShape(CollisionShapeType type = CollisionShapeType::COLLISION_BOX):
+	CollisionShape(CollisionShapeType type = CollisionShapeType::COLLISION_BOX) :
+		OptionalLocalization(nullptr),
 		Type(type)
 	{
 	}
+	CollisionShape(HTreeObjectLoc treeObjLoc, const std::string& meshName, CollisionShapeType type = CollisionShapeType::COLLISION_BOX) :
+		OptionalLocalization(std::make_unique<ColShapeLoc>(Mesh::MeshLoc(treeObjLoc, meshName, meshName))),
+		Type(type)
+	{
+	}
+	ColShapeLoc* GetOptionalLocalization()	//NOTE: Can be nullptr
+	{
+		return OptionalLocalization.get();
+	}
+	void SetOptionalLocalization(ColShapeLoc loc)
+	{
+		OptionalLocalization = std::make_unique<ColShapeLoc>(loc);
+	}
 	template <typename Archive> void Save(Archive& archive) const
 	{
-		archive(CEREAL_NVP(Type), CEREAL_NVP(ShapeTransform), CEREAL_NVP(OptionalFilePath), CEREAL_NVP(OptionalMeshName));
+		std::string treeName, meshNodeName, meshSpecificName;
+		if (OptionalLocalization)
+		{
+			treeName = OptionalLocalization->GetTreeName();
+			meshNodeName = OptionalLocalization->ShapeMeshLoc.NodeName;
+			meshSpecificName = OptionalLocalization->ShapeMeshLoc.SpecificName;
+		}
+		std::cout << "Zapisuje col shape " << treeName << "###" << meshNodeName << "###" << meshSpecificName << "///";
+		if (OptionalLocalization)
+			std::cout << OptionalLocalization->ShapeMeshLoc.SpecificName << " " << OptionalLocalization->OptionalCorrespondingMesh.GetVertexCount() << '\n';
+		archive(CEREAL_NVP(Type), CEREAL_NVP(ShapeTransform), cereal::make_nvp("OptionalTreeName", treeName), cereal::make_nvp("OptionalMeshNodeName", meshNodeName), cereal::make_nvp("OptionalMeshSpecificName", meshSpecificName));
 	}
 	template <typename Archive> void Load(Archive& archive)
 	{
-		archive(CEREAL_NVP(Type), CEREAL_NVP(ShapeTransform), CEREAL_NVP(OptionalFilePath), CEREAL_NVP(OptionalMeshName));
+		std::string treeName, meshNodeName, meshSpecificName;
+		archive(CEREAL_NVP(Type), CEREAL_NVP(ShapeTransform), cereal::make_nvp("OptionalTreeName", treeName), cereal::make_nvp("OptionalMeshNodeName", meshNodeName), cereal::make_nvp("OptionalMeshSpecificName", meshSpecificName));
 		if (Type == CollisionShapeType::COLLISION_TRIANGLE_MESH)
 		{
-			if (OptionalFilePath.empty() || OptionalMeshName.empty())
+			HierarchyTemplate::HierarchyTreeT* tree = EngineDataLoader::LoadHierarchyTree(*GameManager::DefaultScene, treeName);
+			if (treeName.empty() || (meshNodeName.empty() && meshSpecificName.empty()))
+			{
 				std::cout << "ERROR: While serializing Triangle Mesh CollisionShape - No file path or no mesh name detected. Shape will not be added to the physics scene. Nr of verts: " << VertData.size() << "\n";
-			else if (auto found = EngineDataLoader::LoadHierarchyTree(*GameManager::DefaultScene, OptionalFilePath)->FindTriangleMeshCollisionShape(OptionalMeshName))
+				return;
+			}
+
+			if (auto found = tree->FindTriangleMeshCollisionShape(meshNodeName, meshSpecificName))
 				*this = *found;
+			else if (auto foundMesh = tree->FindMesh(meshNodeName, meshSpecificName))
+				*this = *EngineDataLoader::LoadTriangleMeshCollisionShape(GameManager::DefaultScene->GetGameHandle()->GetPhysicsHandle(), *foundMesh);
 			else
-				std::cout << "ERROR: Could not load " << OptionalMeshName << " from " << OptionalFilePath << '\n';
+				std::cout << "ERROR: Could not load " << meshNodeName << "###" << meshSpecificName << " from " << treeName << ".\n";
 		}
 	}
 };
@@ -95,20 +137,27 @@ struct CollisionObject
 	}
 	CollisionShape& AddShape(CollisionShapeType type)
 	{
-		Shapes.push_back(std::make_shared<CollisionShape>(type));
-		return *Shapes.back();
+		return AddShape(std::make_shared<CollisionShape>(type));
 	}
 
 	CollisionShape& AddShape(std::shared_ptr<CollisionShape> shape)
 	{
 		Shapes.push_back(shape);
+
+		if (ActorPtr)
+			ScenePhysicsData->GetPhysicsHandle()->CreatePxShape(*shape, *this);
 		return *Shapes.back();
 	}
-	CollisionShape* FindTriangleMeshCollisionShape(const std::string& meshName)
+	CollisionShape* FindTriangleMeshCollisionShape(const std::string& meshNodeName, const std::string& meshSpecificName)
 	{
+		if (meshNodeName.empty() && meshSpecificName.empty())
+			return nullptr;
+
+		std::function<bool(const std::string&, const std::string&)> checkEqual = [](const std::string& str1, const std::string& str2) -> bool { return str1.empty() || str1 == str2; };
 		for (auto& it : Shapes)
-			if (it->OptionalMeshName == meshName)
+			if (it->GetOptionalLocalization() && (checkEqual(meshNodeName, it->GetOptionalLocalization()->ShapeMeshLoc.NodeName)) && checkEqual(meshSpecificName, it->GetOptionalLocalization()->ShapeMeshLoc.NodeName))
 				return it.get();
+
 
 		return nullptr;
 	}

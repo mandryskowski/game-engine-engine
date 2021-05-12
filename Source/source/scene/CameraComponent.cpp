@@ -7,9 +7,6 @@ CameraComponent::CameraComponent(Actor& actor, Component* parentComp, std::strin
 	RotationEuler(0.0f),
 	Projection(projectionMatrix)
 {
-	Scene.BindActiveCamera(this);
-	if (Scene.GetName() == "GEE_Main")
-		GameHandle->BindAudioListenerTransformPtr(&ComponentTransform);
 }
 
 CameraComponent::CameraComponent(CameraComponent&& comp):
@@ -17,9 +14,6 @@ CameraComponent::CameraComponent(CameraComponent&& comp):
 	RotationEuler(comp.RotationEuler),
 	Projection(comp.Projection)
 {
-	Scene.BindActiveCamera(this);
-	if (Scene.GetName() == "GEE_Main")
-		GameHandle->BindAudioListenerTransformPtr(&ComponentTransform);
 }
 
 glm::mat4 CameraComponent::GetProjectionMat()
@@ -85,6 +79,7 @@ void CameraComponent::RotateWithMouse(glm::vec2 mouseOffset)
 
 void CameraComponent::Update(float deltaTime)
 {
+	Component::Update(deltaTime);
 }
 
 MaterialInstance CameraComponent::GetDebugMatInst(EditorIconState state)
@@ -93,8 +88,31 @@ MaterialInstance CameraComponent::GetDebugMatInst(EditorIconState state)
 	return Component::GetDebugMatInst(state);
 }
 
+#include <UI/UICanvasActor.h>
+#include <UI/UICanvasField.h>
+#include <scene/UIInputBoxActor.h>
+void CameraComponent::GetEditorDescription(EditorDescriptionBuilder descBuilder)
+{	
+	Component::GetEditorDescription(descBuilder);
+
+	UIInputBoxActor& fovInputBox = descBuilder.AddField("Field of view").CreateChild<UIInputBoxActor>("FovButton");
+	fovInputBox.SetOnInputFunc([this](float fov) { Projection = glm::perspective(glm::radians(fov), 1.0f, 0.01f, 100.0f); }, []() { return 0.0f; });
+
+	descBuilder.AddField("Active").GetTemplates().TickBox([this](bool val) {
+		if (val) {
+			Scene.BindActiveCamera(this);  GameHandle->BindAudioListenerTransformPtr(&GetTransform());
+		}
+		else{
+				Scene.BindActiveCamera(nullptr); GameHandle->BindAudioListenerTransformPtr(nullptr);
+		}
+		}, [this]() {return this == Scene.GetActiveCamera(); });
+}
+
 CameraComponent::~CameraComponent()
 {
-	GameHandle->BindAudioListenerTransformPtr(nullptr);
-	Scene.BindActiveCamera(nullptr);
+	if (Scene.GetActiveCamera() == this)
+	{
+		Scene.BindActiveCamera(nullptr);
+		GameHandle->BindAudioListenerTransformPtr(nullptr);	//TODO: Fix: deleting editor's camera will unbind listenertransformptr for the whole game.
+	}
 }

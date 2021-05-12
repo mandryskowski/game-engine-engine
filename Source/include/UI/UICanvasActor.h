@@ -4,9 +4,10 @@
 #include <UI/UICanvas.h>
 
 class UIAutomaticListActor;
-class UIManualListActor;
+class UIListActor;
 class UICanvasField;
 class UIButtonActor;
+class UICanvasFieldCategory;
 
 class UICanvasActor : public Actor, public UICanvas
 {
@@ -22,8 +23,12 @@ public:
 	virtual const Transform* GetCanvasT() const override;
 	virtual Transform ToCanvasSpace(const Transform& worldTransform) const override;
 
-	void HideScrollBars();
+	void RefreshFieldsList();
 
+	void HideScrollBars();
+	virtual void ClampViewToElements() override;
+
+	virtual UICanvasFieldCategory& AddCategory(const std::string& name) override;
 	virtual UICanvasField& AddField(const std::string& name, std::function<glm::vec3()> getElementOffset = nullptr) override;
 
 	virtual void HandleEvent(const Event& ev) override;
@@ -36,22 +41,39 @@ private:
 	template <VecAxis barAxis> void UpdateScrollBarT();
 public:
 	UIActor* ScaleActor;
-	UIManualListActor* FieldsList;
+	UIListActor* FieldsList;
 	glm::vec3 FieldSize;
 	UIScrollBarActor* ScrollBarX, *ScrollBarY, *BothScrollBarsButton;
 	UIScrollBarActor *ResizeBarX, *ResizeBarY;
+	//std::vector<UICanvasActor*> ContextStealers;
 };
 
+#include <UI/UIListActor.h>
+class UICanvasFieldCategory : public UIListActor
+{
+public:
+	UICanvasFieldCategory(GameScene& scene, const std::string& name);
+	UICanvasField& AddField(const std::string& name, std::function<glm::vec3()> getElementOffset = nullptr);
+	virtual glm::vec3 GetListOffset() override;
+	void SetOnExpansionFunc(std::function<void()> onExpansionFunc);
+	virtual void HandleEventAll(const Event& ev) override;
+private:
+	std::function<void()> OnExpansionFunc;
+	UIButtonActor* ExpandButton;
+};
 
 class EditorDescriptionBuilder
 {
 public:
-	EditorDescriptionBuilder(EditorManager&, GameScene& editorScene, UIActor&);
+	EditorDescriptionBuilder(EditorManager&, UIActor&);
+	EditorDescriptionBuilder(EditorManager&, Actor&, UICanvas&);
 	GameScene& GetEditorScene();
 	UICanvas& GetCanvas();
-	UIActor& GetDescriptionParent();
+	Actor& GetDescriptionParent();
+	EditorManager& GetEditorHandle();
 
 	UICanvasField& AddField(const std::string& name, std::function<glm::vec3()> getFieldOffsetFunc = nullptr);	//equivalent to GetCanvasActor().AddField(...). I put it here for easier access.
+
 	template <typename ChildClass, typename... Args> ChildClass& CreateActor(Args&&...);
 
 	void SelectComponent(Component*);
@@ -62,7 +84,8 @@ public:
 private:
 	EditorManager& EditorHandle;
 	GameScene& EditorScene;
-	UIActor& DescriptionParent;
+	Actor& DescriptionParent;
+	UICanvas& CanvasRef;
 };
 
 template <typename ChildClass, typename... Args>

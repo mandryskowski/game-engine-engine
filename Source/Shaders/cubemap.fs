@@ -19,11 +19,11 @@ layout (location = VELOCITY_BUFFER_LOCATION) out vec2 velocity;
 //uniform
 uniform float cubemapNr;
 uniform float mipLevel;
-uniform samplerCubeArray cubemap;
+uniform samplerCube cubemap;
 
 void main()
 {
-	fragColor = textureLod(cubemap, vec4(frag.localPosition, 4.0), 3.0);
+	fragColor = textureLod(cubemap, vec3(frag.localPosition), 0.0);
 	
 	#ifdef CALC_VELOCITY_BUFFER
 	//vec2 currentPos = vec2(gl_FragCoord.xy) / vec2(SCR_WIDTH, SCR_HEIGHT);

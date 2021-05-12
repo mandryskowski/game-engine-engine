@@ -20,20 +20,20 @@ struct Vertex
 	VertexBoneData BoneData;
 };
 
+namespace HierarchyTemplate
+{
+	class HierarchyTreeT;
+}
+
 class Mesh
 {
 public:
 
-	struct MeshLoc	//exact localization of the mesh
+	struct MeshLoc: public HTreeObjectLoc	//exact localization of the mesh
 	{
-		std::string HierarchyTreePath;
 		std::string NodeName;
 		std::string SpecificName;
-		MeshLoc(const std::string& path, const std::string& nodeName, const std::string& specificName) : HierarchyTreePath(path), NodeName(nodeName), SpecificName(specificName) {}
-		static MeshLoc FromNodeName(const std::string& nodeName, const std::string& path = std::string())
-		{
-			return MeshLoc(path, nodeName, "");
-		}
+		MeshLoc(HTreeObjectLoc treeObjectLoc, const std::string& nodeName, const std::string& specificName) : HTreeObjectLoc(treeObjectLoc), NodeName(nodeName), SpecificName(specificName) {}
 	};
 
 	Mesh(const MeshLoc&);
@@ -42,13 +42,16 @@ public:
 	MeshLoc GetLocalization() const;
 	Material* GetMaterial();
 	const Material* GetMaterial() const;
+	std::vector<Vertex>* GetVertsData() const;
+	std::vector<unsigned int>* GetIndicesData() const;
+	void RemoveVertsAndIndicesData() const;
 	bool CanCastShadow() const;
 
 	void SetMaterial(Material*);
 
 	void Bind() const;
 	void LoadFromGLBuffers(unsigned int vertexCount, unsigned int VAO, unsigned int VBO, unsigned int indexCount = 0, unsigned int EBO = 0);
-	void GenerateVAO(std::vector<Vertex>*, std::vector<unsigned int>*);
+	void GenerateVAO(const std::vector<Vertex>&, const std::vector<unsigned int>&, bool keepVerts = false);
 	void Render() const;
 	template <typename Archive> void Save(Archive& archive) const
 	{
@@ -79,6 +82,9 @@ private:
 	unsigned int VertexCount, IndexCount;
 	Material* DefaultMeshMaterial;
 
+	mutable std::shared_ptr<std::vector<Vertex>> VertsData;
+	mutable std::shared_ptr<std::vector<unsigned int>> IndicesData;
+
 	bool CastsShadow;
 };
 
@@ -107,14 +113,27 @@ public:
 		if (&MaterialInst->GetMaterialRef() == mesh.GetMaterial())
 			materialInst = nullptr;	//don't save the material instance if its the same as the mesh default material.
 
-		archive(cereal::make_nvp("Mesh", mesh));
+		archive(cereal::make_nvp("MeshTreePath", mesh.GetLocalization().GetTreeName()), cereal::make_nvp("MeshNodeName", mesh.GetLocalization().NodeName), cereal::make_nvp("MeshSpecificName", mesh.GetLocalization().SpecificName));
 		archive(cereal::make_nvp("MaterialInst", materialInst));
 	}
 	template <typename Archive> static void load_and_construct(Archive& archive, cereal::construct<MeshInstance>& construct)
 	{
-		Mesh* mesh = new Mesh(Mesh::MeshLoc("if_you_see_this_serializing_error_ocurred", "if_you_see_this_serializing_error_ocurred", "if_you_see_this_serializing_error_ocurred"));
+		std::string meshTreePath, meshNodeName, meshSpecificName;
+		archive(cereal::make_nvp("MeshTreePath", meshTreePath), cereal::make_nvp("MeshNodeName", meshNodeName), cereal::make_nvp("MeshSpecificName", meshSpecificName));
+
+		HierarchyTemplate::HierarchyTreeT* tree = EngineDataLoader::LoadHierarchyTree(*GameManager::DefaultScene, meshTreePath);
+		Mesh* mesh = nullptr;
+
+		if (auto found = tree->FindMesh(meshNodeName, meshSpecificName))
+			mesh = found;
+		else
+		{
+			std::cout << "ERROR! Could not find mesh " << meshNodeName + " (" + meshSpecificName + ")" << " in hierarchytree " << meshTreePath << '\n';
+			exit(0);
+		}
+
 		std::shared_ptr<MaterialInstance> materialInst;
-		archive(cereal::make_nvp("Mesh", *mesh), cereal::make_nvp("MaterialInst", materialInst));
+		archive(cereal::make_nvp("MaterialInst", materialInst));
 
 		if (materialInst)
 			construct(MeshInstance(*mesh, materialInst));

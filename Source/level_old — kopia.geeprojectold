@@ -97,7 +97,7 @@ automousecontrol
 transform
 -6.000028 0 3.000007
 end
-newcomp text CameraText child Camera "fonts/expressway rg.ttf" "plis zobacz ten tekst"
+newcomp text CameraText child Camera "fonts/expressway rg.ttf" "No controller"
 transform
 0 0.4 -0.5
 skip
@@ -355,7 +355,7 @@ neacomp model Skybox root StupidSkybox
 end
 
 newactor Actor GameLevel
-newcomp model Warehouse root warehouse/warehouse.fbx
+newcomp model Warehouse root warehouse/warehouse.glb
 transform
 0 -0.5 0
 end

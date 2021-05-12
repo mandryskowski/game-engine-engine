@@ -64,6 +64,15 @@ Transform UICanvasActor::ToCanvasSpace(const Transform& worldTransform) const
 	return GetCanvasT()->GetWorldTransform().GetInverse() * worldTransform;
 }
 
+void UICanvasActor::RefreshFieldsList()
+{
+	if (FieldsList)
+	{
+		FieldsList->Refresh();
+		ClampViewToElements();
+	}
+}
+
 void UICanvasActor::HideScrollBars()
 {
 	ScrollBarX->MarkAsKilled();
@@ -73,10 +82,32 @@ void UICanvasActor::HideScrollBars()
 	ScrollBarX = ScrollBarY = BothScrollBarsButton = nullptr;
 }
 
+void UICanvasActor::ClampViewToElements()
+{
+	UICanvas::ClampViewToElements();
+
+	if (ScrollBarX)	UpdateScrollBarT<VecAxis::X>();
+	if (ScrollBarY) UpdateScrollBarT<VecAxis::Y>();
+}
+
+UICanvasFieldCategory& UICanvasActor::AddCategory(const std::string& name)
+{
+	if (!FieldsList)
+		FieldsList = &ScaleActor->CreateChild<UIListActor>(Name + "_Fields_List");
+
+	UICanvasFieldCategory& category = FieldsList->CreateChild<UICanvasFieldCategory>(name);
+	category.SetTransform(Transform(glm::vec2(0.0f), Vec2f(FieldSize)));	//position doesn't matter if this is not the first field
+	FieldsList->AddElement(UIListElement(category, [&category]() { category.Refresh(); return category.GetListOffset(); }, [&category]() { return Vec3f(0.0f, -1.5f, 0.0f); }));
+	(this->*static_cast<void(UICanvas::*)(UIActor&)>(&UICanvas::AddUIElement))(category);
+	category.SetOnExpansionFunc([this]() { RefreshFieldsList(); });
+
+	return category;
+}
+
 UICanvasField& UICanvasActor::AddField(const std::string& name, std::function<glm::vec3()> getElementOffset)
 {
 	if (!FieldsList)
-		FieldsList = &ScaleActor->CreateChild<UIManualListActor>(Name + "_Fields_List");
+		FieldsList = &ScaleActor->CreateChild<UIListActor>(Name + "_Fields_List");
 
 	UICanvasField& field = FieldsList->CreateChild<UICanvasField>(name);
 	(getElementOffset) ? (FieldsList->AddElement(UIListElement(field, getElementOffset))) : (FieldsList->AddElement(UIListElement(field, glm::vec3(0.0f, -FieldSize.y * 2.0f, 0.0f))));
@@ -100,12 +131,11 @@ void UICanvasActor::HandleEvent(const Event& ev)
 		glm::vec2 newScale = static_cast<glm::vec2>(CanvasView.ScaleRef) * glm::pow(glm::vec2(0.5f), glm::vec2(scrolledEv.GetOffset().y));
 		printVector(newScale, "new scale");
 		SetViewScale(newScale);
+		if (ScrollBarX)	UpdateScrollBarT<VecAxis::X>();
+		if (ScrollBarY) UpdateScrollBarT<VecAxis::Y>();
 	}
 	else
 		ScrollView(scrolledEv.GetOffset());
-
-	if (ScrollBarX)	UpdateScrollBarT<VecAxis::X>();
-	if (ScrollBarY) UpdateScrollBarT<VecAxis::Y>();
 }
 
 RenderInfo UICanvasActor::BindForRender(const RenderInfo& info, const glm::uvec2& res)	//Note: RenderInfo is a relatively big object for real-time standards. HOPEFULLY the compiler will optimize here using NRVO and convertedInfo won't be copied D:
@@ -214,8 +244,13 @@ UICanvasField& AddFieldToCanvas(const std::string& name, UICanvasElement& elemen
 	return element.GetCanvasPtr()->AddField(name, getFieldOffsetFunc);
 }
 
-EditorDescriptionBuilder::EditorDescriptionBuilder(EditorManager& editorHandle, GameScene& editorScene, UIActor& descriptionParent):
-	EditorHandle(editorHandle), EditorScene(editorScene), DescriptionParent(descriptionParent)
+EditorDescriptionBuilder::EditorDescriptionBuilder(EditorManager& editorHandle, UIActor& descriptionParent):
+	EditorDescriptionBuilder(editorHandle, descriptionParent, *descriptionParent.GetCanvasPtr())
+{
+}
+
+EditorDescriptionBuilder::EditorDescriptionBuilder(EditorManager& editorHandle, Actor& descriptionParent, UICanvas& canvas):
+	EditorHandle(editorHandle), EditorScene(descriptionParent.GetScene()), DescriptionParent(descriptionParent), CanvasRef(canvas)
 {
 }
 
@@ -226,12 +261,17 @@ GameScene& EditorDescriptionBuilder::GetEditorScene()
 
 UICanvas& EditorDescriptionBuilder::GetCanvas()
 {
-	return *DescriptionParent.GetCanvasPtr();
+	return CanvasRef;
 }
 
-UIActor& EditorDescriptionBuilder::GetDescriptionParent()
+Actor& EditorDescriptionBuilder::GetDescriptionParent()
 {
 	return DescriptionParent;
+}
+
+EditorManager& EditorDescriptionBuilder::GetEditorHandle()
+{
+	return EditorHandle;
 }
 
 UICanvasField& EditorDescriptionBuilder::AddField(const std::string& name, std::function<glm::vec3()> getFieldOffsetFunc)

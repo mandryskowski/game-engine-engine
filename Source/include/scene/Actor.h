@@ -33,6 +33,7 @@ public:
 	Actor* GetChild(unsigned int) const;
 	std::vector<Actor*> GetChildren();
 	GameScene& GetScene();
+	GameManager* GetGameHandle();
 	bool IsBeingKilled() const;
 
 	void SetName(const std::string&);
@@ -53,7 +54,7 @@ public:
 	virtual void Setup();
 
 	virtual void HandleEvent(const Event& ev) {}
-	void HandleEventAll(const Event& ev);
+	virtual void HandleEventAll(const Event& ev);
 
 	virtual void Update(float);
 	void UpdateAll(float);
@@ -95,10 +96,10 @@ public:
 		RootComponent = nullptr;
 		archive(CEREAL_NVP(Name), CEREAL_NVP(RootComponent)); 
 		std::cout << "Serializing actor " << Name << '\n';
-
+			
 		if (GameHandle->HasStarted())
 			OnStartAll();
-			
+
 		//LoadAndConstruct<Actor>::ParentActor = this;
 		Children.clear();
 		archive(CEREAL_NVP(Children));
@@ -181,6 +182,18 @@ namespace cereal
 				return;
 
 			construct(*LoadAndConstruct<Actor>::ScenePtr, "undefined pawnactor");
+			construct->Load(ar);
+		}
+	};
+	template <> struct LoadAndConstruct<Controller>
+	{
+		template <class Archive>
+		static void load_and_construct(Archive& ar, cereal::construct<Controller>& construct)
+		{
+			if (!LoadAndConstruct<Actor>::ScenePtr)
+				return;
+
+			construct(*LoadAndConstruct<Actor>::ScenePtr, "undefined controller");
 			construct->Load(ar);
 		}
 	};
