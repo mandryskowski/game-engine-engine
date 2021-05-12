@@ -9,6 +9,20 @@ UIInputBoxActor::UIInputBoxActor(GameScene& scene, const std::string& name):
 	ContentTextComp(nullptr),
 	RetrieveContentEachFrame(false)
 {
+	ContentTextComp = &CreateComponent<TextConstantSizeComponent>(Name + "Text", Transform(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f), glm::vec3(1.0f)), "1.0", "");
+	ContentTextComp->SetAlignment(TextAlignment::CENTER, TextAlignment::CENTER);
+}
+
+UIInputBoxActor::UIInputBoxActor(GameScene& scene, const std::string& name, std::function<void(const std::string&)> inputFunc, std::function<std::string()> valueGetter):
+	UIInputBoxActor(scene, name)
+{
+	SetOnInputFunc(inputFunc, valueGetter);
+}
+
+UIInputBoxActor::UIInputBoxActor(GameScene& scene, const std::string& name, std::function<void(float)> inputFunc, std::function<float()> valueGetter, bool fixNumberStr):
+	UIInputBoxActor(scene, name)
+{
+	SetOnInputFunc(inputFunc, valueGetter, fixNumberStr);
 }
 
 /*UIInputBoxActor::UIInputBoxActor(UIInputBoxActor&& inputBox):
@@ -20,8 +34,17 @@ UIInputBoxActor::UIInputBoxActor(GameScene& scene, const std::string& name):
 
 void UIInputBoxActor::OnStart()
 {
-	ContentTextComp = &CreateComponent<TextConstantSizeComponent>(Name + "Text", Transform(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f), glm::vec3(1.0f)), "1.0", "fonts/expressway rg.ttf");
-	ContentTextComp->SetAlignment(TextAlignment::CENTER, TextAlignment::CENTER);
+}
+
+std::string UIInputBoxActor::GetContent()
+{
+	if (!ContentTextComp)
+		return std::string();
+
+	if (ValueGetter)
+		ValueGetter();
+
+	return ContentTextComp->GetContent();
 }
 
 void UIInputBoxActor::PutString(const std::string& str)

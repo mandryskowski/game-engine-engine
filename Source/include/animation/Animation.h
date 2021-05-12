@@ -1,5 +1,6 @@
 #pragma once
 #include <utility/Utility.h>
+#include <game/GameManager.h> //for HTreeObjectLoc
 #include <glfw/glfw3.h>
 #include "assimp/types.h"
 
@@ -130,10 +131,14 @@ struct AnimationChannel
 struct Animation
 {
 	std::vector<std::shared_ptr<AnimationChannel>> Channels;
-	std::string Name;
+	struct AnimationLoc: public HTreeObjectLoc	//exact localization of the animation
+	{
+		std::string Name;
+		AnimationLoc(HTreeObjectLoc treeObjectLoc, const std::string& name) : HTreeObjectLoc(treeObjectLoc), Name(name) {}
+	} Localization;
 	float Duration;
 
-	Animation(aiAnimation*);
+	Animation(const HierarchyTemplate::HierarchyTreeT& tree, aiAnimation*);
 };
 
 glm::vec3 aiToGlm(const aiVector3D&);

@@ -3,19 +3,19 @@
 #include <assimp/material.h>
 #include <assimp/pbrmaterial.h>
 
-Material::Material(std::string name, float shine, float depthScale, Shader* shader)
+Material::Material(MaterialLoc loc, float depthScale, Shader* shader):
+	Localization(loc),
+	Shininess(0.0f),
+	DepthScale(depthScale),
+	Color(Vec4f(0.0f))
 {
-	Name = name;
-	Shininess = shine;
-	DepthScale = depthScale;
-	Color = glm::vec4(0.0f);
 	if (shader)
 		RenderShaderName = shader->GetName();
 }
 
-const std::string& Material::GetName() const
+const Material::MaterialLoc& Material::GetLocalization() const
 {
-	return Name;
+	return Localization;
 }
 
 const std::string& Material::GetRenderShaderName() const
@@ -32,7 +32,7 @@ void Material::SetShininess(float shine)
 	Shininess = shine;
 }
 
-void Material::SetRenderShaderName(std::string name)
+void Material::SetRenderShaderName(const std::string& name)
 {
 	RenderShaderName = name;
 }
@@ -47,12 +47,12 @@ void Material::SetColor(const glm::vec4& color)
 	Color = color;
 }
 
-void Material::AddTexture(NamedTexture* tex)
+void Material::AddTexture(std::shared_ptr<NamedTexture> tex)
 {
 	Textures.push_back(tex);
 }
 
-void Material::LoadFromAiMaterial(const aiScene* scene, aiMaterial* material, std::string directory, MaterialLoadingData* matLoadingData)
+void Material::LoadFromAiMaterial(const aiScene* scene, aiMaterial* material, const std::string& directory, MaterialLoadingData* matLoadingData)
 {
 	//Load material's name
 	aiString name;
@@ -63,18 +63,18 @@ void Material::LoadFromAiMaterial(const aiScene* scene, aiMaterial* material, st
 	material->Get(AI_MATKEY_SHININESS, shininess);
 	material->Get(AI_MATKEY_COLOR_DIFFUSE, color);
 	material->Get(AI_MATKEY_COLOR_SPECULAR, testColor);
-	Name = name.C_Str();
+	Localization.Name = name.C_Str();
 	Shininess = shininess;
 	Color = glm::vec4(color.r, color.g, color.b, 1.0f);
 
 	material->Get(AI_MATKEY_COLOR_SPECULAR, testColor);
-	printVector(glm::vec3(testColor.r, testColor.g, testColor.b), Name + " ROUGHNESS??");
+	printVector(glm::vec3(testColor.r, testColor.g, testColor.b), Localization.Name + " ROUGHNESS??");
 	material->Get(AI_MATKEY_COLOR_AMBIENT, testColor);
-	printVector(glm::vec3(testColor.r, testColor.g, testColor.b), Name + " ROUGHNESS??");
+	printVector(glm::vec3(testColor.r, testColor.g, testColor.b), Localization.Name + " ROUGHNESS??");
 	material->Get(AI_MATKEY_COLOR_REFLECTIVE, testColor);
-	printVector(glm::vec3(testColor.r, testColor.g, testColor.b), Name + " ROUGHNESS??");
+	printVector(glm::vec3(testColor.r, testColor.g, testColor.b), Localization.Name + " ROUGHNESS??");
 	material->Get(AI_MATKEY_COLOR_TRANSPARENT, testColor);
-	printVector(glm::vec3(testColor.r, testColor.g, testColor.b), Name + " ROUGHNESS??");
+	printVector(glm::vec3(testColor.r, testColor.g, testColor.b), Localization.Name + " ROUGHNESS??");
 	std::cout << "SHININESS: " << shininess << '\n';
 	float shininessStrength = 0.0f;
 	material->Get(AI_MATKEY_SHININESS_STRENGTH, shininessStrength);
@@ -109,14 +109,24 @@ void Material::LoadFromAiMaterial(const aiScene* scene, aiMaterial* material, st
 		LoadAiTexturesOfType(scene, material, directory, materialTypes[i].first, materialTypes[i].second, matLoadingData);
 
 	if (fileBaseColor.length > 0 && material->GetTextureCount(aiTextureType_DIFFUSE) == 0 && fileBaseColor.data[0] == '*')
-		AddTexture(new NamedTexture(textureFromAiEmbedded(*scene->mTextures[std::stoi(std::string(fileBaseColor.C_Str()).substr(1))], true), "albedo1"));
+	{
+		//AddTexture(std::make_shared<NamedTexture>(textureFromAiEmbedded(*scene->mTextures[std::stoi(std::string(fileBaseColor.C_Str()).substr(1))], true), "albedo1"));
+		NamedTexture embeddedTex = NamedTexture(textureFromAiEmbedded(*scene->mTextures[std::stoi(std::string(fileBaseColor.C_Str()).substr(1))], true), "albedo1");
+		embeddedTex.SetPath(std::string("*") + scene->mTextures[std::stoi(std::string(fileBaseColor.C_Str()).substr(1))]->mFilename.C_Str());
+		AddTexture(std::make_shared<NamedTexture>(embeddedTex));
+	}
 	if (fileMetallicRoughness.length > 0 && fileMetallicRoughness.data[0] == '*')
-		AddTexture(new NamedTexture(textureFromAiEmbedded(*scene->mTextures[std::stoi(std::string(fileMetallicRoughness.C_Str()).substr(1))], true), "combined1"));
+	{
+		//AddTexture(std::make_shared<NamedTexture>(textureFromAiEmbedded(*scene->mTextures[std::stoi(std::string(fileMetallicRoughness.C_Str()).substr(1))], true), "combined1"));
+		NamedTexture embeddedTex = NamedTexture(textureFromAiEmbedded(*scene->mTextures[std::stoi(std::string(fileMetallicRoughness.C_Str()).substr(1))], true), "combined1");
+		embeddedTex.SetPath(std::string("*") + scene->mTextures[std::stoi(std::string(fileMetallicRoughness.C_Str()).substr(1))]->mFilename.C_Str());
+		AddTexture(std::make_shared<NamedTexture>(embeddedTex));
+	}
 	//if (fileMetallicRoughness.length > 0 && material->GetTextureCount(aiTextureType_SHININESS) == 0 && fileMetallicRoughness.data[0] == '*')
 		//AddTexture(new NamedTexture(textureFromAiEmbedded(*scene->mTextures[std::stoi(std::string(fileMetallicRoughness.C_Str()).substr(1))], true), "roughness1"));
 }
 
-void Material::LoadAiTexturesOfType(const aiScene* scene, aiMaterial* material, std::string directory, aiTextureType type, std::string shaderName, MaterialLoadingData* matLoadingData)
+void Material::LoadAiTexturesOfType(const aiScene* scene, aiMaterial* material, const std::string& directory, aiTextureType type, std::string shaderName, MaterialLoadingData* matLoadingData)
 {
 	std::string name;
 	switch (type)
@@ -140,7 +150,6 @@ void Material::LoadAiTexturesOfType(const aiScene* scene, aiMaterial* material, 
 	bool sRGB = false;
 	if (type == aiTextureType_DIFFUSE)
 		sRGB = true;
-
 	
 
 	for (unsigned int i = 0; i < material->GetTextureCount(type); i++)	//for each texture of this type (there can be more than one)
@@ -155,24 +164,26 @@ void Material::LoadAiTexturesOfType(const aiScene* scene, aiMaterial* material, 
 		if (!pathStr.empty() && *pathStr.begin() == '*')
 		{
 			std::cout << "Znaleziono " + pathStr << " na aiTextureType " << type << "\n";
-			AddTexture(new NamedTexture(textureFromAiEmbedded(*scene->mTextures[std::stoi(pathStr.substr(1))], sRGB), shaderName + std::to_string(i + 1)));
+			NamedTexture embeddedTex = NamedTexture(textureFromAiEmbedded(*scene->mTextures[std::stoi(pathStr.substr(1))], sRGB), shaderName + std::to_string(i + 1));
+			embeddedTex.SetPath(std::string("*") + scene->mTextures[std::stoi(pathStr.substr(1))]->mFilename.C_Str());
+			AddTexture(std::make_shared<NamedTexture>(embeddedTex));
 			continue;
 		}
 
 		pathStr = directory + pathStr;
 
 		if (matLoadingData)
-			if (NamedTexture* found = matLoadingData->FindTexture(pathStr))
+			if (std::shared_ptr<NamedTexture> found = matLoadingData->FindTexture(pathStr))
 			{
 				Textures.push_back(found);
 				continue;
 			}
 	
 
-		NamedTexture* tex = new NamedTexture(textureFromFile(pathStr, (sRGB) ? (GL_SRGB) : (GL_RGB)), shaderName + std::to_string(i + 1));	//create a new Texture and pass the file path, the shader name (for example albedo1, roughness1, ...) and the sRGB info
+		std::shared_ptr<NamedTexture> tex = std::make_shared<NamedTexture>(textureFromFile(pathStr, (sRGB) ? (GL_SRGB) : (GL_RGB)), shaderName + std::to_string(i + 1));	//create a new Texture and pass the file path, the shader name (for example albedo1, roughness1, ...) and the sRGB info
 		AddTexture(tex);
 		if (matLoadingData)
-			matLoadingData->AddTexture(*tex);
+			matLoadingData->AddTexture(tex);
 	}
 }
 
@@ -210,10 +221,15 @@ void Material::UpdateWholeUBOData(Shader* shader, Texture& emptyTexture) const
 ========================================================================================================================
 */
 
-AtlasMaterial::AtlasMaterial(std::string name, glm::ivec2 atlasSize, float shine, float depthScale, Shader* shader) :
-	Material(name, shine, depthScale, shader),
+AtlasMaterial::AtlasMaterial(Material&& material, glm::ivec2 atlasSize) :
+	Material(material),
 	AtlasSize(static_cast<glm::vec2>(atlasSize)),
 	TextureID(0.0f)
+{
+}
+
+AtlasMaterial::AtlasMaterial(Material::MaterialLoc loc, glm::ivec2 atlasSize) :
+	AtlasMaterial(Material(loc), atlasSize)
 {
 }
 
@@ -347,16 +363,16 @@ MaterialInstance& MaterialInstance::operator=(MaterialInstance&& matInst)
 	return *this;
 }
 
-NamedTexture* MaterialLoadingData::FindTexture(const std::string& path) const
+std::shared_ptr<NamedTexture> MaterialLoadingData::FindTexture(const std::string& path) const
 {
-	auto found = std::find_if(LoadedTextures.begin(), LoadedTextures.end(), [path](NamedTexture* tex) { return tex->GetPath() == path; });
+	auto found = std::find_if(LoadedTextures.begin(), LoadedTextures.end(), [path](const std::shared_ptr<NamedTexture>& tex) { return tex->GetPath() == path; });
 	if (found != LoadedTextures.end())
 		return *found;
 
 	return nullptr;
 }
 
-void MaterialLoadingData::AddTexture(NamedTexture& tex)
+void MaterialLoadingData::AddTexture(std::shared_ptr<NamedTexture> tex)
 {
-	LoadedTextures.push_back(&tex);
+	LoadedTextures.push_back(tex);
 }

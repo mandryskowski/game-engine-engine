@@ -4,7 +4,7 @@
 #define SMAA_INCLUDE_PS 0 
 
 layout (location = 0) in vec2 vPosition;
-layout (location = 1) in vec2 vTexCoord;
+layout (location = 2) in vec2 vTexCoord;
 
 //out
 out vec2 texCoord;

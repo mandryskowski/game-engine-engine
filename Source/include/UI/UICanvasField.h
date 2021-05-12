@@ -4,6 +4,7 @@
 #include <functional>
 
 class UIElementTemplates;
+class UIAutomaticListActor;
 
 /*
 class UIListActor : public UIActor
@@ -42,7 +43,6 @@ public:
 	UICanvasField(GameScene&, const std::string& name);
 	virtual void OnStart() override;
 	UIElementTemplates GetTemplates();
-private:
 };
 
 
@@ -52,17 +52,28 @@ public:
 	UIElementTemplates(Actor&, UICanvas*);
 	void TickBox(bool& modifiedBool);
 	void TickBox(std::function<bool()> setFunc);
+	void TickBox(std::function<void(bool)> setFunc, std::function<bool()> getFunc);
 
 	template <int vecSize> void VecInput(std::function<void(float, float)> setFunc, std::function<float(float)> getFunc);	//encapsulated
 	template <typename VecType> void VecInput(std::function<void(float, float)> setFunc, std::function<float(float)> getFunc);	//encapsulated
 	template <typename VecType> void VecInput(VecType& modifedVec);	//not encapsulated
 
+	//
+	template <typename ObjectBase, typename ObjectType> void ObjectInput(std::function<std::vector<ObjectBase*>()> getObjectsFunc, std::function<void(ObjectType*)> setFunc);	//encapsulated
 	template <typename ObjectBase, typename ObjectType> void ObjectInput(ObjectBase& hierarchyRoot, std::function<void(ObjectType*)> setFunc);	//encapsulated
 	template <typename ObjectBase, typename ObjectType> void ObjectInput(ObjectBase& hierarchyRoot, ObjectType*& inputTo);	//not encapsulated
 	template <typename CompType> void ComponentInput(Component& hierarchyRoot, std::function<void(CompType*)> setFunc);	//encapsulated
+	template <typename CompType> void ComponentInput(GameScene& scene, std::function<void(CompType*)> setFunc);	//encapsulated
 	template <typename CompType> void ComponentInput(Component& hierarchyRoot, CompType*& inputTo);	//not encapsulated
 
-	void PathInput(std::function<void(const std::string&)> setFunc, std::function<std::string()> getFunc);	//encapsulated
+private:
+	void HierarchyTreeInput(UIAutomaticListActor& list, GameScene&, std::function<void(HierarchyTemplate::HierarchyTreeT&)> setFunc);
+public:
+	void HierarchyTreeInput(GameScene&, std::function<void(HierarchyTemplate::HierarchyTreeT&)> setFunc);
+	void HierarchyTreeInput(GameManager&, std::function<void(HierarchyTemplate::HierarchyTreeT&)> setFunc);
+
+	void PathInput(std::function<void(const std::string&)> setFunc, std::function<std::string()> getFunc, std::vector<const char*> extensions);	//encapsulated
+	void FolderInput(std::function<void(const std::string&)> setFunc, std::function<std::string()> getFunc);	//encapsulated
 
 private:
 	Actor& TemplateParent;

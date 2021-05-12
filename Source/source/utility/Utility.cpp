@@ -1,4 +1,5 @@
 #include <utility/Utility.h>
+#include <functional>
 
 UniformBuffer::UniformBuffer()
 {
@@ -144,6 +145,30 @@ std::string extractDirectory(std::string path)
 	return std::string();
 }
 
+void extractDirectoryAndFilename(const std::string& fullPath, std::string& filename, std::string& directory)
+{
+	size_t dirPos = fullPath.find_last_of('/');
+
+	std::function<void(size_t)> splitPath = [fullPath, &directory, &filename](size_t dirPos) { 
+		directory = fullPath.substr(0, dirPos + 1);
+		if (dirPos + 1 <= fullPath.size())
+			filename = fullPath.substr(dirPos + 1);
+	};
+
+	if (dirPos != std::string::npos)
+		return splitPath(dirPos);
+
+	dirPos = fullPath.find_last_of(static_cast<char>(92));	//backslash
+
+	if (dirPos != std::string::npos)
+		return splitPath(dirPos);
+	else
+	{
+		directory.clear();
+		filename = fullPath;
+	}
+}
+
 void printVector(const glm::vec2& vec, std::string title)
 {
 	if (!title.empty())
@@ -183,4 +208,21 @@ void printMatrix(const glm::mat4& mat, std::string title)
 			std::cout << mat[x][y] << "	";
 		std::cout << '\n';
 	}
+}
+
+std::string toValidFilepath(std::string str)
+{
+	std::vector<char> invalidChars = { ' ', '\n', '/', 92, ':', '?', '"', '<', '>', '|' };	//92 is backslash ( \ )
+	std::transform(str.begin(), str.end(), str.begin(), [&invalidChars](const unsigned char ch) -> unsigned char { return (std::find(invalidChars.begin(), invalidChars.end(), ch) != invalidChars.end()) ? ('-') : (std::tolower(ch)); });
+	
+	return str;
+}
+
+std::string getFilepathExtension(const std::string& filepath)
+{
+	size_t dotPos = filepath.find_last_of(".");
+	if (dotPos == std::string::npos)
+		return std::string();
+
+	return filepath.substr(dotPos);
 }

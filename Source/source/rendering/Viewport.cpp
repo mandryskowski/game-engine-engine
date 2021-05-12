@@ -22,7 +22,7 @@ NDCViewport Viewport::ToNDCViewport(const glm::uvec2& res) const
 
 
 NDCViewport::NDCViewport(glm::vec2 pos, glm::vec2 size):
-	Box2f(pos, size)
+	Boxf<Vec2f>(pos, size)
 {
 	if (Position != glm::vec2(-1.0f) && !NDCViewport(glm::vec2(-1.0f), glm::vec2(2.0f)).Contains(Position))
 	{
@@ -47,10 +47,10 @@ Viewport NDCViewport::ToPxViewport(const glm::uvec2& res) const
 
 bool NDCViewport::Contains(const glm::vec2& point) const
 {
-	return Box2f(Position + Size, Size).Contains(point);
+	return Boxf<Vec2f>(Position + Size, Size).Contains(point);
 }
 
-bool NDCViewport::Contains(const Box2f& box) const
+bool NDCViewport::Contains(const Boxf<Vec2f>& box) const
 {
-	return Box2f(Position + Size, Size / 2.0f).Contains(box);
+	return Boxf<Vec2f>(Position + Size, Size / 2.0f).Contains(box);
 }

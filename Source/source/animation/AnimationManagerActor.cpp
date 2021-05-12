@@ -169,6 +169,11 @@ AnimationInstance::AnimationInstance(Animation& anim, Component& animRootComp) :
 	boneFinderFunc(AnimRootComp);
 }
 
+Animation::AnimationLoc AnimationInstance::GetLocalization() const
+{
+	return Anim.Localization;
+}
+
 Animation& AnimationInstance::GetAnimation() const
 {
 	return Anim;
@@ -270,7 +275,7 @@ void AnimationManagerComponent::SelectAnimation(AnimationInstance* anim)
 
 	CurrentAnim = anim;
 	if (CurrentAnim)
-		std::cout << "Started anim " + CurrentAnim->GetAnimation().Name + ". Nr of channels: " << CurrentAnim->GetAnimation().Channels.size() << '\n';
+		std::cout << "Started anim " + CurrentAnim->GetAnimation().Localization.Name + ". Nr of channels: " << CurrentAnim->GetAnimation().Channels.size() << '\n';
 	else
 		std::cout << "Selected nullptr animation.\n";
 
@@ -291,7 +296,7 @@ void AnimationManagerComponent::GetEditorDescription(EditorDescriptionBuilder de
 	float posX = 0.0f;
 	for (auto& it : AnimInstances)
 	{
-		UIButtonActor& button = animField.CreateChild<UIButtonActor>(it->GetAnimation().Name, it->GetAnimation().Name, [this, &it]() { SelectAnimation(it.get()); });
+		UIButtonActor& button = animField.CreateChild<UIButtonActor>(it->GetAnimation().Localization.Name, it->GetAnimation().Localization.Name, [this, &it]() { SelectAnimation(it.get()); });
 		button.GetTransform()->SetPosition(glm::vec2(posX, 0.0f));
 		posX += 3.0f;
 	}

@@ -316,6 +316,11 @@ namespace cereal
       {
         return new T();
       }
+    /*  template <class T, typename... Args> inline   //CUSTOM
+      static T * construct(Args&&... args)
+      {
+        return new T(std::forward<Args>(args));
+      }*/
 
       template <class T> inline
       static std::false_type load_and_construct(...)

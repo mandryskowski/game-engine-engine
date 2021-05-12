@@ -8,6 +8,9 @@
 #include <UI/UICanvasActor.h>
 #include <scene/UIInputBoxActor.h>
 
+Actor* cereal::LoadAndConstruct<Component>::ActorRef = nullptr;
+Component* cereal::LoadAndConstruct<Component>::ParentComp = nullptr;
+
 Component::Component(Actor& actor, Component* parentComp, const std::string& name, const Transform& t):
 	Name(name), ComponentTransform(t), Scene(actor.GetScene()), ActorRef(actor), ParentComponent(parentComp), GameHandle(actor.GetScene().GetGameHandle()), CollisionObj(nullptr), DebugRenderMat(nullptr), DebugRenderMatInst(nullptr), DebugRenderLastFrameMVP(glm::mat4(1.0f)), bKillingProcessStarted(false)
 {
@@ -46,7 +49,7 @@ Component& Component::operator=(const Component& compT)
 {
 	Name = compT.Name;
 	ComponentTransform *= compT.ComponentTransform;
-	CollisionObj = (compT.CollisionObj) ? (std::make_unique<CollisionObject>(CollisionObject(*compT.CollisionObj))) : (nullptr);
+	CollisionObj = (compT.CollisionObj) ? (std::make_unique<CollisionObject>(*compT.CollisionObj)) : (nullptr);
 	if (CollisionObj)
 		CollisionObj->TransformPtr = &ComponentTransform;
 	DebugRenderMat = compT.DebugRenderMat;
@@ -119,6 +122,11 @@ void Component::OnStartAll()
 	if (lastWord != "end")
 		std::cerr << "ERROR: There is no ''end'' after component's " << name << " definition! Detected word: " << lastWord << ".\n";
 }*/
+
+Actor& Component::GetActor() const
+{
+	return ActorRef;
+}
 
 const std::string& Component::GetName() const
 {
@@ -195,14 +203,11 @@ void Component::SetTransform(Transform transform)
 }
 
 
-CollisionObject* Component::SetCollisionObject(std::unique_ptr<CollisionObject>& obj)
+CollisionObject* Component::SetCollisionObject(std::unique_ptr<CollisionObject> obj)
 {
-	if (!obj)
-		return nullptr;
-	obj.swap(CollisionObj);
-	Scene.GetPhysicsData()->AddCollisionObject(*CollisionObj, ComponentTransform);
-
-
+	CollisionObj = std::move(obj);
+	if (CollisionObj)
+		Scene.GetPhysicsData()->AddCollisionObject(*CollisionObj, ComponentTransform);
 
 	return CollisionObj.get();
 }
@@ -287,25 +292,33 @@ void CollisionObjRendering(RenderInfo& info, GameManager& gameHandle, CollisionO
 	Shader* shader = renderEngHandle.FindShader("Forward_NoLight");
 	shader->Use();
 	Material material("CollisionShapeDebugMaterial\n");
-	material.SetColor(color);
+
+	physx::PxRigidDynamic* rigidDynamicCast = obj.ActorPtr->is<physx::PxRigidDynamic>();
+	bool sleeping = (rigidDynamicCast && rigidDynamicCast->isSleeping());
+	material.SetColor((sleeping) ? (glm::vec3(1.0) - color) : (color));
 	if (!shader)
 		return;
 
 	for (auto& shape : obj.Shapes)
 	{
-		EngineBasicShape geomShape;
+		Mesh* mesh = nullptr;
 		switch (shape->Type)
 		{
-			case CollisionShapeType::COLLISION_BOX:	default: geomShape = EngineBasicShape::CUBE; break;
-			case CollisionShapeType::COLLISION_SPHERE: geomShape = EngineBasicShape::SPHERE; break;
+			case CollisionShapeType::COLLISION_BOX:	default: mesh = &renderEngHandle.GetBasicShapeMesh(EngineBasicShape::CUBE); break;
+			case CollisionShapeType::COLLISION_SPHERE: mesh = &renderEngHandle.GetBasicShapeMesh(EngineBasicShape::SPHERE); break;
 			case CollisionShapeType::COLLISION_CAPSULE:	continue;
-			case CollisionShapeType::COLLISION_TRIANGLE_MESH: continue;
+			case CollisionShapeType::COLLISION_TRIANGLE_MESH: if (auto loc = shape->GetOptionalLocalization()) { HierarchyTemplate::HierarchyTreeT* tree = gameHandle.FindHierarchyTree(loc->GetTreeName()); mesh = tree->FindMesh(loc->ShapeMeshLoc.NodeName, loc->ShapeMeshLoc.SpecificName); if (!mesh) mesh = &loc->OptionalCorrespondingMesh; } break;
 		}
+
+		if (!mesh)
+			continue;
 
 		const Transform& shapeTransform = shape->ShapeTransform;
 
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-		renderEngHandle.RenderStaticMesh(info, MeshInstance(renderEngHandle.GetBasicShapeMesh(geomShape), &material), t * shapeTransform, shader);
+		std::cout << "Debug-rendering col shape mesh " << mesh->GetLocalization().NodeName << " " << mesh->GetLocalization().SpecificName << '\n';
+		printVector(color, "Color");
+		renderEngHandle.RenderStaticMesh(info, MeshInstance(*mesh, &material), t * shapeTransform, shader);
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	}
 }
@@ -319,7 +332,7 @@ void Component::DebugRender(RenderInfo info, Shader* shader) const
 		return;
 
 	if (CollisionObj)
-		CollisionObjRendering(info, *GameHandle, *CollisionObj, GetTransform().GetWorldTransform());
+		;// CollisionObjRendering(info, *GameHandle, *CollisionObj, GetTransform().GetWorldTransform());
 
 	Transform transform = GetTransform().GetWorldTransform();
 	transform.SetScale(glm::vec3(0.05f));
@@ -334,16 +347,16 @@ void Component::DebugRenderAll(RenderInfo info, Shader* shader) const
 		Children[i]->DebugRenderAll(info, shader);
 }
 
-AtlasMaterial& Component::LoadDebugRenderMaterial(const std::string& materialName, const std::string& path)
+std::shared_ptr<AtlasMaterial> Component::LoadDebugRenderMaterial(const std::string& materialName, const std::string& path)
 {
 	if (DebugRenderMat)
-		return *DebugRenderMat;
+		return DebugRenderMat;
 
-	if (DebugRenderMat = dynamic_cast<AtlasMaterial*>(GameHandle->GetRenderEngineHandle()->FindMaterial(materialName)))
-		return *DebugRenderMat;
+	if (DebugRenderMat = std::dynamic_pointer_cast<AtlasMaterial>(GameHandle->GetRenderEngineHandle()->FindMaterial(materialName)))
+		return DebugRenderMat;
 
-	DebugRenderMat = new AtlasMaterial(materialName, glm::ivec2(3, 1));
-	NamedTexture* texture = new NamedTexture(textureFromFile(path, GL_RGBA, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR, true));
+	DebugRenderMat = std::make_shared<AtlasMaterial>(materialName, glm::ivec2(3, 1));
+	std::shared_ptr<NamedTexture> texture = std::make_shared<NamedTexture>(textureFromFile(path, GL_RGBA, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR, true));
 
 	texture->Bind();
 	texture->SetShaderName("albedo1");
@@ -351,12 +364,12 @@ AtlasMaterial& Component::LoadDebugRenderMaterial(const std::string& materialNam
 	DebugRenderMat->SetRenderShaderName("Forward_NoLight");
 	GameHandle->GetRenderEngineHandle()->AddMaterial(DebugRenderMat);
 
-	return *DebugRenderMat;
+	return DebugRenderMat;
 }
 
 MaterialInstance Component::GetDebugMatInst(EditorIconState state)
 {
-	DebugRenderMat = &LoadDebugRenderMaterial("GEE_Mat_Default_Debug_Component", "EditorAssets/component_icon.png");
+	DebugRenderMat = LoadDebugRenderMaterial("GEE_Mat_Default_Debug_Component", "EditorAssets/component_icon.png");
 	switch (state)
 	{
 	case EditorIconState::IDLE:
@@ -384,8 +397,9 @@ Component* Component::SearchForComponent(std::string name)
 	return nullptr;
 }
 
+
 #include <UI/UICanvasField.h>
-#include <UI/UICanvasActor.h>
+#include <scene/UIWindowActor.h>
 #include <UI/UIListActor.h>
 #include <scene/TextComponent.h>
 void Component::GetEditorDescription(EditorDescriptionBuilder descBuilder)
@@ -399,31 +413,10 @@ void Component::GetEditorDescription(EditorDescriptionBuilder descBuilder)
 	textActor.SetOnInputFunc([this, &prettyQuad, &textActor](const std::string& content) { SetName(content); prettyQuad.SetTransform(Transform(glm::vec2(0.0f, -0.625f), glm::vec2(textActor.GetRoot()->GetComponent<TextComponent>("ComponentsNameActorText")->GetTextLength(), 0.025f))); }, [this]() -> std::string { return GetName(); });
 
 	textActor.DeleteButtonModel();
-	//TextComponent& textComp = textActor.NowyCreate<TextComponent>("ComponentsNameActorTextComp", Transform(glm::vec2(0.0f, 0.75f), glm::vec3(0.0f), glm::vec2(0.25f)), comp->GetName(), "fonts/expressway rg.ttf", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
 
-	/*for (int x = 0, y = 0; !(y == 2 && x == 3); x++)
-	{
-		if ((y == 0 && x == 3) || (y == 1 && x == 4))
-		{
-			x = 0;
-			y++;
-		}
-		UIInputBoxActor& inputBoxActor = editorParent.CreateChild(UIInputBoxActor(editorScene, "TransformBox" + std::to_string(x) + ":" + std::to_string(y)));
-		inputBoxActor.SetTransform(Transform(glm::vec3(-0.75f + float(x) * 0.505f, 0.25f - float(y) * 0.505f, 0.0f), glm::vec3(0.0f), glm::vec3(0.25f)));
+	ComponentTransform.GetEditorDescription(descBuilder);
 
-		switch (y)  
-		{
-		case 0: inputBoxActor.SetOnInputFunc([this, x](float val) {glm::vec3 pos = GetTransform().PositionRef; pos[x] = val; GetTransform().SetPosition(pos); }, [this, x]() { return GetTransform().PositionRef[x]; }, true); break;
-		case 1: inputBoxActor.SetOnInputFunc([this, x](float val) {glm::quat rot = GetTransform().RotationRef; rot[x] = val; GetTransform().SetRotation(glm::normalize(rot)); }, [this, x]() { return GetTransform().RotationRef[x]; }, true); break;
-		case 2: inputBoxActor.SetOnInputFunc([this, x](float val) {glm::vec3 scale = GetTransform().ScaleRef; scale[x] = val; GetTransform().SetScale(scale); }, [this, x]() { return GetTransform().ScaleRef[x]; }, true); break;
-		}
-	}*/
-
-	descBuilder.AddField("Position").GetTemplates().VecInput<glm::vec3>([this](float x, float val) {glm::vec3 pos = GetTransform().PositionRef; pos[x] = val; GetTransform().SetPosition(pos); }, [this](float x) { return GetTransform().PositionRef[x]; });
-	descBuilder.AddField("Rotation").GetTemplates().VecInput<glm::quat>([this](float x, float val) {glm::quat rot = GetTransform().RotationRef; rot[x] = val; GetTransform().SetRotation(glm::normalize(rot)); }, [this](float x) { return GetTransform().RotationRef[x]; });
-	descBuilder.AddField("Scale").GetTemplates().VecInput<glm::vec3>([this](float x, float val) {glm::vec3 scale = GetTransform().ScaleRef; scale[x] = val; GetTransform().SetScale(scale); }, [this](float x) { return GetTransform().ScaleRef[x]; });
-
-	descBuilder.AddField("Delete").CreateChild<UIButtonActor>("DeleteButton", "Delete", [this, descBuilder]() mutable 
+	descBuilder.AddField("Delete").CreateChild<UIButtonActor>("DeleteButton", "Delete", [this, descBuilder]() mutable
 		{
 			MarkAsKilled();
 
@@ -431,37 +424,92 @@ void Component::GetEditorDescription(EditorDescriptionBuilder descBuilder)
 				descBuilder.RefreshScene();
 
 			descBuilder.SelectActor(&ActorRef); //Refresh the actor (to remove the killed component). Component will be deselected automatically - SelectComponent(nullptr) is always called inside SelectActor(...).
-		}).GetTransform()->Move(glm::vec2(1.0f, 0.0f));
+		});
 
-	UICanvasField& shapesListField = descBuilder.AddField("Collision Object");
-	shapesListField.GetTransform()->Move(glm::vec2(1.0f, 0.0f));
+	UICanvasField& shapesListField = descBuilder.AddField("Collision object");
 	UIAutomaticListActor& shapesList = shapesListField.CreateChild<UIAutomaticListActor>("ShapesList");
 	dynamic_cast<UICanvasActor*>(shapesListField.GetCanvasPtr())->FieldsList->SetListElementOffset(dynamic_cast<UICanvasActor*>(shapesListField.GetCanvasPtr())->FieldsList->GetListElementCount() - 1, [&shapesListField, &shapesList]()-> glm::vec3 { return static_cast<glm::mat3>(shapesListField.GetTransform()->GetMatrix()) * (shapesList.GetListOffset());});
 	dynamic_cast<UICanvasActor*>(shapesListField.GetCanvasPtr())->FieldsList->SetListCenterOffset(dynamic_cast<UICanvasActor*>(shapesListField.GetCanvasPtr())->FieldsList->GetListElementCount() - 1, [&shapesListField]()-> glm::vec3 { return glm::vec3(0.0f, -shapesListField.GetTransform()->ScaleRef.y, 0.0f); });
 	UIButtonActor& colObjectPresenceButton = shapesList.CreateChild<UIButtonActor>("CollisionObjectButton", (CollisionObj) ? ("V") : ("X"));
+		
+	shapesListField.CreateChild<UIButtonActor>("AddColShape", "+", [this, descBuilder]() mutable {
+		UIWindowActor& shapeCreatorWindow = descBuilder.GetEditorScene().CreateActorAtRoot<UIWindowActor>("ShapeCreatorWindow");
+		shapeCreatorWindow.GetTransform()->SetScale(glm::vec2(0.25f));
+		UIAutomaticListActor& buttonsList = shapeCreatorWindow.CreateChild<UIAutomaticListActor>("ButtonsList");
 
-	shapesListField.CreateChild<UIButtonActor>("AddColShape", "+", [this, &shapesList, &colObjectPresenceButton]() { if (!CollisionObj) { this->SetCollisionObject(std::make_unique<CollisionObject>(CollisionObject(true, CollisionShapeType::COLLISION_BOX))); }  /*CollisionObj->AddShape(CollisionShapeType::COLLISION_BOX); */shapesList.Refresh();}).SetTransform(Transform(glm::vec2(3.0f, 0.0f), glm::vec2(0.25f)));
+		std::function <void(std::shared_ptr<CollisionShape>)> addShapeFunc = [this, descBuilder, &shapeCreatorWindow](std::shared_ptr<CollisionShape> shape) mutable {
+			if (!CollisionObj)
+			{
+				std::unique_ptr<CollisionObject> colObj = std::make_unique<CollisionObject>(CollisionObject(true));
+				colObj->AddShape(shape);
+				this->SetCollisionObject(std::move(colObj));
+			}
+			else
+				CollisionObj->AddShape(shape);
+
+			shapeCreatorWindow.MarkAsKilled();
+			descBuilder.SelectComponent(this);	//refresh
+
+		};
+
+		for (int i = CollisionShapeType::COLLISION_FIRST; i <= CollisionShapeType::COLLISION_LAST; i++)
+		{
+			CollisionShapeType shapeType = static_cast<CollisionShapeType>(i);
+			UIButtonActor& shapeAddButton = buttonsList.CreateChild<UIButtonActor>("ShapeAddButton" + std::to_string(i), collisionShapeTypeToString(shapeType));
+
+			if (shapeType == CollisionShapeType::COLLISION_TRIANGLE_MESH)
+				shapeAddButton.SetOnClickFunc([this, addShapeFunc, &shapeCreatorWindow]() {
+					UIWindowActor& pathInputWindow = shapeCreatorWindow.CreateChild<UIWindowActor>("PathInputWindow");
+					pathInputWindow.GetTransform()->SetScale(Vec2f(0.5f));
 
 
-	//shapesList.GetTransform()->Move(glm::vec2(0.0f, -0.2f));
+					UIElementTemplates(pathInputWindow, &pathInputWindow).HierarchyTreeInput(*GameHandle, [this, &pathInputWindow, addShapeFunc](HierarchyTemplate::HierarchyTreeT& tree) {
+						pathInputWindow.MarkAsKilled();
+
+						std::shared_ptr<CollisionShape> shape = EngineDataLoader::LoadTriangleMeshCollisionShape(GameHandle->GetPhysicsHandle(), tree.GetMeshes()[0]);
+						addShapeFunc(shape);
+						});
+
+					/*UIInputBoxActor& treeNameInputBox = pathInputWindow.CreateChild<UIInputBoxActor>("TreeNameInputBox");
+					treeNameInputBox.SetOnInputFunc([this, &pathInputWindow, addShapeFunc](const std::string& path) {
+							HierarchyTemplate::HierarchyTreeT* tree = GameHandle->FindHierarchyTree(path);
+							if (!tree)
+								return;
+
+							pathInputWindow.MarkAsKilled();
+
+							std::shared_ptr<CollisionShape> shape = EngineDataLoader::LoadTriangleMeshCollisionShape(GameHandle->GetPhysicsHandle(), tree->GetMeshes()[0]); 
+							addShapeFunc(shape);
+						}, []() { return "Enter tree path"; });*/
+				});
+			else
+				shapeAddButton.SetOnClickFunc([shapeType, addShapeFunc]() { addShapeFunc(std::make_shared<CollisionShape>(shapeType)); });
+
+			shapeCreatorWindow.AddUIElement(shapeAddButton);
+		}
+		buttonsList.Refresh();
+		}).SetTransform(Transform(glm::vec2(3.0f, 0.0f), glm::vec2(0.25f)));
+
+
 	if (CollisionObj)
-	{
-		std::string shapeTypeName;
 		for (auto& it : CollisionObj->Shapes)
 		{
-			switch (it->Type)
-			{
-				case CollisionShapeType::COLLISION_BOX: shapeTypeName = "Box"; break;
-				case CollisionShapeType::COLLISION_SPHERE: shapeTypeName = "Sphere"; break;
-				case CollisionShapeType::COLLISION_TRIANGLE_MESH: shapeTypeName = "Triangle Mesh"; break;
-				case CollisionShapeType::COLLISION_CAPSULE: shapeTypeName = "Capsule"; break;
-			}
-			Actor& shapeActor = shapesList.CreateChild<Actor>("TextActor");
-			shapeActor.CreateComponent<TextComponent>("Text", Transform(), ">" + shapeTypeName + "<", "fonts/expressway rg.ttf", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
+			std::string shapeTypeName = collisionShapeTypeToString(it->Type);
+			UIButtonActor& shapeActor = shapesList.CreateChild<UIButtonActor>("ShapeSelectButton", shapeTypeName, [descBuilder, it]() mutable {
+					UIWindowActor& shapeTransformWindow = descBuilder.GetEditorScene().CreateActorAtRoot<UIWindowActor>("ShapeTransformWindow");
+					shapeTransformWindow.GetTransform()->SetScale(glm::vec2(0.25f));
+					it->ShapeTransform.GetEditorDescription(EditorDescriptionBuilder(descBuilder.GetEditorHandle(), *shapeTransformWindow.GetScaleActor()));
+
+					for (auto& it : shapeTransformWindow.GetScaleActor()->GetChildren())
+						shapeTransformWindow.AddUIElement(*it);
+					
+					shapeTransformWindow.RefreshFieldsList();
+					shapeTransformWindow.AutoClampView();
+				});
+			shapeActor.GetButtonModel()->SetHide(true);
 		
 		}
-	}
-	//shapesList.GetTransform()->Move(-1.0f * static_cast<glm::mat3>(shapesListField.GetTransform()->GetMatrix()) * (shapesList.GetListBegin() + shapesList.GetListOffset()));
+
 	shapesList.Refresh();
 }
 

@@ -30,6 +30,7 @@ public:
 	virtual void BindAudioListenerTransformPtr(Transform*) override;
 	virtual void PassMouseControl(Controller* controller) override; //pass nullptr to unbind any controller and allow moving the mouse around freely
 	virtual const Controller* GetCurrentMouseController() const override; 
+	virtual std::shared_ptr<Font> GetDefaultFont() override;
 	virtual bool HasStarted() const override;
 	InputDevicesStateRetriever GetInputRetriever() override;
 
@@ -39,6 +40,7 @@ public:
 
 	virtual GameSettings* GetGameSettings() override;
 	virtual GameScene* GetScene(const std::string& name) override;
+	virtual GameScene* GetMainScene() override;
 	virtual Actor* GetRootActor(GameScene* scene = nullptr) override;
 
 	virtual HierarchyTemplate::HierarchyTreeT* FindHierarchyTree(const std::string& name, HierarchyTemplate::HierarchyTreeT* treeToIgnore = nullptr) override;
@@ -53,14 +55,21 @@ public:
 	virtual void Render() = 0;
 
 protected:
+	void SetMainScene(GameScene*);
+	virtual void DeleteScene(GameScene&) override;
+
 	GLFWwindow* Window;
 
 	std::vector <std::unique_ptr <GameScene>> Scenes;	//The first scene (Scenes[0]) is referred to as the Main Scene. If you only use 1 scene in your application, don't bother with passing arround GameScene pointers - the Main Scene will be chosen automatically.
+	GameScene* MainScene;
 	EventHolder EventHolderObj;
 	Controller* MouseController;
 
 	std::unique_ptr<GameSettings> Settings;
+
 	std::vector<std::shared_ptr<Font>> Fonts;
+	std::shared_ptr<Font> DefaultFont;
+
 	RenderEngine RenderEng;
 	PhysicsEngine PhysicsEng;
 	AudioEngine AudioEng;

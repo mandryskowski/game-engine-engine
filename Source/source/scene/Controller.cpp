@@ -12,16 +12,17 @@
 Controller::Controller(GameScene& scene, std::string name):
 	Actor(scene, name),
 	PxController(nullptr),
+	PossessedActor(nullptr),
 	Directions{false, false, false, false, false},
-	Velocity(glm::vec3(0.0f)),
-	PreviousFramePos(glm::vec3(0.0f)),
-	RotationEuler(glm::vec3(0.0f))
+	Velocity(Vec3f(0.0f)),
+	PreviousFramePos(Vec3f(0.0f)),
+	RotationEuler(Vec3f(0.0f))
 {
 
+	int i = 0;
 	std::generate(MovementAxises.begin(), MovementAxises.end(),
-		[]()
+		[&i]()
 		{
-			static int i = 0;
 			MovementAxis dir;
 			dir.MovementInterpolator = nullptr;// std::make_unique<Interpolator<float>>(Interpolator<float>(0.0f, 0.15f, 0.0f, 1.0f, InterpolationType::LINEAR));
 			dir.Inversed = false;
@@ -38,18 +39,27 @@ Controller::Controller(GameScene& scene, std::string name):
 		});
 }
 
-void Controller::OnStart()
+void Controller::SetPossessedActor(Actor* actor)
 {
-	Actor::OnStart();
+	if (PossessedActor)
+		PossessedActor->GetRoot()->SetCollisionObject(nullptr);	//PxController will probably be released here, so we set it to Nullptr in the next line
 
-	PxController = GameHandle->GetPhysicsHandle()->CreateController(*Scene.GetPhysicsData());
-	PossessedActor = GameHandle->GetRootActor()->FindActor("CameraActor");
+	PxController = nullptr;
+	PossessedActor = actor;
+
+	if (!PossessedActor)
+		return;
 	std::cout << "Tworze kontroler.\n";
 
-	CollisionObject* colObject = new CollisionObject(false, CollisionShapeType::COLLISION_CAPSULE);
+	RotationEuler = Vec3f(0.0f);
+
+	PxController = GameHandle->GetPhysicsHandle()->CreateController(*Scene.GetPhysicsData(), PossessedActor->GetTransform()->GetWorldTransform());
+
+
+	std::unique_ptr<CollisionObject> colObject = std::make_unique<CollisionObject>(false);
 	colObject->ActorPtr = PxController->getActor();
 	colObject->IgnoreRotation = true;
-	Scene.GetPhysicsData()->AddCollisionObject(*colObject, *PossessedActor->GetTransform());
+	PossessedActor->GetRoot()->SetCollisionObject(std::move(colObject));
 }
 
 #include <input/Event.h>
@@ -67,10 +77,14 @@ void Controller::ReadMovementKeys()
 	if (!PossessedActor || GameHandle->GetCurrentMouseController() != this)
 		return;
 
-	if (GameHandle->GetInputRetriever().IsKeyPressed(Key::E))
-		Scene.FindActor("GameLevel")->GetRoot()->GetComponent("Forklift.001")->GetTransform().SetParentTransform(PossessedActor->GetTransform(), true);
-	if (GameHandle->GetInputRetriever().IsKeyPressed(Key::F))
-		Scene.FindActor("GameLevel")->GetRoot()->GetComponent("Forklift.001")->GetTransform().SetParentTransform(&Scene.FindActor("GameLevel")->GetRoot()->GetTransform(), true);
+	if (Actor* gameLevelActor = Scene.FindActor("GameLevel"))
+		if (Component* forkliftComp = gameLevelActor->GetRoot()->GetComponent("Forklift.001"))
+		{
+			if (GameHandle->GetInputRetriever().IsKeyPressed(Key::E))
+				forkliftComp->GetTransform().SetParentTransform(PossessedActor->GetTransform(), true);
+			if (GameHandle->GetInputRetriever().IsKeyPressed(Key::F))
+				forkliftComp->GetTransform().SetParentTransform(&gameLevelActor->GetRoot()->GetTransform(), true);
+		}
 
 	if (GameHandle->GetInputRetriever().IsKeyPressed(Key::W))
 		Directions[DIRECTION_FORWARD] = true;
@@ -94,6 +108,15 @@ void Controller::Update(float deltaTime)
 	if (!PossessedActor)
 		return;
 
+	if (PossessedActor->IsBeingKilled())
+	{
+		PossessedActor = nullptr;
+		return;
+	}
+
+	if (PxController->getActor()->getNbShapes() == 0)
+		return;
+
 	ReadMovementKeys();
 
 	//bool isOnGround = PxController->getActor()->getScene()->raycast(physx::toVec3(PxController->getFootPosition()), PxController->getScene()->getGravity().getNormalized(), 0.03f, dupa);
@@ -102,8 +125,10 @@ void Controller::Update(float deltaTime)
 	physx::PxSweepBuffer sweepBuffer;
 	physx::PxShape** shapes = new physx::PxShape*[16];
 	PxController->getActor()->getShapes(shapes, 16);
+
 	shapes[0]->acquireReference();
 	PxController->getActor()->detachShape(*shapes[0]);
+	//toTransform(PxController->getActor()->getGlobalPose() * shapes[0]->getLocalPose()).Print("pose");
 	bool groundSweep = PxController->getScene()->sweep(shapes[0]->getGeometry().capsule(), PxController->getActor()->getGlobalPose() * shapes[0]->getLocalPose(), PxController->getScene()->getGravity().getNormalized(), 0.5f, sweepBuffer, physx::PxHitFlag::eDEFAULT, physx::PxQueryFilterData(), nullptr);
 	bool isOnGround = (groundSweep) && ((PxController->getFootPosition().y - sweepBuffer.block.position.y) < 0.01f);
 	PxController->getActor()->attachShape(*shapes[0]);
@@ -121,7 +146,7 @@ void Controller::Update(float deltaTime)
 	if (isOnGround)
 		;// std::cout << "GROUND!!!\n";
 
-	glm::vec3 wishVec(0.0f);
+	Vec3f wishVec(0.0f);
 	for (int i = 0; i < 4; i++)
 	{
 	//	MovementAxises[i].MovementInterpolator->Update(deltaTime);
@@ -136,7 +161,7 @@ void Controller::Update(float deltaTime)
 	if (isOnGround)
 	{
 		const float friction = 10.0f;
-		float previousSpeed = glm::length(Velocity);
+		float previousSpeed = glm::length(Velocity.GetGlmType());
 
 		if (previousSpeed > 0.0f)
 		{
@@ -147,7 +172,7 @@ void Controller::Update(float deltaTime)
 
 	{
 		const float wishSpeed = (isOnGround) ? (3.0f) : (0.5f);
-		float currentProjectedSpeed = (isOnGround) ? (glm::length(glm::vec3(Velocity.x, 0.0f, Velocity.z))) : (glm::dot(glm::vec3(Velocity.x, 0.0f, Velocity.z), wishVec));
+		float currentProjectedSpeed = (isOnGround) ? (glm::length(Vec3f(Velocity.x, 0.0f, Velocity.z).GetGlmType())) : (glm::dot(Vec3f(Velocity.x, 0.0f, Velocity.z).GetGlmType(), wishVec.GetGlmType()));
 		float addedSpeed = wishSpeed - currentProjectedSpeed;
 		if (addedSpeed > 0.0f)
 		{
@@ -155,14 +180,15 @@ void Controller::Update(float deltaTime)
 		}
 	}
 
-	float beforePxSpeed = glm::length(Velocity);
+	float beforePxSpeed = glm::length(Velocity.GetGlmType());
 	physx::PxExtendedVec3 prevPos = PxController->getPosition();
 	PxController->move(toPx(Velocity * deltaTime), 0.001f, deltaTime, physx::PxControllerFilters());
 	if (isOnGround)
 		PxController->move(toPx(glm::vec3(0.0f, -0.2f, 0.0f)), 0.001f, 0.0f, physx::PxControllerFilters());
 	Velocity = toGlm(PxController->getPosition() - prevPos) / deltaTime;
 
-	dynamic_cast<TextComponent*>(PossessedActor->GetRoot()->GetComponent("CameraText"))->SetContent("Velocity: " + std::to_string(glm::length(glm::vec3(Velocity.x, 0.0f, Velocity.z))) + " " + std::to_string(Velocity.y) + ((isOnGround) ? (" ON-GROUND") : (" MID-AIR")));
+	if (TextComponent* found = dynamic_cast<TextComponent*>(PossessedActor->GetRoot()->GetComponent("CameraText")))
+		found->SetContent("Velocity: " + std::to_string(glm::length(glm::vec3(Velocity.x, 0.0f, Velocity.z))) + " " + std::to_string(Velocity.y) + ((isOnGround) ? (" ON-GROUND") : (" MID-AIR")));
 
 	/*physx::PxRaycastBuffer dupa;
 	bool isOnGround = PxController->getActor()->getScene()->raycast(physx::toVec3(PxController->getFootPosition()), PxController->getScene()->getGravity().getNormalized(), 0.1f, dupa);
@@ -236,31 +262,41 @@ void Controller::HandleMovementAxis(bool pressed, MovementAxis& axis)
 	}
 }
 
-ShootingController::ShootingController(GameScene& scene, const std::string& name):
-	Controller(scene, name),
-	PossesedActorGun(nullptr)
+#include <UI/UICanvasActor.h>
+#include <UI/UICanvasField.h>
+void Controller::GetEditorDescription(EditorDescriptionBuilder descBuilder)
 {
+	Actor::GetEditorDescription(descBuilder);
+
+	descBuilder.AddField("Target camera").GetTemplates().ObjectInput<Actor, Actor>([this]() { std::vector<Actor*> actors; Scene.GetRootActor()->GetAllActors(&actors); return actors; }, [this](Actor* actor) { SetPossessedActor(actor); });
 }
 
-void ShootingController::OnStart()
+ShootingController::ShootingController(GameScene& scene, const std::string& name):
+	Controller(scene, name),
+	PossessedGunActor(nullptr)
 {
-	Controller::OnStart();
-	PossesedActorGun = dynamic_cast<GunActor*>(GameHandle->GetRootActor()->FindActor("Gun"));;
 }
 
 void ShootingController::HandleEvent(const Event& ev)
 {
 	Controller::HandleEvent(ev);
-	if (ev.GetType() != EventType::MOUSE_PRESSED || GameHandle->GetCurrentMouseController() != this)
+	if (ev.GetType() != EventType::MOUSE_PRESSED || GameHandle->GetCurrentMouseController() != this || !PossessedGunActor)
 		return;
 
 	const MouseButtonEvent& pressedEv = *dynamic_cast<const MouseButtonEvent*>(&ev);
 	if (pressedEv.GetButton() == MouseButton::RIGHT)
 	{
-		printVector(PossesedActorGun->GetTransform()->RotationRef, "Prawdziwa rotacja");
-		printVector(PossesedActorGun->GetTransform()->GetWorldTransform().PositionRef, "Pozycja gracza");
-		printVector(PossesedActorGun->GetTransform()->GetWorldTransform().GetFrontVec(), "Front");
+		printVector(PossessedGunActor->GetTransform()->RotationRef, "Prawdziwa rotacja");
+		printVector(PossessedGunActor->GetTransform()->GetWorldTransform().PositionRef, "Pozycja gracza");
+		printVector(PossessedGunActor->GetTransform()->GetWorldTransform().GetFrontVec(), "Front");
 	}
 	if (pressedEv.GetButton() == MouseButton::LEFT)
-		PossesedActorGun->FireWeapon();
+		PossessedGunActor->FireWeapon();
+}
+
+void ShootingController::GetEditorDescription(EditorDescriptionBuilder descBuilder)
+{
+	Controller::GetEditorDescription(descBuilder);
+
+	descBuilder.AddField("PossessedGunActor").GetTemplates().ObjectInput<Actor, GunActor>(*Scene.GetRootActor(), PossessedGunActor);
 }

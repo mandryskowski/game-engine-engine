@@ -5,8 +5,9 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <assimp/texture.h>
 
-Texture::Texture(GLenum type, unsigned int id, std::string path):
+Texture::Texture(GLenum type, GLenum internalFormat, unsigned int id, std::string path):
 	Type(type),
+	InternalFormat(internalFormat),
 	ID(id),
 	Path(path)
 {
@@ -33,6 +34,11 @@ unsigned int Texture::GetID() const
 std::string Texture::GetPath() const
 {
 	return Path;
+}
+
+void Texture::SetPath(const std::string& path)
+{
+	Path = path;
 }
 
 void Texture::Bind(int texSlot) const
@@ -144,7 +150,7 @@ template <class T> Texture textureFromFile(std::string path, GLenum internalform
 		std::cerr << "Can't load texture from " << path << '\n';
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 1, 1, 0, GL_RGB, GL_FLOAT, glm::value_ptr(glm::vec3(1.0f, 0.0f, 1.0f)));	//set the texture's color to pink so its obvious that this texture is missing
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		return Texture(GL_TEXTURE_2D, tex, path);
+		return Texture(GL_TEXTURE_2D, internalformat, tex, path);
 	}
 	GLenum format = nrChannelsToFormat(nrChannels, false, &internalformat);
 
@@ -170,7 +176,7 @@ template <class T> Texture textureFromFile(std::string path, GLenum internalform
 
 	stbi_image_free(data);
 
-	return Texture(GL_TEXTURE_2D, tex, path);
+	return Texture(GL_TEXTURE_2D, internalformat, tex, path);
 }
 
 Texture textureFromAiEmbedded(const aiTexture& tex, bool bSRGB)
@@ -181,7 +187,8 @@ Texture textureFromAiEmbedded(const aiTexture& tex, bool bSRGB)
 	stbi_uc* data = stbi_load_from_memory(&tex.pcData[0].b, tex.mWidth, &width, &height, &nrChannels, 0);
 	std::cout << tex.mFilename.C_Str() << " Niby " << width << " " << height << "  |  " << nrChannels << "\n";
 
-	Texture result = textureFromBuffer(data, width, height, nrChannelsToFormat(nrChannels, false), nrChannelsToFormat(nrChannels, false), GL_UNSIGNED_BYTE);;
+	Texture result = textureFromBuffer(data, width, height, nrChannelsToFormat(nrChannels, false), nrChannelsToFormat(nrChannels, false), GL_UNSIGNED_BYTE);
+	result.SetPath(tex.mFilename.C_Str());
 
 	stbi_image_free(data);
 
@@ -202,7 +209,7 @@ Texture textureFromBuffer(const void* buffer, unsigned int width, unsigned int h
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, magFilter);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minFilter);
 
-	return Texture(GL_TEXTURE_2D, tex);
+	return Texture(GL_TEXTURE_2D, internalformat, tex);
 }
 #include <vector>
 std::shared_ptr<Texture> reserveTexture(glm::uvec2 size, GLenum internalformat, GLenum type, GLenum magFilter, GLenum minFilter, GLenum texType, unsigned int samples, std::string texName, GLenum format)

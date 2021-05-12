@@ -23,7 +23,6 @@ PawnActor::PawnActor(GameScene& scene, const std::string& name):
 void PawnActor::OnStart()
 {
 	Actor::OnStart();
-	GetTransform()->SetPosition(glm::vec3(-5.0f, -0.51f, -20.0f));
 }
 
 void PawnActor::Update(float deltaTime)
@@ -63,16 +62,18 @@ void PawnActor::Update(float deltaTime)
 		glm::vec3 posDir = CurrentTargetPos - GetTransform()->GetWorldTransform().PositionRef;
 		posDir.y = 0.0f;
 		posDir = glm::normalize(posDir);
+		if (Actor* cameraActor = Scene.FindActor("CameraActor"))
+		{
+			glm::vec3 playerDir = glm::normalize(cameraActor->GetTransform()->GetWorldTransform().PositionRef - GetTransform()->GetWorldTransform().PositionRef);
+			float distance = glm::distance((glm::vec3)cameraActor->GetTransform()->GetWorldTransform().PositionRef, GetTransform()->GetWorldTransform().PositionRef);
+			std::cout << "Dot: " << glm::dot(playerDir, GetTransform()->RotationRef * glm::vec3(0.0f, 0.0f, -1.0f)) << '\n';
+			if (Gun && glm::dot(playerDir, GetTransform()->RotationRef * glm::vec3(0.0f, 0.0f, -1.0f)) > glm::cos(glm::radians(30.0f)) && distance < 3.0f)
+			{
+				Gun->FireWeapon();
+				Gun->GetTransform()->SetRotationWorld(quatFromDirectionVec(-playerDir));
+				posDir = glm::normalize(glm::vec3(playerDir.x, 0.0f, playerDir.z));
 
-		glm::vec3 playerDir = glm::normalize(Scene.FindActor("CameraActor")->GetTransform()->GetWorldTransform().PositionRef - GetTransform()->GetWorldTransform().PositionRef);
-		float distance = glm::distance(Scene.FindActor("CameraActor")->GetTransform()->GetWorldTransform().PositionRef, GetTransform()->GetWorldTransform().PositionRef);
-		std::cout << "Dot: " << glm::dot(playerDir, GetTransform()->RotationRef * glm::vec3(0.0f, 0.0f, -1.0f)) << '\n';
-		if (Gun && glm::dot(playerDir, GetTransform()->RotationRef * glm::vec3(0.0f, 0.0f, -1.0f)) > glm::cos(glm::radians(30.0f)) && distance < 3.0f)
-		{ 
-			Gun->FireWeapon();
-			Gun->GetTransform()->SetRotationWorld(quatFromDirectionVec(-playerDir));
-			posDir = glm::normalize(glm::vec3(playerDir.x, 0.0f, playerDir.z));
-
+			}
 		}
 
 		GetTransform()->SetRotation(quatFromDirectionVec(-posDir));
@@ -99,11 +100,9 @@ void PawnActor::GetEditorDescription(EditorDescriptionBuilder descBuilder)
 
 	UIInputBoxActor& speedInputBox = descBuilder.AddField("Speed").CreateChild<UIInputBoxActor>("SpeedInputBox");
 	speedInputBox.SetOnInputFunc([this](float val) { SpeedPerSec = val; }, [this]()->float { return SpeedPerSec; });
-	speedInputBox.GetTransform()->Move(glm::vec2(1.0f, 0.0f));
 
 	UICanvasField& animsField = descBuilder.AddField("Anim List");
 	UIAutomaticListActor& animsList = animsField.CreateChild<UIAutomaticListActor>("Animations list", glm::vec3(3.0f, 0.0f, 0.0f));
-	animsList.GetTransform()->Move(glm::vec2(1.0f, 0.0f));
 
 	UpdateAnimsListInEditor = [this, &animsList, descBuilder](AnimationManagerComponent* animManager) mutable {
 		for (auto& it : animsList.GetChildren())
@@ -111,7 +110,7 @@ void PawnActor::GetEditorDescription(EditorDescriptionBuilder descBuilder)
 
 		if (animManager)
 			for (int i = 0; i < animManager->GetAnimInstancesCount(); i++)
-				descBuilder.GetCanvas().AddUIElement(animsList.CreateChild<UIButtonActor>("Anim button", animManager->GetAnimInstance(i)->GetAnimation().Name, [this, i]() {AnimIndex = i; }));
+				descBuilder.GetCanvas().AddUIElement(animsList.CreateChild<UIButtonActor>("Anim button", animManager->GetAnimInstance(i)->GetAnimation().Localization.Name, [this, i]() {AnimIndex = i; }));
 		animsList.Refresh();
 	};
 

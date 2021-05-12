@@ -4,6 +4,7 @@
 #include <rendering/RenderInfo.h>
 #include <rendering/Mesh.h>
 #include <rendering/RenderToolbox.h>
+#include <scene/LightProbeComponent.h>
 
 LightProbe::LightProbe(GameSceneRenderData* sceneRenderData)
 {
@@ -28,47 +29,45 @@ Shader* LightProbe::GetRenderShader(const RenderToolboxCollection& renderCol) co
 	return renderCol.FindShader("CookTorranceIBL");
 }
 
-std::shared_ptr<LightProbe> LightProbeLoader::LightProbeFromFile(GameSceneRenderData* sceneRenderData, std::string path)
+void LightProbeLoader::LoadLightProbeFromFile(LightProbeComponent& probe, std::string filepath)
 {
-	RenderEngineManager* renderHandle = sceneRenderData->GetRenderHandle();
-	std::shared_ptr<LightProbe> probe = std::make_shared<LightProbe>(sceneRenderData);
+	RenderEngineManager* renderHandle = probe.GetScene().GetGameHandle()->GetRenderEngineHandle();
+	probe.Shape = EngineBasicShape::QUAD;
 
-	Texture erTexture = textureFromFile<float>(path, GL_RGBA16F, GL_LINEAR, GL_LINEAR, 1);	//load equirectangular hdr texture
-	int layer = probe->ProbeNr * 6;
+	Texture erTexture = textureFromFile<float>(filepath, GL_RGBA16F, GL_LINEAR, GL_LINEAR, 1);	//load equirectangular hdr texture
+	int layer = probe.GetProbeIndex() * 6;
 
-	renderHandle->RenderCubemapFromTexture(probe->EnvironmentMap, erTexture, glm::uvec2(1024), *renderHandle->FindShader("ErToCubemap"));
-	probe->EnvironmentMap.Bind();
+	renderHandle->RenderCubemapFromTexture(probe.GetEnvironmentMap(), erTexture, glm::uvec2(1024), *renderHandle->FindShader("ErToCubemap"));
+	probe.GetEnvironmentMap().Bind();
+	probe.OptionalFilepath = filepath;
 	glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
 
-	ConvoluteLightProbe(sceneRenderData, *probe, &probe->EnvironmentMap);
-	
-
-	return probe;
+	ConvoluteLightProbe(probe, &probe.GetEnvironmentMap());
 }
 
-void LightProbeLoader::ConvoluteLightProbe(GameSceneRenderData* sceneRenderData, const LightProbe& probe, Texture* envMap)
+void LightProbeLoader::ConvoluteLightProbe(const LightProbeComponent& probe, Texture* envMap)
 {
-	RenderEngineManager* renderHandle = sceneRenderData->GetRenderHandle();
-	LightProbeTextureArrays* probeTexArrays = sceneRenderData->GetProbeTexArrays();
+	RenderEngineManager* renderHandle = probe.GetScene().GetGameHandle()->GetRenderEngineHandle();
+	LightProbeTextureArrays* probeTexArrays = probe.GetScene().GetRenderData()->GetProbeTexArrays();
 
 	envMap->Bind();
 	if (PrimitiveDebugger::bDebugProbeLoading)
 	{
-		std::cout << "Convoluting probe " << probe.ProbeNr << ".\n";
+		std::cout << "Convoluting probe " << probe.GetProbeIndex() << ".\n";
 		std::cout << "Irradiancing\n";
 	}
 	renderHandle->FindShader("CubemapToIrradiance")->Use();
-	int layer = probe.ProbeNr * 6;
+	int layer = probe.GetProbeIndex() * 6;
 
 	renderHandle->RenderCubemapFromTexture(probeTexArrays->IrradianceMapArr, *envMap, glm::uvec2(16), *renderHandle->FindShader("CubemapToIrradiance"), &layer);
 
 	if (PrimitiveDebugger::bDebugProbeLoading)
 		std::cout << "Prefiltering\n";
 	renderHandle->FindShader("CubemapToPrefilter")->Use();
-	renderHandle->FindShader("CubemapToPrefilter")->Uniform1f("cubemapNr", static_cast<float>(probe.ProbeNr));
+	renderHandle->FindShader("CubemapToPrefilter")->Uniform1f("cubemapNr", static_cast<float>(probe.GetProbeIndex()));
 	for (int mipmap = 0; mipmap < 5; mipmap++)
 	{
-		layer = probe.ProbeNr * 6;
+		layer = probe.GetProbeIndex()* 6;
 		renderHandle->FindShader("CubemapToPrefilter")->Uniform1f("roughness", static_cast<float>(mipmap) / 5.0f);
 		renderHandle->RenderCubemapFromTexture(probeTexArrays->PrefilterMapArr, *envMap, glm::vec2(256.0f) / std::pow(2.0f, static_cast<float>(mipmap)), *renderHandle->FindShader("CubemapToPrefilter"), &layer, mipmap);
 	}
@@ -115,7 +114,7 @@ Transform LocalLightProbe::GetTransform() const
 	return ProbeTransform;
 }
 
-LightProbeVolume::LightProbeVolume(const LightProbe& probe):
+LightProbeVolume::LightProbeVolume(const LightProbeComponent& probe):
 	ProbePtr(&probe)
 {
 }
@@ -127,7 +126,7 @@ EngineBasicShape LightProbeVolume::GetShape() const
 
 Transform LightProbeVolume::GetRenderTransform() const
 {
-	return ProbePtr->GetTransform();
+	return ProbePtr->GetTransform().GetWorldTransform();
 }
 
 Shader* LightProbeVolume::GetRenderShader(const RenderToolboxCollection& renderCol) const
@@ -137,7 +136,7 @@ Shader* LightProbeVolume::GetRenderShader(const RenderToolboxCollection& renderC
 
 void LightProbeVolume::SetupRenderUniforms(const Shader& shader) const
 {
-	shader.Uniform1f("lightProbeNr", ProbePtr->ProbeNr);
+	shader.Uniform1f("lightProbeNr", ProbePtr->GetProbeIndex());
 }
 
 LightProbeTextureArrays::LightProbeTextureArrays():

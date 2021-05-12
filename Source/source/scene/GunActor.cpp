@@ -34,7 +34,7 @@ void GunActor::Setup()
 	ModelComponent* found = dynamic_cast<ModelComponent*>(Scene.GetRenderData()->FindRenderable("FireParticle"));
 	std::cout << "Wyszukalem se: " << found << ".\n";
 	dynamic_cast<ModelComponent*>(found->SearchForComponent("Quad"))->SetRenderAsBillboard(true);
-	ParticleMeshInst = found->FindMeshInstance("Quad_NoShadow");
+	ParticleMeshInst = found->FindMeshInstance("Quad");
 	ParticleMeshInst->GetMaterialInst()->SetInterp(&dynamic_cast<AtlasMaterial*>(&ParticleMeshInst->GetMaterialInst()->GetMaterialRef())->GetTextureIDInterpolatorTemplate(Interpolation(0.0f, 0.25f, InterpolationType::LINEAR), 0.0f, dynamic_cast<AtlasMaterial*>(&ParticleMeshInst->GetMaterialInst()->GetMaterialRef())->GetMaxTextureID()));
 	ParticleMeshInst->GetMaterialInst()->SetDrawBeforeAnim(false);
 	ParticleMeshInst->GetMaterialInst()->SetDrawAfterAnim(false);
@@ -87,10 +87,10 @@ void GunActor::FireWeapon()
 	//TODO: Change it so the bullet is fired at the barrel, not at the center
 	std::unique_ptr<ModelComponent> bulletModel = std::make_unique<ModelComponent>(ModelComponent(actor, nullptr, "BulletModel" + std::to_string(FiredBullets++), Transform(GetTransform()->GetWorldTransform().PositionRef, glm::vec3(0.0f), glm::vec3(0.2f))));
 	bulletModel->OnStart();
-	EngineDataLoader::LoadModel("hqSphere/hqSphere.obj", *bulletModel, MeshTreeInstancingType::ROOTTREE, GameHandle->GetRenderEngineHandle()->FindMaterial("RustedIron"));
+	EngineDataLoader::LoadModel("hqSphere/hqSphere.obj", *bulletModel, MeshTreeInstancingType::ROOTTREE, GameHandle->GetRenderEngineHandle()->FindMaterial("RustedIron").get());
 
 	std::unique_ptr<CollisionObject> dupa = std::make_unique<CollisionObject>(CollisionObject(false, CollisionShapeType::COLLISION_SPHERE));
-	CollisionObject& col = *bulletModel->SetCollisionObject(dupa);
+	CollisionObject& col = *bulletModel->SetCollisionObject(std::move(dupa));
 	if (GunModel)
 		GameHandle->GetPhysicsHandle()->ApplyForce(col, GunModel->GetTransform().GetWorldTransform().GetFrontVec() * 0.25f);
 
@@ -119,7 +119,7 @@ void GunActor::GetEditorDescription(EditorDescriptionBuilder descBuilder)
 	blastField.GetTemplates().ComponentInput<SoundSourceComponent>(*GetRoot(), GunBlast);
 
 	UICanvasField& fireField = descBuilder.AddField("Fire");
-	fireField.CreateChild<UIButtonActor>("FireButton", "Fire", [this]() { FireWeapon(); }).GetTransform()->Move(glm::vec2(1.0f, 0.0f));
+	fireField.CreateChild<UIButtonActor>("FireButton", "Fire", [this]() { FireWeapon(); });
 
 	//[this]() {}
 }

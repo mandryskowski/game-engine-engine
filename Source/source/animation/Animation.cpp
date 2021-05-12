@@ -206,8 +206,8 @@ template<class ValType> void Interpolator<ValType>::UpdateInterpolatedValPtr()
 		*InterpolatedValPtr = Interp->InterpolateValues(MinVal, MaxVal);
 }
 
-Animation::Animation(aiAnimation* anim):
-	Name(anim->mName.C_Str()), Duration(anim->mDuration / ((anim->mTicksPerSecond != 0.0f) ? (anim->mTicksPerSecond) : (1.0f)))
+Animation::Animation(const HierarchyTemplate::HierarchyTreeT& tree, aiAnimation* anim):
+	Localization(tree, anim->mName.C_Str()), Duration(anim->mDuration / ((anim->mTicksPerSecond != 0.0f) ? (anim->mTicksPerSecond) : (1.0f)))
 {
 	for (int i = 0; i < static_cast<int>(anim->mNumChannels); i++)
 	{

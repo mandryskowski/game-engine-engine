@@ -11,7 +11,7 @@ public:
 	UIButtonActor(GameScene&, const std::string& name, const std::string& buttonTextContent, std::function<void()> onClickFunc = nullptr, std::function<void()> whileBeingClickedFunc = nullptr);
 
 	ModelComponent* GetButtonModel();
-	virtual Box2f GetBoundingBox(bool world = true) override;
+	virtual Boxf<Vec2f> GetBoundingBox(bool world = true) override;
 
 	void SetMatIdle(MaterialInstance&&);
 	void SetMatHover(MaterialInstance&&);

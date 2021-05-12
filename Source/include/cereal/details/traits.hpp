@@ -1362,6 +1362,8 @@ namespace cereal
                      "} \n\n" );
       static T * load_andor_construct()
       { return ::cereal::access::construct<T>(); }
+      template <typename... Args> static T * load_andor_construct(Args&&... args)
+      { return ::cereal::access::construct<T>(std::forward<Args>(args)...); }
     };
 
     // member non-versioned

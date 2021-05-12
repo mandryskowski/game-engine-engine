@@ -9,6 +9,7 @@ class Actor;
 class UIActor;
 class UIScrollBarActor;
 class UICanvasField;
+class UICanvasFieldCategory;
 
 class UICanvas
 {
@@ -24,10 +25,12 @@ public:
 
 	virtual glm::mat4 GetProjection() const;
 
-	Box2f GetBoundingBox() const;	//Canvas space
+	Boxf<Vec2f> GetBoundingBox() const;	//Canvas space
 
-	void ClampViewToElements();
+	virtual void ClampViewToElements();
+	void AutoClampView(bool trueHorizontalFalseVertical = true);	//Set to false to set view scale to 100% of vertical size, or leave it as it is to set it to 100% of horizontal size
 
+	virtual UICanvasFieldCategory& AddCategory(const std::string& name) = 0;
 	virtual UICanvasField& AddField(const std::string& name, std::function<glm::vec3()> getElementOffset = nullptr) = 0;
 
 	void AddUIElement(UICanvasElement&);
@@ -35,7 +38,7 @@ public:
 	void AddUIElement(UIActor&);	//Add the actor and its components
 	void EraseUIElement(UICanvasElement&);
 	void RemoveUIElement(UICanvasElement*);
-	void ScrollView(glm::vec2 offset);
+	void ScrollView(Vec2f offset);
 	void SetViewScale(glm::vec2 scale);
 	virtual RenderInfo BindForRender(const RenderInfo&, const glm::uvec2& res) = 0;
 	virtual void UnbindForRender(const glm::uvec2& res) = 0;

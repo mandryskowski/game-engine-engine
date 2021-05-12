@@ -40,11 +40,28 @@ class AnimationInstance
 public:
 	AnimationInstance(Animation&, Component&);
 
+	Animation::AnimationLoc GetLocalization() const;
 	Animation& GetAnimation() const;
 	bool HasFinished() const;
 	void Update(float);
 	void Stop();
 	void Restart();
+
+	template <typename Archive> void Save(Archive& archive) const
+	{
+		archive(cereal::make_nvp("AnimHierarchyTreePath", GetLocalization().GetTreeName()), cereal::make_nvp("AnimName", GetLocalization().Name), cereal::make_nvp("RootCompName", AnimRootComp.GetName()), cereal::make_nvp("RootCompActorName", AnimRootComp.GetActor().GetName()));
+	}
+	template <typename Archive> static void load_and_construct(Archive& archive, cereal::construct<AnimationInstance>& construct)
+	{
+		std::cout << "a tera instancje animacji\n";
+		std::string animHierarchyTreePath, animName, rootCompName, rootCompActorName;
+		archive(cereal::make_nvp("AnimHierarchyTreePath", animHierarchyTreePath), cereal::make_nvp("AnimName", animName), cereal::make_nvp("RootCompName", rootCompName), cereal::make_nvp("RootCompActorName", rootCompActorName));
+
+		Animation& anim = *GameManager::DefaultScene->GetGameHandle()->FindHierarchyTree(animHierarchyTreePath)->FindAnimation(animName);
+		Component& comp = *GameManager::DefaultScene->FindActor(rootCompActorName)->GetRoot()->GetComponent<Component>(rootCompName);
+
+		construct(anim, comp);
+	}
 };
 
 class AnimationManagerComponent : public Component
@@ -65,4 +82,20 @@ public:
 	void SelectAnimation(AnimationInstance*);
 
 	virtual void GetEditorDescription(EditorDescriptionBuilder) override;
+
+	template <typename Archive> void Save(Archive& archive) const
+	{
+		archive(cereal::make_nvp("AnimInstances", cereal::defer(AnimInstances)), cereal::make_nvp("CurrentAnimName", std::string((CurrentAnim) ? (CurrentAnim->GetLocalization().Name) : (""))), cereal::base_class<Component>(this));
+	}
+	template <typename Archive> void Load(Archive& archive)
+	{
+		std::cout << "robie animationmanagercomponent\n";
+		std::string currentAnimName;
+		archive(cereal::make_nvp("AnimInstances", cereal::defer(AnimInstances)), cereal::make_nvp("CurrentAnimName", currentAnimName), cereal::base_class<Component>(this));
+
+		if (!currentAnimName.empty())
+			for (auto& it : AnimInstances)
+				if (it->GetLocalization().Name == currentAnimName)
+					SelectAnimation(it.get());
+	}
 };

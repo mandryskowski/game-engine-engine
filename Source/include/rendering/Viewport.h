@@ -17,7 +17,7 @@ private:
 	glm::uvec2 Size;
 };
 
-class NDCViewport: protected Box2f
+class NDCViewport: protected Boxf<Vec2f>
 {
 public:
 	NDCViewport(glm::vec2 pos, glm::vec2 size);
@@ -29,5 +29,5 @@ public:
 	Viewport ToPxViewport(const glm::uvec2& res) const;
 
 	bool Contains(const glm::vec2&) const;
-	bool Contains(const Box2f&) const;
+	bool Contains(const Boxf<Vec2f>&) const;
 };

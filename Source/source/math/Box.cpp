@@ -2,59 +2,56 @@
 #include <math/Transform.h>
 #include <iostream>
 
-Box2f::Box2f(const glm::vec2& pos, const glm::vec2& size):
+
+template <typename VecType> Boxf<VecType>::Boxf(const VecType& pos, const VecType& size):
 	Position(pos), Size(size)
 {
 }
 
-Box2f::Box2f(const Transform& t):
+template <typename VecType> Boxf<VecType>::Boxf(const Transform& t):
 	Position(t.PositionRef),
 	Size(t.ScaleRef)
 {
 }
 
-float Box2f::GetRight() const
+template <typename VecType> float Boxf<VecType>::GetRight() const
 {
 	return Position.x + Size.x;
 }
 
-float Box2f::GetLeft() const
+template <typename VecType> float Boxf<VecType>::GetLeft() const
 {
 	return Position.x - Size.x;
 }
 
-float Box2f::GetTop() const
+template <typename VecType> float Boxf<VecType>::GetTop() const
 {
 	return Position.y + Size.y;
 }
 
-float Box2f::GetBottom() const
+template <typename VecType> float Boxf<VecType>::GetBottom() const
 {
 	return Position.y - Size.y;
 }
 
-bool Box2f::Contains(const glm::vec2& point) const
+template <typename VecType> bool Boxf<VecType>::Contains(const VecType& point) const
 {
-	glm::vec2 thisRightUp = Position + Size;
-	glm::vec2 thisLeftDown = Position - Size;
+	VecType thisRightUp = Position + Size;
+	VecType thisLeftDown = Position - Size;
 
-	//std::cout << glm::step(thisLeftDown, point).x << " " << glm::step(thisLeftDown, point).y << "||||" << glm::step(point, thisRightUp).x << " " << glm::step(point, thisRightUp).y << ";\n";
-	if (glm::step(thisLeftDown, point) * glm::step(point, thisRightUp) == glm::vec2(1.0f))
-		return true;
-
-	return false;
+	return BoxBase::Contains(point, thisLeftDown, thisRightUp);
 }
 
-bool Box2f::Contains(const Box2f& rhs) const
+template <typename VecType> bool Boxf<VecType>::Contains(const Boxf<VecType>& rhs) const
 {
-	glm::vec2 thisRightUp = Position + Size;
-	glm::vec2 thisLeftDown = Position - Size;
+	VecType thisRightUp = Position + Size;
+	VecType thisLeftDown = Position - Size;
 
-	glm::vec2 rhsRightUp = rhs.Position + rhs.Size;
-	glm::vec2 rhsLeftDown = rhs.Position - rhs.Size;
+	VecType rhsRightUp = rhs.Position + rhs.Size;
+	VecType rhsLeftDown = rhs.Position - rhs.Size;
 
-	if ((glm::step(thisLeftDown, rhsRightUp) * glm::step(rhsRightUp, thisRightUp) == glm::vec2(1.0f)) && (glm::step(thisLeftDown, rhsLeftDown) * glm::step(rhsLeftDown, thisRightUp) == glm::vec2(1.0f)))
-		return true;
-
-	return false;
+	return BoxBase::Contains(thisLeftDown, thisRightUp, rhsLeftDown, rhsRightUp);
 }
+
+template class Boxf<Vec2f>;
+template class Boxf<Vec3f>;

@@ -18,9 +18,9 @@ UICanvasElement::UICanvasElement(UICanvasElement&& element):
 	}
 }
 
-Box2f UICanvasElement::GetBoundingBox(bool world)
+Boxf<Vec2f> UICanvasElement::GetBoundingBox(bool world)
 {
-	return Box2f(glm::vec2(0.0f), glm::vec2(0.0f));
+	return Boxf<Vec2f>(glm::vec2(0.0f), glm::vec2(0.0f));
 }
 
 UICanvas* UICanvasElement::GetCanvasPtr()

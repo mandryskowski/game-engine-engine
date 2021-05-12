@@ -5,10 +5,8 @@
 
 class CameraComponent: public Component
 {
-	glm::vec3 RotationEuler;
-
-	
-	glm::mat4 Projection;	
+	Vec3f RotationEuler;
+	Mat4f Projection;	
 
 public:
 	CameraComponent(Actor&, Component* parentComp, std::string name, const glm::mat4& projectionMatrix = glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f));
@@ -21,4 +19,24 @@ public:
 	virtual void Update(float);		//controls the component
 
 	virtual MaterialInstance GetDebugMatInst(EditorIconState) override;
+
+	virtual void GetEditorDescription(EditorDescriptionBuilder);
+	template <typename Archive> void Save(Archive& archive) const
+	{
+		archive(CEREAL_NVP(RotationEuler), CEREAL_NVP(Projection), cereal::make_nvp("Active", Scene.GetActiveCamera() == this), cereal::make_nvp("Component", cereal::base_class<Component>(this)));
+	}
+	template <typename Archive> void Load(Archive& archive)
+	{
+		bool active;
+		archive(CEREAL_NVP(RotationEuler), CEREAL_NVP(Projection), cereal::make_nvp("Active", active), cereal::make_nvp("Component", cereal::base_class<Component>(this)));
+		if (active)
+			Scene.BindActiveCamera(this);
+	}
+	~CameraComponent();
 };
+/*
+namespace cereal
+{
+	template <class Archive>
+	struct specialize<Archive, CameraComponent, cereal::specialization::member_serialize> {};
+}*/

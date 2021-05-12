@@ -1,7 +1,7 @@
 #pragma once
+#include <math/Box.h>
 
 class UICanvas;
-class Box2f;
 class Transform;
 
 
@@ -11,7 +11,7 @@ public:
 	UICanvasElement();
 	UICanvasElement(const UICanvasElement&) = delete;
 	UICanvasElement(UICanvasElement&&);
-	virtual Box2f GetBoundingBox(bool world = true);	//Returns a box at (0, 0) of size (0, 0). Canvas space
+	virtual Boxf<Vec2f> GetBoundingBox(bool world = true);	//Returns a box at (0, 0) of size (0, 0). Canvas space
 	UICanvas* GetCanvasPtr();
 
 	virtual ~UICanvasElement();

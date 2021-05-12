@@ -1,8 +1,11 @@
 #pragma once
+#include <cereal/types/memory.hpp>
+#include <cereal/types/polymorphic.hpp>
+#include <cereal/types/vector.hpp>
 #include <game/GameManager.h>
-#include <math/Transform.h>
 #include <game/GameScene.h>
 #include <editor/EditorManager.h>
+#include <math/Transform.h>
 
 enum class EditorElementRepresentation
 {
@@ -19,6 +22,17 @@ struct EditorElementDesc
 
 class EditorDescriptionBuilder;
 
+class Killable
+{
+public:
+	virtual bool IsBeingKilled();
+	template <typename FieldType> void AddReference(FieldType&);
+	template <typename FieldType> void RemoveReference(FieldType&);
+protected:
+	virtual void MarkAsKilled();
+
+};
+
 class Component
 {
 public:
@@ -31,6 +45,8 @@ public:
 protected:
 	template <typename CompClass> friend class HierarchyTemplate::HierarchyNode;
 	Component& operator=(const Component&);
+
+	template <typename FieldType> void AddToGarbageCollector(FieldType*& field);
 public:
 	Component& operator=(Component&&);
 
@@ -47,6 +63,7 @@ public:
 			Children[i]->DebugHierarchy(nrTabs + 1);
 	}
 
+	Actor& GetActor() const;
 	const std::string& GetName() const;
 	Transform& GetTransform();
 	const Transform& GetTransform() const;
@@ -58,7 +75,7 @@ public:
 
 	void SetName(std::string name);
 	void SetTransform(Transform transform);
-	CollisionObject* SetCollisionObject(std::unique_ptr<CollisionObject>&);
+	CollisionObject* SetCollisionObject(std::unique_ptr<CollisionObject>);
 	void AddComponent(std::unique_ptr<Component> component);
 	void AddComponents(std::vector<std::unique_ptr<Component>> components);
 
@@ -77,7 +94,7 @@ public:
 	virtual void DebugRender(RenderInfo info, Shader* shader) const; //this method should only be called to render the component as something (usually a textured billboard) to debug the project.
 	void DebugRenderAll(RenderInfo info, Shader* shader) const;
 
-	virtual AtlasMaterial& LoadDebugRenderMaterial(const std::string& materialName, const std::string& path);
+	virtual std::shared_ptr<AtlasMaterial> LoadDebugRenderMaterial(const std::string& materialName, const std::string& path);
 	virtual MaterialInstance GetDebugMatInst(EditorIconState);
 
 	Component* SearchForComponent(std::string name);
@@ -123,11 +140,44 @@ public:
 
 	void MarkAsKilled();
 
-	template <typename Archive> void Serialize(Archive& archive)
+	template <typename Archive> void Save(Archive& archive)	 const
 	{
-		archive(Name, ComponentTransform);
+		archive(CEREAL_NVP(Name), CEREAL_NVP(ComponentTransform), CEREAL_NVP(CollisionObj));
+		archive(CEREAL_NVP(Children));
 	}
+	template <typename Archive> void Load(Archive& archive)
+	{
+		archive(CEREAL_NVP(Name), CEREAL_NVP(ComponentTransform), CEREAL_NVP(CollisionObj));
+		if (CollisionObj)
+			Scene.GetPhysicsData()->AddCollisionObject(*CollisionObj, ComponentTransform);
 
+		std::cout << "Serializing comp " << Name << '\n';
+		if (GameHandle->HasStarted())
+			OnStartAll();
+
+		/*
+			This code is not very elegant; it's because Components and Actors are not default_constructible.
+			We always need to pass at least one reference to either the GameScene (in the case of Actors) or to the Actor (of the constructed Component).
+			Furthermore, if an Actor/Component is not at the root of hierarchy (of a scene/an actor) we should always pass the pointer to the parent to the constructor, since users might wrongly assume that an Actor/Component is the root if the parent pointer passed to the constructor is nullptr.
+			This might lead to bugs, so we avoid that.
+		*/
+		
+		cereal::LoadAndConstruct<Component>::ParentComp = this;	//Set the static parent pointer to this
+		archive(CEREAL_NVP(Children));	//We want all children to be constructed using the pointer. IMPORTANT: The first child will be serialized (the Load method will be called) before the next child is constructed! So the ParentComp pointer will be changed to the address of the new child when we construct its children. We counteract that in the next line.
+		cereal::LoadAndConstruct<Component>::ParentComp = ParentComponent;	//There are no more children of this to serialize, so we "move up" the hierarchy and change the parent pointer to the parent of this, to allow brothers (other children of parent of this) to be constructed.
+
+		for (auto& it : Children)
+			it->GetTransform().SetParentTransform(&ComponentTransform);
+	}
+	/*template <class Archive>
+	static void load_and_construct(Archive& ar, cereal::construct<Component>& construct)
+	{
+		if (!LoadAndConstruct<Component>::ActorRef)
+			return;
+		construct(*LoadAndConstruct<Component>::ActorRef, LoadAndConstruct<Component>::ParentComp, "");
+		construct->Load(ar);
+	}
+	*/
 	virtual ~Component();
 
 public:
@@ -149,7 +199,7 @@ public:
 
 	bool bKillingProcessStarted;
 
-	AtlasMaterial* DebugRenderMat;
+	std::shared_ptr<AtlasMaterial> DebugRenderMat;
 	std::shared_ptr<MaterialInstance> DebugRenderMatInst;
 	mutable glm::mat4 DebugRenderLastFrameMVP;
 };
@@ -178,3 +228,120 @@ inline ChildClass& Component::CreateComponent(Args&&... args)
 	return (ChildClass&)childRef;
 }
 void CollisionObjRendering(RenderInfo& info, GameManager& gameHandle, CollisionObject& obj, const Transform& t, const glm::vec3& color = glm::vec3(0.1f, 0.6f, 0.3f));
+
+namespace cereal
+{
+	
+	template <> struct LoadAndConstruct<Component>
+	{
+		static Actor* ActorRef;			//= dummy actor
+		static Component* ParentComp;	//= always nullptr
+		template <class Archive>
+		static void load_and_construct(Archive& ar, cereal::construct<Component>& construct)
+		{
+			std::cout << "trying to construct comp " << ActorRef << '\n';
+			if (!ActorRef)
+				return;
+
+			construct(*ActorRef, ParentComp);
+			//ar(base_class<Component>(construct.ptr()));
+			construct->Load(ar);
+			//ar(*construct.ptr());
+		}
+	};
+	
+	template <> struct LoadAndConstruct<CameraComponent>
+	{
+		template <class Archive>
+		static void load_and_construct(Archive& ar, cereal::construct<CameraComponent>& construct)
+		{
+			if (!LoadAndConstruct<Component>::ActorRef)
+				return;
+			construct(*LoadAndConstruct<Component>::ActorRef, LoadAndConstruct<Component>::ParentComp, "");
+			construct->Load(ar);
+		}
+	};
+
+	template <> struct LoadAndConstruct<ModelComponent>
+	{
+		template <class Archive>
+		static void load_and_construct(Archive& ar, cereal::construct<ModelComponent>& construct)
+		{
+			if (!LoadAndConstruct<Component>::ActorRef)
+				return;
+			construct(*LoadAndConstruct<Component>::ActorRef, LoadAndConstruct<Component>::ParentComp, "");
+			construct->Load(ar);
+		}
+	};
+
+	template <> struct LoadAndConstruct<TextComponent>
+	{
+		template <class Archive>
+		static void load_and_construct(Archive& ar, cereal::construct<TextComponent>& construct)
+		{
+			if (!LoadAndConstruct<Component>::ActorRef)
+				return;
+
+			construct(*LoadAndConstruct<Component>::ActorRef, LoadAndConstruct<Component>::ParentComp, "", Transform(), "", "");
+			construct->Load(ar);
+		}
+	};
+
+	template <> struct LoadAndConstruct<BoneComponent>
+	{
+		template <class Archive>
+		static void load_and_construct(Archive& ar, cereal::construct<BoneComponent>& construct)
+		{
+			if (!LoadAndConstruct<Component>::ActorRef)
+				return;
+			construct(*LoadAndConstruct<Component>::ActorRef, LoadAndConstruct<Component>::ParentComp, "");
+			construct->Load(ar);
+		}
+	};
+
+	template <> struct LoadAndConstruct<LightComponent>
+	{
+		template <class Archive>
+		static void load_and_construct(Archive& ar, cereal::construct<LightComponent>& construct)
+		{
+			if (!LoadAndConstruct<Component>::ActorRef)
+				return;
+			construct(*LoadAndConstruct<Component>::ActorRef, LoadAndConstruct<Component>::ParentComp, "");
+			construct->LightComponent::Load(ar);	
+		}
+	};
+
+	template <> struct LoadAndConstruct<SoundSourceComponent>
+	{
+		template <class Archive>
+		static void load_and_construct(Archive& ar, cereal::construct<SoundSourceComponent>& construct)
+		{
+			if (!LoadAndConstruct<Component>::ActorRef)
+				return;
+			construct(*LoadAndConstruct<Component>::ActorRef, LoadAndConstruct<Component>::ParentComp, "");
+			construct->SoundSourceComponent::Load(ar);
+		}
+	};
+	template <> struct LoadAndConstruct<AnimationManagerComponent>
+	{
+		template <class Archive>
+		static void load_and_construct(Archive& ar, cereal::construct<AnimationManagerComponent>& construct)
+		{
+			if (!LoadAndConstruct<Component>::ActorRef)
+				return;
+			construct(*LoadAndConstruct<Component>::ActorRef, LoadAndConstruct<Component>::ParentComp, "");
+			construct->Load(ar);
+		}
+	};
+	template <> struct LoadAndConstruct<LightProbeComponent>
+	{
+		template <class Archive>
+		static void load_and_construct(Archive& ar, cereal::construct<LightProbeComponent>& construct)
+		{
+			if (!LoadAndConstruct<Component>::ActorRef)
+				return;
+			construct(*LoadAndConstruct<Component>::ActorRef, LoadAndConstruct<Component>::ParentComp, "");
+			construct->Load(ar);
+		}
+	};
+}

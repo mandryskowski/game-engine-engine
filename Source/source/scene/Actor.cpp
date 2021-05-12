@@ -4,6 +4,8 @@
 #include <rendering/RenderInfo.h>
 #include <vector>
 
+GameScene* cereal::LoadAndConstruct<Actor>::ScenePtr = nullptr;
+
 Actor::Actor(GameScene& scene, const std::string& name) :
 	Scene(scene),
 	Name(name),
@@ -27,7 +29,7 @@ Actor::Actor(Actor&& moved):
 	GameHandle(moved.GameHandle),
 	bKillingProcessStarted(moved.bKillingProcessStarted)
 {
-	std::cout << "ERROR: MOVE CONSTRUCTOR NIE DZIALA.\n";
+	std::cout << "UWAGA: MOVE CONSTRUCTOR NIE DZIALA.\n";
 	RootComponent = std::make_unique<Component>(*this, nullptr, Name + "'s root", Transform());
 	//exit(-1);
 }
@@ -48,7 +50,7 @@ void Actor::OnStartAll()
 
 Component* Actor::GetRoot() const
 {
-	return RootComponent.get();
+ 	return RootComponent.get();
 }
 
 std::string Actor::GetName() const
@@ -70,7 +72,6 @@ std::vector<Actor*> Actor::GetChildren()
 {
 	std::vector<Actor*> children;
 	children.reserve(Children.size());
-	std::cout << "Dzieci: " << Children.size() << '\n';
 	std::transform(Children.begin(), Children.end(), std::back_inserter(children), [](std::unique_ptr<Actor>& child) -> Actor*{ return child.get(); });
 
 	return children;
@@ -79,6 +80,11 @@ std::vector<Actor*> Actor::GetChildren()
 GameScene& Actor::GetScene()
 {
 	return Scene;
+}
+
+GameManager* Actor::GetGameHandle()
+{
+	return GameHandle;
 }
 
 bool Actor::IsBeingKilled() const
@@ -93,6 +99,11 @@ void Actor::SetName(const std::string& name)
 
 void Actor::DebugHierarchy(int nrTabs)
 {
+	std::string tabs;
+	for (int i = 0; i < nrTabs; i++)
+		tabs += "	";
+
+	std::cout << tabs + Name + " (Actor)\n";
 	RootComponent->DebugHierarchy(nrTabs);
 	for (int i = 0; i < static_cast<int>(Children.size()); i++)
 		Children[i]->DebugHierarchy(nrTabs + 1);
@@ -187,19 +198,23 @@ void Actor::Update(float deltaTime)
 
 void Actor::UpdateAll(float deltaTime)
 {
-	Update(deltaTime);
-	for (unsigned int i = 0; i < Children.size(); i++)
-		Children[i]->UpdateAll(deltaTime);
-
 	if (IsBeingKilled())
 	{
 		Delete();
+		return;
 	}
+
+	Update(deltaTime);
+	for (unsigned int i = 0; i < Children.size(); i++)
+		Children[i]->UpdateAll(deltaTime);
 }
 
 void Actor::MarkAsKilled()
 {
 	bKillingProcessStarted = true;
+	if (!RootComponent->IsBeingKilled())	//Check if the root is not being killed to avoid infinite recursion (killing the root kills the actor which kills the root which kills the actor...)
+		RootComponent->MarkAsKilled();
+
 	for (auto& it : Children)
 		it->MarkAsKilled();	
 }
@@ -208,13 +223,11 @@ void Actor::Delete()
 {
 	if (RootComponent)
 		RootComponent = nullptr;
-	if (!ParentActor)
-	{
-		std::cout << "ERROR! Cannot delete actor " + GetName() + " because it doesn't have a parent (root?)\n";
-		return;
-	}
 
-	ParentActor->Children.erase(std::remove_if(ParentActor->Children.begin(), ParentActor->Children.end(), [this](std::unique_ptr<Actor>& child) { return child.get() == this; }), ParentActor->Children.end());
+	if (!ParentActor)
+		std::cout << "INFO: Cannot delete actor " + GetName() + " because it doesn't have a parent (it is probably the root of a scene). Hopefully it will be deleted when the scene gets deleted.\n";
+	else
+		ParentActor->Children.erase(std::remove_if(ParentActor->Children.begin(), ParentActor->Children.end(), [this](std::unique_ptr<Actor>& child) { return child.get() == this; }), ParentActor->Children.end());
 }
 
 void Actor::DebugRender(RenderInfo info, Shader* shader) const
@@ -257,9 +270,10 @@ void Actor::GetEditorDescription(EditorDescriptionBuilder descBuilder)
 	textActor.DeleteButtonModel();
 	textActor.SetTransform(Transform(glm::vec2(0.0f, 1.5f), glm::vec2(1.0f)));
 
+
 	UICanvasField& deleteField = descBuilder.AddField("Delete");
-	deleteField.CreateChild<UIButtonActor>("DeleteButton", "Delete", [this, descBuilder]() mutable { 
+	deleteField.CreateChild<UIButtonActor>("DeleteButton", "Delete", [this, descBuilder]() mutable {
 		MarkAsKilled();
 		descBuilder.RefreshScene();	//Actor will be deselected automatically - SelectActor(nullptr) is always called in SelectScene(...).
-		}).GetTransform()->Move(glm::vec2(1.0f, 0.0f));
+		});
 }

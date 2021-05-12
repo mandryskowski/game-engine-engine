@@ -24,6 +24,7 @@ public:
 
 	bool HasValidShadowMap() const;
 	void MarkValidShadowMap();
+	bool ShouldCullFrontsForShadowMap() const;
 
 	void InvalidateCache();
 
@@ -32,6 +33,9 @@ public:
 	void CalculateLightRadius();	//calculates ProjectionMat and Far
 	void SetAdditionalData(glm::vec3);
 	void SetAttenuation(float);
+	void SetCutOff(float);
+	void SetOuterCutOff(float);
+	void SetShadowBias(float);
 	void SetType(LightType);
 	void SetIndex(unsigned int);
 	void UpdateUBOData(UniformBuffer*, size_t = -1);
@@ -39,21 +43,47 @@ public:
 
 	virtual	MaterialInstance GetDebugMatInst(EditorIconState) override;
 	virtual void GetEditorDescription(EditorDescriptionBuilder) override;
+	
+	template <typename Archive> void Save(Archive& archive) const
+	{
+		archive(cereal::make_nvp("Lighttype", static_cast<int>(Type)), CEREAL_NVP(Ambient), CEREAL_NVP(Diffuse), CEREAL_NVP(Specular), CEREAL_NVP(Attenuation), CEREAL_NVP(CutOff), CEREAL_NVP(OuterCutOff), CEREAL_NVP(Far), cereal::make_nvp("Component", cereal::base_class<Component>(this)));
+	}
+	template <typename Archive> void Load(Archive& archive)
+	{
+		LightType type;
+		Vec3f ambient, diffuse, specular;
+		float attenuation, cutOff, outerCutOff, far;
+
+		archive(cereal::make_nvp("Lighttype", type), cereal::make_nvp("Ambient", ambient), cereal::make_nvp("Diffuse", diffuse), cereal::make_nvp("Specular", specular), cereal::make_nvp("Attenuation", attenuation), cereal::make_nvp("CutOff", cutOff), cereal::make_nvp("OuterCutOff", outerCutOff), cereal::make_nvp("Far", far), cereal::base_class<Component>(this));
+		SetType(type);
+		Ambient = ambient;
+		Diffuse = diffuse;
+		Specular = specular;
+		
+		Far = far;
+		SetAttenuation(attenuation);
+		SetCutOff(cutOff);
+		SetOuterCutOff(outerCutOff);
+
+		InvalidateCache();	//make sure that everything is invalidated; e.g. loading a point light won't invalidate its shadowmaps because the light type we set is identical
+	}
 
 	virtual ~LightComponent();
 
 private:
 	LightType Type;
 
-	glm::vec3 Ambient;
-	glm::vec3 Diffuse;
-	glm::vec3 Specular;
+	Vec3f Ambient;
+	Vec3f Diffuse;
+	Vec3f Specular;
 
 	float Attenuation;
 	float CutOff;			//"additional data"
 	float OuterCutOff;		//cutoff angles are defined as: glm::cos( glm::radians( angle in degrees ) )
+
+	float ShadowBias;
+	bool bShadowMapCullFronts;
 	//
-	float OuterCutOffBeforeCos;	//for optimisation purposes; it allows to calculate a cone's radius more easily
 
 	unsigned int LightIndex;
 	unsigned int ShadowMapNr;

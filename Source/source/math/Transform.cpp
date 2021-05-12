@@ -1,5 +1,7 @@
 #include <math/Transform.h>
 #include <glm/gtx/matrix_decompose.hpp>
+#include <UI/UICanvasActor.h> // for EditorDescriptionBuilder
+#include <UI/UICanvasField.h> // for EditorDescriptionBuilder
 
 float beginning;
 
@@ -20,7 +22,7 @@ void Transform::FlagWorldDirtiness() const
 }
 
 Transform::Transform():
-	Transform(glm::vec3(0.0f))
+	Transform(Vec3f(0.0f))
 {
 }
 
@@ -286,6 +288,8 @@ void Transform::SetParentTransform(Transform* parent, bool relocate)
 	
 	ParentTransform = parent;
 	ParentTransform->AddChild(this);
+
+	FlagWorldDirtiness();
 }
 
 void Transform::AddChild(Transform* t)
@@ -393,6 +397,14 @@ void Transform::Update(float deltaTime)
 		FlagMyDirtiness();
 }
 
+
+void Transform::GetEditorDescription(EditorDescriptionBuilder descBuilder)
+{
+	descBuilder.AddField("Position").GetTemplates().VecInput<glm::vec3>([this](float x, float val) {glm::vec3 pos = PositionRef; pos[x] = val; SetPosition(pos); }, [this](float x) { return PositionRef[x]; });
+	descBuilder.AddField("Rotation").GetTemplates().VecInput<glm::quat>([this](float x, float val) {glm::quat rot = RotationRef; rot[x] = val; SetRotation(glm::normalize(rot)); }, [this](float x) { return RotationRef[x]; });
+	descBuilder.AddField("Scale").GetTemplates().VecInput<glm::vec3>([this](float x, float val) {glm::vec3 scale = ScaleRef; scale[x] = val; SetScale(scale); }, [this](float x) { return ScaleRef[x]; });
+}
+
 void Transform::Print(std::string name) const
 {
 	std::cout << "===Transform " + name + ", child of " << ParentTransform << "===\n";
@@ -428,8 +440,8 @@ Transform& Transform::operator*=(const Transform& t)
 {
 	FlagMyDirtiness();
 	Position += static_cast<glm::mat3>(GetMatrix()) * t.Position;
-	Rotation *= t.Rotation;
-	Scale *= t.Scale;
+	Rotation *= (glm::quat)t.Rotation;
+	Scale *= (glm::vec3)t.Scale;
 	return *(this);
 }
 

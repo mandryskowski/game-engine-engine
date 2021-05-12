@@ -186,6 +186,8 @@ public:
 	}
 	virtual void AddTbsRequiredBySettings()
 	{	
+		Dispose();
+		
 		std::cout << "Tobox 1.\n";
 		if (Settings.AAType == AA_SMAA1X || Settings.AAType == AA_SMAAT2X)
 			AddTb<SMAAToolbox>(SMAAToolbox(Settings));
@@ -220,8 +222,8 @@ public:
 	}
 	void Dispose()
 	{
-		for (int i = 0; i < static_cast<int>(Tbs.size()); i++)
-			Tbs[i]->Dispose();
+		for (auto& tb : Tbs)
+			tb->Dispose();
 
 		Tbs.clear();
 	}

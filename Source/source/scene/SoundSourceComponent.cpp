@@ -2,6 +2,7 @@
 #include <rendering/Material.h>
 #include <iostream>
 #include <glm/gtc/type_ptr.hpp>
+#include <math/Transform.h>
 
 SoundSourceComponent::SoundSourceComponent(Actor& actor, Component* parentComp, std::string name, SoundBuffer* buffer, Transform transform):
 	Component(actor, parentComp, name, transform), ALIndex(0), BufferPtr(buffer)
@@ -80,7 +81,7 @@ void SoundSourceComponent::Stop()
 void SoundSourceComponent::Update(float deltaTime)
 {
 	if (ALIndex != 0)
-		alSourcefv(ALIndex, AL_POSITION, glm::value_ptr(ComponentTransform.GetWorldTransform().PositionRef));
+		alSourcefv(ALIndex, AL_POSITION, glm::value_ptr((glm::vec3)ComponentTransform.GetWorldTransform().PositionRef));
 }
 
 MaterialInstance SoundSourceComponent::GetDebugMatInst(EditorIconState state)
@@ -92,12 +93,14 @@ MaterialInstance SoundSourceComponent::GetDebugMatInst(EditorIconState state)
 #include <UI/UICanvasActor.h>
 #include <UI/UICanvasField.h>
 #include <assetload/FileLoader.h>
+#include <scene/UIButtonActor.h>
 
 void SoundSourceComponent::GetEditorDescription(EditorDescriptionBuilder descBuilder)
 {
 	Component::GetEditorDescription(descBuilder);
 
-	descBuilder.AddField("Path").GetTemplates().PathInput([this](const std::string& path) {GameHandle->GetAudioEngineHandle()->CheckError(); GenAL(GameHandle->GetAudioEngineHandle()->LoadBufferFromFile(path)); GameHandle->GetAudioEngineHandle()->CheckError(); }, [this]()->std::string { if (BufferPtr) return BufferPtr->Path; return std::string(); });
+	descBuilder.AddField("Path").GetTemplates().PathInput([this](const std::string& path) {GameHandle->GetAudioEngineHandle()->CheckError(); GenAL(GameHandle->GetAudioEngineHandle()->LoadBufferFromFile(path)); GameHandle->GetAudioEngineHandle()->CheckError(); }, [this]()->std::string { if (BufferPtr) return BufferPtr->Path; return std::string(); }, { "*.wav" });
+	descBuilder.AddField("Play").CreateChild<UIButtonActor>("PlayButton", "Play", [this]() { Play(); });
 }
 
 void SoundSourceComponent::Dispose()

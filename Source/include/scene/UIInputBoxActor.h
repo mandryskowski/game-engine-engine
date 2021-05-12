@@ -8,10 +8,13 @@ class UIInputBoxActor : public UIActivableButtonActor
 {
 public:
 	UIInputBoxActor(GameScene&, const std::string& name);
+	UIInputBoxActor(GameScene&, const std::string& name, std::function<void(const std::string&)> inputFunc, std::function<std::string()> valueGetter);
+	UIInputBoxActor(GameScene&, const std::string& name, std::function<void(float)> inputFunc, std::function<float()> valueGetter, bool fixNumberStr = true);
 	//UIInputBoxActor(UIInputBoxActor&&);
 
 	virtual void OnStart() override;
 
+	std::string GetContent();
 	void PutString(const std::string&);
 
 	void SetOnInputFunc(std::function<void(const std::string&)> inputFunc, std::function<std::string()> valueGetter);
@@ -24,7 +27,6 @@ public:
 	virtual void OnClick() override;	//On activation
 	virtual void OnDeactivation() override;
 private:
-
 	std::function<void()> ValueGetter;
 	TextConstantSizeComponent* ContentTextComp;
 	bool RetrieveContentEachFrame;

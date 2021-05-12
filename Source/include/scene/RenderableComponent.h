@@ -12,7 +12,8 @@ class RenderableComponent: public Component, public Renderable
 {
 public:
 	RenderableComponent::RenderableComponent(Actor& actor, Component* parentComp, const std::string name, const Transform& transform) :
-		Component(actor, parentComp, name, transform)
+		Component(actor, parentComp, name, transform),
+		Hide(false)
 	{
 		if (Name == "Tunnel")
 			std::cout << "Dodaje z constructora\n";
@@ -26,8 +27,12 @@ public:
 		Scene.GetRenderData()->AddRenderable(*this);
 	}
 	virtual void DebugRender(RenderInfo info, Shader* shader) const override {}
+	bool GetHide() const { return Hide; }
+	void SetHide(bool hide) { Hide = hide; }
 	virtual ~RenderableComponent()
 	{
 		Scene.GetRenderData()->EraseRenderable(*this);
 	}
+protected:
+	bool Hide;
 };

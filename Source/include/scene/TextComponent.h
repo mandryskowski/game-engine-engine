@@ -2,8 +2,7 @@
 #include <scene/RenderableComponent.h>
 #include <rendering/Material.h>
 #include <UI/UIElement.h>
-
-class Font;
+#include <UI/Font.h>
 
 class TextComponent: public RenderableComponent, public UICanvasElement
 {
@@ -14,17 +13,37 @@ public:
 	TextComponent(TextComponent&&);
 
 	const std::string& GetContent() const;
-	virtual Box2f GetBoundingBox(bool world = true) override;	//Canvas space
+	virtual Boxf<Vec2f> GetBoundingBox(bool world = true) override;	//Canvas space
 	float GetTextLength(bool world = true) const;
 
 	virtual void SetContent(const std::string&);
+	void SetMaterialInst(MaterialInstance&&);
 
 	virtual void Render(const RenderInfo& info, Shader* shader) override;
 
+	void SetHorizontalAlignment(const TextAlignment);
+	void SetVerticalAlignment(const TextAlignment);
 	void SetAlignment(const TextAlignment horizontal, const TextAlignment vertical = TextAlignment::TOP);	//Change what Component::ComponentTransform::Position
 	void SetAlignment(const std::pair<TextAlignment, TextAlignment>& alignment);	//Change what Component::ComponentTransform::Position
 
 	virtual void GetEditorDescription(EditorDescriptionBuilder) override;
+	virtual MaterialInstance GetDebugMatInst(EditorIconState) override;
+
+	template <typename Archive> void Save(Archive& archive) const
+	{
+		std::string fontPath;
+		if (UsedFont)
+			fontPath = UsedFont->GetPath();
+		archive(cereal::make_nvp("FontPath", fontPath), cereal::make_nvp("Content", Content), cereal::make_nvp("HAlignment", Alignment.first), cereal::make_nvp("VAlignment", Alignment.second), cereal::make_nvp("Component", cereal::base_class<Component>(this)));
+	}
+	template <typename Archive> void Load(Archive& archive)
+	{
+		std::string fontPath;
+		archive(cereal::make_nvp("FontPath", fontPath), cereal::make_nvp("Content", Content), cereal::make_nvp("HAlignment", Alignment.first), cereal::make_nvp("VAlignment", Alignment.second), cereal::make_nvp("Component", cereal::base_class<Component>(this)));
+
+		if (!fontPath.empty())
+			UsedFont = EngineDataLoader::LoadFont(*GameHandle, fontPath);
+	}
 
 private:
 	std::string Content;
@@ -49,6 +68,7 @@ public:
 	TextConstantSizeComponent(TextConstantSizeComponent&&);
 	void SetMaxSize(const glm::vec2&);
 	virtual void SetContent(const std::string&) override;
+	void UpdateSize();
 private:
 	glm::vec2 MaxSize;
 	glm::vec2 ScaleRatio;

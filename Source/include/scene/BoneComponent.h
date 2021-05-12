@@ -11,16 +11,14 @@ struct aiScene;
 struct aiNode;
 struct aiBone;
 
-class SkeletonBatch;
-
 
 class BoneComponent : public Component
 {
 	unsigned int BoneID;
 	SkeletonInfo* InfoPtr;
 public:
-	glm::mat4 BoneOffset;
-	glm::mat4 FinalMatrix;
+	Mat4f BoneOffset;
+	Mat4f FinalMatrix;
 
 public:
 	BoneComponent(Actor&, Component* parentComp, std::string name, Transform t = Transform(), unsigned int boneID = 0);
@@ -42,6 +40,15 @@ public:
 	void SetID(unsigned int id);
 	void SetInfoPtr(SkeletonInfo*);
 
+	template <typename Archive> void Save(Archive& archive) const
+	{
+		archive(CEREAL_NVP(BoneID), CEREAL_NVP(BoneOffset), CEREAL_NVP(FinalMatrix), cereal::make_nvp("Component", cereal::base_class<Component>(this)));
+	}
+	template <typename Archive> void Load(Archive& archive)
+	{
+		archive(CEREAL_NVP(BoneID), CEREAL_NVP(BoneOffset), CEREAL_NVP(FinalMatrix), cereal::make_nvp("Component", cereal::base_class<Component>(this)));
+	}
+
 	virtual ~BoneComponent();
 };
 
@@ -53,50 +60,6 @@ class BoneMapping
 public:
 	unsigned int GetBoneID(std::string name);
 	unsigned int GetBoneID(std::string name) const;
-};
-
-class SkeletonInfo
-{
-	std::vector<BoneComponent*> Bones;
-	const Transform* GlobalInverseTransformPtr;
-	SkeletonBatch* BatchPtr;
-	unsigned int IDOffset;
-
-public:
-	SkeletonInfo();
-	unsigned int GetBoneCount();
-	SkeletonBatch* GetBatchPtr();
-	unsigned int GetIDOffset();
-	void SetGlobalInverseTransformPtr(const Transform* transformPtr);
-	void SetBatchData(SkeletonBatch* batch, unsigned int idOffset);
-	void FillMatricesVec(std::vector<glm::mat4>&);
-	void AddBone(BoneComponent&);
-	void EraseBone(BoneComponent&);
-	void SortBones();	//Sorts bones by id. May improve performance
-	void DRAWBATCH() const
-	{
-		return;
-		std::cout << "----\n";
-		for (int i = 0; i < static_cast<int>(Bones.size()); i++)
-		{
-			std::cout << Bones[i]->GetName() << "!!!: " << Bones[i]->GetID() << ".\n";
-		}
-		std::cout << "----\n";
-	}
-};
-
-class SkeletonBatch
-{
-	std::vector<std::shared_ptr<SkeletonInfo>> Skeletons;
-	unsigned int BoneCount;
-	UniformBuffer BoneUBO;
-
-public:
-	SkeletonBatch();
-	unsigned int GetRemainingCapacity();
-	void RecalculateBoneCount();
-	bool AddSkeleton(std::shared_ptr<SkeletonInfo>);
-	void BindToUBO();
 };
 
 aiBone* FindAiBoneFromNode(const aiScene*, const aiNode*);
