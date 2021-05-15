@@ -4,18 +4,19 @@
 #include <scene/Actor.h>
 
 UICanvasElement::UICanvasElement():
-	CanvasPtr(nullptr)
+	CanvasPtr(nullptr),
+	ParentElement(nullptr)
 {
 }
 
 UICanvasElement::UICanvasElement(UICanvasElement&& element):
-	CanvasPtr(nullptr)
+	CanvasPtr(nullptr),
+	ParentElement(nullptr)
 {
-	if (element.CanvasPtr)
-	{
+	if (element.ParentElement)
+		SetParentElement(*element.ParentElement);
+	else if (element.CanvasPtr)
 		element.CanvasPtr->AddUIElement(*this);
-		element.CanvasPtr->EraseUIElement(element);
-	}
 }
 
 Boxf<Vec2f> UICanvasElement::GetBoundingBox(bool world)
@@ -28,15 +29,46 @@ UICanvas* UICanvasElement::GetCanvasPtr()
 	return CanvasPtr;
 }
 
-UICanvasElement::~UICanvasElement()
+void UICanvasElement::SetParentElement(UICanvasElement& element)
 {
-	if (CanvasPtr)
-		CanvasPtr->RemoveUIElement(this);
+	element.AddChildElement(*this);
+}
+
+void UICanvasElement::AddChildElement(UICanvasElement& element)
+{
+	if (GetCanvasPtr())
+	{
+		GetCanvasPtr()->AddUIElement(element);
+		element.ParentElement = this;
+		ChildElements.push_back(&element);
+	}
+}
+
+void UICanvasElement::EraseChildElement(UICanvasElement& element)
+{
+	element.DetachFromCanvas();
+	ChildElements.erase(std::remove_if(ChildElements.begin(), ChildElements.end(), [&element](UICanvasElement* elementVec) {return elementVec == &element; }), ChildElements.end());
 }
 
 void UICanvasElement::AttachToCanvas(UICanvas& canvas)
 {
 	CanvasPtr = &canvas;
+}
+
+void UICanvasElement::DetachFromCanvas()
+{
+	for (auto& it : ChildElements)
+		it->DetachFromCanvas();
+
+	ChildElements.clear();
+	CanvasPtr = nullptr;
+	ParentElement = nullptr;
+}
+
+UICanvasElement::~UICanvasElement()
+{
+	if (CanvasPtr)
+		CanvasPtr->EraseUIElement(*this);
 }
 
 /*Transform UICanvasComponent::GetCanvasSpaceTransform()

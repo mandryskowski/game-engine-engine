@@ -6,7 +6,7 @@
 class PawnActor : public Actor
 {
 public:
-	PawnActor(GameScene&, const std::string& name);
+	PawnActor(GameScene&, Actor* parentActor, const std::string& name);
 	virtual void OnStart() override;
 	virtual void Update(float deltaTime);
 	virtual void GetEditorDescription(EditorDescriptionBuilder) override;

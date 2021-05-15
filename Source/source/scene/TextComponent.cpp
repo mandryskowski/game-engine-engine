@@ -10,6 +10,7 @@
 
 TextComponent::TextComponent(Actor& actor, Component* parentComp, const std::string& name, const Transform& transform, std::string content, std::shared_ptr<Font> font, std::pair<TextAlignment, TextAlignment> alignment):
 	RenderableComponent(actor, parentComp, name, transform),
+	UIComponent(actor, parentComp),
 	UsedFont(font),
 	TextMatInst(nullptr),
 	Alignment(TextAlignment::LEFT, TextAlignment::BOTTOM)
@@ -30,6 +31,7 @@ TextComponent::TextComponent(Actor& actor, Component* parentComp, const std::str
 
 TextComponent::TextComponent(TextComponent&& textComp) :
 	RenderableComponent(std::move(textComp)),
+	UIComponent(std::move(textComp)),
 	Content(textComp.Content),
 	UsedFont(textComp.UsedFont),
 	TextMatInst(std::move(textComp.TextMatInst)),
@@ -46,8 +48,8 @@ const std::string& TextComponent::GetContent() const
 Boxf<Vec2f> TextComponent::GetBoundingBox(bool world)
 {
 	Transform transform = (world) ? (GetTransform().GetWorldTransform()) : (GetTransform());
-	if (CanvasPtr && world)
-		transform = CanvasPtr->ToCanvasSpace(transform);
+	if (GetCanvasPtr() && world)
+		transform = GetCanvasPtr()->ToCanvasSpace(transform);
 
 	float textLength = GetTextLength(world);
 

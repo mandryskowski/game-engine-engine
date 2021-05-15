@@ -15,7 +15,7 @@ class GunActor: public Actor	//example class implented using engine's components
 	float CooldownLeft;	//also in seconds
 
 public:
-	GunActor(GameScene& scene, std::string name);
+	GunActor(GameScene& scene, Actor* parentActor, std::string name);
 	virtual void Setup() override;
 	virtual void Update(float) override;
 	virtual void HandleEvent(const Event& ev) override;

@@ -33,7 +33,13 @@ protected:
 
 };
 
-class Component
+class ComponentBase
+{
+public:
+	virtual Component& AddComponent(std::unique_ptr<Component> component) = 0;
+};
+
+class Component : public ComponentBase
 {
 public:
 	Component(Actor&, Component* parentComp, const std::string& name = "A Component", const Transform& t = Transform());
@@ -76,7 +82,7 @@ public:
 	void SetName(std::string name);
 	void SetTransform(Transform transform);
 	CollisionObject* SetCollisionObject(std::unique_ptr<CollisionObject>);
-	void AddComponent(std::unique_ptr<Component> component);
+	virtual Component& AddComponent(std::unique_ptr<Component> component) override;
 	void AddComponents(std::vector<std::unique_ptr<Component>> components);
 
 	template<typename ChildClass, typename... Args> ChildClass& CreateComponent(Args&&... args);

@@ -6,8 +6,8 @@
 #include <UI/UIListActor.h>
 #include <scene/UIButtonActor.h>
 
-PawnActor::PawnActor(GameScene& scene, const std::string& name):
-	Actor(scene, name),
+PawnActor::PawnActor(GameScene& scene, Actor* parentActor, const std::string& name):
+	Actor(scene, parentActor, name),
 	PreAnimBonePos(glm::vec3(0.0f)),
 	//RootBone(nullptr),
 	AnimManager(nullptr),
@@ -110,7 +110,7 @@ void PawnActor::GetEditorDescription(EditorDescriptionBuilder descBuilder)
 
 		if (animManager)
 			for (int i = 0; i < animManager->GetAnimInstancesCount(); i++)
-				descBuilder.GetCanvas().AddUIElement(animsList.CreateChild<UIButtonActor>("Anim button", animManager->GetAnimInstance(i)->GetAnimation().Localization.Name, [this, i]() {AnimIndex = i; }));
+				animsList.CreateChild<UIButtonActor>("Anim button", animManager->GetAnimInstance(i)->GetAnimation().Localization.Name, [this, i]() {AnimIndex = i; });
 		animsList.Refresh();
 	};
 

@@ -4,11 +4,11 @@
 #include <editor/EditorManager.h>
 #include <functional>
 
-class UIButtonActor : public UIActor
+class UIButtonActor : public UIActorDefault
 {
 public:
-	UIButtonActor(GameScene&, const std::string& name, std::function<void()> onClickFunc = nullptr, std::function<void()> whileBeingClickedFunc = nullptr);
-	UIButtonActor(GameScene&, const std::string& name, const std::string& buttonTextContent, std::function<void()> onClickFunc = nullptr, std::function<void()> whileBeingClickedFunc = nullptr);
+	UIButtonActor(GameScene&, Actor* parentActor, const std::string& name, std::function<void()> onClickFunc = nullptr, std::function<void()> whileBeingClickedFunc = nullptr);
+	UIButtonActor(GameScene&, Actor* parentActor, const std::string& name, const std::string& buttonTextContent, std::function<void()> onClickFunc = nullptr, std::function<void()> whileBeingClickedFunc = nullptr);
 
 	ModelComponent* GetButtonModel();
 	virtual Boxf<Vec2f> GetBoundingBox(bool world = true) override;
@@ -34,8 +34,8 @@ public:
 	EditorIconState GetState();
 
 
-protected:
 	bool ContainsMouse(glm::vec2 cursorNDC);
+protected:
 	virtual void DeduceMaterial();
 
 	std::function<void()> OnClickFunc, WhileBeingClickedFunc;
@@ -50,7 +50,7 @@ protected:
 class UIActivableButtonActor : public UIButtonActor
 {
 public:
-	UIActivableButtonActor(GameScene& scene, const std::string& name, std::function<void()> onClickFunc = nullptr, std::function<void()> onDeactivationFunc = nullptr);
+	UIActivableButtonActor(GameScene& scene, Actor* parentActor, const std::string& name, std::function<void()> onClickFunc = nullptr, std::function<void()> onDeactivationFunc = nullptr);
 
 	void SetMatActive(MaterialInstance&&);
 	void SetOnDeactivationFunc(std::function<void()> onDeactivationFunc);
@@ -68,7 +68,7 @@ protected:
 class UIScrollBarActor : public UIButtonActor
 {
 public:
-	UIScrollBarActor(GameScene&, const std::string& name, std::function<void()> onClickFunc = nullptr, std::function<void()> beingClickedFunc = nullptr);
+	UIScrollBarActor(GameScene&, Actor* parentActor, const std::string& name, std::function<void()> onClickFunc = nullptr, std::function<void()> beingClickedFunc = nullptr);
 	virtual void OnBeingClicked() override;
 	virtual void WhileBeingClicked() override;
 	const glm::vec2& GetClickPosNDC();

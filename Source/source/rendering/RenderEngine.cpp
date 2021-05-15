@@ -513,8 +513,25 @@ void RenderEngine::RenderRawScene(const RenderInfo& info, GameSceneRenderData* s
 	BoundMaterial = nullptr;
 
 	for (unsigned int i = 0; i < sceneRenderData->Renderables.size(); i++)
-	{
 		sceneRenderData->Renderables[i].get().Render(info, shader);
+}
+
+void RenderEngine::RenderRawSceneUI(const RenderInfo& infoTemplate, GameSceneRenderData* sceneRenderData)
+{
+	BoundMesh = nullptr;
+	BoundMaterial = nullptr;
+
+	RenderInfo info = infoTemplate;
+	for (auto& shader : ForwardShaders)
+	{
+		shader->Use();
+		info.view = glm::translate(infoTemplate.view, glm::vec3(0.0f, 0.0f, 255.0f));
+		for (auto& it : sceneRenderData->Renderables)
+		{
+			info.view = glm::translate(info.view, glm::vec3(0.0f, 0.0f, -1.0f));
+			info.CalculateVP();
+			it.get().Render(info, shader.get());
+		}
 	}
 }
 
@@ -549,7 +566,7 @@ void RenderEngine::PrepareScene(RenderToolboxCollection& tbCollection, GameScene
 }
 
 #include <input/InputDevicesStateRetriever.h>
-void RenderEngine::FullSceneRender(RenderInfo& info, GameSceneRenderData* sceneRenderData, GEE_FB::Framebuffer* framebuffer, Viewport viewport, bool clearMainFB)
+void RenderEngine::FullSceneRender(RenderInfo& info, GameSceneRenderData* sceneRenderData, GEE_FB::Framebuffer* framebuffer, Viewport viewport, bool clearMainFB, bool modifyForwardsDepthForUI)
 {
 	const GameSettings::VideoSettings& settings = info.TbCollection.Settings;
 	bool debugPhysics = GameHandle->GetInputRetriever().IsKeyPressed(Key::P);
@@ -685,8 +702,11 @@ void RenderEngine::FullSceneRender(RenderInfo& info, GameSceneRenderData* sceneR
 	info.MainPass = true;
 	info.CareAboutShader = true;
 
-	for (unsigned int i = 0; i < ForwardShaders.size(); i++)
-		RenderRawScene(info, sceneRenderData, ForwardShaders[i].get());
+	if (modifyForwardsDepthForUI)
+		RenderRawSceneUI(info, sceneRenderData);
+	else
+		for (unsigned int i = 0; i < ForwardShaders.size(); i++)
+			RenderRawScene(info, sceneRenderData, ForwardShaders[i].get());
 
 	FindShader("Forward_NoLight")->Use();
 	FindShader("Forward_NoLight")->Uniform2fv("atlasData", glm::vec2(0.0f));

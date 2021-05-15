@@ -40,7 +40,7 @@ class Controller : public Actor
 	std::array<MovementAxis, 4> MovementAxises;
 
 public:
-	Controller(GameScene& scene, std::string name);
+	Controller(GameScene& scene, Actor* parentActor, std::string name);
 
 	void SetPossessedActor(Actor*);
 
@@ -70,7 +70,7 @@ class ShootingController : public Controller
 {
 	GunActor* PossessedGunActor;
 public:
-	ShootingController(GameScene& scene, const std::string& name);
+	ShootingController(GameScene& scene, Actor* parentActor, const std::string& name);
 	virtual void HandleEvent(const Event& ev) override;
 	template <typename Archive> void Save(Archive& archive) const
 	{

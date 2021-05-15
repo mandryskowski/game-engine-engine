@@ -2,7 +2,7 @@
 #include <scene/RenderableComponent.h>
 #include <rendering/Mesh.h>
 #include "physics/CollisionObject.h"
-#include <UI/UIElement.h>
+#include <UI/UIComponent.h>
 
 namespace MeshSystem
 {
@@ -14,7 +14,7 @@ namespace MeshSystem
 //Dodaj to do osobnej klasy SkeletalModelComponent ktora dziedziczy z ModelComponent
 
 
-class ModelComponent: public RenderableComponent, public UICanvasElement
+class ModelComponent: public RenderableComponent, public UIComponent
 {
 public:
 	ModelComponent(Actor&, Component* parentComp, const std::string& name = "undefinedModel", const Transform& = Transform(), SkeletonInfo* info = nullptr, Material* overrideMat = nullptr);

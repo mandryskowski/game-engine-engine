@@ -212,10 +212,11 @@ CollisionObject* Component::SetCollisionObject(std::unique_ptr<CollisionObject> 
 	return CollisionObj.get();
 }
 
-void Component::AddComponent(std::unique_ptr<Component> component)
+Component& Component::AddComponent(std::unique_ptr<Component> component)
 {
 	component->GetTransform().SetParentTransform(&this->ComponentTransform);
 	Children.push_back(std::move(component));
+	return *Children.back();
 }
 
 void Component::AddComponents(std::vector<std::unique_ptr<Component>> components)
@@ -405,14 +406,14 @@ Component* Component::SearchForComponent(std::string name)
 void Component::GetEditorDescription(EditorDescriptionBuilder descBuilder)
 {
 	UIInputBoxActor& textActor = descBuilder.CreateActor<UIInputBoxActor>("ComponentsNameActor");
-	textActor.SetTransform(Transform(glm::vec2(0.0f, 1.5f), glm::vec2(1.0f)));
+	textActor.SetTransform(Transform(glm::vec2(0.0f, 1.5f), glm::vec2(3.0f)));
 
 	ModelComponent& prettyQuad = textActor.CreateComponent<ModelComponent>("PrettyQuad");
 	prettyQuad.AddMeshInst(MeshInstance(GameHandle->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD), const_cast<Material*>(textActor.GetButtonModel()->GetMeshInstance(0).GetMaterialPtr())));
-	prettyQuad.SetTransform(Transform(glm::vec2(0.0f, -0.625f), glm::vec2(textActor.GetRoot()->GetComponent<TextComponent>("ComponentsNameActorText")->GetTextLength() * 4.0f, 0.025f)));	//Component name text has scale (0.5, 0.5), so pos (0, -0.625) equals to 125% text half extent.
-	textActor.SetOnInputFunc([this, &prettyQuad, &textActor](const std::string& content) { SetName(content); prettyQuad.SetTransform(Transform(glm::vec2(0.0f, -0.625f), glm::vec2(textActor.GetRoot()->GetComponent<TextComponent>("ComponentsNameActorText")->GetTextLength(), 0.025f))); }, [this]() -> std::string { return GetName(); });
+	prettyQuad.SetTransform(Transform(glm::vec2(0.0f, -0.21f), glm::vec2(1.0f, 0.01f)));
+	textActor.SetOnInputFunc([this, &prettyQuad, &textActor](const std::string& content) { SetName(content); /*prettyQuad.SetTransform(Transform(glm::vec2(0.0f, -0.625f), glm::vec2(textActor.GetRoot()->GetComponent<TextComponent>("ComponentsNameActorText")->GetTextLength(), 0.025f)));*/ }, [this]() -> std::string { return GetName(); });
 
-	textActor.DeleteButtonModel();
+	//textActor.DeleteButtonModel();
 
 	ComponentTransform.GetEditorDescription(descBuilder);
 
@@ -484,8 +485,6 @@ void Component::GetEditorDescription(EditorDescriptionBuilder descBuilder)
 				});
 			else
 				shapeAddButton.SetOnClickFunc([shapeType, addShapeFunc]() { addShapeFunc(std::make_shared<CollisionShape>(shapeType)); });
-
-			shapeCreatorWindow.AddUIElement(shapeAddButton);
 		}
 		buttonsList.Refresh();
 		}).SetTransform(Transform(glm::vec2(3.0f, 0.0f), glm::vec2(0.25f)));
@@ -499,9 +498,6 @@ void Component::GetEditorDescription(EditorDescriptionBuilder descBuilder)
 					UIWindowActor& shapeTransformWindow = descBuilder.GetEditorScene().CreateActorAtRoot<UIWindowActor>("ShapeTransformWindow");
 					shapeTransformWindow.GetTransform()->SetScale(glm::vec2(0.25f));
 					it->ShapeTransform.GetEditorDescription(EditorDescriptionBuilder(descBuilder.GetEditorHandle(), *shapeTransformWindow.GetScaleActor()));
-
-					for (auto& it : shapeTransformWindow.GetScaleActor()->GetChildren())
-						shapeTransformWindow.AddUIElement(*it);
 					
 					shapeTransformWindow.RefreshFieldsList();
 					shapeTransformWindow.AutoClampView();

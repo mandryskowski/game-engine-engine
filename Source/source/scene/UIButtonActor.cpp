@@ -8,8 +8,8 @@
 #include <input/InputDevicesStateRetriever.h>
 #include <math/Box.h>
 
-UIButtonActor::UIButtonActor(GameScene& scene, const std::string& name, std::function<void()> onClickFunc, std::function<void()> whileBeingClickedFunc):
-	UIActor(scene, name),
+UIButtonActor::UIButtonActor(GameScene& scene, Actor* parentActor, const std::string& name, std::function<void()> onClickFunc, std::function<void()> whileBeingClickedFunc):
+	UIActorDefault(scene, parentActor, name),
 	OnClickFunc(onClickFunc),
 	WhileBeingClickedFunc(whileBeingClickedFunc),
 	MatIdle(nullptr),
@@ -18,7 +18,7 @@ UIButtonActor::UIButtonActor(GameScene& scene, const std::string& name, std::fun
 	PrevDeducedMaterial(nullptr),
 	State(EditorIconState::IDLE)
 {
-	ButtonModel = &RootComponent->CreateComponent<ModelComponent>(Name + "'s_Button_Model");
+	ButtonModel = &CreateComponent<ModelComponent>(Name + "'s_Button_Model");
 
 	std::shared_ptr<Material> matIdle, matHover, matClick;
 	if ((matIdle = GameHandle->GetRenderEngineHandle()->FindMaterial("GEE_Button_Idle")) == nullptr)
@@ -52,8 +52,8 @@ UIButtonActor::UIButtonActor(GameScene& scene, const std::string& name, std::fun
 	PrevDeducedMaterial = MatIdle.get();
 }
 
-UIButtonActor::UIButtonActor(GameScene& scene, const std::string& name, const std::string& buttonTextContent, std::function<void()> onClickFunc, std::function<void()> whileBeingClickedFunc):
-	UIButtonActor(scene, name, onClickFunc, whileBeingClickedFunc)
+UIButtonActor::UIButtonActor(GameScene& scene, Actor* parentActor, const std::string& name, const std::string& buttonTextContent, std::function<void()> onClickFunc, std::function<void()> whileBeingClickedFunc):
+	UIButtonActor(scene, parentActor, name, onClickFunc, whileBeingClickedFunc)
 {
 	CreateComponent<TextConstantSizeComponent>("ComponentsNameActorTextComp", Transform(glm::vec2(0.0f), glm::vec2(1.0f)), buttonTextContent, "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER)).SetMaxSize(Vec2f(0.8f));
 }
@@ -195,11 +195,10 @@ bool UIButtonActor::ContainsMouse(glm::vec2 cursorNDC)
 
 	if (CanvasPtr)
 	{
-		if (!CanvasPtr->GetViewport().Contains(cursorNDC))
+		if (!CanvasPtr->ContainsMouse())
 			return false;
-
 		glm::vec2 cursorCanvasSpace = glm::inverse(CanvasPtr->UICanvas::GetView()) * Transform(glm::vec3(0.0f), glm::vec3(0.0f), CanvasPtr->UICanvas::GetViewT().ScaleRef).GetMatrix() * glm::inverse(CanvasPtr->GetCanvasT()->GetWorldTransformMatrix()) * glm::vec4(cursorNDC, 0.0f, 1.0f);
-		return CanvasPtr->GetViewport().Contains(cursorNDC) && CollisionTests::AlignedRectContainsPoint(CanvasPtr->ToCanvasSpace(worldT), cursorCanvasSpace);
+		return CollisionTests::AlignedRectContainsPoint(CanvasPtr->ToCanvasSpace(worldT), cursorCanvasSpace);
 	}
 
 	return CollisionTests::AlignedRectContainsPoint(worldT, cursorNDC);
@@ -239,8 +238,8 @@ bool CollisionTests::AlignedRectContainsPoint(const Transform& rect, const glm::
 	return point == glm::min(glm::max(rectLeftBottom, point), rectLeftBottom + glm::vec2(rect.ScaleRef) * 2.0f);
 }
 
-UIActivableButtonActor::UIActivableButtonActor(GameScene& scene, const std::string& name, std::function<void()> onClickFunc, std::function<void()> onDeactivationFunc):
-	UIButtonActor(scene, name, onClickFunc),
+UIActivableButtonActor::UIActivableButtonActor(GameScene& scene, Actor* parentActor, const std::string& name, std::function<void()> onClickFunc, std::function<void()> onDeactivationFunc):
+	UIButtonActor(scene, parentActor, name, onClickFunc),
 	OnDeactivationFunc(onDeactivationFunc)
 {
 
@@ -308,8 +307,8 @@ void UIActivableButtonActor::DeduceMaterial()
 	}
 }
 
-UIScrollBarActor::UIScrollBarActor(GameScene& scene, const std::string& name, std::function<void()> onClickFunc, std::function<void()> beingClickedFunc):
-	UIButtonActor(scene, name, onClickFunc, beingClickedFunc),
+UIScrollBarActor::UIScrollBarActor(GameScene& scene, Actor* parentActor, const std::string& name, std::function<void()> onClickFunc, std::function<void()> beingClickedFunc):
+	UIButtonActor(scene, parentActor, name, onClickFunc, beingClickedFunc),
 	ClickPosNDC(glm::vec2(0.0f))
 {
 }

@@ -37,10 +37,10 @@ private:
 	std::vector<UIListActor*> NestedLists;
 };*/
 
-class UICanvasField : public UIActor
+class UICanvasField : public Actor, public UIActor
 {
 public:
-	UICanvasField(GameScene&, const std::string& name);
+	UICanvasField(GameScene&, Actor* parentActor, const std::string& name);
 	virtual void OnStart() override;
 	UIElementTemplates GetTemplates();
 };

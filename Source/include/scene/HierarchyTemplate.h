@@ -197,7 +197,7 @@ namespace HierarchyTemplate
 			Scene(scene),
 			Name(name),
 			Root(nullptr),
-			TempActor(std::make_unique<Actor>(scene, name + "TempActor")),
+			TempActor(std::make_unique<Actor>(scene, nullptr, name + "TempActor")),
 			TreeBoneMapping(nullptr)
 		{
 			Root = static_unique_pointer_cast<HierarchyNodeBase>(std::make_unique<HierarchyNode<Component>>(*TempActor, name));	//root has the same name as the tree
@@ -206,7 +206,7 @@ namespace HierarchyTemplate
 			Scene(tree.Scene),
 			Name(tree.Name),
 			Root(nullptr),
-			TempActor(std::make_unique<Actor>(tree.Scene, tree.Name + "TempActor")),
+			TempActor(std::make_unique<Actor>(tree.Scene, nullptr, tree.Name + "TempActor")),
 			TreeBoneMapping((tree.TreeBoneMapping) ? (std::make_unique<BoneMapping>(*tree.TreeBoneMapping)) : (nullptr))
 		{
 			if (tree.Root)
@@ -224,7 +224,7 @@ namespace HierarchyTemplate
 			if (!Root)
 				Root = static_unique_pointer_cast<HierarchyNodeBase>(std::make_unique<HierarchyNode<Component>>(*TempActor, Name));	//root has the same name as the tree
 			if (!TempActor)
-				TempActor = std::make_unique<Actor>(Scene, Name + "TempActor");
+				TempActor = std::make_unique<Actor>(Scene, nullptr, Name + "TempActor");
 		}
 		const std::string& GetName() const
 		{

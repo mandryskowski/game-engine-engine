@@ -185,6 +185,7 @@
     <ClCompile Include="source\glad.c" />
     <ClCompile Include="source\UI\UICanvas.cpp" />
     <ClCompile Include="source\UI\UICanvasField.cpp" />
+    <ClCompile Include="source\UI\UIComponent.cpp" />
     <ClCompile Include="source\UI\UIElement.cpp" />
     <ClCompile Include="source\scene\TextComponent.cpp" />
     <ClCompile Include="source\rendering\Texture.cpp" />
@@ -227,6 +228,7 @@
     <ClInclude Include="include\UI\UIActor.h" />
     <ClInclude Include="include\UI\UICanvas.h" />
     <ClInclude Include="include\UI\UICanvasField.h" />
+    <ClInclude Include="include\UI\UIComponent.h" />
     <ClInclude Include="include\UI\UIElement.h" />
     <ClInclude Include="include\input\InputDevicesStateRetriever.h" />
     <ClInclude Include="include\scene\LightComponent.h" />

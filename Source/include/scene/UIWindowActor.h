@@ -5,8 +5,13 @@
 class UIWindowActor : public UICanvasActor
 {
 public:
-	UIWindowActor(GameScene&, const std::string& name);
+	UIWindowActor(GameScene&, Actor* parentActor, const std::string& name);
 	UIWindowActor(UIWindowActor&&);
 	virtual void OnStart() override;
 
+private:
+	virtual void GetExternalButtons(std::vector<UIButtonActor*>&) const override;
+
+	UIButtonActor* CloseButton;
+	UIScrollBarActor* DragButton;
 };

@@ -64,8 +64,8 @@ public:
 		ActiveScene(nullptr),
 		SelectedComp(nullptr),
 		SelectedActor(nullptr),
-		SelectedScene(nullptr),
-		CanvasContext(nullptr)
+		SelectedScene(nullptr)
+		//CanvasContext(nullptr)
 	{
 		Settings = std::make_unique<GameSettings>(GameSettings(EngineDataLoader::LoadSettingsFromFile<GameSettings>("Settings.ini")));
 		glm::vec2 res = static_cast<glm::vec2>(Settings->WindowSize);
@@ -142,7 +142,6 @@ public:
 		GetRenderEngineHandle()->AddMaterial(kopecMat);
 		kopecMat->AddTexture(std::make_shared<NamedTexture>(textureFromFile("kopec_tekstura.png", GL_RGB, GL_LINEAR, GL_NEAREST_MIPMAP_LINEAR, true), "albedo1"));
 
-
 		//LoadSceneFromFile("level.txt", "GEE_Main");
 		//SetMainScene(GetScene("GEE_Main"));
 
@@ -188,28 +187,26 @@ public:
 
 		Actor& scenePreviewActor = editorScene.CreateActorAtRoot<Actor>("SceneViewportActor");
 		ModelComponent& scenePreviewQuad = scenePreviewActor.CreateComponent<ModelComponent>("SceneViewportQuad");
-		 
+
+		//SetCanvasContext(&editorScene.CreateActorAtRoot<UICanvasActor>("GEE_E_Canvas_Context"));
+		
 		/*UICanvasActor& exampleCanvas = editorScene.CreateActorAtRoot<UICanvasActor>("ExampleCanvas");
 		exampleCanvas.SetTransform(Transform(glm::vec3(0.7f, -0.4f, 0.0f), glm::vec3(0.0f), glm::vec3(0.3f)));
 		UIButtonActor& lolBackgroundButton = exampleCanvas.CreateChild<UIButtonActor>("VeryImportantButton");
 		lolBackgroundButton.SetTransform(Transform(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f), glm::vec3(1.0f)));
 
 		TextComponent& sampleText = exampleCanvas.CreateComponent<TextComponent>("SampleTextComp", Transform(glm::vec3(0.9f, 0.0f, 0.0f), glm::vec3(0.0f), glm::vec3(0.1f)), "Sample Text");
-		exampleCanvas.AddUIElement(sampleText);
 		sampleText.SetAlignment(TextAlignment::CENTER, TextAlignment::CENTER);
 
 		TextComponent& sampleText2 = exampleCanvas.CreateComponent<TextComponent>("SampleTextComp", Transform(glm::vec3(1.9f, 0.0f, 0.0f), glm::vec3(0.0f), glm::vec3(0.1f)), "Very important text");
-		exampleCanvas.AddUIElement(sampleText2);
 
 		TextComponent& sampleText3 = exampleCanvas.CreateComponent<TextComponent>("SampleTextComp", Transform(glm::vec3(1.9f, 1.5f, 0.0f), glm::vec3(0.0f), glm::vec3(0.1f)), "Mega ultra important text");
-		exampleCanvas.AddUIElement(sampleText3);
 
 		for (int y = -3; y <= 3; y++)
 		{
 			for (int x = -3; x <= 3; x++)
 			{
 				TextComponent& gridSampleText = exampleCanvas.CreateComponent<TextComponent>("SampleTextComp", Transform(glm::vec3(x, y, 0.0f), glm::vec3(0.0f), glm::vec3(0.05f)), "Sample Text " + std::to_string(x) + "|||" + std::to_string(y));
-				exampleCanvas.AddUIElement(gridSampleText);
 				gridSampleText.SetAlignment(TextAlignment::RIGHT, TextAlignment::TOP);
 			}
 		}*/
@@ -220,7 +217,6 @@ public:
 		UIButtonActor& bigButtonActor = window1.CreateChild<UIButtonActor>("MojTestowyButton");
 		bigButtonActor.SetTransform(Transform(glm::vec2(0.0f, 1.5f), glm::vec2(0.4f)));
 		TextComponent& bigButtonText = bigButtonActor.CreateComponent<TextComponent>("BigButtonText", Transform(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f), glm::vec3(0.1f)), "big button", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
-		window1.AddUIElement(bigButtonActor);
 
 		editorScene.CreateActorAtRoot<UIButtonActor>("MeshTreesButton", "MeshTrees", [this, &editorScene]() {
 			UIWindowActor& window = editorScene.CreateActorAtRoot<UIWindowActor>("MeshTreesWindow");
@@ -231,7 +227,6 @@ public:
 				for (auto& meshTree : scene->HierarchyTrees)
 					meshTreesList.CreateChild<UIButtonActor>("MeshTreeButton", meshTree->GetName(), [this, &meshTree]() { PreviewHierarchyTree(*meshTree); });
 
-			window.AddUIElement(meshTreesList);
 			meshTreesList.Refresh();
 
 			}).SetTransform(Transform(Vec2f(-0.8f, -0.8f), Vec2f(0.1f)));
@@ -246,7 +241,6 @@ public:
 			{
 				std::string name = (it) ? (it->GetLocalization().GetFullStr()) : ("NULLPTR???");
 				UIButtonActor& button = list.CreateChild<UIButtonActor>(name + "Button", name);
-				window.AddUIElement(button);
 				std::cout << name << '\n';
 			}
 
@@ -265,7 +259,6 @@ public:
 			window.AddField("Default font").GetTemplates().PathInput([this](const std::string& path) { Fonts.push_back(std::make_shared<Font>(*DefaultFont)); *DefaultFont = *EngineDataLoader::LoadFont(*this, path); }, [this]() {return GetDefaultFont()->GetPath(); }, { "*.ttf", "*.otf" });
 			window.AddField("Rebuild light probes").CreateChild<UIButtonActor>("RebuildProbesButton", "Rebuild", [this]() { RenderEng.PreLoopPass(); });
 
-			window.AddUIElement(*window.GetScaleActor());
 			window.FieldsList->Refresh();
 			window.AutoClampView();
 			
@@ -282,13 +275,11 @@ public:
 			addShaderButton.SetMatHover(MaterialInstance(addIconMat, addIconMat.GetTextureIDInterpolatorTemplate(1.0f)));
 			addShaderButton.SetMatClick(MaterialInstance(addIconMat, addIconMat.GetTextureIDInterpolatorTemplate(2.0f)));
 
-			window.AddUIElement(addShaderButton);
-
 			}).SetTransform(Transform(Vec2f(0.1f, -0.8f), Vec2f(0.1f)));
 
 
 		Actor& cameraActor = editorScene.CreateActorAtRoot<Actor>("OrthoCameraActor");
-		CameraComponent& orthoCameraComp = cameraActor.CreateComponent<CameraComponent>("OrthoCameraComp");
+		CameraComponent& orthoCameraComp = cameraActor.CreateComponent<CameraComponent>("OrthoCameraComp", glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, 1.0f, -255.0f));
 
 		editorScene.BindActiveCamera(&orthoCameraComp);
 
@@ -304,14 +295,17 @@ public:
 		EditorScene->FindActor("SceneViewportActor")->GetRoot()->GetComponent<ModelComponent>("SceneViewportQuad")->OverrideInstancesMaterial(scenePreviewMaterial.get());
 	}
 	void SetCanvasContext(UICanvasActor* context)
-	{
+	{ 
+		/*
 		CanvasContext = context;
 		if (ActiveScene)
-			ActiveScene->GetRootActor()->HandleEventAll(Event(EventType::FOCUS_SWITCHED));
+			ActiveScene->GetRootActor()->HandleEventAll(Event(EventType::FOCUS_SWITCHED));*/
 	}
 	void SetupMainMenu()
 	{
 		GameScene& mainMenuScene = CreateScene("GEE_Main_Menu");
+
+		//SetCanvasContext(&mainMenuScene.CreateActorAtRoot<UICanvasActor>("GEE_E_Canvas_Context"));
 
 		{
 			Actor& engineTitleActor = mainMenuScene.CreateActorAtRoot<Actor>("EngineTitleActor");
@@ -326,23 +320,40 @@ public:
 		}
 
 		mainMenuScene.CreateActorAtRoot<UIButtonActor>("NewProjectButton", "New project", [this, &mainMenuScene]() {
-				UIWindowActor& window = mainMenuScene.CreateActorAtRoot<UIWindowActor>("ProjectCreatorWindow");
+			UIWindowActor& window = mainMenuScene.CreateActorAtRoot<UIWindowActor>("ProjectCreatorWindow");
+			window.SetTransform(Transform(Vec2f(0.0f), Vec2f(0.5f)));
+
+			window.AddField("Project folder").GetTemplates().FolderInput([this](const std::string& str) { ProjectFileDirectory = str + "/"; }, [this]() { return ProjectFileDirectory; });
+
+			UIInputBoxActor& projectNameInputBox = window.AddField("Project name").CreateChild<UIInputBoxActor>("ProjectNameInputBox");
+			//UIInputBoxActor& projectNameInputBox
+
+			projectNameInputBox.SetOnInputFunc([this](const std::string& input) { ProjectName = input; }, [this]() { return ProjectName; });
+
+			UIButtonActor& okButton = window.AddField("").CreateChild<UIButtonActor>("OKButton", "OK", [this, &window]() { window.MarkAsKilled(); LoadProject(ProjectFileDirectory + ProjectName); });
+
+			window.RefreshFieldsList();
+			window.AutoClampView();
+
+			}).SetTransform(Transform(Vec2f(-0.3f, 0.0f), Vec2f(0.2f)));
+
+			mainMenuScene.CreateActorAtRoot<UIButtonActor>("RatunkuButton", "Co ", [this, &mainMenuScene]() {
+				UIWindowActor& window = mainMenuScene.CreateActorAtRoot<UIWindowActor>("ProjectLoaderWindow");
 				window.SetTransform(Transform(Vec2f(0.0f), Vec2f(0.5f)));
 
 				window.AddField("Project folder").GetTemplates().FolderInput([this](const std::string& str) { ProjectFileDirectory = str + "/"; }, [this]() { return ProjectFileDirectory; });
 
 				UIInputBoxActor& projectNameInputBox = window.AddField("Project name").CreateChild<UIInputBoxActor>("ProjectNameInputBox");
-				projectNameInputBox.SetOnInputFunc([this](const std::string& input) { ProjectName = input; }, [this]() { return ProjectName; });
-				
+
+				window.AddField("Project filepath").GetTemplates().PathInput([this](const std::string& filepath) { extractDirectoryAndFilename(filepath, ProjectName, ProjectFileDirectory); }, [this]() { return ProjectFileDirectory + ProjectName; }, { "*.json", "*.geeproject", "*.geeprojectold" });
+
 				UIButtonActor& okButton = window.AddField("").CreateChild<UIButtonActor>("OKButton", "OK", [this, &window]() { window.MarkAsKilled(); LoadProject(ProjectFileDirectory + ProjectName); });
 
-				window.AddUIElement(*window.GetScaleActor());
 				window.RefreshFieldsList();
 				window.AutoClampView();
 
-				SetCanvasContext(&window);
-			}).SetTransform(Transform(Vec2f(-0.3f, 0.0f), Vec2f(0.2f)));
-
+				}).SetTransform(Transform(Vec2f(0.0f, 0.0f), Vec2f(0.2f)));
+			
 		mainMenuScene.CreateActorAtRoot<UIButtonActor>("LoadProjectButton", "Load project", [this, &mainMenuScene]() {
 			UIWindowActor& window = mainMenuScene.CreateActorAtRoot<UIWindowActor>("ProjectLoaderWindow");
 			window.SetTransform(Transform(Vec2f(0.0f), Vec2f(0.5f)));
@@ -351,15 +362,14 @@ public:
 
 			UIButtonActor& okButton = window.AddField("").CreateChild<UIButtonActor>("OKButton", "OK", [this, &window]() { window.MarkAsKilled(); LoadProject(ProjectFileDirectory + ProjectName); });
 
-			window.AddUIElement(*window.GetScaleActor());
 			window.RefreshFieldsList();
 			window.AutoClampView();
 
-			SetCanvasContext(&window);
 			}).SetTransform(Transform(Vec2f(0.3f, 0.0f), Vec2f(0.2f)));
 
+
 		Actor& cameraActor = mainMenuScene.CreateActorAtRoot<Actor>("OrthoCameraActor");
-		CameraComponent& orthoCameraComp = cameraActor.CreateComponent<CameraComponent>("OrthoCameraComp");
+		CameraComponent& orthoCameraComp = cameraActor.CreateComponent<CameraComponent>("OrthoCameraComp", glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, 1.0f, -255.0f));
 
 		mainMenuScene.BindActiveCamera(&orthoCameraComp);
 		SetActiveScene(&mainMenuScene);
@@ -403,13 +413,11 @@ public:
 			}
 
 			if (ActiveScene)
-				if (CanvasContext && ActiveScene == GetScene("GEE_Main_Menu"))
-					CanvasContext->HandleEventAll(*polledEvent);
-				else
+				//if (CanvasContext && ActiveScene == GetScene("GEE_Main_Menu"))
+				//	CanvasContext->HandleEventAll(*polledEvent);
+				//else
 					ActiveScene->RootActor->HandleEventAll(*polledEvent);
 		}
-		if (SelectedComp)
-			;//SelectedComp->GetTransform().SetRotation(glm::normalize(EditedRotation));
 	}
 	virtual void SelectComponent(Component* comp, GameScene& editorScene) override
 	{
@@ -431,11 +439,9 @@ public:
 
 		UICanvasActor& selectCompCanvas = editorScene.CreateActorAtRoot<UICanvasActor>("GEE_E_Components_Info_Canvas");
 		selectCompCanvas.SetTransform(Transform(glm::vec2(-0.75f, 0.75f), glm::vec2(0.2f)));
-		UIActor* scaleActor = selectCompCanvas.GetScaleActor();
+		UIActorDefault* scaleActor = selectCompCanvas.GetScaleActor();
 
 		comp->GetEditorDescription(EditorDescriptionBuilder(*this, *scaleActor));
-		for (auto& it : scaleActor->GetChildren())
-			selectCompCanvas.AddUIElement(*it);	//add all created actors/components to the UI
 		
 		selectCompCanvas.RefreshFieldsList();
 
@@ -469,7 +475,7 @@ public:
 		UICanvasActor& canvas = editorScene.CreateActorAtRoot<UICanvasActor>("GEE_E_Actors_Components_Canvas");
 		canvas.SetTransform(Transform(glm::vec3(-0.68f, 0.0f, 0.0f), glm::vec3(0.0f), glm::vec3(0.32f, 0.5f, 1.0f)));
 		canvas.SetViewScale(glm::vec2(1.0f, glm::sqrt(0.5f / 0.32f)));
-		UIActor* scaleActor = canvas.GetScaleActor();
+		UIActorDefault* scaleActor = canvas.GetScaleActor();
 
 		UICanvasField& componentsListField = canvas.AddField("List of components");
 		UIAutomaticListActor& listActor = componentsListField.CreateChild<UIAutomaticListActor>("ListActor");
@@ -483,11 +489,6 @@ public:
 		canvas.RefreshFieldsList();
 
 		actor->GetEditorDescription(EditorDescriptionBuilder(*this, *scaleActor));
-		for (auto& it : scaleActor->GetChildren())	//add all created actors/components to the UI
-			if (UIActor* cast = dynamic_cast<UIActor*>(it))
-				canvas.AddUIElement(*cast);
-			else
-				canvas.AddUIElement(*it);
 
 		if (canvas.FieldsList)
 			canvas.FieldsList->Refresh();
@@ -502,8 +503,6 @@ public:
 		refreshButton.SetMatIdle(MaterialInstance(refreshIconMat));
 		refreshButton.SetMatHover(MaterialInstance(refreshIconMat, refreshIconMat.GetTextureIDInterpolatorTemplate(1.0f)));
 		refreshButton.SetMatClick(MaterialInstance(refreshIconMat, refreshIconMat.GetTextureIDInterpolatorTemplate(2.0f)));
-
-		canvas.AddUIElement(refreshButton);
 
 
 
@@ -524,7 +523,6 @@ public:
 				compButton.SetMatHover(exampleComponent.GetDebugMatInst(EditorIconState::HOVER));
 				compButton.SetMatClick(exampleComponent.GetDebugMatInst(EditorIconState::BEING_CLICKED_INSIDE));
 
-				compSelectWindow.AddUIElement(compButton);
 				actor->GetRoot()->DetachChild(exampleComponent);
 			};
 
@@ -547,8 +545,6 @@ public:
 		addActorButton.SetMatIdle(MaterialInstance(addIconMat));
 		addActorButton.SetMatHover(MaterialInstance(addIconMat, addIconMat.GetTextureIDInterpolatorTemplate(1.0f)));
 		addActorButton.SetMatClick(MaterialInstance(addIconMat, addIconMat.GetTextureIDInterpolatorTemplate(2.0f)));
-
-		canvas.AddUIElement(addActorButton);
 
 		if (!previousCanvasView.IsEmpty() && sameActor)
 			canvas.CanvasView = previousCanvasView;
@@ -590,7 +586,6 @@ public:
 		refreshButton.SetMatHover(MaterialInstance(refreshIconMat, refreshIconMat.GetTextureIDInterpolatorTemplate(1.0f)));
 		refreshButton.SetMatClick(MaterialInstance(refreshIconMat, refreshIconMat.GetTextureIDInterpolatorTemplate(2.0f)));
 
-		canvas.AddUIElement(refreshButton);
 
 
 		UIButtonActor& addActorButton = canvas.CreateChild<UIButtonActor>("GEE_E_Scene_Add_Actor_Button", [this, &editorScene, &refreshButton, selectedScene]() {
@@ -602,8 +597,6 @@ public:
 
 				actorButton.GetTransform()->SetPosition(glm::vec2(-0.7f, 0.7f - static_cast<float>(i) * 0.2f));
 				actorButton.GetTransform()->SetScale(glm::vec2(0.1f, 0.1f));
-
-				actorSelectWindow.AddUIElement(actorButton);
 			};
 
 			std::function<Actor& ()> getSelectedActor = [this, selectedScene]() -> Actor& { return ((SelectedActor) ? (*SelectedActor) : (const_cast<Actor&>(*selectedScene->GetRootActor()))); };
@@ -622,8 +615,6 @@ public:
 		addActorButton.SetMatIdle(MaterialInstance(addActorMat));
 		addActorButton.SetMatHover(MaterialInstance(addActorMat, addActorMat.GetTextureIDInterpolatorTemplate(1.0f)));
 		addActorButton.SetMatClick(MaterialInstance(addActorMat, addActorMat.GetTextureIDInterpolatorTemplate(2.0f)));
-
-		canvas.AddUIElement(addActorButton);
 
 		UIAutomaticListActor& listActor = canvas.CreateChild<UIAutomaticListActor>("ListActor");
 		//listActor.GetTransform()->SetScale(glm::vec3(0.5f));
@@ -672,7 +663,6 @@ public:
 			UIButtonActor& nodeButton = parent.CreateChild<UIButtonActor>("OGAR");//correspondingNode.GetName()));
 			TextConstantSizeComponent& nodeText = nodeButton.CreateComponent<TextConstantSizeComponent>("TEXTTEXT", Transform(), correspondingNode.GetCompBaseType().GetName(), "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
 			nodeButton.SetTransform(Transform(glm::vec2(0.0f, -3.0f), glm::vec2(1.0f)));
-			nodesCanvas.AddUIElement(nodeButton);
 
 			//std::cout << "NODE: " << correspondingNode.GetName() << ". CHILDREN COUNT: " << correspondingNode.GetChildCount() << '\n';
 
@@ -732,7 +722,6 @@ public:
 		TextConstantSizeComponent& elementText = element.CreateComponent<TextConstantSizeComponent>(obj.GetName() + "'s Text", Transform(glm::vec2(0.0f), glm::vec2(0.4f / 3.0f, 0.4f)), "", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
 		elementText.SetMaxSize(Vec2f(0.9f));
 		elementText.SetContent(obj.GetName());
-		canvas.AddUIElement(element);
 
 		std::vector<T*> children = obj.GetChildren();
 		std::cout << "liczba dzieciakow of " << obj.GetName() << ": " << children.size() << '\n';
@@ -801,7 +790,7 @@ public:
 			///Render editor scene
 			RenderInfo info = EditorScene->ActiveCamera->GetRenderInfo(*HUDRenderCollection);
 			RenderEng.PrepareScene(*HUDRenderCollection, EditorScene->GetRenderData());
-			RenderEng.FullSceneRender(info, EditorScene->GetRenderData(), nullptr, Viewport(glm::vec2(0.0f), glm::vec2(Settings->WindowSize)));
+			RenderEng.FullSceneRender(info, EditorScene->GetRenderData(), nullptr, Viewport(glm::vec2(0.0f), glm::vec2(Settings->WindowSize)), true, true);
 		}
 
 		if (GameScene* mainMenuScene = GetScene("GEE_Main_Menu"))
@@ -809,7 +798,7 @@ public:
 			{
 				RenderInfo info = mainMenuScene->ActiveCamera->GetRenderInfo(*HUDRenderCollection);
 				RenderEng.PrepareScene(*HUDRenderCollection, mainMenuScene->GetRenderData());
-				RenderEng.FullSceneRender(info, mainMenuScene->GetRenderData(), nullptr, Viewport(glm::vec2(0.0f), glm::vec2(Settings->WindowSize)), !renderEditorScene);
+				RenderEng.FullSceneRender(info, mainMenuScene->GetRenderData(), nullptr, Viewport(glm::vec2(0.0f), glm::vec2(Settings->WindowSize)), !renderEditorScene, true);
 			}
 
 		glfwSwapBuffers(Window);
@@ -867,7 +856,8 @@ private:
 
 	std::string ProjectName, ProjectFileDirectory;
 
-	UICanvasActor* CanvasContext;
+//	UICanvasActor* CanvasContext;
+//	std::vector<UICanvasActor*> Canvases;
 
 	Component* SelectedComp;
 	Actor* SelectedActor;
@@ -969,9 +959,37 @@ CEREAL_REGISTER_TYPE(Material)
 CEREAL_REGISTER_TYPE(AtlasMaterial)
 
 
+class Klasa1 : public UICanvasElement
+{
+public:
+	virtual Boxf<Vec2f> GetBoundingBox(bool world) override
+	{
+		return Boxf<Vec2f>(Vec2f(2.69f, 4.20f), Vec2f(1.337f, 6.9f));
+	}
+};
+
+class Klasa2 : public UICanvasElement
+{
+public:
+	virtual Boxf<Vec2f> GetBoundingBox(bool world) override
+	{
+		return Boxf<Vec2f>(Vec2f(3.19f, 0.32f), Vec2f(99.0f, 0.1f));
+	}
+};
+
+class Ponadklasa : public Klasa1, public Klasa2
+{
+public:
+	virtual Boxf<Vec2f> GetBoundingBox(bool world) override
+	{
+		return Boxf<Vec2f>(Vec2f(483.8f, 827.9f), Vec2f(371.0f, 0.0283f));
+	}
+};
 
 int main(int argc, char** argv)
 {
+	Ponadklasa ponadobjekt;
+	std::cout << ponadobjekt.GetBoundingBox(false).Position.x<< "\n";
 	std::string programFilepath;
 	std::string projectFilepathArgument;
 	for (int i = 0; i < argc; i++)

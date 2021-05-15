@@ -854,9 +854,9 @@ void EngineDataLoader::SetupSceneFromFile(GameManager* gameHandle, const std::st
 				}
 
 				if (typeName == "GunActor")
-					currentActor = (currentActorUniquePtr = std::make_unique<GunActor>(GunActor(scene, actorName))).get();
+					currentActor = (currentActorUniquePtr = std::make_unique<GunActor>(GunActor(scene, nullptr, actorName))).get();
 				else if (typeName == "Actor")
-					currentActor = (currentActorUniquePtr = std::make_unique<Actor>(Actor(scene, actorName))).get();
+					currentActor = (currentActorUniquePtr = std::make_unique<Actor>(Actor(scene, nullptr, actorName))).get();
 				else
 				{
 					std::cerr << "ERROR! Unrecognized actor type " << typeName << ".\n";

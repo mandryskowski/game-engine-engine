@@ -99,14 +99,15 @@ void UIMultipleListActor::NestList(UIListActor& list)
 }*/
 
 
-UICanvasField::UICanvasField(GameScene& scene, const std::string& name) :
-	UIActor(scene, name)
+UICanvasField::UICanvasField(GameScene& scene, Actor* parentActor, const std::string& name) :
+	Actor(scene, parentActor, name),
+	UIActor(parentActor)
 {
 }
 
 void UICanvasField::OnStart()
 {
-	UIActor::OnStart();
+	Actor::OnStart();
 
 	CreateComponent<TextComponent>("ElementText", Transform(glm::vec2(-2.0f, 0.0f), glm::vec2(1.0f)), Name, "", std::pair<TextAlignment, TextAlignment>(TextAlignment::RIGHT, TextAlignment::CENTER));
 }
@@ -116,8 +117,8 @@ UIElementTemplates UICanvasField::GetTemplates()
 	return UIElementTemplates(*this, CanvasPtr);
 }
 
-UICanvasFieldCategory::UICanvasFieldCategory(GameScene& scene, const std::string& name) :
-	UIListActor(scene, name),
+UICanvasFieldCategory::UICanvasFieldCategory(GameScene& scene, Actor* parentActor, const std::string& name) :
+	UIListActor(scene, parentActor, name),
 	OnExpansionFunc(nullptr),
 	ExpandButton(nullptr)
 {
@@ -150,7 +151,6 @@ UICanvasField& UICanvasFieldCategory::AddField(const std::string& name, std::fun
 
 	field.SetTransform(Transform(glm::vec2(0.0f), glm::vec2(1.0f)));	//position doesn't matter if this is not the first field
 	std::cout << "CANVASPTR: " << GetCanvasPtr() << '\n';
-	(GetCanvasPtr()->*static_cast<void(UICanvas::*)(UIActor&)>(&UICanvas::AddUIElement))(field);
 
 	return field;
 }
@@ -233,7 +233,6 @@ void UIElementTemplates::HierarchyTreeInput(UIAutomaticListActor& list, GameScen
 	{
 		HierarchyTemplate::HierarchyTreeT* tree = scene.GetHierarchyTree(i);
 		UIButtonActor& treeButton = list.CreateChild<UIButtonActor>("TreeButton" + std::to_string(i), tree->GetName(), [tree, setFunc]() { setFunc(*tree); });
-		Canvas->AddUIElement(treeButton);
 	}
 
 }
@@ -314,9 +313,9 @@ void UIElementTemplates::ObjectInput(std::function<std::vector<ObjectBase*>()> g
 		UIAutomaticListActor& list = window.CreateChild<UIAutomaticListActor>("Available comp list");
 		std::vector<ObjectType*> availableObjects = getObjectsFunc();
 
-		window.AddUIElement(list.CreateChild<UIButtonActor>("Nullptr object button", "Nullptr", [&window, setFunc]() { setFunc(nullptr); window.MarkAsKilled(); }));
+		list.CreateChild<UIButtonActor>("Nullptr object button", "Nullptr", [&window, setFunc]() { setFunc(nullptr); window.MarkAsKilled(); });
 		for (auto& it : availableObjects)
-			window.AddUIElement(list.CreateChild<UIButtonActor>(it->GetName() + ", Matching object button", it->GetName(), [&window, setFunc, it]() { setFunc(it); window.MarkAsKilled(); }));
+			list.CreateChild<UIButtonActor>(it->GetName() + ", Matching object button", it->GetName(), [&window, setFunc, it]() { setFunc(it); window.MarkAsKilled(); });
 		list.Refresh();
 
 		std::cout << availableObjects.size() << " available objects.\n";
@@ -339,9 +338,8 @@ void UIElementTemplates::ObjectInput(ObjectBase& hierarchyRoot, std::function<vo
 
 		GetAllObjects<ObjectType>(hierarchyRoot, availableObjects);
 
-		window.AddUIElement(list.CreateChild<UIButtonActor>("Nullptr object button", "Nullptr", [&window, setFunc]() { setFunc(nullptr); window.MarkAsKilled(); }));
 		for (auto& it : availableObjects)
-			window.AddUIElement(list.CreateChild<UIButtonActor>(it->GetName() + ", Matching object button", it->GetName(), [&window, setFunc, it]() { setFunc(it); window.MarkAsKilled(); }));
+			list.CreateChild<UIButtonActor>(it->GetName() + ", Matching object button", it->GetName(), [&window, setFunc, it]() { setFunc(it); window.MarkAsKilled(); });
 		list.Refresh();
 
 		std::cout << availableObjects.size() << " available objects.\n";

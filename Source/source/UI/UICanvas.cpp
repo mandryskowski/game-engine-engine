@@ -32,7 +32,7 @@ const Transform& UICanvas::GetViewT() const
 glm::mat4 UICanvas::GetProjection() const
 {
 	glm::vec2 size = static_cast<glm::vec2>(CanvasView.ScaleRef);
-	return glm::ortho(-size.x, size.x, -size.y, size.y);
+	return glm::ortho(-size.x, size.x, -size.y, size.y, 1.0f, -255.0f);
 }
 
 Boxf<Vec2f> UICanvas::GetBoundingBox() const
@@ -93,38 +93,12 @@ void UICanvas::AddUIElement(UICanvasElement& element)
 
 void UICanvas::EraseUIElement(UICanvasElement& element)
 {
-	UIElements.erase(std::remove_if(UIElements.begin(), UIElements.end(), [&element](std::reference_wrapper<UICanvasElement>& elementVec) {return &elementVec.get() == &element; }), UIElements.end());
+	if (element.ParentElement)
+		element.ParentElement->EraseChildElement(element);
+	else
+		element.DetachFromCanvas();
 }
 
-void UICanvas::AddUIElement(Actor& actor)
-{
-	std::vector<UICanvasElement*> elements;
-	actor.GetRoot()->GetAllComponents<UICanvasElement>(&elements);
-
-	for (auto& it : elements)
-		(this->*static_cast<void(UICanvas::*)(UICanvasElement&)>(&UICanvas::AddUIElement))(*it);	//Watch out: AddUIElement both attaches the element to canvas and makes it expand the canvas. TODO: Change it so an element can only be renderable in canvas, only expand the canvas or both.
-
-	std::vector<Actor*> children = actor.GetChildren();
-	for (auto& it : children)
-	{
-		if (UIActor* cast = dynamic_cast<UIActor*>(it))
-			(this->*static_cast<void(UICanvas::*)(UIActor&)>(&UICanvas::AddUIElement))(*cast);
-		else
-			(this->*static_cast<void(UICanvas::*)(Actor&)>(&UICanvas::AddUIElement))(*it);
-		
-	}
-}
-
-void UICanvas::AddUIElement(UIActor& actor)
-{
-	(this->*static_cast<void(UICanvas::*)(UICanvasElement&)>(&UICanvas::AddUIElement))(actor);
-	(this->*static_cast<void(UICanvas::*)(Actor&)>(&UICanvas::AddUIElement))(actor);
-}
-
-void UICanvas::RemoveUIElement(UICanvasElement* element)
-{
-	UIElements.erase(std::remove_if(UIElements.begin(), UIElements.end(), [element](std::reference_wrapper<UICanvasElement>& vecElement) { return element == &vecElement.get(); }), UIElements.end());
-}
 
 void UICanvas::ScrollView(Vec2f offset)
 {
@@ -141,4 +115,14 @@ void UICanvas::SetViewScale(glm::vec2 scale)
 {
 	CanvasView.SetScale(scale);
 	ClampViewToElements();
+}
+
+bool UICanvas::ContainsMouse() const
+{
+	return bContainsMouse;
+}
+
+bool UICanvas::ContainsMouseCheck(const Vec2f& mouseNDC) const
+{
+	return bContainsMouse = GetViewport().Contains(mouseNDC);
 }

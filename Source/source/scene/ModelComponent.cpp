@@ -12,7 +12,7 @@ using namespace MeshSystem;
 
 ModelComponent::ModelComponent(Actor& actor, Component* parentComp, const std::string& name, const Transform& transform, SkeletonInfo* info, Material* overrideMat) :
 	RenderableComponent(actor, parentComp, name, transform),
-	UICanvasElement(),
+	UIComponent(actor, parentComp),
 	LastFrameMVP(glm::mat4(1.0f)),
 	SkelInfo(info),
 	RenderAsBillboard(false)
@@ -21,7 +21,7 @@ ModelComponent::ModelComponent(Actor& actor, Component* parentComp, const std::s
 
 ModelComponent::ModelComponent(ModelComponent&& model) :
 	RenderableComponent(std::move(model)),
-	UICanvasElement(std::move(model)),
+	UIComponent(std::move(model)),
 	MeshInstances(std::move(model.MeshInstances)),
 	SkelInfo(model.SkelInfo),
 	RenderAsBillboard(model.RenderAsBillboard),

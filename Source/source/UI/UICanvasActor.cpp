@@ -6,40 +6,43 @@
 #include <UI/UICanvasField.h>
 #include <UI/UIListActor.h>
 
-UICanvasActor::UICanvasActor(GameScene& scene, const std::string& name):
-	Actor(scene, name),
+UICanvasActor::UICanvasActor(GameScene& scene, Actor* parentActor, const std::string& name):
+	Actor(scene, parentActor, name),
 	FieldsList(nullptr),
 	FieldSize(glm::vec3(0.5f)),
 	ScrollBarX(nullptr),
 	ScrollBarY(nullptr),
+	BothScrollBarsButton(nullptr),
 	ResizeBarX(nullptr),
 	ResizeBarY(nullptr),
-	ScaleActor(nullptr)
+	ScaleActor(nullptr),
+	ContextStealerParent(nullptr)
 {
 }
 
 UICanvasActor::UICanvasActor(UICanvasActor&& canvasActor):
 	Actor(std::move(canvasActor)),
 	UICanvas(std::move(canvasActor)),
-	FieldsList(canvasActor.FieldsList),
+	FieldsList(nullptr),
 	FieldSize(canvasActor.FieldSize),
-	ScrollBarX(canvasActor.ScrollBarX),
-	ScrollBarY(canvasActor.ScrollBarY),
-	ResizeBarX(canvasActor.ResizeBarX),
-	ResizeBarY(canvasActor.ResizeBarY),
-	ScaleActor(canvasActor.ScaleActor)
+	ScrollBarX(nullptr),
+	ScrollBarY(nullptr),
+	ResizeBarX(nullptr),
+	ResizeBarY(nullptr),
+	ScaleActor(nullptr),
+	ContextStealerParent(canvasActor.ContextStealerParent)
 {
+	FieldsList = dynamic_cast<UIListActor*>(canvasActor.FindActor(Name + "_Fields_List"));
 }
 
 void UICanvasActor::OnStart()
 {
 	Actor::OnStart();
+	ScaleActor = &CreateChild<UIActorDefault>(Name + " scale actor");
 	CreateScrollBars();
-	ScaleActor = &CreateChild<UIActor>(Name + " scale actor");
-	AddUIElement(*ScaleActor);
 }
 
-UIActor* UICanvasActor::GetScaleActor()
+UIActorDefault* UICanvasActor::GetScaleActor()
 {
 	return ScaleActor;
 }
@@ -62,6 +65,11 @@ const Transform* UICanvasActor::GetCanvasT() const
 Transform UICanvasActor::ToCanvasSpace(const Transform& worldTransform) const
 {
 	return GetCanvasT()->GetWorldTransform().GetInverse() * worldTransform;
+}
+
+bool UICanvasActor::IsInContext()
+{
+	return ContextStealers.empty();
 }
 
 void UICanvasActor::RefreshFieldsList()
@@ -90,6 +98,15 @@ void UICanvasActor::ClampViewToElements()
 	if (ScrollBarY) UpdateScrollBarT<VecAxis::Y>();
 }
 
+Actor& UICanvasActor::AddChild(std::unique_ptr<Actor> actor)
+{
+	Actor& actorRef = Actor::AddChild(std::move(actor));	//actor becomes invalid (nullptr)
+	//if (UICanvasElement* elementCast = dynamic_cast<UICanvasElement*>(&actorRef))
+		;// AddUIElement(*elementCast);
+
+	return actorRef;
+}
+
 UICanvasFieldCategory& UICanvasActor::AddCategory(const std::string& name)
 {
 	if (!FieldsList)
@@ -98,7 +115,6 @@ UICanvasFieldCategory& UICanvasActor::AddCategory(const std::string& name)
 	UICanvasFieldCategory& category = FieldsList->CreateChild<UICanvasFieldCategory>(name);
 	category.SetTransform(Transform(glm::vec2(0.0f), Vec2f(FieldSize)));	//position doesn't matter if this is not the first field
 	FieldsList->AddElement(UIListElement(category, [&category]() { category.Refresh(); return category.GetListOffset(); }, [&category]() { return Vec3f(0.0f, -1.5f, 0.0f); }));
-	(this->*static_cast<void(UICanvas::*)(UIActor&)>(&UICanvas::AddUIElement))(category);
 	category.SetOnExpansionFunc([this]() { RefreshFieldsList(); });
 
 	return category;
@@ -113,7 +129,6 @@ UICanvasField& UICanvasActor::AddField(const std::string& name, std::function<gl
 	(getElementOffset) ? (FieldsList->AddElement(UIListElement(field, getElementOffset))) : (FieldsList->AddElement(UIListElement(field, glm::vec3(0.0f, -FieldSize.y * 2.0f, 0.0f))));
 
 	field.SetTransform(Transform(glm::vec2(0.0f), glm::vec2(FieldSize)));	//position doesn't matter if this is not the first field
-	(this->*static_cast<void(UICanvas::*)(UIActor&)>(&UICanvas::AddUIElement))(field);
 
 
 	return field;
@@ -138,13 +153,36 @@ void UICanvasActor::HandleEvent(const Event& ev)
 		ScrollView(scrolledEv.GetOffset());
 }
 
+void UICanvasActor::HandleEventAll(const Event& ev)
+{
+	ContainsMouseCheck(GameHandle->GetInputRetriever().GetMousePositionNDC());
+	Actor::HandleEventAll(ev);
+
+	/*bool bContainsMouse = ContainsMouse(GameHandle->GetInputRetriever().GetMousePositionNDC());
+	bool focusedOnThis = bContainsMouse;
+	if (bContainsMouse)
+		Actor::HandleEventAll(ev);
+	else
+	{
+		std::vector<UIButtonActor*> buttons;
+		GetExternalButtons(buttons);
+		for (auto button : buttons)
+			if (button)
+			{
+				button->HandleEventAll(ev);
+				if (button->GetState() != EditorIconState::IDLE)
+					focusedOnThis = true;
+			}
+	}*/
+}
+
 RenderInfo UICanvasActor::BindForRender(const RenderInfo& info, const glm::uvec2& res)	//Note: RenderInfo is a relatively big object for real-time standards. HOPEFULLY the compiler will optimize here using NRVO and convertedInfo won't be copied D:
 {
 	RenderInfo convertedInfo = info;
-	convertedInfo.view = GetView();
+	convertedInfo.view = GetView() * info.view;
 	convertedInfo.projection = GetProjection();
 	convertedInfo.CalculateVP();
-	GetViewport().SetOpenGLState(res);
+	GetViewport().SetOpenGLState(res); 
 
 	return convertedInfo;
 }
@@ -152,6 +190,11 @@ RenderInfo UICanvasActor::BindForRender(const RenderInfo& info, const glm::uvec2
 void UICanvasActor::UnbindForRender(const glm::uvec2& res)
 {
 	Viewport(glm::uvec2(0), res).SetOpenGLState();
+}
+
+void UICanvasActor::GetExternalButtons(std::vector<UIButtonActor*>& buttons) const
+{
+	buttons = { ScrollBarX, ScrollBarY, BothScrollBarsButton, ResizeBarX, ResizeBarY };
 }
 
 void UICanvasActor::CreateScrollBars()
@@ -199,6 +242,12 @@ void UICanvasActor::CreateScrollBars()
 		this->GetTransform()->SetScale((glm::vec2)this->GetTransform()->ScaleRef * (1.0f + scale));
 		ResizeBarX->SetClickPosNDC(GameHandle->GetInputRetriever().GetMousePositionNDC());
 		});
+
+	EraseUIElement(*ScrollBarX);
+	EraseUIElement(*ScrollBarY);
+	EraseUIElement(*BothScrollBarsButton);
+	EraseUIElement(*ResizeBarX);
+	//EraseUIElement(*ResizeBarY);
 }
 
 template<VecAxis barAxis>
@@ -244,7 +293,7 @@ UICanvasField& AddFieldToCanvas(const std::string& name, UICanvasElement& elemen
 	return element.GetCanvasPtr()->AddField(name, getFieldOffsetFunc);
 }
 
-EditorDescriptionBuilder::EditorDescriptionBuilder(EditorManager& editorHandle, UIActor& descriptionParent):
+EditorDescriptionBuilder::EditorDescriptionBuilder(EditorManager& editorHandle, UIActorDefault& descriptionParent):
 	EditorDescriptionBuilder(editorHandle, descriptionParent, *descriptionParent.GetCanvasPtr())
 {
 }

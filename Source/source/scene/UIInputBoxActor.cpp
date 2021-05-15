@@ -3,8 +3,8 @@
 #include <scene/TextComponent.h>
 #include <scene/ModelComponent.h>
 
-UIInputBoxActor::UIInputBoxActor(GameScene& scene, const std::string& name):
-	UIActivableButtonActor(scene, name),
+UIInputBoxActor::UIInputBoxActor(GameScene& scene, Actor* parentActor, const std::string& name):
+	UIActivableButtonActor(scene, parentActor, name),
 	ValueGetter(nullptr),
 	ContentTextComp(nullptr),
 	RetrieveContentEachFrame(false)
@@ -13,16 +13,24 @@ UIInputBoxActor::UIInputBoxActor(GameScene& scene, const std::string& name):
 	ContentTextComp->SetAlignment(TextAlignment::CENTER, TextAlignment::CENTER);
 }
 
-UIInputBoxActor::UIInputBoxActor(GameScene& scene, const std::string& name, std::function<void(const std::string&)> inputFunc, std::function<std::string()> valueGetter):
-	UIInputBoxActor(scene, name)
+UIInputBoxActor::UIInputBoxActor(GameScene& scene, Actor* parentActor, const std::string& name, std::function<void(const std::string&)> inputFunc, std::function<std::string()> valueGetter):
+	UIInputBoxActor(scene, parentActor, name)
 {
 	SetOnInputFunc(inputFunc, valueGetter);
 }
 
-UIInputBoxActor::UIInputBoxActor(GameScene& scene, const std::string& name, std::function<void(float)> inputFunc, std::function<float()> valueGetter, bool fixNumberStr):
-	UIInputBoxActor(scene, name)
+UIInputBoxActor::UIInputBoxActor(GameScene& scene, Actor* parentActor, const std::string& name, std::function<void(float)> inputFunc, std::function<float()> valueGetter, bool fixNumberStr):
+	UIInputBoxActor(scene, parentActor, name)
 {
 	SetOnInputFunc(inputFunc, valueGetter, fixNumberStr);
+}
+
+UIInputBoxActor::UIInputBoxActor(UIInputBoxActor&& inputBox) :
+	UIActivableButtonActor(std::move(inputBox)),
+	ValueGetter(inputBox.ValueGetter),
+	ContentTextComp(nullptr),
+	RetrieveContentEachFrame(inputBox.RetrieveContentEachFrame)
+{
 }
 
 /*UIInputBoxActor::UIInputBoxActor(UIInputBoxActor&& inputBox):
@@ -49,8 +57,10 @@ std::string UIInputBoxActor::GetContent()
 
 void UIInputBoxActor::PutString(const std::string& str)
 {
-	ContentTextComp->SetContent(str);
-	OnDeactivationFunc();
+	if (ContentTextComp)
+		ContentTextComp->SetContent(str);
+	if (OnDeactivationFunc)
+		OnDeactivationFunc();
 }
 
 void UIInputBoxActor::SetOnInputFunc(std::function<void(const std::string&)> inputFunc, std::function<std::string()> valueGetter)

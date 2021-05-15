@@ -16,10 +16,18 @@ public:
 
 	virtual ~UICanvasElement();
 protected:
-	virtual void AttachToCanvas(UICanvas& canvas);
+	void SetParentElement(UICanvasElement&);
+protected:
+	void AddChildElement(UICanvasElement&);
+	void EraseChildElement(UICanvasElement&);
+	void AttachToCanvas(UICanvas& canvas);
+	void DetachFromCanvas();
 	friend class UICanvas;
 
 	UICanvas* CanvasPtr;
+
+	UICanvasElement* ParentElement;
+	std::vector<UICanvasElement*> ChildElements;
 };
 /*
 class UICanvasComponent : public UICanvasElement

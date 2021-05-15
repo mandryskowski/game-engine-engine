@@ -6,11 +6,12 @@
 
 GameScene* cereal::LoadAndConstruct<Actor>::ScenePtr = nullptr;
 
-Actor::Actor(GameScene& scene, const std::string& name) :
+Actor::Actor(GameScene& scene, Actor* parentActor, const std::string& name) :
 	Scene(scene),
 	Name(name),
+	RootComponent(nullptr),
 	GameHandle(scene.GetGameHandle()),
-	ParentActor(nullptr),
+	ParentActor(parentActor),
 	bKillingProcessStarted(false),
 	SetupStream(nullptr)
 {
@@ -29,7 +30,7 @@ Actor::Actor(Actor&& moved):
 	GameHandle(moved.GameHandle),
 	bKillingProcessStarted(moved.bKillingProcessStarted)
 {
-	std::cout << "UWAGA: MOVE CONSTRUCTOR NIE DZIALA.\n";
+	std::cout << "UWAGA: MOVE CONSTRUCTOR NIE DZIALA. (" + Name + ") (" + Scene.GetName() + ")\n";
 	RootComponent = std::make_unique<Component>(*this, nullptr, Name + "'s root", Transform());
 	//exit(-1);
 }

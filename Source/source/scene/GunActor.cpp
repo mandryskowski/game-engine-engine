@@ -3,8 +3,8 @@
 #include <assetload/FileLoader.h>
 #include <input/Event.h>
 
-GunActor::GunActor(GameScene& scene, std::string name):
-	Actor(scene, name),
+GunActor::GunActor(GameScene& scene, Actor* parentActor, std::string name):
+	Actor(scene, parentActor, name),
 	GunModel(nullptr),
 	ParticleMeshInst(nullptr),
 	GunBlast(nullptr)

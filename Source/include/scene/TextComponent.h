@@ -1,10 +1,10 @@
 #pragma once
 #include <scene/RenderableComponent.h>
 #include <rendering/Material.h>
-#include <UI/UIElement.h>
+#include <UI/UIComponent.h>
 #include <UI/Font.h>
 
-class TextComponent: public RenderableComponent, public UICanvasElement
+class TextComponent: public RenderableComponent, public UIComponent
 {
 public:
 	TextComponent(Actor&, Component* parentComp, const std::string& name = std::string(), const Transform &transform = Transform(), std::string content = std::string(), std::shared_ptr<Font> font = nullptr, std::pair<TextAlignment, TextAlignment> = std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::BOTTOM));

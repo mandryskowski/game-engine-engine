@@ -2,15 +2,14 @@
 #include <scene/Component.h>
 #include <math/Transform.h>
 
-UIListActor::UIListActor(GameScene& scene, const std::string& name) :
-	UIActor(scene, name),
+UIListActor::UIListActor(GameScene& scene, Actor* parentActor, const std::string& name) :
+	UIActorDefault(scene, parentActor, name),
 	bExpanded(true)
 {
 }
 
 UIListActor::UIListActor(UIListActor&& listActor) :
-	UIActor(std::move(listActor)),
-	ListElements(listActor.ListElements),
+	UIActorDefault(std::move(listActor)),
 	bExpanded(listActor.bExpanded)
 {
 }
@@ -85,8 +84,8 @@ glm::vec3 UIListActor::MoveElements(unsigned int level)
 	return nextElementBegin;
 }
 
-UIAutomaticListActor::UIAutomaticListActor(GameScene& scene, const std::string& name, glm::vec3 elementOffset):
-	UIListActor(scene, name),
+UIAutomaticListActor::UIAutomaticListActor(GameScene& scene, Actor* parentActor, const std::string& name, glm::vec3 elementOffset):
+	UIListActor(scene, parentActor, name),
 	ElementOffset(elementOffset)
 {
 }

@@ -9,8 +9,8 @@
 #include <scene/GunActor.h>
 #include <math/Transform.h>
 
-Controller::Controller(GameScene& scene, std::string name):
-	Actor(scene, name),
+Controller::Controller(GameScene& scene, Actor* parentActor, std::string name):
+	Actor(scene, parentActor, name),
 	PxController(nullptr),
 	PossessedActor(nullptr),
 	Directions{false, false, false, false, false},
@@ -271,8 +271,8 @@ void Controller::GetEditorDescription(EditorDescriptionBuilder descBuilder)
 	descBuilder.AddField("Target camera").GetTemplates().ObjectInput<Actor, Actor>([this]() { std::vector<Actor*> actors; Scene.GetRootActor()->GetAllActors(&actors); return actors; }, [this](Actor* actor) { SetPossessedActor(actor); });
 }
 
-ShootingController::ShootingController(GameScene& scene, const std::string& name):
-	Controller(scene, name),
+ShootingController::ShootingController(GameScene& scene, Actor* parentActor, const std::string& name):
+	Controller(scene, parentActor, name),
 	PossessedGunActor(nullptr)
 {
 }

@@ -10,15 +10,15 @@
 #include <scene/HierarchyTemplate.h>
 
 GameScene::GameScene(GameManager& gameHandle, const std::string& name) :
-	RenderData(std::make_unique<GameSceneRenderData>(GameSceneRenderData(gameHandle.GetRenderEngineHandle()))),
-	PhysicsData(std::make_unique<GameScenePhysicsData>(GameScenePhysicsData(gameHandle.GetPhysicsHandle()))),
-	AudioData(std::make_unique<GameSceneAudioData>(GameSceneAudioData(gameHandle.GetAudioEngineHandle()))),
+	RenderData(std::make_unique<GameSceneRenderData>(gameHandle.GetRenderEngineHandle())),
+	PhysicsData(std::make_unique<GameScenePhysicsData>(gameHandle.GetPhysicsHandle())),
+	AudioData(std::make_unique<GameSceneAudioData>(gameHandle.GetAudioEngineHandle())),
 	ActiveCamera(nullptr),
 	Name(name),
 	GameHandle(&gameHandle),
 	bKillingProcessStarted(false)
 {
-	RootActor = std::make_unique<Actor>(Actor(*this, "SceneRoot"));
+	RootActor = std::make_unique<Actor>(*this, nullptr, "SceneRoot");
 }
 
 GameScene::GameScene(GameScene&& scene):
@@ -31,7 +31,7 @@ GameScene::GameScene(GameScene&& scene):
 	GameHandle(scene.GameHandle),
 	bKillingProcessStarted(scene.bKillingProcessStarted)
 {
-	RootActor = std::make_unique<Actor>(Actor(*this, "SceneRoot"));
+	RootActor = std::make_unique<Actor>(*this, nullptr, "SceneRoot");
 }
 
 const std::string& GameScene::GetName() const

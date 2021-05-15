@@ -180,6 +180,9 @@
     <ClCompile Include="source\scene\LightProbeComponent.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="source\UI\UIComponent.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\UI\UICanvasActor.h">
@@ -345,6 +348,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\scene\LightProbeComponent.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\UI\UIComponent.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

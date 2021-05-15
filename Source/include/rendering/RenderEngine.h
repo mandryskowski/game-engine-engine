@@ -39,12 +39,13 @@ public:
 	void RenderVolumes(const RenderInfo&, const GEE_FB::Framebuffer& framebuffer, const std::vector<std::unique_ptr<RenderableVolume>>&, bool bIBLPass);
 	void RenderLightProbes(GameSceneRenderData* sceneRenderData);
 	void RenderRawScene(const RenderInfo& info, GameSceneRenderData* sceneRenderData, Shader* shader = nullptr);
+	void RenderRawSceneUI(const RenderInfo& info, GameSceneRenderData* sceneRenderData);
 
 	void RenderBoundInDebug(RenderInfo&, GLenum mode, GLint first, GLint count, glm::vec3 color = glm::vec3(1.0f));
 	void PreLoopPass();
 
 	void PrepareScene(RenderToolboxCollection& tbCollection, GameSceneRenderData* sceneRenderData);	//Call this method once per frame for each scene that will be rendered in order to prepare stuff like shadow maps
-	void FullSceneRender(RenderInfo& info, GameSceneRenderData* sceneRenderData, GEE_FB::Framebuffer* framebuffer = nullptr, Viewport = Viewport(glm::vec2(0.0f), glm::vec2(0.0f)), bool clearMainFB = true);	//This method renders a scene with lighting and some postprocessing that improve the visual quality (e.g. SSAO, if enabled).
+	void FullSceneRender(RenderInfo& info, GameSceneRenderData* sceneRenderData, GEE_FB::Framebuffer* framebuffer = nullptr, Viewport = Viewport(glm::vec2(0.0f), glm::vec2(0.0f)), bool clearMainFB = true, bool modifyForwardsDepthForUI = false);	//This method renders a scene with lighting and some postprocessing that improve the visual quality (e.g. SSAO, if enabled).
 
 	void PrepareFrame();
 	void PostFrame();	//This method completes the postprocessing after everything has been rendered. Call it at the end of your frame rendering function to minimize overhead. Algorithms like anti-aliasing don't need to run multiple times.

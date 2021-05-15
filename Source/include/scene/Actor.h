@@ -20,7 +20,7 @@ class EditorDescriptionBuilder;
 class Actor
 {
 public:
-	Actor(GameScene&, const std::string& name);
+	Actor(GameScene&, Actor* parentActor, const std::string& name);
 	Actor(const Actor&) = delete;
 	Actor(Actor&&);
 
@@ -127,7 +127,7 @@ protected:
 template <typename ChildClass, typename... Args>
 inline ChildClass& Actor::CreateChild(Args&&... args)
 {
-	std::unique_ptr<ChildClass> createdChild = std::make_unique<ChildClass>(Scene, std::forward<Args>(args)...);
+	std::unique_ptr<ChildClass> createdChild = std::make_unique<ChildClass>(Scene, this, std::forward<Args>(args)...);
 	ChildClass& childRef = *createdChild.get();
 	AddChild(std::move(createdChild));
 
@@ -157,7 +157,7 @@ namespace cereal
 			if (!ScenePtr)
 				return;
 
-			construct(*ScenePtr, "undefined actor");
+			construct(*ScenePtr, nullptr, "undefined actor");
 			construct->Load(ar);
 		}
 	};
@@ -169,7 +169,7 @@ namespace cereal
 			if (!LoadAndConstruct<Actor>::ScenePtr)
 				return;
 
-			construct(*LoadAndConstruct<Actor>::ScenePtr, "undefined gunactor");
+			construct(*LoadAndConstruct<Actor>::ScenePtr, nullptr, "undefined gunactor");
 			construct->Load(ar);
 		}
 	};
@@ -181,7 +181,7 @@ namespace cereal
 			if (!LoadAndConstruct<Actor>::ScenePtr)
 				return;
 
-			construct(*LoadAndConstruct<Actor>::ScenePtr, "undefined pawnactor");
+			construct(*LoadAndConstruct<Actor>::ScenePtr, nullptr, "undefined pawnactor");
 			construct->Load(ar);
 		}
 	};
@@ -193,7 +193,7 @@ namespace cereal
 			if (!LoadAndConstruct<Actor>::ScenePtr)
 				return;
 
-			construct(*LoadAndConstruct<Actor>::ScenePtr, "undefined controller");
+			construct(*LoadAndConstruct<Actor>::ScenePtr, nullptr, "undefined controller");
 			construct->Load(ar);
 		}
 	};
@@ -205,7 +205,7 @@ namespace cereal
 			if (!LoadAndConstruct<Actor>::ScenePtr)
 				return;
 
-			construct(*LoadAndConstruct<Actor>::ScenePtr, "undefined controller");
+			construct(*LoadAndConstruct<Actor>::ScenePtr, nullptr, "undefined controller");
 			construct->Load(ar);
 		}
 	};

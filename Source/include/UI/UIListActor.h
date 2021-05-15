@@ -25,10 +25,10 @@ private:
 	std::function<glm::vec3()> GetElementOffsetFunc, GetCenterOffsetFunc;
 };
 
-class UIListActor : public UIActor
+class UIListActor : public UIActorDefault
 {
 public:
-	UIListActor(GameScene& scene, const std::string& name);
+	UIListActor(GameScene& scene, Actor* parentActor, const std::string& name);
 	UIListActor(UIListActor&&);
 
 	void Refresh();
@@ -55,7 +55,7 @@ protected:
 class UIAutomaticListActor : public UIListActor
 {
 public:
-	UIAutomaticListActor(GameScene& scene, const std::string& name, glm::vec3 elementOffset = glm::vec3(0.0, -2.0f, 0.0f));
+	UIAutomaticListActor(GameScene& scene, Actor* parentActor, const std::string& name, glm::vec3 elementOffset = glm::vec3(0.0, -2.0f, 0.0f));
 	UIAutomaticListActor(UIAutomaticListActor&&);
 
 	virtual Actor& AddChild(std::unique_ptr<Actor>) override;
