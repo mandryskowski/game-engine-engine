@@ -99,6 +99,7 @@ public:
 	MeshInstance(const MeshInstance&);
 	MeshInstance(MeshInstance&&) noexcept;
 
+	Mesh& GetMesh();
 	const Mesh& GetMesh() const;
 	const Material* GetMaterialPtr() const;
 	MaterialInstance* GetMaterialInst() const;

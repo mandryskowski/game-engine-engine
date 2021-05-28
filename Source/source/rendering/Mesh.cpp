@@ -172,6 +172,11 @@ MeshInstance::MeshInstance(MeshInstance&& mesh) noexcept:
 		MaterialInst = std::move(mesh.MaterialInst);	//move the material instance
 }
 
+Mesh& MeshInstance::GetMesh()
+{
+	return MeshRef;
+}
+
 const Mesh& MeshInstance::GetMesh() const
 {
 	return MeshRef;

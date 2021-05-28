@@ -16,7 +16,8 @@ PawnActor::PawnActor(GameScene& scene, Actor* parentActor, const std::string& na
 	SpeedPerSec(1.0f),
 	CurrentTargetPos(glm::vec3(0.0f)),
 	PathIndex(0),
-	Gun(nullptr)
+	Gun(nullptr),
+	PlayerTarget(nullptr)
 {
 }
 
@@ -62,10 +63,10 @@ void PawnActor::Update(float deltaTime)
 		glm::vec3 posDir = CurrentTargetPos - GetTransform()->GetWorldTransform().PositionRef;
 		posDir.y = 0.0f;
 		posDir = glm::normalize(posDir);
-		if (Actor* cameraActor = Scene.FindActor("CameraActor"))
+		if (PlayerTarget)
 		{
-			glm::vec3 playerDir = glm::normalize(cameraActor->GetTransform()->GetWorldTransform().PositionRef - GetTransform()->GetWorldTransform().PositionRef);
-			float distance = glm::distance((glm::vec3)cameraActor->GetTransform()->GetWorldTransform().PositionRef, GetTransform()->GetWorldTransform().PositionRef);
+			glm::vec3 playerDir = glm::normalize(PlayerTarget->GetTransform()->GetWorldTransform().PositionRef - GetTransform()->GetWorldTransform().PositionRef);
+			float distance = glm::distance((glm::vec3)PlayerTarget->GetTransform()->GetWorldTransform().PositionRef, GetTransform()->GetWorldTransform().PositionRef);
 			std::cout << "Dot: " << glm::dot(playerDir, GetTransform()->RotationRef * glm::vec3(0.0f, 0.0f, -1.0f)) << '\n';
 			if (Gun && glm::dot(playerDir, GetTransform()->RotationRef * glm::vec3(0.0f, 0.0f, -1.0f)) > glm::cos(glm::radians(30.0f)) && distance < 3.0f)
 			{
@@ -91,12 +92,14 @@ void PawnActor::GetEditorDescription(EditorDescriptionBuilder descBuilder)
 	Actor::GetEditorDescription(descBuilder);
 
 	descBuilder.AddField("Anim Manager").GetTemplates().ComponentInput<AnimationManagerComponent>(*GetRoot(), [this](AnimationManagerComponent* animManager) {AnimManager = animManager; UpdateAnimsListInEditor(animManager); });
-	descBuilder.AddField("Target").GetTemplates().VecInput(CurrentTargetPos);
+	descBuilder.AddField("Target position").GetTemplates().VecInput(CurrentTargetPos);
+
 	dynamic_cast<UIInputBoxActor*>(descBuilder.GetDescriptionParent().FindActor("VecBox0"))->SetRetrieveContentEachFrame(true);
 	dynamic_cast<UIInputBoxActor*>(descBuilder.GetDescriptionParent().FindActor("VecBox1"))->SetRetrieveContentEachFrame(true);
 	dynamic_cast<UIInputBoxActor*>(descBuilder.GetDescriptionParent().FindActor("VecBox2"))->SetRetrieveContentEachFrame(true);
 
 	descBuilder.AddField("Gun").GetTemplates().ObjectInput<Actor, GunActor>(*this, Gun);
+	descBuilder.AddField("Player target").GetTemplates().ObjectInput<Actor, Actor>(const_cast<Actor&>(*Scene.GetRootActor()), PlayerTarget);
 
 	UIInputBoxActor& speedInputBox = descBuilder.AddField("Speed").CreateChild<UIInputBoxActor>("SpeedInputBox");
 	speedInputBox.SetOnInputFunc([this](float val) { SpeedPerSec = val; }, [this]()->float { return SpeedPerSec; });

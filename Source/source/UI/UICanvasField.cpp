@@ -114,11 +114,11 @@ void UICanvasField::OnStart()
 
 UIElementTemplates UICanvasField::GetTemplates()
 {
-	return UIElementTemplates(*this, CanvasPtr);
+	return UIElementTemplates(*this);
 }
 
 UICanvasFieldCategory::UICanvasFieldCategory(GameScene& scene, Actor* parentActor, const std::string& name) :
-	UIListActor(scene, parentActor, name),
+	UIAutomaticListActor(scene, parentActor, name),
 	OnExpansionFunc(nullptr),
 	ExpandButton(nullptr)
 {
@@ -142,22 +142,40 @@ UICanvasFieldCategory::UICanvasFieldCategory(GameScene& scene, Actor* parentActo
 				OnExpansionFunc();
 		});
 	ExpandButton->SetTransform(Transform(Vec2f(0.0f, 2.0f), Vec2f(1.0f)));
+
+	//We do not want the list element to be hidden after retracting
+	EraseListElement(*ExpandButton);
+}
+
+void UICanvasFieldCategory::OnStart()
+{
+	UIListActor::OnStart();
+
+	CreateComponent<TextComponent>("CategoryText", Transform(glm::vec2(-2.0f, 2.0f), glm::vec2(1.0f)), Name, "", std::pair<TextAlignment, TextAlignment>(TextAlignment::RIGHT, TextAlignment::CENTER));
+}
+
+UIButtonActor* UICanvasFieldCategory::GetExpandButton()
+{
+	return ExpandButton;
+}
+
+UIElementTemplates UICanvasFieldCategory::GetTemplates()
+{
+	return UIElementTemplates(*this);
 }
 
 UICanvasField& UICanvasFieldCategory::AddField(const std::string& name, std::function<glm::vec3()> getElementOffset)
 {
 	UICanvasField& field = CreateChild<UICanvasField>(name);
-	(getElementOffset) ? (AddElement(UIListElement(field, getElementOffset))) : (AddElement(UIListElement(field, glm::vec3(0.0f, -2.0f, 0.0f))));
-
-	field.SetTransform(Transform(glm::vec2(0.0f), glm::vec2(1.0f)));	//position doesn't matter if this is not the first field
-	std::cout << "CANVASPTR: " << GetCanvasPtr() << '\n';
+	if (getElementOffset)
+		SetListElementOffset(GetListElementCount() - 1, getElementOffset);
 
 	return field;
 }
 
 glm::vec3 UICanvasFieldCategory::GetListOffset()
 {
-	return (bExpanded) ? (UIListActor::GetListOffset() + Vec3f(0.0f, -1.0f, 0.0f)) : (Vec3f(0.0f, -1.0f, 0.0f));
+	return (bExpanded) ? (UIAutomaticListActor::GetListOffset() + Vec3f(0.0f, -1.0f, 0.0f)) : (Vec3f(0.0f, -1.0f, 0.0f));
 }
 
 #include <input/InputDevicesStateRetriever.h>
@@ -177,11 +195,10 @@ void UICanvasFieldCategory::HandleEventAll(const Event& ev)
 				it->HandleEventAll(ev);
 }
 
-UIElementTemplates::UIElementTemplates(Actor& templateParent, UICanvas* canvas) :
+UIElementTemplates::UIElementTemplates(Actor& templateParent) :
 	TemplateParent(templateParent),
 	Scene(templateParent.GetScene()),
-	GameHandle(*templateParent.GetScene().GetGameHandle()),
-	Canvas(canvas)
+	GameHandle(*templateParent.GetScene().GetGameHandle())
 {
 }
 
@@ -338,6 +355,7 @@ void UIElementTemplates::ObjectInput(ObjectBase& hierarchyRoot, std::function<vo
 
 		GetAllObjects<ObjectType>(hierarchyRoot, availableObjects);
 
+		list.CreateChild<UIButtonActor>("Nullptr object button", "Nullptr", [&window, setFunc]() { setFunc(nullptr); window.MarkAsKilled(); });
 		for (auto& it : availableObjects)
 			list.CreateChild<UIButtonActor>(it->GetName() + ", Matching object button", it->GetName(), [&window, setFunc, it]() { setFunc(it); window.MarkAsKilled(); });
 		list.Refresh();
@@ -378,6 +396,7 @@ void UIElementTemplates::ComponentInput(Component& hierarchyRoot, CompType*& inp
 	ComponentInput<CompType>(hierarchyRoot, [&inputTo](CompType* comp) { inputTo = comp; });
 }
 
+
 template <> void UIElementTemplates::VecInput<glm::vec2>(std::function<void(float, float)> setFunc, std::function<float(float)> getFunc)
 {
 	VecInput<2>(setFunc, getFunc);
@@ -391,6 +410,11 @@ template <> void UIElementTemplates::VecInput<glm::vec3>(std::function<void(floa
 template <> void UIElementTemplates::VecInput<Vec3f>(std::function<void(float, float)> setFunc, std::function<float(float)> getFunc)
 {
 	VecInput<3>(setFunc, getFunc);
+}
+
+template <> void UIElementTemplates::VecInput<Vec4f>(std::function<void(float, float)> setFunc, std::function<float(float)> getFunc)
+{
+	VecInput<4>(setFunc, getFunc);
 }
 
 template <> void UIElementTemplates::VecInput<glm::vec4>(std::function<void(float, float)> setFunc, std::function<float(float)> getFunc) 
@@ -416,6 +440,7 @@ template <typename ObjectType> void GetAllObjects<Actor>(Actor& hierarchyRoot, s
 template void UIElementTemplates::VecInput<glm::vec2>(glm::vec2&);
 template void UIElementTemplates::VecInput<glm::vec3>(glm::vec3&);
 template void UIElementTemplates::VecInput<Vec3f>(Vec3f&);
+template void UIElementTemplates::VecInput<Vec4f>(Vec4f&);
 template void UIElementTemplates::VecInput<glm::vec4>(glm::vec4&);
 template void UIElementTemplates::VecInput<glm::quat>(glm::quat&);
 
@@ -426,10 +451,13 @@ template void UIElementTemplates::ObjectInput<Component, LightComponent>(Compone
 template void UIElementTemplates::ObjectInput<Component, SoundSourceComponent>(Component&, std::function<void(SoundSourceComponent*)>);
 template void UIElementTemplates::ObjectInput<Component, AnimationManagerComponent>(Component&, std::function<void(AnimationManagerComponent*)>);
 
-template void UIElementTemplates::ObjectInput<Actor, GunActor>(Actor&, std::function<void(GunActor*)>);
+template void UIElementTemplates::ObjectInput<Actor, Actor>(Actor&, std::function<void(Actor*)>);
+template void UIElementTemplates::ObjectInput<Actor, Actor>(Actor&, Actor*&);
+template void UIElementTemplates::ObjectInput<Actor, GunActor>(Actor&, GunActor*&);
 template void UIElementTemplates::ObjectInput<Actor, GunActor>(Actor&, GunActor*&);
 
 template void UIElementTemplates::ObjectInput<Actor, Actor>(std::function<std::vector<Actor*>()>, std::function<void(Actor*)>);
+template void UIElementTemplates::ObjectInput<Material, Material>(std::function<std::vector<Material*>()>, std::function<void(Material*)>);
 
 template void UIElementTemplates::ComponentInput<Component>(Component&, std::function<void(Component*)>);
 template void UIElementTemplates::ComponentInput<ModelComponent>(Component&, std::function<void(ModelComponent*)>);

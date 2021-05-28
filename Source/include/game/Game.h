@@ -25,9 +25,16 @@ public:
 	virtual void Init(GLFWwindow* window);
 
 	void LoadSceneFromFile(const std::string& path, const std::string& name = std::string());
-	virtual GameScene& CreateScene(const std::string& name) override;
+	virtual GameScene& CreateScene(const std::string& name, bool isAnUIScene = false) override;
 	void AddScene(std::unique_ptr <GameScene> scene);
 	virtual void BindAudioListenerTransformPtr(Transform*) override;
+
+	/**
+	 * @brief Checks if the passed transform is bound and unbinds it if that's the case.
+	 * @param a pointer to the Transform object to be checked (and potentially unbound)
+	*/
+	virtual void UnbindAudioListenerTransformPtr(Transform* transform) override;
+
 	virtual void PassMouseControl(Controller* controller) override; //pass nullptr to unbind any controller and allow moving the mouse around freely
 	virtual const Controller* GetCurrentMouseController() const override; 
 	virtual std::shared_ptr<Font> GetDefaultFont() override;
@@ -42,6 +49,8 @@ public:
 	virtual GameScene* GetScene(const std::string& name) override;
 	virtual GameScene* GetMainScene() override;
 	virtual Actor* GetRootActor(GameScene* scene = nullptr) override;
+
+	virtual void SetActiveScene(GameScene* scene) override;
 
 	virtual HierarchyTemplate::HierarchyTreeT* FindHierarchyTree(const std::string& name, HierarchyTemplate::HierarchyTreeT* treeToIgnore = nullptr) override;
 	virtual std::shared_ptr<Font> FindFont(const std::string& path) override;
@@ -62,6 +71,7 @@ protected:
 
 	std::vector <std::unique_ptr <GameScene>> Scenes;	//The first scene (Scenes[0]) is referred to as the Main Scene. If you only use 1 scene in your application, don't bother with passing arround GameScene pointers - the Main Scene will be chosen automatically.
 	GameScene* MainScene;
+	GameScene* ActiveScene;	//which scene currently handles events
 	EventHolder EventHolderObj;
 	Controller* MouseController;
 

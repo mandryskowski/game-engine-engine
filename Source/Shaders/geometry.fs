@@ -10,6 +10,8 @@ struct Material
 	float depthScale;
 	#endif
 	#ifdef PBR_SHADING
+	vec3 roughnessMetallicAoColor;
+	
 	sampler2D roughness1;
 	sampler2D metallic1;
 	sampler2D ao1;
@@ -128,13 +130,17 @@ void main()
 		//discard;
 	gAlbedoSpec.a = texture(material.specular1, texCoord).r;
 	#ifdef PBR_SHADING
-	gAlphaMetalAo.r = pow(texture(material.roughness1, texCoord).r, 2.0);
-	if (gAlphaMetalAo.r == 0.0)
-		gAlphaMetalAo.r = pow(texture(material.combined1, texCoord).g, 2.0);
+	gAlphaMetalAo.r = texture(material.roughness1, texCoord).r;
+	if (gAlphaMetalAo.r == 0.0)	gAlphaMetalAo.r = texture(material.combined1, texCoord).g;
+	if (gAlphaMetalAo.r == 0.0)	gAlphaMetalAo.r = material.roughnessMetallicAoColor.r;
+	gAlphaMetalAo.r = pow(gAlphaMetalAo.r, 2.0);
+	
 	gAlphaMetalAo.g = texture(material.metallic1, texCoord).r;
+	if (gAlphaMetalAo.g == 0.0)	gAlphaMetalAo.g = texture(material.combined1, texCoord).b;
+	if (gAlphaMetalAo.g == 0.0) gAlphaMetalAo.g = material.roughnessMetallicAoColor.g;
+	
 	gAlphaMetalAo.b = texture(material.ao1, texCoord).r;
-	if (gAlphaMetalAo.g == 0.0)
-		gAlphaMetalAo.g = texture(material.combined1, texCoord).b;
+	if (gAlphaMetalAo.b == 0.0) gAlphaMetalAo.b = material.roughnessMetallicAoColor.b;
 	
 	#endif
 	

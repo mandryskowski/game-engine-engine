@@ -3,6 +3,7 @@
 #include <assetload/FileLoader.h>
 #include <input/Event.h>
 
+
 GunActor::GunActor(GameScene& scene, Actor* parentActor, std::string name):
 	Actor(scene, parentActor, name),
 	GunModel(nullptr),
@@ -31,14 +32,14 @@ void GunActor::Setup()
 		std::cout << "Firematerial = " << GameHandle->GetRenderEngineHandle()->FindMaterial(str) << ".\n";
 	}
 
-	ModelComponent* found = dynamic_cast<ModelComponent*>(Scene.GetRenderData()->FindRenderable("FireParticle"));
+	ModelComponent* found = GetRoot()->GetComponent<ModelComponent>("FireParticle");
 	std::cout << "Wyszukalem se: " << found << ".\n";
 	dynamic_cast<ModelComponent*>(found->SearchForComponent("Quad"))->SetRenderAsBillboard(true);
 	ParticleMeshInst = found->FindMeshInstance("Quad");
 	ParticleMeshInst->GetMaterialInst()->SetInterp(&dynamic_cast<AtlasMaterial*>(&ParticleMeshInst->GetMaterialInst()->GetMaterialRef())->GetTextureIDInterpolatorTemplate(Interpolation(0.0f, 0.25f, InterpolationType::LINEAR), 0.0f, dynamic_cast<AtlasMaterial*>(&ParticleMeshInst->GetMaterialInst()->GetMaterialRef())->GetMaxTextureID()));
 	ParticleMeshInst->GetMaterialInst()->SetDrawBeforeAnim(false);
 	ParticleMeshInst->GetMaterialInst()->SetDrawAfterAnim(false);
-	GunModel = dynamic_cast<ModelComponent*>(Scene.GetRenderData()->FindRenderable("MyDoubleBarrel"));
+	GunModel = GetRoot()->GetComponent<ModelComponent>("MyDoubleBarrel");
 
 	/*
 	GunModel->GetTransform()->AddInterpolator("position", 10.0f, 20.0f, glm::vec3(0.0f, 0.0f, -10.0f), InterpolationType::LINEAR);

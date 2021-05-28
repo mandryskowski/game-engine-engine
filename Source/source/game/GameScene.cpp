@@ -8,17 +8,20 @@
 #include <game/GameScene.h>
 #include <physics/CollisionObject.h>
 #include <scene/HierarchyTemplate.h>
+#include <UI/UICanvas.h>
 
-GameScene::GameScene(GameManager& gameHandle, const std::string& name) :
-	RenderData(std::make_unique<GameSceneRenderData>(gameHandle.GetRenderEngineHandle())),
+GameScene::GameScene(GameManager& gameHandle, const std::string& name, bool isAnUIScene) :
+	RenderData(std::make_unique<GameSceneRenderData>(gameHandle.GetRenderEngineHandle(), isAnUIScene)),
 	PhysicsData(std::make_unique<GameScenePhysicsData>(gameHandle.GetPhysicsHandle())),
 	AudioData(std::make_unique<GameSceneAudioData>(gameHandle.GetAudioEngineHandle())),
 	ActiveCamera(nullptr),
 	Name(name),
 	GameHandle(&gameHandle),
-	bKillingProcessStarted(false)
+	bKillingProcessStarted(false),
+	CurrentBlockingCanvas(nullptr)
 {
 	RootActor = std::make_unique<Actor>(*this, nullptr, "SceneRoot");
+	BlockingCanvases;
 }
 
 GameScene::GameScene(GameScene&& scene):
@@ -29,7 +32,8 @@ GameScene::GameScene(GameScene&& scene):
 	ActiveCamera(scene.ActiveCamera),
 	Name(scene.Name),
 	GameHandle(scene.GameHandle),
-	bKillingProcessStarted(scene.bKillingProcessStarted)
+	bKillingProcessStarted(scene.bKillingProcessStarted),
+	CurrentBlockingCanvas(nullptr)
 {
 	RootActor = std::make_unique<Actor>(*this, nullptr, "SceneRoot");
 }
@@ -97,6 +101,39 @@ void GameScene::AddPostLoadLambda(std::function<void()> postLoadLambda)
 	PostLoadLambdas.push_back(postLoadLambda);
 }
 
+void GameScene::AddBlockingCanvas(UICanvas& canvas)
+{
+	BlockingCanvases.push_back(&canvas);
+	std::sort(BlockingCanvases.begin(), BlockingCanvases.end(), [](UICanvas* lhs, UICanvas* rhs) { return lhs->GetCanvasDepth() < rhs->GetCanvasDepth(); });
+}
+
+void GameScene::EraseBlockingCanvas(UICanvas& canvas)
+{
+	BlockingCanvases.erase(std::remove_if(BlockingCanvases.begin(), BlockingCanvases.end(), [this, &canvas](UICanvas* canvasVec) { bool matches = canvasVec == &canvas; if (matches && CurrentBlockingCanvas == canvasVec) CurrentBlockingCanvas = nullptr; return matches; }), BlockingCanvases.end());	//should still be sorted
+}
+
+UICanvas* GameScene::GetCurrentBlockingCanvas() const
+{
+	return CurrentBlockingCanvas;
+}
+
+std::string GameScene::GetUniqueActorName(const std::string& name) const
+{
+	std::vector <Actor*> actorsWithSimilarNames;
+	std::function<void(Actor&)> getActorsWithSimilarNamesFunc = [&actorsWithSimilarNames, name, &getActorsWithSimilarNamesFunc](Actor& currentActor) { if (currentActor.GetName().rfind(name, 0) == 0) /* if currentActor's name stars with name */ actorsWithSimilarNames.push_back(&currentActor);	for (auto& it : currentActor.GetChildren()) getActorsWithSimilarNamesFunc(*it); };
+
+	getActorsWithSimilarNamesFunc(*RootActor);
+	if (actorsWithSimilarNames.empty())
+		return name;
+
+	int addedIndex = 1;
+	std::string currentNameCandidate = name + std::to_string(addedIndex);
+	while (std::find_if(actorsWithSimilarNames.begin(), actorsWithSimilarNames.end(), [currentNameCandidate](Actor* actor) { return actor->GetName() == currentNameCandidate; }) != actorsWithSimilarNames.end())
+		currentNameCandidate = name + std::to_string(++addedIndex);
+
+	return currentNameCandidate;
+}
+
 Actor& GameScene::AddActorToRoot(std::unique_ptr<Actor> actor)
 {
 	return RootActor->AddChild(std::move(actor));
@@ -116,6 +153,23 @@ HierarchyTemplate::HierarchyTreeT* GameScene::FindHierarchyTree(const std::strin
 		return (*found).get();
 
 	return nullptr;
+}
+
+#include <input/InputDevicesStateRetriever.h>
+#include <UI/UICanvasActor.h>
+void GameScene::HandleEventAll(const Event& ev)
+{
+	const Vec2f mouseNDC = static_cast<Vec2f>(GameHandle->GetInputRetriever().GetMousePositionNDC());
+	auto found = std::find_if(BlockingCanvases.rbegin(), BlockingCanvases.rend(), [&mouseNDC](UICanvas* canvas) { return canvas->ContainsMouseCheck(mouseNDC) && !(dynamic_cast<UICanvasActor*>(canvas)->IsBeingKilled()); });
+	if (found != BlockingCanvases.rend())
+		CurrentBlockingCanvas = *found;
+	else
+		CurrentBlockingCanvas = nullptr;
+	/*std::cout << "Current blocking canvas: " << CurrentBlockingCanvas;
+	if (CurrentBlockingCanvas)
+		std::cout << dynamic_cast<UICanvasActor*>(CurrentBlockingCanvas)->GetName();
+	std::cout << '\n';*/
+	RootActor->HandleEventAll(ev);
 }
 
 void GameScene::Update(float deltaTime)
@@ -140,6 +194,11 @@ Actor* GameScene::FindActor(std::string name)
 	return RootActor->FindActor(name);
 }
 
+GameScene::~GameScene()
+{
+
+}
+
 void GameScene::MarkAsKilled()
 {
 	bKillingProcessStarted = true;
@@ -155,11 +214,13 @@ void GameScene::Delete()
 	GameHandle->DeleteScene(*this);
 }
 
-GameSceneRenderData::GameSceneRenderData(RenderEngineManager* renderHandle) :
+GameSceneRenderData::GameSceneRenderData(RenderEngineManager* renderHandle, bool isAnUIScene) :
 	RenderHandle(renderHandle),
 	ProbeTexArrays(std::make_shared<LightProbeTextureArrays>(LightProbeTextureArrays())),
 	LightBlockBindingSlot(-1),
-	ProbesLoaded(false)
+	ProbesLoaded(false),
+	bIsAnUIScene(isAnUIScene),
+	bUIRenderableDepthsDirtyFlag(false)
 {
 	if (LightProbes.empty() && RenderHandle->GetShadingModel() == ShadingModel::SHADING_PBR_COOK_TORRANCE)
 	{
@@ -206,9 +267,18 @@ bool GameSceneRenderData::HasLightWithoutShadowMap() const
 }
 
 
-void GameSceneRenderData::AddRenderable(RenderableComponent& renderable)
+void GameSceneRenderData::AddRenderable(Renderable& renderable)
 {
-	Renderables.push_back(renderable);
+	//if (bIsAnUIScene)
+		//insertSorted(Renderables, &renderable, [](Renderable* value, Renderable* vecElement) { return value->GetUIDepth() < vecElement->GetUIDepth(); });
+	//else
+		Renderables.push_back(&renderable);
+		if (bIsAnUIScene)
+			MarkUIRenderableDepthsDirty();
+/*	std::cout << "***POST-ADD RENDERABLES***\n";
+	i = 0;
+	for (auto it : Renderables)
+		std::cout << ++i << ". " << it << "### Depth:" << it->GetUIDepth() << '\n';*/
 	//std::cout << "Adding renderable " << renderable.GetName() << " " << &renderable << "\n";
 }
 
@@ -226,6 +296,9 @@ void GameSceneRenderData::AddLightProbe(LightProbeComponent& probe)
 	LightProbes.push_back(&probe);
 	for (int i = 0; i < static_cast<int>(LightProbes.size()); i++)
 		LightProbes[i]->SetProbeIndex(i);
+
+	if (!LightsBuffer.HasBeenGenerated())
+		SetupLights(LightBlockBindingSlot);
 }
 
 std::shared_ptr<SkeletonInfo> GameSceneRenderData::AddSkeletonInfo()
@@ -240,9 +313,9 @@ std::shared_ptr<SkeletonInfo> GameSceneRenderData::AddSkeletonInfo()
 	return info;
 }
 
-void GameSceneRenderData::EraseRenderable(RenderableComponent& renderable)
+void GameSceneRenderData::EraseRenderable(Renderable& renderable)
 {
-	Renderables.erase(std::remove_if(Renderables.begin(), Renderables.end(), [&renderable](std::reference_wrapper<RenderableComponent>& renderableVec) {return &renderableVec.get() == &renderable; }), Renderables.end());
+	Renderables.erase(std::remove_if(Renderables.begin(), Renderables.end(), [&renderable](Renderable* renderableVec) {return renderableVec == &renderable; }), Renderables.end());
 	//std::cout << "Erasing renderable " << renderable.GetName() << " " << &renderable << "\n";
 }
 
@@ -258,6 +331,11 @@ void GameSceneRenderData::EraseLight(LightComponent& light)
 void GameSceneRenderData::EraseLightProbe(LightProbeComponent& lightProbe)
 {
 	LightProbes.erase(std::remove_if(LightProbes.begin(), LightProbes.end(), [&lightProbe](LightProbeComponent* lightProbeVec) {return lightProbeVec == &lightProbe; }), LightProbes.end());
+}
+
+void GameSceneRenderData::MarkUIRenderableDepthsDirty()
+{
+	bUIRenderableDepthsDirtyFlag = true;
 }
 
 void GameSceneRenderData::SetupLights(unsigned int blockBindingSlot)
@@ -303,14 +381,29 @@ SkeletonBatch* GameSceneRenderData::GetBatch(int ID)
 	return SkeletonBatches[ID].get();
 }
 
+GameSceneRenderData::~GameSceneRenderData()
+{
+	LightsBuffer.Dispose();
+}
+
+void GameSceneRenderData::AssertThatUIRenderablesAreSorted()
+{
+	if (!bUIRenderableDepthsDirtyFlag)
+		return;
+
+	std::stable_sort(Renderables.begin(), Renderables.end(), [](Renderable* lhs, Renderable* rhs) { return lhs->GetUIDepth() < rhs->GetUIDepth(); });
+	bUIRenderableDepthsDirtyFlag = false;
+}
+
+/*
 RenderableComponent* GameSceneRenderData::FindRenderable(std::string name)
 {
-	auto found = std::find_if(Renderables.begin(), Renderables.end(), [name](const std::reference_wrapper<RenderableComponent>& comp) { if (name == "FireParticle") std::cout << comp.get().GetName() << "\n"; return comp.get().GetName() == name; });
+	auto found = std::find_if(Renderables.begin(), Renderables.end(), [name](Renderable* comp) { return comp->GetName() == name; });
 	if (found != Renderables.end())
-		return &found->get();
+		return *found;
 
 	return nullptr;
-}
+}*/
 
 GameScenePhysicsData::GameScenePhysicsData(PhysicsEngineManager* physicsHandle) :
 	PhysicsHandle(physicsHandle),

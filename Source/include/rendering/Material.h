@@ -6,6 +6,8 @@
 #include <assimp/postprocess.h>
 #include <assimp/Importer.hpp>
 
+#include <math/Transform.h> //TODO: CHANGE TO VEC.H
+
 struct MaterialLoadingData;	//note: it's legally incomplete in class Material declaration (it's safe to use incomplete types in functions'/methods' declarations!)
 
 class NamedTexture;
@@ -21,29 +23,28 @@ public:
 	struct MaterialLoc : public HTreeObjectLoc
 	{
 		std::string Name;
-		MaterialLoc(HTreeObjectLoc treeObjectLoc, const std::string& name = std::string()) : HTreeObjectLoc(treeObjectLoc), Name(name)  {}
-		MaterialLoc(const char* name) : HTreeObjectLoc(), Name(name)  {}	//allows implicit conversion from const char*
-		MaterialLoc(const std::string& name) : HTreeObjectLoc(), Name(name)  {}	//allows implicit conversion from const std::string&
+		MaterialLoc(HTreeObjectLoc treeObjectLoc, const std::string& name = std::string()) : HTreeObjectLoc(treeObjectLoc), Name(name) {}
+		MaterialLoc(const char* name) : HTreeObjectLoc(), Name(name) {}	//allows implicit conversion from const char*
+		MaterialLoc(const std::string& name) : HTreeObjectLoc(), Name(name) {}	//allows implicit conversion from const std::string&
 		std::string GetFullStr() const
 		{
 			return (!GetTreeName().empty()) ? (GetTreeName() + ":" + Name) : (Name);
 		}
-	} Localization;
-	std::vector <std::shared_ptr<NamedTexture>> Textures;	//Often used; NamedTextures (NamedTexture is a child class of Texture) are bound to the samplers which names correspond to ShaderName of a NamedTexture.
-	Vec4f Color;	//Probably not often used; Used for some materials that only need a colour, e.g. for button materials - they can be monocolour
-	float Shininess;
-	float DepthScale;	//used in parallax mapping
-	std::string RenderShaderName;
-
+	};
 public:
 	Material(MaterialLoc, float depthScale = 0.0f, Shader* shader = nullptr);
 	const MaterialLoc& GetLocalization() const;
+	std::string GetName() const;
 	const std::string& GetRenderShaderName() const;
+	Vec4f GetColor() const;
 	void SetDepthScale(float);
 	void SetShininess(float);
 	void SetRenderShaderName(const std::string&);
 	void SetColor(const glm::vec3& color);
 	void SetColor(const glm::vec4& color); //Think twice before you use colours; you need a corresponding shader to make it work (one that has uniform vec4 color in it)
+	void SetRoughnessColor(float roughness);
+	void SetMetallicColor(float metallic);
+	void SetAoColor(float ao);
 	void AddTexture(std::shared_ptr<NamedTexture> tex);
 
 	void LoadFromAiMaterial(const aiScene* scene, aiMaterial*, const std::string&, MaterialLoadingData*);
@@ -68,6 +69,19 @@ public:
 		construct("if_you_see_this_serializing_error_ocurred");
 		construct->Load(archive);
 	}
+
+	virtual void GetEditorDescription(EditorDescriptionBuilder);
+
+
+public:
+	MaterialLoc Localization;
+	std::vector <std::shared_ptr<NamedTexture>> Textures;	//Often used; NamedTextures (NamedTexture is a child class of Texture) are bound to the samplers which names correspond to ShaderName of a NamedTexture.
+	Vec4f Color;	//Probably not often used; Used for some materials that only need a colour, e.g. for button materials - they can be monocolour
+	float Shininess;
+	float DepthScale;	//used in parallax mapping
+	std::string RenderShaderName;
+
+	float RoughnessColor, MetallicColor, AoColor;
 };
 
 struct MaterialLoadingData

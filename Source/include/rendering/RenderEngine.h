@@ -22,12 +22,23 @@ public:
 	virtual Shader* GetLightShader(const RenderToolboxCollection& renderCol, LightType type) override;
 	virtual RenderToolboxCollection* GetCurrentTbCollection() override;
 
-	RenderToolboxCollection& AddRenderTbCollection(const RenderToolboxCollection&, bool setupToolboxesAccordingToSettings = true); //Pass false as the second argument to disable loading any toolboxes. By default, we load every toolbox that will be needed according to RenderToolboxCollection::Settings
+	virtual std::vector<Material*> GetMaterials() override;
+
+	/**
+	 * @brief Add a new RenderToolboxCollection to the render engine to enable updating shadow maps automatically. By default, we load every toolbox that will be needed according to RenderToolboxCollection::Settings
+	 * @param tbCollection: a constructed RenderToolboxCollection object containing the name and settings of it
+	 * @param setupToolboxesAccordingToSettings: pass false as the second argument to disable loading any toolboxes
+	 * @return a reference to the added RenderToolboxCollection
+	*/
+	virtual RenderToolboxCollection& AddRenderTbCollection(const RenderToolboxCollection& tbCollection, bool setupToolboxesAccordingToSettings = true) override;
 	virtual Material* AddMaterial(std::shared_ptr<Material> material) override;
 	virtual std::shared_ptr<Shader> AddShader(std::shared_ptr<Shader> shader, bool bForwardShader = false) override;
 
 	void BindSkeletonBatch(SkeletonBatch* batch);
 	void BindSkeletonBatch(GameSceneRenderData* sceneRenderData, unsigned int index);
+
+	virtual void EraseRenderTbCollection(RenderToolboxCollection& tbCollection) override;
+	virtual void EraseMaterial(Material&) override;
 
 	virtual std::shared_ptr<Material> FindMaterial(std::string) override;
 	virtual Shader* FindShader(std::string) override;

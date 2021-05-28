@@ -160,11 +160,20 @@ private:
 class RenderToolboxCollection
 {
 public:
-	RenderToolboxCollection(std::string name, const GameSettings::VideoSettings& settings):
+	/**
+	 * @brief Constructor of RenderToolboxCollection.
+	 * @param name: the name of this RenderToolboxCollection
+	 * @param settings: settings to be used for rendering. DO NOT pass a local variable that is about to be destroyed or you will encounter UB. (should be allocated on the heap)
+	*/
+	RenderToolboxCollection(const std::string& name, const GameSettings::VideoSettings& settings):
 		Name(name),
 		Settings(settings)
 	{
 
+	}
+	std::string GetName() const
+	{
+		return Name;
 	}
 	template <class T> T* GetTb() const
 	{

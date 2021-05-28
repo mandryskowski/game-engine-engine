@@ -140,8 +140,10 @@
   <ItemGroup>
     <ClCompile Include="include\scene\PawnActor.cpp" />
     <ClCompile Include="include\scene\UIWindowActor.cpp" />
+    <ClCompile Include="include\UI\UIActor.cpp" />
     <ClCompile Include="source\animation\AnimationManagerActor.cpp" />
     <ClCompile Include="source\animation\SkeletonInfo.cpp" />
+    <ClCompile Include="source\editor\GameEngineEngineEditor.cpp" />
     <ClCompile Include="source\game\GameManager.cpp" />
     <ClCompile Include="source\scene\Actor.cpp" />
     <ClCompile Include="source\animation\Animation.cpp" />
@@ -194,11 +196,13 @@
     <ClCompile Include="source\UI\UIListActor.cpp" />
     <ClCompile Include="source\utility\Utility.cpp" />
     <ClCompile Include="source\rendering\Viewport.cpp" />
+    <ClCompile Include="source\whereami.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\animation\AnimationManagerActor.h" />
     <ClInclude Include="include\animation\SkeletonInfo.h" />
     <ClInclude Include="include\editor\EditorManager.h" />
+    <ClInclude Include="include\editor\GameEngineEngineEditor.h" />
     <ClInclude Include="include\scene\Actor.h" />
     <ClInclude Include="include\animation\Animation.h" />
     <ClInclude Include="include\audio\AudioEngine.h" />

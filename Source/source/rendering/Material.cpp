@@ -7,7 +7,10 @@ Material::Material(MaterialLoc loc, float depthScale, Shader* shader):
 	Localization(loc),
 	Shininess(0.0f),
 	DepthScale(depthScale),
-	Color(Vec4f(0.0f))
+	Color(Vec4f(0.0f)),
+	RoughnessColor(0.0f),
+	MetallicColor(0.0f),
+	AoColor(0.0f)
 {
 	if (shader)
 		RenderShaderName = shader->GetName();
@@ -18,9 +21,19 @@ const Material::MaterialLoc& Material::GetLocalization() const
 	return Localization;
 }
 
+std::string Material::GetName() const
+{
+	return GetLocalization().GetFullStr();
+}
+
 const std::string& Material::GetRenderShaderName() const
 {
 	return RenderShaderName;
+}
+
+Vec4f Material::GetColor() const
+{
+	return Color;
 }
 
 void Material::SetDepthScale(float scale)
@@ -45,6 +58,21 @@ void Material::SetColor(const glm::vec3& color)
 void Material::SetColor(const glm::vec4& color)
 {
 	Color = color;
+}
+
+void Material::SetRoughnessColor(float roughness)
+{
+	RoughnessColor = roughness;
+}
+
+void Material::SetMetallicColor(float metallic)
+{
+	MetallicColor = metallic;
+}
+
+void Material::SetAoColor(float ao)
+{
+	AoColor = ao;
 }
 
 void Material::AddTexture(std::shared_ptr<NamedTexture> tex)
@@ -192,6 +220,7 @@ void Material::UpdateWholeUBOData(Shader* shader, Texture& emptyTexture) const
 	shader->Uniform1f("material.shininess", Shininess);
 	shader->Uniform1f("material.depthScale", DepthScale);
 	shader->Uniform4fv("material.color", Color);
+	shader->Uniform3fv("material.roughnessMetallicAoColor", glm::vec3(RoughnessColor, MetallicColor, AoColor));
 
 	std::vector<std::pair<unsigned int, std::string>>* textureUnits = shader->GetMaterialTextureUnits();
 
@@ -213,6 +242,33 @@ void Material::UpdateWholeUBOData(Shader* shader, Texture& emptyTexture) const
 		if (!found)
 			emptyTexture.Bind();
 	}
+}
+
+#include <UI/UICanvasActor.h>
+#include <UI/UICanvasField.h>
+#include <scene/UIInputBoxActor.h>
+#include <scene/TextComponent.h>
+void Material::GetEditorDescription(EditorDescriptionBuilder descBuilder)
+{
+	descBuilder.AddField("Shader name").CreateChild<UIButtonActor>("ShaderNameButton", RenderShaderName).SetDisableInput(true);
+	descBuilder.AddField("Color").GetTemplates().VecInput<Vec4f>(Color);
+	UICanvasFieldCategory& texturesCat = descBuilder.AddCategory("Textures");
+	UIAutomaticListActor& list = texturesCat.CreateChild<UIAutomaticListActor>("TexturesList");
+
+	for (auto& it : Textures)
+	{
+		std::string texName = it->GetPath();
+		Material* dummyMaterial = new Material("dummy", 0.0f, descBuilder.GetEditorHandle().GetGameHandle()->GetRenderEngineHandle()->FindShader("Forward_NoLight"));
+		dummyMaterial->AddTexture(std::make_shared<NamedTexture>(NamedTexture((Texture)*it, "albedo1")));
+		UIButtonActor& texButton = list.CreateChild<UIButtonActor>(texName + "Button", texName);
+		texButton.SetMatIdle(*dummyMaterial);
+		texButton.CreateComponent<TextComponent>("TexShaderNameButton", Transform(Vec2f(1.0f, 0.0f)), it->GetShaderName(), "");
+	}
+	list.Refresh();
+
+	descBuilder.AddField("Roughness color").CreateChild<UIInputBoxActor>("RoughnessColorInputBoxActor", [this](float val) { SetRoughnessColor(val); }, [this]() { return RoughnessColor; });
+	descBuilder.AddField("Metallic color").CreateChild<UIInputBoxActor>("MetallicColorInputBoxActor", [this](float val) { SetMetallicColor(val); }, [this]() { return MetallicColor; });
+	descBuilder.AddField("Ao color").CreateChild<UIInputBoxActor>("AoColorInputBoxActor", [this](float val) { SetAoColor(val); }, [this]() { return AoColor; });
 }
 
 /*

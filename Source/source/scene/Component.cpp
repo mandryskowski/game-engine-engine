@@ -464,7 +464,7 @@ void Component::GetEditorDescription(EditorDescriptionBuilder descBuilder)
 					pathInputWindow.GetTransform()->SetScale(Vec2f(0.5f));
 
 
-					UIElementTemplates(pathInputWindow, &pathInputWindow).HierarchyTreeInput(*GameHandle, [this, &pathInputWindow, addShapeFunc](HierarchyTemplate::HierarchyTreeT& tree) {
+					UIElementTemplates(pathInputWindow).HierarchyTreeInput(*GameHandle, [this, &pathInputWindow, addShapeFunc](HierarchyTemplate::HierarchyTreeT& tree) {
 						pathInputWindow.MarkAsKilled();
 
 						std::shared_ptr<CollisionShape> shape = EngineDataLoader::LoadTriangleMeshCollisionShape(GameHandle->GetPhysicsHandle(), tree.GetMeshes()[0]);

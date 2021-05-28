@@ -67,6 +67,7 @@ public:
 
 
 protected:
+	virtual unsigned int GetUIDepth() const override;
 	std::vector<std::unique_ptr<MeshInstance>> MeshInstances;
 	SkeletonInfo* SkelInfo;
 	bool RenderAsBillboard;
@@ -74,7 +75,6 @@ protected:
 	mutable glm::mat4 LastFrameMVP;	//for velocity buffer; this field is only updated when velocity buffer is needed (for temporal AA/motion blur), in any other case it will be set to an identity matrix
 
 };
-
 
 namespace cereal
 {

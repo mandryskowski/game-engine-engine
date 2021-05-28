@@ -6,6 +6,9 @@ class UIComponent : public UICanvasElement
 {
 public:
 	UIComponent(Actor& actorRef, Component* parentComp);
+	virtual void AttachToCanvas(UICanvas& canvas) override;
+private:
+	GameScene& SceneRef;
 }; 
 
 class UIComponentDefault : public Component, public UIComponent

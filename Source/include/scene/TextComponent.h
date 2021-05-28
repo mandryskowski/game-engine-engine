@@ -7,8 +7,8 @@
 class TextComponent: public RenderableComponent, public UIComponent
 {
 public:
-	TextComponent(Actor&, Component* parentComp, const std::string& name = std::string(), const Transform &transform = Transform(), std::string content = std::string(), std::shared_ptr<Font> font = nullptr, std::pair<TextAlignment, TextAlignment> = std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::BOTTOM));
-	TextComponent(Actor&, Component* parentComp, const std::string& name = std::string(), const Transform &transform = Transform(), std::string content = std::string(), std::string fontPath = std::string(), std::pair<TextAlignment, TextAlignment> = std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::BOTTOM));
+	TextComponent(Actor&, Component* parentComp, const std::string& name = std::string(), const Transform &transform = Transform(), std::string content = std::string(), std::shared_ptr<Font> font = nullptr, std::pair<TextAlignment, TextAlignment> = std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::CENTER));
+	TextComponent(Actor&, Component* parentComp, const std::string& name = std::string(), const Transform &transform = Transform(), std::string content = std::string(), std::string fontPath = std::string(), std::pair<TextAlignment, TextAlignment> = std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::CENTER));
 	TextComponent(const TextComponent&) = delete;
 	TextComponent(TextComponent&&);
 
@@ -28,6 +28,8 @@ public:
 
 	virtual void GetEditorDescription(EditorDescriptionBuilder) override;
 	virtual MaterialInstance GetDebugMatInst(EditorIconState) override;
+
+	virtual unsigned int GetUIDepth() const override;
 
 	template <typename Archive> void Save(Archive& archive) const
 	{
@@ -58,6 +60,7 @@ private:
 															  Use a function (that DOES NOT EXIST YET. TODO) to get the bottom-left corner of the text.
 															*/
 };
+
 
 class TextConstantSizeComponent: public TextComponent
 {

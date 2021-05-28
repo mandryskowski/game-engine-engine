@@ -46,6 +46,9 @@ public:
 	glm::vec3 MoveElement(UIListElement& element, glm::vec3 nextElementBegin, float level);
 	glm::vec3 MoveElements(unsigned int level = 0);
 
+	void EraseListElement(std::function<bool(const UIListElement&)>);
+	void EraseListElement(Actor&);
+
 
 protected:
 	std::vector<UIListElement> ListElements;

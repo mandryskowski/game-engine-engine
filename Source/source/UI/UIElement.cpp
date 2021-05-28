@@ -5,13 +5,15 @@
 
 UICanvasElement::UICanvasElement():
 	CanvasPtr(nullptr),
-	ParentElement(nullptr)
+	ParentElement(nullptr),
+	ElementDepth(0)
 {
 }
 
 UICanvasElement::UICanvasElement(UICanvasElement&& element):
 	CanvasPtr(nullptr),
-	ParentElement(nullptr)
+	ParentElement(nullptr),
+	ElementDepth(element.ElementDepth)
 {
 	if (element.ParentElement)
 		SetParentElement(*element.ParentElement);
@@ -27,6 +29,11 @@ Boxf<Vec2f> UICanvasElement::GetBoundingBox(bool world)
 UICanvas* UICanvasElement::GetCanvasPtr()
 {
 	return CanvasPtr;
+}
+
+unsigned int UICanvasElement::GetElementDepth() const
+{
+	return ElementDepth;
 }
 
 void UICanvasElement::SetParentElement(UICanvasElement& element)
@@ -53,6 +60,8 @@ void UICanvasElement::EraseChildElement(UICanvasElement& element)
 void UICanvasElement::AttachToCanvas(UICanvas& canvas)
 {
 	CanvasPtr = &canvas;
+	ElementDepth = CanvasPtr->GetCanvasDepth();
+	
 }
 
 void UICanvasElement::DetachFromCanvas()

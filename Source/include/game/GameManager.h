@@ -12,9 +12,11 @@ class GunActor;
 class PawnActor;
 class ShootingController;
 class UIActor;
+class UICanvas;
 class UICanvasActor;
 class Controller;
 class Component;
+class Renderable;
 class RenderableComponent;
 class LightComponent;
 class LightProbeComponent;
@@ -133,8 +135,22 @@ public:
 	virtual Shader* GetLightShader(const RenderToolboxCollection& renderCol, LightType) = 0;
 	virtual RenderToolboxCollection* GetCurrentTbCollection() = 0;
 
+	//TODO: THIS SHOULD NOT BE HERE
+	virtual std::vector<Material*> GetMaterials() = 0;
+
+	/**
+	 * @brief Add a new RenderToolboxCollection to the render engine to enable updating shadow maps automatically. By default, we load every toolbox that will be needed according to RenderToolboxCollection::Settings
+	 * @param tbCollection: a constructed RenderToolboxCollection object containing the name and settings of it
+	 * @param setupToolboxesAccordingToSettings: pass false as the second argument to disable loading any toolboxes
+	 * @return a reference to the added RenderToolboxCollection
+	*/
+	virtual RenderToolboxCollection& AddRenderTbCollection(const RenderToolboxCollection& tbCollection, bool setupToolboxesAccordingToSettings = true) = 0;
+
 	virtual Material* AddMaterial(std::shared_ptr<Material>) = 0;
 	virtual std::shared_ptr<Shader> AddShader(std::shared_ptr<Shader>, bool bForwardShader = false) = 0;
+
+	virtual void EraseRenderTbCollection(RenderToolboxCollection& tbCollection) = 0;
+	virtual void EraseMaterial(Material&) = 0;
 
 	virtual Shader* FindShader(std::string) = 0;
 	virtual std::shared_ptr<Material> FindMaterial(std::string) = 0;
@@ -162,9 +178,11 @@ class GameManager
 {
 public:
 	static GameScene* DefaultScene;
-	virtual GameScene& CreateScene(const std::string& name) = 0;
+public:
+	virtual GameScene& CreateScene(const std::string& name, bool isAnUIScene = false) = 0;
 
 	virtual void BindAudioListenerTransformPtr(Transform*) = 0;
+	virtual void UnbindAudioListenerTransformPtr(Transform* transform) = 0;
 	virtual void PassMouseControl(Controller* controller) = 0;
 	virtual const Controller* GetCurrentMouseController() const = 0;
 	virtual InputDevicesStateRetriever GetInputRetriever() = 0;
@@ -182,6 +200,8 @@ public:
 	virtual AudioEngineManager* GetAudioEngineHandle() = 0;
 
 	virtual GameSettings* GetGameSettings() = 0;
+
+	virtual void SetActiveScene(GameScene* scene) = 0;
 
 	virtual HierarchyTemplate::HierarchyTreeT* FindHierarchyTree(const std::string& name, HierarchyTemplate::HierarchyTreeT* treeToIgnore = nullptr) = 0;
 	virtual std::shared_ptr<Font> FindFont(const std::string& path) = 0;
@@ -206,7 +226,6 @@ public:
 	virtual GameScene* GetSelectedScene() = 0;
 
 	virtual void PreviewHierarchyTree(HierarchyTemplate::HierarchyTreeT& tree) = 0;
-
 };
 
 struct PrimitiveDebugger

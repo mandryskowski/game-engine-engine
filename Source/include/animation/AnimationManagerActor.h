@@ -57,10 +57,21 @@ public:
 		std::string animHierarchyTreePath, animName, rootCompName, rootCompActorName;
 		archive(cereal::make_nvp("AnimHierarchyTreePath", animHierarchyTreePath), cereal::make_nvp("AnimName", animName), cereal::make_nvp("RootCompName", rootCompName), cereal::make_nvp("RootCompActorName", rootCompActorName));
 
-		Animation& anim = *GameManager::DefaultScene->GetGameHandle()->FindHierarchyTree(animHierarchyTreePath)->FindAnimation(animName);
-		Component& comp = *GameManager::DefaultScene->FindActor(rootCompActorName)->GetRoot()->GetComponent<Component>(rootCompName);
+		Animation* anim = GameManager::DefaultScene->GetGameHandle()->FindHierarchyTree(animHierarchyTreePath)->FindAnimation(animName);
+		Component* comp = GameManager::DefaultScene->FindActor(rootCompActorName)->GetRoot()->GetComponent<Component>(rootCompName);
 
-		construct(anim, comp);
+		if (!anim)
+		{
+			std::cout << "ERROR: Cannot find anim " << animName << " in hierarchy tree " << animHierarchyTreePath << '\n';
+			exit(-42069);
+		}
+		if (!comp)
+		{
+			std::cout << "ERROR: Cannot find anim root component " << rootCompName << " in actor " << rootCompActorName << '\n';
+			exit(-42069);
+		}
+
+		construct(*anim, *comp);
 	}
 };
 

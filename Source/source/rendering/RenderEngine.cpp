@@ -49,22 +49,31 @@ void RenderEngine::Init(glm::uvec2 resolution)
 	for (int i = 0; i < 6; i++)
 		CubemapData.DefaultVP[i] = cubemapProj * CubemapData.DefaultV[i];
 
-	for (int i = 0; i < static_cast<int>(ScenesRenderData.size()); i++)
+	for (auto sceneRenderData : ScenesRenderData)
 	{
-		if (ScenesRenderData[i]->LightProbes.empty() && GameHandle->GetGameSettings()->Video.Shading == ShadingModel::SHADING_PBR_COOK_TORRANCE)
-		{
-			LightProbeLoader::LoadLightProbeTextureArrays(ScenesRenderData[i]);
-			ScenesRenderData[i]->ProbeTexArrays->IrradianceMapArr.Bind(12);
-			ScenesRenderData[i]->ProbeTexArrays->PrefilterMapArr.Bind(13);
-			ScenesRenderData[i]->ProbeTexArrays->BRDFLut.Bind(14);
-			glActiveTexture(GL_TEXTURE0);
-		}
+		if (!(sceneRenderData->LightProbes.empty() && !sceneRenderData->bIsAnUIScene && GameHandle->GetGameSettings()->Video.Shading == ShadingModel::SHADING_PBR_COOK_TORRANCE))
+			continue;
+
+		LightProbeLoader::LoadLightProbeTextureArrays(sceneRenderData);
+		sceneRenderData->ProbeTexArrays->IrradianceMapArr.Bind(12);
+		sceneRenderData->ProbeTexArrays->PrefilterMapArr.Bind(13);
+		sceneRenderData->ProbeTexArrays->BRDFLut.Bind(14);
+		glActiveTexture(GL_TEXTURE0);
 	}
 }
 
 void RenderEngine::AddSceneRenderDataPtr(GameSceneRenderData& sceneRenderData)
 {
 	ScenesRenderData.push_back(&sceneRenderData);
+	sceneRenderData.LightBlockBindingSlot = ScenesRenderData.size();
+	if (GameHandle->HasStarted() && sceneRenderData.LightProbes.empty() && !sceneRenderData.bIsAnUIScene && GameHandle->GetGameSettings()->Video.Shading == ShadingModel::SHADING_PBR_COOK_TORRANCE)
+	{
+		LightProbeLoader::LoadLightProbeTextureArrays(&sceneRenderData);
+		sceneRenderData.ProbeTexArrays->IrradianceMapArr.Bind(12);
+		sceneRenderData.ProbeTexArrays->PrefilterMapArr.Bind(13);
+		sceneRenderData.ProbeTexArrays->BRDFLut.Bind(14);
+		glActiveTexture(GL_TEXTURE0);
+	}
 }
 
 void RenderEngine::RemoveSceneRenderDataPtr(GameSceneRenderData& sceneRenderData)
@@ -166,6 +175,16 @@ RenderToolboxCollection* RenderEngine::GetCurrentTbCollection()
 	return CurrentTbCollection;
 }
 
+std::vector<Material*> RenderEngine::GetMaterials()
+{
+	std::vector<Material*> materials;
+	materials.reserve(Materials.size());
+	for (auto& it : Materials)
+		materials.push_back(it.get());
+
+	return materials;
+}
+
 RenderToolboxCollection& RenderEngine::AddRenderTbCollection(const RenderToolboxCollection& tbCollection, bool setupToolboxesAccordingToSettings)
 {
 	RenderTbCollections.push_back(std::make_unique<RenderToolboxCollection>(tbCollection));
@@ -212,6 +231,16 @@ void RenderEngine::BindSkeletonBatch(GameSceneRenderData* sceneRenderData, unsig
 
 	sceneRenderData->SkeletonBatches[index]->BindToUBO();
 	BoundSkeletonBatch = sceneRenderData->SkeletonBatches[index].get();
+}
+
+void RenderEngine::EraseRenderTbCollection(RenderToolboxCollection& tbCollection)
+{
+	RenderTbCollections.erase(std::remove_if(RenderTbCollections.begin(), RenderTbCollections.end(), [&tbCollection](std::unique_ptr<RenderToolboxCollection>& tbColVec) {return tbColVec.get() == &tbCollection; }), RenderTbCollections.end());
+}
+
+void RenderEngine::EraseMaterial(Material& mat)
+{
+	Materials.erase(std::remove_if(Materials.begin(), Materials.end(), [&mat](std::shared_ptr<Material>& matVec) {return matVec.get() == &mat; }), Materials.end());
 }
 
 std::shared_ptr<Material> RenderEngine::FindMaterial(std::string name)
@@ -513,24 +542,32 @@ void RenderEngine::RenderRawScene(const RenderInfo& info, GameSceneRenderData* s
 	BoundMaterial = nullptr;
 
 	for (unsigned int i = 0; i < sceneRenderData->Renderables.size(); i++)
-		sceneRenderData->Renderables[i].get().Render(info, shader);
+		sceneRenderData->Renderables[i]->Render(info, shader);
 }
 
 void RenderEngine::RenderRawSceneUI(const RenderInfo& infoTemplate, GameSceneRenderData* sceneRenderData)
 {
 	BoundMesh = nullptr;
 	BoundMaterial = nullptr;
-
 	RenderInfo info = infoTemplate;
+	const float maxDepth = 2550.0f;
+
+	//std::stable_sort(sceneRenderData->Renderables.begin(), sceneRenderData->Renderables.end(), [](Renderable* lhs, Renderable* rhs) { return lhs->GetUIDepth() < rhs->GetUIDepth(); });
+	sceneRenderData->AssertThatUIRenderablesAreSorted();
+
+	glDepthFunc(GL_LEQUAL);
 	for (auto& shader : ForwardShaders)
 	{
 		shader->Use();
-		info.view = glm::translate(infoTemplate.view, glm::vec3(0.0f, 0.0f, 255.0f));
-		for (auto& it : sceneRenderData->Renderables)
+		info.view = infoTemplate.view;
+		//Render from back to front (elements inserted last in the container probably have the biggest depth; early depth testing should work better using this method
+		for (auto it = sceneRenderData->Renderables.rbegin(); it != sceneRenderData->Renderables.rend(); it++)
 		{
-			info.view = glm::translate(info.view, glm::vec3(0.0f, 0.0f, -1.0f));
+			//float uiDepth = static_cast<float>(it->get().GetUIDepth());
+			//info.view = (uiDepth !=	0.0f) ? (glm::translate(maxDepthMat, glm::vec3(0.0f, 0.0f, -uiDepth))) : (maxDepthMat);
+			info.view = glm::translate(info.view, glm::vec3(0.0f, 0.0f, 1.0f));
 			info.CalculateVP();
-			it.get().Render(info, shader.get());
+			(*it)->Render(info, shader.get());
 		}
 	}
 }
@@ -589,7 +626,8 @@ void RenderEngine::FullSceneRender(RenderInfo& info, GameSceneRenderData* sceneR
 	////////////////////2. Geometry pass
 	if (useLightingAlgorithms)
 	{
-		sceneRenderData->LightsBuffer.SubData4fv(info.camPos, 16); //TODO: BUGCHECK A TERAZ JEST TU.
+		if (sceneRenderData->LightsBuffer.HasBeenGenerated())
+			sceneRenderData->LightsBuffer.SubData4fv(info.camPos, 16); //TODO: BUGCHECK A TERAZ JEST TU.
 		DeferredShadingToolbox* deferredTb = info.TbCollection.GetTb<DeferredShadingToolbox>();
 		GEE_FB::Framebuffer& GFramebuffer = *deferredTb->GFb;
 
@@ -830,7 +868,7 @@ void RenderEngine::RenderCubemapFromTexture(Texture targetTex, Texture tex, glm:
 		{
 		case GL_TEXTURE_CUBE_MAP:		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, targetTex.GetID(), mipLevel); break;
 		case GL_TEXTURE_CUBE_MAP_ARRAY: glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, targetTex.GetID(), mipLevel, *layer); *layer = *layer + 1; break;
-		default:						std::cerr << "ERROR: Can't render a scene to cubemap texture, when the texture's type is " << targetTex.GetType() << ".\n"; return;
+		default:						std::cerr << "ERROR: Can't render a 2D texture to cubemap texture, when the (cubemap) texture's type is " << targetTex.GetType() << ".\n"; return;
 		}
 		glDrawBuffer(GL_COLOR_ATTACHMENT0);
 		if (PrimitiveDebugger::bDebugCubemapFromTex)

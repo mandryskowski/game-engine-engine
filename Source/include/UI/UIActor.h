@@ -23,7 +23,7 @@ public:
 class UIActorDefault : public Actor, public UIActor
 {
 public:
-	UIActorDefault(GameScene& scene, Actor* parentActor, const std::string& name) :
-		Actor(scene, parentActor, name),
+	UIActorDefault(GameScene& scene, Actor* parentActor, const std::string& name, const Transform& t = Transform()) :
+		Actor(scene, parentActor, name, t),
 		UIActor(parentActor) {}
 };

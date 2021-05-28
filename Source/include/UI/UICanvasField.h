@@ -46,10 +46,10 @@ public:
 };
 
 
-class UIElementTemplates	//TODO: Wyjeb UICanvas* Canvas
+class UIElementTemplates
 {
 public:
-	UIElementTemplates(Actor&, UICanvas*);
+	UIElementTemplates(Actor&);
 	void TickBox(bool& modifiedBool);
 	void TickBox(std::function<bool()> setFunc);
 	void TickBox(std::function<void(bool)> setFunc, std::function<bool()> getFunc);
@@ -66,6 +66,18 @@ public:
 	template <typename CompType> void ComponentInput(GameScene& scene, std::function<void(CompType*)> setFunc);	//encapsulated
 	template <typename CompType> void ComponentInput(Component& hierarchyRoot, CompType*& inputTo);	//not encapsulated
 
+	template <typename InputIt, typename T> void ListSelection(InputIt first, InputIt last, std::function<void(UIButtonActor&, T&)> buttonFunc)
+	{
+		ListSelection(first, last, [](UIAutomaticListActor& listActor, T& object) { buttonFunc(listActor.CreateChild<UIButtonActor>("ListElementActor"), object); })
+	}
+	template < typename T,typename InputIt> void ListSelection(InputIt first, InputIt last, std::function<void(UIAutomaticListActor&, T&)> buttonFunc)
+	{
+		UIAutomaticListActor& listActor = TemplateParent.CreateChild<UIAutomaticListActor>("ListSelectionActor");
+		std::cout << "WYWOLALEM LIST SELECTION " << &(*first )<< &(*last )<< '\n';
+		std::for_each(first, last, [&listActor, buttonFunc](T& object) { buttonFunc(listActor, object); std::cout << " TWORZE PRZYCISKA"; });
+		listActor.Refresh();
+	}
+
 private:
 	void HierarchyTreeInput(UIAutomaticListActor& list, GameScene&, std::function<void(HierarchyTemplate::HierarchyTreeT&)> setFunc);
 public:
@@ -77,7 +89,6 @@ public:
 
 private:
 	Actor& TemplateParent;
-	UICanvas* Canvas;
 	GameScene& Scene;
 	GameManager& GameHandle;
 };

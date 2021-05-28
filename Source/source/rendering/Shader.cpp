@@ -177,6 +177,17 @@ void Shader::Dispose()
 	Program = 0;
 }
 
+#include <UI/UICanvasActor.h>
+#include <UI/UICanvasField.h>
+#include <scene/UIButtonActor.h>
+void Shader::GetEditorDescription(EditorDescriptionBuilder descBuilder)
+{
+	descBuilder.AddField("Shader name").CreateChild<UIButtonActor>("ShaderName", Name).SetDisableInput(true);
+	descBuilder.AddField("Program ID").CreateChild<UIButtonActor>("ProgramID", std::to_string(Program)).SetDisableInput(true);
+
+	descBuilder.AddField("Texture units").GetTemplates().ListSelection<std::pair<unsigned int, std::string>>(MaterialTextureUnits.begin(), MaterialTextureUnits.end(), [](UIAutomaticListActor& listActor, std::pair<unsigned int, std::string>& object) { listActor.CreateChild<UIButtonActor>(object.second, object.second + " - " + std::to_string(object.first)); });
+}
+
 unsigned int ShaderLoader::LoadShader(GLenum type, std::string shaderPath, std::string additionalData, std::string* shaderSourcePtr)
 {
 	additionalData = "#version 400 core\n" + additionalData;

@@ -73,6 +73,11 @@ void AudioEngine::SetListenerTransformPtr(Transform* transformPtr)
 	ListenerTransformPtr = transformPtr;
 }
 
+Transform* AudioEngine::GetListenerTransformPtr()
+{
+	return ListenerTransformPtr;
+}
+
 void AudioEngine::Update()
 {
 	////////////////// Update listener position & orientation

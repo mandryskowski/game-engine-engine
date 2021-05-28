@@ -71,7 +71,7 @@ glm::vec3 UIListActor::MoveElement(UIListElement& element, glm::vec3 nextElement
 
 glm::vec3 UIListActor::MoveElements(unsigned int level)
 {
-	ListElements.erase(std::remove_if(ListElements.begin(), ListElements.end(), [](const UIListElement& element) { return element.IsBeingKilled(); }), ListElements.end());
+	EraseListElement([](const UIListElement& element) { return element.IsBeingKilled(); });
 	glm::vec3 nextElementBegin = GetListBegin();
 
 	for (auto& element : ListElements)
@@ -82,6 +82,16 @@ glm::vec3 UIListActor::MoveElements(unsigned int level)
 	}
 
 	return nextElementBegin;
+}
+
+void UIListActor::EraseListElement(std::function<bool(const UIListElement&)> removeFunc)
+{
+	ListElements.erase(std::remove_if(ListElements.begin(), ListElements.end(), [&removeFunc](const UIListElement& element) { return removeFunc(element); }), ListElements.end());
+}
+
+void UIListActor::EraseListElement(Actor& actor)
+{
+	EraseListElement([&actor](const UIListElement& listElement) { return &listElement.GetActorRef() == &actor; });
 }
 
 UIAutomaticListActor::UIAutomaticListActor(GameScene& scene, Actor* parentActor, const std::string& name, glm::vec3 elementOffset):

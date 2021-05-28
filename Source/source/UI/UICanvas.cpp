@@ -7,7 +7,10 @@
 
 UICanvas::UICanvas(const UICanvas& canvas):
 	UIElements(canvas.UIElements),
-	CanvasView(canvas.CanvasView)
+	CanvasView(canvas.CanvasView),
+	bContainsMouse(false),
+	bContainsMouseOutsideTrueCanvas(false),
+	CanvasDepth(canvas.CanvasDepth)
 {
 }
 
@@ -17,7 +20,7 @@ UICanvas::UICanvas(UICanvas&& canvas):
 	std::for_each(UIElements.begin(), UIElements.end(), [this](std::reference_wrapper<UICanvasElement>& element) { element.get().AttachToCanvas(*this); });
 }
 
-glm::mat4 UICanvas::GetView() const
+glm::mat4 UICanvas::GetViewMatrix() const
 {
 	assertm(CanvasView.ScaleRef.x != 0.0f && CanvasView.ScaleRef.y != 0.0f && CanvasView.ScaleRef.z != 0.0f, "Scale component equal to 0.");
 	
@@ -32,7 +35,7 @@ const Transform& UICanvas::GetViewT() const
 glm::mat4 UICanvas::GetProjection() const
 {
 	glm::vec2 size = static_cast<glm::vec2>(CanvasView.ScaleRef);
-	return glm::ortho(-size.x, size.x, -size.y, size.y, 1.0f, -255.0f);
+	return glm::ortho(-size.x, size.x, -size.y, size.y, 1.0f, -2550.0f);
 }
 
 Boxf<Vec2f> UICanvas::GetBoundingBox() const
@@ -61,6 +64,16 @@ Boxf<Vec2f> UICanvas::GetBoundingBox() const
 //	std::cout << canvasLeftDownMin.x << ", " << canvasLeftDownMin.y << " --> " << canvasRightUpMax.x << ", " << canvasRightUpMax.y << "\n";
 
 	return Boxf<Vec2f>(center, canvasRightUpMax - center);
+}
+
+unsigned int UICanvas::GetCanvasDepth() const
+{
+	return CanvasDepth;
+}
+
+void UICanvas::SetCanvasView(const Transform& canvasView)
+{
+	CanvasView = canvasView;
 }
 
 void UICanvas::ClampViewToElements()
@@ -122,7 +135,36 @@ bool UICanvas::ContainsMouse() const
 	return bContainsMouse;
 }
 
+#include <scene/UIButtonActor.h>
+bool UICanvas::ShouldAcceptBlockedEvents(UICanvasElement& element) const
+{
+	if (element.GetCanvasPtr() == this && !bContainsMouseOutsideTrueCanvas)
+		return true;
+	else if (element.GetCanvasPtr())
+		return false;
+
+	std::vector<UIButtonActor*> externalButtons;
+	GetExternalButtons(externalButtons);
+
+	for (auto it : externalButtons)
+		if (it == &element)
+			return true;
+
+	return false;
+}
+
 bool UICanvas::ContainsMouseCheck(const Vec2f& mouseNDC) const
 {
-	return bContainsMouse = GetViewport().Contains(mouseNDC);
+	bContainsMouse = GetViewport().Contains(mouseNDC);
+	bContainsMouseOutsideTrueCanvas = false;
+	if (!bContainsMouse)
+	{
+		std::vector<UIButtonActor*> externalButtons;
+		GetExternalButtons(externalButtons);
+		for (auto it : externalButtons)
+			if (it && !it->IsBeingKilled() && it->ContainsMouse(mouseNDC))
+				return bContainsMouse = bContainsMouseOutsideTrueCanvas = true;
+	}
+
+	return bContainsMouse;
 }

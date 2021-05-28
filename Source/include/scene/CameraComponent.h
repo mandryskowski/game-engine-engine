@@ -30,7 +30,10 @@ public:
 		bool active;
 		archive(CEREAL_NVP(RotationEuler), CEREAL_NVP(Projection), cereal::make_nvp("Active", active), cereal::make_nvp("Component", cereal::base_class<Component>(this)));
 		if (active)
+		{
 			Scene.BindActiveCamera(this);
+			GameHandle->BindAudioListenerTransformPtr(&GetTransform());
+		}
 	}
 	~CameraComponent();
 };

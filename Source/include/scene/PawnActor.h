@@ -25,6 +25,7 @@ private:
 	glm::vec3 Waypoints[4];
 
 	GunActor* Gun;
+	Actor* PlayerTarget;
 
 	std::function<void(AnimationManagerComponent*)> UpdateAnimsListInEditor;
 };

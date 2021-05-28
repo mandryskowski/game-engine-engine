@@ -139,6 +139,9 @@ void ModelComponent::Update(float deltaTime)
 	for (auto& it : MeshInstances)
 		if (it->GetMaterialInst())
 			it->GetMaterialInst()->Update(deltaTime);
+
+	if (Name == "MeshPreviewModel")
+		ComponentTransform.SetRotation((glm::mat3)glm::rotate(glm::mat4(1.0f), (float)glfwGetTime(), glm::vec3(0.0f, 1.0f, 0.0f)));
 }
 
 void ModelComponent::Render(const RenderInfo& info, Shader* shader)
@@ -164,6 +167,11 @@ void ModelComponent::Render(const RenderInfo& info, Shader* shader)
 }
 
 #include <UI/UIListActor.h>
+#include <scene/UIWindowActor.h>
+#include <scene/LightProbeComponent.h>
+#include <rendering/RenderToolbox.h>
+#include <scene/CameraComponent.h>
+#include <scene/Controller.h>
 
 void ModelComponent::GetEditorDescription(EditorDescriptionBuilder descBuilder)
 {
@@ -175,13 +183,55 @@ void ModelComponent::GetEditorDescription(EditorDescriptionBuilder descBuilder)
 	descBuilder.AddField("Render as billboard").GetTemplates().TickBox(RenderAsBillboard);
 	descBuilder.AddField("Hide").GetTemplates().TickBox(Hide);
 
-	UICanvasField& testField = descBuilder.AddField("TEST");
-	UIAutomaticListActor& testList = testField.CreateChild<UIAutomaticListActor>("TESTHELP");
-	Actor& testTextAc = testList.CreateChild<Actor>("TESTTEXTAC");
-	testTextAc.SetTransform(Transform(glm::vec2(0.0f), glm::vec2(0.1f)));
-	testTextAc.CreateComponent<TextComponent>("ElementText", Transform(glm::vec2(-10.0f, 0.0f), glm::vec2(1.0f)), "Lorem ipsum test 123", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::CENTER));
+	UICanvasFieldCategory& cat = descBuilder.GetCanvas().AddCategory("Mesh instances");
+	cat.GetExpandButton()->CreateComponent<TextConstantSizeComponent>("NrMeshInstancesText", Transform(), std::to_string(MeshInstances.size()), "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
+	cat.GetTemplates().ListSelection<std::unique_ptr<MeshInstance>>(MeshInstances.begin(), MeshInstances.end(), [this, descBuilder](UIAutomaticListActor& listActor, std::unique_ptr<MeshInstance>& meshInst)
+		{
+			std::string name = meshInst->GetMesh().GetLocalization().NodeName + " (" + meshInst->GetMesh().GetLocalization().SpecificName + ")";
+			listActor.CreateChild<UIButtonActor>(name + "Button", name, [this, descBuilder, &meshInst]() mutable {
+				UIWindowActor& window = dynamic_cast<UICanvasActor*>(&descBuilder.GetCanvas())->CreateChildCanvas<UIWindowActor>("MeshViewport");
+				window.SetTransform(Transform(Vec2f(0.0f), Vec2f(0.5f)));
 
-	Actor& testTextAc2 = testList.CreateChild<Actor>("TESTTEXTAC");
-	testTextAc2.SetTransform(Transform(glm::vec2(0.0f, -10.0f), glm::vec2(0.1f)));
-	testTextAc2.CreateComponent<TextComponent>("ElementText", Transform(glm::vec2(-10.0f, 0.0f), glm::vec2(1.0f)), "Kolejny ipsum lorem test 456", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::CENTER));
+				GameScene& meshPreviewScene = GameHandle->CreateScene("GEE_Mesh_Preview_Scene");
+
+				LightProbeComponent& probe = meshPreviewScene.GetRootActor()->CreateComponent<LightProbeComponent>("PreviewLightProbe");
+				LightProbeLoader::LoadLightProbeFromFile(probe, "EditorAssets/winter_lake_01_4k.hdr");
+
+				ModelComponent& model = meshPreviewScene.CreateActorAtRoot<Actor>("MeshPreviewActor").CreateComponent<ModelComponent>("MeshPreviewModel");
+				model.AddMeshInst(*meshInst);
+
+				Actor& camActor = meshPreviewScene.CreateActorAtRoot<Actor>("MeshPreviewCameraActor");
+				CameraComponent& cam = camActor.CreateComponent<CameraComponent>("MeshPreviewCamera", glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 100.0f));
+				camActor.GetTransform()->Move(Vec3f(0.0f, 0.0f, 10.0f));
+				meshPreviewScene.BindActiveCamera(&cam);
+
+				Controller& camController = camActor.CreateChild<Controller>("MeshPreviewCameraController");
+				camController.SetPossessedActor(&camActor);
+
+				UIButtonActor& viewportButton = window.CreateChild<UIButtonActor>("MeshPreviewViewportActor", [this, &meshPreviewScene, &camController]() { std::cout << "VIEWPORT WCISIETY\n"; GameHandle->SetActiveScene(&meshPreviewScene); GameHandle->PassMouseControl(&camController); });
+
+				RenderEngineManager& renderHandle = *GameHandle->GetRenderEngineHandle();
+
+				GameSettings* settings = new GameSettings(*GameHandle->GetGameSettings());
+
+				settings->WindowSize = glm::uvec2(1024);
+				RenderToolboxCollection& renderTbCollection = renderHandle.AddRenderTbCollection(RenderToolboxCollection("GEE_E_Mesh_Preview_Toolbox_Collection", settings->Video));
+
+				std::shared_ptr<Material> viewportMaterial = std::make_shared<Material>("GEE_E_Mesh_Preview_Viewport", 0.0f, renderHandle.FindShader("Forward_NoLight"));
+				renderHandle.AddMaterial(viewportMaterial);
+				viewportMaterial->AddTexture(std::make_shared<NamedTexture>(*renderTbCollection.GetTb<FinalRenderTargetToolbox>()->GetFinalFramebuffer().GetColorBuffer(0), "albedo1"));
+				viewportButton.SetMatIdle(*viewportMaterial);
+				viewportButton.SetMatClick(*viewportMaterial);
+				viewportButton.SetMatHover(*viewportMaterial);
+
+				window.SetOnCloseFunc([&meshPreviewScene, &renderHandle, viewportMaterial, &renderTbCollection]() { meshPreviewScene.MarkAsKilled();  renderHandle.EraseMaterial(*viewportMaterial); renderHandle.EraseRenderTbCollection(renderTbCollection); });
+				});
+		});
+
+	descBuilder.AddField("Override materials").GetTemplates().ObjectInput<Material, Material>([this]() { return GameHandle->GetRenderEngineHandle()->GetMaterials(); }, [this](Material* material) { OverrideInstancesMaterial(material); });
+}
+
+unsigned int ModelComponent::GetUIDepth() const
+{
+	return GetElementDepth();
 }

@@ -3,12 +3,18 @@
 #include <rendering/Material.h>
 #include <rendering/Texture.h>
 
-UIWindowActor::UIWindowActor(GameScene& scene, Actor* parentActor, const std::string& name):
-	UICanvasActor(scene, parentActor, name),
+UIWindowActor::UIWindowActor(GameScene& scene, Actor* parentActor, UICanvasActor* parentCanvas, const std::string& name, const Transform& t):
+	UICanvasActor(scene, parentActor, parentCanvas, name, t),
 	CloseButton(nullptr),
 	DragButton(nullptr)
 {
 }
+
+UIWindowActor::UIWindowActor(GameScene& scene, Actor* parentActor, const std::string& name) :
+	UIWindowActor(scene, parentActor, nullptr, name)
+{
+}
+
 
 UIWindowActor::UIWindowActor(UIWindowActor&& actor):
 	UICanvasActor(std::move(actor)),
@@ -19,11 +25,21 @@ UIWindowActor::UIWindowActor(UIWindowActor&& actor):
 	DragButton = dynamic_cast<UIScrollBarActor*>(actor.FindActor("GEE_E_Drag_Button"));
 }
 #include <input/InputDevicesStateRetriever.h>
-
+#include <scene/TextComponent.h>
+#include <scene/ModelComponent.h>
 void UIWindowActor::OnStart()
 {
 	UICanvasActor::OnStart();
-	CloseButton = &CreateChild<UIButtonActor>("GEE_E_Close_Button", [this]() {this->MarkAsKilled(); });
+
+	ModelComponent& backgroundModel = CreateComponent<ModelComponent>("WindowBackground");
+	backgroundModel.AddMeshInst(GameHandle->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD));
+	backgroundModel.OverrideInstancesMaterial(GameHandle->GetRenderEngineHandle()->FindMaterial("GEE_E_Canvas_Background_Material").get());
+
+	AddUIElement(backgroundModel);	//Add the background model as a UIElement to give it UIDepth
+	EraseUIElement(backgroundModel);	//Erase it immediately because we do not want it to be an element of the canvas, but its background
+
+	CloseButton = &CreateChild<UIButtonActor>("GEE_E_Close_Button");
+	SetOnCloseFunc(nullptr);
 	CloseButton->SetTransform(Transform(glm::vec2(1.15f, 1.15f), glm::vec2(0.15f)));
 
 	AtlasMaterial& closeIconMat = *new AtlasMaterial(Material("GEE_Close_Icon_Material", 0.0f, GameHandle->GetRenderEngineHandle()->FindShader("Forward_NoLight")), glm::ivec2(3, 1));
@@ -36,9 +52,28 @@ void UIWindowActor::OnStart()
 	DragButton->SetWhileBeingClickedFunc([this]() { this->GetTransform()->Move(static_cast<glm::vec2>(GameHandle->GetInputRetriever().GetMousePositionNDC()) - DragButton->GetClickPosNDC()); DragButton->SetClickPosNDC(GameHandle->GetInputRetriever().GetMousePositionNDC());});
 	DragButton->SetTransform(Transform(glm::vec2(0.0f, 1.15f), glm::vec2(1.0f, 0.15f)));
 
+	TextConstantSizeComponent& titleComp = DragButton->CreateComponent<TextConstantSizeComponent>("WindowTitle", Transform(Vec2f(-1.0f, 0.0f), Vec2f(0.15f / 1.0f, 1.0f)), GetFullCanvasName(), "", std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::CENTER));// .SetMaxSize(Vec2f(0.5f, 0.7f));
+	Material& titleMaterial = *new Material(Material("GEE_E_Title_Material", 0.0f, GameHandle->GetRenderEngineHandle()->FindShader("Forward_NoLight")));
+	titleMaterial.SetColor(Vec3f(0.8f));
+	titleComp.SetMaterialInst(titleMaterial);
+
 	EraseUIElement(*DragButton);
 	EraseUIElement(*CloseButton);
 
+}
+
+void UIWindowActor::SetOnCloseFunc(std::function<void()> func)
+{
+	if (!CloseButton)
+		return;
+
+	std::function<void()> onClick;
+	if (func)
+		onClick = [this, func]() { this->MarkAsKilled(); func(); };
+	else
+		onClick = [this]() { this->MarkAsKilled(); };
+
+	CloseButton->SetOnClickFunc(onClick);
 }
 
 void UIWindowActor::GetExternalButtons(std::vector<UIButtonActor*>& buttons) const

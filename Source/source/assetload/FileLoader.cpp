@@ -324,6 +324,7 @@ std::unique_ptr<CollisionObject> EngineDataLoader::LoadCollisionObject(GameScene
 std::shared_ptr<CollisionShape> EngineDataLoader::LoadTriangleMeshCollisionShape(PhysicsEngineManager* physicsHandle, const Mesh& mesh)
 {
 	std::shared_ptr<CollisionShape> shape = std::make_shared<CollisionShape>(CollisionShape(CollisionShapeType::COLLISION_TRIANGLE_MESH));
+	
 	shape->SetOptionalLocalization(mesh.GetLocalization());
 
 	if (!mesh.GetVertsData() || !mesh.GetIndicesData())

@@ -20,7 +20,7 @@ class EditorDescriptionBuilder;
 class Actor
 {
 public:
-	Actor(GameScene&, Actor* parentActor, const std::string& name);
+	Actor(GameScene&, Actor* parentActor, const std::string& name, const Transform& t = Transform());
 	Actor(const Actor&) = delete;
 	Actor(Actor&&);
 
@@ -69,7 +69,11 @@ public:
 	Actor* FindActor(const std::string& name);
 	const Actor* FindActor(const std::string& name) const;
 
-	virtual void GetEditorDescription(EditorDescriptionBuilder);
+	/**
+	 * @brief Creates UI elements to edit the Actor in the editor
+	 * @param descBuilder: an EditorDescriptionBuilder used to easily create UI elements
+	*/
+	virtual void GetEditorDescription(EditorDescriptionBuilder descBuilder);
 
 	template<class ActorClass> void GetAllActors(std::vector <ActorClass*>* comps)	//this function returns every element further in the hierarchy tree (kids, kids' kids, ...) that is of ActorClass type
 	{
@@ -110,6 +114,8 @@ public:
 			it->GetTransform()->SetParentTransform(GetTransform());
 		}
 	}
+
+	virtual ~Actor() {}
 
 protected:
 	std::unique_ptr<Component> RootComponent;

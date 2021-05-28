@@ -38,6 +38,8 @@ struct UniformBuffer
 	UniformBuffer();
 	void Generate(unsigned int blockBindingSlot, size_t size, float* = nullptr, GLenum = GL_DYNAMIC_DRAW);
 
+	bool HasBeenGenerated() const;
+
 	void SubData1i(int, size_t offset);
 	void SubData1f(float, size_t offset);
 	void SubData(size_t size, float* data, size_t offset);
@@ -99,3 +101,32 @@ constexpr int32_t floorConstexpr(float num)
 
 std::string toValidFilepath(std::string);
 std::string getFilepathExtension(const std::string& filepath);
+
+/**
+* @brief Compares two numbers of type float while accounting for floating-point accuracy.
+* @param a: one of the numbers
+* @param b: the other number
+* @param epsilon: the maximum absolute difference between numbers that we consider equal
+* @return a boolean indicating whether the numbers are equal according to our epsilon
+*/
+bool floatComparison(float a, float b, float epsilon);
+
+template <typename T, typename Pred> typename std::vector<T>::iterator insertSorted(std::vector<T>& vec, const T& element, Pred pred)
+{
+	return vec.insert(std::upper_bound(vec.begin(), vec.end(), element, pred), element);
+}
+
+/*
+template <typename Func> void assertFn(bool expression, Func func)
+{
+	if (!expression)
+	{
+		func();
+		abort();
+	}
+}
+
+void assertM(bool expression, const std::string& message)
+{
+	assertFn(expression, [message]() { std::cout << "ERROR: ASSERTION FAILURE: " + message + '\n'; });
+}*/

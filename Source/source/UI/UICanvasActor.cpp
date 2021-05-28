@@ -6,8 +6,9 @@
 #include <UI/UICanvasField.h>
 #include <UI/UIListActor.h>
 
-UICanvasActor::UICanvasActor(GameScene& scene, Actor* parentActor, const std::string& name):
-	Actor(scene, parentActor, name),
+UICanvasActor::UICanvasActor(GameScene& scene, Actor* parentActor, UICanvasActor* canvasParent, const std::string& name, const Transform& t):
+	Actor(scene, parentActor, name, t),
+	UICanvas((canvasParent) ? (canvasParent->GetCanvasDepth() + 1) :(1)),	//CanvasDepth starts at 1 (because it has to be higher than depth outside any canvas)
 	FieldsList(nullptr),
 	FieldSize(glm::vec3(0.5f)),
 	ScrollBarX(nullptr),
@@ -16,9 +17,14 @@ UICanvasActor::UICanvasActor(GameScene& scene, Actor* parentActor, const std::st
 	ResizeBarX(nullptr),
 	ResizeBarY(nullptr),
 	ScaleActor(nullptr),
-	ContextStealerParent(nullptr)
+	CanvasParent(canvasParent)
 {
+	Scene.AddBlockingCanvas(*this);
 }
+
+UICanvasActor::UICanvasActor(GameScene& scene, Actor* parentActor, const std::string& name, const Transform& t):
+	UICanvasActor(scene, parentActor, nullptr, name)
+{}
 
 UICanvasActor::UICanvasActor(UICanvasActor&& canvasActor):
 	Actor(std::move(canvasActor)),
@@ -30,9 +36,10 @@ UICanvasActor::UICanvasActor(UICanvasActor&& canvasActor):
 	ResizeBarX(nullptr),
 	ResizeBarY(nullptr),
 	ScaleActor(nullptr),
-	ContextStealerParent(canvasActor.ContextStealerParent)
+	CanvasParent(canvasActor.CanvasParent)
 {
 	FieldsList = dynamic_cast<UIListActor*>(canvasActor.FindActor(Name + "_Fields_List"));
+	Scene.AddBlockingCanvas(*this);
 }
 
 void UICanvasActor::OnStart()
@@ -47,9 +54,9 @@ UIActorDefault* UICanvasActor::GetScaleActor()
 	return ScaleActor;
 }
 
-glm::mat4 UICanvasActor::GetView() const
+glm::mat4 UICanvasActor::GetViewMatrix() const
 {
-	return UICanvas::GetView() * glm::inverse(GetTransform()->GetWorldTransformMatrix());
+	return UICanvas::GetViewMatrix() * glm::inverse(GetTransform()->GetWorldTransformMatrix());
 }
 
 NDCViewport UICanvasActor::GetViewport() const
@@ -62,14 +69,17 @@ const Transform* UICanvasActor::GetCanvasT() const
 	return GetTransform();
 }
 
+void UICanvasActor::SetCanvasView(const Transform& canvasView)
+{
+	CanvasView = canvasView;
+	ClampViewToElements();
+	if (ScrollBarX) UpdateScrollBarT<VecAxis::X>();
+	if (ScrollBarY) UpdateScrollBarT<VecAxis::Y>();
+}
+
 Transform UICanvasActor::ToCanvasSpace(const Transform& worldTransform) const
 {
 	return GetCanvasT()->GetWorldTransform().GetInverse() * worldTransform;
-}
-
-bool UICanvasActor::IsInContext()
-{
-	return ContextStealers.empty();
 }
 
 void UICanvasActor::RefreshFieldsList()
@@ -136,7 +146,7 @@ UICanvasField& UICanvasActor::AddField(const std::string& name, std::function<gl
 
 void UICanvasActor::HandleEvent(const Event& ev)
 {
-	if (ev.GetType() != EventType::MOUSE_SCROLLED || !Boxf<Vec2f>(GetTransform()->GetWorldTransform()).Contains(GameHandle->GetInputRetriever().GetMousePositionNDC()))
+	if (ev.GetType() != EventType::MOUSE_SCROLLED || Scene.GetCurrentBlockingCanvas() != this)
 		return;
 
 	const MouseScrollEvent& scrolledEv = dynamic_cast<const MouseScrollEvent&>(ev);
@@ -146,8 +156,6 @@ void UICanvasActor::HandleEvent(const Event& ev)
 		glm::vec2 newScale = static_cast<glm::vec2>(CanvasView.ScaleRef) * glm::pow(glm::vec2(0.5f), glm::vec2(scrolledEv.GetOffset().y));
 		printVector(newScale, "new scale");
 		SetViewScale(newScale);
-		if (ScrollBarX)	UpdateScrollBarT<VecAxis::X>();
-		if (ScrollBarY) UpdateScrollBarT<VecAxis::Y>();
 	}
 	else
 		ScrollView(scrolledEv.GetOffset());
@@ -155,7 +163,6 @@ void UICanvasActor::HandleEvent(const Event& ev)
 
 void UICanvasActor::HandleEventAll(const Event& ev)
 {
-	ContainsMouseCheck(GameHandle->GetInputRetriever().GetMousePositionNDC());
 	Actor::HandleEventAll(ev);
 
 	/*bool bContainsMouse = ContainsMouse(GameHandle->GetInputRetriever().GetMousePositionNDC());
@@ -179,7 +186,7 @@ void UICanvasActor::HandleEventAll(const Event& ev)
 RenderInfo UICanvasActor::BindForRender(const RenderInfo& info, const glm::uvec2& res)	//Note: RenderInfo is a relatively big object for real-time standards. HOPEFULLY the compiler will optimize here using NRVO and convertedInfo won't be copied D:
 {
 	RenderInfo convertedInfo = info;
-	convertedInfo.view = GetView() * info.view;
+	convertedInfo.view = GetViewMatrix() * info.view;
 	convertedInfo.projection = GetProjection();
 	convertedInfo.CalculateVP();
 	GetViewport().SetOpenGLState(res); 
@@ -192,19 +199,25 @@ void UICanvasActor::UnbindForRender(const glm::uvec2& res)
 	Viewport(glm::uvec2(0), res).SetOpenGLState();
 }
 
+UICanvasActor::~UICanvasActor()
+{
+	Scene.EraseBlockingCanvas(*this);
+}
+
 void UICanvasActor::GetExternalButtons(std::vector<UIButtonActor*>& buttons) const
 {
 	buttons = { ScrollBarX, ScrollBarY, BothScrollBarsButton, ResizeBarX, ResizeBarY };
 }
 
+std::string UICanvasActor::GetFullCanvasName() const
+{
+	if (CanvasParent)
+		return CanvasParent->GetFullCanvasName() + ">" + Name;
+	return Name;
+}
+
 void UICanvasActor::CreateScrollBars()
 {
-	Material* markerMaterial = new Material("MarkerMaterial", 0.0f, GameHandle->GetRenderEngineHandle()->FindShader("Forward_NoLight"));
-	markerMaterial->SetColor(glm::vec4(1.0f, 1.0f, 0.1f, 1.0f));
-	Actor& marker = CreateChild<Actor>("Gowno");
-	ModelComponent& markerModel = marker.CreateComponent<ModelComponent>("Gownomodel");
-	//markerModel.AddMeshInst(MeshInstance(GameHandle->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD), markerMaterial));
-
 	ScrollBarX = &CreateChild<UIScrollBarActor>("ScrollBarX");
 	ScrollBarX->SetTransform(Transform(glm::vec2(0.0f, -1.10f), glm::vec2(0.05f, 0.1f)));
 	ScrollBarX->SetWhileBeingClickedFunc([this]() {
@@ -279,8 +292,9 @@ inline void UICanvasActor::UpdateScrollBarT()
 	scrollBar->GetTransform()->SetVecAxis<TVec::POSITION, barAxis>(barPos);
 	scrollBar->GetTransform()->SetVecAxis<TVec::SCALE, barAxis>(barSize);
 
-	bool hide = barSize == 1.0f;	//hide if we can't scroll on this axis
-	((barAxis == VecAxis::X) ? (ScrollBarX) : (ScrollBarY))->GetButtonModel()->SetHide(hide);
+	bool hide = floatComparison(barSize, 1.0f, std::numeric_limits<float>().epsilon());	//hide if we can't scroll on this axis
+	scrollBar->GetButtonModel()->SetHide(hide);
+	scrollBar->SetDisableInput(hide);
 }
 
 template void UICanvasActor::UpdateScrollBarT<VecAxis::X>();
@@ -326,6 +340,11 @@ EditorManager& EditorDescriptionBuilder::GetEditorHandle()
 UICanvasField& EditorDescriptionBuilder::AddField(const std::string& name, std::function<glm::vec3()> getFieldOffsetFunc)
 {
 	return GetCanvas().AddField(name, getFieldOffsetFunc);
+}
+
+UICanvasFieldCategory& EditorDescriptionBuilder::AddCategory(const std::string& name)
+{
+	return GetCanvas().AddCategory(name);
 }
 
 void EditorDescriptionBuilder::SelectComponent(Component* comp)

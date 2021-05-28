@@ -113,6 +113,6 @@ CameraComponent::~CameraComponent()
 	if (Scene.GetActiveCamera() == this)
 	{
 		Scene.BindActiveCamera(nullptr);
-		GameHandle->BindAudioListenerTransformPtr(nullptr);	//TODO: Fix: deleting editor's camera will unbind listenertransformptr for the whole game.
+		GameHandle->UnbindAudioListenerTransformPtr(nullptr);	//TODO: Fix: deleting editor's camera will unbind listenertransformptr for the whole game.
 	}
 }

@@ -6,6 +6,7 @@
 #include <rendering/RenderToolbox.h>
 #include <scene/LightProbeComponent.h>
 
+/*
 LightProbe::LightProbe(GameSceneRenderData* sceneRenderData)
 {
 	SceneRenderData = sceneRenderData;
@@ -28,7 +29,7 @@ Shader* LightProbe::GetRenderShader(const RenderToolboxCollection& renderCol) co
 {
 	return renderCol.FindShader("CookTorranceIBL");
 }
-
+*/
 void LightProbeLoader::LoadLightProbeFromFile(LightProbeComponent& probe, std::string filepath)
 {
 	RenderEngineManager* renderHandle = probe.GetScene().GetGameHandle()->GetRenderEngineHandle();
@@ -96,7 +97,7 @@ void LightProbeLoader::LoadLightProbeTextureArrays(GameSceneRenderData* sceneRen
 
 	framebuffer.Dispose();
 }
-
+/*
 LocalLightProbe::LocalLightProbe(GameSceneRenderData* sceneRenderData, Transform transform, EngineBasicShape shape):
 	LightProbe(sceneRenderData),
 	Shape(shape),
@@ -112,7 +113,7 @@ EngineBasicShape LocalLightProbe::GetShape() const
 Transform LocalLightProbe::GetTransform() const
 {
 	return ProbeTransform;
-}
+}*/
 
 LightProbeVolume::LightProbeVolume(const LightProbeComponent& probe):
 	ProbePtr(&probe)

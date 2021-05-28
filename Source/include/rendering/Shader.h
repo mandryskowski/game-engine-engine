@@ -29,6 +29,8 @@ enum MatrixType
 	const GameSettings* Settings;
 };*/
 
+class EditorDescriptionBuilder;
+
 class Shader
 {
 	struct UniformLocation
@@ -85,6 +87,8 @@ public:
 	void BindMatrices(const glm::mat4& model, const glm::mat4* view, const glm::mat4* projection, const glm::mat4* VP) const;
 
 	void Dispose();
+
+	void GetEditorDescription(EditorDescriptionBuilder);
 };
 
 struct ShaderLoader

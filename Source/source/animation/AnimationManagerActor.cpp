@@ -3,7 +3,6 @@
 #include <functional>
 
 
-
 AnimationChannelInstance::AnimationChannelInstance(AnimationChannel& channelRef, Component& channelComp):
 	ChannelRef(channelRef), ChannelComp(channelComp), IsValid(true)
 {

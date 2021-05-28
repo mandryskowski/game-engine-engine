@@ -18,6 +18,10 @@ void UniformBuffer::Generate(unsigned int blockBindingSlot, size_t size, float* 
 	offsetCache = 0;
 	BlockBindingSlot = blockBindingSlot;
 }
+bool UniformBuffer::HasBeenGenerated() const
+{
+	return UBO != 0;
+}
 void UniformBuffer::SubData1i(int data, size_t offset)
 {
 	glBindBuffer(GL_UNIFORM_BUFFER, UBO);
@@ -71,7 +75,7 @@ void UniformBuffer::PadOffset()
 
 void UniformBuffer::Dispose()
 {
-	if (UBO != 0)
+	if (HasBeenGenerated())
 		glDeleteBuffers(1, &UBO);
 }
 
@@ -225,4 +229,9 @@ std::string getFilepathExtension(const std::string& filepath)
 		return std::string();
 
 	return filepath.substr(dotPos);
+}
+
+bool floatComparison(float a, float b, float epsilon)
+{
+	return glm::abs(a - b) <= epsilon;
 }

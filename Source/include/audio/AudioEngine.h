@@ -21,6 +21,7 @@ public:
 	void Init();
 
 	void SetListenerTransformPtr(Transform*);
+	Transform* GetListenerTransformPtr();
 
 	void Update();
 

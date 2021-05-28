@@ -87,7 +87,7 @@ void TextComponent::Render(const RenderInfo& info, Shader* shader)
 {
 	if (!UsedFont || GetHide())
 		return;
-	GameHandle->GetRenderEngineHandle()->RenderText((CanvasPtr) ? (CanvasPtr->BindForRender(info, GameHandle->GetGameSettings()->WindowSize)) : (info), *UsedFont, Content, GetTransform().GetWorldTransform(), TextMatInst->GetMaterialRef().Color, shader, false, Alignment);
+	GameHandle->GetRenderEngineHandle()->RenderText((CanvasPtr) ? (CanvasPtr->BindForRender(info, GameHandle->GetGameSettings()->WindowSize)) : (info), *UsedFont, Content, GetTransform().GetWorldTransform(), TextMatInst->GetMaterialRef().GetColor(), shader, false, Alignment);
 //	GameHandle->GetRenderEngineHandle()->RenderStaticMesh(RenderInfo(*GameHandle->GetRenderEngineHandle()->GetCurrentTbCollection()), MeshInstance(GameHandle->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD)), Transform(), GameHandle->GetRenderEngineHandle()->FindShader("Debug")));
 	if (CanvasPtr)
 		CanvasPtr->UnbindForRender(GameHandle->GetGameSettings()->WindowSize);
@@ -142,6 +142,11 @@ MaterialInstance TextComponent::GetDebugMatInst(EditorIconState state)
 {
 	LoadDebugRenderMaterial("GEE_Mat_Default_Debug_TextComponent", "EditorAssets/textcomponent_icon.png");
 	return Component::GetDebugMatInst(state);
+}
+
+unsigned int TextComponent::GetUIDepth() const
+{
+	return GetElementDepth();
 }
 
 TextConstantSizeComponent::TextConstantSizeComponent(Actor& actor, Component* parentComp, const std::string& name, const Transform& transform, std::string content, std::shared_ptr<Font> font, std::pair<TextAlignment, TextAlignment> alignment):

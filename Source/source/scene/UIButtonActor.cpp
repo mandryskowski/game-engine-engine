@@ -8,52 +8,62 @@
 #include <input/InputDevicesStateRetriever.h>
 #include <math/Box.h>
 
-UIButtonActor::UIButtonActor(GameScene& scene, Actor* parentActor, const std::string& name, std::function<void()> onClickFunc, std::function<void()> whileBeingClickedFunc):
-	UIActorDefault(scene, parentActor, name),
+UIButtonActor::UIButtonActor(GameScene& scene, Actor* parentActor, const std::string& name, std::function<void()> onClickFunc, std::function<void()> whileBeingClickedFunc, const Transform& t):
+	UIActorDefault(scene, parentActor, name, t),
 	OnClickFunc(onClickFunc),
 	WhileBeingClickedFunc(whileBeingClickedFunc),
 	MatIdle(nullptr),
 	MatClick(nullptr),
 	MatHover(nullptr),
+	MatDisabled(nullptr),
 	PrevDeducedMaterial(nullptr),
-	State(EditorIconState::IDLE)
+	State(EditorIconState::IDLE),
+	bInputDisabled(false)
 {
 	ButtonModel = &CreateComponent<ModelComponent>(Name + "'s_Button_Model");
 
-	std::shared_ptr<Material> matIdle, matHover, matClick;
+	std::shared_ptr<Material> matIdle, matHover, matClick, matDisabled;
 	if ((matIdle = GameHandle->GetRenderEngineHandle()->FindMaterial("GEE_Button_Idle")) == nullptr)
 	{
 		matIdle = std::make_shared<Material>("GEE_Button_Idle");
-		matIdle->SetColor(glm::vec4(0.520841f, 0.680359f, 0.773018f, 1.0f));
+		matIdle->SetColor(Vec4f(0.520841f, 0.680359f, 0.773018f, 1.0f));
 		matIdle->SetRenderShaderName("Forward_NoLight");
 		GameHandle->GetRenderEngineHandle()->AddMaterial(matIdle);
 	}
 	if ((matHover = GameHandle->GetRenderEngineHandle()->FindMaterial("GEE_Button_Hover")) == nullptr)
 	{
 		matHover = std::make_shared<Material>("GEE_Button_Hover");
-		matHover->SetColor(glm::vec4(0.831684f, 0.2f, 0.2f, 1.0f));
+		matHover->SetColor(Vec4f(0.831684f, 0.2f, 0.2f, 1.0f));
 		matHover->SetRenderShaderName("Forward_NoLight");
 		GameHandle->GetRenderEngineHandle()->AddMaterial(matHover);
 	}
 	if ((matClick = GameHandle->GetRenderEngineHandle()->FindMaterial("GEE_Button_Click")) == nullptr)
 	{
 		matClick = std::make_shared<Material>("GEE_Button_Click");
-		matClick->SetColor(glm::vec4(0.773018f, 0.773018f, 0.773018f, 1.0f));
+		matClick->SetColor(Vec4f(0.773018f, 0.773018f, 0.773018f, 1.0f));
 		matClick->SetRenderShaderName("Forward_NoLight");
 		GameHandle->GetRenderEngineHandle()->AddMaterial(matClick);
+	}
+	if ((matDisabled = GameHandle->GetRenderEngineHandle()->FindMaterial("GEE_Button_Disabled")) == nullptr)
+	{
+		matDisabled = std::make_shared<Material>("GEE_Button_Disabled");
+		matDisabled->SetColor(Vec4f(0.3f, 0.3f, 0.3f, 1.0f));
+		matDisabled->SetRenderShaderName("Forward_NoLight");
+		GameHandle->GetRenderEngineHandle()->AddMaterial(matDisabled);
 	}
 
 	MatIdle = std::make_shared<MaterialInstance>(MaterialInstance(*matIdle));
 	MatHover = std::make_shared<MaterialInstance>(MaterialInstance(*matHover));
 	MatClick = std::make_shared<MaterialInstance>(MaterialInstance(*matClick));
+	MatDisabled = std::make_shared<MaterialInstance>(MaterialInstance(*matDisabled));
 
 
 	ButtonModel->AddMeshInst(MeshInstance(GameHandle->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD), MatIdle));
 	PrevDeducedMaterial = MatIdle.get();
 }
 
-UIButtonActor::UIButtonActor(GameScene& scene, Actor* parentActor, const std::string& name, const std::string& buttonTextContent, std::function<void()> onClickFunc, std::function<void()> whileBeingClickedFunc):
-	UIButtonActor(scene, parentActor, name, onClickFunc, whileBeingClickedFunc)
+UIButtonActor::UIButtonActor(GameScene& scene, Actor* parentActor, const std::string& name, const std::string& buttonTextContent, std::function<void()> onClickFunc, std::function<void()> whileBeingClickedFunc, const Transform& t):
+	UIButtonActor(scene, parentActor, name, onClickFunc, whileBeingClickedFunc, t)
 {
 	CreateComponent<TextConstantSizeComponent>("ComponentsNameActorTextComp", Transform(glm::vec2(0.0f), glm::vec2(1.0f)), buttonTextContent, "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER)).SetMaxSize(Vec2f(0.8f));
 }
@@ -97,6 +107,14 @@ void UIButtonActor::SetMatClick(MaterialInstance&& mat)
 
 }
 
+void UIButtonActor::SetDisableInput(bool disable)
+{
+	if (disable && !bInputDisabled) 
+		State = EditorIconState::IDLE;
+	bInputDisabled = disable;
+	DeduceMaterial();
+}
+
 void UIButtonActor::SetOnClickFunc(std::function<void()> onClickFunc)
 {
 	OnClickFunc = onClickFunc;
@@ -118,6 +136,9 @@ void UIButtonActor::DeleteButtonModel()
 
 void UIButtonActor::HandleEvent(const Event& ev)
 {
+	if (bInputDisabled)
+		return;
+
 	if (ev.GetType() == EventType::MOUSE_MOVED)
 	{
 		glm::vec2 cursorPos = static_cast<glm::vec2>(dynamic_cast<const CursorMoveEvent*>(&ev)->GetNewPosition());
@@ -126,7 +147,7 @@ void UIButtonActor::HandleEvent(const Event& ev)
 
 		glm::vec2 cursorNDC = (glm::vec2(cursorPos.x, windowSize.y - cursorPos.y) - windowBottomLeft) / windowSize * 2.0f - 1.0f;
 
-		bool bMouseInside = ContainsMouse(cursorNDC);
+		bool bMouseInside = (Scene.GetCurrentBlockingCanvas() && !Scene.GetCurrentBlockingCanvas()->ShouldAcceptBlockedEvents(*this)) ? (false) : (ContainsMouse(cursorNDC));
 
 
 		if (bMouseInside)
@@ -197,7 +218,7 @@ bool UIButtonActor::ContainsMouse(glm::vec2 cursorNDC)
 	{
 		if (!CanvasPtr->ContainsMouse())
 			return false;
-		glm::vec2 cursorCanvasSpace = glm::inverse(CanvasPtr->UICanvas::GetView()) * Transform(glm::vec3(0.0f), glm::vec3(0.0f), CanvasPtr->UICanvas::GetViewT().ScaleRef).GetMatrix() * glm::inverse(CanvasPtr->GetCanvasT()->GetWorldTransformMatrix()) * glm::vec4(cursorNDC, 0.0f, 1.0f);
+		glm::vec2 cursorCanvasSpace = glm::inverse(CanvasPtr->UICanvas::GetViewMatrix()) * Transform(glm::vec3(0.0f), glm::vec3(0.0f), CanvasPtr->UICanvas::GetViewT().ScaleRef).GetMatrix() * glm::inverse(CanvasPtr->GetCanvasT()->GetWorldTransformMatrix()) * glm::vec4(cursorNDC, 0.0f, 1.0f);
 		return CollisionTests::AlignedRectContainsPoint(CanvasPtr->ToCanvasSpace(worldT), cursorCanvasSpace);
 	}
 
@@ -210,20 +231,25 @@ void UIButtonActor::DeduceMaterial()
 		return;
 
 	std::shared_ptr<MaterialInstance>* currentMatInst = nullptr;
-	switch (State)
+	if (!bInputDisabled)
 	{
-	case EditorIconState::IDLE:
-		currentMatInst = &MatIdle; break;
-	case EditorIconState::HOVER:
-	case EditorIconState::BEING_CLICKED_OUTSIDE:
-		currentMatInst = &MatHover; break;
-	case EditorIconState::BEING_CLICKED_INSIDE:
-		currentMatInst = &MatClick; break;
-	default:
-		ButtonModel->OverrideInstancesMaterialInstances(nullptr);
-		PrevDeducedMaterial = nullptr;
-		return;
+		switch (State)
+		{
+		case EditorIconState::IDLE:
+			currentMatInst = &MatIdle; break;
+		case EditorIconState::HOVER:
+		case EditorIconState::BEING_CLICKED_OUTSIDE:
+			currentMatInst = &MatHover; break;
+		case EditorIconState::BEING_CLICKED_INSIDE:
+			currentMatInst = &MatClick; break;
+		default:
+			ButtonModel->OverrideInstancesMaterialInstances(nullptr);
+			PrevDeducedMaterial = nullptr;
+			return;
+		}
 	}
+	else
+		currentMatInst = &MatDisabled;
 	
 	if (currentMatInst->get() != PrevDeducedMaterial)
 	{

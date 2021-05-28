@@ -6,7 +6,7 @@
 
 GameScene* cereal::LoadAndConstruct<Actor>::ScenePtr = nullptr;
 
-Actor::Actor(GameScene& scene, Actor* parentActor, const std::string& name) :
+Actor::Actor(GameScene& scene, Actor* parentActor, const std::string& name, const Transform& t) :
 	Scene(scene),
 	Name(name),
 	RootComponent(nullptr),
@@ -15,7 +15,7 @@ Actor::Actor(GameScene& scene, Actor* parentActor, const std::string& name) :
 	bKillingProcessStarted(false),
 	SetupStream(nullptr)
 {
-	RootComponent = std::make_unique<Component>(*this, nullptr, Name + "'s root", Transform());
+	RootComponent = std::make_unique<Component>(*this, nullptr, Name + "'s root", t);
 	if (GameHandle->HasStarted())
 		RootComponent->OnStartAll();
 }
@@ -267,7 +267,7 @@ const Actor* Actor::FindActor(const std::string& name) const
 void Actor::GetEditorDescription(EditorDescriptionBuilder descBuilder)
 {
 	UIInputBoxActor& textActor = descBuilder.CreateActor<UIInputBoxActor>("ComponentsNameActor");
-	textActor.SetOnInputFunc([this](const std::string& content) { SetName(content); }, [this]() -> std::string { return GetName(); });
+	textActor.SetOnInputFunc([this](const std::string& content) { if (Scene.GetUniqueActorName(content) == content) SetName(content); }, [this]() -> std::string { return GetName(); });
 	textActor.DeleteButtonModel();
 	textActor.SetTransform(Transform(glm::vec2(0.0f, 1.5f), glm::vec2(1.0f)));
 

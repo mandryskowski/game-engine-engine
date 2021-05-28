@@ -15,7 +15,7 @@ struct LightProbeTextureArrays
 	LightProbeTextureArrays();
 };
 
-class LightProbe
+/*class LightProbe		//DEPRECATED
 {
 protected:
 	GameSceneRenderData* SceneRenderData;
@@ -39,7 +39,7 @@ public:
 	LocalLightProbe(GameSceneRenderData* sceneRenderData, Transform = Transform(), EngineBasicShape = EngineBasicShape::CUBE);
 	virtual EngineBasicShape GetShape() const override;
 	virtual Transform GetTransform() const override;
-};
+};*/
 
 struct LightProbeLoader
 {

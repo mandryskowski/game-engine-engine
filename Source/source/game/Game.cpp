@@ -67,7 +67,7 @@ void APIENTRY debugOutput(GLenum source,	//Copied from learnopengl.com - I don't
 }
 
 Game::Game(const ShadingModel& shading, const GameSettings& settings) :
-	AudioEng(static_cast<GameManager*>(this)), RenderEng(static_cast<GameManager*>(this)), PhysicsEng(&DebugMode), Shading(shading), Settings(nullptr), GameStarted(false), DefaultFont(nullptr), MainScene(nullptr)
+	AudioEng(static_cast<GameManager*>(this)), RenderEng(static_cast<GameManager*>(this)), PhysicsEng(&DebugMode), Shading(shading), Settings(nullptr), GameStarted(false), DefaultFont(nullptr), MainScene(nullptr), ActiveScene(nullptr)
 {
 
 	glDisable(GL_MULTISAMPLE);
@@ -121,9 +121,9 @@ void Game::LoadSceneFromFile(const std::string& path, const std::string& name)
 	EngineDataLoader::SetupSceneFromFile(this, path, name);
 }
 
-GameScene& Game::CreateScene(const std::string& name)
+GameScene& Game::CreateScene(const std::string& name, bool isAnUIScene)
 {
-	AddScene(std::make_unique<GameScene>(GameScene(*this, name)));
+	AddScene(std::make_unique<GameScene>(*this, name, isAnUIScene));
 	return *Scenes.back();
 }
 
@@ -148,6 +148,13 @@ void Game::AddScene(std::unique_ptr<GameScene> scene)
 void Game::BindAudioListenerTransformPtr(Transform* transform)
 {
 	AudioEng.SetListenerTransformPtr(transform);
+	std::cout << "SETTING AUDIO LISTENER TRANSFORM TO " << transform << '\n';
+}
+
+void Game::UnbindAudioListenerTransformPtr(Transform* transform)
+{
+	if (AudioEng.GetListenerTransformPtr() == transform)
+		AudioEng.SetListenerTransformPtr(nullptr);
 }
 
 void Game::PassMouseControl(Controller* controller)
@@ -224,6 +231,11 @@ Actor* Game::GetRootActor(GameScene* scene)
 		scene = GetMainScene();
 
 	return scene->RootActor.get();
+}
+
+void Game::SetActiveScene(GameScene* scene)
+{
+	ActiveScene = scene;
 }
 
 HierarchyTemplate::HierarchyTreeT* Game::FindHierarchyTree(const std::string& name, HierarchyTemplate::HierarchyTreeT* treeToIgnore)

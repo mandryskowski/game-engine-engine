@@ -3,6 +3,7 @@
 #include <scene/UIInputBoxActor.h>
 #include <UI/UICanvasActor.h>
 
+
 LightComponent::LightComponent(Actor& actor, Component* parentComp, std::string name, LightType type, unsigned int index, unsigned int shadowNr, float far, glm::mat4 projection, glm::vec3 amb, glm::vec3 diff, glm::vec3 spec, glm::vec3 settings):
 	Component(actor, parentComp, name, Transform()),
 	Type(type),

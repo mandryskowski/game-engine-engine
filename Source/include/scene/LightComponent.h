@@ -95,7 +95,6 @@ private:
 	unsigned int TransformDirtyFlagIndex; //again for optimisation; the ComponentTransform's flag of this index should be on if the light's position/direction has changed
 };
 
-
 class LightVolume : public RenderableVolume
 {
 	const LightComponent* LightCompPtr;
