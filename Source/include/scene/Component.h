@@ -2,7 +2,6 @@
 #include <cereal/types/memory.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include <cereal/types/vector.hpp>
-#include <physics/CollisionObject.h>
 #include <game/GameScene.h>
 #include <math/Transform.h>
 #include <game/GameManager.h>

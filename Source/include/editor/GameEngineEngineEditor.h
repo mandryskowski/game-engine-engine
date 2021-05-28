@@ -2,7 +2,7 @@
 #include <game/Game.h>
 #include <editor/EditorManager.h>
 #include <UI/UIListActor.h>
-/*
+
 struct EditorEventProcessor
 {
 	static void FileDropCallback(GLFWwindow* window, int count, const char** paths)
@@ -81,4 +81,4 @@ inline void GameEngineEngineEditor::AddActorToList(GameScene& editorScene, T& ob
 		UIAutomaticListActor& nestedList = listParent.CreateChild<UIAutomaticListActor>(child->GetName() + "'s nestedlist");
 		AddActorToList(editorScene, *child, nestedList, canvas);
 	}
-}*/
+}

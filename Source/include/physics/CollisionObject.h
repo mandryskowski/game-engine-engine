@@ -1,7 +1,7 @@
 #pragma once
+#include <rendering/Mesh.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
-#include <rendering/Mesh.h>
 #include <PhysX/PxPhysicsAPI.h>
 #include <math/Transform.h>
 #include <game/GameScene.h>
