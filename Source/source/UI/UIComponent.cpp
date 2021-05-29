@@ -5,22 +5,26 @@
 
 #include <UI/UICanvasActor.h>
 
-UIComponent::UIComponent(Actor& actorRef, Component* parentComp):
-	SceneRef(actorRef.GetScene())
+namespace GEE
 {
-	UICanvasElement* elementCast = dynamic_cast<UICanvasElement*>(parentComp);
-	if (!elementCast)
-		elementCast = dynamic_cast<UICanvasElement*>(&actorRef);
-
-	if (elementCast)
+	UIComponent::UIComponent(Actor& actorRef, Component* parentComp) :
+		SceneRef(actorRef.GetScene())
 	{
-		SetParentElement(*elementCast);
-		SceneRef.GetRenderData()->MarkUIRenderableDepthsDirty();	//SetParentElement calls AttachToCanvas, but because overridden methods can't be called from the constructor, we have to call it here.
-	}
-}
+		UICanvasElement* elementCast = dynamic_cast<UICanvasElement*>(parentComp);
+		if (!elementCast)
+			elementCast = dynamic_cast<UICanvasElement*>(&actorRef);
 
-void UIComponent::AttachToCanvas(UICanvas& canvas)
-{
-	UICanvasElement::AttachToCanvas(canvas);
-	SceneRef.GetRenderData()->MarkUIRenderableDepthsDirty();
+		if (elementCast)
+		{
+			SetParentElement(*elementCast);
+			SceneRef.GetRenderData()->MarkUIRenderableDepthsDirty();	//SetParentElement calls AttachToCanvas, but because overridden methods can't be called from the constructor, we have to call it here.
+		}
+	}
+
+	void UIComponent::AttachToCanvas(UICanvas& canvas)
+	{
+		UICanvasElement::AttachToCanvas(canvas);
+		SceneRef.GetRenderData()->MarkUIRenderableDepthsDirty();
+	}
+
 }

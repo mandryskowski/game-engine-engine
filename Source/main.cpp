@@ -17,13 +17,10 @@
 #include <scene/Controller.h>
 #include <input/InputDevicesStateRetriever.h>
 #include <whereami.h>
+#include <scene/BoneComponent.h>
 #include <map>
 
-
-
-//Po 11 minutach i 7 sekundach crashuje przez C:\Users\48511\Desktop\PhysX-4.1\physx\source\foundation\include\PsBroadcast.h (199) : abort : User allocator returned NULL. Czemu?
-//ODPOWIEDZ MEMORY LEAKS!!!!! we leak about 3 MB/s
-
+using namespace GEE;
 
 extern "C"
 {
@@ -35,134 +32,10 @@ extern "C"
 	__declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
 }
 
-CEREAL_REGISTER_TYPE(GunActor)
-CEREAL_REGISTER_POLYMORPHIC_RELATION(Actor, GunActor)
-CEREAL_REGISTER_TYPE(PawnActor)
-CEREAL_REGISTER_POLYMORPHIC_RELATION(Actor, PawnActor)
-CEREAL_REGISTER_TYPE(Controller)
-CEREAL_REGISTER_POLYMORPHIC_RELATION(Actor, Controller)
-CEREAL_REGISTER_POLYMORPHIC_RELATION(Controller, ShootingController)
-CEREAL_REGISTER_TYPE(ShootingController)
-CEREAL_REGISTER_POLYMORPHIC_RELATION(Actor, ShootingController)
-CEREAL_REGISTER_TYPE(CameraComponent)
-CEREAL_REGISTER_POLYMORPHIC_RELATION(Component, CameraComponent)
-CEREAL_REGISTER_TYPE(ModelComponent)
-CEREAL_REGISTER_POLYMORPHIC_RELATION(Component, ModelComponent)
-CEREAL_REGISTER_TYPE(TextComponent)
-CEREAL_REGISTER_POLYMORPHIC_RELATION(Component, TextComponent)
-CEREAL_REGISTER_TYPE(BoneComponent)
-CEREAL_REGISTER_POLYMORPHIC_RELATION(Component, BoneComponent)
-CEREAL_REGISTER_TYPE(LightComponent)
-CEREAL_REGISTER_POLYMORPHIC_RELATION(Component, LightComponent)
-CEREAL_REGISTER_TYPE(SoundSourceComponent)
-CEREAL_REGISTER_POLYMORPHIC_RELATION(Component, SoundSourceComponent)
-CEREAL_REGISTER_TYPE(AnimationManagerComponent)
-CEREAL_REGISTER_POLYMORPHIC_RELATION(Component, AnimationManagerComponent)
-CEREAL_REGISTER_TYPE(LightProbeComponent)
-CEREAL_REGISTER_POLYMORPHIC_RELATION(Component, LightProbeComponent)
-
-CEREAL_REGISTER_TYPE(Material)
-CEREAL_REGISTER_TYPE(AtlasMaterial)
-
 EditorManager* EditorEventProcessor::EditorHandle = nullptr;
-
-class Base
-{
-public:
-	int Pierwsza = 5;
-	static std::unique_ptr<Base> Get()
-	{
-		return std::make_unique<Base>();
-	}
-	virtual void AA() { std::cout << Pierwsza << "|!!!!!\n"; };
-};
-
-class Inheriting : public Base
-{
-public:
-	float Druga = 3.0f;
-	static std::unique_ptr<Base> Get()
-	{
-		return static_unique_pointer_cast<Base>(std::make_unique<Inheriting>());
-	}
-	virtual void AA() override { std::cout << Druga << "|!!!!!\n"; };
-};
-
-class Different
-{
-public:
-	Different(std::unique_ptr<Base>&& base):
-		BaseObj(std::move(base))
-	{
-		BaseObj->AA();
-	}
-
-private:
-	std::unique_ptr<Base> BaseObj;
-};
-
-class BaseAndInheritingFactory
-{
-	typedef std::unique_ptr<Base>(*CreateObjFun)(void);
-	typedef std::map<std::string, CreateObjFun> FactoryMap;
-	std::map<std::string, CreateObjFun> CreateMap;
-public:
-	BaseAndInheritingFactory()
-	{
-		Register("Base", Base::Get);
-		Register("Inheriting", Inheriting::Get);
-	}
-	static BaseAndInheritingFactory& Get()
-	{
-		static BaseAndInheritingFactory factory;
-		return factory;
-	}
-	std::unique_ptr<Base> CreateBase(const std::string& name)
-	{
-		FactoryMap::iterator it = CreateMap.find(name);
-		if (it != CreateMap.end())
-			return (*it->second)();
-		return nullptr;
-	}
-	void Register(std::string name, CreateObjFun fun)
-	{
-		CreateMap[name] = fun;
-	}
-private:
-};
-
-
-class Klasa1 : public UICanvasElement
-{
-public:
-	virtual Boxf<Vec2f> GetBoundingBox(bool world) override
-	{
-		return Boxf<Vec2f>(Vec2f(2.69f, 4.20f), Vec2f(1.337f, 6.9f));
-	}
-};
-
-class Klasa2 : public UICanvasElement
-{
-public:
-	virtual Boxf<Vec2f> GetBoundingBox(bool world) override
-	{
-		return Boxf<Vec2f>(Vec2f(3.19f, 0.32f), Vec2f(99.0f, 0.1f));
-	}
-};
-
-class Ponadklasa : public Klasa1, public Klasa2
-{
-public:
-	virtual Boxf<Vec2f> GetBoundingBox(bool world) override
-	{
-		return Boxf<Vec2f>(Vec2f(483.8f, 827.9f), Vec2f(371.0f, 0.0283f));
-	}
-};
 
 int main(int argc, char** argv)
 {
-	Ponadklasa ponadobjekt;
-	std::cout << ponadobjekt.GetBoundingBox(false).Position.x<< "\n";
 	std::string programFilepath;
 	std::string projectFilepathArgument;
 	for (int i = 0; i < argc; i++)
@@ -174,7 +47,6 @@ int main(int argc, char** argv)
 		case 1: projectFilepathArgument = argv[i]; break;
 		}
 	}
-	Different(BaseAndInheritingFactory::Get().CreateBase("Inheriting"));
 	glfwInit();
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
@@ -225,31 +97,6 @@ int main(int argc, char** argv)
 	if (!projectFilepathArgument.empty())
 		editor.LoadProject(projectFilepathArgument);
 
-	/*std::ifstream deserializationStream("zjebany.json");
-
-	std::cout << "Serializing...\n";
-	if (deserializationStream.good() && editor.GetMainScene())
-	{
-		try
-		{
-			cereal::JSONInputArchive archive(deserializationStream);
-			cereal::LoadAndConstruct<Actor>::ScenePtr = editor.GetMainScene();
-			editor.GetMainScene()->GetRenderData()->LoadSkeletonBatches(archive);
-			const_cast<Actor*>(editor.GetMainScene()->GetRootActor())->Load(archive);
-
-			archive.serializeDeferments();
-
-			editor.GetMainScene()->Load();
-		}
-		catch (cereal::Exception& ex)
-		{
-			std::cout << "ERROR: While loading scene: " << ex.what() << '\n';
-		}
-		const_cast<Actor*>(editor.GetMainScene()->GetRootActor())->DebugHierarchy();
-	}
-	deserializationStream.close();*/
-
-
 	editor.PreGameLoop();
 
 	float deltaTime = 0.0f;
@@ -266,7 +113,6 @@ int main(int argc, char** argv)
 
 		endGame = editor.GameLoopIteration(1.0f / 60.0f, deltaTime);
 	} while (!endGame);
-	//game.Run();
 
 	editor.SaveProject();
 

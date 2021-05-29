@@ -3,33 +3,37 @@
 #include <scene/SoundSourceComponent.h>
 #include <AL/alc.h>
 
-class AudioEngine: public AudioEngineManager
+namespace GEE
 {
-	ALCdevice* Device;
-	ALCcontext* Context;
-	std::vector <SoundBuffer*> ALBuffers;
 
-	Transform* ListenerTransformPtr;
+	class AudioEngine : public AudioEngineManager
+	{
+		ALCdevice* Device;
+		ALCcontext* Context;
+		std::vector <SoundBuffer*> ALBuffers;
 
-	GameManager* GameHandle;
+		Transform* ListenerTransformPtr;
 
-private:
-	SoundBuffer* LoadALBuffer(ALenum, ALvoid*, ALsizei, ALsizei, std::string = "");
-	SoundBuffer* SearchForAlreadyLoadedBuffer(std::string);
-public:
-	AudioEngine(GameManager*);
-	void Init();
+		GameManager* GameHandle;
 
-	void SetListenerTransformPtr(Transform*);
-	Transform* GetListenerTransformPtr();
+	private:
+		SoundBuffer* LoadALBuffer(ALenum, ALvoid*, ALsizei, ALsizei, std::string = "");
+		SoundBuffer* SearchForAlreadyLoadedBuffer(std::string);
+	public:
+		AudioEngine(GameManager*);
+		void Init();
 
-	void Update();
+		void SetListenerTransformPtr(Transform*);
+		Transform* GetListenerTransformPtr();
 
-	virtual SoundBuffer* LoadBufferFromFile(std::string path) override;
-	SoundBuffer* LoadBufferFromWav(std::string path);
-	SoundBuffer* LoadBufferFromOgg(std::string path);
+		void Update();
 
-	virtual void CheckError() override;
+		virtual SoundBuffer* LoadBufferFromFile(std::string path) override;
+		SoundBuffer* LoadBufferFromWav(std::string path);
+		SoundBuffer* LoadBufferFromOgg(std::string path);
 
-	~AudioEngine();
-};
+		virtual void CheckError() override;
+
+		~AudioEngine();
+	};
+}

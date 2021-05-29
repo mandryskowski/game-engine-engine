@@ -3,71 +3,74 @@
 #include <math/Transform.h>
 #include <functional>
 
-class RenderInfo;
-class UICanvasElement;
-class Actor;
-class UIActor;
-class UIScrollBarActor;
-class UICanvasField;
-class UICanvasFieldCategory;
-class UIButtonActor;
-
-class UICanvas
+namespace GEE
 {
-public:
-	UICanvas(unsigned int canvasDepth = 0): bContainsMouse(false), CanvasDepth(canvasDepth) {}
-	UICanvas(const UICanvas&);
-	UICanvas(UICanvas&&); 
-	virtual NDCViewport GetViewport() const = 0;
-	virtual glm::mat4 GetViewMatrix() const = 0;
-	virtual const Transform& GetViewT() const;
-	virtual const Transform* GetCanvasT() const = 0;
-	virtual Transform ToCanvasSpace(const Transform& worldTransform) const = 0;
+	class RenderInfo;
+	class UICanvasElement;
+	class Actor;
+	class UIActor;
+	class UIScrollBarActor;
+	class UICanvasField;
+	class UICanvasFieldCategory;
+	class UIButtonActor;
 
-	virtual glm::mat4 GetProjection() const;
+	class UICanvas
+	{
+	public:
+		UICanvas(unsigned int canvasDepth = 0) : bContainsMouse(false), CanvasDepth(canvasDepth) {}
+		UICanvas(const UICanvas&);
+		UICanvas(UICanvas&&);
+		virtual NDCViewport GetViewport() const = 0;
+		virtual glm::mat4 GetViewMatrix() const = 0;
+		virtual const Transform& GetViewT() const;
+		virtual const Transform* GetCanvasT() const = 0;
+		virtual Transform ToCanvasSpace(const Transform& worldTransform) const = 0;
 
-	Boxf<Vec2f> GetBoundingBox() const;	//Canvas space
+		virtual glm::mat4 GetProjection() const;
 
-	unsigned int GetCanvasDepth() const;
+		Boxf<Vec2f> GetBoundingBox() const;	//Canvas space
 
-	virtual void SetCanvasView(const Transform&);
+		unsigned int GetCanvasDepth() const;
 
-	virtual void ClampViewToElements();
-	void AutoClampView(bool trueHorizontalFalseVertical = true);	//Set to false to set view scale to 100% of vertical size, or leave it as it is to set it to 100% of horizontal size
+		virtual void SetCanvasView(const Transform&);
 
-	virtual UICanvasFieldCategory& AddCategory(const std::string& name) = 0;
-	virtual UICanvasField& AddField(const std::string& name, std::function<glm::vec3()> getElementOffset = nullptr) = 0;
+		virtual void ClampViewToElements();
+		void AutoClampView(bool trueHorizontalFalseVertical = true);	//Set to false to set view scale to 100% of vertical size, or leave it as it is to set it to 100% of horizontal size
 
-	void AddUIElement(UICanvasElement&);
-	void EraseUIElement(UICanvasElement&);
+		virtual UICanvasFieldCategory& AddCategory(const std::string& name) = 0;
+		virtual UICanvasField& AddField(const std::string& name, std::function<glm::vec3()> getElementOffset = nullptr) = 0;
 
-	void ScrollView(Vec2f offset);
-	void SetViewScale(glm::vec2 scale);
-	virtual RenderInfo BindForRender(const RenderInfo&, const glm::uvec2& res) = 0;
-	virtual void UnbindForRender(const glm::uvec2& res) = 0;
+		void AddUIElement(UICanvasElement&);
+		void EraseUIElement(UICanvasElement&);
 
-	bool ContainsMouse() const; //Returns cached value. Guaranteed to be valid if called in HandleEvent() or HandleEventAll() of a child of UICanvasActor.
+		void ScrollView(Vec2f offset);
+		void SetViewScale(glm::vec2 scale);
+		virtual RenderInfo BindForRender(const RenderInfo&, const glm::uvec2& res) = 0;
+		virtual void UnbindForRender(const glm::uvec2& res) = 0;
 
-	/**
-	 * @brief Some UIElements should not accept certain events when the cursor is inside a different canvas.
-	 * E.g. when the cursor is over a window that is over another window, the buttons in the window below should not be clickable.
-	 * Assumes that this UICanvas is the CurrentBlockingCanvas
-	 * @see GameScene::GetCurrentBlockingCanvas()
-	 * @param element: the element to be checked for the ability to accept blocked events
-	 * @return a boolean that indicates whether blocked events should be accepted
-	*/
-	bool ShouldAcceptBlockedEvents(UICanvasElement& element) const;
+		bool ContainsMouse() const; //Returns cached value. Guaranteed to be valid if called in HandleEvent() or HandleEventAll() of a child of UICanvasActor.
 
-	virtual ~UICanvas() {}
-//protected:
-	bool ContainsMouseCheck(const Vec2f& mouseNDC) const;
-	virtual void GetExternalButtons(std::vector<UIButtonActor*>&) const = 0;
-public:
+		/**
+		 * @brief Some UIElements should not accept certain events when the cursor is inside a different canvas.
+		 * E.g. when the cursor is over a window that is over another window, the buttons in the window below should not be clickable.
+		 * Assumes that this UICanvas is the CurrentBlockingCanvas
+		 * @see GameScene::GetCurrentBlockingCanvas()
+		 * @param element: the element to be checked for the ability to accept blocked events
+		 * @return a boolean that indicates whether blocked events should be accepted
+		*/
+		bool ShouldAcceptBlockedEvents(UICanvasElement& element) const;
 
-	std::vector<std::reference_wrapper<UICanvasElement>> UIElements;
-	Transform CanvasView;
-	mutable bool bContainsMouse;	//Cache variable
-	mutable bool bContainsMouseOutsideTrueCanvas;
+		virtual ~UICanvas() {}
+		//protected:
+		bool ContainsMouseCheck(const Vec2f& mouseNDC) const;
+		virtual void GetExternalButtons(std::vector<UIButtonActor*>&) const = 0;
+	public:
 
-	const unsigned int CanvasDepth;
-};
+		std::vector<std::reference_wrapper<UICanvasElement>> UIElements;
+		Transform CanvasView;
+		mutable bool bContainsMouse;	//Cache variable
+		mutable bool bContainsMouseOutsideTrueCanvas;
+
+		const unsigned int CanvasDepth;
+	};
+}

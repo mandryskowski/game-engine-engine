@@ -14,54 +14,57 @@
 #include <vector>
 #include <game/GameManager.h>
 
-struct CollisionShape;
-class RenderEngine;
-class Transform;
-class RenderInfo;
-
-class PhysicsEngine: public PhysicsEngineManager
+namespace GEE
 {
-	physx::PxDefaultAllocator Allocator;
-	physx::PxDefaultErrorCallback ErrorCallback;
+	struct CollisionShape;
+	class RenderEngine;
+	class Transform;
+	class RenderInfo;
 
-	static physx::PxFoundation* Foundation;
-	physx::PxPhysics* Physics;
+	class PhysicsEngine : public PhysicsEngineManager
+	{
+		physx::PxDefaultAllocator Allocator;
+		physx::PxDefaultErrorCallback ErrorCallback;
 
-	physx::PxDefaultCpuDispatcher* Dispatcher;
-	physx::PxCooking* Cooking;
+		static physx::PxFoundation* Foundation;
+		physx::PxPhysics* Physics;
 
-	physx::PxMaterial* DefaultMaterial;
-	physx::PxPvd* Pvd;
+		physx::PxDefaultCpuDispatcher* Dispatcher;
+		physx::PxCooking* Cooking;
 
-	std::vector <GameScenePhysicsData*> ScenesPhysicsData;
-	unsigned int VAO, VBO;
-	bool WasSetup;
-	bool* DebugModePtr;
+		physx::PxMaterial* DefaultMaterial;
+		physx::PxPvd* Pvd;
 
-public:
-	PhysicsEngine(bool* debugmode);
-	void Init();
+		std::vector <GameScenePhysicsData*> ScenesPhysicsData;
+		unsigned int VAO, VBO;
+		bool WasSetup;
+		bool* DebugModePtr;
 
-private:
-	physx::PxShape* CreateTriangleMeshShape(CollisionShape*, glm::vec3 scale);
-	virtual void AddCollisionObjectToPxPipeline(GameScenePhysicsData& scenePhysicsData, CollisionObject&) override;
+	public:
+		PhysicsEngine(bool* debugmode);
+		void Init();
 
-public:
-	virtual void CreatePxShape(CollisionShape&, CollisionObject&) override;
-	void AddScenePhysicsDataPtr(GameScenePhysicsData& scenePhysicsData);
-	virtual void RemoveScenePhysicsDataPtr(GameScenePhysicsData& scenePhysicsData) override;
+	private:
+		physx::PxShape* CreateTriangleMeshShape(CollisionShape*, glm::vec3 scale);
+		virtual void AddCollisionObjectToPxPipeline(GameScenePhysicsData& scenePhysicsData, CollisionObject&) override;
 
-	virtual physx::PxController* CreateController(GameScenePhysicsData& scenePhysicsData, const Transform& t) override;
+	public:
+		virtual void CreatePxShape(CollisionShape&, CollisionObject&) override;
+		void AddScenePhysicsDataPtr(GameScenePhysicsData& scenePhysicsData);
+		virtual void RemoveScenePhysicsDataPtr(GameScenePhysicsData& scenePhysicsData) override;
 
-	virtual void ApplyForce(CollisionObject&, glm::vec3 force) override;
-	void SetupScene(GameScenePhysicsData& scenePhysicsData);
+		virtual physx::PxController* CreateController(GameScenePhysicsData& scenePhysicsData, const Transform& t) override;
 
-	void Update(float deltaTime);
-	void UpdateTransforms();
-	void UpdatePxTransforms();
+		virtual void ApplyForce(CollisionObject&, glm::vec3 force) override;
+		void SetupScene(GameScenePhysicsData& scenePhysicsData);
 
-	virtual void DebugRender(GameScenePhysicsData& scenePhysicsData, RenderEngine&, RenderInfo&) override;
-	~PhysicsEngine();
-};
+		void Update(float deltaTime);
+		void UpdateTransforms();
+		void UpdatePxTransforms();
 
-glm::vec3 toVecColor(physx::PxDebugColor::Enum);
+		virtual void DebugRender(GameScenePhysicsData& scenePhysicsData, RenderEngine&, RenderInfo&) override;
+		~PhysicsEngine();
+	};
+
+	glm::vec3 toVecColor(physx::PxDebugColor::Enum);
+}

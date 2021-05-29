@@ -150,7 +150,8 @@
     <ClCompile Include="source\audio\AudioEngine.cpp" />
     <ClCompile Include="source\scene\BoneComponent.cpp" />
     <ClCompile Include="source\math\Box.cpp" />
-    <ClCompile Include="source\scene\HierarchyTemplate.cpp" />
+    <ClCompile Include="source\scene\hierarchy\HierarchyNode.cpp" />
+    <ClCompile Include="source\scene\hierarchy\HierarchyTree.cpp" />
     <ClCompile Include="source\scene\LightProbeComponent.cpp" />
     <ClCompile Include="source\scene\UIButtonActor.cpp" />
     <ClCompile Include="source\scene\CameraComponent.cpp" />
@@ -209,7 +210,8 @@
     <ClInclude Include="include\audio\AudioFile.h" />
     <ClInclude Include="include\scene\BoneComponent.h" />
     <ClInclude Include="include\math\Box.h" />
-    <ClInclude Include="include\scene\HierarchyTemplate.h" />
+    <ClInclude Include="include\scene\hierarchy\HierarchyNode.h" />
+    <ClInclude Include="include\scene\hierarchy\HierarchyTree.h" />
     <ClInclude Include="include\scene\LightProbeComponent.h" />
     <ClInclude Include="include\scene\PawnActor.h" />
     <ClInclude Include="include\scene\UIButtonActor.h" />

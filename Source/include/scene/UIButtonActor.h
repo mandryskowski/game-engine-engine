@@ -3,86 +3,88 @@
 #include <UI/UIActor.h>
 #include <editor/EditorManager.h>
 #include <functional>
-
-class UIButtonActor : public UIActorDefault
+namespace GEE
 {
-public:
-	UIButtonActor(GameScene&, Actor* parentActor, const std::string& name, std::function<void()> onClickFunc = nullptr, std::function<void()> whileBeingClickedFunc = nullptr, const Transform& = Transform());
-	UIButtonActor(GameScene&, Actor* parentActor, const std::string& name, const std::string& buttonTextContent, std::function<void()> onClickFunc = nullptr, std::function<void()> whileBeingClickedFunc = nullptr, const Transform& = Transform());
+	class UIButtonActor : public UIActorDefault
+	{
+	public:
+		UIButtonActor(GameScene&, Actor* parentActor, const std::string& name, std::function<void()> onClickFunc = nullptr, std::function<void()> whileBeingClickedFunc = nullptr, const Transform & = Transform());
+		UIButtonActor(GameScene&, Actor* parentActor, const std::string& name, const std::string& buttonTextContent, std::function<void()> onClickFunc = nullptr, std::function<void()> whileBeingClickedFunc = nullptr, const Transform & = Transform());
 
-	ModelComponent* GetButtonModel();
-	virtual Boxf<Vec2f> GetBoundingBox(bool world = true) override;
+		ModelComponent* GetButtonModel();
+		virtual Boxf<Vec2f> GetBoundingBox(bool world = true) override;
 
-	void SetMatIdle(MaterialInstance&&);
-	void SetMatHover(MaterialInstance&&);
-	void SetMatClick(MaterialInstance&&);
+		void SetMatIdle(MaterialInstance&&);
+		void SetMatHover(MaterialInstance&&);
+		void SetMatClick(MaterialInstance&&);
 
-	void SetDisableInput(bool disable);
+		void SetDisableInput(bool disable);
 
-	void SetOnClickFunc(std::function<void()> onClickFunc);
-	void SetWhileBeingClickedFunc(std::function<void()> whileBeingClickedFunc);
+		void SetOnClickFunc(std::function<void()> onClickFunc);
+		void SetWhileBeingClickedFunc(std::function<void()> whileBeingClickedFunc);
 
-	void DeleteButtonModel();
+		void DeleteButtonModel();
 
-	virtual void HandleEvent(const Event& ev) override;
+		virtual void HandleEvent(const Event& ev) override;
 
-	virtual void OnHover();
-	virtual void OnUnhover();
+		virtual void OnHover();
+		virtual void OnUnhover();
 
-	virtual void OnClick();
-	virtual void OnBeingClicked();
-	virtual void WhileBeingClicked();
+		virtual void OnClick();
+		virtual void OnBeingClicked();
+		virtual void WhileBeingClicked();
 
-	EditorIconState GetState();
+		EditorIconState GetState();
 
 
-	bool ContainsMouse(glm::vec2 cursorNDC);
-protected:
-	virtual void DeduceMaterial();
+		bool ContainsMouse(glm::vec2 cursorNDC);
+	protected:
+		virtual void DeduceMaterial();
 
-	std::function<void()> OnClickFunc, WhileBeingClickedFunc;
-	
-	ModelComponent* ButtonModel;
-	std::shared_ptr<MaterialInstance> MatIdle, MatHover, MatClick, MatDisabled;
-	MaterialInstance* PrevDeducedMaterial;
+		std::function<void()> OnClickFunc, WhileBeingClickedFunc;
 
-	EditorIconState State;
+		ModelComponent* ButtonModel;
+		std::shared_ptr<MaterialInstance> MatIdle, MatHover, MatClick, MatDisabled;
+		MaterialInstance* PrevDeducedMaterial;
 
-	bool bInputDisabled;
-};
+		EditorIconState State;
 
-class UIActivableButtonActor : public UIButtonActor
-{
-public:
-	UIActivableButtonActor(GameScene& scene, Actor* parentActor, const std::string& name, std::function<void()> onClickFunc = nullptr, std::function<void()> onDeactivationFunc = nullptr);
+		bool bInputDisabled;
+	};
 
-	void SetMatActive(MaterialInstance&&);
-	void SetOnDeactivationFunc(std::function<void()> onDeactivationFunc);
+	class UIActivableButtonActor : public UIButtonActor
+	{
+	public:
+		UIActivableButtonActor(GameScene& scene, Actor* parentActor, const std::string& name, std::function<void()> onClickFunc = nullptr, std::function<void()> onDeactivationFunc = nullptr);
 
-	virtual void HandleEvent(const Event& ev) override;
-	virtual void OnClick() override;	//On activation
-	virtual void OnDeactivation();
-protected:
-	virtual void DeduceMaterial() override;
+		void SetMatActive(MaterialInstance&&);
+		void SetOnDeactivationFunc(std::function<void()> onDeactivationFunc);
 
-	std::function<void()> OnDeactivationFunc;
-	std::shared_ptr<MaterialInstance> MatActive;
-};
+		virtual void HandleEvent(const Event& ev) override;
+		virtual void OnClick() override;	//On activation
+		virtual void OnDeactivation();
+	protected:
+		virtual void DeduceMaterial() override;
 
-class UIScrollBarActor : public UIButtonActor
-{
-public:
-	UIScrollBarActor(GameScene&, Actor* parentActor, const std::string& name, std::function<void()> onClickFunc = nullptr, std::function<void()> whileBeingClickedFunc = nullptr);
-	virtual void OnBeingClicked() override;
-	virtual void WhileBeingClicked() override;
-	const glm::vec2& GetClickPosNDC();
-	void SetClickPosNDC(const glm::vec2&);
-private:
-	glm::vec2 ClickPosNDC;
-};
+		std::function<void()> OnDeactivationFunc;
+		std::shared_ptr<MaterialInstance> MatActive;
+	};
 
-struct CollisionTests
-{
-public:
-	static bool AlignedRectContainsPoint(const Transform& rect, const glm::vec2& point); //treats rect as a rectangle at position rect.PositionRef and size rect.ScaleRef
-};
+	class UIScrollBarActor : public UIButtonActor
+	{
+	public:
+		UIScrollBarActor(GameScene&, Actor* parentActor, const std::string& name, std::function<void()> onClickFunc = nullptr, std::function<void()> whileBeingClickedFunc = nullptr);
+		virtual void OnBeingClicked() override;
+		virtual void WhileBeingClicked() override;
+		const glm::vec2& GetClickPosNDC();
+		void SetClickPosNDC(const glm::vec2&);
+	private:
+		glm::vec2 ClickPosNDC;
+	};
+
+	struct CollisionTests
+	{
+	public:
+		static bool AlignedRectContainsPoint(const Transform& rect, const glm::vec2& point); //treats rect as a rectangle at position rect.PositionRef and size rect.ScaleRef
+	};
+}
