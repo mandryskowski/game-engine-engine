@@ -52,7 +52,7 @@ namespace GEE
 
 		if (CurrentTargetPos != glm::vec3(0.0f))
 		{
-			if (glm::distance(CurrentTargetPos, GetTransform()->GetWorldTransform().PositionRef) < 0.05f)
+			if (glm::distance(CurrentTargetPos, GetTransform()->GetWorldTransform().Pos()) < 0.05f)
 			{
 				CurrentTargetPos = glm::vec3(0.0f);
 				if (AnimManager->GetCurrentAnim())
@@ -64,18 +64,18 @@ namespace GEE
 			if (!AnimManager->GetCurrentAnim())
 				AnimManager->SelectAnimation(AnimManager->GetAnimInstance(AnimIndex));
 
-			glm::vec3 posDir = CurrentTargetPos - GetTransform()->GetWorldTransform().PositionRef;
+			glm::vec3 posDir = CurrentTargetPos - GetTransform()->GetWorldTransform().Pos();
 			posDir.y = 0.0f;
 			posDir = glm::normalize(posDir);
 			if (PlayerTarget)
 			{
-				glm::vec3 playerDir = glm::normalize(PlayerTarget->GetTransform()->GetWorldTransform().PositionRef - GetTransform()->GetWorldTransform().PositionRef);
-				float distance = glm::distance((glm::vec3)PlayerTarget->GetTransform()->GetWorldTransform().PositionRef, GetTransform()->GetWorldTransform().PositionRef);
-				std::cout << "Dot: " << glm::dot(playerDir, GetTransform()->RotationRef * glm::vec3(0.0f, 0.0f, -1.0f)) << '\n';
-				if (Gun && glm::dot(playerDir, GetTransform()->RotationRef * glm::vec3(0.0f, 0.0f, -1.0f)) > glm::cos(glm::radians(30.0f)) && distance < 3.0f)
+				glm::vec3 playerDir = glm::normalize(PlayerTarget->GetTransform()->GetWorldTransform().Pos() - GetTransform()->GetWorldTransform().Pos());
+				float distance = glm::distance((glm::vec3)PlayerTarget->GetTransform()->GetWorldTransform().Pos(), GetTransform()->GetWorldTransform().Pos());
+				std::cout << "Dot: " << glm::dot(playerDir, GetTransform()->Rot() * glm::vec3(0.0f, 0.0f, -1.0f)) << '\n';
+				if (Gun && glm::dot(playerDir, GetTransform()->Rot() * glm::vec3(0.0f, 0.0f, -1.0f)) > glm::cos(glm::radians(30.0f)) && distance < 3.0f)
 				{
 					Gun->FireWeapon();
-					Gun->GetTransform()->SetRotationWorld(quatFromDirectionVec(-playerDir));
+					//Gun->GetTransform()->SetRotationWorld(quatFromDirectionVec(-playerDir));
 					posDir = glm::normalize(glm::vec3(playerDir.x, 0.0f, playerDir.z));
 
 				}
@@ -83,7 +83,7 @@ namespace GEE
 
 			GetTransform()->SetRotation(quatFromDirectionVec(-posDir));
 
-			glm::vec3 velocity = GetTransform()->GetWorldTransform().RotationRef * glm::vec3(0.0f, 0.0f, -1.0f * SpeedPerSec * deltaTime);
+			glm::vec3 velocity = GetTransform()->GetWorldTransform().Rot() * glm::vec3(0.0f, 0.0f, -1.0f * SpeedPerSec * deltaTime);
 
 			GetTransform()->Move(velocity);
 		}

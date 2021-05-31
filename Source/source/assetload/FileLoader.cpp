@@ -235,7 +235,7 @@ namespace GEE
 			std::string path;
 			filestr >> path;
 
-			SoundSourceComponent& source = parent->CreateComponent<SoundSourceComponent>(name, gameHandle->GetAudioEngineHandle()->LoadBufferFromFile(path));
+			Audio::SoundSourceComponent& source = parent->CreateComponent<Audio::SoundSourceComponent>(name, path);
 			scene.GetAudioData()->AddSource(source);
 
 			comp = &source;
@@ -274,9 +274,9 @@ namespace GEE
 			std::cerr << "ERROR: There is no ''end'' after component's " << name << " definition! Detected word: " << lastWord << ".\n";
 	}
 
-	std::unique_ptr<CollisionObject> EngineDataLoader::LoadCollisionObject(GameScene& scene, std::stringstream& filestr)
+	std::unique_ptr<Physics::CollisionObject> EngineDataLoader::LoadCollisionObject(GameScene& scene, std::stringstream& filestr)
 	{
-		std::unique_ptr<CollisionObject> obj = std::make_unique<CollisionObject>();
+		std::unique_ptr<Physics::CollisionObject> obj = std::make_unique<Physics::CollisionObject>();
 
 		if (isNextWordEqual(filestr, "dynamic"))
 			obj->IsStatic = false;
@@ -290,13 +290,13 @@ namespace GEE
 		for (int i = 0; i < nrShapes; i++)
 		{
 			filestr >> shapeType;
-			if (shapeType < CollisionShapeType::COLLISION_FIRST || shapeType > CollisionShapeType::COLLISION_LAST)
+			if (shapeType < Physics::CollisionShapeType::COLLISION_FIRST || shapeType > Physics::CollisionShapeType::COLLISION_LAST)
 			{
 				std::cerr << "ERROR! Shape type is " << shapeType << ", which is undefined.\n";
 				continue;
 			}
 
-			if (shapeType == CollisionShapeType::COLLISION_TRIANGLE_MESH)
+			if (shapeType == Physics::CollisionShapeType::COLLISION_TRIANGLE_MESH)
 			{
 				std::string path;
 				filestr >> path;
@@ -311,13 +311,13 @@ namespace GEE
 				std::vector<Mesh> meshes = tree->GetMeshes();
 				for (Mesh& mesh : meshes)
 				{
-					CollisionShape& shape = obj->AddShape(LoadTriangleMeshCollisionShape(scene.GetGameHandle()->GetPhysicsHandle(), mesh));
+					Physics::CollisionShape& shape = obj->AddShape(LoadTriangleMeshCollisionShape(scene.GetGameHandle()->GetPhysicsHandle(), mesh));
 					shape.ShapeTransform = shapesTransform;	//add new shape and set its transform to the loaded one
 				}
 			}
 			else
 			{
-				CollisionShape& shape = obj->AddShape(static_cast<CollisionShapeType>(shapeType));
+				Physics::CollisionShape& shape = obj->AddShape(static_cast<Physics::CollisionShapeType>(shapeType));
 				LoadTransform(filestr, shape.ShapeTransform, transformLoadType);
 			}
 		}
@@ -325,9 +325,9 @@ namespace GEE
 		return obj;
 	}
 
-	std::shared_ptr<CollisionShape> EngineDataLoader::LoadTriangleMeshCollisionShape(PhysicsEngineManager* physicsHandle, const Mesh& mesh)
+	std::shared_ptr<Physics::CollisionShape> EngineDataLoader::LoadTriangleMeshCollisionShape(Physics::PhysicsEngineManager* physicsHandle, const Mesh& mesh)
 	{
-		std::shared_ptr<CollisionShape> shape = std::make_shared<CollisionShape>(CollisionShape(CollisionShapeType::COLLISION_TRIANGLE_MESH));
+		std::shared_ptr<Physics::CollisionShape> shape = std::make_shared<Physics::CollisionShape>(Physics::CollisionShape(Physics::CollisionShapeType::COLLISION_TRIANGLE_MESH));
 
 		shape->SetOptionalLocalization(mesh.GetLocalization());
 
@@ -348,9 +348,9 @@ namespace GEE
 		return shape;
 	}
 
-	std::shared_ptr<CollisionShape> EngineDataLoader::LoadTriangleMeshCollisionShape(PhysicsEngineManager* physicsHandle, const aiScene* scene, aiMesh& mesh)
+	std::shared_ptr<Physics::CollisionShape> EngineDataLoader::LoadTriangleMeshCollisionShape(Physics::PhysicsEngineManager* physicsHandle, const aiScene* scene, aiMesh& mesh)
 	{
-		return std::shared_ptr<CollisionShape>();
+		return std::shared_ptr<Physics::CollisionShape>();
 	}
 
 	void EngineDataLoader::LoadLightProbes(GameScene& scene, std::stringstream& filestr)
@@ -503,8 +503,17 @@ namespace GEE
 				materialName = "Material";
 			}
 
+			
+			std::shared_ptr<Material> material = nullptr;
+			
+			std::string materialNameStr = materialName.C_Str();
+			if (materialNameStr.size() > 6 && materialNameStr.substr(materialNameStr.size() - 6) == "_atlas")
+			{
+				material = std::static_pointer_cast<Material>(std::make_shared<AtlasMaterial>(Material(Material::MaterialLoc(treeObjLoc, materialNameStr), 0.0f, GameManager::Get().GetRenderEngineHandle()->FindShader("Forward_NoLight")), glm::ivec2(4, 2)));	//TODO: remove this ivec2(4, 2)
+			}
+			else
+				material = std::make_shared<Material>(Material::MaterialLoc(treeObjLoc, materialNameStr));	//we name all materials "undefined" by default; their name should be contained in the files
 
-			std::shared_ptr<Material> material = std::make_shared<Material>(Material::MaterialLoc(treeObjLoc, materialName.C_Str()));	//we name all materials "undefined" by default; their name should be contained in the files
 			material->LoadFromAiMaterial(scene, assimpMaterial, directory, matLoadingData);
 
 			if (meshPtr)
@@ -740,7 +749,7 @@ namespace GEE
 					{
 						Mesh mesh(Mesh::MeshLoc(treeObjLoc, meshName, meshName));
 						LoadMeshFromAi(&mesh, assimpScene, assimpScene->mMeshes[node->mChildren[i]->mMeshes[j]], treeObjLoc, directory, false, nullptr, nullptr, true);
-						std::shared_ptr<CollisionShape> shape = LoadTriangleMeshCollisionShape(gameHandle.GetPhysicsHandle(), mesh);
+						std::shared_ptr<Physics::CollisionShape> shape = LoadTriangleMeshCollisionShape(gameHandle.GetPhysicsHandle(), mesh);
 
 
 						hierarchyNode.AddCollisionShape(shape);
@@ -798,7 +807,7 @@ namespace GEE
 	}
 
 	void EngineDataLoader::SetupSceneFromFile(GameManager* gameHandle, const std::string& filepath, const std::string& name)
-	{
+	{	
 		GameScene& scene = gameHandle->CreateScene((name.empty()) ? (filepath) : (name));
 		std::ifstream file(filepath);
 		std::string fileExtension = getFilepathExtension(filepath);
@@ -809,7 +818,6 @@ namespace GEE
 
 		if (fileExtension != ".geeprojectold")
 		{
-
 			std::cout << "Serializing...\n";
 			GameManager::DefaultScene = &scene;
 			if (filestr.good())
@@ -984,7 +992,8 @@ namespace GEE
 			renderHandle.AddMaterial(matLoadingData.LoadedMaterials[j]);
 
 		for (unsigned int i = 0; i < matLoadingData.LoadedMaterials.size(); i++)
-			matLoadingData.LoadedMaterials[i]->SetRenderShaderName("Geometry");
+			if (matLoadingData.LoadedMaterials[i]->GetRenderShaderName().empty())
+				matLoadingData.LoadedMaterials[i]->SetRenderShaderName("Geometry");
 
 		return treePtr;
 	}

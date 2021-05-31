@@ -65,7 +65,7 @@ namespace GEE
 
 	NDCViewport UICanvasActor::GetViewport() const
 	{
-		return NDCViewport(GetTransform()->GetWorldTransform().PositionRef - GetTransform()->GetWorldTransform().ScaleRef, GetTransform()->GetWorldTransform().ScaleRef);
+		return NDCViewport(GetTransform()->GetWorldTransform().Pos() - GetTransform()->GetWorldTransform().Scale(), GetTransform()->GetWorldTransform().Scale());
 	}
 
 	const Transform* UICanvasActor::GetCanvasT() const
@@ -157,7 +157,7 @@ namespace GEE
 
 		if (GameHandle->GetInputRetriever().IsKeyPressed(Key::LEFT_CONTROL))
 		{
-			glm::vec2 newScale = static_cast<glm::vec2>(CanvasView.ScaleRef) * glm::pow(glm::vec2(0.5f), glm::vec2(scrolledEv.GetOffset().y));
+			glm::vec2 newScale = static_cast<glm::vec2>(CanvasView.Scale()) * glm::pow(glm::vec2(0.5f), glm::vec2(scrolledEv.GetOffset().y));
 			printVector(newScale, "new scale");
 			SetViewScale(newScale);
 		}
@@ -256,7 +256,7 @@ namespace GEE
 		ResizeBarX->SetTransform(Transform(glm::vec2(0.0f, -1.2625f), glm::vec2(1.0f, 0.0375f)));
 		ResizeBarX->SetWhileBeingClickedFunc([this]() {
 			float scale = ResizeBarX->GetClickPosNDC().y - GameHandle->GetInputRetriever().GetMousePositionNDC().y;
-			this->GetTransform()->SetScale((glm::vec2)this->GetTransform()->ScaleRef * (1.0f + scale));
+			this->GetTransform()->SetScale((glm::vec2)this->GetTransform()->Scale() * (1.0f + scale));
 			ResizeBarX->SetClickPosNDC(GameHandle->GetInputRetriever().GetMousePositionNDC());
 			});
 
@@ -273,10 +273,10 @@ namespace GEE
 		unsigned int axisIndex = static_cast<unsigned int>(barAxis);
 		Boxf<Vec2f> canvasBBox = GetBoundingBox();
 
-		float barSize = glm::min(1.0f, glm::pow(CanvasView.ScaleRef[axisIndex], 2.0f) / canvasBBox.Size[axisIndex]);
+		float barSize = glm::min(1.0f, glm::pow(CanvasView.Scale()[axisIndex], 2.0f) / canvasBBox.Size[axisIndex]);
 
-		float viewMovePos = CanvasView.PositionRef[axisIndex] - glm::pow(CanvasView.ScaleRef[axisIndex], 2.0f) - ((barAxis == VecAxis::X) ? (canvasBBox.GetLeft()) : (canvasBBox.GetBottom()));
-		float viewMoveSize = (canvasBBox.Size[axisIndex] - glm::pow(CanvasView.ScaleRef[axisIndex], 2.0f)) * 2.0f;
+		float viewMovePos = CanvasView.Pos()[axisIndex] - glm::pow(CanvasView.Scale()[axisIndex], 2.0f) - ((barAxis == VecAxis::X) ? (canvasBBox.GetLeft()) : (canvasBBox.GetBottom()));
+		float viewMoveSize = (canvasBBox.Size[axisIndex] - glm::pow(CanvasView.Scale()[axisIndex], 2.0f)) * 2.0f;
 
 		float barPos = 0.0F;
 		if (viewMoveSize > 0.0f)

@@ -5,35 +5,33 @@
 
 namespace GEE
 {
-
-	class AudioEngine : public AudioEngineManager
+	namespace Audio
 	{
-		ALCdevice* Device;
-		ALCcontext* Context;
-		std::vector <SoundBuffer*> ALBuffers;
+		class AudioEngine : public AudioEngineManager
+		{
+			ALCdevice* Device;
+			ALCcontext* Context;
+			std::vector <SoundBuffer> ALBuffers;
 
-		Transform* ListenerTransformPtr;
+			Transform* ListenerTransformPtr;
 
-		GameManager* GameHandle;
+			GameManager* GameHandle;
 
-	private:
-		SoundBuffer* LoadALBuffer(ALenum, ALvoid*, ALsizei, ALsizei, std::string = "");
-		SoundBuffer* SearchForAlreadyLoadedBuffer(std::string);
-	public:
-		AudioEngine(GameManager*);
-		void Init();
+		public:
+			AudioEngine(GameManager*);
+			void Init();
 
-		void SetListenerTransformPtr(Transform*);
-		Transform* GetListenerTransformPtr();
+			void SetListenerTransformPtr(Transform*);
+			Transform* GetListenerTransformPtr();
 
-		void Update();
+			void Update();
 
-		virtual SoundBuffer* LoadBufferFromFile(std::string path) override;
-		SoundBuffer* LoadBufferFromWav(std::string path);
-		SoundBuffer* LoadBufferFromOgg(std::string path);
+			virtual void AddBuffer(const SoundBuffer&) override;
+			virtual SoundBuffer FindBuffer(const std::string&) override;
 
-		virtual void CheckError() override;
+			virtual void CheckError() override;
 
-		~AudioEngine();
-	};
+			~AudioEngine();
+		};
+	}
 }

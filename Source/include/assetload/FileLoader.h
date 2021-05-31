@@ -2,6 +2,7 @@
 #include <game/GameManager.h>
 #include <assimp/types.h>
 #include <ft2build.h>
+#include <math/Transform.h>
 #include FT_FREETYPE_H
 
 struct aiScene;
@@ -18,8 +19,10 @@ namespace GEE
 	class Component;
 	class BoneMapping;
 	class SkeletonInfo;
-	struct CollisionShape;
-
+	namespace Physics
+	{
+		struct CollisionShape;
+	}
 	class Font;
 
 	enum MeshTreeInstancingType
@@ -42,14 +45,14 @@ namespace GEE
 		static std::shared_ptr<Font> LoadFont(GameManager& gameHandle, const std::string& path);
 		template <class T = GameSettings> static T LoadSettingsFromFile(std::string path);
 
-		static std::shared_ptr<CollisionShape> LoadTriangleMeshCollisionShape(PhysicsEngineManager* physicsHandle, const Mesh& mesh);
+		static std::shared_ptr<Physics::CollisionShape> LoadTriangleMeshCollisionShape(Physics::PhysicsEngineManager* physicsHandle, const Mesh& mesh);
 
 	private:
 		static void LoadMaterials(RenderEngineManager*, std::string path, std::string directory);
 		static void LoadShaders(RenderEngineManager*, std::stringstream&, std::string path);
 		static void LoadComponentData(GameManager*, std::stringstream&, Actor* currentActor, GameScene& scene);
-		static std::unique_ptr<CollisionObject> LoadCollisionObject(GameScene& scene, std::stringstream&);
-		static std::shared_ptr<CollisionShape> LoadTriangleMeshCollisionShape(PhysicsEngineManager* physicsHandle, const aiScene* scene, aiMesh&);
+		static std::unique_ptr<Physics::CollisionObject> LoadCollisionObject(GameScene& scene, std::stringstream&);
+		static std::shared_ptr<Physics::CollisionShape> LoadTriangleMeshCollisionShape(Physics::PhysicsEngineManager* physicsHandle, const aiScene* scene, aiMesh&);
 		static void LoadLightProbes(GameScene&, std::stringstream&);
 
 		static void LoadMeshFromAi(Mesh* meshPtr, const aiScene* scene, aiMesh* mesh, const HTreeObjectLoc& treeObjLoc, const std::string& directory = std::string(), bool bLoadMaterial = true, MaterialLoadingData* matLoadingData = nullptr, BoneMapping* = nullptr, bool keepVertsData = false);

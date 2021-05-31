@@ -15,7 +15,7 @@ namespace GEE
 	{
 		CompT = node.CompT;
 		if (node.CollisionObj)
-			CollisionObj = std::make_unique<CollisionObject>(*node.CollisionObj);
+			CollisionObj = std::make_unique<Physics::CollisionObject>(*node.CollisionObj);
 		if (copyChildren)
 		{
 			Children.reserve(node.Children.size());
@@ -47,7 +47,7 @@ namespace GEE
 			comp = CompT;
 
 		if (CollisionObj)
-			comp.SetCollisionObject(std::make_unique<CollisionObject>(*CollisionObj));
+			comp.SetCollisionObject(std::make_unique<Physics::CollisionObject>(*CollisionObj));
 	}
 
 	template<typename CompType>
@@ -90,7 +90,7 @@ namespace GEE
 	}
 
 	template<typename CompType>
-	CollisionObject* HierarchyTemplate::HierarchyNode<CompType>::GetCollisionObject()
+	Physics::CollisionObject* HierarchyTemplate::HierarchyNode<CompType>::GetCollisionObject()
 	{
 		return CollisionObj.get();
 	}
@@ -122,16 +122,16 @@ namespace GEE
 	}
 
 	template<typename CompType>
-	void HierarchyTemplate::HierarchyNode<CompType>::SetCollisionObject(std::unique_ptr<CollisionObject> collisionObj)
+	void HierarchyTemplate::HierarchyNode<CompType>::SetCollisionObject(std::unique_ptr<Physics::CollisionObject> collisionObj)
 	{
 		CollisionObj = std::move(collisionObj);
 	}
 
 	template<typename CompType>
-	void HierarchyTemplate::HierarchyNode<CompType>::AddCollisionShape(std::shared_ptr<CollisionShape> shape)
+	void HierarchyTemplate::HierarchyNode<CompType>::AddCollisionShape(std::shared_ptr<Physics::CollisionShape> shape)
 	{
 		if (!CollisionObj)
-			CollisionObj = std::make_unique<CollisionObject>();
+			CollisionObj = std::make_unique<Physics::CollisionObject>();
 
 		CollisionObj->AddShape(shape);
 	}
@@ -148,7 +148,7 @@ namespace GEE
 	{
 		CompT = node.CompT;
 		if (node.CollisionObj)
-			CollisionObj = std::make_unique<CollisionObject>(*node.CollisionObj);
+			CollisionObj = std::make_unique<Physics::CollisionObject>(*node.CollisionObj);
 		if (copyChildren)
 		{
 			Children.reserve(node.Children.size());

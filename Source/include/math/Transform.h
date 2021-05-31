@@ -5,6 +5,8 @@
 #include <string>
 #include <cereal/access.hpp>
 #include <cereal/archives/json.hpp>
+#include "Vec.h"
+
 namespace GEE
 {
 	enum class VecAxis	//VectorAxis
@@ -20,81 +22,6 @@ namespace GEE
 		ROTATION_EULER
 	};
 
-	class Vec2f : public glm::vec2
-	{
-		using glm::vec2::vec2;
-	public:
-		template <typename Archive> void Serialize(Archive& archive)
-		{
-			archive(CEREAL_NVP(x), CEREAL_NVP(y));
-		}
-		glm::vec2 GetGlmType() const
-		{
-			return static_cast<glm::vec2>(*this);
-		}
-	};
-
-	class Vec3f : public glm::vec3
-	{
-		using glm::vec3::vec3;
-	public:
-		template <typename Archive> void Serialize(Archive& archive)
-		{
-			archive(CEREAL_NVP(x), CEREAL_NVP(y), CEREAL_NVP(z));
-		}
-		glm::vec3 GetGlmType() const
-		{
-			return static_cast<glm::vec3>(*this);
-		}
-	};
-
-	class Vec4f : public glm::vec4
-	{
-		using glm::vec4::vec4;
-	public:
-		template <typename Archive> void Serialize(Archive& archive)
-		{
-			archive(CEREAL_NVP(x), CEREAL_NVP(y), CEREAL_NVP(z), CEREAL_NVP(w));
-		}
-		glm::vec4 GetGlmType() const
-		{
-			return static_cast<glm::vec4>(*this);
-		}
-	};
-
-	class Quatf : public glm::quat
-	{
-		using glm::quat::quat;
-	public:
-		template <typename Archive> void Serialize(Archive& archive)
-		{
-			archive(CEREAL_NVP(x), CEREAL_NVP(y), CEREAL_NVP(z), CEREAL_NVP(w));
-		}
-	};
-
-	class Mat4f : public glm::mat4
-	{
-		using glm::mat4::mat4;
-	public:
-		template <typename Archive> void Save(Archive& archive) const
-		{
-			for (int i = 0; i < 4; i++)
-				archive(cereal::make_nvp("row" + std::to_string(i), Vec4f((*this)[i])));
-		}
-		template <typename Archive> void Load(Archive& archive)
-		{
-			for (int i = 0; i < 4; i++)
-			{
-				Vec4f row;
-				archive(cereal::make_nvp("row" + std::to_string(i), row));
-				(*this)[i] = row;
-			}
-
-		}
-	};
-
-	namespace Math = glm;
-
 
 	class Transform
 	{
@@ -108,7 +35,7 @@ namespace GEE
 
 		Vec3f Position;
 		Quatf Rotation;
-		Vec3f Scale;
+		Vec3f _Scale;
 
 		mutable std::vector <bool> DirtyFlags;
 		mutable bool Empty;	//true if the Transform object has never been changed. Allows for a simple optimization - we skip it during world transform calculation
@@ -119,10 +46,6 @@ namespace GEE
 		void FlagWorldDirtiness() const;
 
 	public:
-		const Vec3f& PositionRef;		//read-only for optimization purposes
-		const Quatf& RotationRef;
-		const Vec3f& ScaleRef;
-
 		explicit Transform();
 		explicit Transform(const glm::vec2& pos, const glm::vec2& scale = glm::vec2(1.0f), const glm::quat& rot = glm::quat(glm::vec3(0.0f)));
 		explicit Transform(const glm::vec3& pos, const glm::quat& rot = glm::quat(glm::vec3(0.0f)), const glm::vec3& scale = glm::vec3(1.0f));
@@ -130,6 +53,10 @@ namespace GEE
 		Transform(Transform&&) noexcept;
 
 		bool IsEmpty() const;
+
+		const Vec3f& Pos() const;
+		const Quatf& Rot() const;
+		const Vec3f& Scale() const;
 
 		glm::vec3 Transform::GetFrontVec() const;
 		Transform GetInverse() const;
@@ -165,8 +92,8 @@ namespace GEE
 			{
 			case TVec::POSITION: Position[axisIndex] = val; break;
 			case TVec::ROTATION: Rotation[axisIndex] = val; break;
-			case TVec::ROTATION_EULER: glm::vec3 euler = toEuler(RotationRef); euler[axisIndex] = val; SetRotation(euler); break;
-			case TVec::SCALE: Scale[axisIndex] = val; break;
+			case TVec::ROTATION_EULER: glm::vec3 euler = toEuler(Rot()); euler[axisIndex] = val; SetRotation(euler); break;
+			case TVec::SCALE: _Scale[axisIndex] = val; break;
 			}
 
 			FlagMyDirtiness();
@@ -188,7 +115,7 @@ namespace GEE
 
 		template <typename Archive> void Serialize(Archive& archive)
 		{
-			archive(CEREAL_NVP(Position), CEREAL_NVP(Rotation), CEREAL_NVP(Scale));
+			archive(CEREAL_NVP(Position), CEREAL_NVP(Rotation), CEREAL_NVP(_Scale));
 			FlagMyDirtiness();
 		}
 

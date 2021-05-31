@@ -4,6 +4,7 @@
 namespace GEE
 {
 	GameScene* GameManager::DefaultScene = nullptr;
+	GameManager* GameManager::GamePtr = nullptr;
 
 	template <> void EditorManager::Select<Component>(Component* obj, GameScene& editorScene) { SelectComponent(obj, editorScene); }
 	template <> void EditorManager::Select<Actor>(Actor* obj, GameScene& editorScene) { SelectActor(obj, editorScene); }
@@ -20,5 +21,9 @@ namespace GEE
 			return std::string();
 
 		return TreePtr->GetName();
+	}
+	GameManager& GameManager::Get()
+	{
+		return *GamePtr;
 	}
 }

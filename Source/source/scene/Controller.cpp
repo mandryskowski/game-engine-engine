@@ -62,7 +62,7 @@ namespace GEE
 		PxController = GameHandle->GetPhysicsHandle()->CreateController(*Scene.GetPhysicsData(), PossessedActor->GetTransform()->GetWorldTransform());
 
 
-		std::unique_ptr<CollisionObject> colObject = std::make_unique<CollisionObject>(false);
+		std::unique_ptr<Physics::CollisionObject> colObject = std::make_unique<Physics::CollisionObject>(false);
 		colObject->ActorPtr = PxController->getActor();
 		colObject->IgnoreRotation = true;
 		PossessedActor->GetRoot()->SetCollisionObject(std::move(colObject));
@@ -143,7 +143,7 @@ namespace GEE
 		if (isOnGround && Directions[DIRECTION_UP])
 		{
 			Velocity.y = 0.0f;
-			Velocity += toGlm(PxController->getUpDirection()) * 2.45f;
+			Velocity += Physics::Util::toGlm(PxController->getUpDirection()) * 2.45f;
 			isOnGround = false;
 		}
 
@@ -186,10 +186,10 @@ namespace GEE
 
 		float beforePxSpeed = glm::length(Velocity.GetGlmType());
 		physx::PxExtendedVec3 prevPos = PxController->getPosition();
-		PxController->move(toPx(Velocity * deltaTime), 0.001f, deltaTime, physx::PxControllerFilters());
+		PxController->move(Physics::Util::toPx(Velocity * deltaTime), 0.001f, deltaTime, physx::PxControllerFilters());
 		if (isOnGround)
-			PxController->move(toPx(glm::vec3(0.0f, -0.2f, 0.0f)), 0.001f, 0.0f, physx::PxControllerFilters());
-		Velocity = toGlm(PxController->getPosition() - prevPos) / deltaTime;
+			PxController->move(Physics::Util::toPx(glm::vec3(0.0f, -0.2f, 0.0f)), 0.001f, 0.0f, physx::PxControllerFilters());
+		Velocity = Physics::Util::toGlm(PxController->getPosition() - prevPos) / deltaTime;
 
 		if (TextComponent* found = dynamic_cast<TextComponent*>(PossessedActor->GetRoot()->GetComponent("CameraText")))
 			found->SetContent("Velocity: " + std::to_string(glm::length(glm::vec3(Velocity.x, 0.0f, Velocity.z))) + " " + std::to_string(Velocity.y) + ((isOnGround) ? (" ON-GROUND") : (" MID-AIR")));
@@ -288,8 +288,8 @@ namespace GEE
 		const MouseButtonEvent& pressedEv = *dynamic_cast<const MouseButtonEvent*>(&ev);
 		if (pressedEv.GetButton() == MouseButton::RIGHT)
 		{
-			printVector(PossessedGunActor->GetTransform()->RotationRef, "Prawdziwa rotacja");
-			printVector(PossessedGunActor->GetTransform()->GetWorldTransform().PositionRef, "Pozycja gracza");
+			printVector(PossessedGunActor->GetTransform()->Rot(), "Prawdziwa rotacja");
+			printVector(PossessedGunActor->GetTransform()->GetWorldTransform().Pos(), "Pozycja gracza");
 			printVector(PossessedGunActor->GetTransform()->GetWorldTransform().GetFrontVec(), "Front");
 		}
 		if (pressedEv.GetButton() == MouseButton::LEFT)

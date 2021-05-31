@@ -58,7 +58,7 @@ namespace GEE
 	{
 		Name = compT.Name;
 		ComponentTransform *= compT.ComponentTransform;
-		CollisionObj = (compT.CollisionObj) ? (std::make_unique<CollisionObject>(*compT.CollisionObj)) : (nullptr);
+		CollisionObj = (compT.CollisionObj) ? (std::make_unique<Physics::CollisionObject>(*compT.CollisionObj)) : (nullptr);
 		if (CollisionObj)
 			CollisionObj->TransformPtr = &ComponentTransform;
 		DebugRenderMat = compT.DebugRenderMat;
@@ -162,7 +162,7 @@ namespace GEE
 		return Scene;
 	}
 
-	CollisionObject* Component::GetCollisionObj() const
+	Physics::CollisionObject* Component::GetCollisionObj() const
 	{
 		return CollisionObj.get();
 	}
@@ -212,7 +212,7 @@ namespace GEE
 	}
 
 
-	CollisionObject* Component::SetCollisionObject(std::unique_ptr<CollisionObject> obj)
+	Physics::CollisionObject* Component::SetCollisionObject(std::unique_ptr<Physics::CollisionObject> obj)
 	{
 		CollisionObj = std::move(obj);
 		if (CollisionObj)
@@ -296,7 +296,7 @@ namespace GEE
 	{
 	}
 
-	void CollisionObjRendering(RenderInfo& info, GameManager& gameHandle, CollisionObject& obj, const Transform& t, const glm::vec3& color)
+	void CollisionObjRendering(RenderInfo& info, GameManager& gameHandle, Physics::CollisionObject& obj, const Transform& t, const glm::vec3& color)
 	{
 		RenderEngineManager& renderEngHandle = *gameHandle.GetRenderEngineHandle();
 		Shader* shader = renderEngHandle.FindShader("Forward_NoLight");
@@ -314,10 +314,10 @@ namespace GEE
 			Mesh* mesh = nullptr;
 			switch (shape->Type)
 			{
-			case CollisionShapeType::COLLISION_BOX:	default: mesh = &renderEngHandle.GetBasicShapeMesh(EngineBasicShape::CUBE); break;
-			case CollisionShapeType::COLLISION_SPHERE: mesh = &renderEngHandle.GetBasicShapeMesh(EngineBasicShape::SPHERE); break;
-			case CollisionShapeType::COLLISION_CAPSULE:	continue;
-			case CollisionShapeType::COLLISION_TRIANGLE_MESH: if (auto loc = shape->GetOptionalLocalization()) { HierarchyTemplate::HierarchyTreeT* tree = gameHandle.FindHierarchyTree(loc->GetTreeName()); mesh = tree->FindMesh(loc->ShapeMeshLoc.NodeName, loc->ShapeMeshLoc.SpecificName); if (!mesh) mesh = &loc->OptionalCorrespondingMesh; } break;
+			case Physics::CollisionShapeType::COLLISION_BOX:	default: mesh = &renderEngHandle.GetBasicShapeMesh(EngineBasicShape::CUBE); break;
+			case Physics::CollisionShapeType::COLLISION_SPHERE: mesh = &renderEngHandle.GetBasicShapeMesh(EngineBasicShape::SPHERE); break;
+			case Physics::CollisionShapeType::COLLISION_CAPSULE:	continue;
+			case Physics::CollisionShapeType::COLLISION_TRIANGLE_MESH: if (auto loc = shape->GetOptionalLocalization()) { HierarchyTemplate::HierarchyTreeT* tree = gameHandle.FindHierarchyTree(loc->GetTreeName()); mesh = tree->FindMesh(loc->ShapeMeshLoc.NodeName, loc->ShapeMeshLoc.SpecificName); if (!mesh) mesh = &loc->OptionalCorrespondingMesh; } break;
 			}
 
 			if (!mesh)
@@ -326,8 +326,8 @@ namespace GEE
 			const Transform& shapeTransform = shape->ShapeTransform;
 
 			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-			std::cout << "Debug-rendering col shape mesh " << mesh->GetLocalization().NodeName << " " << mesh->GetLocalization().SpecificName << '\n';
-			printVector(color, "Color");
+			//std::cout << "Debug-rendering col shape mesh " << mesh->GetLocalization().NodeName << " " << mesh->GetLocalization().SpecificName << '\n';
+			//printVector(color, "Color");
 			renderEngHandle.RenderStaticMesh(info, MeshInstance(*mesh, &material), t * shapeTransform, shader);
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		}
@@ -420,7 +420,7 @@ namespace GEE
 
 		ComponentTransform.GetEditorDescription(descBuilder);
 
-		descBuilder.AddField("Delete").CreateChild<UIButtonActor>("DeleteButton", "Delete", [this, descBuilder]() mutable
+		UIButtonActor& deleteButton = descBuilder.AddField("Delete").CreateChild<UIButtonActor>("DeleteButton", "Delete", [this, descBuilder]() mutable
 			{
 				MarkAsKilled();
 
@@ -430,10 +430,13 @@ namespace GEE
 				descBuilder.SelectActor(&ActorRef); //Refresh the actor (to remove the killed component). Component will be deselected automatically - SelectComponent(nullptr) is always called inside SelectActor(...).
 			});
 
+		if (&ActorRef == Scene.GetRootActor() && !ParentComponent)	//Disallow deleting the root of a scene
+			deleteButton.SetDisableInput(true);
+
 		UICanvasField& shapesListField = descBuilder.AddField("Collision object");
 		UIAutomaticListActor& shapesList = shapesListField.CreateChild<UIAutomaticListActor>("ShapesList");
 		dynamic_cast<UICanvasActor*>(shapesListField.GetCanvasPtr())->FieldsList->SetListElementOffset(dynamic_cast<UICanvasActor*>(shapesListField.GetCanvasPtr())->FieldsList->GetListElementCount() - 1, [&shapesListField, &shapesList]()-> glm::vec3 { return static_cast<glm::mat3>(shapesListField.GetTransform()->GetMatrix()) * (shapesList.GetListOffset()); });
-		dynamic_cast<UICanvasActor*>(shapesListField.GetCanvasPtr())->FieldsList->SetListCenterOffset(dynamic_cast<UICanvasActor*>(shapesListField.GetCanvasPtr())->FieldsList->GetListElementCount() - 1, [&shapesListField]()-> glm::vec3 { return glm::vec3(0.0f, -shapesListField.GetTransform()->ScaleRef.y, 0.0f); });
+		dynamic_cast<UICanvasActor*>(shapesListField.GetCanvasPtr())->FieldsList->SetListCenterOffset(dynamic_cast<UICanvasActor*>(shapesListField.GetCanvasPtr())->FieldsList->GetListElementCount() - 1, [&shapesListField]()-> glm::vec3 { return glm::vec3(0.0f, -shapesListField.GetTransform()->Scale().y, 0.0f); });
 		UIButtonActor& colObjectPresenceButton = shapesList.CreateChild<UIButtonActor>("CollisionObjectButton", (CollisionObj) ? ("V") : ("X"));
 
 		shapesListField.CreateChild<UIButtonActor>("AddColShape", "+", [this, descBuilder]() mutable {
@@ -441,10 +444,10 @@ namespace GEE
 			shapeCreatorWindow.GetTransform()->SetScale(glm::vec2(0.25f));
 			UIAutomaticListActor& buttonsList = shapeCreatorWindow.CreateChild<UIAutomaticListActor>("ButtonsList");
 
-			std::function <void(std::shared_ptr<CollisionShape>)> addShapeFunc = [this, descBuilder, &shapeCreatorWindow](std::shared_ptr<CollisionShape> shape) mutable {
+			std::function <void(std::shared_ptr<Physics::CollisionShape>)> addShapeFunc = [this, descBuilder, &shapeCreatorWindow](std::shared_ptr<Physics::CollisionShape> shape) mutable {
 				if (!CollisionObj)
 				{
-					std::unique_ptr<CollisionObject> colObj = std::make_unique<CollisionObject>(CollisionObject(true));
+					std::unique_ptr<Physics::CollisionObject> colObj = std::make_unique<Physics::CollisionObject>(true);
 					colObj->AddShape(shape);
 					this->SetCollisionObject(std::move(colObj));
 				}
@@ -456,12 +459,12 @@ namespace GEE
 
 			};
 
-			for (int i = CollisionShapeType::COLLISION_FIRST; i <= CollisionShapeType::COLLISION_LAST; i++)
+			for (int i = Physics::CollisionShapeType::COLLISION_FIRST; i <= Physics::CollisionShapeType::COLLISION_LAST; i++)
 			{
-				CollisionShapeType shapeType = static_cast<CollisionShapeType>(i);
-				UIButtonActor& shapeAddButton = buttonsList.CreateChild<UIButtonActor>("ShapeAddButton" + std::to_string(i), collisionShapeTypeToString(shapeType));
+				Physics::CollisionShapeType shapeType = static_cast<Physics::CollisionShapeType>(i);
+				UIButtonActor& shapeAddButton = buttonsList.CreateChild<UIButtonActor>("ShapeAddButton" + std::to_string(i), Physics::Util::collisionShapeTypeToString(shapeType));
 
-				if (shapeType == CollisionShapeType::COLLISION_TRIANGLE_MESH)
+				if (shapeType == Physics::CollisionShapeType::COLLISION_TRIANGLE_MESH)
 					shapeAddButton.SetOnClickFunc([this, addShapeFunc, &shapeCreatorWindow]() {
 					UIWindowActor& pathInputWindow = shapeCreatorWindow.CreateChild<UIWindowActor>("PathInputWindow");
 					pathInputWindow.GetTransform()->SetScale(Vec2f(0.5f));
@@ -470,7 +473,7 @@ namespace GEE
 					UIElementTemplates(pathInputWindow).HierarchyTreeInput(*GameHandle, [this, &pathInputWindow, addShapeFunc](HierarchyTemplate::HierarchyTreeT& tree) {
 						pathInputWindow.MarkAsKilled();
 
-						std::shared_ptr<CollisionShape> shape = EngineDataLoader::LoadTriangleMeshCollisionShape(GameHandle->GetPhysicsHandle(), tree.GetMeshes()[0]);
+						std::shared_ptr<Physics::CollisionShape> shape = EngineDataLoader::LoadTriangleMeshCollisionShape(GameHandle->GetPhysicsHandle(), tree.GetMeshes()[0]);
 						addShapeFunc(shape);
 						});
 
@@ -487,7 +490,7 @@ namespace GEE
 						}, []() { return "Enter tree path"; });*/
 						});
 				else
-					shapeAddButton.SetOnClickFunc([shapeType, addShapeFunc]() { addShapeFunc(std::make_shared<CollisionShape>(shapeType)); });
+					shapeAddButton.SetOnClickFunc([shapeType, addShapeFunc]() { addShapeFunc(std::make_shared<Physics::CollisionShape>(shapeType)); });
 			}
 			buttonsList.Refresh();
 			}).SetTransform(Transform(glm::vec2(3.0f, 0.0f), glm::vec2(0.25f)));
@@ -496,7 +499,7 @@ namespace GEE
 			if (CollisionObj)
 				for (auto& it : CollisionObj->Shapes)
 				{
-					std::string shapeTypeName = collisionShapeTypeToString(it->Type);
+					std::string shapeTypeName = Physics::Util::collisionShapeTypeToString(it->Type);
 					UIButtonActor& shapeActor = shapesList.CreateChild<UIButtonActor>("ShapeSelectButton", shapeTypeName, [descBuilder, it]() mutable {
 						UIWindowActor& shapeTransformWindow = descBuilder.GetEditorScene().CreateActorAtRoot<UIWindowActor>("ShapeTransformWindow");
 						shapeTransformWindow.GetTransform()->SetScale(glm::vec2(0.25f));

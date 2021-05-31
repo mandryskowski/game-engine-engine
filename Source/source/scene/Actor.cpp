@@ -125,8 +125,8 @@ namespace GEE
 		std::cout << tabs + "-" + Name + "  ";
 		if (GetTransform())
 		{
-			std::cout << GetTransform()->PositionRef.x << " " << GetTransform()->PositionRef.y << "       ";
-			std::cout << GetTransform()->ScaleRef.x << " " << GetTransform()->ScaleRef.y;
+			std::cout << GetTransform()->Pos().x << " " << GetTransform()->Pos().y << "       ";
+			std::cout << GetTransform()->Scale().x << " " << GetTransform()->Scale().y;
 		}
 		std::cout << "\n";
 
@@ -276,10 +276,13 @@ namespace GEE
 
 
 		UICanvasField& deleteField = descBuilder.AddField("Delete");
-		deleteField.CreateChild<UIButtonActor>("DeleteButton", "Delete", [this, descBuilder]() mutable {
+		UIButtonActor& deleteButton = deleteField.CreateChild<UIButtonActor>("DeleteButton", "Delete", [this, descBuilder]() mutable {
 			MarkAsKilled();
 			descBuilder.RefreshScene();	//Actor will be deselected automatically - SelectActor(nullptr) is always called in SelectScene(...).
 			});
+
+		if (Scene.GetRootActor() == this)	//Disallow deleting the root of a scene
+			deleteButton.SetDisableInput(true);
 	}
 
 }

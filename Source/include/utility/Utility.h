@@ -103,6 +103,7 @@ namespace GEE
 
 	std::string toValidFilepath(std::string);
 	std::string getFilepathExtension(const std::string& filepath);
+	std::string getFileName(const std::string& filepath);
 
 	/**
 	* @brief Compares two numbers of type float while accounting for floating-point accuracy.

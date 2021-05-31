@@ -59,9 +59,9 @@ namespace GEE
 
 		float textLength = GetTextLength(world);
 
-		glm::vec2 alignmentOffset((static_cast<float>(Alignment.first) - static_cast<float>(TextAlignment::CENTER)) * -textLength, (static_cast<float>(Alignment.second) - static_cast<float>(TextAlignment::CENTER)) * -transform.ScaleRef.y);
+		glm::vec2 alignmentOffset((static_cast<float>(Alignment.first) - static_cast<float>(TextAlignment::CENTER)) * -textLength, (static_cast<float>(Alignment.second) - static_cast<float>(TextAlignment::CENTER)) * -transform.Scale().y);
 
-		return Boxf<Vec2f>(glm::vec2(transform.PositionRef) + alignmentOffset, glm::vec2(textLength, transform.ScaleRef.y));
+		return Boxf<Vec2f>(glm::vec2(transform.Pos()) + alignmentOffset, glm::vec2(textLength, transform.Scale().y));
 	}
 
 	float TextComponent::GetTextLength(bool world) const
@@ -70,7 +70,7 @@ namespace GEE
 		if (CanvasPtr && world)
 			transform = CanvasPtr->ToCanvasSpace(transform);
 
-		glm::vec2 scale = transform.ScaleRef;
+		glm::vec2 scale = transform.Scale();
 
 		float advancesSum = 0.0f;
 		for (auto it : Content)
@@ -155,7 +155,7 @@ namespace GEE
 	TextConstantSizeComponent::TextConstantSizeComponent(Actor& actor, Component* parentComp, const std::string& name, const Transform& transform, std::string content, std::shared_ptr<Font> font, std::pair<TextAlignment, TextAlignment> alignment) :
 		TextComponent(actor, parentComp, name, transform, "", font, alignment),
 		MaxSize(glm::vec2(1.0f)),
-		ScaleRatio(glm::max(glm::vec2(1.0f), glm::vec2(transform.ScaleRef.x / transform.ScaleRef.y, transform.ScaleRef.y / transform.ScaleRef.x)))
+		ScaleRatio(glm::max(glm::vec2(1.0f), glm::vec2(transform.Scale().x / transform.Scale().y, transform.Scale().y / transform.Scale().x)))
 	{
 		SetContent(content);
 	}
@@ -163,7 +163,7 @@ namespace GEE
 	TextConstantSizeComponent::TextConstantSizeComponent(Actor& actor, Component* parentComp, const std::string& name, const Transform& transform, std::string content, std::string fontPath, std::pair<TextAlignment, TextAlignment> alignment) :
 		TextComponent(actor, parentComp, name, transform, "", fontPath, alignment),
 		MaxSize(glm::vec2(1.0f)),
-		ScaleRatio(glm::max(glm::vec2(1.0f), glm::vec2(transform.ScaleRef.x / transform.ScaleRef.y, transform.ScaleRef.y / transform.ScaleRef.x)))
+		ScaleRatio(glm::max(glm::vec2(1.0f), glm::vec2(transform.Scale().x / transform.Scale().y, transform.Scale().y / transform.Scale().x)))
 	{
 		SetContent(content);
 	}
@@ -194,7 +194,7 @@ namespace GEE
 
 	void TextConstantSizeComponent::UpdateSize()
 	{
-		float textLength = glm::max(GetTextLength(false) / GetTransform().ScaleRef.x, 0.001f);
+		float textLength = glm::max(GetTextLength(false) / GetTransform().Scale().x, 0.001f);
 		float scale = glm::min(MaxSize.y, MaxSize.x / textLength);
 
 		GetTransform().SetScale(glm::vec2(scale) * ScaleRatio);

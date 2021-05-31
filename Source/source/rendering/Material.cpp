@@ -112,6 +112,7 @@ namespace GEE
 		printVector(glm::vec3(testColor.r, testColor.g, testColor.b), Localization.Name + " ROUGHNESS??");
 		std::cout << "SHININESS: " << shininess << '\n';
 		float shininessStrength = 0.0f;
+		RoughnessColor = 0.5f;
 		material->Get(AI_MATKEY_SHININESS_STRENGTH, shininessStrength);
 		std::cout << "SHININESS STRENGTH: " << shininessStrength << '\n';
 
@@ -264,7 +265,8 @@ namespace GEE
 			Material* dummyMaterial = new Material("dummy", 0.0f, descBuilder.GetEditorHandle().GetGameHandle()->GetRenderEngineHandle()->FindShader("Forward_NoLight"));
 			dummyMaterial->AddTexture(std::make_shared<NamedTexture>(NamedTexture((Texture)*it, "albedo1")));
 			UIButtonActor& texButton = list.CreateChild<UIButtonActor>(texName + "Button", texName);
-			texButton.SetMatIdle(*dummyMaterial);
+			texButton.SetMatDisabled(*dummyMaterial);
+			texButton.SetDisableInput(true);
 			texButton.CreateComponent<TextComponent>("TexShaderNameButton", Transform(Vec2f(1.0f, 0.0f)), it->GetShaderName(), "");
 		}
 		list.Refresh();
@@ -320,6 +322,13 @@ namespace GEE
 	Interpolator<float>& AtlasMaterial::GetTextureIDInterpolatorTemplate(const Interpolation& interp, float min, float max)
 	{
 		return *new Interpolator<float>(std::make_shared<Interpolation>(interp), min, max, false, &TextureID);
+	}
+
+	void AtlasMaterial::GetEditorDescription(EditorDescriptionBuilder descBuilder)
+	{
+		Material::GetEditorDescription(descBuilder);
+
+		descBuilder.AddField("Atlas size").GetTemplates().VecInput(AtlasSize);
 	}
 
 	/*

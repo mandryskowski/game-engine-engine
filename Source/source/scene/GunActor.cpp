@@ -13,8 +13,8 @@ namespace GEE
 {
 	GunActor::GunActor(GameScene& scene, Actor* parentActor, std::string name) :
 		Actor(scene, parentActor, name),
-		GunModel(nullptr),
 		ParticleMeshInst(nullptr),
+		FireModel(nullptr),
 		GunBlast(nullptr)
 	{
 		FireCooldown = 2.0f;
@@ -39,14 +39,9 @@ namespace GEE
 			std::cout << "Firematerial = " << GameHandle->GetRenderEngineHandle()->FindMaterial(str) << ".\n";
 		}
 
-		ModelComponent* found = GetRoot()->GetComponent<ModelComponent>("FireParticle");
-		std::cout << "Wyszukalem se: " << found << ".\n";
-		dynamic_cast<ModelComponent*>(found->SearchForComponent("Quad"))->SetRenderAsBillboard(true);
-		ParticleMeshInst = found->FindMeshInstance("Quad");
-		ParticleMeshInst->GetMaterialInst()->SetInterp(&dynamic_cast<AtlasMaterial*>(&ParticleMeshInst->GetMaterialInst()->GetMaterialRef())->GetTextureIDInterpolatorTemplate(Interpolation(0.0f, 0.25f, InterpolationType::LINEAR), 0.0f, dynamic_cast<AtlasMaterial*>(&ParticleMeshInst->GetMaterialInst()->GetMaterialRef())->GetMaxTextureID()));
-		ParticleMeshInst->GetMaterialInst()->SetDrawBeforeAnim(false);
-		ParticleMeshInst->GetMaterialInst()->SetDrawAfterAnim(false);
-		GunModel = GetRoot()->GetComponent<ModelComponent>("MyDoubleBarrel");
+		SetFireModel(GetRoot()->GetComponent<ModelComponent>("FireParticle"));
+		std::cout << "Wyszukalem se: " << FireModel << ".\n";
+
 
 		/*
 		GunModel->GetTransform()->AddInterpolator("position", 10.0f, 20.0f, glm::vec3(0.0f, 0.0f, -10.0f), InterpolationType::LINEAR);
@@ -60,19 +55,39 @@ namespace GEE
 
 	void GunActor::Update(float deltaTime)
 	{
-		if (GunModel && GunModel->IsBeingKilled())
-			GunModel = nullptr;
 		if (GunBlast && GunBlast->IsBeingKilled())
 			GunBlast = nullptr;
+		if (FireModel && FireModel->IsBeingKilled())
+			SetFireModel(nullptr);
 
-		if (GunModel)
-			GunModel->GetTransform().Update(deltaTime);
+		GetRoot()->GetTransform().Update(deltaTime);	//update for recoil animation
 		CooldownLeft -= deltaTime;
 		Actor::Update(deltaTime);
 	}
 
 	void GunActor::HandleEvent(const Event& ev)
 	{
+	}
+
+	void GunActor::SetFireModel(ModelComponent* model)
+	{
+		FireModel = model;
+		if (!FireModel)
+		{
+			ParticleMeshInst = nullptr;
+			return;
+		}
+
+		dynamic_cast<ModelComponent*>(FireModel->SearchForComponent("Quad"))->SetRenderAsBillboard(true);
+		ParticleMeshInst = FireModel->FindMeshInstance("Quad");
+
+		AtlasMaterial* fireMaterial = dynamic_cast<AtlasMaterial*>(const_cast<Material*>(&ParticleMeshInst->GetMaterialInst()->GetMaterialRef()));
+		if (!fireMaterial)
+			return;
+
+		ParticleMeshInst->GetMaterialInst()->SetInterp(&fireMaterial->GetTextureIDInterpolatorTemplate(Interpolation(0.0f, 0.25f, InterpolationType::LINEAR), 0.0f, dynamic_cast<AtlasMaterial*>(&ParticleMeshInst->GetMaterialInst()->GetMaterialRef())->GetMaxTextureID()));
+		ParticleMeshInst->GetMaterialInst()->SetDrawBeforeAnim(false);
+		ParticleMeshInst->GetMaterialInst()->SetDrawAfterAnim(false);
 	}
 
 	void GunActor::FireWeapon()
@@ -85,22 +100,18 @@ namespace GEE
 		if (GunBlast)
 			GunBlast->Play();
 
-		if (GunModel)
-		{
-			GunModel->GetTransform().AddInterpolator<glm::quat>("rotation", 0.0f, 0.25f, glm::quat(glm::vec3(0.0f)), toQuat(glm::vec3(30.0f, 0.0f, 0.0f)), InterpolationType::QUINTIC, true);
-			GunModel->GetTransform().AddInterpolator<glm::quat>("rotation", 0.25f, 1.25f, glm::quat(glm::vec3(0.0f)), InterpolationType::QUADRATIC, true);
-		}
+		GetRoot()->GetTransform().AddInterpolator<glm::quat>("rotation", 0.0f, 0.25f, glm::quat(glm::vec3(0.0f)), toQuat(glm::vec3(30.0f, 0.0f, 0.0f)), InterpolationType::QUINTIC, true);
+		GetRoot()->GetTransform().AddInterpolator<glm::quat>("rotation", 0.25f, 1.25f, glm::quat(glm::vec3(0.0f)), InterpolationType::QUADRATIC, true);
 
 		Actor& actor = Scene.CreateActorAtRoot<Actor>("Bullet" + std::to_string(FiredBullets));
 		//TODO: Change it so the bullet is fired at the barrel, not at the center
-		std::unique_ptr<ModelComponent> bulletModel = std::make_unique<ModelComponent>(ModelComponent(actor, nullptr, "BulletModel" + std::to_string(FiredBullets++), Transform(GetTransform()->GetWorldTransform().PositionRef, glm::vec3(0.0f), glm::vec3(0.2f))));
+		std::unique_ptr<ModelComponent> bulletModel = std::make_unique<ModelComponent>(ModelComponent(actor, nullptr, "BulletModel" + std::to_string(FiredBullets++), Transform(GetTransform()->GetWorldTransform().Pos(), glm::vec3(0.0f), glm::vec3(0.2f))));
 		bulletModel->OnStart();
 		EngineDataLoader::LoadModel("hqSphere/hqSphere.obj", *bulletModel, MeshTreeInstancingType::ROOTTREE, GameHandle->GetRenderEngineHandle()->FindMaterial("RustedIron").get());
 
-		std::unique_ptr<CollisionObject> dupa = std::make_unique<CollisionObject>(CollisionObject(false, CollisionShapeType::COLLISION_SPHERE));
-		CollisionObject& col = *bulletModel->SetCollisionObject(std::move(dupa));
-		if (GunModel)
-			GameHandle->GetPhysicsHandle()->ApplyForce(col, GunModel->GetTransform().GetWorldTransform().GetFrontVec() * 0.25f);
+		std::unique_ptr<Physics::CollisionObject> dupa = std::make_unique<Physics::CollisionObject>(false, Physics::CollisionShapeType::COLLISION_SPHERE);
+		Physics::CollisionObject& col = *bulletModel->SetCollisionObject(std::move(dupa));
+		GameHandle->GetPhysicsHandle()->ApplyForce(col, GetRoot()->GetTransform().GetWorldTransform().GetFrontVec() * 0.25f);
 
 		actor.ReplaceRoot(std::move(bulletModel));
 
@@ -113,12 +124,10 @@ namespace GEE
 	{
 		Actor::GetEditorDescription(descBuilder);
 
-		UICanvasField& gunModelField = descBuilder.AddField("GunModel");
-		gunModelField.GetTemplates().ComponentInput<ModelComponent>(*GetRoot(), GunModel);
-		std::cout << "Second element pos: " << gunModelField.GetTransform()->PositionRef.y << '\n';
-
 		UICanvasField& blastField = descBuilder.AddField("Blast sound");
-		blastField.GetTemplates().ComponentInput<SoundSourceComponent>(*GetRoot(), GunBlast);
+		blastField.GetTemplates().ComponentInput<Audio::SoundSourceComponent>(*GetRoot(), GunBlast);
+
+		descBuilder.AddField("Fire model").GetTemplates().ComponentInput<ModelComponent>(*GetRoot(), [this](ModelComponent* model) { SetFireModel(model); });
 
 		UICanvasField& fireField = descBuilder.AddField("Fire");
 		fireField.CreateChild<UIButtonActor>("FireButton", "Fire", [this]() { FireWeapon(); });

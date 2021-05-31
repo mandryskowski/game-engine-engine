@@ -86,8 +86,11 @@ namespace GEE
 		{
 			std::string possessedActorName;
 			archive(cereal::make_nvp("Controller", cereal::base_class<Controller>(this)), cereal::make_nvp("PossesedGunActorName", possessedActorName));
-			if (!possessedActorName.empty())
-				PossessedGunActor = dynamic_cast<GunActor*>(Scene.GetRootActor()->FindActor(possessedActorName));
+
+			Scene.AddPostLoadLambda([this, possessedActorName]() {
+				if (!possessedActorName.empty())
+					PossessedGunActor = dynamic_cast<GunActor*>(Scene.GetRootActor()->FindActor(possessedActorName));
+				});
 		}
 		virtual void GetEditorDescription(EditorDescriptionBuilder);
 	};

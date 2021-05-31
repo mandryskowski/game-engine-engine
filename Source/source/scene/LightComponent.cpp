@@ -234,10 +234,10 @@ namespace GEE
 				lightsUBO->offsetCache += sizeof(glm::vec4);
 				lightsUBO->SubData4fv(worldTransform.GetFrontVec(), lightsUBO->offsetCache); break;
 			case LightType::POINT:
-				lightsUBO->SubData4fv(worldTransform.PositionRef, lightsUBO->offsetCache);
+				lightsUBO->SubData4fv(worldTransform.Pos(), lightsUBO->offsetCache);
 				lightsUBO->offsetCache += sizeof(glm::vec4); break;
 			case LightType::SPOT:
-				lightsUBO->SubData4fv(worldTransform.PositionRef, lightsUBO->offsetCache);
+				lightsUBO->SubData4fv(worldTransform.Pos(), lightsUBO->offsetCache);
 				lightsUBO->SubData4fv(worldTransform.GetFrontVec(), lightsUBO->offsetCache); break;
 			}
 		}
@@ -330,7 +330,7 @@ namespace GEE
 	Transform LightVolume::GetRenderTransform() const
 	{
 		Transform lightTransform = LightCompPtr->GetTransform().GetWorldTransform();
-		lightTransform.SetScale(LightCompPtr->GetTransform().ScaleRef);
+		lightTransform.SetScale(LightCompPtr->GetTransform().Scale());
 
 		return lightTransform;
 	}

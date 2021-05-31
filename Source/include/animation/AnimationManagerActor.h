@@ -59,7 +59,7 @@ namespace GEE
 			std::string animHierarchyTreePath, animName, rootCompName, rootCompActorName;
 			archive(cereal::make_nvp("AnimHierarchyTreePath", animHierarchyTreePath), cereal::make_nvp("AnimName", animName), cereal::make_nvp("RootCompName", rootCompName), cereal::make_nvp("RootCompActorName", rootCompActorName));
 
-			Animation* anim = GameManager::DefaultScene->GetGameHandle()->FindHierarchyTree(animHierarchyTreePath)->FindAnimation(animName);
+			Animation* anim = GameManager::Get().FindHierarchyTree(animHierarchyTreePath)->FindAnimation(animName);
 			Component* comp = GameManager::DefaultScene->FindActor(rootCompActorName)->GetRoot()->GetComponent<Component>(rootCompName);
 
 			if (!anim)

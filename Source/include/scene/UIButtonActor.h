@@ -17,6 +17,7 @@ namespace GEE
 		void SetMatIdle(MaterialInstance&&);
 		void SetMatHover(MaterialInstance&&);
 		void SetMatClick(MaterialInstance&&);
+		void SetMatDisabled(MaterialInstance&&);
 
 		void SetDisableInput(bool disable);
 

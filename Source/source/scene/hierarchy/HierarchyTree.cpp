@@ -109,11 +109,11 @@ namespace GEE
 		return found;
 	}
 
-	CollisionShape* HierarchyTreeT::FindTriangleMeshCollisionShape(const std::string& nodeName, const std::string& specificMeshName)
+	Physics::CollisionShape* HierarchyTreeT::FindTriangleMeshCollisionShape(const std::string& nodeName, const std::string& specificMeshName)
 	{
-		std::function<CollisionShape* (HierarchyNodeBase&, const std::string&, const std::string&)> findShape = [&findShape](HierarchyNodeBase& node, const std::string& meshNodeName, const std::string& meshSpecificName) -> CollisionShape* {
-			if (CollisionObject* colObject = node.GetCollisionObject())
-				if (CollisionShape* found = colObject->FindTriangleMeshCollisionShape(meshNodeName, meshSpecificName))
+		std::function<Physics::CollisionShape* (HierarchyNodeBase&, const std::string&, const std::string&)> findShape = [&findShape](HierarchyNodeBase& node, const std::string& meshNodeName, const std::string& meshSpecificName) -> Physics::CollisionShape* {
+			if (Physics::CollisionObject* colObject = node.GetCollisionObject())
+				if (Physics::CollisionShape* found = colObject->FindTriangleMeshCollisionShape(meshNodeName, meshSpecificName))
 					return found;
 
 			for (int i = 0; i < static_cast<int>(node.GetChildCount()); i++)
@@ -124,7 +124,7 @@ namespace GEE
 		};
 
 
-		CollisionShape* found = findShape(*Root, nodeName, specificMeshName);
+		Physics::CollisionShape* found = findShape(*Root, nodeName, specificMeshName);
 		if (!found)	//If no mesh was found, perhaps the specific mesh name was put into the node name or vice versa. Search again.
 		{
 			if (nodeName.empty())

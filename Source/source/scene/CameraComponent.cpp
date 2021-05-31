@@ -29,7 +29,7 @@ namespace GEE
 
 	RenderInfo CameraComponent::GetRenderInfo(RenderToolboxCollection& renderCollection)
 	{
-		return RenderInfo(renderCollection, GetTransform().GetWorldTransform().GetViewMatrix(), GetProjectionMat(), glm::mat4(1.0f), GetTransform().GetWorldTransform().PositionRef);
+		return RenderInfo(renderCollection, GetTransform().GetWorldTransform().GetViewMatrix(), GetProjectionMat(), glm::mat4(1.0f), GetTransform().GetWorldTransform().Pos());
 	}
 
 	void CameraComponent::RotateWithMouse(glm::vec2 mouseOffset)

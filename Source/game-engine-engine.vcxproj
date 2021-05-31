@@ -145,6 +145,7 @@
     <ClCompile Include="source\animation\SkeletonInfo.cpp" />
     <ClCompile Include="source\editor\GameEngineEngineEditor.cpp" />
     <ClCompile Include="source\game\GameManager.cpp" />
+    <ClCompile Include="source\math\Vec.cpp" />
     <ClCompile Include="source\scene\Actor.cpp" />
     <ClCompile Include="source\animation\Animation.cpp" />
     <ClCompile Include="source\audio\AudioEngine.cpp" />
@@ -204,6 +205,7 @@
     <ClInclude Include="include\animation\SkeletonInfo.h" />
     <ClInclude Include="include\editor\EditorManager.h" />
     <ClInclude Include="include\editor\GameEngineEngineEditor.h" />
+    <ClInclude Include="include\math\Vec.h" />
     <ClInclude Include="include\scene\Actor.h" />
     <ClInclude Include="include\animation\Animation.h" />
     <ClInclude Include="include\audio\AudioEngine.h" />

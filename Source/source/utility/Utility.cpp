@@ -233,6 +233,18 @@ namespace GEE
 		return filepath.substr(dotPos);
 	}
 
+	std::string getFileName(const std::string& filepath)
+	{
+		size_t lastSlash = filepath.find_last_of("/");
+		if (lastSlash == std::string::npos)
+			lastSlash = filepath.find_last_of(static_cast<char>(92));	//backslash
+
+		if (lastSlash == std::string::npos)
+			return filepath;	//filepath is the filename
+
+		return filepath.substr(lastSlash + 1);
+	}
+
 	bool floatComparison(float a, float b, float epsilon)
 	{
 		return glm::abs(a - b) <= epsilon;

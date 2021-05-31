@@ -36,7 +36,7 @@ EditorManager* EditorEventProcessor::EditorHandle = nullptr;
 
 int main(int argc, char** argv)
 {
-	std::string programFilepath;
+	std::string programFilepath;	//do not rely on this; if called from cmd, for example, it may not actually contain the program filepath
 	std::string projectFilepathArgument;
 	for (int i = 0; i < argc; i++)
 	{
@@ -108,8 +108,8 @@ int main(int argc, char** argv)
 		deltaTime = glfwGetTime() - lastUpdateTime;
 		lastUpdateTime = glfwGetTime();
 
-		if (Material* found = editor.GetRenderEngineHandle()->FindMaterial("GEE_Engine_Title").get())
-			found->SetColor(hsvToRgb(Vec3f(glm::mod((float)glfwGetTime() * 10.0f, 360.0f), 1.0f, 1.0f)));
+		if (Material* found = editor.GetRenderEngineHandle()->FindMaterial("GEE_Engine_Title").get())	//dalem tu na chama; da sie to zrobic duzo ladniej ale musialbym zmodyfikowac klase Interpolator zeby obslugiwala lambdy ale mi sie nie chce
+			found->SetColor(hsvToRgb(Vec3f(glm::mod((float)glfwGetTime() * 10.0f, 360.0f), 0.6f, 0.6f)));
 
 		endGame = editor.GameLoopIteration(1.0f / 60.0f, deltaTime);
 	} while (!endGame);

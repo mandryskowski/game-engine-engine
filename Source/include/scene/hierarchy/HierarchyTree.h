@@ -10,7 +10,10 @@ namespace GEE
 	struct Animation;
 	class Mesh;
 	class BoneMapping;
-	class CollisionShape;
+	namespace Physics
+	{
+		class CollisionShape;
+	}
 
 	namespace HierarchyTemplate
 	{
@@ -45,7 +48,7 @@ namespace GEE
 
 			void AddAnimation(const Animation& anim);
 			Mesh* FindMesh(const std::string& nodeName, const std::string& specificMeshName = std::string());
-			CollisionShape* FindTriangleMeshCollisionShape(const std::string& nodeName, const std::string& specificMeshName = std::string());
+			Physics::CollisionShape* FindTriangleMeshCollisionShape(const std::string& nodeName, const std::string& specificMeshName = std::string());
 			Animation* FindAnimation(const std::string& animLoc);
 
 			void RemoveVertsData();

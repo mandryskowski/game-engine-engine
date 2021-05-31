@@ -5,6 +5,7 @@
 #include <scene/LightComponent.h>
 #include <scene/LightProbeComponent.h>
 #include <scene/SoundSourceComponent.h>
+#include <scene/CameraComponent.h>
 #include <game/GameScene.h>
 #include <physics/CollisionObject.h>
 #include <scene/hierarchy/HierarchyTree.h>
@@ -17,8 +18,8 @@ namespace GEE
 {
 	GameScene::GameScene(GameManager& gameHandle, const std::string& name, bool isAnUIScene) :
 		RenderData(std::make_unique<GameSceneRenderData>(gameHandle.GetRenderEngineHandle(), isAnUIScene)),
-		PhysicsData(std::make_unique<GameScenePhysicsData>(gameHandle.GetPhysicsHandle())),
-		AudioData(std::make_unique<GameSceneAudioData>(gameHandle.GetAudioEngineHandle())),
+		PhysicsData(std::make_unique<Physics::GameScenePhysicsData>(gameHandle.GetPhysicsHandle())),
+		AudioData(std::make_unique<Audio::GameSceneAudioData>(gameHandle.GetAudioEngineHandle())),
 		ActiveCamera(nullptr),
 		Name(name),
 		GameHandle(&gameHandle),
@@ -68,12 +69,12 @@ namespace GEE
 		return RenderData.get();
 	}
 
-	GameScenePhysicsData* GameScene::GetPhysicsData()
+	Physics::GameScenePhysicsData* GameScene::GetPhysicsData()
 	{
 		return PhysicsData.get();
 	}
 
-	GameSceneAudioData* GameScene::GetAudioData()
+	Audio::GameSceneAudioData* GameScene::GetAudioData()
 	{
 		return AudioData.get();
 	}
@@ -125,10 +126,11 @@ namespace GEE
 	std::string GameScene::GetUniqueActorName(const std::string& name) const
 	{
 		std::vector <Actor*> actorsWithSimilarNames;
-		std::function<void(Actor&)> getActorsWithSimilarNamesFunc = [&actorsWithSimilarNames, name, &getActorsWithSimilarNamesFunc](Actor& currentActor) { if (currentActor.GetName().rfind(name, 0) == 0) /* if currentActor's name stars with name */ actorsWithSimilarNames.push_back(&currentActor);	for (auto& it : currentActor.GetChildren()) getActorsWithSimilarNamesFunc(*it); };
+		bool sameNameExists = false;
+		std::function<void(Actor&)> getActorsWithSimilarNamesFunc = [&actorsWithSimilarNames, name, &getActorsWithSimilarNamesFunc, &sameNameExists](Actor& currentActor) { if (currentActor.GetName().rfind(name, 0) == 0) /* if currentActor's name stars with name */ { actorsWithSimilarNames.push_back(&currentActor); if (currentActor.GetName() == name) sameNameExists = true; }	for (auto& it : currentActor.GetChildren()) getActorsWithSimilarNamesFunc(*it); };
 
 		getActorsWithSimilarNamesFunc(*RootActor);
-		if (actorsWithSimilarNames.empty())
+		if (!sameNameExists)
 			return name;
 
 		int addedIndex = 1;
@@ -182,6 +184,9 @@ namespace GEE
 			Delete();
 			return;
 		}
+		if (ActiveCamera && ActiveCamera->IsBeingKilled())
+			BindActiveCamera(nullptr);
+
 		RootActor->UpdateAll(deltaTime);
 		for (auto& it : RenderData->SkeletonBatches)
 			it->VerifySkeletonsLives();	//verify if any SkeletonInfos are invalid and get rid of any garbage objects
@@ -408,55 +413,61 @@ namespace GEE
 		return nullptr;
 	}*/
 
-	GameScenePhysicsData::GameScenePhysicsData(PhysicsEngineManager* physicsHandle) :
-		PhysicsHandle(physicsHandle),
-		WasSetup(false)
+	namespace Physics
 	{
-	}
-
-	void GameScenePhysicsData::AddCollisionObject(CollisionObject& object, Transform& t)	//tytaj!!!!!!!!!!!!!!!!!!!!!!!!!!!! TUTAJ TUTAJ TU
-	{
-		CollisionObjects.push_back(&object);
-		object.ScenePhysicsData = this;
-		object.TransformPtr = &t;
-
-		if (WasSetup)
-			PhysicsHandle->AddCollisionObjectToPxPipeline(*this, object);
-	}
-
-	void GameScenePhysicsData::EraseCollisionObject(CollisionObject& object)
-	{
-		auto found = std::find(CollisionObjects.begin(), CollisionObjects.end(), &object);
-		if (found != CollisionObjects.end())
+		GameScenePhysicsData::GameScenePhysicsData(PhysicsEngineManager* physicsHandle) :
+			PhysicsHandle(physicsHandle),
+			WasSetup(false)
 		{
-			if ((*found)->ActorPtr)
-				(*found)->ActorPtr->release();
-			CollisionObjects.erase(found);
+		}
+
+		void GameScenePhysicsData::AddCollisionObject(CollisionObject& object, Transform& t)	//tytaj!!!!!!!!!!!!!!!!!!!!!!!!!!!! TUTAJ TUTAJ TU
+		{
+			CollisionObjects.push_back(&object);
+			object.ScenePhysicsData = this;
+			object.TransformPtr = &t;
+
+			if (WasSetup)
+				PhysicsHandle->AddCollisionObjectToPxPipeline(*this, object);
+		}
+
+		void GameScenePhysicsData::EraseCollisionObject(CollisionObject& object)
+		{
+			auto found = std::find(CollisionObjects.begin(), CollisionObjects.end(), &object);
+			if (found != CollisionObjects.end())
+			{
+				if ((*found)->ActorPtr)
+					(*found)->ActorPtr->release();
+				CollisionObjects.erase(found);
+			}
+		}
+
+		PhysicsEngineManager* GameScenePhysicsData::GetPhysicsHandle()
+		{
+			return PhysicsHandle;
 		}
 	}
 
-	PhysicsEngineManager* GameScenePhysicsData::GetPhysicsHandle()
+	namespace Audio
 	{
-		return PhysicsHandle;
-	}
+		GameSceneAudioData::GameSceneAudioData(Audio::AudioEngineManager* audioHandle) :
+			AudioHandle(audioHandle)
+		{
+		}
 
-	GameSceneAudioData::GameSceneAudioData(AudioEngineManager* audioHandle) :
-		AudioHandle(audioHandle)
-	{
-	}
+		void GameSceneAudioData::AddSource(SoundSourceComponent& sourceComp)
+		{
+			Sources.push_back(sourceComp);
+		}
 
-	void GameSceneAudioData::AddSource(SoundSourceComponent& sourceComp)
-	{
-		Sources.push_back(sourceComp);
-	}
+		SoundSourceComponent* GameSceneAudioData::FindSource(std::string name)
+		{
+			auto found = std::find_if(Sources.begin(), Sources.end(), [name](std::reference_wrapper<SoundSourceComponent>& sourceComp) { return sourceComp.get().GetName() == name; });
+			if (found != Sources.end())
+				return &found->get();
 
-	SoundSourceComponent* GameSceneAudioData::FindSource(std::string name)
-	{
-		auto found = std::find_if(Sources.begin(), Sources.end(), [name](std::reference_wrapper<SoundSourceComponent>& sourceComp) { return sourceComp.get().GetName() == name; });
-		if (found != Sources.end())
-			return &found->get();
-
-		return nullptr;
+			return nullptr;
+		}
 	}
 
 }

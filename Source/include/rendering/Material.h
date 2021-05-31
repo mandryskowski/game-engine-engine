@@ -6,7 +6,7 @@
 #include <assimp/Importer.hpp>
 #include <rendering/Texture.h> 
 
-#include <math/Transform.h> //TODO: CHANGE TO VEC.H
+#include <math/Vec.h>
 #include <cereal/access.hpp>
 #include <cereal/archives/json.hpp>
 #include <cereal/types/polymorphic.hpp>
@@ -125,6 +125,8 @@ namespace GEE
 			construct("if_you_see_this_serializing_error_ocurred");
 			construct->Serialize(archive);
 		}
+
+		virtual void GetEditorDescription(EditorDescriptionBuilder) override;
 	};
 
 	/*
@@ -161,7 +163,7 @@ namespace GEE
 
 		template <typename Archive> void Save(Archive& archive) const
 		{
-			std::shared_ptr<Material> mat = GameManager::DefaultScene->GetGameHandle()->GetRenderEngineHandle()->FindMaterial(MaterialRef.GetLocalization().Name);
+			std::shared_ptr<Material> mat = GameManager::Get().GetRenderEngineHandle()->FindMaterial(MaterialRef.GetLocalization().Name);
 			if (!mat)
 			{
 				std::cout << "ERROR! Cannot save materialinstance of " << MaterialRef.GetLocalization().Name << ". The most likely cause of this is that the material has not been added to the RenderEngine, and thus cannot be found.\n";
@@ -177,13 +179,13 @@ namespace GEE
 		{
 			std::string materialName, materialPath;
 			archive(cereal::make_nvp("MaterialName", materialName), cereal::make_nvp("MaterialOptionalPath", materialPath));
-			std::shared_ptr<Material> mat = GameManager::DefaultScene->GetGameHandle()->GetRenderEngineHandle()->FindMaterial(materialName);
+			std::shared_ptr<Material> mat = GameManager::Get().GetRenderEngineHandle()->FindMaterial(materialName);
 			if (!mat)
 			{
 				if (materialPath.empty())
 				{
 					archive(cereal::make_nvp("ExternalMaterial", mat));
-					GameManager::DefaultScene->GetGameHandle()->GetRenderEngineHandle()->AddMaterial(mat);
+					GameManager::Get().GetRenderEngineHandle()->AddMaterial(mat);
 				}
 				else
 				{
@@ -198,7 +200,7 @@ namespace GEE
 
 			construct(*mat);// , drawBeforeAnim, drawAfterAnim);
 
-			//GameManager::DefaultScene->AddPostLoadLambda([mat]() { std::cout << "uwaga robie " << mat << '\n'; GameManager::DefaultScene->GetGameHandle()->GetRenderEngineHandle()->AddMaterial(mat); });
+			//GameManager::DefaultScene->AddPostLoadLambda([mat]() { std::cout << "uwaga robie " << mat << '\n'; GameManager::Get().GetRenderEngineHandle()->AddMaterial(mat); });
 		}
 	};
 

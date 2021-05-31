@@ -322,7 +322,7 @@ namespace GEE
 				}
 
 				Transform lightWorld = light.GetTransform().GetWorldTransform();
-				glm::vec3 lightPos = lightWorld.PositionRef;
+				glm::vec3 lightPos = lightWorld.Pos();
 				glm::mat4 viewTranslation = glm::translate(glm::mat4(1.0f), -lightPos);
 				glm::mat4 projection = light.GetProjection();
 
@@ -508,7 +508,7 @@ namespace GEE
 			LightProbeComponent* probe = sceneRenderData->LightProbes[i];
 			if (probe->GetShape() == EngineBasicShape::QUAD)
 				continue;
-			glm::vec3 camPos = probe->GetTransform().GetWorldTransform().PositionRef;
+			glm::vec3 camPos = probe->GetTransform().GetWorldTransform().Pos();
 			glm::mat4 viewTranslation = glm::translate(glm::mat4(1.0f), -camPos);
 			glm::mat4 p = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 100.0f);
 
@@ -701,7 +701,7 @@ namespace GEE
 				if (probe->GetShape() == EngineBasicShape::QUAD)
 					continue;
 
-				shader->Uniform3fv("lightProbes[" + std::to_string(i) + "].position", probe->GetTransform().GetWorldTransform().PositionRef);
+				shader->Uniform3fv("lightProbes[" + std::to_string(i) + "].position", probe->GetTransform().GetWorldTransform().Pos());
 			}
 
 			std::vector<std::unique_ptr<RenderableVolume>> probeVolumes;
@@ -735,7 +735,7 @@ namespace GEE
 		info.MainPass = false;
 		info.CareAboutShader = false;
 
-		if (useLightingAlgorithms)
+		if (sceneRenderData->ContainsLightProbes())
 			TestRenderCubemap(info, sceneRenderData);
 
 
@@ -956,9 +956,9 @@ namespace GEE
 			info.MainPass = false;
 		}
 
-		glm::vec2 halfExtent = static_cast<glm::vec2>(t.ScaleRef);
+		glm::vec2 halfExtent = static_cast<glm::vec2>(t.Scale());
 		//	halfExtent.y *= 1.0f - font.GetBaselineHeight() / 4.0f;	//Account for baseline height (we move the character quads by the height in the next line, so we have to shrink them a bit so that the text fits within halfExtent)
-		t.Move(glm::vec3(0.0f, -t.ScaleRef.y * 2.0f + font.GetBaselineHeight() * t.ScaleRef.y * 2.0f, 0.0f));	//align to bottom (-t.ScaleRef.y), move down to the bottom of it (-t.ScaleRef.y), and then move up to baseline height (-t.ScaleRef.y * 2.0f + font.GetBaselineHeight() * halfExtent.y * 2.0f)
+		t.Move(glm::vec3(0.0f, -t.Scale().y * 2.0f + font.GetBaselineHeight() * t.Scale().y * 2.0f, 0.0f));	//align to bottom (-t.ScaleRef.y), move down to the bottom of it (-t.ScaleRef.y), and then move up to baseline height (-t.ScaleRef.y * 2.0f + font.GetBaselineHeight() * halfExtent.y * 2.0f)
 
 		if (alignment.first != TextAlignment::LEFT)
 		{
@@ -966,11 +966,11 @@ namespace GEE
 			for (int i = 0; i < static_cast<int>(content.length()); i++)
 				advancesSum += (font.GetCharacter(content[i]).Advance);
 
-			t.Move(t.RotationRef * glm::vec3(-advancesSum * halfExtent.x * (static_cast<float>(alignment.first) - static_cast<float>(TextAlignment::LEFT)), 0.0f, 0.0f));
+			t.Move(t.Rot() * glm::vec3(-advancesSum * halfExtent.x * (static_cast<float>(alignment.first) - static_cast<float>(TextAlignment::LEFT)), 0.0f, 0.0f));
 		}
 
 		if (alignment.second != TextAlignment::BOTTOM)
-			t.Move(t.RotationRef * glm::vec3(0.0f, -t.ScaleRef.y * (static_cast<float>(alignment.second) - static_cast<float>(TextAlignment::BOTTOM)), 0.0f));
+			t.Move(t.Rot() * glm::vec3(0.0f, -t.Scale().y * (static_cast<float>(alignment.second) - static_cast<float>(TextAlignment::BOTTOM)), 0.0f));
 
 		//t.Move(glm::vec3(0.0f, -64.0f, 0.0f));
 		//t.Move(glm::vec3(0.0f, 11.0f, 0.0f) / scale);

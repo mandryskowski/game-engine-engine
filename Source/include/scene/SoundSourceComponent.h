@@ -3,58 +3,77 @@
 #include <AL/al.h>
 namespace GEE
 {
-	struct SoundBuffer
+	namespace Audio
 	{
-		unsigned int ALIndex;
-		std::string Path;	//used for optimization; we don't load a buffer from file if this file was already read before (there will never be two buffers that share the same path)
-	};
-
-	class SoundSourceComponent : public Component
-	{
-		unsigned int ALIndex;
-		SoundBuffer* BufferPtr;
-
-	public:
-
-		SoundSourceComponent(Actor&, Component* parentComp, std::string, SoundBuffer* = nullptr, Transform = Transform());
-
-		void GenAL(SoundBuffer* = nullptr);	//pass a pointer here only if you want to update it in the class
-
-		void SetLoop(bool);
-		bool IsPlaying();
-
-		void Play();
-		void Pause();
-		void Stop();
-
-		virtual void Update(float) override;
-
-		virtual	MaterialInstance GetDebugMatInst(EditorIconState) override;
-
-		virtual void GetEditorDescription(EditorDescriptionBuilder) override;
-		template <typename Archive> void Save(Archive& archive) const
+		struct SoundBuffer
 		{
-			std::string emptyStr = "";
-			if (BufferPtr)
-				archive(cereal::make_nvp("Path", BufferPtr->Path), cereal::make_nvp("Component", cereal::base_class<Component>(this)));
-			else
-				archive(cereal::make_nvp("Path", emptyStr), cereal::make_nvp("Component", cereal::base_class<Component>(this)));
-		}
-		template <typename Archive> void Load(Archive& archive)
+			unsigned int ALIndex;
+			std::string Path;	//used for optimization; we don't load a buffer from file if this file was already read before (there will never be two buffers that share the same path)
+			bool IsValid() const
+			{
+				return ALIndex != 0;
+			}
+		};
+
+		class SoundSourceComponent : public Component
 		{
-			std::cout << "Began loading sound\n";
-			std::string path;
-			archive(cereal::make_nvp("Path", path), cereal::make_nvp("Component", cereal::base_class<Component>(this)));
-			GenAL(GameHandle->GetAudioEngineHandle()->LoadBufferFromFile(path));
-			std::cout << "Finished loading sound\n";
+		public:
+
+			SoundSourceComponent(Actor&, Component* parentComp, const std::string& name, SoundBuffer = SoundBuffer(), const Transform& = Transform());
+			SoundSourceComponent(Actor&, Component* parentComp, const std::string& name, const std::string& bufferPath, const Transform& = Transform());
+
+			void LoadSound(const SoundBuffer&);
+
+			void SetLoop(bool);
+			bool IsPlaying();
+
+			void Play();
+			void Pause();
+			void Stop();
+
+			virtual void Update(float) override;
+
+			virtual	MaterialInstance GetDebugMatInst(EditorIconState) override;
+
+			virtual void GetEditorDescription(EditorDescriptionBuilder) override;
+			template <typename Archive> void Save(Archive& archive) const
+			{
+				std::string emptyStr = "";
+				archive(cereal::make_nvp("Path", SndBuffer.Path), cereal::make_nvp("Component", cereal::base_class<Component>(this)));
+			}
+			template <typename Archive> void Load(Archive& archive)
+			{
+				std::cout << "Began loading sound\n";
+				std::string path;
+				archive(cereal::make_nvp("Path", path), cereal::make_nvp("Component", cereal::base_class<Component>(this)));
+				Audio::Loader::LoadSoundFromFile(path, *this);
+				std::cout << "Finished loading sound\n";
+			}
+
+			void Dispose();
+			~SoundSourceComponent();
+
+		private:
+			void GenerateAL();
+		private:
+			unsigned int ALIndex;
+			SoundBuffer SndBuffer;
+
+		};
+
+		namespace Loader
+		{
+			void LoadSoundFromFile(const std::string&, SoundSourceComponent&);
+			namespace Impl
+			{
+				SoundBuffer LoadBufferFromWav(const std::string& path);
+				SoundBuffer LoadBufferFromOgg(const std::string& path);
+
+				SoundBuffer LoadALBuffer(ALenum, ALvoid*, ALsizei, ALsizei, const std::string&);
+			}
 		}
-
-		void Dispose();
-		~SoundSourceComponent();
-	};
-
-
+	}
 }
 
-CEREAL_REGISTER_TYPE(GEE::SoundSourceComponent)
-CEREAL_REGISTER_POLYMORPHIC_RELATION(GEE::Component, GEE::SoundSourceComponent)
+CEREAL_REGISTER_TYPE(GEE::Audio::SoundSourceComponent)
+CEREAL_REGISTER_POLYMORPHIC_RELATION(GEE::Component, GEE::Audio::SoundSourceComponent)

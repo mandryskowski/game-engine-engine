@@ -195,6 +195,9 @@
     <ClCompile Include="source\scene\hierarchy\HierarchyNode.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="source\math\Vec.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\UI\UICanvasActor.h">
@@ -369,6 +372,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\scene\hierarchy\HierarchyNode.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\math\Vec.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

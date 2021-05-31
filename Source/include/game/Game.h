@@ -44,9 +44,9 @@ namespace GEE
 		virtual bool HasStarted() const override;
 		InputDevicesStateRetriever GetInputRetriever() override;
 
-		virtual PhysicsEngineManager* GetPhysicsHandle() override;
+		virtual Physics::PhysicsEngineManager* GetPhysicsHandle() override;
 		virtual RenderEngineManager* GetRenderEngineHandle() override;
-		virtual AudioEngineManager* GetAudioEngineHandle() override;
+		virtual Audio::AudioEngineManager* GetAudioEngineHandle() override;
 
 		virtual GameSettings* GetGameSettings() override;
 		virtual GameScene* GetScene(const std::string& name) override;
@@ -84,8 +84,8 @@ namespace GEE
 		std::shared_ptr<Font> DefaultFont;
 
 		RenderEngine RenderEng;
-		PhysicsEngine PhysicsEng;
-		AudioEngine AudioEng;
+		Physics::PhysicsEngine PhysicsEng;
+		Audio::AudioEngine AudioEng;
 
 		const ShadingModel Shading;
 		bool GameStarted;

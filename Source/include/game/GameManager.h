@@ -35,19 +35,15 @@ namespace GEE
 	class TextComponent;
 	class CameraComponent;
 	class BoneComponent;
-	class SoundSourceComponent;
+
 	class AnimationManagerComponent;
 	class Transform;
 	struct Animation;
 
-	struct SoundBuffer;
 
 	class GameScene;
 	class GameSceneRenderData;
-	class GameScenePhysicsData;
 
-	struct CollisionObject;
-	struct CollisionShape;
 	class Mesh;
 	class MeshInstance;
 
@@ -105,22 +101,42 @@ namespace GEE
 		virtual unsigned int GetFrameIndex() = 0;
 	};
 
-	class PhysicsEngineManager
+	namespace Physics
 	{
-	public:
-		virtual void CreatePxShape(CollisionShape&, CollisionObject&) = 0;
-		virtual void AddCollisionObjectToPxPipeline(GameScenePhysicsData& scenePhysicsData, CollisionObject&) = 0;
+		class GameScenePhysicsData;
+		struct CollisionObject;
+		struct CollisionShape;
 
-		virtual physx::PxController* CreateController(GameScenePhysicsData& scenePhysicsData, const Transform& t) = 0;
+		class PhysicsEngineManager
+		{
+		public:
+			virtual void CreatePxShape(CollisionShape&, CollisionObject&) = 0;
+			virtual void AddCollisionObjectToPxPipeline(GameScenePhysicsData& scenePhysicsData, CollisionObject&) = 0;
 
-		virtual void ApplyForce(CollisionObject&, glm::vec3 force) = 0;
+			virtual physx::PxController* CreateController(GameScenePhysicsData& scenePhysicsData, const Transform& t) = 0;
 
-		virtual void DebugRender(GameScenePhysicsData&, RenderEngine&, RenderInfo&) = 0;
-	protected:
-		virtual void RemoveScenePhysicsDataPtr(GameScenePhysicsData& scenePhysicsData) = 0;
-		friend class GameScene;
-	};
+			virtual void ApplyForce(CollisionObject&, glm::vec3 force) = 0;
 
+			virtual void DebugRender(GameScenePhysicsData&, RenderEngine&, RenderInfo&) = 0;
+		protected:
+			virtual void RemoveScenePhysicsDataPtr(GameScenePhysicsData& scenePhysicsData) = 0;
+			friend class GameScene;
+		};
+	}
+
+	namespace Audio
+	{
+		class SoundSourceComponent;
+		struct SoundBuffer;
+
+		class AudioEngineManager
+		{
+		public:
+			virtual void CheckError() = 0;
+			virtual SoundBuffer FindBuffer(const std::string& path) = 0;
+			virtual void AddBuffer(const SoundBuffer&) = 0;
+		};
+	}
 
 	class RenderEngineManager
 	{
@@ -162,17 +178,11 @@ namespace GEE
 		friend class GameScene;
 	};
 
-	class AudioEngineManager
-	{
-	public:
-		virtual SoundBuffer* LoadBufferFromFile(std::string path) = 0;
-		virtual void CheckError() = 0;
-	};
-
 	class GameManager
 	{
 	public:
 		static GameScene* DefaultScene;
+		static GameManager& Get();
 	public:
 		virtual GameScene& CreateScene(const std::string& name, bool isAnUIScene = false) = 0;
 
@@ -190,9 +200,9 @@ namespace GEE
 		virtual GameScene* GetMainScene() = 0;
 		virtual std::vector<GameScene*> GetScenes() = 0;
 
-		virtual PhysicsEngineManager* GetPhysicsHandle() = 0;
+		virtual Physics::PhysicsEngineManager* GetPhysicsHandle() = 0;
 		virtual RenderEngineManager* GetRenderEngineHandle() = 0;
-		virtual AudioEngineManager* GetAudioEngineHandle() = 0;
+		virtual Audio::AudioEngineManager* GetAudioEngineHandle() = 0;
 
 		virtual GameSettings* GetGameSettings() = 0;
 
@@ -203,8 +213,10 @@ namespace GEE
 
 	protected:
 		virtual void DeleteScene(GameScene&) = 0;
+	private:
+		static GameManager* GamePtr;
 		friend class GameScene;
-
+		friend class Game;
 	};
 
 	class EditorManager

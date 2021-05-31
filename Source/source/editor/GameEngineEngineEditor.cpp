@@ -93,6 +93,10 @@ namespace GEE
 		std::shared_ptr<AtlasMaterial> refreshIconMat = std::make_shared<AtlasMaterial>(Material("GEE_E_Refresh_Icon_Mat", 0.0f, RenderEng.FindShader("Forward_NoLight")), glm::ivec2(3, 1));
 		GetRenderEngineHandle()->AddMaterial(refreshIconMat);
 		refreshIconMat->AddTexture(std::make_shared<NamedTexture>(textureFromFile("EditorAssets/refresh_icon.png", GL_RGB, GL_LINEAR, GL_NEAREST_MIPMAP_LINEAR), "albedo1"));
+		
+		std::shared_ptr<AtlasMaterial> moreMat = std::make_shared<AtlasMaterial>(Material("GEE_E_More_Mat", 0.0f, RenderEng.FindShader("Forward_NoLight")), glm::ivec2(3, 1));
+		GetRenderEngineHandle()->AddMaterial(moreMat);
+		moreMat->AddTexture(std::make_shared<NamedTexture>(textureFromFile("EditorAssets/more_icon.png", GL_RGB, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR, true), "albedo1"));
 
 		{
 			std::shared_ptr<Material> material = std::make_shared<Material>(Material("GEE_Default_Text_Material", 0.0f, RenderEng.FindShader("TextShader")));
@@ -214,7 +218,7 @@ namespace GEE
 		bigButtonActor.SetTransform(Transform(glm::vec2(0.0f, 1.5f), glm::vec2(0.4f)));
 		TextComponent& bigButtonText = bigButtonActor.CreateComponent<TextComponent>("BigButtonText", Transform(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f), glm::vec3(0.1f)), "big button", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
 
-		editorScene.CreateActorAtRoot<UIButtonActor>("MeshTreesButton", "MeshTrees", [this, &editorScene]() {
+		editorScene.CreateActorAtRoot<UIButtonActor>("MeshTreesButton", "HierarchyTrees", [this, &editorScene]() {
 			UIWindowActor& window = editorScene.CreateActorAtRoot<UIWindowActor>("MeshTreesWindow");
 			window.GetTransform()->SetScale(glm::vec2(0.5f));
 
@@ -239,6 +243,12 @@ namespace GEE
 					std::cout << name << '\n';
 				}
 
+				UIButtonActor& addMaterialButton = list.CreateChild<UIButtonActor>("CreateMaterialButton", [this, &list]() { GetRenderEngineHandle()->AddMaterial(std::make_shared<AtlasMaterial>("CreatedMaterial")); });
+				AtlasMaterial* mat = dynamic_cast<AtlasMaterial*>(GetRenderEngineHandle()->FindMaterial("GEE_E_Add_Icon_Mat").get());
+				addMaterialButton.SetMatIdle(MaterialInstance(*mat, mat->GetTextureIDInterpolatorTemplate(0.0f)));
+				addMaterialButton.SetMatHover(MaterialInstance(*mat, mat->GetTextureIDInterpolatorTemplate(1.0f)));
+				addMaterialButton.SetMatClick(MaterialInstance(*mat, mat->GetTextureIDInterpolatorTemplate(2.0f)));
+
 				list.Refresh();
 
 				}).SetTransform(Transform(Vec2f(-0.5f, -0.8f), Vec2f(0.1f)));
@@ -253,6 +263,14 @@ namespace GEE
 
 					window.AddField("Default font").GetTemplates().PathInput([this](const std::string& path) { Fonts.push_back(std::make_shared<Font>(*DefaultFont)); *DefaultFont = *EngineDataLoader::LoadFont(*this, path); }, [this]() {return GetDefaultFont()->GetPath(); }, { "*.ttf", "*.otf" });
 					window.AddField("Rebuild light probes").CreateChild<UIButtonActor>("RebuildProbesButton", "Rebuild", [this]() { RenderEng.PreLoopPass(); });
+					UIAutomaticListActor& aaSelectionList = window.AddField("Anti-aliasing").CreateChild<UIAutomaticListActor>("AASelectionList", Vec3f(2.0f, 0.0f, 0.0f));
+
+					std::function<void(AntiAliasingType)> setAAFunc = [this](AntiAliasingType type) { const_cast<GameSettings::VideoSettings&>(ViewportRenderCollection->GetSettings()).AAType = type; UpdateSettings(); };
+					aaSelectionList.CreateChild<UIButtonActor>("NoAAButton", "None", [=]() { setAAFunc(AntiAliasingType::AA_NONE); });
+					aaSelectionList.CreateChild<UIButtonActor>("SMAA1XButton", "SMAA1X", [=]() { setAAFunc(AntiAliasingType::AA_SMAA1X); });
+					aaSelectionList.CreateChild<UIButtonActor>("SMAAT2XButton", "SMAAT2X", [=]() { setAAFunc(AntiAliasingType::AA_SMAAT2X); });
+
+					aaSelectionList.Refresh();
 
 					window.FieldsList->Refresh();
 					window.AutoClampView();
@@ -294,15 +312,21 @@ namespace GEE
 		//SetCanvasContext(&mainMenuScene.CreateActorAtRoot<UICanvasActor>("GEE_E_Canvas_Context"));
 
 		{
-			Actor& engineTitleActor = mainMenuScene.CreateActorAtRoot<Actor>("EngineTitleActor");
+			Actor& engineTitleActor = mainMenuScene.CreateActorAtRoot<Actor>("EngineTitleActor", Transform(Vec2f(0.0f, 0.6f)));
 			TextComponent& engineTitleTextComp = engineTitleActor.CreateComponent<TextComponent>("EngineTitleTextComp", Transform(), "Game Engine Engine", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
-			engineTitleTextComp.SetTransform(Transform(Vec2f(0.0f, 0.6f), Vec2f(0.12f)));
+			engineTitleTextComp.SetTransform(Transform(Vec2f(0.0f), Vec2f(0.12f)));
 
-			std::shared_ptr<Material> purpleTextMaterial = std::make_shared<Material>("GEE_Engine_Title");
-			RenderEng.AddMaterial(purpleTextMaterial);
-			purpleTextMaterial->SetColor(hsvToRgb(Vec3f(300.0f, 1.0f, 1.0f)));
+			std::shared_ptr<Material> titleMaterial = std::make_shared<Material>("GEE_Engine_Title");
+			RenderEng.AddMaterial(titleMaterial);
+			titleMaterial->SetColor(hsvToRgb(Vec3f(300.0f, 1.0f, 1.0f)));
 
-			engineTitleTextComp.SetMaterialInst(MaterialInstance(*purpleTextMaterial));
+			engineTitleTextComp.SetMaterialInst(MaterialInstance(*titleMaterial));
+
+			TextComponent& engineSubtitleTextComp = engineTitleActor.CreateComponent<TextComponent>("EngineSubtitleTextComp", Transform(), "wersja dla forum.pasja-informatyki", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
+			engineSubtitleTextComp.SetTransform(Transform(Vec2f(0.0f, -0.15f), Vec2f(0.06f)));
+			Material* subtitleMaterial = RenderEng.AddMaterial(std::make_shared<Material>("GEE_Engine_Subtitle"));
+			subtitleMaterial->SetColor(hsvToRgb(Vec3f(300.0f, 0.4f, 0.3f)));
+			engineSubtitleTextComp.SetMaterialInst(*subtitleMaterial);
 		}
 
 		mainMenuScene.CreateActorAtRoot<UIButtonActor>("NewProjectButton", "New project", [this, &mainMenuScene]() {
@@ -315,6 +339,7 @@ namespace GEE
 			UIInputBoxActor& projectNameInputBox = window.AddField("Project name").CreateChild<UIInputBoxActor>("ProjectNameInputBox");
 			//UIInputBoxActor& projectNameInputBox
 
+			ProjectName = "Project1";
 			projectNameInputBox.SetOnInputFunc([this](const std::string& input) { ProjectName = input; }, [this]() { return ProjectName; });
 
 			UIButtonActor& okButton = window.AddField("").CreateChild<UIButtonActor>("OKButton", "OK", [this, &window]() { window.MarkAsKilled(); LoadProject(ProjectFilepath + ProjectName + ".json"); });
@@ -349,7 +374,11 @@ namespace GEE
 					recentProjectsFile.close();
 
 					if (!filepaths.empty())
-						UIElementTemplates(mainMenuScene.CreateActorAtRoot<UIActorDefault>("Recent", Transform(Vec2f(0.0f, -0.5f), Vec2f(0.1f)))).ListSelection<std::string>(filepaths.begin(), filepaths.end(), [this](UIAutomaticListActor& listActor, std::string& filepath) { listActor.CreateChild<UIButtonActor>("RecentFilepathButton", filepath, [this, filepath]() { LoadProject(filepath); }); });
+					{
+						UIActorDefault& recentProjectsActor = mainMenuScene.CreateActorAtRoot<UIActorDefault>("Recent", Transform(Vec2f(0.0f, -0.5f), Vec2f(0.1f)));
+						recentProjectsActor.CreateComponent<TextComponent>("RecentsText", Transform(Vec2f(0.0f, 1.6f), Vec2f(0.5f)), "Recent projects", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
+						UIElementTemplates(recentProjectsActor).ListSelection<std::string>(filepaths.begin(), filepaths.end(), [this](UIAutomaticListActor& listActor, std::string& filepath) { listActor.CreateChild<UIButtonActor>("RecentFilepathButton", getFileName(filepath), [this, filepath]() { LoadProject(filepath); }); });
+					}
 				}
 
 				Actor& cameraActor = mainMenuScene.CreateActorAtRoot<Actor>("OrthoCameraActor");
@@ -377,7 +406,12 @@ namespace GEE
 				{
 					Controller* controller = dynamic_cast<Controller*>(GetMainScene()->FindActor("MojTestowyController"));
 					if (!controller)
-						controller = dynamic_cast<Controller*>(GetMainScene()->FindActor("A Controller"));
+					{
+						std::vector<Controller*> controllers;
+						GetMainScene()->GetRootActor()->GetAllActors(&controllers);
+						if (!controllers.empty())
+							controller = controllers[0];
+					}
 					if (controller)
 					{
 						ActiveScene = GetMainScene();
@@ -467,7 +501,7 @@ namespace GEE
 		UICanvasField& componentsListField = canvas.AddField("List of components");
 		UIAutomaticListActor& listActor = componentsListField.CreateChild<UIAutomaticListActor>("ListActor");
 		canvas.FieldsList->SetListElementOffset(canvas.FieldsList->GetListElementCount() - 1, [&listActor, &componentsListField]() { std::cout << "List offset: " << (static_cast<glm::mat3>(componentsListField.GetTransform()->GetMatrix()) * listActor.GetListOffset()).y << '\n';  return static_cast<glm::mat3>(componentsListField.GetTransform()->GetMatrix()) * (listActor.GetListOffset()); });
-		canvas.FieldsList->SetListCenterOffset(canvas.FieldsList->GetListElementCount() - 1, [&componentsListField]() -> glm::vec3 { return glm::vec3(0.0f, -componentsListField.GetTransform()->ScaleRef.y, 0.0f); });
+		canvas.FieldsList->SetListCenterOffset(canvas.FieldsList->GetListElementCount() - 1, [&componentsListField]() -> glm::vec3 { return glm::vec3(0.0f, -componentsListField.GetTransform()->Scale().y, 0.0f); });
 		listActor.GetTransform()->Move(glm::vec2(0.5f, 0.0f));
 
 		AddActorToList<Component>(editorScene, *actor->GetRoot(), listActor, canvas);
@@ -517,7 +551,7 @@ namespace GEE
 
 			addCompCreateButton(0, [this, &editorScene, getSelectedComp]() -> Component& { return getSelectedComp().CreateComponent<Component>("A Component", Transform()); });
 			addCompCreateButton(1, [this, &editorScene, getSelectedComp]() -> Component& { LightComponent& comp = getSelectedComp().CreateComponent<LightComponent>("A LightComponent", POINT, GetMainScene()->GetRenderData()->GetAvailableLightIndex(), GetMainScene()->GetRenderData()->GetAvailableLightIndex()); comp.CalculateLightRadius(); return comp;  });
-			addCompCreateButton(2, [this, &editorScene, getSelectedComp]() -> Component& { return getSelectedComp().CreateComponent<SoundSourceComponent>("A SoundSourceComponent"); });
+			addCompCreateButton(2, [this, &editorScene, getSelectedComp]() -> Component& { return getSelectedComp().CreateComponent<Audio::SoundSourceComponent>("A SoundSourceComponent"); });
 			addCompCreateButton(3, [this, &editorScene, getSelectedComp]() -> Component& { return getSelectedComp().CreateComponent<CameraComponent>("A CameraComponent"); });
 			addCompCreateButton(4, [this, &editorScene, getSelectedComp]() -> Component& { return getSelectedComp().CreateComponent<TextComponent>("A TextComponent", Transform(), "", ""); });
 			addCompCreateButton(5, [this, &editorScene, getSelectedComp]() -> Component& { return getSelectedComp().CreateComponent<LightProbeComponent>("A LightProbeComponent"); });
@@ -538,7 +572,7 @@ namespace GEE
 		else
 		{
 			canvas.AutoClampView();
-			canvas.SetViewScale(static_cast<Vec2f>(canvas.CanvasView.ScaleRef) * glm::vec2(1.0f, glm::sqrt(0.5f / 0.32f)));
+			canvas.SetViewScale(static_cast<Vec2f>(canvas.CanvasView.Scale()) * glm::vec2(1.0f, glm::sqrt(0.5f / 0.32f)));
 		}
 	}
 
@@ -593,6 +627,7 @@ namespace GEE
 			addActorCreateButton(1, [this, &editorScene, &selectedScene, getSelectedActor]() -> GunActor& { return getSelectedActor().CreateChild<GunActor>(selectedScene->GetUniqueActorName("A GunActor")); }, "GunActor");
 			addActorCreateButton(2, [this, &editorScene, &selectedScene, getSelectedActor]() -> PawnActor& { return getSelectedActor().CreateChild<PawnActor>(selectedScene->GetUniqueActorName("A PawnActor")); }, "PawnActor");
 			addActorCreateButton(3, [this, &editorScene, &selectedScene, getSelectedActor]() -> Controller& { return getSelectedActor().CreateChild<Controller>(selectedScene->GetUniqueActorName("A Controller")); }, "Controller");
+			addActorCreateButton(4, [this, &editorScene, &selectedScene, getSelectedActor]() -> ShootingController& { return getSelectedActor().CreateChild<ShootingController>(selectedScene->GetUniqueActorName("A ShootingController")); }, "ShootingController");
 			});
 
 		addActorButton.GetTransform()->SetPosition(glm::vec2(8.0f, 0.0f));
@@ -616,7 +651,7 @@ namespace GEE
 		const_cast<Actor*>(EditorScene->GetRootActor())->DebugActorHierarchy();
 
 		canvas.AutoClampView();
-		canvas.SetViewScale(static_cast<Vec2f>(canvas.CanvasView.ScaleRef) * glm::vec2(1.0f, glm::sqrt(0.32f / 0.32f)));
+		canvas.SetViewScale(static_cast<Vec2f>(canvas.CanvasView.Scale()) * glm::vec2(1.0f, glm::sqrt(0.32f / 0.32f)));
 	}
 
 	void GameEngineEngineEditor::PreviewHierarchyTree(HierarchyTemplate::HierarchyTreeT& tree)
@@ -677,12 +712,12 @@ namespace GEE
 		std::function<void(Actor&)> func = [&previewWindow, &func](Actor& actor) {
 			if (TextComponent* text = actor.GetRoot()->GetComponent<TextComponent>("TEXTTEXT"))
 			{
-				std::string str1 = std::to_string(previewWindow.ToCanvasSpace(actor.GetTransform()->GetWorldTransform()).PositionRef.x);
+				std::string str1 = std::to_string(previewWindow.ToCanvasSpace(actor.GetTransform()->GetWorldTransform()).Pos().x);
 				str1 = str1.erase(str1.find_last_not_of('0') + 1, std::string::npos);
 				if (str1.back() == '.')
 					str1 = str1.substr(0, str1.length() - 1);
 
-				std::string str2 = std::to_string(previewWindow.ToCanvasSpace(actor.GetTransform()->GetWorldTransform()).PositionRef.y);
+				std::string str2 = std::to_string(previewWindow.ToCanvasSpace(actor.GetTransform()->GetWorldTransform()).Pos().y);
 				str2 = str2.erase(str2.find_last_not_of('0') + 1, std::string::npos);
 				if (str2.back() == '.')
 					str2 = str2.substr(0, str2.length() - 1);
@@ -801,7 +836,7 @@ namespace GEE
 	{
 		if (getFilepathExtension(ProjectFilepath) == ".geeprojectold")
 			ProjectFilepath = ProjectFilepath.substr(0, ProjectFilepath.find(".geeprojectold")) + ".json";
-		std::cout << "Saving to path " << ProjectFilepath << "\n";
+		std::cout << "Saving project to path " << ProjectFilepath << "\n";
 
 		std::ofstream serializationStream(ProjectFilepath);
 		{
@@ -820,6 +855,8 @@ namespace GEE
 		serializationStream.close();
 
 		UpdateRecentProjects();
+
+		std::cout << "Project " + ProjectName + " (" + ProjectFilepath + ") saved successfully.\n";
 	}
 
 	void GameEngineEngineEditor::UpdateRecentProjects()

@@ -86,37 +86,43 @@ namespace GEE
 		std::shared_ptr<LightProbeTextureArrays> ProbeTexArrays;
 	};
 
-	class GameScenePhysicsData
+	namespace Physics
 	{
-	public:
-		GameScenePhysicsData(PhysicsEngineManager*);
-		void AddCollisionObject(CollisionObject&, Transform& t);
-		void EraseCollisionObject(CollisionObject&);
-		PhysicsEngineManager* GetPhysicsHandle();
+		class GameScenePhysicsData
+		{
+		public:
+			GameScenePhysicsData(PhysicsEngineManager*);
+			void AddCollisionObject(CollisionObject&, Transform& t);
+			void EraseCollisionObject(CollisionObject&);
+			Physics::PhysicsEngineManager* GetPhysicsHandle();
 
-		friend class PhysicsEngine;
+			friend class PhysicsEngine;
 
-	private:
-		PhysicsEngineManager* PhysicsHandle;
-		std::vector <CollisionObject*> CollisionObjects;
-		physx::PxScene* PhysXScene;
-		physx::PxControllerManager* PhysXControllerManager;
-		bool WasSetup;
-	};
+		private:
+			Physics::PhysicsEngineManager* PhysicsHandle;
+			std::vector <CollisionObject*> CollisionObjects;
+			physx::PxScene* PhysXScene;
+			physx::PxControllerManager* PhysXControllerManager;
+			bool WasSetup;
+		};
+	}
 
-	class GameSceneAudioData
+	namespace Audio
 	{
-	public:
-		GameSceneAudioData(AudioEngineManager* audioHandle);
+		class GameSceneAudioData
+		{
+		public:
+			GameSceneAudioData(AudioEngineManager* audioHandle);
 
-		void AddSource(SoundSourceComponent&);
+			void AddSource(SoundSourceComponent&);
 
-		SoundSourceComponent* FindSource(std::string name);
+			SoundSourceComponent* FindSource(std::string name);
 
-	private:
-		std::vector <std::reference_wrapper<SoundSourceComponent>> Sources;
-		AudioEngineManager* AudioHandle;
-	};
+		private:
+			std::vector <std::reference_wrapper<SoundSourceComponent>> Sources;
+			AudioEngineManager* AudioHandle;
+		};
+	}
 
 
 
@@ -132,8 +138,8 @@ namespace GEE
 		const Actor* GetRootActor() const;
 		CameraComponent* GetActiveCamera();
 		GameSceneRenderData* GetRenderData();
-		GameScenePhysicsData* GetPhysicsData();
-		GameSceneAudioData* GetAudioData();
+		Physics::GameScenePhysicsData* GetPhysicsData();
+		Audio::GameSceneAudioData* GetAudioData();
 		GameManager* GetGameHandle();
 		/**
 		 * @brief Use the function to check if this is a valid scene. If it returns true, you should remove all references to the scene and avoid processing it at all. The root actor, its children and their components become invalid along with the scene.
@@ -199,15 +205,24 @@ namespace GEE
 		~GameScene();
 		//private:
 		void MarkAsKilled();	//Note: this should probably be encapsulated
+
+
 	private:
 		void Delete();
+
+		struct Loader
+		{
+			static void LoadSceneFromFile();
+		};
+
+	private:
 		std::string Name;
 		GameManager* GameHandle;
 
 		std::unique_ptr<Actor> RootActor;
 		std::unique_ptr<GameSceneRenderData> RenderData;
-		std::unique_ptr<GameScenePhysicsData> PhysicsData;
-		std::unique_ptr<GameSceneAudioData> AudioData;
+		std::unique_ptr<Physics::GameScenePhysicsData> PhysicsData;
+		std::unique_ptr<Audio::GameSceneAudioData> AudioData;
 
 		std::vector<std::unique_ptr<HierarchyTemplate::HierarchyTreeT>> HierarchyTrees;
 

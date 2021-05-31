@@ -281,6 +281,11 @@ void UIMultipleListActor::NestList(UIListActor& list)
 		pathInputBox.SetTransform(Transform(glm::vec2(2.0f, 0.0f), glm::vec2(3.0f, 1.0f)));
 		pathInputBox.SetOnInputFunc(setFunc, getFunc);
 		UIButtonActor& selectFileActor = TemplateParent.CreateChild<UIButtonActor>("SelectFileButton");
+		AtlasMaterial* moreMat = dynamic_cast<AtlasMaterial*>(GameHandle.GetRenderEngineHandle()->FindMaterial("GEE_E_More_Mat").get());
+
+		selectFileActor.SetMatIdle(MaterialInstance(*moreMat, moreMat->GetTextureIDInterpolatorTemplate(0.0f)));
+		selectFileActor.SetMatHover(MaterialInstance(*moreMat, moreMat->GetTextureIDInterpolatorTemplate(1.0f)));
+		selectFileActor.SetMatClick(MaterialInstance(*moreMat, moreMat->GetTextureIDInterpolatorTemplate(2.0f)));
 
 		selectFileActor.SetTransform(Transform(glm::vec2(6.0f, 0.0f), glm::vec2(1.0f, 1.0f)));
 
@@ -294,6 +299,11 @@ void UIMultipleListActor::NestList(UIListActor& list)
 		pathInputBox.SetTransform(Transform(glm::vec2(2.0f, 0.0f), glm::vec2(3.0f, 1.0f)));
 		pathInputBox.SetOnInputFunc(setFunc, getFunc);
 		UIButtonActor& selectFileActor = TemplateParent.CreateChild<UIButtonActor>("SelectFolderButton");
+		AtlasMaterial* moreMat = dynamic_cast<AtlasMaterial*>(GameHandle.GetRenderEngineHandle()->FindMaterial("GEE_E_More_Mat").get());
+
+		selectFileActor.SetMatIdle(MaterialInstance(*moreMat, moreMat->GetTextureIDInterpolatorTemplate(0.0f)));
+		selectFileActor.SetMatHover(MaterialInstance(*moreMat, moreMat->GetTextureIDInterpolatorTemplate(1.0f)));
+		selectFileActor.SetMatClick(MaterialInstance(*moreMat, moreMat->GetTextureIDInterpolatorTemplate(2.0f)));
 
 		selectFileActor.SetTransform(Transform(glm::vec2(6.0f, 0.0f), glm::vec2(1.0f, 1.0f)));
 		selectFileActor.SetOnClickFunc([&pathInputBox]() { const char* path = tinyfd_selectFolderDialog("Select folder", "C:\\"); if (path) pathInputBox.PutString(path); });
@@ -411,6 +421,11 @@ void UIMultipleListActor::NestList(UIListActor& list)
 		VecInput<3>(setFunc, getFunc);
 	}
 
+	template <> void UIElementTemplates::VecInput<Vec2f>(std::function<void(float, float)> setFunc, std::function<float(float)> getFunc)
+	{
+		VecInput<2>(setFunc, getFunc);
+	}
+
 	template <> void UIElementTemplates::VecInput<Vec3f>(std::function<void(float, float)> setFunc, std::function<float(float)> getFunc)
 	{
 		VecInput<3>(setFunc, getFunc);
@@ -443,6 +458,7 @@ void UIMultipleListActor::NestList(UIListActor& list)
 
 	template void UIElementTemplates::VecInput<glm::vec2>(glm::vec2&);
 	template void UIElementTemplates::VecInput<glm::vec3>(glm::vec3&);
+	template void UIElementTemplates::VecInput<Vec2f>(Vec2f&);
 	template void UIElementTemplates::VecInput<Vec3f>(Vec3f&);
 	template void UIElementTemplates::VecInput<Vec4f>(Vec4f&);
 	template void UIElementTemplates::VecInput<glm::vec4>(glm::vec4&);
@@ -452,7 +468,7 @@ void UIMultipleListActor::NestList(UIListActor& list)
 	template void UIElementTemplates::ObjectInput<Component, ModelComponent>(Component&, std::function<void(ModelComponent*)>);
 	template void UIElementTemplates::ObjectInput<Component, BoneComponent>(Component&, std::function<void(BoneComponent*)>);
 	template void UIElementTemplates::ObjectInput<Component, LightComponent>(Component&, std::function<void(LightComponent*)>);
-	template void UIElementTemplates::ObjectInput<Component, SoundSourceComponent>(Component&, std::function<void(SoundSourceComponent*)>);
+	template void UIElementTemplates::ObjectInput<Component, Audio::SoundSourceComponent>(Component&, std::function<void(Audio::SoundSourceComponent*)>);
 	template void UIElementTemplates::ObjectInput<Component, AnimationManagerComponent>(Component&, std::function<void(AnimationManagerComponent*)>);
 
 	template void UIElementTemplates::ObjectInput<Actor, Actor>(Actor&, std::function<void(Actor*)>);
@@ -467,13 +483,13 @@ void UIMultipleListActor::NestList(UIListActor& list)
 	template void UIElementTemplates::ComponentInput<ModelComponent>(Component&, std::function<void(ModelComponent*)>);
 	template void UIElementTemplates::ComponentInput<BoneComponent>(Component&, std::function<void(BoneComponent*)>);
 	template void UIElementTemplates::ComponentInput<LightComponent>(Component&, std::function<void(LightComponent*)>);
-	template void UIElementTemplates::ComponentInput<SoundSourceComponent>(Component&, std::function<void(SoundSourceComponent*)>);
+	template void UIElementTemplates::ComponentInput<Audio::SoundSourceComponent>(Component&, std::function<void(Audio::SoundSourceComponent*)>);
 	template void UIElementTemplates::ComponentInput<AnimationManagerComponent>(Component&, std::function<void(AnimationManagerComponent*)>);
 
 	template void UIElementTemplates::ComponentInput<Component>(Component&, Component*&);
 	template void UIElementTemplates::ComponentInput<ModelComponent>(Component&, ModelComponent*&);
 	template void UIElementTemplates::ComponentInput<BoneComponent>(Component&, BoneComponent*&);
 	template void UIElementTemplates::ComponentInput<LightComponent>(Component&, LightComponent*&);
-	template void UIElementTemplates::ComponentInput<SoundSourceComponent>(Component&, SoundSourceComponent*&);
+	template void UIElementTemplates::ComponentInput<Audio::SoundSourceComponent>(Component&, Audio::SoundSourceComponent*&);
 	template void UIElementTemplates::ComponentInput<AnimationManagerComponent>(Component&, AnimationManagerComponent*&);
 }

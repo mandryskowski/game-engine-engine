@@ -80,13 +80,13 @@ namespace GEE
 			return Boxf<Vec2f>(glm::vec2(0.0f), glm::vec2(0.0f));
 
 		if (!world)
-			return Boxf<Vec2f>(GetTransform()->PositionRef, GetTransform()->ScaleRef);
+			return Boxf<Vec2f>(GetTransform()->Pos(), GetTransform()->Scale());
 
 		if (!CanvasPtr)
-			return Boxf<Vec2f>(GetTransform()->GetWorldTransform().PositionRef, GetTransform()->GetWorldTransform().ScaleRef);
+			return Boxf<Vec2f>(GetTransform()->GetWorldTransform().Pos(), GetTransform()->GetWorldTransform().Scale());
 
 		Transform canvasSpaceTransform = CanvasPtr->ToCanvasSpace(GetTransform()->GetWorldTransform());	//world == true, CanvasPtr isn't nullptr and this actor has got a Transform.
-		return Boxf<Vec2f>(canvasSpaceTransform.PositionRef, canvasSpaceTransform.ScaleRef);
+		return Boxf<Vec2f>(canvasSpaceTransform.Pos(), canvasSpaceTransform.Scale());
 	}
 
 	void UIButtonActor::SetMatIdle(MaterialInstance&& mat)
@@ -105,7 +105,12 @@ namespace GEE
 	{
 		MatClick = std::make_shared<MaterialInstance>(std::move(mat));
 		DeduceMaterial();
+	}
 
+	void UIButtonActor::SetMatDisabled(MaterialInstance&& mat)
+	{
+		MatDisabled = std::make_shared<MaterialInstance>(std::move(mat));
+		DeduceMaterial();
 	}
 
 	void UIButtonActor::SetDisableInput(bool disable)
@@ -219,7 +224,7 @@ namespace GEE
 		{
 			if (!CanvasPtr->ContainsMouse())
 				return false;
-			glm::vec2 cursorCanvasSpace = glm::inverse(CanvasPtr->UICanvas::GetViewMatrix()) * Transform(glm::vec3(0.0f), glm::vec3(0.0f), CanvasPtr->UICanvas::GetViewT().ScaleRef).GetMatrix() * glm::inverse(CanvasPtr->GetCanvasT()->GetWorldTransformMatrix()) * glm::vec4(cursorNDC, 0.0f, 1.0f);
+			glm::vec2 cursorCanvasSpace = glm::inverse(CanvasPtr->UICanvas::GetViewMatrix()) * Transform(glm::vec3(0.0f), glm::vec3(0.0f), CanvasPtr->UICanvas::GetViewT().Scale()).GetMatrix() * glm::inverse(CanvasPtr->GetCanvasT()->GetWorldTransformMatrix()) * glm::vec4(cursorNDC, 0.0f, 1.0f);
 			return CollisionTests::AlignedRectContainsPoint(CanvasPtr->ToCanvasSpace(worldT), cursorCanvasSpace);
 		}
 
@@ -261,8 +266,8 @@ namespace GEE
 
 	bool CollisionTests::AlignedRectContainsPoint(const Transform& rect, const glm::vec2& point)
 	{
-		glm::vec2 rectLeftBottom = rect.PositionRef - rect.ScaleRef;
-		return point == glm::min(glm::max(rectLeftBottom, point), rectLeftBottom + glm::vec2(rect.ScaleRef) * 2.0f);
+		glm::vec2 rectLeftBottom = rect.Pos() - rect.Scale();
+		return point == glm::min(glm::max(rectLeftBottom, point), rectLeftBottom + glm::vec2(rect.Scale()) * 2.0f);
 	}
 
 	UIActivableButtonActor::UIActivableButtonActor(GameScene& scene, Actor* parentActor, const std::string& name, std::function<void()> onClickFunc, std::function<void()> onDeactivationFunc) :

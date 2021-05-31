@@ -81,13 +81,13 @@ namespace GEE
 		const Transform& GetTransform() const;
 		std::vector<Component*> GetChildren();
 		GameScene& GetScene() const;
-		CollisionObject* GetCollisionObj() const;
+		Physics::CollisionObject* GetCollisionObj() const;
 
 		bool IsBeingKilled() const;
 
 		void SetName(std::string name);
 		void SetTransform(Transform transform);
-		CollisionObject* SetCollisionObject(std::unique_ptr<CollisionObject>);
+		Physics::CollisionObject* SetCollisionObject(std::unique_ptr<Physics::CollisionObject>);
 		virtual Component& AddComponent(std::unique_ptr<Component> component) override;
 		void AddComponents(std::vector<std::unique_ptr<Component>> components);
 
@@ -202,7 +202,7 @@ namespace GEE
 
 		Transform ComponentTransform;
 		std::vector <std::unique_ptr<Component>> Children;
-		std::unique_ptr<CollisionObject> CollisionObj;
+		std::unique_ptr<Physics::CollisionObject> CollisionObj;
 
 		GameScene& Scene; //The scene that this Component is present in
 		Actor& ActorRef;
@@ -239,7 +239,7 @@ namespace GEE
 
 		return (ChildClass&)childRef;
 	}
-	void CollisionObjRendering(RenderInfo& info, GameManager& gameHandle, CollisionObject& obj, const Transform& t, const glm::vec3& color = glm::vec3(0.1f, 0.6f, 0.3f));
+	void CollisionObjRendering(RenderInfo& info, GameManager& gameHandle, Physics::CollisionObject& obj, const Transform& t, const glm::vec3& color = glm::vec3(0.1f, 0.6f, 0.3f));
 }
 
 namespace cereal
@@ -324,15 +324,15 @@ namespace cereal
 		}
 	};
 
-	template <> struct LoadAndConstruct<GEE::SoundSourceComponent>
+	template <> struct LoadAndConstruct<GEE::Audio::SoundSourceComponent>
 	{
 		template <class Archive>
-		static void load_and_construct(Archive& ar, cereal::construct<GEE::SoundSourceComponent>& construct)
+		static void load_and_construct(Archive& ar, cereal::construct<GEE::Audio::SoundSourceComponent>& construct)
 		{
 			if (!LoadAndConstruct<GEE::Component>::ActorRef)
 				return;
 			construct(*LoadAndConstruct<GEE::Component>::ActorRef, LoadAndConstruct<GEE::Component>::ParentComp, "");
-			construct->GEE::SoundSourceComponent::Load(ar);
+			construct->GEE::Audio::SoundSourceComponent::Load(ar);
 		}
 	};
 	template <> struct LoadAndConstruct<GEE::AnimationManagerComponent>

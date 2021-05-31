@@ -71,7 +71,7 @@ namespace GEE
 	Game::Game(const ShadingModel& shading, const GameSettings& settings) :
 		AudioEng(static_cast<GameManager*>(this)), RenderEng(static_cast<GameManager*>(this)), PhysicsEng(&DebugMode), Shading(shading), Settings(nullptr), GameStarted(false), DefaultFont(nullptr), MainScene(nullptr), ActiveScene(nullptr)
 	{
-
+		GameManager::GamePtr = this;
 		glDisable(GL_MULTISAMPLE);
 		glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 
@@ -192,7 +192,7 @@ namespace GEE
 		return InputDevicesStateRetriever(*Window);
 	}
 
-	PhysicsEngineManager* Game::GetPhysicsHandle()
+	Physics::PhysicsEngineManager* Game::GetPhysicsHandle()
 	{
 		return &PhysicsEng;
 	}
@@ -202,7 +202,7 @@ namespace GEE
 		return &RenderEng;
 	}
 
-	AudioEngineManager* Game::GetAudioEngineHandle()
+	Audio::AudioEngineManager* Game::GetAudioEngineHandle()
 	{
 		return &AudioEng;
 	}
