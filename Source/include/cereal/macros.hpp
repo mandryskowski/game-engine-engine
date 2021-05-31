@@ -75,35 +75,35 @@
 //! The serialization/deserialization function name to search for.
 /*! You can define @c CEREAL_SERIALIZE_FUNCTION_NAME to be different assuming
     you do so before this file is included. */
-#define CEREAL_SERIALIZE_FUNCTION_NAME serialize
+#define CEREAL_SERIALIZE_FUNCTION_NAME Serialize
 #endif // CEREAL_SERIALIZE_FUNCTION_NAME
 
 #ifndef CEREAL_LOAD_FUNCTION_NAME
 //! The deserialization (load) function name to search for.
 /*! You can define @c CEREAL_LOAD_FUNCTION_NAME to be different assuming you do so
     before this file is included. */
-#define CEREAL_LOAD_FUNCTION_NAME load
+#define CEREAL_LOAD_FUNCTION_NAME Load
 #endif // CEREAL_LOAD_FUNCTION_NAME
 
 #ifndef CEREAL_SAVE_FUNCTION_NAME
 //! The serialization (save) function name to search for.
 /*! You can define @c CEREAL_SAVE_FUNCTION_NAME to be different assuming you do so
     before this file is included. */
-#define CEREAL_SAVE_FUNCTION_NAME save
+#define CEREAL_SAVE_FUNCTION_NAME Save
 #endif // CEREAL_SAVE_FUNCTION_NAME
 
 #ifndef CEREAL_LOAD_MINIMAL_FUNCTION_NAME
 //! The deserialization (load_minimal) function name to search for.
 /*! You can define @c CEREAL_LOAD_MINIMAL_FUNCTION_NAME to be different assuming you do so
     before this file is included. */
-#define CEREAL_LOAD_MINIMAL_FUNCTION_NAME load_minimal
+#define CEREAL_LOAD_MINIMAL_FUNCTION_NAME Load_minimal
 #endif // CEREAL_LOAD_MINIMAL_FUNCTION_NAME
 
 #ifndef CEREAL_SAVE_MINIMAL_FUNCTION_NAME
 //! The serialization (save_minimal) function name to search for.
 /*! You can define @c CEREAL_SAVE_MINIMAL_FUNCTION_NAME to be different assuming you do so
     before this file is included. */
-#define CEREAL_SAVE_MINIMAL_FUNCTION_NAME save_minimal
+#define CEREAL_SAVE_MINIMAL_FUNCTION_NAME Save_minimal
 #endif // CEREAL_SAVE_MINIMAL_FUNCTION_NAME
 
 // ######################################################################

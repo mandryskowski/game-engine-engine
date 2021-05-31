@@ -1,33 +1,36 @@
 #pragma once
 #include <scene/UIButtonActor.h>
 
-class TextComponent;
-class TextConstantSizeComponent;
-
-class UIInputBoxActor : public UIActivableButtonActor
+namespace GEE
 {
-public:
-	UIInputBoxActor(GameScene&, const std::string& name);
-	UIInputBoxActor(GameScene&, const std::string& name, std::function<void(const std::string&)> inputFunc, std::function<std::string()> valueGetter);
-	UIInputBoxActor(GameScene&, const std::string& name, std::function<void(float)> inputFunc, std::function<float()> valueGetter, bool fixNumberStr = true);
-	//UIInputBoxActor(UIInputBoxActor&&);
+	class TextComponent;
+	class TextConstantSizeComponent;
 
-	virtual void OnStart() override;
+	class UIInputBoxActor : public UIActivableButtonActor
+	{
+	public:
+		UIInputBoxActor(GameScene&, Actor* parentActor, const std::string& name);
+		UIInputBoxActor(GameScene&, Actor* parentActor, const std::string& name, std::function<void(const std::string&)> inputFunc, std::function<std::string()> valueGetter);
+		UIInputBoxActor(GameScene&, Actor* parentActor, const std::string& name, std::function<void(float)> inputFunc, std::function<float()> valueGetter, bool fixNumberStr = true);
+		UIInputBoxActor(UIInputBoxActor&&);
 
-	std::string GetContent();
-	void PutString(const std::string&);
+		virtual void OnStart() override;
 
-	void SetOnInputFunc(std::function<void(const std::string&)> inputFunc, std::function<std::string()> valueGetter);
-	void SetOnInputFunc(std::function<void(float)> inputFunc, std::function<float()> valueGetter, bool fixNumberStr = true);
-	void SetRetrieveContentEachFrame(bool);
+		std::string GetContent();
+		void PutString(const std::string&);
 
-	virtual void Update(float deltaTime) override;
+		void SetOnInputFunc(std::function<void(const std::string&)> inputFunc, std::function<std::string()> valueGetter);
+		void SetOnInputFunc(std::function<void(float)> inputFunc, std::function<float()> valueGetter, bool fixNumberStr = true);
+		void SetRetrieveContentEachFrame(bool);
 
-	virtual void HandleEvent(const Event& ev) override;
-	virtual void OnClick() override;	//On activation
-	virtual void OnDeactivation() override;
-private:
-	std::function<void()> ValueGetter;
-	TextConstantSizeComponent* ContentTextComp;
-	bool RetrieveContentEachFrame;
-};
+		virtual void Update(float deltaTime) override;
+
+		virtual void HandleEvent(const Event& ev) override;
+		virtual void OnClick() override;	//On activation
+		virtual void OnDeactivation() override;
+	private:
+		std::function<void()> ValueGetter;
+		TextConstantSizeComponent* ContentTextComp;
+		bool RetrieveContentEachFrame;
+	};
+}

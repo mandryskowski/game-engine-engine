@@ -7,33 +7,36 @@ class Transform;
 class Vec2f;
 class Vec3f;*/
 
-class BoxBase
+namespace GEE
 {
-public:
-	template <typename VecType> bool Contains(const VecType& point, const VecType& leftDown, const VecType& rightUp) const
+	class BoxBase
 	{
-		return glm::step(leftDown.GetGlmType(), point.GetGlmType()) * glm::step(point.GetGlmType(), rightUp.GetGlmType()) == VecType(1.0f);
-	}
-	template <typename VecType> bool Contains(const VecType& leftDown1, const VecType& rightUp1, const VecType& leftDown2, const VecType& rightUp2) const
+	public:
+		template <typename VecType> bool Contains(const VecType& point, const VecType& leftDown, const VecType& rightUp) const
+		{
+			return glm::step(leftDown.GetGlmType(), point.GetGlmType()) * glm::step(point.GetGlmType(), rightUp.GetGlmType()) == VecType(1.0f);
+		}
+		template <typename VecType> bool Contains(const VecType& leftDown1, const VecType& rightUp1, const VecType& leftDown2, const VecType& rightUp2) const
+		{
+			return (glm::step(leftDown1.GetGlmType(), rightUp2.GetGlmType()) * glm::step(rightUp2.GetGlmType(), rightUp1.GetGlmType()) == VecType(1.0f)) && (glm::step(leftDown1.GetGlmType(), leftDown2.GetGlmType()) * glm::step(leftDown2.GetGlmType(), rightUp1.GetGlmType()) == VecType(1.0f));
+		}
+	};
+
+	template <typename VecType = Vec2f> class Boxf : public BoxBase
 	{
-		return (glm::step(leftDown1.GetGlmType(), rightUp2.GetGlmType()) * glm::step(rightUp2.GetGlmType(), rightUp1.GetGlmType()) == VecType(1.0f)) && (glm::step(leftDown1.GetGlmType(), leftDown2.GetGlmType()) * glm::step(leftDown2.GetGlmType(), rightUp1.GetGlmType()) == VecType(1.0f));
-	}
-};
+	public:
+		VecType Position;
+		VecType Size;
 
-template <typename VecType = Vec2f> class Boxf : public BoxBase
-{
-public:
-	VecType Position;
-	VecType Size;
+		Boxf(const VecType& pos, const VecType& size);
+		Boxf(const Transform&);
 
-	Boxf(const VecType& pos, const VecType& size);
-	Boxf(const Transform&);
+		float GetRight() const;
+		float GetLeft() const;
+		float GetTop() const;
+		float GetBottom() const;
 
-	float GetRight() const;
-	float GetLeft() const;
-	float GetTop() const;
-	float GetBottom() const;
-
-	bool Contains(const VecType&) const;
-	bool Contains(const Boxf<VecType>&) const;
-};
+		bool Contains(const VecType&) const;
+		bool Contains(const Boxf<VecType>&) const;
+	};
+}

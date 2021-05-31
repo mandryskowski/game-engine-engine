@@ -7,166 +7,254 @@
 #include <cereal/types/polymorphic.hpp>
 #include <animation/SkeletonInfo.h>
 
-class GameScene;
-
-class GameSceneRenderData
+namespace GEE
 {
-public:
-	GameSceneRenderData(RenderEngineManager* renderHandle);
+	class GameScene;
+	class Event;
 
-	RenderEngineManager* GetRenderHandle();
-	LightProbeTextureArrays* GetProbeTexArrays();
-	int GetAvailableLightIndex();
-	bool ContainsLights() const;
-	bool ContainsLightProbes() const;
-	bool HasLightWithoutShadowMap() const;
-
-	void AddRenderable(RenderableComponent&);
-	void AddLight(LightComponent& light); // this function lets the engine know that the passed light component's data needs to be forwarded to shaders (therefore lighting our meshes)
-	void AddLightProbe(LightProbeComponent& probe);
-	std::shared_ptr<SkeletonInfo> AddSkeletonInfo();
-
-	void EraseRenderable(RenderableComponent&);
-	void EraseLight(LightComponent&);
-	void EraseLightProbe(LightProbeComponent&);
-
-	void SetupLights(unsigned int blockBindingSlot);
-	void UpdateLightUniforms();
-
-	int GetBatchID(SkeletonBatch&) const;
-	SkeletonBatch* GetBatch(int ID);
-
-	RenderableComponent* FindRenderable(std::string name);
-
-	template<typename Archive> void SaveSkeletonBatches(Archive& archive) const
-	{ 
-		archive(CEREAL_NVP(SkeletonBatches));
-	}
-	template<typename Archive> void LoadSkeletonBatches(Archive& archive)
+	class GameSceneRenderData
 	{
-		SkeletonBatches.clear();
-		archive(CEREAL_NVP(SkeletonBatches));
-	}
+	public:
+		GameSceneRenderData(RenderEngineManager* renderHandle, bool isAnUIScene);
 
-	friend class RenderEngine;
+		RenderEngineManager* GetRenderHandle();
+		LightProbeTextureArrays* GetProbeTexArrays();
+		int GetAvailableLightIndex();
+		bool ContainsLights() const;
+		bool ContainsLightProbes() const;
+		bool HasLightWithoutShadowMap() const;
 
-private:
-public:
-	RenderEngineManager* RenderHandle;
+		void AddRenderable(Renderable&);
+		void AddLight(LightComponent& light); // this function lets the engine know that the passed light component's data needs to be forwarded to shaders (therefore lighting our meshes)
+		void AddLightProbe(LightProbeComponent& probe);
+		std::shared_ptr<SkeletonInfo> AddSkeletonInfo();
 
-	std::vector <std::reference_wrapper<RenderableComponent>> Renderables;
-	std::vector <std::shared_ptr <SkeletonBatch>> SkeletonBatches;
-	std::vector <LightProbeComponent*> LightProbes;
+		void EraseRenderable(Renderable&);
+		void EraseLight(LightComponent&);
+		void EraseLightProbe(LightProbeComponent&);
 
-	std::vector<std::reference_wrapper<LightComponent>> Lights;
-	UniformBuffer LightsBuffer;
-	
-	int LightBlockBindingSlot;
-	bool ProbesLoaded;
+		/**
+		 * @brief Applies if bIsAnUIScene is true. Should be called after the UIDepth of a Renderable has changed.
+		 * If bIsAnUIScene is true, we must keep the Renderables vector sorted by depth (ascending order).
+		*/
+		void MarkUIRenderableDepthsDirty();
 
-	std::shared_ptr<LightProbeTextureArrays> ProbeTexArrays;
-};
+		void SetupLights(unsigned int blockBindingSlot);
+		void UpdateLightUniforms();
 
-class GameScenePhysicsData
-{
-public:
-	GameScenePhysicsData(PhysicsEngineManager*);
-	void AddCollisionObject(CollisionObject&, Transform& t);
-	void EraseCollisionObject(CollisionObject&);
-	PhysicsEngineManager* GetPhysicsHandle();
+		int GetBatchID(SkeletonBatch&) const;
+		SkeletonBatch* GetBatch(int ID);
 
-	friend class PhysicsEngine;
+		~GameSceneRenderData();
 
-private:
-	PhysicsEngineManager* PhysicsHandle;
-	std::vector <CollisionObject*> CollisionObjects;
-	physx::PxScene* PhysXScene;
-	physx::PxControllerManager* PhysXControllerManager;
-	bool WasSetup;
-};
+		//RenderableComponent* FindRenderable(std::string name);
 
-class GameSceneAudioData
-{
-public:
-	GameSceneAudioData(AudioEngineManager* audioHandle);
+		template<typename Archive> void SaveSkeletonBatches(Archive& archive) const
+		{
+			archive(CEREAL_NVP(SkeletonBatches));
+		}
+		template<typename Archive> void LoadSkeletonBatches(Archive& archive)
+		{
+			SkeletonBatches.clear();
+			archive(CEREAL_NVP(SkeletonBatches));
+		}
 
-	void AddSource(SoundSourceComponent&);
+		friend class RenderEngine;
 
-	SoundSourceComponent* FindSource(std::string name);
+	private:
+		void AssertThatUIRenderablesAreSorted();
+	public:
+		RenderEngineManager* RenderHandle;
 
-private:
-	std::vector <std::reference_wrapper<SoundSourceComponent>> Sources;
-	AudioEngineManager* AudioHandle;
-};
+		std::vector <Renderable*> Renderables;
+		/**
+		 * @brief If bIsAnUIScene is true, Renderables are sorted by UI depth upon insertion.
+		 * This allows to render UIElements with different depths correctly
+		*/
+		bool bIsAnUIScene;
+		bool bUIRenderableDepthsDirtyFlag;
 
+		std::vector <std::shared_ptr <SkeletonBatch>> SkeletonBatches;
+		std::vector <LightProbeComponent*> LightProbes;
 
+		std::vector<std::reference_wrapper<LightComponent>> Lights;
+		UniformBuffer LightsBuffer;
 
-class GameScene
-{
-public:
-	GameScene(GameManager&, const std::string& name);
-	GameScene(const GameScene&) = delete;
-	GameScene(GameScene&&);
+		int LightBlockBindingSlot;
+		bool ProbesLoaded;
 
-	const std::string& GetName() const;
-	Actor* GetRootActor();
-	const Actor* GetRootActor() const;
-	CameraComponent* GetActiveCamera();
-	GameSceneRenderData* GetRenderData();
-	GameScenePhysicsData* GetPhysicsData();
-	GameSceneAudioData* GetAudioData();
-	GameManager* GetGameHandle();
+		std::shared_ptr<LightProbeTextureArrays> ProbeTexArrays;
+	};
 
-	bool IsBeingKilled() const;
-
-	int GetHierarchyTreeCount() const;
-	HierarchyTemplate::HierarchyTreeT* GetHierarchyTree(int index);
-
-	void AddPostLoadLambda(std::function<void()>);	//Pass a function that you want to be called after this GameScene has been loaded. Warning: Using Archive in the lambda will not work unless you really know what you're doing.
-
-	Actor& AddActorToRoot(std::unique_ptr<Actor> actor);	//you use this function to make the game interact (update, draw...) with the actor; without adding it to the scene, the Actor instance isnt updated real-time by default. Pass nullptr to use the Main Scene.
-	template <typename ActorClass, typename... Args> ActorClass& CreateActorAtRoot(Args&&...);
-
-	HierarchyTemplate::HierarchyTreeT& CreateHierarchyTree(const std::string& name);
-	HierarchyTemplate::HierarchyTreeT* FindHierarchyTree(const std::string& name, HierarchyTemplate::HierarchyTreeT* treeToIgnore = nullptr);
-
-	void Update(float deltaTime);
-
-	void BindActiveCamera(CameraComponent*);
-
-	Actor* FindActor(std::string name);
-	
-	void Load()
+	namespace Physics
 	{
-		for (auto& it : PostLoadLambdas)
-			it();
+		class GameScenePhysicsData
+		{
+		public:
+			GameScenePhysicsData(PhysicsEngineManager*);
+			void AddCollisionObject(CollisionObject&, Transform& t);
+			void EraseCollisionObject(CollisionObject&);
+			Physics::PhysicsEngineManager* GetPhysicsHandle();
+
+			friend class PhysicsEngine;
+
+		private:
+			Physics::PhysicsEngineManager* PhysicsHandle;
+			std::vector <CollisionObject*> CollisionObjects;
+			physx::PxScene* PhysXScene;
+			physx::PxControllerManager* PhysXControllerManager;
+			bool WasSetup;
+		};
 	}
 
-private:
-	void MarkAsKilled();
-	void Delete();
-	std::string Name;
-	GameManager* GameHandle;
+	namespace Audio
+	{
+		class GameSceneAudioData
+		{
+		public:
+			GameSceneAudioData(AudioEngineManager* audioHandle);
 
-	std::unique_ptr<Actor> RootActor;
-	std::unique_ptr<GameSceneRenderData> RenderData;
-	std::unique_ptr<GameScenePhysicsData> PhysicsData;
-	std::unique_ptr<GameSceneAudioData> AudioData;
+			void AddSource(SoundSourceComponent&);
 
-	std::vector<std::unique_ptr<HierarchyTemplate::HierarchyTreeT>> HierarchyTrees;
+			SoundSourceComponent* FindSource(std::string name);
 
-	std::vector<std::function<void()>> PostLoadLambdas;
+		private:
+			std::vector <std::reference_wrapper<SoundSourceComponent>> Sources;
+			AudioEngineManager* AudioHandle;
+		};
+	}
 
-	CameraComponent* ActiveCamera;
 
-	bool bKillingProcessStarted;
 
-	friend class Game;
-	friend class GameEngineEngineEditor;
-};
+	class GameScene
+	{
+	public:
+		GameScene(GameManager&, const std::string& name, bool isAnUIScene = false);
+		GameScene(const GameScene&) = delete;
+		GameScene(GameScene&&);
 
-template<typename ActorClass, typename... Args>
-inline ActorClass& GameScene::CreateActorAtRoot(Args&&... args)
-{
-	return RootActor->CreateChild<ActorClass>(std::forward<Args>(args)...);
+		const std::string& GetName() const;
+		Actor* GetRootActor();
+		const Actor* GetRootActor() const;
+		CameraComponent* GetActiveCamera();
+		GameSceneRenderData* GetRenderData();
+		Physics::GameScenePhysicsData* GetPhysicsData();
+		Audio::GameSceneAudioData* GetAudioData();
+		GameManager* GetGameHandle();
+		/**
+		 * @brief Use the function to check if this is a valid scene. If it returns true, you should remove all references to the scene and avoid processing it at all. The root actor, its children and their components become invalid along with the scene.
+		 * @return a boolean indicating whether the GameScene is about to be destroyed
+		*/
+		bool IsBeingKilled() const;
+
+		int GetHierarchyTreeCount() const;
+		HierarchyTemplate::HierarchyTreeT* GetHierarchyTree(int index);
+
+		/**
+		* @brief Pass a function that you want to be called after this GameScene has been loaded. **Warning: Using Archive in the lambda will not work unless you really know what you're doing.**
+		* @param postLoadLambda: the lambda that will be called after the scene will be loaded
+		*/
+		void AddPostLoadLambda(std::function<void()> postLoadLambda);
+
+		/**
+		 * @brief Add a UICanvas to check every frame if it contains the cursor. This information can be used to disable some input outside the canvas that contains the cursor. Should be called automatically by the constructor of UICanvasActor.
+		 * @see UICanvasActor::UICanvasActor()
+		 * @param canvas: the canvas to be added
+		*/
+		void AddBlockingCanvas(UICanvas& canvas);
+		/**
+		 * @brief Erase a UICanvas to stop checking every frame if it contains a cursor. Must be called when the UICanvas is about to be killed (gets destroyed). Should be called automatically by the destructor of UICanvasActor.
+		 * @see UICanvasActor::~UICanvasActor()
+		 * @param canvas: the canvas to be erased
+		*/
+		void EraseBlockingCanvas(UICanvas&);
+
+		/**
+		 * @brief Get the canvas that contains the cursor in this frame. Events handled by UIElements outside the canvas should be treated differently.
+		 * @return a UICanvas pointer to the blocking canvas (or nullptr if there isn't any)
+		*/
+		UICanvas* GetCurrentBlockingCanvas() const;
+
+		/**
+		 * @brief Returns an actor name that is guaranteed to be unique (no other actor in the scene has it). Always use this function if there is a possibility of duplicating actor names - this can cause crashes.
+		 * @param name: the name that should be converted to unique
+		 * @return a string of characters containing an unique actor name (can be the same as the parameter)
+		*/
+		std::string GetUniqueActorName(const std::string& name) const;
+
+		//You use this function to make the game interact (update, draw...) with the actor; without adding it to the scene, the Actor instance isnt updated real-time by default. Pass nullptr to use the Main Scene.
+		Actor& AddActorToRoot(std::unique_ptr<Actor> actor);
+		template <typename ActorClass, typename... Args> ActorClass& CreateActorAtRoot(Args&&...);
+
+		HierarchyTemplate::HierarchyTreeT& CreateHierarchyTree(const std::string& name);
+		HierarchyTemplate::HierarchyTreeT* FindHierarchyTree(const std::string& name, HierarchyTemplate::HierarchyTreeT* treeToIgnore = nullptr);
+
+		void HandleEventAll(const Event&);
+		void Update(float deltaTime);
+
+		void BindActiveCamera(CameraComponent*);
+
+		Actor* FindActor(std::string name);
+
+		void Load()
+		{
+			for (auto& it : PostLoadLambdas)
+				it();
+		}
+
+		~GameScene();
+		//private:
+		void MarkAsKilled();	//Note: this should probably be encapsulated
+
+
+	private:
+		void Delete();
+
+		struct Loader
+		{
+			static void LoadSceneFromFile();
+		};
+
+	private:
+		std::string Name;
+		GameManager* GameHandle;
+
+		std::unique_ptr<Actor> RootActor;
+		std::unique_ptr<GameSceneRenderData> RenderData;
+		std::unique_ptr<Physics::GameScenePhysicsData> PhysicsData;
+		std::unique_ptr<Audio::GameSceneAudioData> AudioData;
+
+		std::vector<std::unique_ptr<HierarchyTemplate::HierarchyTreeT>> HierarchyTrees;
+
+		/**
+		* @brief If the cursor is contained within one of these canvases, you most likely should disable some interaction with UI elements outside the canvas.
+		* The canvas with the highest depth has the priority if a mouse is contained within many canvases (if many canvases with the same depth contain the cursor, one will be chosen).
+		* Must be sorted by CanvasDepth in ascending order.
+		* Note: this should perhaps be moved to a separate class GameSceneUIData
+		* @see UICanvas::GetCanvasDepth()
+		*/
+		std::vector<UICanvas*> BlockingCanvases;
+
+		/**
+		 * @brief Points to the canvas (if there is any) containing the cursor in the current frame.
+		*/
+		UICanvas* CurrentBlockingCanvas;
+
+
+		std::vector<std::function<void()>> PostLoadLambdas;
+
+		CameraComponent* ActiveCamera;
+
+		bool bKillingProcessStarted;
+
+		friend class Game;
+		friend class GameEngineEngineEditor;
+	};
+
+	template<typename ActorClass, typename... Args>
+	inline ActorClass& GameScene::CreateActorAtRoot(Args&&... args)
+	{
+		return RootActor->CreateChild<ActorClass>(std::forward<Args>(args)...);
+	}
+
 }

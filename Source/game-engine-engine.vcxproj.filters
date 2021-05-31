@@ -168,9 +168,6 @@
     <ClCompile Include="source\UI\UIListActor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="source\scene\HierarchyTemplate.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="include\scene\PawnActor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -178,6 +175,27 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="source\scene\LightProbeComponent.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\UI\UIComponent.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="include\UI\UIActor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\whereami.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\editor\GameEngineEngineEditor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\scene\hierarchy\HierarchyTree.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\scene\hierarchy\HierarchyNode.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\math\Vec.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -335,9 +353,6 @@
     <ClInclude Include="include\UI\UIListActor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\scene\HierarchyTemplate.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="include\scene\PawnActor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -345,6 +360,21 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\scene\LightProbeComponent.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\UI\UIComponent.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\editor\GameEngineEngineEditor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\scene\hierarchy\HierarchyTree.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\scene\hierarchy\HierarchyNode.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\math\Vec.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -140,15 +140,19 @@
   <ItemGroup>
     <ClCompile Include="include\scene\PawnActor.cpp" />
     <ClCompile Include="include\scene\UIWindowActor.cpp" />
+    <ClCompile Include="include\UI\UIActor.cpp" />
     <ClCompile Include="source\animation\AnimationManagerActor.cpp" />
     <ClCompile Include="source\animation\SkeletonInfo.cpp" />
+    <ClCompile Include="source\editor\GameEngineEngineEditor.cpp" />
     <ClCompile Include="source\game\GameManager.cpp" />
+    <ClCompile Include="source\math\Vec.cpp" />
     <ClCompile Include="source\scene\Actor.cpp" />
     <ClCompile Include="source\animation\Animation.cpp" />
     <ClCompile Include="source\audio\AudioEngine.cpp" />
     <ClCompile Include="source\scene\BoneComponent.cpp" />
     <ClCompile Include="source\math\Box.cpp" />
-    <ClCompile Include="source\scene\HierarchyTemplate.cpp" />
+    <ClCompile Include="source\scene\hierarchy\HierarchyNode.cpp" />
+    <ClCompile Include="source\scene\hierarchy\HierarchyTree.cpp" />
     <ClCompile Include="source\scene\LightProbeComponent.cpp" />
     <ClCompile Include="source\scene\UIButtonActor.cpp" />
     <ClCompile Include="source\scene\CameraComponent.cpp" />
@@ -185,6 +189,7 @@
     <ClCompile Include="source\glad.c" />
     <ClCompile Include="source\UI\UICanvas.cpp" />
     <ClCompile Include="source\UI\UICanvasField.cpp" />
+    <ClCompile Include="source\UI\UIComponent.cpp" />
     <ClCompile Include="source\UI\UIElement.cpp" />
     <ClCompile Include="source\scene\TextComponent.cpp" />
     <ClCompile Include="source\rendering\Texture.cpp" />
@@ -193,18 +198,22 @@
     <ClCompile Include="source\UI\UIListActor.cpp" />
     <ClCompile Include="source\utility\Utility.cpp" />
     <ClCompile Include="source\rendering\Viewport.cpp" />
+    <ClCompile Include="source\whereami.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\animation\AnimationManagerActor.h" />
     <ClInclude Include="include\animation\SkeletonInfo.h" />
     <ClInclude Include="include\editor\EditorManager.h" />
+    <ClInclude Include="include\editor\GameEngineEngineEditor.h" />
+    <ClInclude Include="include\math\Vec.h" />
     <ClInclude Include="include\scene\Actor.h" />
     <ClInclude Include="include\animation\Animation.h" />
     <ClInclude Include="include\audio\AudioEngine.h" />
     <ClInclude Include="include\audio\AudioFile.h" />
     <ClInclude Include="include\scene\BoneComponent.h" />
     <ClInclude Include="include\math\Box.h" />
-    <ClInclude Include="include\scene\HierarchyTemplate.h" />
+    <ClInclude Include="include\scene\hierarchy\HierarchyNode.h" />
+    <ClInclude Include="include\scene\hierarchy\HierarchyTree.h" />
     <ClInclude Include="include\scene\LightProbeComponent.h" />
     <ClInclude Include="include\scene\PawnActor.h" />
     <ClInclude Include="include\scene\UIButtonActor.h" />
@@ -227,6 +236,7 @@
     <ClInclude Include="include\UI\UIActor.h" />
     <ClInclude Include="include\UI\UICanvas.h" />
     <ClInclude Include="include\UI\UICanvasField.h" />
+    <ClInclude Include="include\UI\UIComponent.h" />
     <ClInclude Include="include\UI\UIElement.h" />
     <ClInclude Include="include\input\InputDevicesStateRetriever.h" />
     <ClInclude Include="include\scene\LightComponent.h" />

@@ -1,5 +1,5 @@
 #define MAX_LIGHTS 16
-#define M_PI 3.14159
+#define M_PI 3.14159265359
 #define MAX_PREFILTER_MIPMAP 4.0
 
 #if !defined(POINT_LIGHT) && !defined(DIRECTIONAL_LIGHT) && !defined(SPOT_LIGHT) && !defined(IBL_PASS)

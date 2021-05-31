@@ -1,38 +1,37 @@
 #pragma once
 #include <scene/Component.h>
 #include <rendering/RenderInfo.h>
-
-class Renderable
+namespace GEE
 {
-public:
-	virtual void Render(const RenderInfo& info, Shader* shader) = 0;
-};
+	class Renderable
+	{
+	public:
+		Renderable(GameScene& scene) : SceneRenderData(*scene.GetRenderData()), Hide(false) { SceneRenderData.AddRenderable(*this); }
+		Renderable(Renderable&& renderable) : SceneRenderData(renderable.SceneRenderData), Hide(renderable.Hide) { SceneRenderData.AddRenderable(*this); }
+		virtual void Render(const RenderInfo& info, Shader* shader) = 0;
+		bool GetHide() const { return Hide; }
+		void SetHide(bool hide) { Hide = hide; }
+		~Renderable() { SceneRenderData.EraseRenderable(*this); }
+	protected:
+		virtual unsigned int GetUIDepth() const { return 0; }
+		bool Hide;
+		GameSceneRenderData& SceneRenderData;
+		friend class RenderEngine;
+		friend class GameSceneRenderData;
+		friend class UIComponent;
+	};
 
-class RenderableComponent: public Component, public Renderable
-{
-public:
-	RenderableComponent::RenderableComponent(Actor& actor, Component* parentComp, const std::string name, const Transform& transform) :
-		Component(actor, parentComp, name, transform),
-		Hide(false)
+
+	class RenderableComponent : public Component, public Renderable
 	{
-		if (Name == "Tunnel")
-			std::cout << "Dodaje z constructora\n";
-		Scene.GetRenderData()->AddRenderable(*this);
-	}
-	RenderableComponent(RenderableComponent&& comp) :
-		Component(std::move(comp))
-	{
-		if (Name == "Tunnel")
-			std::cout << "Dodaje z move\n";
-		Scene.GetRenderData()->AddRenderable(*this);
-	}
-	virtual void DebugRender(RenderInfo info, Shader* shader) const override {}
-	bool GetHide() const { return Hide; }
-	void SetHide(bool hide) { Hide = hide; }
-	virtual ~RenderableComponent()
-	{
-		Scene.GetRenderData()->EraseRenderable(*this);
-	}
-protected:
-	bool Hide;
-};
+	public:
+		RenderableComponent(Actor& actor, Component* parentComp, const std::string name, const Transform& transform) :
+			Component(actor, parentComp, name, transform),
+			Renderable(Scene) {}
+		RenderableComponent(RenderableComponent&& comp) :
+			Component(std::move(comp)),
+			Renderable(std::move(comp)) {}
+		virtual void DebugRender(RenderInfo info, Shader* shader) const override {}
+	protected:
+	};
+}

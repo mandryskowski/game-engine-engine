@@ -20,7 +20,7 @@ uniform Material material;
 void main()
 {
 	fragColor = mix(texture(material.albedo1, texCoord1), texture(material.albedo1, texCoord2), blend);
-	if (material.color != vec4(0.0))
+	if (material.color.rgb != vec3(0.0) && fragColor.rgb == vec3(0.0))
 		fragColor = material.color;
 	brightColor = fragColor;
 	
