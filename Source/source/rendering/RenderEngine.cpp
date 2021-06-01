@@ -547,7 +547,10 @@ namespace GEE
 		BoundMaterial = nullptr;
 
 		for (unsigned int i = 0; i < sceneRenderData->Renderables.size(); i++)
-			sceneRenderData->Renderables[i]->Render(info, shader);
+			if (info.OnlyShadowCasters && !sceneRenderData->Renderables[i]->CastsShadow())
+				continue;
+			else
+				sceneRenderData->Renderables[i]->Render(info, shader);
 	}
 
 	void RenderEngine::RenderRawSceneUI(const RenderInfo& infoTemplate, GameSceneRenderData* sceneRenderData)

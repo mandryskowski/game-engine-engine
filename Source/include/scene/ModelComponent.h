@@ -54,12 +54,12 @@ namespace GEE
 
 		template <typename Archive> void Save(Archive& archive) const
 		{
-			archive(CEREAL_NVP(RenderAsBillboard), CEREAL_NVP(Hide), CEREAL_NVP(MeshInstances), cereal::make_nvp("SkelInfoBatchID", (SkelInfo) ? (SkelInfo->GetBatchPtr()->GetBatchID()) : (-1)), cereal::make_nvp("SkelInfoID", (SkelInfo) ? (SkelInfo->GetInfoID()) : (-1)), cereal::make_nvp("Component", cereal::base_class<Component>(this)));
+			archive(CEREAL_NVP(RenderAsBillboard), CEREAL_NVP(MeshInstances), cereal::make_nvp("SkelInfoBatchID", (SkelInfo) ? (SkelInfo->GetBatchPtr()->GetBatchID()) : (-1)), cereal::make_nvp("SkelInfoID", (SkelInfo) ? (SkelInfo->GetInfoID()) : (-1)), cereal::make_nvp("RenderableComponent", cereal::base_class<RenderableComponent>(this)));
 		}
 		template <typename Archive> void Load(Archive& archive)	//Assumptions: Order of batches and their Skeletons is not changed during loading.
 		{
 			int skelInfoBatchID, skelInfoID;
-			archive(CEREAL_NVP(RenderAsBillboard), CEREAL_NVP(Hide), CEREAL_NVP(MeshInstances), cereal::make_nvp("SkelInfoBatchID", skelInfoBatchID), cereal::make_nvp("SkelInfoID", skelInfoID), cereal::make_nvp("Component", cereal::base_class<Component>(this)));
+			archive(CEREAL_NVP(RenderAsBillboard), CEREAL_NVP(MeshInstances), cereal::make_nvp("SkelInfoBatchID", skelInfoBatchID), cereal::make_nvp("SkelInfoID", skelInfoID), cereal::make_nvp("RenderableComponent", cereal::base_class<RenderableComponent>(this)));
 			if (skelInfoID >= 0)
 			{
 				SkelInfo = Scene.GetRenderData()->GetBatch(skelInfoBatchID)->GetInfo(skelInfoID);

@@ -439,7 +439,6 @@
                                                                 "valid": 1,
                                                                 "data": {
                                                                     "RenderAsBillboard": false,
-                                                                    "Hide": false,
                                                                     "MeshInstances": [
                                                                         {
                                                                             "ptr_wrapper": {
@@ -459,32 +458,36 @@
                                                                     ],
                                                                     "SkelInfoBatchID": 0,
                                                                     "SkelInfoID": 0,
-                                                                    "Component": {
-                                                                        "Name": "Shotgun_Cube",
-                                                                        "ComponentTransform": {
-                                                                            "Position": {
-                                                                                "x": 0.0,
-                                                                                "y": 0.0,
-                                                                                "z": 0.0
+                                                                    "RenderableComponent": {
+                                                                        "Hide": false,
+                                                                        "CastsShadow": true,
+                                                                        "Component": {
+                                                                            "Name": "Shotgun_Cube",
+                                                                            "ComponentTransform": {
+                                                                                "Position": {
+                                                                                    "x": 0.0,
+                                                                                    "y": 0.0,
+                                                                                    "z": 0.0
+                                                                                },
+                                                                                "Rotation": {
+                                                                                    "x": -3.637978807091713e-12,
+                                                                                    "y": 0.0,
+                                                                                    "z": 0.0,
+                                                                                    "w": 1.0
+                                                                                },
+                                                                                "_Scale": {
+                                                                                    "x": 1.0,
+                                                                                    "y": 1.0,
+                                                                                    "z": 1.0
+                                                                                }
                                                                             },
-                                                                            "Rotation": {
-                                                                                "x": -3.637978807091713e-12,
-                                                                                "y": 0.0,
-                                                                                "z": 0.0,
-                                                                                "w": 1.0
+                                                                            "CollisionObj": {
+                                                                                "ptr_wrapper": {
+                                                                                    "valid": 0
+                                                                                }
                                                                             },
-                                                                            "_Scale": {
-                                                                                "x": 1.0,
-                                                                                "y": 1.0,
-                                                                                "z": 1.0
-                                                                            }
-                                                                        },
-                                                                        "CollisionObj": {
-                                                                            "ptr_wrapper": {
-                                                                                "valid": 0
-                                                                            }
-                                                                        },
-                                                                        "Children": []
+                                                                            "Children": []
+                                                                        }
                                                                     }
                                                                 }
                                                             }
@@ -495,7 +498,6 @@
                                                                 "valid": 1,
                                                                 "data": {
                                                                     "RenderAsBillboard": false,
-                                                                    "Hide": false,
                                                                     "MeshInstances": [
                                                                         {
                                                                             "ptr_wrapper": {
@@ -515,32 +517,36 @@
                                                                     ],
                                                                     "SkelInfoBatchID": 0,
                                                                     "SkelInfoID": 0,
-                                                                    "Component": {
-                                                                        "Name": "Barrel+Release",
-                                                                        "ComponentTransform": {
-                                                                            "Position": {
-                                                                                "x": 0.0,
-                                                                                "y": 0.0,
-                                                                                "z": 0.0
+                                                                    "RenderableComponent": {
+                                                                        "Hide": false,
+                                                                        "CastsShadow": true,
+                                                                        "Component": {
+                                                                            "Name": "Barrel+Release",
+                                                                            "ComponentTransform": {
+                                                                                "Position": {
+                                                                                    "x": 0.0,
+                                                                                    "y": 0.0,
+                                                                                    "z": 0.0
+                                                                                },
+                                                                                "Rotation": {
+                                                                                    "x": -3.637978807091713e-12,
+                                                                                    "y": 0.0,
+                                                                                    "z": 0.0,
+                                                                                    "w": 1.0
+                                                                                },
+                                                                                "_Scale": {
+                                                                                    "x": 1.0,
+                                                                                    "y": 1.0,
+                                                                                    "z": 1.0
+                                                                                }
                                                                             },
-                                                                            "Rotation": {
-                                                                                "x": -3.637978807091713e-12,
-                                                                                "y": 0.0,
-                                                                                "z": 0.0,
-                                                                                "w": 1.0
+                                                                            "CollisionObj": {
+                                                                                "ptr_wrapper": {
+                                                                                    "valid": 0
+                                                                                }
                                                                             },
-                                                                            "_Scale": {
-                                                                                "x": 1.0,
-                                                                                "y": 1.0,
-                                                                                "z": 1.0
-                                                                            }
-                                                                        },
-                                                                        "CollisionObj": {
-                                                                            "ptr_wrapper": {
-                                                                                "valid": 0
-                                                                            }
-                                                                        },
-                                                                        "Children": []
+                                                                            "Children": []
+                                                                        }
                                                                     }
                                                                 }
                                                             }
@@ -588,7 +594,6 @@
                                                                 "valid": 1,
                                                                 "data": {
                                                                     "RenderAsBillboard": true,
-                                                                    "Hide": false,
                                                                     "MeshInstances": [
                                                                         {
                                                                             "ptr_wrapper": {
@@ -608,32 +613,36 @@
                                                                     ],
                                                                     "SkelInfoBatchID": 0,
                                                                     "SkelInfoID": 5,
-                                                                    "Component": {
-                                                                        "Name": "Quad",
-                                                                        "ComponentTransform": {
-                                                                            "Position": {
-                                                                                "x": 0.0,
-                                                                                "y": 0.0,
-                                                                                "z": -3.0
+                                                                    "RenderableComponent": {
+                                                                        "Hide": false,
+                                                                        "CastsShadow": true,
+                                                                        "Component": {
+                                                                            "Name": "Quad",
+                                                                            "ComponentTransform": {
+                                                                                "Position": {
+                                                                                    "x": 0.0,
+                                                                                    "y": 0.0,
+                                                                                    "z": -3.0
+                                                                                },
+                                                                                "Rotation": {
+                                                                                    "x": 0.0,
+                                                                                    "y": 0.0,
+                                                                                    "z": 0.0,
+                                                                                    "w": 1.0
+                                                                                },
+                                                                                "_Scale": {
+                                                                                    "x": 1.0,
+                                                                                    "y": 1.0,
+                                                                                    "z": 1.0
+                                                                                }
                                                                             },
-                                                                            "Rotation": {
-                                                                                "x": 0.0,
-                                                                                "y": 0.0,
-                                                                                "z": 0.0,
-                                                                                "w": 1.0
+                                                                            "CollisionObj": {
+                                                                                "ptr_wrapper": {
+                                                                                    "valid": 0
+                                                                                }
                                                                             },
-                                                                            "_Scale": {
-                                                                                "x": 1.0,
-                                                                                "y": 1.0,
-                                                                                "z": 1.0
-                                                                            }
-                                                                        },
-                                                                        "CollisionObj": {
-                                                                            "ptr_wrapper": {
-                                                                                "valid": 0
-                                                                            }
-                                                                        },
-                                                                        "Children": []
+                                                                            "Children": []
+                                                                        }
                                                                     }
                                                                 }
                                                             }
@@ -728,7 +737,6 @@
                                             "valid": 1,
                                             "data": {
                                                 "RenderAsBillboard": false,
-                                                "Hide": false,
                                                 "MeshInstances": [
                                                     {
                                                         "ptr_wrapper": {
@@ -748,32 +756,36 @@
                                                 ],
                                                 "SkelInfoBatchID": 0,
                                                 "SkelInfoID": 1,
-                                                "Component": {
-                                                    "Name": "Cube",
-                                                    "ComponentTransform": {
-                                                        "Position": {
-                                                            "x": 0.0,
-                                                            "y": 0.0,
-                                                            "z": 0.0
+                                                "RenderableComponent": {
+                                                    "Hide": false,
+                                                    "CastsShadow": true,
+                                                    "Component": {
+                                                        "Name": "Cube",
+                                                        "ComponentTransform": {
+                                                            "Position": {
+                                                                "x": 0.0,
+                                                                "y": 0.0,
+                                                                "z": 0.0
+                                                            },
+                                                            "Rotation": {
+                                                                "x": 0.0,
+                                                                "y": 0.0,
+                                                                "z": 0.0,
+                                                                "w": 1.0
+                                                            },
+                                                            "_Scale": {
+                                                                "x": 1.0,
+                                                                "y": 1.0,
+                                                                "z": 1.0
+                                                            }
                                                         },
-                                                        "Rotation": {
-                                                            "x": 0.0,
-                                                            "y": 0.0,
-                                                            "z": 0.0,
-                                                            "w": 1.0
+                                                        "CollisionObj": {
+                                                            "ptr_wrapper": {
+                                                                "valid": 0
+                                                            }
                                                         },
-                                                        "_Scale": {
-                                                            "x": 1.0,
-                                                            "y": 1.0,
-                                                            "z": 1.0
-                                                        }
-                                                    },
-                                                    "CollisionObj": {
-                                                        "ptr_wrapper": {
-                                                            "valid": 0
-                                                        }
-                                                    },
-                                                    "Children": []
+                                                        "Children": []
+                                                    }
                                                 }
                                             }
                                         }
@@ -863,7 +875,6 @@
                                             "valid": 1,
                                             "data": {
                                                 "RenderAsBillboard": false,
-                                                "Hide": false,
                                                 "MeshInstances": [
                                                     {
                                                         "ptr_wrapper": {
@@ -973,32 +984,36 @@
                                                 ],
                                                 "SkelInfoBatchID": 0,
                                                 "SkelInfoID": 2,
-                                                "Component": {
-                                                    "Name": "Sphere",
-                                                    "ComponentTransform": {
-                                                        "Position": {
-                                                            "x": 0.0,
-                                                            "y": 0.0,
-                                                            "z": 0.0
+                                                "RenderableComponent": {
+                                                    "Hide": false,
+                                                    "CastsShadow": true,
+                                                    "Component": {
+                                                        "Name": "Sphere",
+                                                        "ComponentTransform": {
+                                                            "Position": {
+                                                                "x": 0.0,
+                                                                "y": 0.0,
+                                                                "z": 0.0
+                                                            },
+                                                            "Rotation": {
+                                                                "x": 0.0,
+                                                                "y": 0.0,
+                                                                "z": 0.0,
+                                                                "w": 1.0
+                                                            },
+                                                            "_Scale": {
+                                                                "x": 1.0,
+                                                                "y": 1.0,
+                                                                "z": 1.0
+                                                            }
                                                         },
-                                                        "Rotation": {
-                                                            "x": 0.0,
-                                                            "y": 0.0,
-                                                            "z": 0.0,
-                                                            "w": 1.0
+                                                        "CollisionObj": {
+                                                            "ptr_wrapper": {
+                                                                "valid": 0
+                                                            }
                                                         },
-                                                        "_Scale": {
-                                                            "x": 1.0,
-                                                            "y": 1.0,
-                                                            "z": 1.0
-                                                        }
-                                                    },
-                                                    "CollisionObj": {
-                                                        "ptr_wrapper": {
-                                                            "valid": 0
-                                                        }
-                                                    },
-                                                    "Children": []
+                                                        "Children": []
+                                                    }
                                                 }
                                             }
                                         }
@@ -1013,32 +1028,36 @@
                                                 "Content": "<TAB> to switch to/from editor",
                                                 "HAlignment": 1,
                                                 "VAlignment": 1,
-                                                "Component": {
-                                                    "Name": "A TextComponent",
-                                                    "ComponentTransform": {
-                                                        "Position": {
-                                                            "x": 0.0,
-                                                            "y": 2.0,
-                                                            "z": 0.0
+                                                "RenderableComponent": {
+                                                    "Hide": false,
+                                                    "CastsShadow": true,
+                                                    "Component": {
+                                                        "Name": "A TextComponent",
+                                                        "ComponentTransform": {
+                                                            "Position": {
+                                                                "x": 0.0,
+                                                                "y": 2.0,
+                                                                "z": 0.0
+                                                            },
+                                                            "Rotation": {
+                                                                "x": 0.0,
+                                                                "y": 0.0,
+                                                                "z": 0.0,
+                                                                "w": 1.0
+                                                            },
+                                                            "_Scale": {
+                                                                "x": 0.4000000059604645,
+                                                                "y": 0.4000000059604645,
+                                                                "z": 1.0
+                                                            }
                                                         },
-                                                        "Rotation": {
-                                                            "x": 0.0,
-                                                            "y": 0.0,
-                                                            "z": 0.0,
-                                                            "w": 1.0
+                                                        "CollisionObj": {
+                                                            "ptr_wrapper": {
+                                                                "valid": 0
+                                                            }
                                                         },
-                                                        "_Scale": {
-                                                            "x": 0.4000000059604645,
-                                                            "y": 0.4000000059604645,
-                                                            "z": 1.0
-                                                        }
-                                                    },
-                                                    "CollisionObj": {
-                                                        "ptr_wrapper": {
-                                                            "valid": 0
-                                                        }
-                                                    },
-                                                    "Children": []
+                                                        "Children": []
+                                                    }
                                                 }
                                             }
                                         }
@@ -1063,43 +1082,214 @@
                             "valid": 1,
                             "data": {
                                 "RenderAsBillboard": false,
-                                "Hide": false,
                                 "MeshInstances": [],
                                 "SkelInfoBatchID": -1,
                                 "SkelInfoID": -1,
-                                "Component": {
-                                    "Name": "hqSphere/hqSphere.obj",
-                                    "ComponentTransform": {
-                                        "Position": {
-                                            "x": 2.6710753440856935,
-                                            "y": -0.30000030994415285,
-                                            "z": 0.05045346915721893
+                                "RenderableComponent": {
+                                    "Hide": false,
+                                    "CastsShadow": true,
+                                    "Component": {
+                                        "Name": "hqSphere/hqSphere.obj",
+                                        "ComponentTransform": {
+                                            "Position": {
+                                                "x": 2.671083450317383,
+                                                "y": -0.30000030994415285,
+                                                "z": 0.05045390874147415
+                                            },
+                                            "Rotation": {
+                                                "x": 0.5753604769706726,
+                                                "y": 0.331224262714386,
+                                                "z": 0.31014710664749148,
+                                                "w": 0.6804848909378052
+                                            },
+                                            "_Scale": {
+                                                "x": 0.20000000298023225,
+                                                "y": 0.20000000298023225,
+                                                "z": 0.20000000298023225
+                                            }
                                         },
-                                        "Rotation": {
-                                            "x": 0.5753758549690247,
-                                            "y": 0.3311990797519684,
-                                            "z": 0.31011882424354555,
-                                            "w": 0.6804970502853394
+                                        "CollisionObj": {
+                                            "ptr_wrapper": {
+                                                "valid": 1,
+                                                "data": {
+                                                    "IsStatic": false,
+                                                    "IgnoreRotation": false,
+                                                    "Shapes": [
+                                                        {
+                                                            "ptr_wrapper": {
+                                                                "id": 2147483666,
+                                                                "data": {
+                                                                    "Type": 1,
+                                                                    "ShapeTransform": {
+                                                                        "Position": {
+                                                                            "x": 0.0,
+                                                                            "y": 0.0,
+                                                                            "z": 0.0
+                                                                        },
+                                                                        "Rotation": {
+                                                                            "x": 0.0,
+                                                                            "y": 0.0,
+                                                                            "z": 0.0,
+                                                                            "w": 1.0
+                                                                        },
+                                                                        "_Scale": {
+                                                                            "x": 1.0,
+                                                                            "y": 1.0,
+                                                                            "z": 1.0
+                                                                        }
+                                                                    },
+                                                                    "OptionalTreeName": "",
+                                                                    "OptionalMeshNodeName": "",
+                                                                    "OptionalMeshSpecificName": ""
+                                                                }
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            }
                                         },
-                                        "_Scale": {
-                                            "x": 0.20000000298023225,
-                                            "y": 0.20000000298023225,
-                                            "z": 0.20000000298023225
-                                        }
-                                    },
-                                    "CollisionObj": {
-                                        "ptr_wrapper": {
-                                            "valid": 1,
-                                            "data": {
-                                                "IsStatic": false,
-                                                "IgnoreRotation": false,
-                                                "Shapes": [
-                                                    {
-                                                        "ptr_wrapper": {
-                                                            "id": 2147483666,
-                                                            "data": {
-                                                                "Type": 1,
-                                                                "ShapeTransform": {
+                                        "Children": [
+                                            {
+                                                "polymorphic_id": 5,
+                                                "ptr_wrapper": {
+                                                    "valid": 1,
+                                                    "data": {
+                                                        "RenderAsBillboard": false,
+                                                        "MeshInstances": [
+                                                            {
+                                                                "ptr_wrapper": {
+                                                                    "valid": 1,
+                                                                    "data": {
+                                                                        "MeshTreePath": "hqSphere/hqSphere.obj",
+                                                                        "MeshNodeName": "Sphere",
+                                                                        "MeshSpecificName": "Sphere",
+                                                                        "MaterialInst": {
+                                                                            "ptr_wrapper": {
+                                                                                "id": 2147483667,
+                                                                                "data": {
+                                                                                    "MaterialName": "RustedIron",
+                                                                                    "MaterialOptionalPath": "",
+                                                                                    "ExternalMaterial": {
+                                                                                        "polymorphic_id": 1073741824,
+                                                                                        "ptr_wrapper": {
+                                                                                            "id": 2147483668,
+                                                                                            "data": {
+                                                                                                "Name": "RustedIron",
+                                                                                                "Textures": [
+                                                                                                    {
+                                                                                                        "polymorphic_id": 1073741824,
+                                                                                                        "ptr_wrapper": {
+                                                                                                            "id": 2147483669,
+                                                                                                            "data": {
+                                                                                                                "ShaderName": "albedo1",
+                                                                                                                "Texture": {
+                                                                                                                    "Type": 3553,
+                                                                                                                    "InternalFormat": 35906,
+                                                                                                                    "Path": "EngineMaterials/rustediron_albedo.png"
+                                                                                                                }
+                                                                                                            }
+                                                                                                        }
+                                                                                                    },
+                                                                                                    {
+                                                                                                        "polymorphic_id": 1073741824,
+                                                                                                        "ptr_wrapper": {
+                                                                                                            "id": 2147483670,
+                                                                                                            "data": {
+                                                                                                                "ShaderName": "metallic1",
+                                                                                                                "Texture": {
+                                                                                                                    "Type": 3553,
+                                                                                                                    "InternalFormat": 6407,
+                                                                                                                    "Path": "EngineMaterials/rustediron_metallic.png"
+                                                                                                                }
+                                                                                                            }
+                                                                                                        }
+                                                                                                    },
+                                                                                                    {
+                                                                                                        "polymorphic_id": 1073741824,
+                                                                                                        "ptr_wrapper": {
+                                                                                                            "id": 2147483671,
+                                                                                                            "data": {
+                                                                                                                "ShaderName": "roughness1",
+                                                                                                                "Texture": {
+                                                                                                                    "Type": 3553,
+                                                                                                                    "InternalFormat": 6407,
+                                                                                                                    "Path": "EngineMaterials/rustediron_roughness.png"
+                                                                                                                }
+                                                                                                            }
+                                                                                                        }
+                                                                                                    },
+                                                                                                    {
+                                                                                                        "polymorphic_id": 1073741824,
+                                                                                                        "ptr_wrapper": {
+                                                                                                            "id": 2147483672,
+                                                                                                            "data": {
+                                                                                                                "ShaderName": "normal1",
+                                                                                                                "Texture": {
+                                                                                                                    "Type": 3553,
+                                                                                                                    "InternalFormat": 6407,
+                                                                                                                    "Path": "EngineMaterials/rustediron_normal.png"
+                                                                                                                }
+                                                                                                            }
+                                                                                                        }
+                                                                                                    },
+                                                                                                    {
+                                                                                                        "polymorphic_id": 1073741824,
+                                                                                                        "ptr_wrapper": {
+                                                                                                            "id": 2147483673,
+                                                                                                            "data": {
+                                                                                                                "ShaderName": "xd",
+                                                                                                                "Texture": {
+                                                                                                                    "Type": 3553,
+                                                                                                                    "InternalFormat": 6407,
+                                                                                                                    "Path": "C:\\Users\\48511\\source\\repos\\swetroniusz\\game-engine-engine\\Source\\EngineMaterials\\bricks_disp.jpg"
+                                                                                                                }
+                                                                                                            }
+                                                                                                        }
+                                                                                                    },
+                                                                                                    {
+                                                                                                        "polymorphic_id": 1073741824,
+                                                                                                        "ptr_wrapper": {
+                                                                                                            "id": 2147483674,
+                                                                                                            "data": {
+                                                                                                                "ShaderName": "albedo1",
+                                                                                                                "Texture": {
+                                                                                                                    "Type": 3553,
+                                                                                                                    "InternalFormat": 6407,
+                                                                                                                    "Path": "C:\\Users\\48511\\source\\repos\\swetroniusz\\game-engine-engine\\Source\\EngineMaterials\\brickwall.jpg"
+                                                                                                                }
+                                                                                                            }
+                                                                                                        }
+                                                                                                    }
+                                                                                                ],
+                                                                                                "Color": {
+                                                                                                    "x": 0.0,
+                                                                                                    "y": 0.0,
+                                                                                                    "z": 0.0,
+                                                                                                    "w": 0.0
+                                                                                                },
+                                                                                                "Shininess": 0.0,
+                                                                                                "DepthScale": 0.0,
+                                                                                                "RenderShaderName": "Geometry"
+                                                                                            }
+                                                                                        }
+                                                                                    },
+                                                                                    "DrawBeforeAnim": true,
+                                                                                    "DrawAfterAnim": true
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        ],
+                                                        "SkelInfoBatchID": 0,
+                                                        "SkelInfoID": 6,
+                                                        "RenderableComponent": {
+                                                            "Hide": false,
+                                                            "CastsShadow": true,
+                                                            "Component": {
+                                                                "Name": "Sphere",
+                                                                "ComponentTransform": {
                                                                     "Position": {
                                                                         "x": 0.0,
                                                                         "y": 0.0,
@@ -1117,184 +1307,19 @@
                                                                         "z": 1.0
                                                                     }
                                                                 },
-                                                                "OptionalTreeName": "",
-                                                                "OptionalMeshNodeName": "",
-                                                                "OptionalMeshSpecificName": ""
-                                                            }
-                                                        }
-                                                    }
-                                                ]
-                                            }
-                                        }
-                                    },
-                                    "Children": [
-                                        {
-                                            "polymorphic_id": 5,
-                                            "ptr_wrapper": {
-                                                "valid": 1,
-                                                "data": {
-                                                    "RenderAsBillboard": false,
-                                                    "Hide": false,
-                                                    "MeshInstances": [
-                                                        {
-                                                            "ptr_wrapper": {
-                                                                "valid": 1,
-                                                                "data": {
-                                                                    "MeshTreePath": "hqSphere/hqSphere.obj",
-                                                                    "MeshNodeName": "Sphere",
-                                                                    "MeshSpecificName": "Sphere",
-                                                                    "MaterialInst": {
-                                                                        "ptr_wrapper": {
-                                                                            "id": 2147483667,
-                                                                            "data": {
-                                                                                "MaterialName": "RustedIron",
-                                                                                "MaterialOptionalPath": "",
-                                                                                "ExternalMaterial": {
-                                                                                    "polymorphic_id": 1073741824,
-                                                                                    "ptr_wrapper": {
-                                                                                        "id": 2147483668,
-                                                                                        "data": {
-                                                                                            "Name": "RustedIron",
-                                                                                            "Textures": [
-                                                                                                {
-                                                                                                    "polymorphic_id": 1073741824,
-                                                                                                    "ptr_wrapper": {
-                                                                                                        "id": 2147483669,
-                                                                                                        "data": {
-                                                                                                            "ShaderName": "albedo1",
-                                                                                                            "Texture": {
-                                                                                                                "Type": 3553,
-                                                                                                                "InternalFormat": 35906,
-                                                                                                                "Path": "EngineMaterials/rustediron_albedo.png"
-                                                                                                            }
-                                                                                                        }
-                                                                                                    }
-                                                                                                },
-                                                                                                {
-                                                                                                    "polymorphic_id": 1073741824,
-                                                                                                    "ptr_wrapper": {
-                                                                                                        "id": 2147483670,
-                                                                                                        "data": {
-                                                                                                            "ShaderName": "metallic1",
-                                                                                                            "Texture": {
-                                                                                                                "Type": 3553,
-                                                                                                                "InternalFormat": 6407,
-                                                                                                                "Path": "EngineMaterials/rustediron_metallic.png"
-                                                                                                            }
-                                                                                                        }
-                                                                                                    }
-                                                                                                },
-                                                                                                {
-                                                                                                    "polymorphic_id": 1073741824,
-                                                                                                    "ptr_wrapper": {
-                                                                                                        "id": 2147483671,
-                                                                                                        "data": {
-                                                                                                            "ShaderName": "roughness1",
-                                                                                                            "Texture": {
-                                                                                                                "Type": 3553,
-                                                                                                                "InternalFormat": 6407,
-                                                                                                                "Path": "EngineMaterials/rustediron_roughness.png"
-                                                                                                            }
-                                                                                                        }
-                                                                                                    }
-                                                                                                },
-                                                                                                {
-                                                                                                    "polymorphic_id": 1073741824,
-                                                                                                    "ptr_wrapper": {
-                                                                                                        "id": 2147483672,
-                                                                                                        "data": {
-                                                                                                            "ShaderName": "normal1",
-                                                                                                            "Texture": {
-                                                                                                                "Type": 3553,
-                                                                                                                "InternalFormat": 6407,
-                                                                                                                "Path": "EngineMaterials/rustediron_normal.png"
-                                                                                                            }
-                                                                                                        }
-                                                                                                    }
-                                                                                                },
-                                                                                                {
-                                                                                                    "polymorphic_id": 1073741824,
-                                                                                                    "ptr_wrapper": {
-                                                                                                        "id": 2147483673,
-                                                                                                        "data": {
-                                                                                                            "ShaderName": "xd",
-                                                                                                            "Texture": {
-                                                                                                                "Type": 3553,
-                                                                                                                "InternalFormat": 6407,
-                                                                                                                "Path": "C:\\Users\\48511\\source\\repos\\swetroniusz\\game-engine-engine\\Source\\EngineMaterials\\bricks_disp.jpg"
-                                                                                                            }
-                                                                                                        }
-                                                                                                    }
-                                                                                                },
-                                                                                                {
-                                                                                                    "polymorphic_id": 1073741824,
-                                                                                                    "ptr_wrapper": {
-                                                                                                        "id": 2147483674,
-                                                                                                        "data": {
-                                                                                                            "ShaderName": "albedo1",
-                                                                                                            "Texture": {
-                                                                                                                "Type": 3553,
-                                                                                                                "InternalFormat": 6407,
-                                                                                                                "Path": "C:\\Users\\48511\\source\\repos\\swetroniusz\\game-engine-engine\\Source\\EngineMaterials\\brickwall.jpg"
-                                                                                                            }
-                                                                                                        }
-                                                                                                    }
-                                                                                                }
-                                                                                            ],
-                                                                                            "Color": {
-                                                                                                "x": 0.0,
-                                                                                                "y": 0.0,
-                                                                                                "z": 0.0,
-                                                                                                "w": 0.0
-                                                                                            },
-                                                                                            "Shininess": 0.0,
-                                                                                            "DepthScale": 0.0,
-                                                                                            "RenderShaderName": "Geometry"
-                                                                                        }
-                                                                                    }
-                                                                                },
-                                                                                "DrawBeforeAnim": true,
-                                                                                "DrawAfterAnim": true
-                                                                            }
-                                                                        }
+                                                                "CollisionObj": {
+                                                                    "ptr_wrapper": {
+                                                                        "valid": 0
                                                                     }
-                                                                }
+                                                                },
+                                                                "Children": []
                                                             }
                                                         }
-                                                    ],
-                                                    "SkelInfoBatchID": 0,
-                                                    "SkelInfoID": 6,
-                                                    "Component": {
-                                                        "Name": "Sphere",
-                                                        "ComponentTransform": {
-                                                            "Position": {
-                                                                "x": 0.0,
-                                                                "y": 0.0,
-                                                                "z": 0.0
-                                                            },
-                                                            "Rotation": {
-                                                                "x": 0.0,
-                                                                "y": 0.0,
-                                                                "z": 0.0,
-                                                                "w": 1.0
-                                                            },
-                                                            "_Scale": {
-                                                                "x": 1.0,
-                                                                "y": 1.0,
-                                                                "z": 1.0
-                                                            }
-                                                        },
-                                                        "CollisionObj": {
-                                                            "ptr_wrapper": {
-                                                                "valid": 0
-                                                            }
-                                                        },
-                                                        "Children": []
                                                     }
                                                 }
                                             }
-                                        }
-                                    ]
+                                        ]
+                                    }
                                 }
                             }
                         }
@@ -1315,43 +1340,116 @@
                             "valid": 1,
                             "data": {
                                 "RenderAsBillboard": false,
-                                "Hide": false,
                                 "MeshInstances": [],
                                 "SkelInfoBatchID": -1,
                                 "SkelInfoID": -1,
-                                "Component": {
-                                    "Name": "hqSphere/hqSphere.obj",
-                                    "ComponentTransform": {
-                                        "Position": {
-                                            "x": -0.5954154133796692,
-                                            "y": -0.2999999523162842,
-                                            "z": 1.086169958114624
+                                "RenderableComponent": {
+                                    "Hide": false,
+                                    "CastsShadow": true,
+                                    "Component": {
+                                        "Name": "hqSphere/hqSphere.obj",
+                                        "ComponentTransform": {
+                                            "Position": {
+                                                "x": -0.5954173803329468,
+                                                "y": -0.2999999523162842,
+                                                "z": 1.086174726486206
+                                            },
+                                            "Rotation": {
+                                                "x": -0.7173672318458557,
+                                                "y": 0.5243925452232361,
+                                                "z": -0.45465606451034548,
+                                                "w": 0.0607004277408123
+                                            },
+                                            "_Scale": {
+                                                "x": 0.20000000298023225,
+                                                "y": 0.20000000298023225,
+                                                "z": 0.20000000298023225
+                                            }
                                         },
-                                        "Rotation": {
-                                            "x": -0.7173712253570557,
-                                            "y": 0.5243979096412659,
-                                            "z": -0.45464035868644717,
-                                            "w": 0.06072525307536125
+                                        "CollisionObj": {
+                                            "ptr_wrapper": {
+                                                "valid": 1,
+                                                "data": {
+                                                    "IsStatic": false,
+                                                    "IgnoreRotation": false,
+                                                    "Shapes": [
+                                                        {
+                                                            "ptr_wrapper": {
+                                                                "id": 2147483675,
+                                                                "data": {
+                                                                    "Type": 1,
+                                                                    "ShapeTransform": {
+                                                                        "Position": {
+                                                                            "x": 0.0,
+                                                                            "y": 0.0,
+                                                                            "z": 0.0
+                                                                        },
+                                                                        "Rotation": {
+                                                                            "x": 0.0,
+                                                                            "y": 0.0,
+                                                                            "z": 0.0,
+                                                                            "w": 1.0
+                                                                        },
+                                                                        "_Scale": {
+                                                                            "x": 1.0,
+                                                                            "y": 1.0,
+                                                                            "z": 1.0
+                                                                        }
+                                                                    },
+                                                                    "OptionalTreeName": "",
+                                                                    "OptionalMeshNodeName": "",
+                                                                    "OptionalMeshSpecificName": ""
+                                                                }
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            }
                                         },
-                                        "_Scale": {
-                                            "x": 0.20000000298023225,
-                                            "y": 0.20000000298023225,
-                                            "z": 0.20000000298023225
-                                        }
-                                    },
-                                    "CollisionObj": {
-                                        "ptr_wrapper": {
-                                            "valid": 1,
-                                            "data": {
-                                                "IsStatic": false,
-                                                "IgnoreRotation": false,
-                                                "Shapes": [
-                                                    {
-                                                        "ptr_wrapper": {
-                                                            "id": 2147483675,
-                                                            "data": {
-                                                                "Type": 1,
-                                                                "ShapeTransform": {
+                                        "Children": [
+                                            {
+                                                "polymorphic_id": 5,
+                                                "ptr_wrapper": {
+                                                    "valid": 1,
+                                                    "data": {
+                                                        "RenderAsBillboard": false,
+                                                        "MeshInstances": [
+                                                            {
+                                                                "ptr_wrapper": {
+                                                                    "valid": 1,
+                                                                    "data": {
+                                                                        "MeshTreePath": "hqSphere/hqSphere.obj",
+                                                                        "MeshNodeName": "Sphere",
+                                                                        "MeshSpecificName": "Sphere",
+                                                                        "MaterialInst": {
+                                                                            "ptr_wrapper": {
+                                                                                "id": 2147483676,
+                                                                                "data": {
+                                                                                    "MaterialName": "RustedIron",
+                                                                                    "MaterialOptionalPath": "",
+                                                                                    "ExternalMaterial": {
+                                                                                        "polymorphic_id": 1073741824,
+                                                                                        "ptr_wrapper": {
+                                                                                            "id": 20
+                                                                                        }
+                                                                                    },
+                                                                                    "DrawBeforeAnim": true,
+                                                                                    "DrawAfterAnim": true
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        ],
+                                                        "SkelInfoBatchID": 0,
+                                                        "SkelInfoID": 7,
+                                                        "RenderableComponent": {
+                                                            "Hide": false,
+                                                            "CastsShadow": true,
+                                                            "Component": {
+                                                                "Name": "Sphere",
+                                                                "ComponentTransform": {
                                                                     "Position": {
                                                                         "x": 0.0,
                                                                         "y": 0.0,
@@ -1369,86 +1467,19 @@
                                                                         "z": 1.0
                                                                     }
                                                                 },
-                                                                "OptionalTreeName": "",
-                                                                "OptionalMeshNodeName": "",
-                                                                "OptionalMeshSpecificName": ""
-                                                            }
-                                                        }
-                                                    }
-                                                ]
-                                            }
-                                        }
-                                    },
-                                    "Children": [
-                                        {
-                                            "polymorphic_id": 5,
-                                            "ptr_wrapper": {
-                                                "valid": 1,
-                                                "data": {
-                                                    "RenderAsBillboard": false,
-                                                    "Hide": false,
-                                                    "MeshInstances": [
-                                                        {
-                                                            "ptr_wrapper": {
-                                                                "valid": 1,
-                                                                "data": {
-                                                                    "MeshTreePath": "hqSphere/hqSphere.obj",
-                                                                    "MeshNodeName": "Sphere",
-                                                                    "MeshSpecificName": "Sphere",
-                                                                    "MaterialInst": {
-                                                                        "ptr_wrapper": {
-                                                                            "id": 2147483676,
-                                                                            "data": {
-                                                                                "MaterialName": "RustedIron",
-                                                                                "MaterialOptionalPath": "",
-                                                                                "ExternalMaterial": {
-                                                                                    "polymorphic_id": 1073741824,
-                                                                                    "ptr_wrapper": {
-                                                                                        "id": 20
-                                                                                    }
-                                                                                },
-                                                                                "DrawBeforeAnim": true,
-                                                                                "DrawAfterAnim": true
-                                                                            }
-                                                                        }
+                                                                "CollisionObj": {
+                                                                    "ptr_wrapper": {
+                                                                        "valid": 0
                                                                     }
-                                                                }
+                                                                },
+                                                                "Children": []
                                                             }
                                                         }
-                                                    ],
-                                                    "SkelInfoBatchID": 0,
-                                                    "SkelInfoID": 7,
-                                                    "Component": {
-                                                        "Name": "Sphere",
-                                                        "ComponentTransform": {
-                                                            "Position": {
-                                                                "x": 0.0,
-                                                                "y": 0.0,
-                                                                "z": 0.0
-                                                            },
-                                                            "Rotation": {
-                                                                "x": 0.0,
-                                                                "y": 0.0,
-                                                                "z": 0.0,
-                                                                "w": 1.0
-                                                            },
-                                                            "_Scale": {
-                                                                "x": 1.0,
-                                                                "y": 1.0,
-                                                                "z": 1.0
-                                                            }
-                                                        },
-                                                        "CollisionObj": {
-                                                            "ptr_wrapper": {
-                                                                "valid": 0
-                                                            }
-                                                        },
-                                                        "Children": []
                                                     }
                                                 }
                                             }
-                                        }
-                                    ]
+                                        ]
+                                    }
                                 }
                             }
                         }

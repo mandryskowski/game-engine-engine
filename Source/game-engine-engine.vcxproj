@@ -264,6 +264,9 @@
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="icon.rc" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
     <Import Project="packages\Assimp.redist.3.0.0\build\native\Assimp.redist.targets" Condition="Exists('packages\Assimp.redist.3.0.0\build\native\Assimp.redist.targets')" />

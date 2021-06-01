@@ -81,6 +81,13 @@ namespace GEE
 	{
 		Game::Init(window);
 
+		GLFWimage image;
+		image.pixels = stbi_load("gee_icon.png", &image.width, &image.height, nullptr, 4);
+		if (!image.pixels)
+			std::cout << "INFO: Could not load icon file gee_icon.png.\n";
+		glfwSetWindowIcon(window, 1, &image);
+		stbi_image_free(image.pixels);
+
 		EditorEventProcessor::EditorHandle = this;
 		glfwSetDropCallback(Window, EditorEventProcessor::FileDropCallback);
 		glfwSetFramebufferSizeCallback(Window, EditorEventProcessor::Resize);
@@ -100,7 +107,6 @@ namespace GEE
 
 		{
 			std::shared_ptr<Material> material = std::make_shared<Material>(Material("GEE_Default_Text_Material", 0.0f, RenderEng.FindShader("TextShader")));
-			//material->SetColor(Vec4f(0.0f, 0.607057f, 0.663284f, 1.0f));
 			material->SetColor(Vec4f(1.0f));
 			GetRenderEngineHandle()->AddMaterial(material);
 		}

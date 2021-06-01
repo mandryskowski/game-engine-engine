@@ -71,7 +71,7 @@ namespace GEE
 			{
 				glm::vec3 playerDir = glm::normalize(PlayerTarget->GetTransform()->GetWorldTransform().Pos() - GetTransform()->GetWorldTransform().Pos());
 				float distance = glm::distance((glm::vec3)PlayerTarget->GetTransform()->GetWorldTransform().Pos(), GetTransform()->GetWorldTransform().Pos());
-				std::cout << "Dot: " << glm::dot(playerDir, GetTransform()->Rot() * glm::vec3(0.0f, 0.0f, -1.0f)) << '\n';
+	
 				if (Gun && glm::dot(playerDir, GetTransform()->Rot() * glm::vec3(0.0f, 0.0f, -1.0f)) > glm::cos(glm::radians(30.0f)) && distance < 3.0f)
 				{
 					Gun->FireWeapon();

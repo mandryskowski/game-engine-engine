@@ -37,12 +37,12 @@ namespace GEE
 			std::string fontPath;
 			if (UsedFont)
 				fontPath = UsedFont->GetPath();
-			archive(cereal::make_nvp("FontPath", fontPath), cereal::make_nvp("Content", Content), cereal::make_nvp("HAlignment", Alignment.first), cereal::make_nvp("VAlignment", Alignment.second), cereal::make_nvp("Component", cereal::base_class<Component>(this)));
+			archive(cereal::make_nvp("FontPath", fontPath), cereal::make_nvp("Content", Content), cereal::make_nvp("HAlignment", Alignment.first), cereal::make_nvp("VAlignment", Alignment.second), cereal::make_nvp("RenderableComponent", cereal::base_class<RenderableComponent>(this)));
 		}
 		template <typename Archive> void Load(Archive& archive)
 		{
 			std::string fontPath;
-			archive(cereal::make_nvp("FontPath", fontPath), cereal::make_nvp("Content", Content), cereal::make_nvp("HAlignment", Alignment.first), cereal::make_nvp("VAlignment", Alignment.second), cereal::make_nvp("Component", cereal::base_class<Component>(this)));
+			archive(cereal::make_nvp("FontPath", fontPath), cereal::make_nvp("Content", Content), cereal::make_nvp("HAlignment", Alignment.first), cereal::make_nvp("VAlignment", Alignment.second), cereal::make_nvp("RenderableComponent", cereal::base_class<RenderableComponent>(this)));
 
 			if (!fontPath.empty())
 				UsedFont = EngineDataLoader::LoadFont(*GameHandle, fontPath);
