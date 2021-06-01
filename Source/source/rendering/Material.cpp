@@ -5,6 +5,7 @@
 
 #include <UI/UICanvasActor.h>
 #include <UI/UICanvasField.h>
+#include <scene/UIWindowActor.h>
 #include <scene/UIInputBoxActor.h>
 #include <scene/TextComponent.h>
 
@@ -21,6 +22,8 @@ namespace GEE
 	{
 		if (shader)
 			RenderShaderName = shader->GetName();
+		else
+			RenderShaderName = "Geometry";
 	}
 
 	const Material::MaterialLoc& Material::GetLocalization() const
@@ -85,6 +88,11 @@ namespace GEE
 	void Material::AddTexture(std::shared_ptr<NamedTexture> tex)
 	{
 		Textures.push_back(tex);
+	}
+
+	void Material::RemoveTexture(NamedTexture& tex)
+	{
+		Textures.erase(std::remove_if(Textures.begin(), Textures.end(), [&tex](auto& texVec) { return &tex == texVec.get(); }), Textures.end());
 	}
 
 	void Material::LoadFromAiMaterial(const aiScene* scene, aiMaterial* material, const std::string& directory, MaterialLoadingData* matLoadingData)
@@ -259,21 +267,56 @@ namespace GEE
 		UICanvasFieldCategory& texturesCat = descBuilder.AddCategory("Textures");
 		UIAutomaticListActor& list = texturesCat.CreateChild<UIAutomaticListActor>("TexturesList");
 
-		for (auto& it : Textures)
-		{
-			std::string texName = it->GetPath();
+		std::function<void(UIAutomaticListActor&, NamedTexture&)> addTextureButtonFunc = [this, &list, descBuilder](UIAutomaticListActor& list, NamedTexture& tex) mutable {
+			std::string texName = tex.GetPath();
 			Material* dummyMaterial = new Material("dummy", 0.0f, descBuilder.GetEditorHandle().GetGameHandle()->GetRenderEngineHandle()->FindShader("Forward_NoLight"));
-			dummyMaterial->AddTexture(std::make_shared<NamedTexture>(NamedTexture((Texture)*it, "albedo1")));
+			dummyMaterial->AddTexture(std::make_shared<NamedTexture>(NamedTexture((Texture)tex, "albedo1")));
 			UIButtonActor& texButton = list.CreateChild<UIButtonActor>(texName + "Button", texName);
 			texButton.SetMatDisabled(*dummyMaterial);
 			texButton.SetDisableInput(true);
-			texButton.CreateComponent<TextComponent>("TexShaderNameButton", Transform(Vec2f(1.0f, 0.0f)), it->GetShaderName(), "");
+			texButton.CreateChild<UIButtonActor>("DeleteTexture", "Delete", [this, &list, &tex, &texButton, descBuilder]() mutable { texButton.MarkAsKilled(); RemoveTexture(tex); dynamic_cast<UICanvasActor*>(&descBuilder.GetCanvas())->RefreshFieldsList(); }).GetTransform()->Move(Vec2f(2.0f, 0.0f));
+			texButton.CreateComponent<TextComponent>("TexShaderNameButton", Transform(Vec2f(3.0f, 0.0f)), tex.GetShaderName(), "");
+		};
+
+		UIButtonActor& addTexToMaterialButton = list.CreateChild<UIButtonActor>("AddTextureToMaterialButton", [this, addTextureButtonFunc, &list, descBuilder]() mutable {
+			UIWindowActor& addTexWindow = dynamic_cast<UICanvasActor*>(&descBuilder.GetCanvas())->CreateChildCanvas<UIWindowActor>("AddTextureWindow");
+			EditorDescriptionBuilder texWindowDescBuilder(descBuilder.GetEditorHandle(), addTexWindow, addTexWindow);
+			std::shared_ptr<std::string> path = std::make_shared<std::string>();
+			std::shared_ptr<std::string> shaderName = std::make_shared<std::string>("albedo1");
+			texWindowDescBuilder.AddField("Tex path").GetTemplates().PathInput([this, path](const std::string& str) {
+				*path = str;
+				}, [path]() { return *path; }, { "*.png", "*.jpg" });
+			texWindowDescBuilder.AddField("Shader name").CreateChild<UIInputBoxActor>("ShaderNameInputBox").SetOnInputFunc([shaderName](const std::string& input) { *shaderName = input; }, [shaderName]() { return *shaderName; });
+			texWindowDescBuilder.AddField("Add texture").CreateChild<UIButtonActor>("OKButton", "OK", [this, path, shaderName, &addTextureButtonFunc, &list, &addTexWindow, descBuilder]() mutable {
+				auto tex = std::make_shared<NamedTexture>(textureFromFile(*path, GL_RGB), *shaderName);
+				AddTexture(tex);
+				addTextureButtonFunc(list, *tex);
+				addTexWindow.MarkAsKilled();
+				dynamic_cast<UICanvasActor*>(&descBuilder.GetCanvas())->RefreshFieldsList();
+				});
+
+			addTexWindow.AutoClampView();
+			addTexWindow.RefreshFieldsList();
+			});
+
+		for (auto& it : Textures)
+			addTextureButtonFunc(list, *it);
+
+		AtlasMaterial* addIconMat = dynamic_cast<AtlasMaterial*>(descBuilder.GetEditorHandle().GetGameHandle()->GetRenderEngineHandle()->FindMaterial("GEE_E_Add_Icon_Mat").get());
+		if (addIconMat)
+		{
+			addTexToMaterialButton.SetMatIdle(MaterialInstance(*addIconMat, addIconMat->GetTextureIDInterpolatorTemplate(0.0f)));
+			addTexToMaterialButton.SetMatHover(MaterialInstance(*addIconMat, addIconMat->GetTextureIDInterpolatorTemplate(1.0f)));
+			addTexToMaterialButton.SetMatClick(MaterialInstance(*addIconMat, addIconMat->GetTextureIDInterpolatorTemplate(2.0f)));
 		}
+
 		list.Refresh();
 
 		descBuilder.AddField("Roughness color").CreateChild<UIInputBoxActor>("RoughnessColorInputBoxActor", [this](float val) { SetRoughnessColor(val); }, [this]() { return RoughnessColor; });
 		descBuilder.AddField("Metallic color").CreateChild<UIInputBoxActor>("MetallicColorInputBoxActor", [this](float val) { SetMetallicColor(val); }, [this]() { return MetallicColor; });
 		descBuilder.AddField("Ao color").CreateChild<UIInputBoxActor>("AoColorInputBoxActor", [this](float val) { SetAoColor(val); }, [this]() { return AoColor; });
+
+		descBuilder.AddField("Depth scale").CreateChild<UIInputBoxActor>("DepthScaleInputBoxActor", [this](float val) { SetDepthScale(val); }, [this]() { return DepthScale; });
 	}
 
 	/*

@@ -6,6 +6,21 @@ namespace GEE
 {
 	class UIListElement
 	{
+		template <typename T>
+		class NonNullPtr
+		{
+		public:
+			NonNullPtr(T& obj) : Ptr(&obj) {}
+			NonNullPtr(const NonNullPtr<T>& ptr) : Ptr(ptr.Ptr) {}
+			NonNullPtr(NonNullPtr<T>&& ptr) : Ptr(ptr.Ptr) {}
+			T& Get() { return *Ptr; };
+			const T& Get() const { return *Ptr; };
+			NonNullPtr& operator=(const NonNullPtr<T>& ptr) { Ptr = ptr.Ptr; return *this; }
+			NonNullPtr& operator=(NonNullPtr<T>&& ptr) { return *this = static_cast<const NonNullPtr<T>&>(ptr); }
+			NonNullPtr& operator=(const T& obj) { Ptr = &obj; return *this; };
+		private:
+			T* Ptr;
+		};
 	public:
 		UIListElement(Actor& actorRef, std::function<glm::vec3()> getElementOffset, std::function<glm::vec3()> getCenterOffset = nullptr);
 		UIListElement(Actor& actorRef, const glm::vec3& constElementOffset);
@@ -23,7 +38,7 @@ namespace GEE
 		void SetGetCenterOffsetFunc(std::function<glm::vec3()>);
 
 	private:
-		Actor& ActorRef;
+		NonNullPtr<Actor> ActorPtr;
 		std::function<glm::vec3()> GetElementOffsetFunc, GetCenterOffsetFunc;
 	};
 

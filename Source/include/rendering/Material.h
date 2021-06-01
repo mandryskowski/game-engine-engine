@@ -46,6 +46,7 @@ namespace GEE
 		void SetMetallicColor(float metallic);
 		void SetAoColor(float ao);
 		void AddTexture(std::shared_ptr<NamedTexture> tex);
+		void RemoveTexture(NamedTexture&);
 
 		void LoadFromAiMaterial(const aiScene* scene, aiMaterial*, const std::string&, MaterialLoadingData*);
 		void LoadAiTexturesOfType(const aiScene* scene, aiMaterial*, const std::string&, aiTextureType, std::string, MaterialLoadingData*);

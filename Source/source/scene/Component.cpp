@@ -409,7 +409,8 @@ namespace GEE
 	void Component::GetEditorDescription(EditorDescriptionBuilder descBuilder)
 	{
 		UIInputBoxActor& textActor = descBuilder.CreateActor<UIInputBoxActor>("ComponentsNameActor");
-		textActor.SetTransform(Transform(glm::vec2(0.0f, 1.5f), glm::vec2(3.0f)));
+		textActor.SetTransform(Transform(glm::vec2(0.0f, 1.5f), glm::vec2(1.0f)));
+		textActor.GetButtonModel()->SetHide(true);
 
 		ModelComponent& prettyQuad = textActor.CreateComponent<ModelComponent>("PrettyQuad");
 		prettyQuad.AddMeshInst(MeshInstance(GameHandle->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD), const_cast<Material*>(textActor.GetButtonModel()->GetMeshInstance(0).GetMaterialPtr())));

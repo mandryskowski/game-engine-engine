@@ -107,7 +107,24 @@ namespace GEE
 		//TODO: Change it so the bullet is fired at the barrel, not at the center
 		std::unique_ptr<ModelComponent> bulletModel = std::make_unique<ModelComponent>(ModelComponent(actor, nullptr, "BulletModel" + std::to_string(FiredBullets++), Transform(GetTransform()->GetWorldTransform().Pos(), glm::vec3(0.0f), glm::vec3(0.2f))));
 		bulletModel->OnStart();
-		EngineDataLoader::LoadModel("hqSphere/hqSphere.obj", *bulletModel, MeshTreeInstancingType::ROOTTREE, GameHandle->GetRenderEngineHandle()->FindMaterial("RustedIron").get());
+		Material* rustedIronMaterial = GameHandle->GetRenderEngineHandle()->FindMaterial("RustedIron").get();
+		if (!rustedIronMaterial)
+		{
+			rustedIronMaterial = GameHandle->GetRenderEngineHandle()->AddMaterial(std::make_shared<Material>("RustedIron"));
+			rustedIronMaterial->AddTexture(std::make_shared<NamedTexture>(textureFromFile("EngineMaterials/rustediron_albedo.png", GL_SRGB), "albedo1"));
+			rustedIronMaterial->AddTexture(std::make_shared<NamedTexture>(textureFromFile("EngineMaterials/rustediron_metallic.png", GL_RGB), "metallic1"));
+			rustedIronMaterial->AddTexture(std::make_shared<NamedTexture>(textureFromFile("EngineMaterials/rustediron_roughness.png", GL_RGB), "roughness1"));
+			rustedIronMaterial->AddTexture(std::make_shared<NamedTexture>(textureFromFile("EngineMaterials/rustediron_normal.png", GL_RGB), "normal1"));
+		}
+
+		{
+			EngineDataLoader::LoadModel("hqSphere/hqSphere.obj", *bulletModel, MeshTreeInstancingType::ROOTTREE);
+			std::vector<ModelComponent*> models;
+			models.push_back(bulletModel.get());
+			bulletModel->GetAllComponents<ModelComponent>(&models);
+			for (auto& it : models)
+				it->OverrideInstancesMaterial(rustedIronMaterial);
+		}
 
 		std::unique_ptr<Physics::CollisionObject> dupa = std::make_unique<Physics::CollisionObject>(false, Physics::CollisionShapeType::COLLISION_SPHERE);
 		Physics::CollisionObject& col = *bulletModel->SetCollisionObject(std::move(dupa));

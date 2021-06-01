@@ -62,6 +62,7 @@ namespace GEE
 	void UIListActor::AddElement(const UIListElement& element)
 	{
 		ListElements.push_back(element);
+		std::cout << "ADDING LIST ELEMENT: " << element.GetActorRef().GetName() << '\n';
 	}
 
 	glm::vec3 UIListActor::MoveElement(UIListElement& element, glm::vec3 nextElementBegin, float level)
@@ -73,13 +74,14 @@ namespace GEE
 
 	glm::vec3 UIListActor::MoveElements(unsigned int level)
 	{
-		EraseListElement([](const UIListElement& element) { return element.IsBeingKilled(); });
+		EraseListElement([](const UIListElement& element) { if (element.IsBeingKilled()) std::cout << "ERASING LIST ELEMENT: " << element.GetActorRef().GetName() << '\n'; return element.IsBeingKilled(); });
 		glm::vec3 nextElementBegin = GetListBegin();
 
 		for (auto& element : ListElements)
 		{
 			if (element.GetActorRef().GetName() == "OGAR")
 				continue;
+			std::cout << "ELEMENT: " << element.GetActorRef().GetName() << '\n';
 			nextElementBegin = MoveElement(element, nextElementBegin, level);
 		}
 
@@ -118,7 +120,7 @@ namespace GEE
 	}
 
 	UIListElement::UIListElement(Actor& actorRef, std::function<glm::vec3()> getElementOffset, std::function<glm::vec3()> getCenterOffset) :
-		ActorRef(actorRef),
+		ActorPtr(actorRef),
 		GetElementOffsetFunc(getElementOffset),
 		GetCenterOffsetFunc(getCenterOffset)
 	{
@@ -132,7 +134,7 @@ namespace GEE
 	}
 
 	UIListElement::UIListElement(const UIListElement& element) :
-		ActorRef(element.ActorRef), GetElementOffsetFunc(element.GetElementOffsetFunc), GetCenterOffsetFunc(element.GetCenterOffsetFunc)
+		ActorPtr(element.ActorPtr), GetElementOffsetFunc(element.GetElementOffsetFunc), GetCenterOffsetFunc(element.GetCenterOffsetFunc)
 	{
 	}
 
@@ -143,6 +145,7 @@ namespace GEE
 
 	UIListElement& UIListElement::operator=(const UIListElement& element)
 	{
+		ActorPtr = element.ActorPtr;
 		GetElementOffsetFunc = element.GetElementOffsetFunc;
 		GetCenterOffsetFunc = element.GetCenterOffsetFunc;
 		return *this;
@@ -155,17 +158,17 @@ namespace GEE
 
 	bool UIListElement::IsBeingKilled() const
 	{
-		return ActorRef.IsBeingKilled();
+		return ActorPtr.Get().IsBeingKilled();
 	}
 
 	Actor& UIListElement::GetActorRef()
 	{
-		return ActorRef;
+		return ActorPtr.Get();
 	}
 
 	const Actor& UIListElement::GetActorRef() const
 	{
-		return ActorRef;
+		return ActorPtr.Get();
 	}
 
 	glm::vec3 UIListElement::GetElementOffset() const

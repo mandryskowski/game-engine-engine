@@ -86,7 +86,7 @@ namespace GEE
 
 	void UIInputBoxActor::SetOnInputFunc(std::function<void(float)> inputFunc, std::function<float()> valueGetter, bool fixNumberStr)
 	{
-		std::function<std::string()> valueGetterStr = [=]() {return std::to_string(valueGetter()); };
+		std::function<std::string()> valueGetterStr = [=]() { return std::to_string(valueGetter()); };
 		if (fixNumberStr)
 		{
 			valueGetterStr = [=]() {
@@ -99,7 +99,11 @@ namespace GEE
 			};
 		}
 
-		SetOnInputFunc([=](const std::string& content) { inputFunc((content.empty()) ? (0.0f) : (std::stof(content))); },
+		SetOnInputFunc([=](const std::string& content) {
+			if (content.empty()) return 0.0f;
+			try { float val = std::stof(content); inputFunc(val); }
+			catch (std::exception& exception) { std::cout << "ERROR: Std exception: " << exception.what() << '\n'; }
+			},
 			valueGetterStr);
 	}
 
