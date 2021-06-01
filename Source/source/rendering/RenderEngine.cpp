@@ -611,7 +611,7 @@ namespace GEE
 	void RenderEngine::FullSceneRender(RenderInfo& info, GameSceneRenderData* sceneRenderData, GEE_FB::Framebuffer* framebuffer, Viewport viewport, bool clearMainFB, bool modifyForwardsDepthForUI)
 	{
 		const GameSettings::VideoSettings& settings = info.TbCollection.Settings;
-		bool debugPhysics = GameHandle->GetInputRetriever().IsKeyPressed(Key::P);
+		bool debugPhysics = GameHandle->GetInputRetriever().IsKeyPressed(Key::F2);
 		bool debugComponents = true;
 		bool useLightingAlgorithms = sceneRenderData->ContainsLights() || sceneRenderData->ContainsLightProbes();
 		glm::mat4 currentFrameView = info.view;
@@ -762,7 +762,7 @@ namespace GEE
 		glDisable(GL_DEPTH_TEST);
 
 
-		if (debugPhysics && GameHandle->GetMainScene())
+		if (debugPhysics && GameHandle->GetMainScene()->GetRenderData() == sceneRenderData)
 			GameHandle->GetPhysicsHandle()->DebugRender(*GameHandle->GetMainScene()->GetPhysicsData(), *this, info);
 
 		////////////////////4. Postprocessing pass (Blur + Tonemapping & Gamma Correction)

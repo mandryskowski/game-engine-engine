@@ -762,7 +762,7 @@ namespace GEE
 			RenderEng.FindShader("Forward_NoLight")->Use();
 			GetMainScene()->GetRootActor()->DebugRenderAll(GetMainScene()->ActiveCamera->GetRenderInfo(*ViewportRenderCollection), RenderEng.FindShader("Forward_NoLight"));
 
-			if (SelectedActor && !GetInputRetriever().IsKeyPressed(Key::P))
+			if (SelectedActor && !GetInputRetriever().IsKeyPressed(Key::F2))
 			{
 				std::function<void(Component&)> renderAllColObjs = [this, &renderAllColObjs](Component& comp) {
 					if (comp.GetCollisionObj() && comp.GetName() != "Counter")

@@ -335,7 +335,7 @@ namespace GEE
 
 	void Component::DebugRender(RenderInfo info, Shader* shader) const
 	{
-		if (GameHandle->GetInputRetriever().IsKeyPressed(Key::P))
+		if (GameHandle->GetInputRetriever().IsKeyPressed(Key::F2))
 			return;
 		if (!DebugRenderMatInst)
 			return;

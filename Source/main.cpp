@@ -52,6 +52,7 @@ int main(int argc, char** argv)
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, true);
+	glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
 	glm::dvec3 front(-0.80989, - 0.15385, - 0.56604);
 	glm::dvec3 rotationVec = glm::cross(front, glm::dvec3(0.0f, 0.0f, -1.0f));

@@ -62,7 +62,6 @@ namespace GEE
 	void UIListActor::AddElement(const UIListElement& element)
 	{
 		ListElements.push_back(element);
-		std::cout << "ADDING LIST ELEMENT: " << element.GetActorRef().GetName() << '\n';
 	}
 
 	glm::vec3 UIListActor::MoveElement(UIListElement& element, glm::vec3 nextElementBegin, float level)
@@ -74,14 +73,13 @@ namespace GEE
 
 	glm::vec3 UIListActor::MoveElements(unsigned int level)
 	{
-		EraseListElement([](const UIListElement& element) { if (element.IsBeingKilled()) std::cout << "ERASING LIST ELEMENT: " << element.GetActorRef().GetName() << '\n'; return element.IsBeingKilled(); });
+		EraseListElement([](const UIListElement& element) { return element.IsBeingKilled(); });
 		glm::vec3 nextElementBegin = GetListBegin();
 
 		for (auto& element : ListElements)
 		{
 			if (element.GetActorRef().GetName() == "OGAR")
 				continue;
-			std::cout << "ELEMENT: " << element.GetActorRef().GetName() << '\n';
 			nextElementBegin = MoveElement(element, nextElementBegin, level);
 		}
 
