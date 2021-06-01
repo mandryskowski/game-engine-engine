@@ -1,4 +1,7 @@
-# The "My Game Engine" Engine C++/OpenGL (26 Oct 2019 -> Now)
+# The "My Game Engine" Engine C++/OpenGL (26 Oct 2019 -> Now)!
+
+![alt text](https://user-images.githubusercontent.com/19364312/120382376-db924500-c323-11eb-8ba4-eaeccd562eef.png)
+
 
 #### Features
 - Actor & Component hierarchy
