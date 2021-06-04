@@ -31,7 +31,7 @@ namespace GEE
 		{
 			std::unique_ptr<Interpolator<float>> MovementInterpolator;
 			bool Inversed;
-			glm::vec3 Direction;
+			Vec3f Direction;
 		};
 
 		physx::PxController* PxController;
@@ -51,7 +51,7 @@ namespace GEE
 		virtual void HandleEvent(const Event& ev) override;
 		virtual void ReadMovementKeys();
 		virtual void Update(float deltaTime) override;
-		void RotateWithMouse(glm::vec2);	//rotates camera - you should pass the mouse offset from the center
+		void RotateWithMouse(Vec2f);	//rotates camera - you should pass the mouse offset from the center
 		void HandleMovementAxis(bool pressed, MovementAxis& axis);
 
 		template <typename Archive> void Save(Archive& archive) const

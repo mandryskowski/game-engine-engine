@@ -21,7 +21,7 @@ GEE::Component* cereal::LoadAndConstruct<GEE::Component>::ParentComp = nullptr;
 namespace GEE
 {
 	Component::Component(Actor& actor, Component* parentComp, const std::string& name, const Transform& t) :
-		Name(name), ComponentTransform(t), Scene(actor.GetScene()), ActorRef(actor), ParentComponent(parentComp), GameHandle(actor.GetScene().GetGameHandle()), CollisionObj(nullptr), DebugRenderMat(nullptr), DebugRenderMatInst(nullptr), DebugRenderLastFrameMVP(glm::mat4(1.0f)), bKillingProcessStarted(false)
+		Name(name), ComponentTransform(t), Scene(actor.GetScene()), ActorRef(actor), ParentComponent(parentComp), GameHandle(actor.GetScene().GetGameHandle()), CollisionObj(nullptr), DebugRenderMat(nullptr), DebugRenderMatInst(nullptr), DebugRenderLastFrameMVP(Mat4f(1.0f)), bKillingProcessStarted(false)
 	{
 	}
 
@@ -263,13 +263,13 @@ namespace GEE
 			AnimationChannel& channel = *animation->Channels[i];
 
 			for (int j = 0; j < static_cast<int>(channel.PosKeys.size() - 1); j++)
-				ComponentTransform.AddInterpolator<glm::vec3>("position", (float)channel.PosKeys[j]->Time, (float)channel.PosKeys[j + 1]->Time - (float)channel.PosKeys[j]->Time, channel.PosKeys[j]->Value, channel.PosKeys[j + 1]->Value);
+				ComponentTransform.AddInterpolator<Vec3f>("position", (float)channel.PosKeys[j]->Time, (float)channel.PosKeys[j + 1]->Time - (float)channel.PosKeys[j]->Time, channel.PosKeys[j]->Value, channel.PosKeys[j + 1]->Value);
 
 			for (int j = 0; j < static_cast<int>(channel.RotKeys.size() - 1); j++)
-				ComponentTransform.AddInterpolator<glm::quat>("rotation", (float)channel.RotKeys[j]->Time, (float)channel.RotKeys[j + 1]->Time - (float)channel.RotKeys[j]->Time, channel.RotKeys[j]->Value, channel.RotKeys[j + 1]->Value);
+				ComponentTransform.AddInterpolator<Quatf>("rotation", (float)channel.RotKeys[j]->Time, (float)channel.RotKeys[j + 1]->Time - (float)channel.RotKeys[j]->Time, channel.RotKeys[j]->Value, channel.RotKeys[j + 1]->Value);
 
 			for (int j = 0; j < static_cast<int>(channel.ScaleKeys.size() - 1); j++)
-				ComponentTransform.AddInterpolator<glm::vec3>("scale", (float)channel.ScaleKeys[j]->Time, (float)channel.ScaleKeys[j + 1]->Time - (float)channel.ScaleKeys[j]->Time, channel.ScaleKeys[j]->Value, channel.ScaleKeys[j + 1]->Value);
+				ComponentTransform.AddInterpolator<Vec3f>("scale", (float)channel.ScaleKeys[j]->Time, (float)channel.ScaleKeys[j + 1]->Time - (float)channel.ScaleKeys[j]->Time, channel.ScaleKeys[j]->Value, channel.ScaleKeys[j + 1]->Value);
 		}
 	}
 
@@ -283,20 +283,20 @@ namespace GEE
 	void Component::QueueKeyFrame(AnimationChannel& channel)
 	{
 		for (int j = 0; j < static_cast<int>(channel.PosKeys.size() - 1); j++)
-			ComponentTransform.AddInterpolator<glm::vec3>("position", (float)channel.PosKeys[j]->Time, (float)channel.PosKeys[j + 1]->Time - (float)channel.PosKeys[j]->Time, channel.PosKeys[j]->Value, channel.PosKeys[j + 1]->Value);
+			ComponentTransform.AddInterpolator<Vec3f>("position", (float)channel.PosKeys[j]->Time, (float)channel.PosKeys[j + 1]->Time - (float)channel.PosKeys[j]->Time, channel.PosKeys[j]->Value, channel.PosKeys[j + 1]->Value);
 
 		for (int j = 0; j < static_cast<int>(channel.RotKeys.size() - 1); j++)
-			ComponentTransform.AddInterpolator<glm::quat>("rotation", (float)channel.RotKeys[j]->Time, (float)channel.RotKeys[j + 1]->Time - (float)channel.RotKeys[j]->Time, channel.RotKeys[j]->Value, channel.RotKeys[j + 1]->Value);
+			ComponentTransform.AddInterpolator<Quatf>("rotation", (float)channel.RotKeys[j]->Time, (float)channel.RotKeys[j + 1]->Time - (float)channel.RotKeys[j]->Time, channel.RotKeys[j]->Value, channel.RotKeys[j + 1]->Value);
 
 		for (int j = 0; j < static_cast<int>(channel.ScaleKeys.size() - 1); j++)
-			ComponentTransform.AddInterpolator<glm::vec3>("scale", (float)channel.ScaleKeys[j]->Time, (float)channel.ScaleKeys[j + 1]->Time - (float)channel.ScaleKeys[j]->Time, channel.ScaleKeys[j]->Value, channel.ScaleKeys[j + 1]->Value);
+			ComponentTransform.AddInterpolator<Vec3f>("scale", (float)channel.ScaleKeys[j]->Time, (float)channel.ScaleKeys[j + 1]->Time - (float)channel.ScaleKeys[j]->Time, channel.ScaleKeys[j]->Value, channel.ScaleKeys[j + 1]->Value);
 	}
 
 	void Component::QueueKeyFrameAll(AnimationChannel&)
 	{
 	}
 
-	void CollisionObjRendering(RenderInfo& info, GameManager& gameHandle, Physics::CollisionObject& obj, const Transform& t, const glm::vec3& color)
+	void CollisionObjRendering(RenderInfo& info, GameManager& gameHandle, Physics::CollisionObject& obj, const Transform& t, const Vec3f& color)
 	{
 		RenderEngineManager& renderEngHandle = *gameHandle.GetRenderEngineHandle();
 		Shader* shader = renderEngHandle.FindShader("Forward_NoLight");
@@ -305,7 +305,7 @@ namespace GEE
 
 		physx::PxRigidDynamic* rigidDynamicCast = obj.ActorPtr->is<physx::PxRigidDynamic>();
 		bool sleeping = (rigidDynamicCast && rigidDynamicCast->isSleeping());
-		material.SetColor((sleeping) ? (glm::vec3(1.0) - color) : (color));
+		material.SetColor((sleeping) ? (Vec3f(1.0) - color) : (color));
 		if (!shader)
 			return;
 
@@ -344,7 +344,7 @@ namespace GEE
 			;// CollisionObjRendering(info, *GameHandle, *CollisionObj, GetTransform().GetWorldTransform());
 
 		Transform transform = GetTransform().GetWorldTransform();
-		transform.SetScale(glm::vec3(0.05f));
+		transform.SetScale(Vec3f(0.05f));
 		GameHandle->GetRenderEngineHandle()->RenderStaticMesh(info, MeshInstance(GameHandle->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD), DebugRenderMatInst), transform, shader, &DebugRenderLastFrameMVP, nullptr, true);
 	}
 
@@ -365,7 +365,7 @@ namespace GEE
 			return DebugRenderMat;
 
 		DebugRenderMat = std::make_shared<AtlasMaterial>(materialName, glm::ivec2(3, 1));
-		std::shared_ptr<NamedTexture> texture = std::make_shared<NamedTexture>(textureFromFile(path, GL_RGBA, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR, true));
+		std::shared_ptr<NamedTexture> texture = std::make_shared<NamedTexture>(Texture::Loader::FromFile2D(path, true));
 
 		texture->Bind();
 		texture->SetShaderName("albedo1");
@@ -409,13 +409,13 @@ namespace GEE
 	void Component::GetEditorDescription(EditorDescriptionBuilder descBuilder)
 	{
 		UIInputBoxActor& textActor = descBuilder.CreateActor<UIInputBoxActor>("ComponentsNameActor");
-		textActor.SetTransform(Transform(glm::vec2(0.0f, 1.5f), glm::vec2(1.0f)));
+		textActor.SetTransform(Transform(Vec2f(0.0f, 1.5f), Vec2f(1.0f)));
 		textActor.GetButtonModel()->SetHide(true);
 
 		ModelComponent& prettyQuad = textActor.CreateComponent<ModelComponent>("PrettyQuad");
 		prettyQuad.AddMeshInst(MeshInstance(GameHandle->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD), const_cast<Material*>(textActor.GetButtonModel()->GetMeshInstance(0).GetMaterialPtr())));
-		prettyQuad.SetTransform(Transform(glm::vec2(0.0f, -0.21f), glm::vec2(1.0f, 0.01f)));
-		textActor.SetOnInputFunc([this, &prettyQuad, &textActor](const std::string& content) { SetName(content); /*prettyQuad.SetTransform(Transform(glm::vec2(0.0f, -0.625f), glm::vec2(textActor.GetRoot()->GetComponent<TextComponent>("ComponentsNameActorText")->GetTextLength(), 0.025f)));*/ }, [this]() -> std::string { return GetName(); });
+		prettyQuad.SetTransform(Transform(Vec2f(0.0f, -0.21f), Vec2f(1.0f, 0.01f)));
+		textActor.SetOnInputFunc([this, &prettyQuad, &textActor](const std::string& content) { SetName(content); /*prettyQuad.SetTransform(Transform(Vec2f(0.0f, -0.625f), Vec2f(textActor.GetRoot()->GetComponent<TextComponent>("ComponentsNameActorText")->GetTextLength(), 0.025f)));*/ }, [this]() -> std::string { return GetName(); });
 
 		//textActor.DeleteButtonModel();
 
@@ -436,13 +436,13 @@ namespace GEE
 
 		UICanvasField& shapesListField = descBuilder.AddField("Collision object");
 		UIAutomaticListActor& shapesList = shapesListField.CreateChild<UIAutomaticListActor>("ShapesList");
-		dynamic_cast<UICanvasActor*>(shapesListField.GetCanvasPtr())->FieldsList->SetListElementOffset(dynamic_cast<UICanvasActor*>(shapesListField.GetCanvasPtr())->FieldsList->GetListElementCount() - 1, [&shapesListField, &shapesList]()-> glm::vec3 { return static_cast<glm::mat3>(shapesListField.GetTransform()->GetMatrix()) * (shapesList.GetListOffset()); });
-		dynamic_cast<UICanvasActor*>(shapesListField.GetCanvasPtr())->FieldsList->SetListCenterOffset(dynamic_cast<UICanvasActor*>(shapesListField.GetCanvasPtr())->FieldsList->GetListElementCount() - 1, [&shapesListField]()-> glm::vec3 { return glm::vec3(0.0f, -shapesListField.GetTransform()->Scale().y, 0.0f); });
+		dynamic_cast<UICanvasActor*>(shapesListField.GetCanvasPtr())->FieldsList->SetListElementOffset(dynamic_cast<UICanvasActor*>(shapesListField.GetCanvasPtr())->FieldsList->GetListElementCount() - 1, [&shapesListField, &shapesList]()-> Vec3f { return static_cast<Mat3f>(shapesListField.GetTransform()->GetMatrix()) * (shapesList.GetListOffset()); });
+		dynamic_cast<UICanvasActor*>(shapesListField.GetCanvasPtr())->FieldsList->SetListCenterOffset(dynamic_cast<UICanvasActor*>(shapesListField.GetCanvasPtr())->FieldsList->GetListElementCount() - 1, [&shapesListField]()-> Vec3f { return Vec3f(0.0f, -shapesListField.GetTransform()->Scale().y, 0.0f); });
 		UIButtonActor& colObjectPresenceButton = shapesList.CreateChild<UIButtonActor>("CollisionObjectButton", (CollisionObj) ? ("V") : ("X"));
 
 		shapesListField.CreateChild<UIButtonActor>("AddColShape", "+", [this, descBuilder]() mutable {
 			UIWindowActor& shapeCreatorWindow = descBuilder.GetEditorScene().CreateActorAtRoot<UIWindowActor>("ShapeCreatorWindow");
-			shapeCreatorWindow.GetTransform()->SetScale(glm::vec2(0.25f));
+			shapeCreatorWindow.GetTransform()->SetScale(Vec2f(0.25f));
 			UIAutomaticListActor& buttonsList = shapeCreatorWindow.CreateChild<UIAutomaticListActor>("ButtonsList");
 
 			std::function <void(std::shared_ptr<Physics::CollisionShape>)> addShapeFunc = [this, descBuilder, &shapeCreatorWindow](std::shared_ptr<Physics::CollisionShape> shape) mutable {
@@ -494,7 +494,7 @@ namespace GEE
 					shapeAddButton.SetOnClickFunc([shapeType, addShapeFunc]() { addShapeFunc(std::make_shared<Physics::CollisionShape>(shapeType)); });
 			}
 			buttonsList.Refresh();
-			}).SetTransform(Transform(glm::vec2(3.0f, 0.0f), glm::vec2(0.25f)));
+			}).SetTransform(Transform(Vec2f(3.0f, 0.0f), Vec2f(0.25f)));
 
 
 			if (CollisionObj)
@@ -503,7 +503,7 @@ namespace GEE
 					std::string shapeTypeName = Physics::Util::collisionShapeTypeToString(it->Type);
 					UIButtonActor& shapeActor = shapesList.CreateChild<UIButtonActor>("ShapeSelectButton", shapeTypeName, [descBuilder, it]() mutable {
 						UIWindowActor& shapeTransformWindow = descBuilder.GetEditorScene().CreateActorAtRoot<UIWindowActor>("ShapeTransformWindow");
-						shapeTransformWindow.GetTransform()->SetScale(glm::vec2(0.25f));
+						shapeTransformWindow.GetTransform()->SetScale(Vec2f(0.25f));
 						it->ShapeTransform.GetEditorDescription(EditorDescriptionBuilder(descBuilder.GetEditorHandle(), *shapeTransformWindow.GetScaleActor()));
 
 						shapeTransformWindow.RefreshFieldsList();

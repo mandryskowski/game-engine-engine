@@ -213,7 +213,7 @@ namespace GEE
 
 		std::shared_ptr<AtlasMaterial> DebugRenderMat;
 		std::shared_ptr<MaterialInstance> DebugRenderMatInst;
-		mutable glm::mat4 DebugRenderLastFrameMVP;
+		mutable Mat4f DebugRenderLastFrameMVP;
 	};
 
 	/*template<typename ChildClass>
@@ -239,7 +239,7 @@ namespace GEE
 
 		return (ChildClass&)childRef;
 	}
-	void CollisionObjRendering(RenderInfo& info, GameManager& gameHandle, Physics::CollisionObject& obj, const Transform& t, const glm::vec3& color = glm::vec3(0.1f, 0.6f, 0.3f));
+	void CollisionObjRendering(RenderInfo& info, GameManager& gameHandle, Physics::CollisionObject& obj, const Transform& t, const Vec3f& color = Vec3f(0.1f, 0.6f, 0.3f));
 }
 
 namespace cereal

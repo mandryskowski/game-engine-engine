@@ -6,18 +6,18 @@ namespace GEE
 	struct VertexBoneData
 	{
 		glm::ivec4 BoneIDs;
-		glm::vec4 BoneWeights;
+		Vec4f BoneWeights;
 		VertexBoneData();
 		void AddWeight(unsigned int boneID, float boneWeight);
 	};
 
 	struct Vertex
 	{
-		glm::vec3 Position;
-		glm::vec3 Normal;
-		glm::vec2 TexCoord;
-		glm::vec3 Tangent;
-		glm::vec3 Bitangent;
+		Vec3f Position;
+		Vec3f Normal;
+		Vec2f TexCoord;
+		Vec3f Tangent;
+		Vec3f Bitangent;
 		VertexBoneData BoneData;
 	};
 

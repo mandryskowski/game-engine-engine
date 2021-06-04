@@ -16,7 +16,7 @@ namespace GEE
 	{
 	}
 
-	void Postprocess::Init(GameManager* gameHandle, glm::uvec2 resolution)
+	void Postprocess::Init(GameManager* gameHandle, Vec2u resolution)
 	{
 		RenderHandle = gameHandle->GetRenderEngineHandle();
 
@@ -30,32 +30,32 @@ namespace GEE
 		return FrameIndex;
 	}
 
-	glm::mat4 Postprocess::GetJitterMat(const GameSettings::VideoSettings& usedSettings, int optionalIndex)
+	Mat4f Postprocess::GetJitterMat(const GameSettings::VideoSettings& usedSettings, int optionalIndex)
 	{
-		glm::vec2 jitter(0.0f);
+		Vec2f jitter(0.0f);
 
 		switch (usedSettings.AAType)
 		{
 		case AA_NONE:
 		case AA_SMAA1X:
 		default:
-			return glm::mat4(1.0f);
+			return Mat4f(1.0f);
 		case AA_SMAAT2X:
-			glm::vec2 jitters[] = {
-				glm::vec2(-0.25f, 0.25f),
-				glm::vec2(0.25f, -0.25f)
+			Vec2f jitters[] = {
+				Vec2f(-0.25f, 0.25f),
+				Vec2f(0.25f, -0.25f)
 			};
 
-			/*glm::vec2 jitters[] = {
-	glm::vec2(10.0f, -10.0f),
-	glm::vec2(-10.0f, 10.0f)
+			/*Vec2f jitters[] = {
+	Vec2f(10.0f, -10.0f),
+	Vec2f(-10.0f, 10.0f)
 	};*/
 			jitter = jitters[((optionalIndex >= 0) ? (optionalIndex) : (FrameIndex))];
 			break;
 		}
 
-		jitter /= static_cast<glm::vec2>(usedSettings.Resolution) * 0.5f;
-		return glm::translate(glm::mat4(1.0f), glm::vec3(jitter, 0.0f));
+		jitter /= static_cast<Vec2f>(usedSettings.Resolution) * 0.5f;
+		return glm::translate(Mat4f(1.0f), Vec3f(jitter, 0.0f));
 	}
 
 	const Texture* Postprocess::GaussianBlur(PPToolbox<GaussianBlurToolbox> ppTb, const GEE_FB::Framebuffer& writeFramebuffer, const Viewport* viewport, const Texture* tex, int passes, unsigned int writeColorBuffer) const	//Implemented using ping-pong framebuffers (one gaussian blur pass is separable into two lower-cost passes) and linear filtering for performance
@@ -151,7 +151,7 @@ namespace GEE
 
 		tb.SMAAShaders[1]->Use();
 		if (bT2x)
-			tb.SMAAShaders[1]->Uniform4fv("ssIndices", (FrameIndex == 0) ? (glm::vec4(1, 1, 1, 0)) : (glm::vec4(2, 2, 2, 0)));
+			tb.SMAAShaders[1]->Uniform4fv("ssIndices", (FrameIndex == 0) ? (Vec4f(1, 1, 1, 0)) : (Vec4f(2, 2, 2, 0)));
 
 		tb.SMAAFb->GetColorBuffer(0)->Bind(0);	//bind edges texture to slot 0
 		tb.SMAAAreaTex->Bind(1);

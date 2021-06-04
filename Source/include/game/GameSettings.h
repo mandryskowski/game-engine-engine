@@ -34,14 +34,14 @@ namespace GEE
 
 	struct GameSettings
 	{
-		glm::uvec2 WindowSize;
+		Vec2u WindowSize;
 
 		bool bWindowFullscreen;
 		std::string WindowTitle;
 
 		struct VideoSettings
 		{
-			glm::vec2 Resolution;
+			Vec2f Resolution;
 			ShadingModel Shading;
 
 			unsigned int AmbientOcclusionSamples;
@@ -59,7 +59,7 @@ namespace GEE
 			VideoSettings();
 			bool IsVelocityBufferNeeded() const;
 			bool IsTemporalReprojectionEnabled() const;
-			std::string GetShaderDefines(glm::uvec2 resolution = glm::uvec2(0)) const;
+			std::string GetShaderDefines(Vec2u resolution = Vec2u(0)) const;
 			virtual bool LoadSetting(std::stringstream& filestr, std::string settingName);
 		} Video;
 

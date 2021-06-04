@@ -45,11 +45,11 @@ namespace GEE
 		void SubData1i(int, size_t offset);
 		void SubData1f(float, size_t offset);
 		void SubData(size_t size, float* data, size_t offset);
-		void SubData4fv(glm::vec3, size_t offset);
-		void SubData4fv(std::vector<glm::vec3>, size_t offset);
-		void SubData4fv(glm::vec4, size_t offset);
-		void SubData4fv(std::vector<glm::vec4>, size_t offset);
-		void SubDataMatrix4fv(glm::mat4, size_t offset);
+		void SubData4fv(Vec3f, size_t offset);
+		void SubData4fv(std::vector<Vec3f>, size_t offset);
+		void SubData4fv(Vec4f, size_t offset);
+		void SubData4fv(std::vector<Vec4f>, size_t offset);
+		void SubDataMatrix4fv(Mat4f, size_t offset);
 		void PadOffset();
 
 		void Dispose();
@@ -70,18 +70,18 @@ namespace GEE
 	bool isNextWordEqual(std::stringstream&, std::string);	//works just like the previous one, but moves the pointer if the word is equal to a passed string
 
 	bool toBool(std::string);
-	glm::vec3 toEuler(const glm::quat& quat);
-	glm::quat toQuat(const glm::vec3& euler);
+	Vec3f toEuler(const Quatf& quat);
+	Quatf toQuat(const Vec3f& euler);
 
 	std::string extractDirectory(std::string path);
 	void extractDirectoryAndFilename(const std::string& fullPath, std::string& filename, std::string& directory);
 
-	void printVector(const glm::vec2&, std::string title = std::string());
-	void printVector(const glm::vec3&, std::string title = std::string());
-	void printVector(const glm::vec4&, std::string title = std::string());
-	void printVector(const glm::quat&, std::string title = std::string());
+	void printVector(const Vec2f&, std::string title = std::string());
+	void printVector(const Vec3f&, std::string title = std::string());
+	void printVector(const Vec4f&, std::string title = std::string());
+	void printVector(const Quatf&, std::string title = std::string());
 
-	void printMatrix(const glm::mat4&, std::string title = std::string());
+	void printMatrix(const Mat4f&, std::string title = std::string());
 
 	template<typename To, typename From>
 	std::unique_ptr<To> static_unique_pointer_cast(std::unique_ptr<From>&& old) {

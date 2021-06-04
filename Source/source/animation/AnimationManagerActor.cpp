@@ -21,19 +21,19 @@ namespace GEE
 		ScaleKeysLeft.clear();
 
 		for (int i = 0; i < static_cast<int>(ChannelRef.PosKeys.size() - 1); i++)
-			PosKeysLeft.push_back(std::make_unique<Interpolator<glm::vec3>>(Interpolator<glm::vec3>(Interpolation((i == 0) ? (ChannelRef.PosKeys[0]->Time) : (0.0f), (float)ChannelRef.PosKeys[i + 1]->Time - (float)ChannelRef.PosKeys[i]->Time), ChannelRef.PosKeys[i]->Value, ChannelRef.PosKeys[i + 1]->Value)));
+			PosKeysLeft.push_back(std::make_unique<Interpolator<Vec3f>>(Interpolator<Vec3f>(Interpolation((i == 0) ? (ChannelRef.PosKeys[0]->Time) : (0.0f), (float)ChannelRef.PosKeys[i + 1]->Time - (float)ChannelRef.PosKeys[i]->Time), ChannelRef.PosKeys[i]->Value, ChannelRef.PosKeys[i + 1]->Value)));
 		if (!ChannelRef.PosKeys.empty())
-			PosKeysLeft.push_back(std::make_unique<Interpolator<glm::vec3>>(Interpolator<glm::vec3>(Interpolation(ChannelRef.PosKeys.back()->Time, 0.0f, InterpolationType::CONSTANT, false, AnimBehaviour::STOP, AnimBehaviour::REPEAT), ChannelRef.PosKeys.back()->Value, ChannelRef.PosKeys.back()->Value)));
+			PosKeysLeft.push_back(std::make_unique<Interpolator<Vec3f>>(Interpolator<Vec3f>(Interpolation(ChannelRef.PosKeys.back()->Time, 0.0f, InterpolationType::CONSTANT, false, AnimBehaviour::STOP, AnimBehaviour::REPEAT), ChannelRef.PosKeys.back()->Value, ChannelRef.PosKeys.back()->Value)));
 
 		for (int i = 0; i < static_cast<int>(ChannelRef.RotKeys.size() - 1); i++)
-			RotKeysLeft.push_back(std::make_unique<Interpolator<glm::quat>>(Interpolator<glm::quat>(Interpolation((i == 0) ? (ChannelRef.RotKeys[0]->Time) : (0.0f), (float)ChannelRef.RotKeys[i + 1]->Time - (float)ChannelRef.RotKeys[i]->Time), ChannelRef.RotKeys[i]->Value, ChannelRef.RotKeys[i + 1]->Value)));
+			RotKeysLeft.push_back(std::make_unique<Interpolator<Quatf>>(Interpolator<Quatf>(Interpolation((i == 0) ? (ChannelRef.RotKeys[0]->Time) : (0.0f), (float)ChannelRef.RotKeys[i + 1]->Time - (float)ChannelRef.RotKeys[i]->Time), ChannelRef.RotKeys[i]->Value, ChannelRef.RotKeys[i + 1]->Value)));
 		if (!ChannelRef.RotKeys.empty())
-			RotKeysLeft.push_back(std::make_unique<Interpolator<glm::quat>>(Interpolator<glm::quat>(Interpolation(ChannelRef.RotKeys.back()->Time, 0.0f, InterpolationType::CONSTANT, false, AnimBehaviour::STOP, AnimBehaviour::REPEAT), ChannelRef.RotKeys.back()->Value, ChannelRef.RotKeys.back()->Value)));
+			RotKeysLeft.push_back(std::make_unique<Interpolator<Quatf>>(Interpolator<Quatf>(Interpolation(ChannelRef.RotKeys.back()->Time, 0.0f, InterpolationType::CONSTANT, false, AnimBehaviour::STOP, AnimBehaviour::REPEAT), ChannelRef.RotKeys.back()->Value, ChannelRef.RotKeys.back()->Value)));
 
 		for (int i = 0; i < static_cast<int>(ChannelRef.ScaleKeys.size() - 1); i++)
-			ScaleKeysLeft.push_back(std::make_unique<Interpolator<glm::vec3>>(Interpolator<glm::vec3>(Interpolation((i == 0) ? (ChannelRef.ScaleKeys[0]->Time) : (0.0f), (float)ChannelRef.ScaleKeys[i + 1]->Time - (float)ChannelRef.ScaleKeys[i]->Time), ChannelRef.ScaleKeys[i]->Value, ChannelRef.ScaleKeys[i + 1]->Value)));
+			ScaleKeysLeft.push_back(std::make_unique<Interpolator<Vec3f>>(Interpolator<Vec3f>(Interpolation((i == 0) ? (ChannelRef.ScaleKeys[0]->Time) : (0.0f), (float)ChannelRef.ScaleKeys[i + 1]->Time - (float)ChannelRef.ScaleKeys[i]->Time), ChannelRef.ScaleKeys[i]->Value, ChannelRef.ScaleKeys[i + 1]->Value)));
 		if (!ChannelRef.ScaleKeys.empty())
-			ScaleKeysLeft.push_back(std::make_unique<Interpolator<glm::vec3>>(Interpolator<glm::vec3>(Interpolation(ChannelRef.ScaleKeys.back()->Time, 0.0f, InterpolationType::CONSTANT, false, AnimBehaviour::STOP, AnimBehaviour::REPEAT), ChannelRef.ScaleKeys.back()->Value, ChannelRef.ScaleKeys.back()->Value)));
+			ScaleKeysLeft.push_back(std::make_unique<Interpolator<Vec3f>>(Interpolator<Vec3f>(Interpolation(ChannelRef.ScaleKeys.back()->Time, 0.0f, InterpolationType::CONSTANT, false, AnimBehaviour::STOP, AnimBehaviour::REPEAT), ChannelRef.ScaleKeys.back()->Value, ChannelRef.ScaleKeys.back()->Value)));
 	}
 
 	void AnimationChannelInstance::Stop()
@@ -86,9 +86,9 @@ namespace GEE
 			return false;
 		}
 
-		UpdateKeys<glm::vec3>(PosKeysLeft, deltaTime, [this](const glm::vec3& vec) {ChannelComp.GetTransform().SetPosition(vec); });
-		UpdateKeys<glm::quat>(RotKeysLeft, deltaTime, [this](const glm::quat& q) {ChannelComp.GetTransform().SetRotation(q); });
-		UpdateKeys<glm::vec3>(ScaleKeysLeft, deltaTime, [this](const glm::vec3& vec) {ChannelComp.GetTransform().SetScale(vec); });
+		UpdateKeys<Vec3f>(PosKeysLeft, deltaTime, [this](const Vec3f& vec) {ChannelComp.GetTransform().SetPosition(vec); });
+		UpdateKeys<Quatf>(RotKeysLeft, deltaTime, [this](const Quatf& q) {ChannelComp.GetTransform().SetRotation(q); });
+		UpdateKeys<Vec3f>(ScaleKeysLeft, deltaTime, [this](const Vec3f& vec) {ChannelComp.GetTransform().SetScale(vec); });
 		/*float timeLeft = deltaTime;
 		while (!PosKeysLeft.empty())
 		{
@@ -298,7 +298,7 @@ namespace GEE
 		for (auto& it : AnimInstances)
 		{
 			UIButtonActor& button = animField.CreateChild<UIButtonActor>(it->GetAnimation().Localization.Name, it->GetAnimation().Localization.Name, [this, &it]() { SelectAnimation(it.get()); });
-			button.GetTransform()->SetPosition(glm::vec2(posX, 0.0f));
+			button.GetTransform()->SetPosition(Vec2f(posX, 0.0f));
 			posX += 3.0f;
 		}
 	}

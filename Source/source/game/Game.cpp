@@ -109,7 +109,7 @@ namespace GEE
 		glfwSetScrollCallback(Window, GLFWEventProcessor::ScrollCallback);
 		glfwSetDropCallback(Window, GLFWEventProcessor::FileDropCallback);
 
-		RenderEng.Init(glm::uvec2(Settings->Video.Resolution.x, Settings->Video.Resolution.y));
+		RenderEng.Init(Vec2u(Settings->Video.Resolution.x, Settings->Video.Resolution.y));
 		PhysicsEng.Init();
 
 		DefaultFont = EngineDataLoader::LoadFont(*this, "fonts/Atkinson-Hyperlegible-Regular-102.otf");
@@ -371,7 +371,7 @@ namespace GEE
 
 	void GLFWEventProcessor::CursorPosCallback(GLFWwindow* window, double xpos, double ypos)
 	{
-		TargetHolder->Events.push(std::make_shared<CursorMoveEvent>(CursorMoveEvent(EventType::MOUSE_MOVED, glm::vec2(static_cast<float>(xpos), static_cast<float>(ypos)))));
+		TargetHolder->Events.push(std::make_shared<CursorMoveEvent>(CursorMoveEvent(EventType::MouseMoved, Vec2f(static_cast<float>(xpos), static_cast<float>(ypos)))));
 
 		if (!mouseController || !TargetHolder)
 			return;
@@ -380,22 +380,22 @@ namespace GEE
 		glfwGetWindowSize(window, &halfWindowSize.x, &halfWindowSize.y);
 		halfWindowSize /= 2;
 		glfwSetCursorPos(window, (double)halfWindowSize.x, (double)halfWindowSize.y);
-		mouseController->RotateWithMouse(glm::vec2(xpos - (float)halfWindowSize.x, ypos - (float)halfWindowSize.y)); //Implement it as an Event instead! TODO
+		mouseController->RotateWithMouse(Vec2f(xpos - (float)halfWindowSize.x, ypos - (float)halfWindowSize.y)); //Implement it as an Event instead! TODO
 	}
 
 	void GLFWEventProcessor::MouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
 	{
-		TargetHolder->Events.push(std::make_shared<MouseButtonEvent>(MouseButtonEvent((action == GLFW_PRESS) ? (EventType::MOUSE_PRESSED) : (EventType::MOUSE_RELEASED), static_cast<MouseButton>(button), mods)));
+		TargetHolder->Events.push(std::make_shared<MouseButtonEvent>(MouseButtonEvent((action == GLFW_PRESS) ? (EventType::MousePressed) : (EventType::MouseReleased), static_cast<MouseButton>(button), mods)));
 	}
 
 	void GLFWEventProcessor::KeyPressedCallback(GLFWwindow*, int key, int scancode, int action, int mods)
 	{
-		TargetHolder->Events.push(std::make_shared<KeyEvent>(KeyEvent((action == GLFW_PRESS) ? (EventType::KEY_PRESSED) : ((action == GLFW_REPEAT) ? (EventType::KEY_REPEATED) : (EventType::KEY_RELEASED)), static_cast<Key>(key), mods)));
+		TargetHolder->Events.push(std::make_shared<KeyEvent>(KeyEvent((action == GLFW_PRESS) ? (EventType::KeyPressed) : ((action == GLFW_REPEAT) ? (EventType::KeyRepeated) : (EventType::KeyReleased)), static_cast<Key>(key), mods)));
 	}
 
 	void GLFWEventProcessor::CharEnteredCallback(GLFWwindow*, unsigned int codepoint)
 	{
-		TargetHolder->Events.push(std::make_shared<CharEnteredEvent>(CharEnteredEvent(EventType::CHARACTER_ENTERED, codepoint)));
+		TargetHolder->Events.push(std::make_shared<CharEnteredEvent>(CharEnteredEvent(EventType::CharacterEntered, codepoint)));
 	}
 
 	void GLFWEventProcessor::ScrollCallback(GLFWwindow* window, double offsetX, double offsetY)
@@ -403,8 +403,8 @@ namespace GEE
 		std::cout << "Scrolled " << offsetX << ", " << offsetY << "\n";
 		glm::dvec2 cursorPos(0.0);
 		glfwGetCursorPos(window, &cursorPos.x, &cursorPos.y);
-		TargetHolder->Events.push(std::make_shared<MouseScrollEvent>(MouseScrollEvent(EventType::MOUSE_SCROLLED, glm::vec2(static_cast<float>(-offsetX), static_cast<float>(offsetY)))));
-		TargetHolder->Events.push(std::make_shared<CursorMoveEvent>(CursorMoveEvent(EventType::MOUSE_MOVED, glm::vec2(cursorPos))));	//When we scroll (e.g. a canvas), it is possible that some buttons or other objects relying on cursor position might be scrolled (moved) as well, so we need to create a CursorMoveEvent.
+		TargetHolder->Events.push(std::make_shared<MouseScrollEvent>(MouseScrollEvent(EventType::MouseScrolled, Vec2f(static_cast<float>(-offsetX), static_cast<float>(offsetY)))));
+		TargetHolder->Events.push(std::make_shared<CursorMoveEvent>(CursorMoveEvent(EventType::MouseMoved, Vec2f(cursorPos))));	//When we scroll (e.g. a canvas), it is possible that some buttons or other objects relying on cursor position might be scrolled (moved) as well, so we need to create a CursorMoveEvent.
 	}
 
 	void GLFWEventProcessor::FileDropCallback(GLFWwindow* window, int count, const char** paths)

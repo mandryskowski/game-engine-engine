@@ -16,7 +16,7 @@ namespace GEE
 {
 	RenderEngine::RenderEngine(GameManager* gameHandle) :
 		GameHandle(gameHandle),
-		PreviousFrameView(glm::mat4(1.0f)),
+		PreviousFrameView(Mat4f(1.0f)),
 		BoundSkeletonBatch(nullptr),
 		BoundMesh(nullptr),
 		BoundMaterial(nullptr),
@@ -30,10 +30,12 @@ namespace GEE
 		glCullFace(GL_BACK);
 
 		//generate engine's empty texture
-		EmptyTexture = std::make_shared<Texture>(textureFromBuffer(glm::value_ptr(glm::vec3(0.5f, 0.5f, 1.0f)), 1, 1, GL_RGB, GL_RGB, GL_UNSIGNED_BYTE, GL_NEAREST, GL_NEAREST));
+		EmptyTexture = Texture::Loader::FromBuffer2D(Vec2u(1, 1), Math::GetDataPtr(Vec3f(0.5f, 0.5f, 1.0f)), 3);
+		EmptyTexture.SetMinFilter(Texture::MinTextureFilter::Nearest(), true, true);
+		EmptyTexture.SetMagFilter(Texture::MagTextureFilter::Nearest(), true);
 	}
 
-	void RenderEngine::Init(glm::uvec2 resolution)
+	void RenderEngine::Init(Vec2u resolution)
 	{
 		Resize(resolution);
 
@@ -42,14 +44,14 @@ namespace GEE
 
 		Postprocessing.Init(GameHandle, Resolution);
 
-		CubemapData.DefaultV[0] = glm::lookAt(glm::vec3(0.0f), glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f));
-		CubemapData.DefaultV[1] = glm::lookAt(glm::vec3(0.0f), glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f));
-		CubemapData.DefaultV[2] = glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-		CubemapData.DefaultV[3] = glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f));
-		CubemapData.DefaultV[4] = glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, -1.0f, 0.0f));
-		CubemapData.DefaultV[5] = glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, -1.0f, 0.0f));
+		CubemapData.DefaultV[0] = glm::lookAt(Vec3f(0.0f), Vec3f(1.0f, 0.0f, 0.0f), Vec3f(0.0f, -1.0f, 0.0f));
+		CubemapData.DefaultV[1] = glm::lookAt(Vec3f(0.0f), Vec3f(-1.0f, 0.0f, 0.0f), Vec3f(0.0f, -1.0f, 0.0f));
+		CubemapData.DefaultV[2] = glm::lookAt(Vec3f(0.0f), Vec3f(0.0f, 1.0f, 0.0f), Vec3f(0.0f, 0.0f, 1.0f));
+		CubemapData.DefaultV[3] = glm::lookAt(Vec3f(0.0f), Vec3f(0.0f, -1.0f, 0.0f), Vec3f(0.0f, 0.0f, -1.0f));
+		CubemapData.DefaultV[4] = glm::lookAt(Vec3f(0.0f), Vec3f(0.0f, 0.0f, 1.0f), Vec3f(0.0f, -1.0f, 0.0f));
+		CubemapData.DefaultV[5] = glm::lookAt(Vec3f(0.0f), Vec3f(0.0f, 0.0f, -1.0f), Vec3f(0.0f, -1.0f, 0.0f));
 
-		glm::mat4 cubemapProj = glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, 0.0f, 2.0f);
+		Mat4f cubemapProj = glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, 0.0f, 2.0f);
 
 		for (int i = 0; i < 6; i++)
 			CubemapData.DefaultVP[i] = cubemapProj * CubemapData.DefaultV[i];
@@ -142,7 +144,7 @@ namespace GEE
 		Shaders.back()->SetExpectedMatrices(std::vector<MatrixType>{MatrixType::MVP});
 	}
 
-	void RenderEngine::Resize(glm::uvec2 resolution)
+	void RenderEngine::Resize(Vec2u resolution)
 	{
 		Resolution = resolution;
 		const GameSettings* settings = GameHandle->GetGameSettings();
@@ -322,9 +324,9 @@ namespace GEE
 				}
 
 				Transform lightWorld = light.GetTransform().GetWorldTransform();
-				glm::vec3 lightPos = lightWorld.Pos();
-				glm::mat4 viewTranslation = glm::translate(glm::mat4(1.0f), -lightPos);
-				glm::mat4 projection = light.GetProjection();
+				Vec3f lightPos = lightWorld.Pos();
+				Mat4f viewTranslation = glm::translate(Mat4f(1.0f), -lightPos);
+				Mat4f projection = light.GetProjection();
 
 				FindShader("DepthLinearize")->Uniform1f("far", light.GetFar());
 				FindShader("DepthLinearize")->Uniform3fv("lightPos", lightPos);
@@ -333,7 +335,7 @@ namespace GEE
 				timeSum += (float)glfwGetTime() - time1;
 
 
-				RenderInfo info(tbCollection, viewTranslation, projection, glm::mat4(1.0f), glm::vec3(0.0f), false, true, false);
+				RenderInfo info(tbCollection, viewTranslation, projection, Mat4f(1.0f), Vec3f(0.0f), false, true, false);
 				shadowsTb->ShadowFramebuffer->DepthBuffer = std::make_shared<GEE_FB::FramebufferAttachment>(*shadowsTb->ShadowCubemapArray, GL_DEPTH_ATTACHMENT);
 				RenderCubemapFromScene(info, sceneRenderData, *shadowsTb->ShadowFramebuffer, *shadowsTb->ShadowFramebuffer->DepthBuffer, GL_DEPTH_ATTACHMENT, FindShader("DepthLinearize"), &cubemapFirst);
 			}
@@ -346,15 +348,15 @@ namespace GEE
 					bCubemapBound = false;
 				}
 
-				glm::mat4 view = light.GetTransform().GetWorldTransform().GetViewMatrix();
-				glm::mat4 projection = light.GetProjection();
-				glm::mat4 VP = projection * view;
+				Mat4f view = light.GetTransform().GetWorldTransform().GetViewMatrix();
+				Mat4f projection = light.GetProjection();
+				Mat4f VP = projection * view;
 
 				timeSum += (float)glfwGetTime() - time1;
 				glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, shadowsTb->ShadowMapArray->GetID(), 0, light.GetShadowMapNr());
 				glClear(GL_DEPTH_BUFFER_BIT);
 
-				RenderInfo info(tbCollection, view, projection, VP, glm::vec3(0.0f), false, true, false);
+				RenderInfo info(tbCollection, view, projection, VP, Vec3f(0.0f), false, true, false);
 				RenderRawScene(info, sceneRenderData, FindShader("Depth"));
 			}
 
@@ -449,7 +451,7 @@ namespace GEE
 			framebuffer.SetDrawBuffers();
 
 			RenderInfo xdCopy = info;
-			xdCopy.view = glm::mat4(1.0f);
+			xdCopy.view = Mat4f(1.0f);
 			xdCopy.projection = glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f);
 			xdCopy.CalculateVP();
 			RenderVolume((volumes[i]->GetShape() == EngineBasicShape::QUAD) ? (xdCopy) : (info), volumes[i].get(), boundShader, true);
@@ -471,18 +473,20 @@ namespace GEE
 			return;
 
 		GameSettings::VideoSettings settings;
-		settings.AAType = AA_NONE;
+		settings.AAType = AA_NONE;	//Disable SMAA; it doesn't work on HDR colorbuffers
 		settings.AALevel = SettingLevel::SETTING_ULTRA;
-		settings.bBloom = true;
+		settings.bBloom = false;
 		settings.AmbientOcclusionSamples = 64;
 		settings.POMLevel = SettingLevel::SETTING_ULTRA;
 		settings.ShadowLevel = SettingLevel::SETTING_ULTRA;
-		settings.Resolution = glm::uvec2(1024);
+		settings.Resolution = Vec2u(1024);
 		settings.Shading = ShadingModel::SHADING_PBR_COOK_TORRANCE;
+		settings.MonitorGamma = 1.0f;	//Keep radiance data in linear space
+		settings.TMType = ToneMappingType::TM_NONE;	//Do not tonemap when rendering probes; we want to keep HDR data
 
 		std::cout << "Initting for " << sceneRenderData->LightProbes.size() << " probes.\n";
 		//Dispose();
-		//Init(glm::uvec2(1024));
+		//Init(Vec2u(1024));
 
 		RenderToolboxCollection probeRenderingCollection("LightProbeRendering", settings);
 		CurrentTbCollection = &probeRenderingCollection;
@@ -494,9 +498,9 @@ namespace GEE
 		//info.projection = &p;
 
 		GEE_FB::Framebuffer framebuffer;
-		std::shared_ptr<GEE_FB::FramebufferAttachment> depthBuffer = GEE_FB::reserveDepthBuffer(glm::uvec2(1024), GL_DEPTH_COMPONENT, GL_FLOAT, GL_NEAREST, GL_NEAREST, GL_TEXTURE_2D);
+		std::shared_ptr<GEE_FB::FramebufferAttachment> depthBuffer = GEE_FB::reserveDepthBuffer(Vec2u(1024), GL_DEPTH_COMPONENT, GL_FLOAT, GL_NEAREST, GL_NEAREST, GL_TEXTURE_2D);
 		framebuffer.Bind();
-		framebuffer.SetAttachments(glm::uvec2(1024), GEE_FB::FramebufferAttachment(), nullptr);
+		framebuffer.SetAttachments(Vec2u(1024), GEE_FB::FramebufferAttachment(), nullptr);
 		framebuffer.Bind(true);
 
 		Shader* gShader = probeRenderingCollection.GetTb<DeferredShadingToolbox>()->GeometryShader;
@@ -508,9 +512,9 @@ namespace GEE
 			LightProbeComponent* probe = sceneRenderData->LightProbes[i];
 			if (probe->GetShape() == EngineBasicShape::QUAD)
 				continue;
-			glm::vec3 camPos = probe->GetTransform().GetWorldTransform().Pos();
-			glm::mat4 viewTranslation = glm::translate(glm::mat4(1.0f), -camPos);
-			glm::mat4 p = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 100.0f);
+			Vec3f camPos = probe->GetTransform().GetWorldTransform().Pos();
+			Mat4f viewTranslation = glm::translate(Mat4f(1.0f), -camPos);
+			Mat4f p = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 100.0f);
 
 			RenderInfo info(probeRenderingCollection);
 			info.view = viewTranslation;
@@ -529,7 +533,7 @@ namespace GEE
 
 		//Dispose();
 
-		//Init(glm::uvec2(GameHandle->GetGameSettings()->ViewportData.z, GameHandle->GetGameSettings()->ViewportData.w));
+		//Init(Vec2u(GameHandle->GetGameSettings()->ViewportData.z, GameHandle->GetGameSettings()->ViewportData.w));
 		CurrentTbCollection = RenderTbCollections[0].get();
 		probeRenderingCollection.Dispose();
 		depthBuffer->Dispose();
@@ -572,15 +576,15 @@ namespace GEE
 			for (auto it = sceneRenderData->Renderables.rbegin(); it != sceneRenderData->Renderables.rend(); it++)
 			{
 				//float uiDepth = static_cast<float>(it->get().GetUIDepth());
-				//info.view = (uiDepth !=	0.0f) ? (glm::translate(maxDepthMat, glm::vec3(0.0f, 0.0f, -uiDepth))) : (maxDepthMat);
-				info.view = glm::translate(info.view, glm::vec3(0.0f, 0.0f, 1.0f));
+				//info.view = (uiDepth !=	0.0f) ? (glm::translate(maxDepthMat, Vec3f(0.0f, 0.0f, -uiDepth))) : (maxDepthMat);
+				info.view = glm::translate(info.view, Vec3f(0.0f, 0.0f, 1.0f));
 				info.CalculateVP();
 				(*it)->Render(info, shader.get());
 			}
 		}
 	}
 
-	void RenderEngine::RenderBoundInDebug(RenderInfo& info, GLenum mode, GLint first, GLint count, glm::vec3 color)
+	void RenderEngine::RenderBoundInDebug(RenderInfo& info, GLenum mode, GLint first, GLint count, Vec3f color)
 	{
 		Shader* debugShader = FindShader("Debug");
 		debugShader->Use();
@@ -617,12 +621,12 @@ namespace GEE
 		bool debugPhysics = GameHandle->GetInputRetriever().IsKeyPressed(Key::F2);
 		bool debugComponents = true;
 		bool useLightingAlgorithms = sceneRenderData->ContainsLights() || sceneRenderData->ContainsLightProbes();
-		glm::mat4 currentFrameView = info.view;
+		Mat4f currentFrameView = info.view;
 		info.previousFrameView = PreviousFrameView;
 
 		const GEE_FB::Framebuffer& target = ((framebuffer) ? (*framebuffer) : (GEE_FB::getDefaultFramebuffer(GameHandle->GetGameSettings()->WindowSize)));
-		if (viewport.GetSize() == glm::uvec2(0))
-			viewport = Viewport(glm::uvec2(0), target.GetSize());
+		if (viewport.GetSize() == Vec2u(0))
+			viewport = Viewport(Vec2u(0), target.GetSize());
 
 		//sceneRenderData->LightsBuffer.SubData4fv(info.camPos, 16); TO BYLO TU...
 
@@ -640,7 +644,7 @@ namespace GEE
 			GEE_FB::Framebuffer& GFramebuffer = *deferredTb->GFb;
 
 			{
-				Viewport onlySizeViewport(glm::uvec2(0), viewport.GetSize());
+				Viewport onlySizeViewport(Vec2u(0), viewport.GetSize());
 				GFramebuffer.Bind(true, &onlySizeViewport);
 			}
 			glEnable(GL_DEPTH_TEST);
@@ -678,9 +682,9 @@ namespace GEE
 			sceneRenderData->UpdateLightUniforms();
 			MainFramebuffer.Bind();
 
-			glClearBufferfv(GL_COLOR, 0, glm::value_ptr(glm::vec3(0.0f, 0.0f, 0.0f)));
+			glClearBufferfv(GL_COLOR, 0, Math::GetDataPtr(Vec3f(0.0f, 0.0f, 0.0f)));
 			if (info.TbCollection.GetSettings().bBloom)
-				glClearBufferfv(GL_COLOR, 1, glm::value_ptr(glm::vec3(0.0f)));
+				glClearBufferfv(GL_COLOR, 1, Math::GetDataPtr(Vec3f(0.0f)));
 
 			for (int i = 0; i < 4; i++)
 			{
@@ -723,7 +727,7 @@ namespace GEE
 		else
 		{
 			{
-				Viewport onlySizeViewport(glm::uvec2(0), viewport.GetSize());
+				Viewport onlySizeViewport(Vec2u(0), viewport.GetSize());
 				MainFramebuffer.Bind(true, &viewport);
 			}
 
@@ -755,8 +759,8 @@ namespace GEE
 				RenderRawScene(info, sceneRenderData, ForwardShaders[i].get());
 
 		FindShader("Forward_NoLight")->Use();
-		FindShader("Forward_NoLight")->Uniform2fv("atlasData", glm::vec2(0.0f));
-		FindShader("Forward_NoLight")->Uniform2fv("atlasTexOffset", glm::vec2(0.0f));
+		FindShader("Forward_NoLight")->Uniform2fv("atlasData", Vec2f(0.0f));
+		FindShader("Forward_NoLight")->Uniform2fv("atlasTexOffset", Vec2f(0.0f));
 
 
 		info.MainPass = false;
@@ -806,9 +810,9 @@ namespace GEE
 		PrepareFrame();
 
 		FullSceneRender(info, ScenesRenderData[0]);
-		info.view = glm::mat4(1.0f);
-		info.projection = glm::mat4(1.0f);
-		info.VP = glm::mat4(1.0f);
+		info.view = Mat4f(1.0f);
+		info.projection = Mat4f(1.0f);
+		info.VP = Mat4f(1.0f);
 
 		glViewport(0, 0, 800, 600);
 		info.MainPass = true;
@@ -830,7 +834,7 @@ namespace GEE
 		bool bCalcVelocity = GameHandle->GetGameSettings()->Video.IsVelocityBufferNeeded() && info.MainPass;
 		bool jitter = info.MainPass && GameHandle->GetGameSettings()->Video.IsTemporalReprojectionEnabled();
 
-		glm::mat4 jitteredVP = (jitter) ? (Postprocessing.GetJitterMat(info.TbCollection.GetSettings(), Postprocessing.GetFrameIndex()) * info.VP) : (info.VP);
+		Mat4f jitteredVP = (jitter) ? (Postprocessing.GetJitterMat(info.TbCollection.GetSettings(), Postprocessing.GetFrameIndex()) * info.VP) : (info.VP);
 
 		if (bCalcVelocity)
 		{
@@ -840,16 +844,16 @@ namespace GEE
 		}
 		else
 		{
-			FindShader("Cubemap")->UniformMatrix4fv("prevVP", glm::mat4(1.0f));
-			FindShader("Cubemap")->UniformMatrix4fv("flickerMat", glm::mat4(1.0f));
-			FindShader("Cubemap")->UniformMatrix4fv("prevFlickerMat", glm::mat4(1.0f));
+			FindShader("Cubemap")->UniformMatrix4fv("prevVP", Mat4f(1.0f));
+			FindShader("Cubemap")->UniformMatrix4fv("flickerMat", Mat4f(1.0f));
+			FindShader("Cubemap")->UniformMatrix4fv("prevFlickerMat", Mat4f(1.0f));
 		}
 
 
 		RenderStaticMesh(info, GetBasicShapeMesh(EngineBasicShape::CUBE), Transform(), FindShader("Cubemap"));
 	}
 
-	void RenderEngine::RenderCubemapFromTexture(Texture targetTex, Texture tex, glm::uvec2 size, Shader& shader, int* layer, int mipLevel)
+	void RenderEngine::RenderCubemapFromTexture(Texture targetTex, Texture tex, Vec2u size, Shader& shader, int* layer, int mipLevel)
 	{
 		CubemapData.DefaultFramebuffer.SetAttachments(size);
 		CubemapData.DefaultFramebuffer.Bind(true);
@@ -903,7 +907,7 @@ namespace GEE
 		target.Bind(true);
 		glActiveTexture(GL_TEXTURE0);
 
-		glm::mat4 viewTranslation = info.view;
+		Mat4f viewTranslation = info.view;
 
 		for (int i = 0; i < 6; i++)
 		{
@@ -924,7 +928,7 @@ namespace GEE
 		}
 	}
 
-	void RenderEngine::RenderText(const RenderInfo& infoPreConvert, const Font& font, std::string content, Transform t, glm::vec3 color, Shader* shader, bool convertFromPx, const std::pair<TextAlignment, TextAlignment>& alignment)
+	void RenderEngine::RenderText(const RenderInfo& infoPreConvert, const Font& font, std::string content, Transform t, Vec3f color, Shader* shader, bool convertFromPx, const std::pair<TextAlignment, TextAlignment>& alignment)
 	{
 		if (infoPreConvert.CareAboutShader && shader && shader != FindShader("TextShader"))	///TODO: CHANGE IT SO TEXTS USE MATERIALS SO THEY CAN BE RENDERED USING DIFFERENT SHADERS!!!!
 			return;
@@ -943,14 +947,14 @@ namespace GEE
 		shader->Uniform3fv("color", color);
 		font.GetBitmapsArray().Bind(0);
 
-		glm::vec2 resolution(GameHandle->GetGameSettings()->WindowSize);// (GameHandle->GetGameSettings()->ViewportData.z, GameHandle->GetGameSettings()->ViewportData.w);s
+		Vec2f resolution(GameHandle->GetGameSettings()->WindowSize);// (GameHandle->GetGameSettings()->ViewportData.z, GameHandle->GetGameSettings()->ViewportData.w);s
 
 		RenderInfo info = infoPreConvert;
 		if (convertFromPx)
 		{
-			glm::mat4 pxConvertMatrix = glm::ortho(0.0f, resolution.x, 0.0f, resolution.y);
-			const glm::mat4& proj = info.projection;
-			glm::mat4 vp = info.CalculateVP() * pxConvertMatrix;
+			Mat4f pxConvertMatrix = glm::ortho(0.0f, resolution.x, 0.0f, resolution.y);
+			const Mat4f& proj = info.projection;
+			Mat4f vp = info.CalculateVP() * pxConvertMatrix;
 			info.projection = proj;
 			info.VP = vp;
 
@@ -959,9 +963,9 @@ namespace GEE
 			info.MainPass = false;
 		}
 
-		glm::vec2 halfExtent = static_cast<glm::vec2>(t.Scale());
+		Vec2f halfExtent = static_cast<Vec2f>(t.Scale());
 		//	halfExtent.y *= 1.0f - font.GetBaselineHeight() / 4.0f;	//Account for baseline height (we move the character quads by the height in the next line, so we have to shrink them a bit so that the text fits within halfExtent)
-		t.Move(glm::vec3(0.0f, -t.Scale().y * 2.0f + font.GetBaselineHeight() * t.Scale().y * 2.0f, 0.0f));	//align to bottom (-t.ScaleRef.y), move down to the bottom of it (-t.ScaleRef.y), and then move up to baseline height (-t.ScaleRef.y * 2.0f + font.GetBaselineHeight() * halfExtent.y * 2.0f)
+		t.Move(Vec3f(0.0f, -t.Scale().y * 2.0f + font.GetBaselineHeight() * t.Scale().y * 2.0f, 0.0f));	//align to bottom (-t.ScaleRef.y), move down to the bottom of it (-t.ScaleRef.y), and then move up to baseline height (-t.ScaleRef.y * 2.0f + font.GetBaselineHeight() * halfExtent.y * 2.0f)
 
 		if (alignment.first != TextAlignment::LEFT)
 		{
@@ -969,16 +973,16 @@ namespace GEE
 			for (int i = 0; i < static_cast<int>(content.length()); i++)
 				advancesSum += (font.GetCharacter(content[i]).Advance);
 
-			t.Move(t.Rot() * glm::vec3(-advancesSum * halfExtent.x * (static_cast<float>(alignment.first) - static_cast<float>(TextAlignment::LEFT)), 0.0f, 0.0f));
+			t.Move(t.Rot() * Vec3f(-advancesSum * halfExtent.x * (static_cast<float>(alignment.first) - static_cast<float>(TextAlignment::LEFT)), 0.0f, 0.0f));
 		}
 
 		if (alignment.second != TextAlignment::BOTTOM)
-			t.Move(t.Rot() * glm::vec3(0.0f, -t.Scale().y * (static_cast<float>(alignment.second) - static_cast<float>(TextAlignment::BOTTOM)), 0.0f));
+			t.Move(t.Rot() * Vec3f(0.0f, -t.Scale().y * (static_cast<float>(alignment.second) - static_cast<float>(TextAlignment::BOTTOM)), 0.0f));
 
-		//t.Move(glm::vec3(0.0f, -64.0f, 0.0f));
-		//t.Move(glm::vec3(0.0f, 11.0f, 0.0f) / scale);
+		//t.Move(Vec3f(0.0f, -64.0f, 0.0f));
+		//t.Move(Vec3f(0.0f, 11.0f, 0.0f) / scale);
 
-		const glm::mat3& textRot = t.GetRotationMatrix();
+		const Mat3f& textRot = t.GetRotationMatrix();
 
 		Material textMaterial("TextMaterial", 0.0f, FindShader("TextShader"));
 
@@ -995,26 +999,26 @@ namespace GEE
 			shader->Uniform1i("glyphNr", content[i]);
 			const Character& c = font.GetCharacter(content[i]);
 
-			t.Move(textRot * glm::vec3(static_cast<glm::vec2>(c.Bearing) * halfExtent, 0.0f) * 2.0f);
+			t.Move(textRot * Vec3f(static_cast<Vec2f>(c.Bearing) * halfExtent, 0.0f) * 2.0f);
 			t.SetScale(halfExtent);
-			//printVector(vp * t.GetWorldTransformMatrix() * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f), "Letter " + std::to_string(i));
+			//printVector(vp * t.GetWorldTransformMatrix() * Vec4f(0.0f, 0.0f, 0.0f, 1.0f), "Letter " + std::to_string(i));
 			RenderStaticMesh(info, GetBasicShapeMesh(EngineBasicShape::QUAD), t, shader, nullptr, &textMaterial);
-			t.Move(textRot * -glm::vec3(static_cast<glm::vec2>(c.Bearing) * halfExtent, 0.0f) * 2.0f);
+			t.Move(textRot * -Vec3f(static_cast<Vec2f>(c.Bearing) * halfExtent, 0.0f) * 2.0f);
 
-			t.Move(textRot * glm::vec3(c.Advance * halfExtent.x, 0.0f, 0.0f) * 2.0f);
+			t.Move(textRot * Vec3f(c.Advance * halfExtent.x, 0.0f, 0.0f) * 2.0f);
 		}
 
 		glDisable(GL_BLEND);
 	}
 
-	void RenderEngine::RenderStaticMesh(const RenderInfo& info, const MeshInstance& mesh, const Transform& transform, Shader* shader, glm::mat4* lastFrameMVP, Material* material, bool billboard)
+	void RenderEngine::RenderStaticMesh(const RenderInfo& info, const MeshInstance& mesh, const Transform& transform, Shader* shader, Mat4f* lastFrameMVP, Material* material, bool billboard)
 	{
 		std::vector<std::unique_ptr<MeshInstance>> vec;
 		vec.push_back(std::make_unique<MeshInstance>(MeshInstance(mesh)));
 		RenderStaticMeshes(info, vec, transform, shader, lastFrameMVP, material, billboard);
 	}
 
-	void RenderEngine::RenderStaticMeshes(const RenderInfo& info, const std::vector<std::unique_ptr<MeshInstance>>& meshes, const Transform& transform, Shader* shader, glm::mat4* lastFrameMVP, Material* overrideMaterial, bool billboard)
+	void RenderEngine::RenderStaticMeshes(const RenderInfo& info, const std::vector<std::unique_ptr<MeshInstance>>& meshes, const Transform& transform, Shader* shader, Mat4f* lastFrameMVP, Material* overrideMaterial, bool billboard)
 	{
 		if (meshes.empty())
 			return;
@@ -1036,14 +1040,14 @@ namespace GEE
 			{
 				handledShader = true;
 
-				glm::mat4 modelMat = transform.GetWorldTransformMatrix();	//the ComponentTransform's world transform is cached
+				Mat4f modelMat = transform.GetWorldTransformMatrix();	//the ComponentTransform's world transform is cached
 				if (billboard)
-					modelMat = modelMat * glm::mat4(glm::inverse(transform.GetWorldTransform().GetRotationMatrix()) * glm::inverse(glm::mat3(info.view)));
+					modelMat = modelMat * Mat4f(glm::inverse(transform.GetWorldTransform().GetRotationMatrix()) * glm::inverse(Mat3f(info.view)));
 
 				bool bCalcVelocity = GameHandle->GetGameSettings()->Video.IsVelocityBufferNeeded() && info.MainPass;
 				bool jitter = info.MainPass && GameHandle->GetGameSettings()->Video.IsTemporalReprojectionEnabled();
 
-				glm::mat4 jitteredVP = (jitter) ? (Postprocessing.GetJitterMat(info.TbCollection.GetSettings(), (Postprocessing.GetFrameIndex() + 1) % 2) * info.VP) : (info.VP);
+				Mat4f jitteredVP = (jitter) ? (Postprocessing.GetJitterMat(info.TbCollection.GetSettings(), (Postprocessing.GetFrameIndex() + 1) % 2) * info.VP) : (info.VP);
 				shader->BindMatrices(modelMat, &info.view, &info.projection, &jitteredVP);
 
 				if (bCalcVelocity)
@@ -1069,7 +1073,7 @@ namespace GEE
 			{
 				if (BoundMaterial != material) //jesli zbindowany jest inny material niz potrzebny obecnie, musimy zmienic go w shaderze
 				{
-					materialInst->UpdateWholeUBOData(shader, *EmptyTexture);
+					materialInst->UpdateWholeUBOData(shader, EmptyTexture);
 					BoundMaterial = material;
 				}
 				else if (BoundMaterial) //jesli ostatni zbindowany material jest taki sam, to nie musimy zmieniac wszystkich danych w shaderze; oszczedzmy sobie roboty
@@ -1107,11 +1111,11 @@ namespace GEE
 
 				shader->Uniform1i("boneIDOffset", skelInfo.GetBoneIDOffset());
 
-				glm::mat4 modelMat = transform.GetWorldTransformMatrix();	//the ComponentTransform's world transform is cached
+				Mat4f modelMat = transform.GetWorldTransformMatrix();	//the ComponentTransform's world transform is cached
 				bool bCalcVelocity = GameHandle->GetGameSettings()->Video.IsVelocityBufferNeeded() && info.MainPass;
 				bool jitter = info.MainPass && GameHandle->GetGameSettings()->Video.IsTemporalReprojectionEnabled();
 
-				glm::mat4 jitteredVP = (jitter) ? (Postprocessing.GetJitterMat(info.TbCollection.GetSettings()) * info.VP) : (info.VP);
+				Mat4f jitteredVP = (jitter) ? (Postprocessing.GetJitterMat(info.TbCollection.GetSettings()) * info.VP) : (info.VP);
 				shader->BindMatrices(modelMat, &info.view, &info.projection, &jitteredVP);
 			}
 			if (skelInfo.GetBatchPtr() != BoundSkeletonBatch)
@@ -1129,7 +1133,7 @@ namespace GEE
 			{
 				if (BoundMaterial != material) //jesli zbindowany jest inny material niz potrzebny obecnie, musimy zmienic go w shaderze
 				{
-					materialInst->UpdateWholeUBOData(shader, *EmptyTexture);
+					materialInst->UpdateWholeUBOData(shader, EmptyTexture);
 					BoundMaterial = material;
 				}
 				else if (BoundMaterial) //jesli ostatni zbindowany material jest taki sam, to nie musimy zmieniac wszystkich danych w shaderze; oszczedzmy sobie roboty
@@ -1150,7 +1154,6 @@ namespace GEE
 
 		//CurrentTbCollection->ShadowsTb->ShadowMapArray->Dispose();
 		//CurrentTbCollection->ShadowsTb->ShadowCubemapArray->Dispose();
-		//EmptyTexture->Dispose();
 
 		for (auto i = Shaders.begin(); i != Shaders.end(); i++)
 			if (std::find(ForwardShaders.begin(), ForwardShaders.end(), *i) == ForwardShaders.end())
@@ -1163,10 +1166,10 @@ namespace GEE
 		LightShaders.clear();
 	}
 
-	glm::vec3 GetCubemapFront(unsigned int index)
+	Vec3f GetCubemapFront(unsigned int index)
 	{
 		GLenum face = GL_TEXTURE_CUBE_MAP_POSITIVE_X + (index % 6);
-		glm::vec3 front(0.0f);
+		Vec3f front(0.0f);
 
 		switch (face)
 		{
@@ -1187,14 +1190,14 @@ namespace GEE
 		return front;
 	}
 
-	glm::vec3 GetCubemapUp(unsigned int index)
+	Vec3f GetCubemapUp(unsigned int index)
 	{
 		GLenum face = GL_TEXTURE_CUBE_MAP_POSITIVE_X + (index % 6);
 
 		if (face == GL_TEXTURE_CUBE_MAP_POSITIVE_Y)
-			return glm::vec3(0.0f, 0.0f, 1.0f);
+			return Vec3f(0.0f, 0.0f, 1.0f);
 		else if (face == GL_TEXTURE_CUBE_MAP_NEGATIVE_Y)
-			return glm::vec3(0.0f, 0.0f, -1.0f);
-		return glm::vec3(0.0f, -1.0f, 0.0f);
+			return Vec3f(0.0f, 0.0f, -1.0f);
+		return Vec3f(0.0f, -1.0f, 0.0f);
 	}
 }

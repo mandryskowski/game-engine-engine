@@ -8,7 +8,7 @@ namespace GEE
 	struct ToolboxCollectionInfo
 	{
 		std::string Name;
-		glm::vec2 Resolution;
+		Vec2f Resolution;
 		GameSettings Settings;
 		ShadingModel Shading;
 	};

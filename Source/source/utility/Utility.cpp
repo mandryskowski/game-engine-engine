@@ -41,31 +41,31 @@ namespace GEE
 		offsetCache = offset + size;
 	}
 
-	void UniformBuffer::SubData4fv(glm::vec3 vec, size_t offset)
+	void UniformBuffer::SubData4fv(Vec3f vec, size_t offset)
 	{
-		glm::vec4 bufferVector(vec, 0.0f);
-		SubData(sizeof(glm::vec4), glm::value_ptr(bufferVector), offset);
+		Vec4f bufferVector(vec, 0.0f);
+		SubData(sizeof(Vec4f), Math::GetDataPtr(bufferVector), offset);
 	}
-	void UniformBuffer::SubData4fv(std::vector<glm::vec3> vecs, size_t offset)
+	void UniformBuffer::SubData4fv(std::vector<Vec3f> vecs, size_t offset)
 	{
 		offsetCache = offset;
 		for (unsigned int i = 0; i < vecs.size(); i++)
 			SubData4fv(vecs[i], offsetCache);
 	}
-	void UniformBuffer::SubData4fv(glm::vec4 vec, size_t offset)
+	void UniformBuffer::SubData4fv(Vec4f vec, size_t offset)
 	{
-		SubData(sizeof(glm::vec4), glm::value_ptr(vec), offset);
+		SubData(sizeof(Vec4f), Math::GetDataPtr(vec), offset);
 	}
-	void UniformBuffer::SubData4fv(std::vector<glm::vec4> vecs, size_t offset)
+	void UniformBuffer::SubData4fv(std::vector<Vec4f> vecs, size_t offset)
 	{
 		offsetCache = offset;
 		for (unsigned int i = 0; i < vecs.size(); i++)
 			SubData4fv(vecs[i], offsetCache);
 	}
 
-	void UniformBuffer::SubDataMatrix4fv(glm::mat4 mat, size_t offset)
+	void UniformBuffer::SubDataMatrix4fv(Mat4f mat, size_t offset)
 	{
-		SubData(64, glm::value_ptr(mat), offset);
+		SubData(64, Math::GetDataPtr(mat), offset);
 	}
 
 	void UniformBuffer::PadOffset()
@@ -129,14 +129,14 @@ namespace GEE
 		return true;
 	}
 
-	glm::vec3 toEuler(const glm::quat& quat)
+	Vec3f toEuler(const Quatf& quat)
 	{
 		return glm::degrees(glm::eulerAngles(quat));
 	}
 
-	glm::quat toQuat(const glm::vec3& euler)
+	Quatf toQuat(const Vec3f& euler)
 	{
-		return glm::quat(glm::radians(euler));
+		return Quatf(glm::radians(euler));
 	}
 
 	std::string extractDirectory(std::string path)
@@ -175,7 +175,7 @@ namespace GEE
 		}
 	}
 
-	void printVector(const glm::vec2& vec, std::string title)
+	void printVector(const Vec2f& vec, std::string title)
 	{
 		if (!title.empty())
 			title.append(": ");	//if we want to draw a title, add something after it
@@ -183,7 +183,7 @@ namespace GEE
 		std::cout << title << vec.x << ", " << vec.y << '\n';
 	}
 
-	void printVector(const glm::vec3& vec, std::string title)
+	void printVector(const Vec3f& vec, std::string title)
 	{
 		if (!title.empty())
 			title.append(": ");	//if we want to draw a title, add something after it
@@ -191,7 +191,7 @@ namespace GEE
 		std::cout << title << vec.x << ", " << vec.y << ", " << vec.z << '\n';
 	}
 
-	void printVector(const glm::vec4& vec, std::string title)
+	void printVector(const Vec4f& vec, std::string title)
 	{
 		if (!title.empty())
 			title.append(": ");	//if we want to draw a title, add something after it
@@ -199,12 +199,12 @@ namespace GEE
 		std::cout << title << vec.x << ", " << vec.y << ", " << vec.z << ", " << vec.w << '\n';
 	}
 
-	void printVector(const glm::quat& q, std::string title)
+	void printVector(const Quatf& q, std::string title)
 	{
 		printVector(glm::degrees(glm::eulerAngles(q)), title);
 	}
 
-	void printMatrix(const glm::mat4& mat, std::string title)
+	void printMatrix(const Mat4f& mat, std::string title)
 	{
 		if (!title.empty())
 			std::cout << "===Matrix " + title + "===\n";

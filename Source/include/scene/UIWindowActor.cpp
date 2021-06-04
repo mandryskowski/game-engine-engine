@@ -43,17 +43,17 @@ namespace GEE
 
 		CloseButton = &CreateChild<UIButtonActor>("GEE_E_Close_Button");
 		SetOnCloseFunc(nullptr);
-		CloseButton->SetTransform(Transform(glm::vec2(1.15f, 1.15f), glm::vec2(0.15f)));
+		CloseButton->SetTransform(Transform(Vec2f(1.15f, 1.15f), Vec2f(0.15f)));
 
 		AtlasMaterial& closeIconMat = *new AtlasMaterial(Material("GEE_Close_Icon_Material", 0.0f, GameHandle->GetRenderEngineHandle()->FindShader("Forward_NoLight")), glm::ivec2(3, 1));
-		closeIconMat.AddTexture(std::make_shared<NamedTexture>(textureFromFile("EditorAssets/close_icon.png", GL_RGB, GL_LINEAR, GL_NEAREST_MIPMAP_LINEAR), "albedo1"));
+		closeIconMat.AddTexture(std::make_shared<NamedTexture>(Texture::Loader::FromFile2D("EditorAssets/close_icon.png", false, Texture::MinTextureFilter::NearestInterpolateMipmap()), "albedo1"));
 		CloseButton->SetMatIdle(MaterialInstance(closeIconMat, closeIconMat.GetTextureIDInterpolatorTemplate(0.0f)));
 		CloseButton->SetMatHover(MaterialInstance(closeIconMat, closeIconMat.GetTextureIDInterpolatorTemplate(1.0f)));
 		CloseButton->SetMatClick(MaterialInstance(closeIconMat, closeIconMat.GetTextureIDInterpolatorTemplate(2.0f)));
 
 		DragButton = &CreateChild<UIScrollBarActor>("GEE_E_Drag_Button");
-		DragButton->SetWhileBeingClickedFunc([this]() { this->GetTransform()->Move(static_cast<glm::vec2>(GameHandle->GetInputRetriever().GetMousePositionNDC()) - DragButton->GetClickPosNDC()); DragButton->SetClickPosNDC(GameHandle->GetInputRetriever().GetMousePositionNDC()); });
-		DragButton->SetTransform(Transform(glm::vec2(0.0f, 1.15f), glm::vec2(1.0f, 0.15f)));
+		DragButton->SetWhileBeingClickedFunc([this]() { this->GetTransform()->Move(static_cast<Vec2f>(GameHandle->GetInputRetriever().GetMousePositionNDC()) - DragButton->GetClickPosNDC()); DragButton->SetClickPosNDC(GameHandle->GetInputRetriever().GetMousePositionNDC()); });
+		DragButton->SetTransform(Transform(Vec2f(0.0f, 1.15f), Vec2f(1.0f, 0.15f)));
 
 		TextConstantSizeComponent& titleComp = DragButton->CreateComponent<TextConstantSizeComponent>("WindowTitle", Transform(Vec2f(-1.0f, 0.0f), Vec2f(0.15f / 1.0f, 1.0f)), GetFullCanvasName(), "", std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::CENTER));// .SetMaxSize(Vec2f(0.5f, 0.7f));
 		Material& titleMaterial = *new Material(Material("GEE_E_Title_Material", 0.0f, GameHandle->GetRenderEngineHandle()->FindShader("Forward_NoLight")));

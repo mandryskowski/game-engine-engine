@@ -81,7 +81,7 @@ namespace GEE
 		return glm::mix(y1, y2, T);
 	}
 
-	template<> glm::quat Interpolation::InterpolateValues<glm::quat>(glm::quat y1, glm::quat y2)
+	template<> Quatf Interpolation::InterpolateValues<Quatf>(Quatf y1, Quatf y2)
 	{
 		return glm::slerp(y1, y2, T);
 	}
@@ -228,14 +228,14 @@ namespace GEE
 	}
 
 
-	glm::vec3 aiToGlm(const aiVector3D& aiVec)
+	Vec3f aiToGlm(const aiVector3D& aiVec)
 	{
-		return glm::vec3(aiVec.x, aiVec.y, aiVec.z);
+		return Vec3f(aiVec.x, aiVec.y, aiVec.z);
 	}
 
-	glm::quat aiToGlm(const aiQuaternion& aiQuat)
+	Quatf aiToGlm(const aiQuaternion& aiQuat)
 	{
-		return glm::quat(aiQuat.w, aiQuat.x, aiQuat.y, aiQuat.z);
+		return Quatf(aiQuat.w, aiQuat.x, aiQuat.y, aiQuat.z);
 	}
 
 	/*
@@ -245,9 +245,9 @@ namespace GEE
 	*/
 
 	template float Interpolation::InterpolateValues<float>(float y1, float y2);
-	template glm::vec3 Interpolation::InterpolateValues<glm::vec3>(glm::vec3 y1, glm::vec3 y2);
+	template Vec3f Interpolation::InterpolateValues<Vec3f>(Vec3f y1, Vec3f y2);
 
 	template class Interpolator<float>;
-	template class Interpolator<glm::vec3>;
-	template class Interpolator<glm::quat>;
+	template class Interpolator<Vec3f>;
+	template class Interpolator<Quatf>;
 }

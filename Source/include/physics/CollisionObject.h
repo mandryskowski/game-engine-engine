@@ -1,6 +1,6 @@
 #pragma once
 #include <rendering/Mesh.h>
-#include <glm/glm.hpp>
+#include <math/Vec.h>
 #include <glm/gtc/quaternion.hpp>
 #include <PhysX/PxPhysicsAPI.h>
 #include <math/Transform.h>
@@ -46,7 +46,7 @@ namespace GEE
 			};
 			std::shared_ptr<ColShapeLoc> OptionalLocalization;
 			Transform ShapeTransform;
-			std::vector<glm::vec3> VertData;
+			std::vector<Vec3f> VertData;
 			std::vector<unsigned int> IndicesData;
 			CollisionShape(CollisionShapeType type = CollisionShapeType::COLLISION_BOX);
 			CollisionShape(HTreeObjectLoc treeObjLoc, const std::string& meshName, CollisionShapeType type = CollisionShapeType::COLLISION_BOX);
@@ -119,11 +119,11 @@ namespace GEE
 		{
 			std::string collisionShapeTypeToString(CollisionShapeType type);
 
-			glm::vec3 toGlm(physx::PxVec3);
-			glm::quat toGlm(physx::PxQuat);
+			Vec3f toGlm(physx::PxVec3);
+			Quatf toGlm(physx::PxQuat);
 
-			physx::PxVec3 toPx(const glm::vec3&);
-			physx::PxQuat toPx(const glm::quat&);
+			physx::PxVec3 toPx(const Vec3f&);
+			physx::PxQuat toPx(const Quatf&);
 			physx::PxTransform toPx(const Transform&);
 
 			Transform toTransform(const physx::PxTransform&);

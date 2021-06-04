@@ -34,11 +34,11 @@ namespace GEE
 
 		virtual void Update(float deltaTime) override;
 		unsigned int GetID() const;
-		const glm::mat4& GetFinalMatrix();
+		const Mat4f& GetFinalMatrix();
 
 		virtual MaterialInstance GetDebugMatInst(EditorIconState) override;
 
-		void SetBoneOffset(const glm::mat4&);
+		void SetBoneOffset(const Mat4f&);
 		void SetID(unsigned int id);
 		void SetInfoPtr(SkeletonInfo*);
 

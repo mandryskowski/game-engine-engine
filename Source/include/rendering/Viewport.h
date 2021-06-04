@@ -8,29 +8,29 @@ namespace GEE
 	class Viewport
 	{
 	public:
-		Viewport(const glm::uvec2& pos, const glm::uvec2& size);
-		const glm::uvec2& GetSize() const;
+		Viewport(const Vec2u& pos, const Vec2u& size);
+		const Vec2u& GetSize() const;
 		void SetOpenGLState() const;
-		NDCViewport ToNDCViewport(const glm::uvec2& res) const;
+		NDCViewport ToNDCViewport(const Vec2u& res) const;
 
 
 	private:
-		glm::uvec2 Position;
-		glm::uvec2 Size;
+		Vec2u Position;
+		Vec2u Size;
 	};
 
 	class NDCViewport : protected Boxf<Vec2f>
 	{
 	public:
-		NDCViewport(glm::vec2 pos, glm::vec2 size);
+		NDCViewport(Vec2f pos, Vec2f size);
 
-		const glm::vec2& GetPosition() const;
-		const glm::vec2& GetSize() const;
+		const Vec2f& GetPosition() const;
+		const Vec2f& GetSize() const;
 
-		void SetOpenGLState(const glm::uvec2& res) const;
-		Viewport ToPxViewport(const glm::uvec2& res) const;
+		void SetOpenGLState(const Vec2u& res) const;
+		Viewport ToPxViewport(const Vec2u& res) const;
 
-		bool Contains(const glm::vec2&) const;
+		bool Contains(const Vec2f&) const;
 		bool Contains(const Boxf<Vec2f>&) const;
 	};
 }

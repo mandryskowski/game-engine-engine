@@ -23,7 +23,7 @@ namespace GEE
 		virtual void OnStart() override;
 
 		UIActorDefault* GetScaleActor();
-		virtual glm::mat4 GetViewMatrix() const override;
+		virtual Mat4f GetViewMatrix() const override;
 		virtual NDCViewport GetViewport() const override;
 		virtual const Transform* GetCanvasT() const override;
 
@@ -40,13 +40,13 @@ namespace GEE
 
 		virtual Actor& AddChild(std::unique_ptr<Actor>) override;
 		virtual UICanvasFieldCategory& AddCategory(const std::string& name) override;
-		virtual UICanvasField& AddField(const std::string& name, std::function<glm::vec3()> getElementOffset = nullptr) override;
+		virtual UICanvasField& AddField(const std::string& name, std::function<Vec3f()> getElementOffset = nullptr) override;
 
 		virtual void HandleEvent(const Event& ev) override;
 		virtual void HandleEventAll(const Event& ev) override;
 
-		virtual RenderInfo BindForRender(const RenderInfo&, const glm::uvec2& res) override;
-		virtual void UnbindForRender(const glm::uvec2& res) override;
+		virtual RenderInfo BindForRender(const RenderInfo&, const Vec2u& res) override;
+		virtual void UnbindForRender(const Vec2u& res) override;
 
 		~UICanvasActor();
 	protected:
@@ -59,7 +59,7 @@ namespace GEE
 	public:
 		UIActorDefault* ScaleActor;
 		UIListActor* FieldsList;
-		glm::vec3 FieldSize;
+		Vec3f FieldSize;
 		UIScrollBarActor* ScrollBarX, * ScrollBarY, * BothScrollBarsButton;
 		UIScrollBarActor* ResizeBarX, * ResizeBarY;
 
@@ -76,9 +76,9 @@ namespace GEE
 
 		UIElementTemplates GetTemplates();
 
-		UICanvasField& AddField(const std::string& name, std::function<glm::vec3()> getElementOffset = nullptr);
+		UICanvasField& AddField(const std::string& name, std::function<Vec3f()> getElementOffset = nullptr);
 
-		virtual glm::vec3 GetListOffset() override;
+		virtual Vec3f GetListOffset() override;
 		void SetOnExpansionFunc(std::function<void()> onExpansionFunc);
 
 		virtual void HandleEventAll(const Event& ev) override;
@@ -97,7 +97,7 @@ namespace GEE
 		Actor& GetDescriptionParent();
 		EditorManager& GetEditorHandle();
 
-		UICanvasField& AddField(const std::string& name, std::function<glm::vec3()> getFieldOffsetFunc = nullptr);	//equivalent to GetCanvasActor().AddField(...). I put it here for easier access.
+		UICanvasField& AddField(const std::string& name, std::function<Vec3f()> getFieldOffsetFunc = nullptr);	//equivalent to GetCanvasActor().AddField(...). I put it here for easier access.
 		UICanvasFieldCategory& AddCategory(const std::string& name);
 
 		template <typename ChildClass, typename... Args> ChildClass& CreateActor(Args&&...);
@@ -128,5 +128,5 @@ namespace GEE
 
 
 
-	UICanvasField& AddFieldToCanvas(const std::string& name, UICanvasElement& element, std::function<glm::vec3()> getFieldOffsetFunc = nullptr);
+	UICanvasField& AddFieldToCanvas(const std::string& name, UICanvasElement& element, std::function<Vec3f()> getFieldOffsetFunc = nullptr);
 }

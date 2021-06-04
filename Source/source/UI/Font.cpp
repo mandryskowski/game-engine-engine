@@ -6,7 +6,11 @@ namespace GEE
 	Font::Font(const std::string& path) :
 		Path(path)
 	{
-		BitmapsArray = *reserveTexture(glm::uvec3(64, 64, 128), GL_RED, GL_UNSIGNED_BYTE, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR, GL_TEXTURE_2D_ARRAY, 0, "undefinedFontBitmap", GL_RED);
+		BitmapsArray = Texture::Loader::ReserveEmpty2DArray(Vec3u(64, 64, 128), GL_RED);
+		BitmapsArray.SetMinFilter(Texture::MinTextureFilter::Trilinear());
+		BitmapsArray.SetMagFilter(Texture::MagTextureFilter::Bilinear());
+		BitmapsArray.SetWrap(GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, 0, true);
+
 		std::cout << BitmapsArray.GetID() << ".\n";
 	}
 

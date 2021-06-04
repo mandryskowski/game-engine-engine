@@ -14,14 +14,14 @@ namespace GEE
 	class LightComponent : public Component
 	{
 	public:
-		LightComponent(Actor&, Component* parentComp, std::string name = "undefinedLight", LightType = LightType::POINT, unsigned int index = 0, unsigned int shadowMapNr = 0, float = 10.0f, glm::mat4 = glm::perspective(glm::radians(90.0f), 1.0f, 0.01f, 10.0f), glm::vec3 = glm::vec3(0.0f), glm::vec3 = glm::vec3(1.0f), glm::vec3 = glm::vec3(0.5f), glm::vec3 = glm::vec3(1.0f, 0.0f, 0.0f));
+		LightComponent(Actor&, Component* parentComp, std::string name = "undefinedLight", LightType = LightType::POINT, unsigned int index = 0, unsigned int shadowMapNr = 0, float = 10.0f, Mat4f = glm::perspective(glm::radians(90.0f), 1.0f, 0.01f, 10.0f), Vec3f = Vec3f(0.0f), Vec3f = Vec3f(1.0f), Vec3f = Vec3f(0.5f), Vec3f = Vec3f(1.0f, 0.0f, 0.0f));
 		LightComponent(LightComponent&&);
 
 		LightType GetType() const;
 		float GetFar() const;
 		unsigned int GetLightIndex() const;
 		unsigned int GetShadowMapNr() const;
-		glm::mat4 GetProjection() const;
+		Mat4f GetProjection() const;
 		EngineBasicShape GetVolumeType() const;
 		Shader* GetRenderShader(const RenderToolboxCollection& renderCol) const;
 
@@ -34,7 +34,7 @@ namespace GEE
 
 
 		void CalculateLightRadius();	//calculates ProjectionMat and Far
-		void SetAdditionalData(glm::vec3);
+		void SetAdditionalData(Vec3f);
 		void SetAttenuation(float);
 		void SetCutOff(float);
 		void SetOuterCutOff(float);
@@ -42,7 +42,7 @@ namespace GEE
 		void SetType(LightType);
 		void SetIndex(unsigned int);
 		void UpdateUBOData(UniformBuffer*, size_t = -1);
-		glm::vec3& operator[](unsigned int);
+		Vec3f& operator[](unsigned int);
 
 		virtual	MaterialInstance GetDebugMatInst(EditorIconState) override;
 		virtual void GetEditorDescription(EditorDescriptionBuilder) override;
@@ -91,7 +91,7 @@ namespace GEE
 		unsigned int LightIndex;
 		unsigned int ShadowMapNr;
 		float Far;
-		glm::mat4 Projection;
+		Mat4f Projection;
 
 		bool DirtyFlag;	//for optimisation purposes; it should be set to on if the light's property has changed
 		bool bHasValidShadowMap;

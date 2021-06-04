@@ -244,7 +244,7 @@ namespace GEE
 
 	VertexBoneData::VertexBoneData() :
 		BoneIDs(glm::ivec4(0)),
-		BoneWeights(glm::vec4(0.0f))
+		BoneWeights(Vec4f(0.0f))
 	{
 	}
 

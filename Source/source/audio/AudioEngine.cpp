@@ -33,8 +33,8 @@ namespace GEE
 				return;
 			}
 
-			alListenerfv(AL_POSITION, glm::value_ptr(glm::vec3(0.0f)));
-			alListenerfv(AL_VELOCITY, glm::value_ptr(glm::vec3(0.0f)));
+			alListenerfv(AL_POSITION, Math::GetDataPtr(Vec3f(0.0f)));
+			alListenerfv(AL_VELOCITY, Math::GetDataPtr(Vec3f(0.0f)));
 		}
 
 
@@ -58,9 +58,9 @@ namespace GEE
 			if (!ListenerTransformPtr)
 				return;
 
-			alListenerfv(AL_POSITION, glm::value_ptr((glm::vec3)ListenerTransformPtr->GetWorldTransform().Pos()));
+			alListenerfv(AL_POSITION, Math::GetDataPtr((Vec3f)ListenerTransformPtr->GetWorldTransform().Pos()));
 
-			glm::vec3 orientationVecs[2] = { ListenerTransformPtr->GetWorldTransform().GetFrontVec(), glm::vec3(0.0f, 1.0f, 0.0f) };
+			Vec3f orientationVecs[2] = { ListenerTransformPtr->GetWorldTransform().GetFrontVec(), Vec3f(0.0f, 1.0f, 0.0f) };
 			alListenerfv(AL_ORIENTATION, &orientationVecs[0].x);
 		}
 

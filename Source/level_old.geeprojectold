@@ -408,7 +408,7 @@ skip
 end
 
 newactor Actor Januszek
-newcomp model JanuszekModel root janusz/janusz.obj
+newcomp model JanuszekModel root janusz/janusz.glb
 transform
 -15 -0.4 0
 skip

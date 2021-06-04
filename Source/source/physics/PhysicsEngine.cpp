@@ -58,7 +58,7 @@ namespace GEE
 			DefaultMaterial = Physics->createMaterial(0.5f, 1.0f, 0.6f);
 		}
 
-		PxShape* PhysicsEngine::CreateTriangleMeshShape(CollisionShape* colShape, glm::vec3 scale)
+		PxShape* PhysicsEngine::CreateTriangleMeshShape(CollisionShape* colShape, Vec3f scale)
 		{
 			if (colShape->VertData.empty() || colShape->IndicesData.empty())
 			{
@@ -68,7 +68,7 @@ namespace GEE
 
 			PxTriangleMeshDesc desc;
 			desc.points.count = colShape->VertData.size();
-			desc.points.stride = sizeof(glm::vec3);
+			desc.points.stride = sizeof(Vec3f);
 			desc.points.data = &colShape->VertData[0];
 
 			desc.triangles.count = colShape->IndicesData.size() / 3;
@@ -151,7 +151,7 @@ namespace GEE
 			if (!pxShape)
 				return;
 
-			pxShape->setLocalPose(PxTransform(toPx(static_cast<glm::mat3>(object.TransformPtr->GetWorldTransformMatrix()) * shapeT.Pos()), (object.IgnoreRotation) ? (physx::PxQuat()) : (toPx(shapeT.Rot()))));
+			pxShape->setLocalPose(PxTransform(toPx(static_cast<Mat3f>(object.TransformPtr->GetWorldTransformMatrix()) * shapeT.Pos()), (object.IgnoreRotation) ? (physx::PxQuat()) : (toPx(shapeT.Rot()))));
 			pxShape->userData = &shape.ShapeTransform;
 
 			if (!object.ActorPtr)
@@ -199,7 +199,7 @@ namespace GEE
 			return controller;
 		}
 
-		void PhysicsEngine::ApplyForce(CollisionObject& obj, glm::vec3 force)
+		void PhysicsEngine::ApplyForce(CollisionObject& obj, Vec3f force)
 		{
 			Physics::ApplyForce(obj, force);
 		}
@@ -351,7 +351,7 @@ namespace GEE
 							obj->ActorPtr->detachShape(*shapes[j]);
 						}
 
-						shapes[j]->setLocalPose(PxTransform(toPx(static_cast<glm::mat3>(worldTransform.GetMatrix()) * shapeTransform->Pos()), (obj->IgnoreRotation) ? (physx::PxQuat()) : (toPx(shapeTransform->Rot()))));
+						shapes[j]->setLocalPose(PxTransform(toPx(static_cast<Mat3f>(worldTransform.GetMatrix()) * shapeTransform->Pos()), (obj->IgnoreRotation) ? (physx::PxQuat()) : (toPx(shapeTransform->Rot()))));
 						obj->ActorPtr->attachShape(*shapes[j]);
 
 					}
@@ -372,7 +372,7 @@ namespace GEE
 			const PxRenderBuffer& rb = scenePhysicsData.PhysXScene->getRenderBuffer();
 
 
-			std::vector<std::array<glm::vec3, 2>> verts;
+			std::vector<std::array<Vec3f, 2>> verts;
 			int sizeSum = rb.getNbPoints() + rb.getNbLines() * 2 + rb.getNbTriangles() * 3;
 			int v = 0;
 			verts.resize(sizeSum);
@@ -411,11 +411,11 @@ namespace GEE
 
 			glBindVertexArray(VAO);
 			glBindBuffer(GL_ARRAY_BUFFER, VBO);
-			glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * 2 * verts.size(), &verts[0][0], GL_STATIC_DRAW);
+			glBufferData(GL_ARRAY_BUFFER, sizeof(Vec3f) * 2 * verts.size(), &verts[0][0], GL_STATIC_DRAW);
 
-			renderEng.RenderBoundInDebug(info, GL_POINTS, 0, rb.getNbPoints(), glm::vec3(0.0f));
-			renderEng.RenderBoundInDebug(info, GL_LINES, rb.getNbPoints(), rb.getNbLines() * 2, glm::vec3(0.0f));
-			renderEng.RenderBoundInDebug(info, GL_TRIANGLES, rb.getNbPoints() + rb.getNbLines() * 2, rb.getNbTriangles() * 3, glm::vec3(0.0f));
+			renderEng.RenderBoundInDebug(info, GL_POINTS, 0, rb.getNbPoints(), Vec3f(0.0f));
+			renderEng.RenderBoundInDebug(info, GL_LINES, rb.getNbPoints(), rb.getNbLines() * 2, Vec3f(0.0f));
+			renderEng.RenderBoundInDebug(info, GL_TRIANGLES, rb.getNbPoints() + rb.getNbLines() * 2, rb.getNbTriangles() * 3, Vec3f(0.0f));
 		}
 
 		PhysicsEngine::~PhysicsEngine()
@@ -452,25 +452,25 @@ namespace GEE
 
 		namespace Util
 		{
-			glm::vec3 toVecColor(PxDebugColor::Enum col)
+			Vec3f toVecColor(PxDebugColor::Enum col)
 			{
 				switch (col)
 				{
-				case PxDebugColor::eARGB_BLACK: return glm::vec3(0.0f);
-				case PxDebugColor::eARGB_BLUE: return glm::vec3(0.0f, 0.0f, 1.0f);
-				case PxDebugColor::eARGB_CYAN: return glm::vec3(0.5f, 0.5f, 1.0f);
-				case PxDebugColor::eARGB_DARKBLUE: return glm::vec3(0.0f, 0.0f, 0.75f);
-				case PxDebugColor::eARGB_DARKGREEN: return glm::vec3(0.0f, 0.75f, 0.0f);
-				case PxDebugColor::eARGB_DARKRED: return glm::vec3(0.75f, 0.0f, 0.0f);
-				case PxDebugColor::eARGB_GREEN: return glm::vec3(0.0f, 1.0f, 0.0f);
-				case PxDebugColor::eARGB_GREY: return glm::vec3(0.5f, 0.5f, 0.5f);
-				case PxDebugColor::eARGB_MAGENTA: return glm::vec3(1.0f, 0.0f, 1.0f);
-				case PxDebugColor::eARGB_RED: return glm::vec3(1.0f, 0.0f, 0.0f);
-				case PxDebugColor::eARGB_WHITE: return glm::vec3(1.0f);
-				case PxDebugColor::eARGB_YELLOW: return glm::vec3(1.0f, 1.0f, 0.0f);
+				case PxDebugColor::eARGB_BLACK: return Vec3f(0.0f);
+				case PxDebugColor::eARGB_BLUE: return Vec3f(0.0f, 0.0f, 1.0f);
+				case PxDebugColor::eARGB_CYAN: return Vec3f(0.5f, 0.5f, 1.0f);
+				case PxDebugColor::eARGB_DARKBLUE: return Vec3f(0.0f, 0.0f, 0.75f);
+				case PxDebugColor::eARGB_DARKGREEN: return Vec3f(0.0f, 0.75f, 0.0f);
+				case PxDebugColor::eARGB_DARKRED: return Vec3f(0.75f, 0.0f, 0.0f);
+				case PxDebugColor::eARGB_GREEN: return Vec3f(0.0f, 1.0f, 0.0f);
+				case PxDebugColor::eARGB_GREY: return Vec3f(0.5f, 0.5f, 0.5f);
+				case PxDebugColor::eARGB_MAGENTA: return Vec3f(1.0f, 0.0f, 1.0f);
+				case PxDebugColor::eARGB_RED: return Vec3f(1.0f, 0.0f, 0.0f);
+				case PxDebugColor::eARGB_WHITE: return Vec3f(1.0f);
+				case PxDebugColor::eARGB_YELLOW: return Vec3f(1.0f, 1.0f, 0.0f);
 				}
 
-				return glm::vec3(0.0f);
+				return Vec3f(0.0f);
 			}
 		}
 	}

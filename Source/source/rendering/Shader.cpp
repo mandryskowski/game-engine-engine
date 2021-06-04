@@ -1,4 +1,5 @@
 #include <rendering/Shader.h>
+#include <glm/gtc/matrix_transform.hpp>
 
 #include <UI/UICanvasActor.h>
 #include <UI/UICanvasField.h>
@@ -114,29 +115,29 @@ namespace GEE
 		glUniform1f(FindLocation(name), val);
 	}
 
-	void Shader::Uniform2fv(std::string name, glm::vec2 val) const
+	void Shader::Uniform2fv(std::string name, Vec2f val) const
 	{
-		glUniform2fv(FindLocation(name), 1, glm::value_ptr(val));
+		glUniform2fv(FindLocation(name), 1, Math::GetDataPtr(val));
 	}
 
-	void Shader::Uniform3fv(std::string name, glm::vec3 val) const
+	void Shader::Uniform3fv(std::string name, Vec3f val) const
 	{
-		glUniform3fv(FindLocation(name), 1, glm::value_ptr(val));
+		glUniform3fv(FindLocation(name), 1, Math::GetDataPtr(val));
 	}
 
-	void Shader::Uniform4fv(std::string name, glm::vec4 val) const
+	void Shader::Uniform4fv(std::string name, Vec4f val) const
 	{
-		glUniform4fv(FindLocation(name), 1, glm::value_ptr(val));
+		glUniform4fv(FindLocation(name), 1, Math::GetDataPtr(val));
 	}
 
-	void Shader::UniformMatrix3fv(std::string name, glm::mat3 val) const
+	void Shader::UniformMatrix3fv(std::string name, Mat3f val) const
 	{
-		glUniformMatrix3fv(FindLocation(name), 1, GL_FALSE, glm::value_ptr(val));
+		glUniformMatrix3fv(FindLocation(name), 1, GL_FALSE, Math::GetDataPtr(val));
 	}
 
-	void Shader::UniformMatrix4fv(std::string name, const glm::mat4& val) const
+	void Shader::UniformMatrix4fv(std::string name, const Mat4f& val) const
 	{
-		glUniformMatrix4fv(FindLocation(name), 1, GL_FALSE, glm::value_ptr(val));
+		glUniformMatrix4fv(FindLocation(name), 1, GL_FALSE, Math::GetDataPtr(val));
 	}
 
 	void Shader::UniformBlockBinding(std::string name, unsigned int binding) const
@@ -159,7 +160,7 @@ namespace GEE
 		glUseProgram(Program);
 	}
 
-	void Shader::BindMatrices(const glm::mat4& model, const glm::mat4* view, const glm::mat4* projection, const glm::mat4* VP) const
+	void Shader::BindMatrices(const Mat4f& model, const Mat4f* view, const Mat4f* projection, const Mat4f* VP) const
 	{
 		if (ExpectedMatrices[MatrixType::MODEL])
 			UniformMatrix4fv("model", model);
@@ -269,8 +270,8 @@ namespace GEE
 	}
 
 
-	glm::mat3 ModelToNormal(glm::mat4 model)
+	Mat3f ModelToNormal(Mat4f model)
 	{
-		return glm::mat3(glm::transpose(glm::inverse(model)));
+		return Mat3f(glm::transpose(glm::inverse(model)));
 	}
 }

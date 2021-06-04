@@ -20,7 +20,7 @@
 namespace GEE
 {
 	/*
-UIListActor::UIListActor(GameScene& scene, const std::string& name, glm::vec3 elementOffset):
+UIListActor::UIListActor(GameScene& scene, const std::string& name, Vec3f elementOffset):
 	UIActor(scene, name),
 	ElementOffset(elementOffset)
 {
@@ -42,41 +42,41 @@ void UIListActor::Refresh()
 	MoveElements(GetChildren(), 0);
 }
 
-glm::vec3 UIListActor::GetListOffset()
+Vec3f UIListActor::GetListOffset()
 {
-	glm::vec3 offset = ElementOffset * static_cast<float>(Children.size());
+	Vec3f offset = ElementOffset * static_cast<float>(Children.size());
 	for (auto& it : Children)
 		if (UIListActor* cast = dynamic_cast<UIListActor*>(it.get()))
 			offset += cast->GetListOffset() - ElementOffset;	//subtract ElementOffset to avoid offseting twice
 
-	return glm::mat3(GetTransform()->GetMatrix()) * offset;
+	return Mat3f(GetTransform()->GetMatrix()) * offset;
 }
 
-glm::vec3 UIListActor::MoveElement(Actor& element, glm::vec3 nextElementBegin, float level)
+Vec3f UIListActor::MoveElement(Actor& element, Vec3f nextElementBegin, float level)
 {
 	element.GetTransform()->SetPosition(nextElementBegin + ElementOffset / 2.0f);
 
 	return nextElementBegin + ElementOffset;
 }
 
-glm::vec3 UIListActor::MoveElements(std::vector<Actor*> currentLevelElements, unsigned int level)
+Vec3f UIListActor::MoveElements(std::vector<Actor*> currentLevelElements, unsigned int level)
 {
 	if (currentLevelElements.empty())
-		return glm::vec3(0.0f);
+		return Vec3f(0.0f);
 
-	glm::vec3 nextElementBegin = currentLevelElements.front()->GetTransform()->PositionRef - ElementOffset / 2.0f;
+	Vec3f nextElementBegin = currentLevelElements.front()->GetTransform()->PositionRef - ElementOffset / 2.0f;
 	for (auto& element : currentLevelElements)
 		nextElementBegin = MoveElement(*element, nextElementBegin, level);
 
 	return nextElementBegin;
 }
 
-glm::vec3 UIMultipleListActor::MoveElements(std::vector<Actor*> currentLevelElements, unsigned int level)
+Vec3f UIMultipleListActor::MoveElements(std::vector<Actor*> currentLevelElements, unsigned int level)
 {
 	if (currentLevelElements.empty())
-		return glm::vec3(0.0f);
+		return Vec3f(0.0f);
 
-	glm::vec3 nextElementBegin = currentLevelElements.front()->GetTransform()->PositionRef - ElementOffset / 2.0f;
+	Vec3f nextElementBegin = currentLevelElements.front()->GetTransform()->PositionRef - ElementOffset / 2.0f;
 	for (auto& element : currentLevelElements)
 	{
 		if (element->GetName() == "OGAR")
@@ -117,7 +117,7 @@ void UIMultipleListActor::NestList(UIListActor& list)
 	{
 		Actor::OnStart();
 
-		CreateComponent<TextComponent>("ElementText", Transform(glm::vec2(-2.0f, 0.0f), glm::vec2(1.0f)), Name, "", std::pair<TextAlignment, TextAlignment>(TextAlignment::RIGHT, TextAlignment::CENTER));
+		CreateComponent<TextComponent>("ElementText", Transform(Vec2f(-2.0f, 0.0f), Vec2f(1.0f)), Name, "", std::pair<TextAlignment, TextAlignment>(TextAlignment::RIGHT, TextAlignment::CENTER));
 	}
 
 	UIElementTemplates UICanvasField::GetTemplates()
@@ -159,7 +159,7 @@ void UIMultipleListActor::NestList(UIListActor& list)
 	{
 		UIListActor::OnStart();
 
-		CreateComponent<TextComponent>("CategoryText", Transform(glm::vec2(-2.0f, 2.0f), glm::vec2(1.0f)), Name, "", std::pair<TextAlignment, TextAlignment>(TextAlignment::RIGHT, TextAlignment::CENTER));
+		CreateComponent<TextComponent>("CategoryText", Transform(Vec2f(-2.0f, 2.0f), Vec2f(1.0f)), Name, "", std::pair<TextAlignment, TextAlignment>(TextAlignment::RIGHT, TextAlignment::CENTER));
 	}
 
 	UIButtonActor* UICanvasFieldCategory::GetExpandButton()
@@ -172,7 +172,7 @@ void UIMultipleListActor::NestList(UIListActor& list)
 		return UIElementTemplates(*this);
 	}
 
-	UICanvasField& UICanvasFieldCategory::AddField(const std::string& name, std::function<glm::vec3()> getElementOffset)
+	UICanvasField& UICanvasFieldCategory::AddField(const std::string& name, std::function<Vec3f()> getElementOffset)
 	{
 		UICanvasField& field = CreateChild<UICanvasField>(name);
 		if (getElementOffset)
@@ -181,14 +181,14 @@ void UIMultipleListActor::NestList(UIListActor& list)
 		return field;
 	}
 
-	glm::vec3 UICanvasFieldCategory::GetListOffset()
+	Vec3f UICanvasFieldCategory::GetListOffset()
 	{
 		return (bExpanded) ? (UIAutomaticListActor::GetListOffset() + Vec3f(0.0f, -1.0f, 0.0f)) : (Vec3f(0.0f, -1.0f, 0.0f));
 	}
 
 	void UICanvasFieldCategory::SetOnExpansionFunc(std::function<void()> onExpansionFunc)
 	{
-		OnExpansionFunc = [this, onExpansionFunc]() { if (onExpansionFunc) onExpansionFunc(); for (auto& it : Children) it->HandleEventAll(CursorMoveEvent(EventType::MOUSE_MOVED, GameHandle->GetInputRetriever().GetMousePositionNDC())); };
+		OnExpansionFunc = [this, onExpansionFunc]() { if (onExpansionFunc) onExpansionFunc(); for (auto& it : Children) it->HandleEventAll(CursorMoveEvent(EventType::MouseMoved, GameHandle->GetInputRetriever().GetMousePositionNDC())); };
 	}
 
 	void UICanvasFieldCategory::HandleEventAll(const Event& ev)
@@ -217,7 +217,7 @@ void UIMultipleListActor::NestList(UIListActor& list)
 	void UIElementTemplates::TickBox(std::function<bool()> setFunc)
 	{
 		AtlasMaterial* tickMaterial = new AtlasMaterial(Material("TickMaterial", 0.0f, GameHandle.GetRenderEngineHandle()->FindShader("Forward_NoLight")), glm::ivec2(3, 1));
-		tickMaterial->AddTexture(std::make_shared<NamedTexture>(textureFromFile("EditorAssets/tick_icon.png", GL_RGBA, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR, true), "albedo1"));
+		tickMaterial->AddTexture(std::make_shared<NamedTexture>(Texture::Loader::FromFile2D("EditorAssets/tick_icon.png", true), "albedo1"));
 
 		UIButtonActor& billboardTickBoxActor = TemplateParent.CreateChild<UIButtonActor>("BillboardTickBox");
 
@@ -236,7 +236,7 @@ void UIMultipleListActor::NestList(UIListActor& list)
 	void UIElementTemplates::TickBox(std::function<void(bool)> setFunc, std::function<bool()> getFunc)
 	{
 		AtlasMaterial* tickMaterial = new AtlasMaterial(Material("TickMaterial", 0.0f, GameHandle.GetRenderEngineHandle()->FindShader("Forward_NoLight")), glm::ivec2(3, 1));
-		tickMaterial->AddTexture(std::make_shared<NamedTexture>(textureFromFile("EditorAssets/tick_icon.png", GL_RGBA, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR, true), "albedo1"));
+		tickMaterial->AddTexture(std::make_shared<NamedTexture>(Texture::Loader::FromFile2D("EditorAssets/tick_icon.png", true), "albedo1"));
 
 		UIButtonActor& billboardTickBoxActor = TemplateParent.CreateChild<UIButtonActor>("BillboardTickBox");
 
@@ -278,7 +278,7 @@ void UIMultipleListActor::NestList(UIListActor& list)
 	void UIElementTemplates::PathInput(std::function<void(const std::string&)> setFunc, std::function<std::string()> getFunc, std::vector<const char*> extensions)
 	{
 		UIInputBoxActor& pathInputBox = TemplateParent.CreateChild<UIInputBoxActor>("PathInputBox");
-		pathInputBox.SetTransform(Transform(glm::vec2(2.0f, 0.0f), glm::vec2(3.0f, 1.0f)));
+		pathInputBox.SetTransform(Transform(Vec2f(2.0f, 0.0f), Vec2f(3.0f, 1.0f)));
 		pathInputBox.SetOnInputFunc(setFunc, getFunc);
 		UIButtonActor& selectFileActor = TemplateParent.CreateChild<UIButtonActor>("SelectFileButton");
 		AtlasMaterial* moreMat = dynamic_cast<AtlasMaterial*>(GameHandle.GetRenderEngineHandle()->FindMaterial("GEE_E_More_Mat").get());
@@ -287,7 +287,7 @@ void UIMultipleListActor::NestList(UIListActor& list)
 		selectFileActor.SetMatHover(MaterialInstance(*moreMat, moreMat->GetTextureIDInterpolatorTemplate(1.0f)));
 		selectFileActor.SetMatClick(MaterialInstance(*moreMat, moreMat->GetTextureIDInterpolatorTemplate(2.0f)));
 
-		selectFileActor.SetTransform(Transform(glm::vec2(6.0f, 0.0f), glm::vec2(1.0f, 1.0f)));
+		selectFileActor.SetTransform(Transform(Vec2f(6.0f, 0.0f), Vec2f(1.0f, 1.0f)));
 
 		//TextComponent& pathText = selectFileActor.NowyCreateComponent<TextComponent>("Text", Transform(), "", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
 		selectFileActor.SetOnClickFunc([&pathInputBox, extensions]() { const char* path = tinyfd_openFileDialog("Select file", "C:\\", extensions.size(), (extensions.empty()) ? (nullptr) : (&extensions[0]), nullptr, 0); if (path) pathInputBox.PutString(path); });
@@ -296,7 +296,7 @@ void UIMultipleListActor::NestList(UIListActor& list)
 	void UIElementTemplates::FolderInput(std::function<void(const std::string&)> setFunc, std::function<std::string()> getFunc)
 	{
 		UIInputBoxActor& pathInputBox = TemplateParent.CreateChild<UIInputBoxActor>("PathInputBox");
-		pathInputBox.SetTransform(Transform(glm::vec2(2.0f, 0.0f), glm::vec2(3.0f, 1.0f)));
+		pathInputBox.SetTransform(Transform(Vec2f(2.0f, 0.0f), Vec2f(3.0f, 1.0f)));
 		pathInputBox.SetOnInputFunc(setFunc, getFunc);
 		UIButtonActor& selectFileActor = TemplateParent.CreateChild<UIButtonActor>("SelectFolderButton");
 		AtlasMaterial* moreMat = dynamic_cast<AtlasMaterial*>(GameHandle.GetRenderEngineHandle()->FindMaterial("GEE_E_More_Mat").get());
@@ -305,7 +305,7 @@ void UIMultipleListActor::NestList(UIListActor& list)
 		selectFileActor.SetMatHover(MaterialInstance(*moreMat, moreMat->GetTextureIDInterpolatorTemplate(1.0f)));
 		selectFileActor.SetMatClick(MaterialInstance(*moreMat, moreMat->GetTextureIDInterpolatorTemplate(2.0f)));
 
-		selectFileActor.SetTransform(Transform(glm::vec2(6.0f, 0.0f), glm::vec2(1.0f, 1.0f)));
+		selectFileActor.SetTransform(Transform(Vec2f(6.0f, 0.0f), Vec2f(1.0f, 1.0f)));
 		selectFileActor.SetOnClickFunc([&pathInputBox]() { const char* path = tinyfd_selectFolderDialog("Select folder", "C:\\"); if (path) pathInputBox.PutString(path); });
 	}
 
@@ -320,7 +320,7 @@ void UIMultipleListActor::NestList(UIListActor& list)
 		for (int axis = 0; axis < vecSize; axis++)
 		{
 			UIInputBoxActor& inputBoxActor = TemplateParent.CreateChild<UIInputBoxActor>("VecBox" + std::to_string(axis));
-			inputBoxActor.SetTransform(Transform(glm::vec2(float(axis) * 2.0f, 0.0f), glm::vec2(1.0f)));
+			inputBoxActor.SetTransform(Transform(Vec2f(float(axis) * 2.0f, 0.0f), Vec2f(1.0f)));
 			inputBoxActor.SetOnInputFunc([axis, setFunc](float val) {setFunc(axis, val); }, [axis, getFunc]() { return getFunc(axis); }, true);
 
 			if (Material* found = GameHandle.GetRenderEngineHandle()->FindMaterial(materialNames[axis]).get())
@@ -339,7 +339,7 @@ void UIMultipleListActor::NestList(UIListActor& list)
 		GameScene* scenePtr = &Scene;
 		UIButtonActor& compNameButton = TemplateParent.CreateChild<UIButtonActor>("CompNameBox", "", [scenePtr, getObjectsFunc, setFunc]() {
 			UIWindowActor& window = scenePtr->CreateActorAtRoot<UIWindowActor>("CompInputWindow");
-			window.SetTransform(Transform(glm::vec2(0.0f, -0.7f), glm::vec2(0.25f)));
+			window.SetTransform(Transform(Vec2f(0.0f, -0.7f), Vec2f(0.25f)));
 
 			UIAutomaticListActor& list = window.CreateChild<UIAutomaticListActor>("Available comp list");
 			std::vector<ObjectType*> availableObjects = getObjectsFunc();
@@ -351,7 +351,7 @@ void UIMultipleListActor::NestList(UIListActor& list)
 
 			std::cout << availableObjects.size() << " available objects.\n";
 			});
-		compNameButton.SetTransform(Transform(glm::vec2(2.0f, 0.0f), glm::vec2(3.0f, 1.0f)));
+		compNameButton.SetTransform(Transform(Vec2f(2.0f, 0.0f), Vec2f(3.0f, 1.0f)));
 	}
 
 	template<typename ObjectBase, typename ObjectType>
@@ -360,7 +360,7 @@ void UIMultipleListActor::NestList(UIListActor& list)
 		GameScene* scenePtr = &Scene;
 		UIButtonActor& compNameButton = TemplateParent.CreateChild<UIButtonActor>("CompNameBox", "", [scenePtr, &hierarchyRoot, setFunc]() {
 			UIWindowActor& window = scenePtr->CreateActorAtRoot<UIWindowActor>("CompInputWindow");
-			window.SetTransform(Transform(glm::vec2(0.0f, -0.7f), glm::vec2(0.25f)));
+			window.SetTransform(Transform(Vec2f(0.0f, -0.7f), Vec2f(0.25f)));
 
 			UIAutomaticListActor& list = window.CreateChild<UIAutomaticListActor>("Available comp list");
 			std::vector<ObjectType*> availableObjects;
@@ -376,7 +376,7 @@ void UIMultipleListActor::NestList(UIListActor& list)
 
 			std::cout << availableObjects.size() << " available objects.\n";
 			});
-		compNameButton.SetTransform(Transform(glm::vec2(2.0f, 0.0f), glm::vec2(3.0f, 1.0f)));
+		compNameButton.SetTransform(Transform(Vec2f(2.0f, 0.0f), Vec2f(3.0f, 1.0f)));
 	}
 
 	template<typename ObjectBase, typename ObjectType>
@@ -410,17 +410,6 @@ void UIMultipleListActor::NestList(UIListActor& list)
 		ComponentInput<CompType>(hierarchyRoot, [&inputTo](CompType* comp) { inputTo = comp; });
 	}
 
-
-	template <> void UIElementTemplates::VecInput<glm::vec2>(std::function<void(float, float)> setFunc, std::function<float(float)> getFunc)
-	{
-		VecInput<2>(setFunc, getFunc);
-	}
-
-	template <> void UIElementTemplates::VecInput<glm::vec3>(std::function<void(float, float)> setFunc, std::function<float(float)> getFunc)
-	{
-		VecInput<3>(setFunc, getFunc);
-	}
-
 	template <> void UIElementTemplates::VecInput<Vec2f>(std::function<void(float, float)> setFunc, std::function<float(float)> getFunc)
 	{
 		VecInput<2>(setFunc, getFunc);
@@ -436,12 +425,7 @@ void UIMultipleListActor::NestList(UIListActor& list)
 		VecInput<4>(setFunc, getFunc);
 	}
 
-	template <> void UIElementTemplates::VecInput<glm::vec4>(std::function<void(float, float)> setFunc, std::function<float(float)> getFunc)
-	{
-		VecInput<4>(setFunc, getFunc);
-	}
-
-	template <> void UIElementTemplates::VecInput<glm::quat>(std::function<void(float, float)> setFunc, std::function<float(float)> getFunc)
+	template <> void UIElementTemplates::VecInput<Quatf>(std::function<void(float, float)> setFunc, std::function<float(float)> getFunc)
 	{
 		VecInput<4>(setFunc, getFunc);
 	}
@@ -456,13 +440,10 @@ void UIMultipleListActor::NestList(UIListActor& list)
 		hierarchyRoot.GetAllActors<ObjectType>(&actors);
 	}
 
-	template void UIElementTemplates::VecInput<glm::vec2>(glm::vec2&);
-	template void UIElementTemplates::VecInput<glm::vec3>(glm::vec3&);
 	template void UIElementTemplates::VecInput<Vec2f>(Vec2f&);
 	template void UIElementTemplates::VecInput<Vec3f>(Vec3f&);
 	template void UIElementTemplates::VecInput<Vec4f>(Vec4f&);
-	template void UIElementTemplates::VecInput<glm::vec4>(glm::vec4&);
-	template void UIElementTemplates::VecInput<glm::quat>(glm::quat&);
+	template void UIElementTemplates::VecInput<Quatf>(Quatf&);
 
 	template void UIElementTemplates::ObjectInput<Component, Component>(Component&, std::function<void(Component*)>);
 	template void UIElementTemplates::ObjectInput<Component, ModelComponent>(Component&, std::function<void(ModelComponent*)>);

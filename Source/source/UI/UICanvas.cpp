@@ -23,7 +23,7 @@ namespace GEE
 		std::for_each(UIElements.begin(), UIElements.end(), [this](std::reference_wrapper<UICanvasElement>& element) { element.get().AttachToCanvas(*this); });
 	}
 
-	glm::mat4 UICanvas::GetViewMatrix() const
+	Mat4f UICanvas::GetViewMatrix() const
 	{
 		assertm(CanvasView.Scale().x != 0.0f && CanvasView.Scale().y != 0.0f && CanvasView.Scale().z != 0.0f, "Scale component equal to 0.");
 
@@ -35,25 +35,25 @@ namespace GEE
 		return CanvasView;
 	}
 
-	glm::mat4 UICanvas::GetProjection() const
+	Mat4f UICanvas::GetProjection() const
 	{
-		glm::vec2 size = static_cast<glm::vec2>(CanvasView.Scale());
+		Vec2f size = static_cast<Vec2f>(CanvasView.Scale());
 		return glm::ortho(-size.x, size.x, -size.y, size.y, 1.0f, -2550.0f);
 	}
 
 	Boxf<Vec2f> UICanvas::GetBoundingBox() const
 	{
-		glm::vec2 canvasRightUpMax(0.0f);
-		glm::vec2 canvasLeftDownMin(0.0f);
+		Vec2f canvasRightUpMax(0.0f);
+		Vec2f canvasLeftDownMin(0.0f);
 
 		for (int i = 0; i < UIElements.size(); i++)
 		{
 			Boxf<Vec2f> bBox = UIElements[i].get().GetBoundingBox();
-			if (bBox.Size == glm::vec2(0.0f))
+			if (bBox.Size == Vec2f(0.0f))
 				continue;
 
-			glm::vec2 elementRightUpMax(bBox.Position + bBox.Size);		//pos.x + size.x; pos.y + size.y;
-			glm::vec2 elementLeftDownMin(bBox.Position - bBox.Size);	//pos.y - size.x; pos.y - size.y;
+			Vec2f elementRightUpMax(bBox.Position + bBox.Size);		//pos.x + size.x; pos.y + size.y;
+			Vec2f elementLeftDownMin(bBox.Position - bBox.Size);	//pos.y - size.x; pos.y - size.y;
 
 	//		std::cout << elementLeftDownMin.y << "??\n";
 
@@ -61,7 +61,7 @@ namespace GEE
 			canvasLeftDownMin = glm::min(canvasLeftDownMin, elementLeftDownMin);
 		}
 
-		glm::vec2 center = (canvasLeftDownMin + canvasRightUpMax) / 2.0f;
+		Vec2f center = (canvasLeftDownMin + canvasRightUpMax) / 2.0f;
 
 		//	std::cout << UIElements.size() << "\n";
 		//	std::cout << canvasLeftDownMin.x << ", " << canvasLeftDownMin.y << " --> " << canvasRightUpMax.x << ", " << canvasRightUpMax.y << "\n";
@@ -82,10 +82,10 @@ namespace GEE
 	void UICanvas::ClampViewToElements()
 	{
 		Boxf<Vec2f> bBox = GetBoundingBox();
-		glm::vec2 canvasRightUp = bBox.Position + bBox.Size - glm::pow(static_cast<glm::vec2>(CanvasView.Scale()), glm::vec2(2.0f));	//Canvas space
-		glm::vec2 canvasLeftDown = bBox.Position - bBox.Size + glm::pow(static_cast<glm::vec2>(CanvasView.Scale()), glm::vec2(2.0f));	//Canvas space
+		Vec2f canvasRightUp = bBox.Position + bBox.Size - glm::pow(static_cast<Vec2f>(CanvasView.Scale()), Vec2f(2.0f));	//Canvas space
+		Vec2f canvasLeftDown = bBox.Position - bBox.Size + glm::pow(static_cast<Vec2f>(CanvasView.Scale()), Vec2f(2.0f));	//Canvas space
 
-		glm::vec2 adjustedViewPos = glm::clamp(glm::vec2(CanvasView.Pos()), canvasLeftDown, canvasRightUp);
+		Vec2f adjustedViewPos = glm::clamp(Vec2f(CanvasView.Pos()), canvasLeftDown, canvasRightUp);
 
 		if (canvasLeftDown.x > canvasRightUp.x)
 			adjustedViewPos.x = bBox.Position.x;
@@ -127,7 +127,7 @@ namespace GEE
 		}
 	}
 
-	void UICanvas::SetViewScale(glm::vec2 scale)
+	void UICanvas::SetViewScale(Vec2f scale)
 	{
 		CanvasView.SetScale(scale);
 		ClampViewToElements();

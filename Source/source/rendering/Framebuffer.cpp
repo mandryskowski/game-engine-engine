@@ -41,7 +41,7 @@ namespace GEE
 	Framebuffer::Framebuffer()
 	{
 		FBO = 0;
-		RenderSize = glm::uvec2(0, 0);
+		RenderSize = Vec2u(0, 0);
 		DepthBuffer = nullptr;
 	}
 
@@ -57,7 +57,7 @@ namespace GEE
 		return FBO;
 	}
 
-	glm::uvec2 Framebuffer::GetSize() const
+	Vec2u Framebuffer::GetSize() const
 	{
 		return RenderSize;
 	}
@@ -89,7 +89,7 @@ namespace GEE
 		return ColorBuffers.size();
 	}
 
-	void Framebuffer::SetAttachments(glm::uvec2 size, std::shared_ptr<FramebufferAttachment> colorBuffer, std::shared_ptr<FramebufferAttachment> depthBuffer, unsigned int samples)
+	void Framebuffer::SetAttachments(Vec2u size, std::shared_ptr<FramebufferAttachment> colorBuffer, std::shared_ptr<FramebufferAttachment> depthBuffer, unsigned int samples)
 	{
 		std::vector<std::shared_ptr<FramebufferAttachment>> colorBuffers;
 		if (colorBuffer)
@@ -97,7 +97,7 @@ namespace GEE
 
 		SetAttachments(size, colorBuffers, depthBuffer, samples);
 	}
-	void Framebuffer::SetAttachments(glm::uvec2 size, std::vector <std::shared_ptr<FramebufferAttachment>> colorBuffers, std::shared_ptr<FramebufferAttachment> depthBuffer, unsigned int samples)
+	void Framebuffer::SetAttachments(Vec2u size, std::vector <std::shared_ptr<FramebufferAttachment>> colorBuffers, std::shared_ptr<FramebufferAttachment> depthBuffer, unsigned int samples)
 	{
 		RenderSize = size;
 
@@ -130,11 +130,11 @@ namespace GEE
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	}
 
-	void Framebuffer::SetAttachments(glm::uvec2 size, const FramebufferAttachment& colorBuffer, FramebufferAttachment* depthBuffer, unsigned int samples)
+	void Framebuffer::SetAttachments(Vec2u size, const FramebufferAttachment& colorBuffer, FramebufferAttachment* depthBuffer, unsigned int samples)
 	{
 		SetAttachments(size, std::make_shared<FramebufferAttachment>(colorBuffer), (depthBuffer) ? (std::make_shared<FramebufferAttachment>(*depthBuffer)) : (nullptr), samples);
 	}
-	void Framebuffer::SetAttachments(glm::uvec2 size, const std::vector<FramebufferAttachment>& colorBuffers, FramebufferAttachment* depthBuffer, unsigned int samples)
+	void Framebuffer::SetAttachments(Vec2u size, const std::vector<FramebufferAttachment>& colorBuffers, FramebufferAttachment* depthBuffer, unsigned int samples)
 	{
 		std::vector<std::shared_ptr<FramebufferAttachment>> createdColorBuffers;
 		createdColorBuffers.resize(colorBuffers.size());
@@ -251,7 +251,7 @@ namespace GEE
 		return false;
 	}
 
-	Framebuffer GEE_FB::getDefaultFramebuffer(glm::uvec2 windowRes)
+	Framebuffer GEE_FB::getDefaultFramebuffer(Vec2u windowRes)
 	{
 		Framebuffer fb;
 		fb.FBO = 0;
@@ -260,7 +260,7 @@ namespace GEE
 		return fb;
 	}
 
-	std::shared_ptr<FramebufferAttachment> GEE_FB::reserveColorBuffer(glm::uvec2 size, GLenum internalformat, GLenum type, GLenum magFilter, GLenum minFilter, GLenum texType, unsigned int samples, std::string texName, GLenum format)
+	std::shared_ptr<FramebufferAttachment> GEE_FB::reserveColorBuffer(Vec2u size, GLenum internalformat, GLenum type, GLenum magFilter, GLenum minFilter, GLenum texType, unsigned int samples, std::string texName, GLenum format)
 	{
 		std::shared_ptr<FramebufferAttachment> tex = std::make_shared<FramebufferAttachment>(FramebufferAttachment(NamedTexture(*reserveTexture(size, internalformat, type, magFilter, minFilter, texType, samples, texName, format), texName)));
 		tex->SetAttachmentEnum(GL_COLOR_ATTACHMENT0);
@@ -268,7 +268,7 @@ namespace GEE
 		return tex;
 	}
 
-	std::shared_ptr<FramebufferAttachment> GEE_FB::reserveColorBuffer(glm::uvec3 size, GLenum internalformat, GLenum type, GLenum magFilter, GLenum minFilter, GLenum texType, unsigned int samples, std::string texName, GLenum format)
+	std::shared_ptr<FramebufferAttachment> GEE_FB::reserveColorBuffer(Vec3u size, GLenum internalformat, GLenum type, GLenum magFilter, GLenum minFilter, GLenum texType, unsigned int samples, std::string texName, GLenum format)
 	{
 		std::shared_ptr<FramebufferAttachment> tex = std::make_shared<FramebufferAttachment>(FramebufferAttachment(NamedTexture(*reserveTexture(size, internalformat, type, magFilter, minFilter, texType, samples, texName, format), texName)));
 		tex->SetAttachmentEnum(GL_COLOR_ATTACHMENT0);
@@ -276,7 +276,7 @@ namespace GEE
 		return tex;
 	}
 
-	std::shared_ptr<FramebufferAttachment> GEE_FB::reserveDepthBuffer(glm::uvec2 size, GLenum internalformat, GLenum type, GLenum magFilter, GLenum minFilter, GLenum texType, unsigned int samples, std::string texName, GLenum format)
+	std::shared_ptr<FramebufferAttachment> GEE_FB::reserveDepthBuffer(Vec2u size, GLenum internalformat, GLenum type, GLenum magFilter, GLenum minFilter, GLenum texType, unsigned int samples, std::string texName, GLenum format)
 	{
 		if (format == GL_ZERO)
 			format = ((GEE_FB::containsStencil(internalformat)) ? (GL_DEPTH_STENCIL) : (GL_DEPTH_COMPONENT));

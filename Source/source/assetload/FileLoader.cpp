@@ -58,7 +58,7 @@ namespace GEE
 
 			if (isNextWordEqual(filestr, "atlas"))
 			{
-				glm::vec2 size(0.0f);
+				Vec2f size(0.0f);
 				filestr >> size.x >> size.y;
 				material = std::make_shared<AtlasMaterial>(materialName, size);
 			}
@@ -80,7 +80,7 @@ namespace GEE
 
 				if (!(path.size() > 3 && path.substr(0, 2) == "./"))
 					path = directory + path;
-				material->AddTexture(std::make_shared<NamedTexture>(textureFromFile(path, (toBool(isSRGB)) ? (GL_SRGB) : (GL_RGB)), shaderUniformName));
+				material->AddTexture(std::make_shared<NamedTexture>(Texture::Loader::FromFile2D(path, false, Texture::MinTextureFilter::Trilinear(), Texture::MagTextureFilter::Bilinear(), (toBool(isSRGB)) ? (GL_SRGB) : (GL_RGB)), shaderUniformName));
 			}
 		}
 	}
@@ -194,7 +194,7 @@ namespace GEE
 			std::string lightType;
 			filestr >> lightType;
 
-			glm::mat4 projection;
+			Mat4f projection;
 			if (lightType == "point" || lightType == "spot")
 				projection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
 			else
@@ -206,7 +206,7 @@ namespace GEE
 				for (unsigned int axis = 0; axis < 3; axis++)
 					filestr >> (light)[vector][axis];	//TODO: sprawdzic czy sie wywala
 
-			glm::vec3 additionalData(0.0f);
+			Vec3f additionalData(0.0f);
 			for (unsigned int i = 0; i < 3; i++)
 				filestr >> additionalData[i];
 			light.SetAdditionalData(additionalData);
@@ -420,7 +420,7 @@ namespace GEE
 				vert.TexCoord.y = mesh->mTextureCoords[0][i].y;
 			}
 			else
-				vert.TexCoord = glm::vec2(0.0f);
+				vert.TexCoord = Vec2f(0.0f);
 
 			if (bTangentsBitangents)
 			{
@@ -533,7 +533,7 @@ namespace GEE
 
 		for (int transformField = 0; transformField < 4; transformField++)
 		{
-			glm::vec3 value(0.0f);
+			Vec3f value(0.0f);
 			bool skipped = false;
 
 			for (int i = 0; i < 3; i++)
@@ -582,7 +582,7 @@ namespace GEE
 				return;
 			}
 
-			glm::vec3 data(0.0f);
+			Vec3f data(0.0f);
 			for (int j = 0; j < 3; j++)
 				filestr >> data[j];
 
@@ -1062,14 +1062,14 @@ namespace GEE
 			glTexSubImage3D(font->GetBitmapsArray().GetType(), 0, 0, 0, i, face->glyph->bitmap.width, face->glyph->bitmap.rows, 1, GL_RED, GL_UNSIGNED_BYTE, face->glyph->bitmap.buffer);
 			Character character = Character();
 			character.ID = i;
-			character.Size = glm::vec2(face->glyph->bitmap.width, face->glyph->bitmap.rows) * pixelScale;
-			character.Bearing = glm::vec2(face->glyph->bitmap_left, face->glyph->bitmap_top) * pixelScale;
+			character.Size = Vec2f(face->glyph->bitmap.width, face->glyph->bitmap.rows) * pixelScale;
+			character.Bearing = Vec2f(face->glyph->bitmap_left, face->glyph->bitmap_top) * pixelScale;
 			character.Advance = static_cast<float>(face->glyph->advance.x) * pixelScale * advanceUnit;
 
 			font->AddCharacter(character);
 		}
 
-		glGenerateMipmap(font->GetBitmapsArray().GetType());
+		font->GetBitmapsArray().GenerateMipmap();
 
 		return font;
 	}
@@ -1115,9 +1115,9 @@ namespace GEE
 		return nullptr;
 	}
 
-	glm::mat4 toGlm(const aiMatrix4x4& aiMat)
+	Mat4f toGlm(const aiMatrix4x4& aiMat)
 	{
-		return glm::mat4(aiMat.a1, aiMat.b1, aiMat.c1, aiMat.d1,
+		return Mat4f(aiMat.a1, aiMat.b1, aiMat.c1, aiMat.d1,
 			aiMat.a2, aiMat.b2, aiMat.c2, aiMat.d2,
 			aiMat.a3, aiMat.b3, aiMat.c3, aiMat.d3,
 			aiMat.a4, aiMat.b4, aiMat.c4, aiMat.d4);

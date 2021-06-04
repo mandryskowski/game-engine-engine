@@ -200,7 +200,7 @@ namespace GEE
 	{
 		RootComponent->UpdateAll(deltaTime);
 		if (Name == "CubeActor")
-			;//RootComponent->GetTransform().SetScale(glm::vec3(1.0f + glfwGetTime() * 0.05f));
+			;//RootComponent->GetTransform().SetScale(Vec3f(1.0f + glfwGetTime() * 0.05f));
 	}
 
 	void Actor::UpdateAll(float deltaTime)
@@ -272,7 +272,7 @@ namespace GEE
 		UIInputBoxActor& textActor = descBuilder.CreateActor<UIInputBoxActor>("ComponentsNameActor");
 		textActor.SetOnInputFunc([this](const std::string& content) { if (Scene.GetUniqueActorName(content) == content) SetName(content); }, [this]() -> std::string { return GetName(); });
 		textActor.DeleteButtonModel();
-		textActor.SetTransform(Transform(glm::vec2(0.0f, 1.5f), glm::vec2(1.0f)));
+		textActor.SetTransform(Transform(Vec2f(0.0f, 1.5f), Vec2f(1.0f)));
 
 
 		UICanvasField& deleteField = descBuilder.AddField("Delete");

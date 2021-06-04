@@ -8,8 +8,8 @@ namespace GEE
 	BoneComponent::BoneComponent(Actor& actor, Component* parentComp, std::string name, Transform transform, unsigned int boneID) :
 		Component(actor, parentComp, name, transform),
 		BoneID(boneID),
-		BoneOffset(glm::mat4(1.0f)),
-		FinalMatrix(glm::mat4(1.0f)),
+		BoneOffset(Mat4f(1.0f)),
+		FinalMatrix(Mat4f(1.0f)),
 		InfoPtr(nullptr)
 	{
 
@@ -35,7 +35,7 @@ namespace GEE
 
 	void BoneComponent::Update(float deltaTime)
 	{
-		glm::mat4 globalMat = ComponentTransform.GetWorldTransformMatrix();
+		Mat4f globalMat = ComponentTransform.GetWorldTransformMatrix();
 		FinalMatrix = globalMat * BoneOffset;
 		//ComponentTransform.Print(Name);
 
@@ -47,7 +47,7 @@ namespace GEE
 		return BoneID;
 	}
 
-	const glm::mat4& BoneComponent::GetFinalMatrix()
+	const Mat4f& BoneComponent::GetFinalMatrix()
 	{
 		return FinalMatrix;
 	}
@@ -58,7 +58,7 @@ namespace GEE
 		return Component::GetDebugMatInst(state);
 	}
 
-	void BoneComponent::SetBoneOffset(const glm::mat4& boneOffset)
+	void BoneComponent::SetBoneOffset(const Mat4f& boneOffset)
 	{
 		BoneOffset = boneOffset;
 	}

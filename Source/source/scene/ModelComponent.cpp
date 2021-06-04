@@ -21,7 +21,7 @@ namespace GEE
 	ModelComponent::ModelComponent(Actor& actor, Component* parentComp, const std::string& name, const Transform& transform, SkeletonInfo* info, Material* overrideMat) :
 		RenderableComponent(actor, parentComp, name, transform),
 		UIComponent(actor, parentComp),
-		LastFrameMVP(glm::mat4(1.0f)),
+		LastFrameMVP(Mat4f(1.0f)),
 		SkelInfo(info),
 		RenderAsBillboard(false)
 	{
@@ -63,7 +63,7 @@ namespace GEE
 			it->SetMaterialInst(overrideMatInst);
 	}
 
-	void ModelComponent::SetLastFrameMVP(const glm::mat4& lastMVP) const
+	void ModelComponent::SetLastFrameMVP(const Mat4f& lastMVP) const
 	{
 		LastFrameMVP = lastMVP;
 	}
@@ -96,7 +96,7 @@ namespace GEE
 		return *MeshInstances[index];
 	}
 
-	const glm::mat4& ModelComponent::GetLastFrameMVP() const
+	const Mat4f& ModelComponent::GetLastFrameMVP() const
 	{
 		return LastFrameMVP;
 	}
@@ -149,7 +149,7 @@ namespace GEE
 				it->GetMaterialInst()->Update(deltaTime);
 
 		if (Name == "MeshPreviewModel")
-			ComponentTransform.SetRotation((glm::mat3)glm::rotate(glm::mat4(1.0f), (float)glfwGetTime(), glm::vec3(0.0f, 1.0f, 0.0f)));
+			ComponentTransform.SetRotation((Mat3f)glm::rotate(Mat4f(1.0f), (float)glfwGetTime(), Vec3f(0.0f, 1.0f, 0.0f)));
 	}
 
 	void ModelComponent::Render(const RenderInfo& info, Shader* shader)
@@ -177,9 +177,6 @@ namespace GEE
 	void ModelComponent::GetEditorDescription(EditorDescriptionBuilder descBuilder)
 	{
 		RenderableComponent::GetEditorDescription(descBuilder);
-
-		Material* tickMaterial = new Material("TickMaterial", 0.0f, GameHandle->GetRenderEngineHandle()->FindShader("Forward_NoLight"));
-		tickMaterial->AddTexture(std::make_shared<NamedTexture>(textureFromFile("EditorAssets/tick_icon.png", GL_SRGB_ALPHA, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR, true), "albedo1"));
 
 		descBuilder.AddField("Render as billboard").GetTemplates().TickBox(RenderAsBillboard);
 		descBuilder.AddField("Hide").GetTemplates().TickBox(Hide);
@@ -215,7 +212,7 @@ namespace GEE
 
 					GameSettings* settings = new GameSettings(*GameHandle->GetGameSettings());
 
-					settings->WindowSize = glm::uvec2(1024);
+					settings->WindowSize = Vec2u(1024);
 					RenderToolboxCollection& renderTbCollection = renderHandle.AddRenderTbCollection(RenderToolboxCollection("GEE_E_Mesh_Preview_Toolbox_Collection", settings->Video));
 
 					std::shared_ptr<Material> viewportMaterial = std::make_shared<Material>("GEE_E_Mesh_Preview_Viewport", 0.0f, renderHandle.FindShader("Forward_NoLight"));

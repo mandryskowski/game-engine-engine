@@ -25,7 +25,7 @@ namespace GEE
 
 	Boxf<Vec2f> UICanvasElement::GetBoundingBox(bool world)
 	{
-		return Boxf<Vec2f>(glm::vec2(0.0f), glm::vec2(0.0f));
+		return Boxf<Vec2f>(Vec2f(0.0f), Vec2f(0.0f));
 	}
 
 	UICanvas* UICanvasElement::GetCanvasPtr()

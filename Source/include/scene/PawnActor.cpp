@@ -12,13 +12,13 @@ namespace GEE
 {
 	PawnActor::PawnActor(GameScene& scene, Actor* parentActor, const std::string& name) :
 		Actor(scene, parentActor, name),
-		PreAnimBonePos(glm::vec3(0.0f)),
+		PreAnimBonePos(Vec3f(0.0f)),
 		//RootBone(nullptr),
 		AnimManager(nullptr),
 		UpdateAnimsListInEditor(nullptr),
 		AnimIndex(0),
 		SpeedPerSec(1.0f),
-		CurrentTargetPos(glm::vec3(0.0f)),
+		CurrentTargetPos(Vec3f(0.0f)),
 		PathIndex(0),
 		Gun(nullptr),
 		PlayerTarget(nullptr)
@@ -46,15 +46,15 @@ namespace GEE
 			Gun = nullptr;
 
 
-		/*		glm::vec3 velocity = RootBone->GetTransform().GetWorldTransform().RotationRef * glm::abs(RootBone->GetTransform().PositionRef - PreAnimBonePos);
+		/*		Vec3f velocity = RootBone->GetTransform().GetWorldTransform().RotationRef * glm::abs(RootBone->GetTransform().PositionRef - PreAnimBonePos);
 			velocity.y = 0.0f;
 			//velocity.x = 0.0f;*/
 
-		if (CurrentTargetPos != glm::vec3(0.0f))
+		if (CurrentTargetPos != Vec3f(0.0f))
 		{
 			if (glm::distance(CurrentTargetPos, GetTransform()->GetWorldTransform().Pos()) < 0.05f)
 			{
-				CurrentTargetPos = glm::vec3(0.0f);
+				CurrentTargetPos = Vec3f(0.0f);
 				if (AnimManager->GetCurrentAnim())
 					AnimManager->GetCurrentAnim()->Stop();
 				PathIndex = (++PathIndex) % 4;
@@ -64,26 +64,26 @@ namespace GEE
 			if (!AnimManager->GetCurrentAnim())
 				AnimManager->SelectAnimation(AnimManager->GetAnimInstance(AnimIndex));
 
-			glm::vec3 posDir = CurrentTargetPos - GetTransform()->GetWorldTransform().Pos();
+			Vec3f posDir = CurrentTargetPos - GetTransform()->GetWorldTransform().Pos();
 			posDir.y = 0.0f;
 			posDir = glm::normalize(posDir);
 			if (PlayerTarget)
 			{
-				glm::vec3 playerDir = glm::normalize(PlayerTarget->GetTransform()->GetWorldTransform().Pos() - GetTransform()->GetWorldTransform().Pos());
-				float distance = glm::distance((glm::vec3)PlayerTarget->GetTransform()->GetWorldTransform().Pos(), GetTransform()->GetWorldTransform().Pos());
+				Vec3f playerDir = glm::normalize(PlayerTarget->GetTransform()->GetWorldTransform().Pos() - GetTransform()->GetWorldTransform().Pos());
+				float distance = glm::distance((Vec3f)PlayerTarget->GetTransform()->GetWorldTransform().Pos(), GetTransform()->GetWorldTransform().Pos());
 	
-				if (Gun && glm::dot(playerDir, GetTransform()->Rot() * glm::vec3(0.0f, 0.0f, -1.0f)) > glm::cos(glm::radians(30.0f)) && distance < 3.0f)
+				if (Gun && glm::dot(playerDir, GetTransform()->Rot() * Vec3f(0.0f, 0.0f, -1.0f)) > glm::cos(glm::radians(30.0f)) && distance < 3.0f)
 				{
 					Gun->FireWeapon();
 					//Gun->GetTransform()->SetRotationWorld(quatFromDirectionVec(-playerDir));
-					posDir = glm::normalize(glm::vec3(playerDir.x, 0.0f, playerDir.z));
+					posDir = glm::normalize(Vec3f(playerDir.x, 0.0f, playerDir.z));
 
 				}
 			}
 
 			GetTransform()->SetRotation(quatFromDirectionVec(-posDir));
 
-			glm::vec3 velocity = GetTransform()->GetWorldTransform().Rot() * glm::vec3(0.0f, 0.0f, -1.0f * SpeedPerSec * deltaTime);
+			Vec3f velocity = GetTransform()->GetWorldTransform().Rot() * Vec3f(0.0f, 0.0f, -1.0f * SpeedPerSec * deltaTime);
 
 			GetTransform()->Move(velocity);
 		}
@@ -109,7 +109,7 @@ namespace GEE
 		speedInputBox.SetOnInputFunc([this](float val) { SpeedPerSec = val; }, [this]()->float { return SpeedPerSec; });
 
 		UICanvasField& animsField = descBuilder.AddField("Anim List");
-		UIAutomaticListActor& animsList = animsField.CreateChild<UIAutomaticListActor>("Animations list", glm::vec3(3.0f, 0.0f, 0.0f));
+		UIAutomaticListActor& animsList = animsField.CreateChild<UIAutomaticListActor>("Animations list", Vec3f(3.0f, 0.0f, 0.0f));
 
 		UpdateAnimsListInEditor = [this, &animsList, descBuilder](AnimationManagerComponent* animManager) mutable {
 			for (auto& it : animsList.GetChildren())
@@ -125,7 +125,7 @@ namespace GEE
 			UpdateAnimsListInEditor(AnimManager);
 	}
 
-	void PawnActor::MoveToPosition(const glm::vec3& worldPos)
+	void PawnActor::MoveToPosition(const Vec3f& worldPos)
 	{
 		CurrentTargetPos = worldPos;
 	}
@@ -134,10 +134,10 @@ namespace GEE
 	{
 		switch (PathIndex)
 		{
-		case 0: MoveToPosition(glm::vec3(-5.0f, -0.51f, 0.0f)); break;
-		case 1: MoveToPosition(glm::vec3(-15.0f, -0.51f, 0.0f)); break;
-		case 2: MoveToPosition(glm::vec3(-15.0f, -0.51f, -20.0f)); break;
-		case 3: MoveToPosition(glm::vec3(-5.0f, -0.51f, -20.0f)); break;
+		case 0: MoveToPosition(Vec3f(-5.0f, -0.51f, 0.0f)); break;
+		case 1: MoveToPosition(Vec3f(-15.0f, -0.51f, 0.0f)); break;
+		case 2: MoveToPosition(Vec3f(-15.0f, -0.51f, -20.0f)); break;
+		case 3: MoveToPosition(Vec3f(-5.0f, -0.51f, -20.0f)); break;
 		}
 	}
 

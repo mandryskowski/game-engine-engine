@@ -1,7 +1,6 @@
 #include <scene/SoundSourceComponent.h>
 #include <rendering/Material.h>
 #include <iostream>
-#include <glm/gtc/type_ptr.hpp>
 #include <math/Transform.h>
 #include <audio/AudioFile.h>
 
@@ -88,7 +87,7 @@ namespace GEE
 		void SoundSourceComponent::Update(float deltaTime)
 		{
 			if (ALIndex != 0)
-				alSourcefv(ALIndex, AL_POSITION, glm::value_ptr((glm::vec3)ComponentTransform.GetWorldTransform().Pos()));
+				alSourcefv(ALIndex, AL_POSITION, Math::GetDataPtr((Vec3f)ComponentTransform.GetWorldTransform().Pos()));
 		}
 
 		MaterialInstance SoundSourceComponent::GetDebugMatInst(EditorIconState state)
@@ -125,8 +124,8 @@ namespace GEE
 				alDeleteSources(1, &ALIndex);
 
 			alGenSources(1, &ALIndex);
-			alSourcefv(ALIndex, AL_POSITION, glm::value_ptr(glm::vec3(0.0f)));
-			alSourcefv(ALIndex, AL_VELOCITY, glm::value_ptr(glm::vec3(0.0f)));
+			alSourcefv(ALIndex, AL_POSITION, Math::GetDataPtr(Vec3f(0.0f)));
+			alSourcefv(ALIndex, AL_VELOCITY, Math::GetDataPtr(Vec3f(0.0f)));
 			alSourcei(ALIndex, AL_BUFFER, SndBuffer.ALIndex);
 		}
 

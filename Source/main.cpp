@@ -57,7 +57,7 @@ int main(int argc, char** argv)
 	glm::dvec3 front(-0.80989, - 0.15385, - 0.56604);
 	glm::dvec3 rotationVec = glm::cross(front, glm::dvec3(0.0f, 0.0f, -1.0f));
 	double angle = std::atan2((double)glm::dot(front, glm::dvec3(0.0f, 1.0f, 0.0f)), 0.0);
-	glm::quat rot(glm::angleAxis(angle, rotationVec));
+	Quatf rot(glm::angleAxis(angle, rotationVec));
 	printVector(rot, "quick maths");
 
 	GLFWwindow* programWindow = glfwCreateWindow(800, 600, "c00lki", nullptr, nullptr);
@@ -85,9 +85,9 @@ int main(int argc, char** argv)
 	GameSettings settings;
 	//settings.LoadFromFile("Settings.ini");
 	
-	//glm::vec2 res = static_cast<glm::vec2>(settings.WindowSize);
+	//Vec2f res = static_cast<Vec2f>(settings.WindowSize);
 	//settings.ViewportData = glm::uvec4(res.x * 0.3f, res.y * 0.4f, res.x * 0.4, res.y * 0.6f);
-	//settings.Video.Resolution = glm::vec2(res.x * 0.4, res.y * 0.6f);
+	//settings.Video.Resolution = Vec2f(res.x * 0.4, res.y * 0.6f);
 
 	GameEngineEngineEditor editor(programWindow, settings);
 	editor.SetupMainMenu();

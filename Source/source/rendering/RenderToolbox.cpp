@@ -186,11 +186,11 @@ namespace GEE
 		std::uniform_real_distribution<float> randomFloats(0.0f, 1.0f);
 		std::default_random_engine generator;
 
-		std::vector<glm::vec3> ssaoSamples;
+		std::vector<Vec3f> ssaoSamples;
 		ssaoSamples.reserve(settings.AmbientOcclusionSamples);
 		for (unsigned int i = 0; i < settings.AmbientOcclusionSamples; i++)
 		{
-			glm::vec3 sample(
+			Vec3f sample(
 				randomFloats(generator) * 2.0f - 1.0f,
 				randomFloats(generator) * 2.0f - 1.0f,
 				randomFloats(generator)
@@ -206,11 +206,11 @@ namespace GEE
 			ssaoSamples.push_back(sample);
 		}
 
-		std::vector<glm::vec3> ssaoNoise;
+		std::vector<Vec3f> ssaoNoise;
 		ssaoNoise.reserve(16);
 		for (unsigned int i = 0; i < 16; i++)
 		{
-			glm::vec3 noise(
+			Vec3f noise(
 				randomFloats(generator) * 2.0f - 1.0f,
 				randomFloats(generator) * 2.0f - 1.0f,
 				0.0f
@@ -297,7 +297,7 @@ namespace GEE
 		SMAAShaders[1]->Uniform1i("edgesTex", 0);
 		SMAAShaders[1]->Uniform1i("areaTex", 1);
 		SMAAShaders[1]->Uniform1i("searchTex", 2);
-		SMAAShaders[1]->Uniform4fv("ssIndices", glm::vec4(0.0f));
+		SMAAShaders[1]->Uniform4fv("ssIndices", Vec4f(0.0f));
 
 		SMAAShaders[2]->Use();
 		SMAAShaders[2]->Uniform1i("colorTex", 0);
@@ -317,8 +317,13 @@ namespace GEE
 		}
 
 		//////////////////////////////TEX GENERATION//////////////////////////////
-		SMAAAreaTex = AddTexture(Texture(textureFromBuffer(areaTexBytes, AREATEX_WIDTH, AREATEX_HEIGHT, GL_RG, GL_RG, GL_UNSIGNED_BYTE, GL_NEAREST, GL_NEAREST)));
-		SMAASearchTex = AddTexture(Texture(textureFromBuffer(searchTexBytes, SEARCHTEX_WIDTH, SEARCHTEX_HEIGHT, GL_R8, GL_RED, GL_UNSIGNED_BYTE, GL_NEAREST, GL_NEAREST)));
+		SMAAAreaTex = AddTexture(Texture::Loader::FromBuffer2D(Vec2u(AREATEX_WIDTH, AREATEX_HEIGHT), areaTexBytes, 2, GL_RG));
+		SMAAAreaTex->SetMinFilter(Texture::MinTextureFilter::Nearest());
+		SMAAAreaTex->SetMagFilter(Texture::MagTextureFilter::Nearest());
+		
+		SMAASearchTex = AddTexture(Texture::Loader::FromBuffer2D(Vec2u(SEARCHTEX_WIDTH, SEARCHTEX_HEIGHT), searchTexBytes, 1, GL_RED));
+		SMAASearchTex->SetMinFilter(Texture::MinTextureFilter::Nearest());
+		SMAASearchTex->SetMagFilter(Texture::MagTextureFilter::Nearest());
 	}
 
 	ComposedImageStorageToolbox::ComposedImageStorageToolbox() :
@@ -441,13 +446,13 @@ namespace GEE
 
 	void ShadowMappingToolbox::Setup(const GameSettings::VideoSettings& settings)
 	{
-		glm::uvec2 shadowMapSize(512);
+		Vec2u shadowMapSize(512);
 		switch (settings.ShadowLevel)
 		{
-		case SETTING_LOW: shadowMapSize = glm::vec2(1024); break;
-		case SETTING_MEDIUM: shadowMapSize = glm::vec2(2048); break;
-		case SETTING_HIGH: shadowMapSize = glm::vec2(512); break;
-		case SETTING_ULTRA: shadowMapSize = glm::vec2(1024); break;
+		case SETTING_LOW: shadowMapSize = Vec2f(1024); break;
+		case SETTING_MEDIUM: shadowMapSize = Vec2f(2048); break;
+		case SETTING_HIGH: shadowMapSize = Vec2f(512); break;
+		case SETTING_ULTRA: shadowMapSize = Vec2f(1024); break;
 		}
 		ShadowFramebuffer = AddFramebuffer();
 		ShadowFramebuffer->SetAttachments(shadowMapSize);
@@ -461,7 +466,7 @@ namespace GEE
 		glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
 		glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-		glTexParameterfv(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_BORDER_COLOR, glm::value_ptr(glm::vec4(1.0f)));
+		glTexParameterfv(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_BORDER_COLOR, Math::GetDataPtr((Vec4f(1.0f))));
 
 		ShadowCubemapArray = AddTexture();
 		ShadowCubemapArray->GenerateID(GL_TEXTURE_CUBE_MAP_ARRAY);

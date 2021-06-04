@@ -60,12 +60,12 @@ namespace GEE
 		RenderShaderName = name;
 	}
 
-	void Material::SetColor(const glm::vec3& color)
+	void Material::SetColor(const Vec3f& color)
 	{
-		SetColor(glm::vec4(color, 1.0f));
+		SetColor(Vec4f(color, 1.0f));
 	}
 
-	void Material::SetColor(const glm::vec4& color)
+	void Material::SetColor(const Vec4f& color)
 	{
 		Color = color;
 	}
@@ -108,16 +108,16 @@ namespace GEE
 		material->Get(AI_MATKEY_COLOR_SPECULAR, testColor);
 		Localization.Name = name.C_Str();
 		Shininess = shininess;
-		Color = glm::vec4(color.r, color.g, color.b, 1.0f);
+		Color = Vec4f(color.r, color.g, color.b, 1.0f);
 
 		material->Get(AI_MATKEY_COLOR_SPECULAR, testColor);
-		printVector(glm::vec3(testColor.r, testColor.g, testColor.b), Localization.Name + " ROUGHNESS??");
+		printVector(Vec3f(testColor.r, testColor.g, testColor.b), Localization.Name + " ROUGHNESS??");
 		material->Get(AI_MATKEY_COLOR_AMBIENT, testColor);
-		printVector(glm::vec3(testColor.r, testColor.g, testColor.b), Localization.Name + " ROUGHNESS??");
+		printVector(Vec3f(testColor.r, testColor.g, testColor.b), Localization.Name + " ROUGHNESS??");
 		material->Get(AI_MATKEY_COLOR_REFLECTIVE, testColor);
-		printVector(glm::vec3(testColor.r, testColor.g, testColor.b), Localization.Name + " ROUGHNESS??");
+		printVector(Vec3f(testColor.r, testColor.g, testColor.b), Localization.Name + " ROUGHNESS??");
 		material->Get(AI_MATKEY_COLOR_TRANSPARENT, testColor);
-		printVector(glm::vec3(testColor.r, testColor.g, testColor.b), Localization.Name + " ROUGHNESS??");
+		printVector(Vec3f(testColor.r, testColor.g, testColor.b), Localization.Name + " ROUGHNESS??");
 		std::cout << "SHININESS: " << shininess << '\n';
 		float shininessStrength = 0.0f;
 		RoughnessColor = 0.5f;
@@ -139,10 +139,6 @@ namespace GEE
 			std::pair<aiTextureType, std::string>(aiTextureType_LIGHTMAP, "aaa"),
 		};
 
-		if (directory.find("Container") != std::string::npos)
-			for (int i = 0; i <= aiTextureType_UNKNOWN; i++)
-				std::cout << i << ": " << material->GetTextureCount(aiTextureType(i)) << "\n";
-
 		aiString fileBaseColor, fileMetallicRoughness;
 		material->GetTexture(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_BASE_COLOR_TEXTURE, &fileBaseColor);
 		material->GetTexture(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE, &fileMetallicRoughness);
@@ -154,20 +150,18 @@ namespace GEE
 
 		if (fileBaseColor.length > 0 && material->GetTextureCount(aiTextureType_DIFFUSE) == 0 && fileBaseColor.data[0] == '*')
 		{
-			//AddTexture(std::make_shared<NamedTexture>(textureFromAiEmbedded(*scene->mTextures[std::stoi(std::string(fileBaseColor.C_Str()).substr(1))], true), "albedo1"));
-			NamedTexture embeddedTex = NamedTexture(textureFromAiEmbedded(*scene->mTextures[std::stoi(std::string(fileBaseColor.C_Str()).substr(1))], true), "albedo1");
+			NamedTexture embeddedTex = NamedTexture(Texture::Loader::Assimp::FromAssimpEmbedded(*scene->mTextures[std::stoi(std::string(fileBaseColor.C_Str()).substr(1))], true), "albedo1");
 			embeddedTex.SetPath(std::string("*") + scene->mTextures[std::stoi(std::string(fileBaseColor.C_Str()).substr(1))]->mFilename.C_Str());
 			AddTexture(std::make_shared<NamedTexture>(embeddedTex));
 		}
 		if (fileMetallicRoughness.length > 0 && fileMetallicRoughness.data[0] == '*')
 		{
-			//AddTexture(std::make_shared<NamedTexture>(textureFromAiEmbedded(*scene->mTextures[std::stoi(std::string(fileMetallicRoughness.C_Str()).substr(1))], true), "combined1"));
-			NamedTexture embeddedTex = NamedTexture(textureFromAiEmbedded(*scene->mTextures[std::stoi(std::string(fileMetallicRoughness.C_Str()).substr(1))], true), "combined1");
+			NamedTexture embeddedTex = NamedTexture(Texture::Loader::Assimp::FromAssimpEmbedded(*scene->mTextures[std::stoi(std::string(fileMetallicRoughness.C_Str()).substr(1))], false), "combined1");
 			embeddedTex.SetPath(std::string("*") + scene->mTextures[std::stoi(std::string(fileMetallicRoughness.C_Str()).substr(1))]->mFilename.C_Str());
 			AddTexture(std::make_shared<NamedTexture>(embeddedTex));
 		}
 		//if (fileMetallicRoughness.length > 0 && material->GetTextureCount(aiTextureType_SHININESS) == 0 && fileMetallicRoughness.data[0] == '*')
-			//AddTexture(new NamedTexture(textureFromAiEmbedded(*scene->mTextures[std::stoi(std::string(fileMetallicRoughness.C_Str()).substr(1))], true), "roughness1"));
+			//AddTexture(new NamedTexture(Texture::Loader::Assimp::FromAssimpEmbedded(*scene->mTextures[std::stoi(std::string(fileMetallicRoughness.C_Str()).substr(1))], true), "roughness1"));
 	}
 
 	void Material::LoadAiTexturesOfType(const aiScene* scene, aiMaterial* material, const std::string& directory, aiTextureType type, std::string shaderName, MaterialLoadingData* matLoadingData)
@@ -208,7 +202,7 @@ namespace GEE
 			if (!pathStr.empty() && *pathStr.begin() == '*')
 			{
 				std::cout << "Znaleziono " + pathStr << " na aiTextureType " << type << "\n";
-				NamedTexture embeddedTex = NamedTexture(textureFromAiEmbedded(*scene->mTextures[std::stoi(pathStr.substr(1))], sRGB), shaderName + std::to_string(i + 1));
+				NamedTexture embeddedTex = NamedTexture(Texture::Loader::Assimp::FromAssimpEmbedded(*scene->mTextures[std::stoi(pathStr.substr(1))], sRGB), shaderName + std::to_string(i + 1));
 				embeddedTex.SetPath(std::string("*") + scene->mTextures[std::stoi(pathStr.substr(1))]->mFilename.C_Str());
 				AddTexture(std::make_shared<NamedTexture>(embeddedTex));
 				continue;
@@ -224,7 +218,7 @@ namespace GEE
 				}
 
 
-			std::shared_ptr<NamedTexture> tex = std::make_shared<NamedTexture>(textureFromFile(pathStr, (sRGB) ? (GL_SRGB) : (GL_RGB)), shaderName + std::to_string(i + 1));	//create a new Texture and pass the file path, the shader name (for example albedo1, roughness1, ...) and the sRGB info
+			std::shared_ptr<NamedTexture> tex = std::make_shared<NamedTexture>(Texture::Loader::FromFile2D(pathStr, false, Texture::MinTextureFilter::Trilinear(), Texture::MagTextureFilter::Bilinear(), (sRGB) ? (GL_SRGB) : (GL_RGB)), shaderName + std::to_string(i + 1));	//create a new Texture and pass the file path, the shader name (for example albedo1, roughness1, ...) and the sRGB info
 			AddTexture(tex);
 			if (matLoadingData)
 				matLoadingData->AddTexture(tex);
@@ -236,7 +230,7 @@ namespace GEE
 		shader->Uniform1f("material.shininess", Shininess);
 		shader->Uniform1f("material.depthScale", DepthScale);
 		shader->Uniform4fv("material.color", Color);
-		shader->Uniform3fv("material.roughnessMetallicAoColor", glm::vec3(RoughnessColor, MetallicColor, AoColor));
+		shader->Uniform3fv("material.roughnessMetallicAoColor", Vec3f(RoughnessColor, MetallicColor, AoColor));
 
 		std::vector<std::pair<unsigned int, std::string>>* textureUnits = shader->GetMaterialTextureUnits();
 
@@ -288,7 +282,7 @@ namespace GEE
 				}, [path]() { return *path; }, { "*.png", "*.jpg" });
 			texWindowDescBuilder.AddField("Shader name").CreateChild<UIInputBoxActor>("ShaderNameInputBox").SetOnInputFunc([shaderName](const std::string& input) { *shaderName = input; }, [shaderName]() { return *shaderName; });
 			texWindowDescBuilder.AddField("Add texture").CreateChild<UIButtonActor>("OKButton", "OK", [this, path, shaderName, &addTextureButtonFunc, &list, &addTexWindow, descBuilder]() mutable {
-				auto tex = std::make_shared<NamedTexture>(textureFromFile(*path, GL_RGB), *shaderName);
+				auto tex = std::make_shared<NamedTexture>(Texture::Loader::FromFile2D(*path), *shaderName);
 				AddTexture(tex);
 				addTextureButtonFunc(list, *tex);
 				addTexWindow.MarkAsKilled();
@@ -327,7 +321,7 @@ namespace GEE
 
 	AtlasMaterial::AtlasMaterial(Material&& material, glm::ivec2 atlasSize) :
 		Material(material),
-		AtlasSize(static_cast<glm::vec2>(atlasSize)),
+		AtlasSize(static_cast<Vec2f>(atlasSize)),
 		TextureID(0.0f)
 	{
 	}
@@ -346,7 +340,7 @@ namespace GEE
 	{
 		if (setValuesToDefault)
 			TextureID = 0.0f;
-		shader->Uniform2fv("atlasData", glm::vec2(TextureID, AtlasSize.x));
+		shader->Uniform2fv("atlasData", Vec2f(TextureID, AtlasSize.x));
 	}
 
 	void AtlasMaterial::UpdateWholeUBOData(Shader* shader, Texture& emptyTexture) const
@@ -354,7 +348,7 @@ namespace GEE
 		UpdateInstanceUBOData(shader);
 		Material::UpdateWholeUBOData(shader, emptyTexture);
 
-		shader->Uniform2fv("atlasTexOffset", glm::vec2(1.0f) / AtlasSize);
+		shader->Uniform2fv("atlasTexOffset", Vec2f(1.0f) / AtlasSize);
 	}
 
 	Interpolator<float>& AtlasMaterial::GetTextureIDInterpolatorTemplate(float constantTextureID)

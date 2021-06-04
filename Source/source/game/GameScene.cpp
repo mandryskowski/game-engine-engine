@@ -351,12 +351,13 @@ namespace GEE
 		LightBlockBindingSlot = blockBindingSlot;
 		std::cout << "Setupping lights for bbindingslot " << blockBindingSlot << '\n';
 
-		LightsBuffer.Generate(blockBindingSlot, sizeof(glm::vec4) * 2 + Lights.size() * 192);
+		LightsBuffer.Generate(blockBindingSlot, sizeof(Vec4f) * 2 + Lights.size() * 192);
 		LightsBuffer.SubData1i((int)Lights.size(), (size_t)0);
 
 		for (auto& light : Lights)
 		{
-			light.get().InvalidateCache();
+			if (!light.get().IsBeingKilled())
+				light.get().InvalidateCache();
 		}
 
 		//UpdateLightUniforms();
@@ -364,7 +365,7 @@ namespace GEE
 
 	void GameSceneRenderData::UpdateLightUniforms()
 	{
-		LightsBuffer.offsetCache = sizeof(glm::vec4) * 2;
+		LightsBuffer.offsetCache = sizeof(Vec4f) * 2;
 		for (auto& light : Lights)
 		{
 			light.get().InvalidateCache();

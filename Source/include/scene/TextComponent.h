@@ -71,12 +71,12 @@ namespace GEE
 		TextConstantSizeComponent(Actor&, Component* parentComp, const std::string& name = std::string(), const Transform& transform = Transform(), std::string content = std::string(), std::string fontPath = std::string(), std::pair<TextAlignment, TextAlignment> = std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::BOTTOM));
 		TextConstantSizeComponent(const TextConstantSizeComponent&) = delete;
 		TextConstantSizeComponent(TextConstantSizeComponent&&);
-		void SetMaxSize(const glm::vec2&);
+		void SetMaxSize(const Vec2f&);
 		virtual void SetContent(const std::string&) override;
 		void UpdateSize();
 	private:
-		glm::vec2 MaxSize;
-		glm::vec2 ScaleRatio;
+		Vec2f MaxSize;
+		Vec2f ScaleRatio;
 	};
 }
 CEREAL_REGISTER_TYPE(GEE::TextComponent)

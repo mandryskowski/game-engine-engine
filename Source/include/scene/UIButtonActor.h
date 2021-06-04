@@ -38,7 +38,7 @@ namespace GEE
 		EditorIconState GetState();
 
 
-		bool ContainsMouse(glm::vec2 cursorNDC);
+		bool ContainsMouse(Vec2f cursorNDC);
 	protected:
 		virtual void DeduceMaterial();
 
@@ -77,15 +77,15 @@ namespace GEE
 		UIScrollBarActor(GameScene&, Actor* parentActor, const std::string& name, std::function<void()> onClickFunc = nullptr, std::function<void()> whileBeingClickedFunc = nullptr);
 		virtual void OnBeingClicked() override;
 		virtual void WhileBeingClicked() override;
-		const glm::vec2& GetClickPosNDC();
-		void SetClickPosNDC(const glm::vec2&);
+		const Vec2f& GetClickPosNDC();
+		void SetClickPosNDC(const Vec2f&);
 	private:
-		glm::vec2 ClickPosNDC;
+		Vec2f ClickPosNDC;
 	};
 
 	struct CollisionTests
 	{
 	public:
-		static bool AlignedRectContainsPoint(const Transform& rect, const glm::vec2& point); //treats rect as a rectangle at position rect.PositionRef and size rect.ScaleRef
+		static bool AlignedRectContainsPoint(const Transform& rect, const Vec2f& point); //treats rect as a rectangle at position rect.PositionRef and size rect.ScaleRef
 	};
 }

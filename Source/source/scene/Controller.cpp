@@ -35,10 +35,10 @@ namespace GEE
 
 				switch (static_cast<MovementDirections>(i))
 				{
-				case DIRECTION_FORWARD: dir.Direction = glm::vec3(0.0f, 0.0f, -1.0f); break;
-				case DIRECTION_BACKWARD: dir.Direction = glm::vec3(0.0f, 0.0f, 1.0f); break;
-				case DIRECTION_LEFT: dir.Direction = glm::vec3(-1.0f, 0.0f, 0.0f); break;
-				case DIRECTION_RIGHT: dir.Direction = glm::vec3(1.0f, 0.0f, 0.0f); break;
+				case DIRECTION_FORWARD: dir.Direction = Vec3f(0.0f, 0.0f, -1.0f); break;
+				case DIRECTION_BACKWARD: dir.Direction = Vec3f(0.0f, 0.0f, 1.0f); break;
+				case DIRECTION_LEFT: dir.Direction = Vec3f(-1.0f, 0.0f, 0.0f); break;
+				case DIRECTION_RIGHT: dir.Direction = Vec3f(1.0f, 0.0f, 0.0f); break;
 				}
 				i++;
 				return dir;
@@ -98,7 +98,7 @@ namespace GEE
 			Directions[DIRECTION_LEFT] = true;
 		if (GameHandle->GetInputRetriever().IsKeyPressed(Key::D))
 			Directions[DIRECTION_RIGHT] = true;
-		if (GameHandle->GetInputRetriever().IsKeyPressed(Key::SPACE))
+		if (GameHandle->GetInputRetriever().IsKeyPressed(Key::Space))
 			Directions[DIRECTION_UP] = true;
 
 		HandleMovementAxis(Directions[DIRECTION_FORWARD], MovementAxises[DIRECTION_FORWARD]);
@@ -154,18 +154,18 @@ namespace GEE
 		for (int i = 0; i < 4; i++)
 		{
 			//	MovementAxises[i].MovementInterpolator->Update(deltaTime);
-			glm::vec3 dir = PossessedActor->GetTransform()->GetWorldTransform().GetRotationMatrix() * MovementAxises[i].Direction;
-			dir = glm::normalize(glm::vec3(dir.x, 0.0f, dir.z));
+			Vec3f dir = PossessedActor->GetTransform()->GetWorldTransform().GetRotationMatrix() * MovementAxises[i].Direction;
+			dir = glm::normalize(Vec3f(dir.x, 0.0f, dir.z));
 			wishVec += dir * static_cast<float>(Directions[i]);
 		}
 
-		if (wishVec != glm::vec3(0.0f))
+		if (wishVec != Vec3f(0.0f))
 			wishVec = glm::normalize(wishVec);
 
 		if (isOnGround)
 		{
 			const float friction = 10.0f;
-			float previousSpeed = glm::length(Velocity.GetGlmType());
+			float previousSpeed = glm::length(Velocity);
 
 			if (previousSpeed > 0.0f)
 			{
@@ -176,7 +176,7 @@ namespace GEE
 
 		{
 			const float wishSpeed = (isOnGround) ? (3.0f) : (0.5f);
-			float currentProjectedSpeed = (isOnGround) ? (glm::length(Vec3f(Velocity.x, 0.0f, Velocity.z).GetGlmType())) : (glm::dot(Vec3f(Velocity.x, 0.0f, Velocity.z).GetGlmType(), wishVec.GetGlmType()));
+			float currentProjectedSpeed = (isOnGround) ? (glm::length(Vec3f(Velocity.x, 0.0f, Velocity.z))) : (glm::dot(Vec3f(Velocity.x, 0.0f, Velocity.z), wishVec));
 			float addedSpeed = wishSpeed - currentProjectedSpeed;
 			if (addedSpeed > 0.0f)
 			{
@@ -184,19 +184,19 @@ namespace GEE
 			}
 		}
 
-		float beforePxSpeed = glm::length(Velocity.GetGlmType());
+		float beforePxSpeed = glm::length(Velocity);
 		physx::PxExtendedVec3 prevPos = PxController->getPosition();
 		PxController->move(Physics::Util::toPx(Velocity * deltaTime), 0.001f, deltaTime, physx::PxControllerFilters());
 		if (isOnGround)
-			PxController->move(Physics::Util::toPx(glm::vec3(0.0f, -0.2f, 0.0f)), 0.001f, 0.0f, physx::PxControllerFilters());
+			PxController->move(Physics::Util::toPx(Vec3f(0.0f, -0.2f, 0.0f)), 0.001f, 0.0f, physx::PxControllerFilters());
 		Velocity = Physics::Util::toGlm(PxController->getPosition() - prevPos) / deltaTime;
 
 		if (TextComponent* found = dynamic_cast<TextComponent*>(PossessedActor->GetRoot()->GetComponent("CameraText")))
-			found->SetContent("Velocity: " + std::to_string(glm::length(glm::vec3(Velocity.x, 0.0f, Velocity.z))) + " " + std::to_string(Velocity.y) + ((isOnGround) ? (" ON-GROUND") : (" MID-AIR")));
+			found->SetContent("Velocity: " + std::to_string(glm::length(Vec3f(Velocity.x, 0.0f, Velocity.z))) + " " + std::to_string(Velocity.y) + ((isOnGround) ? (" ON-GROUND") : (" MID-AIR")));
 
 		/*physx::PxRaycastBuffer dupa;
 		bool isOnGround = PxController->getActor()->getScene()->raycast(physx::toVec3(PxController->getFootPosition()), PxController->getScene()->getGravity().getNormalized(), 0.1f, dupa);
-		glm::vec3 movementVec(0.0f);
+		Vec3f movementVec(0.0f);
 
 		Velocity.x *= 0.5f;
 		Velocity.z *= 0.5f;
@@ -204,8 +204,8 @@ namespace GEE
 		for (int i = 0; i < 4; i++)
 		{
 			MovementAxises[i].MovementInterpolator->Update(deltaTime);
-			glm::vec3 dir = PossessedActor->GetTransform()->GetWorldTransform().GetRotationMatrix() * MovementAxises[i].Direction;
-			dir = glm::normalize(glm::vec3(dir.x, 0.0f, dir.z));
+			Vec3f dir = PossessedActor->GetTransform()->GetWorldTransform().GetRotationMatrix() * MovementAxises[i].Direction;
+			dir = glm::normalize(Vec3f(dir.x, 0.0f, dir.z));
 			movementVec += dir * static_cast<float>(Directions[i]);
 		}
 
@@ -242,7 +242,7 @@ namespace GEE
 		PreviousFramePos = toGlm(PxController->getActor()->getGlobalPose().p);*/
 	}
 
-	void Controller::RotateWithMouse(glm::vec2 mouseOffset)
+	void Controller::RotateWithMouse(Vec2f mouseOffset)
 	{
 		if (!PossessedActor)
 			return;
@@ -282,17 +282,17 @@ namespace GEE
 	void ShootingController::HandleEvent(const Event& ev)
 	{
 		Controller::HandleEvent(ev);
-		if (ev.GetType() != EventType::MOUSE_PRESSED || GameHandle->GetCurrentMouseController() != this || !PossessedGunActor)
+		if (ev.GetType() != EventType::MousePressed || GameHandle->GetCurrentMouseController() != this || !PossessedGunActor)
 			return;
 
 		const MouseButtonEvent& pressedEv = *dynamic_cast<const MouseButtonEvent*>(&ev);
-		if (pressedEv.GetButton() == MouseButton::RIGHT)
+		if (pressedEv.GetButton() == MouseButton::Right)
 		{
 			printVector(PossessedGunActor->GetTransform()->Rot(), "Prawdziwa rotacja");
 			printVector(PossessedGunActor->GetTransform()->GetWorldTransform().Pos(), "Pozycja gracza");
 			printVector(PossessedGunActor->GetTransform()->GetWorldTransform().GetFrontVec(), "Front");
 		}
-		if (pressedEv.GetButton() == MouseButton::LEFT)
+		if (pressedEv.GetButton() == MouseButton::Left)
 			PossessedGunActor->FireWeapon();
 	}
 

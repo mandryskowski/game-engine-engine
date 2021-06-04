@@ -72,5 +72,5 @@ namespace GEE
 	};
 
 	aiBone* CastAiNodeToBone(const aiScene* scene, aiNode* node, const aiMesh** ownerMesh = nullptr);
-	glm::mat4 toGlm(const aiMatrix4x4&);
+	Mat4f toGlm(const aiMatrix4x4&);
 }

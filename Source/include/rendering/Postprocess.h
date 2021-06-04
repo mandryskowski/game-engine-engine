@@ -39,10 +39,10 @@ namespace GEE
 
 	public:
 		Postprocess();
-		void Init(GameManager* gameHandle, glm::uvec2 resolution);
+		void Init(GameManager* gameHandle, Vec2u resolution);
 
 		virtual unsigned int GetFrameIndex() override;
-		virtual glm::mat4 GetJitterMat(const GameSettings::VideoSettings& usedSettings, int optionalIndex = -1) override;	//dont pass anything to receive the current jitter matrix
+		virtual Mat4f GetJitterMat(const GameSettings::VideoSettings& usedSettings, int optionalIndex = -1) override;	//dont pass anything to receive the current jitter matrix
 		template <typename ToolboxType> PPToolbox<ToolboxType> GetPPToolbox(RenderToolboxCollection& toolboxCol) const
 		{
 			return PPToolbox<ToolboxType>(*this, toolboxCol);
@@ -54,7 +54,7 @@ namespace GEE
 		const Texture* TonemapGammaPass(PPToolbox<ComposedImageStorageToolbox> tbCollection, const GEE_FB::Framebuffer& writeFramebuffer, const Viewport* viewport, const Texture* colorTex, const Texture* blurTex) const;	//converts from linear to gamma and from HDR data to LDR
 		void Render(RenderToolboxCollection& tbCollection, const GEE_FB::Framebuffer& finalFramebuffer, const Viewport* viewport, const Texture* colorTex, const Texture* blurTex = nullptr, const Texture* depthTex = nullptr, const Texture* velocityTex = nullptr) const;
 		void RenderFullscreenQuad(RenderToolboxCollection& tbCollection, Shader* shader = nullptr, bool useShader = true) const {
-			RenderFullscreenQuad(RenderInfo(tbCollection, glm::mat4(1.0f), glm::mat4(1.0f), glm::mat4(1.0f), glm::vec3(0.0f), false), shader, useShader);
+			RenderFullscreenQuad(RenderInfo(tbCollection, Mat4f(1.0f), Mat4f(1.0f), Mat4f(1.0f), Vec3f(0.0f), false), shader, useShader);
 		}
 		void RenderFullscreenQuad(RenderInfo& info, Shader* shader = nullptr, bool useShader = true) const {
 			if (!shader) shader = RenderHandle->FindShader("Quad");

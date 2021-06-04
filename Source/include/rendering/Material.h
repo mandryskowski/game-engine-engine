@@ -40,8 +40,8 @@ namespace GEE
 		void SetDepthScale(float);
 		void SetShininess(float);
 		void SetRenderShaderName(const std::string&);
-		void SetColor(const glm::vec3& color);
-		void SetColor(const glm::vec4& color); //Think twice before you use colours; you need a corresponding shader to make it work (one that has uniform vec4 color in it)
+		void SetColor(const Vec3f& color);
+		void SetColor(const Vec4f& color); //Think twice before you use colours; you need a corresponding shader to make it work (one that has uniform vec4 color in it)
 		void SetRoughnessColor(float roughness);
 		void SetMetallicColor(float metallic);
 		void SetAoColor(float ao);
@@ -52,16 +52,16 @@ namespace GEE
 		void LoadAiTexturesOfType(const aiScene* scene, aiMaterial*, const std::string&, aiTextureType, std::string, MaterialLoadingData*);
 
 		virtual void InterpolateInAnimation(InterpolatorBase*) const {}	//some Materials can be animated. That's why we declare these two virtual methods - objects of some child classes interpolate their animated values in here...
-		virtual void UpdateInstanceUBOData(Shader* shader, bool setValuesToDefault = false) const { shader->Uniform2fv("atlasData", glm::vec2(0.0f)); }	//...and pass the interpolated values to shader in here. I separated these functions for flexibility - you don't always want to interpolate the values each time you use the material for rendering
+		virtual void UpdateInstanceUBOData(Shader* shader, bool setValuesToDefault = false) const { shader->Uniform2fv("atlasData", Vec2f(0.0f)); }	//...and pass the interpolated values to shader in here. I separated these functions for flexibility - you don't always want to interpolate the values each time you use the material for rendering
 		virtual void UpdateWholeUBOData(Shader*, Texture& emptyTexture) const;
 
 		template <typename Archive> void Save(Archive& archive) const
 		{
-			archive(cereal::make_nvp("Name", GetLocalization().Name), cereal::make_nvp("Textures", Textures), CEREAL_NVP(Color), CEREAL_NVP(Shininess), CEREAL_NVP(DepthScale), CEREAL_NVP(RenderShaderName));
+			archive(cereal::make_nvp("Name", GetLocalization().Name), cereal::make_nvp("Textures", Textures), CEREAL_NVP(Color), CEREAL_NVP(Shininess), CEREAL_NVP(RoughnessColor), CEREAL_NVP(MetallicColor), CEREAL_NVP(AoColor), CEREAL_NVP(DepthScale), CEREAL_NVP(RenderShaderName));
 		}
 		template <typename Archive> void Load(Archive& archive)
 		{
-			archive(cereal::make_nvp("Name", Localization.Name), cereal::make_nvp("Textures", Textures), cereal::make_nvp("Color", Color), cereal::make_nvp("Shininess", Shininess), cereal::make_nvp("DepthScale", DepthScale), cereal::make_nvp("RenderShaderName", RenderShaderName));
+			archive(cereal::make_nvp("Name", Localization.Name), cereal::make_nvp("Textures", Textures), cereal::make_nvp("Color", Color), cereal::make_nvp("Shininess", Shininess), CEREAL_NVP(RoughnessColor), CEREAL_NVP(MetallicColor), CEREAL_NVP(AoColor), cereal::make_nvp("DepthScale", DepthScale), cereal::make_nvp("RenderShaderName", RenderShaderName));
 			if (RenderShaderName.empty())
 				RenderShaderName = "Geometry";
 		}

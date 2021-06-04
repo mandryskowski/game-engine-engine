@@ -24,7 +24,7 @@ namespace GEE
 		void SetGlobalInverseTransformCompPtr(const Component* comp);
 		void SetBatchData(SkeletonBatch* batch, unsigned int idOffset);
 		bool VerifyGlobalInverseCompPtrLife();	//Call every frame
-		void FillMatricesVec(std::vector<glm::mat4>&);
+		void FillMatricesVec(std::vector<Mat4f>&);
 		void AddBone(BoneComponent&);
 		void EraseBone(BoneComponent&);
 		void SortBones();	//Sorts bones by id. May improve performance

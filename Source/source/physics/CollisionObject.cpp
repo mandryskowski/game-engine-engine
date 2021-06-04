@@ -118,22 +118,22 @@ namespace GEE
 				return "CannotCastCollisionShapeToString";
 			}
 
-			glm::vec3 toGlm(PxVec3 pxVec)
+			Vec3f toGlm(PxVec3 pxVec)
 			{
-				return glm::vec3(pxVec.x, pxVec.y, pxVec.z);
+				return Vec3f(pxVec.x, pxVec.y, pxVec.z);
 			}
 
-			glm::quat toGlm(PxQuat pxQuat)
+			Quatf toGlm(PxQuat pxQuat)
 			{
-				return glm::quat(pxQuat.w, pxQuat.x, pxQuat.y, pxQuat.z);
+				return Quatf(pxQuat.w, pxQuat.x, pxQuat.y, pxQuat.z);
 			}
 
-			PxVec3 toPx(const glm::vec3& glmVec)
+			PxVec3 toPx(const Vec3f& glmVec)
 			{
 				return PxVec3(glmVec.x, glmVec.y, glmVec.z);
 			}
 
-			PxQuat toPx(const glm::quat& glmQuat)
+			PxQuat toPx(const Quatf& glmQuat)
 			{
 				return PxQuat(glmQuat.x, glmQuat.y, glmQuat.z, glmQuat.w);
 			}

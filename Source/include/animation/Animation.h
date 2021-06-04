@@ -104,8 +104,8 @@ namespace GEE
 
 	struct AnimationVecKey : public AnimationKey
 	{
-		glm::vec3 Value;
-		AnimationVecKey(float time, glm::vec3 value) :
+		Vec3f Value;
+		AnimationVecKey(float time, Vec3f value) :
 			AnimationKey(time),
 			Value(value)
 		{
@@ -114,8 +114,8 @@ namespace GEE
 
 	struct AnimationQuatKey : public AnimationKey
 	{
-		glm::quat Value;
-		AnimationQuatKey(float time, glm::quat value) :
+		Quatf Value;
+		AnimationQuatKey(float time, Quatf value) :
 			AnimationKey(time),
 			Value(value)
 		{
@@ -144,6 +144,6 @@ namespace GEE
 		Animation(const HierarchyTemplate::HierarchyTreeT& tree, aiAnimation*);
 	};
 
-	glm::vec3 aiToGlm(const aiVector3D&);
-	glm::quat aiToGlm(const aiQuaternion&);
+	Vec3f aiToGlm(const aiVector3D&);
+	Quatf aiToGlm(const aiQuaternion&);
 }

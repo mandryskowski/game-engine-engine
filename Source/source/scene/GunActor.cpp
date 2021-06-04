@@ -44,9 +44,9 @@ namespace GEE
 
 
 		/*
-		GunModel->GetTransform()->AddInterpolator("position", 10.0f, 20.0f, glm::vec3(0.0f, 0.0f, -10.0f), InterpolationType::LINEAR);
-		GunModel->GetTransform()->AddInterpolator("rotation", 10.0f, 5.0f, glm::vec3(360.0f, 0.0f, 0.0f), InterpolationType::QUADRATIC, false, AnimBehaviour::STOP, AnimBehaviour::EXTRAPOLATE);
-		GunModel->GetTransform()->AddInterpolator("scale", 10.0f, 10.0f, glm::vec3(0.3f, 0.3f, 0.2f), InterpolationType::CONSTANT);*/
+		GunModel->GetTransform()->AddInterpolator("position", 10.0f, 20.0f, Vec3f(0.0f, 0.0f, -10.0f), InterpolationType::LINEAR);
+		GunModel->GetTransform()->AddInterpolator("rotation", 10.0f, 5.0f, Vec3f(360.0f, 0.0f, 0.0f), InterpolationType::QUADRATIC, false, AnimBehaviour::STOP, AnimBehaviour::EXTRAPOLATE);
+		GunModel->GetTransform()->AddInterpolator("scale", 10.0f, 10.0f, Vec3f(0.3f, 0.3f, 0.2f), InterpolationType::CONSTANT);*/
 
 		GunBlast = Scene.GetAudioData()->FindSource("DoubleBarrelBlast");
 
@@ -100,21 +100,21 @@ namespace GEE
 		if (GunBlast)
 			GunBlast->Play();
 
-		GetRoot()->GetTransform().AddInterpolator<glm::quat>("rotation", 0.0f, 0.25f, glm::quat(glm::vec3(0.0f)), toQuat(glm::vec3(30.0f, 0.0f, 0.0f)), InterpolationType::QUINTIC, true);
-		GetRoot()->GetTransform().AddInterpolator<glm::quat>("rotation", 0.25f, 1.25f, glm::quat(glm::vec3(0.0f)), InterpolationType::QUADRATIC, true);
+		GetRoot()->GetTransform().AddInterpolator<Quatf>("rotation", 0.0f, 0.25f, Quatf(Vec3f(0.0f)), toQuat(Vec3f(30.0f, 0.0f, 0.0f)), InterpolationType::QUINTIC, true);
+		GetRoot()->GetTransform().AddInterpolator<Quatf>("rotation", 0.25f, 1.25f, Quatf(Vec3f(0.0f)), InterpolationType::QUADRATIC, true);
 
 		Actor& actor = Scene.CreateActorAtRoot<Actor>("Bullet" + std::to_string(FiredBullets));
 		//TODO: Change it so the bullet is fired at the barrel, not at the center
-		std::unique_ptr<ModelComponent> bulletModel = std::make_unique<ModelComponent>(ModelComponent(actor, nullptr, "BulletModel" + std::to_string(FiredBullets++), Transform(GetTransform()->GetWorldTransform().Pos(), glm::vec3(0.0f), glm::vec3(0.2f))));
+		std::unique_ptr<ModelComponent> bulletModel = std::make_unique<ModelComponent>(ModelComponent(actor, nullptr, "BulletModel" + std::to_string(FiredBullets++), Transform(GetTransform()->GetWorldTransform().Pos(), Vec3f(0.0f), Vec3f(0.2f))));
 		bulletModel->OnStart();
 		Material* rustedIronMaterial = GameHandle->GetRenderEngineHandle()->FindMaterial("RustedIron").get();
 		if (!rustedIronMaterial)
 		{
 			rustedIronMaterial = GameHandle->GetRenderEngineHandle()->AddMaterial(std::make_shared<Material>("RustedIron"));
-			rustedIronMaterial->AddTexture(std::make_shared<NamedTexture>(textureFromFile("EngineMaterials/rustediron_albedo.png", GL_SRGB), "albedo1"));
-			rustedIronMaterial->AddTexture(std::make_shared<NamedTexture>(textureFromFile("EngineMaterials/rustediron_metallic.png", GL_RGB), "metallic1"));
-			rustedIronMaterial->AddTexture(std::make_shared<NamedTexture>(textureFromFile("EngineMaterials/rustediron_roughness.png", GL_RGB), "roughness1"));
-			rustedIronMaterial->AddTexture(std::make_shared<NamedTexture>(textureFromFile("EngineMaterials/rustediron_normal.png", GL_RGB), "normal1"));
+			rustedIronMaterial->AddTexture(std::make_shared<NamedTexture>(Texture::Loader::FromFile2D("EngineMaterials/rustediron_albedo.png", false, Texture::MinTextureFilter::Trilinear(), Texture::MagTextureFilter::Bilinear(), GL_SRGB), "albedo1"));
+			rustedIronMaterial->AddTexture(std::make_shared<NamedTexture>(Texture::Loader::FromFile2D("EngineMaterials/rustediron_metallic.png"), "metallic1"));
+			rustedIronMaterial->AddTexture(std::make_shared<NamedTexture>(Texture::Loader::FromFile2D("EngineMaterials/rustediron_roughness.png"), "roughness1"));
+			rustedIronMaterial->AddTexture(std::make_shared<NamedTexture>(Texture::Loader::FromFile2D("EngineMaterials/rustediron_normal.png"), "normal1"));
 		}
 
 		{

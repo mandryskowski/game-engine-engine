@@ -4,10 +4,9 @@
 #endif
 #include <PhysX/PxPhysicsAPI.h>
 
-#include <glm/glm.hpp>
+#include <math/Vec.h>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
 
 #include <game/GameScene.h>
 
@@ -49,7 +48,7 @@ namespace GEE
 			void Init();
 
 		private:
-			physx::PxShape* CreateTriangleMeshShape(CollisionShape*, glm::vec3 scale);
+			physx::PxShape* CreateTriangleMeshShape(CollisionShape*, Vec3f scale);
 			virtual void AddCollisionObjectToPxPipeline(GameScenePhysicsData& scenePhysicsData, CollisionObject&) override;
 
 		public:
@@ -59,7 +58,7 @@ namespace GEE
 
 			virtual physx::PxController* CreateController(GameScenePhysicsData& scenePhysicsData, const Transform& t) override;
 
-			virtual void ApplyForce(CollisionObject&, glm::vec3 force) override;
+			virtual void ApplyForce(CollisionObject&, Vec3f force) override;
 			void SetupScene(GameScenePhysicsData& scenePhysicsData);
 
 			void Update(float deltaTime);
@@ -75,7 +74,7 @@ namespace GEE
 
 		namespace Util
 		{
-			glm::vec3 toVecColor(physx::PxDebugColor::Enum);
+			Vec3f toVecColor(physx::PxDebugColor::Enum);
 		}
 	}
 }

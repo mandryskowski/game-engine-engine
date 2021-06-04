@@ -12,8 +12,8 @@ namespace GEE
 
 		bool IsValid;
 
-		std::deque<std::unique_ptr<Interpolator<glm::vec3>>> PosKeysLeft, ScaleKeysLeft;
-		std::deque<std::unique_ptr<Interpolator<glm::quat>>> RotKeysLeft;
+		std::deque<std::unique_ptr<Interpolator<Vec3f>>> PosKeysLeft, ScaleKeysLeft;
+		std::deque<std::unique_ptr<Interpolator<Quatf>>> RotKeysLeft;
 
 		AnimationChannelInstance(AnimationChannel&, Component&);
 		void Restart();

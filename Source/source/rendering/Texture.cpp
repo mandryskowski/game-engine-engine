@@ -1,8 +1,6 @@
 #include <rendering/Texture.h>
 #include <stb/stb_image.h>
 #include <iostream>
-#include <glm/glm.hpp>
-#include <glm/gtc/type_ptr.hpp>
 #include <assimp/texture.h>
 #include <vector>
 
@@ -22,6 +20,13 @@ namespace GEE
 		if (type != GL_ZERO)
 			Type = type;
 		return ID;
+	}
+
+	void Texture::Bind(int texSlot) const
+	{
+		if (texSlot >= 0)
+			glActiveTexture(GL_TEXTURE0 + texSlot);
+		glBindTexture(Type, ID);
 	}
 
 	GLenum Texture::GetType() const
@@ -44,11 +49,40 @@ namespace GEE
 		Path = path;
 	}
 
-	void Texture::Bind(int texSlot) const
+	void Texture::SetWrap(GLenum wrapS, GLenum wrapT, GLenum wrapR, bool isAlreadyBound)
 	{
-		if (texSlot >= 0)
-			glActiveTexture(GL_TEXTURE0 + texSlot);
-		glBindTexture(Type, ID);
+		if (!isAlreadyBound) Bind();
+		
+		if (wrapS != 0) glTexParameteri(GetType(), GL_TEXTURE_WRAP_S, wrapS);
+		if (wrapT != 0) glTexParameteri(GetType(), GL_TEXTURE_WRAP_T, wrapT);
+		if (wrapR != 0) glTexParameteri(GetType(), GL_TEXTURE_WRAP_R, wrapR);
+	}
+
+	void Texture::GenerateMipmap(bool isAlreadyBound)
+	{
+		if (!isAlreadyBound) Bind();
+		glGenerateMipmap(Type);
+	}
+
+	void Texture::SetMinFilter(MinTextureFilter minFilter, bool generateMipmapIfPossible, bool isAlreadyBound)
+	{
+		if (!isAlreadyBound) Bind();
+		glTexParameteri(Type, GL_TEXTURE_MIN_FILTER, Impl::GetTextureFilterGL(minFilter.Filter));
+
+		if (generateMipmapIfPossible)
+			switch (minFilter.Filter)
+			{
+				case TextureFilter::NearestClosestMipmap:
+				case TextureFilter::BilinearClosestMipmap:
+				case TextureFilter::NearestInterpolateMipmap:
+				case TextureFilter::Trilinear:
+					GenerateMipmap(isAlreadyBound);
+			}
+	}
+
+	void Texture::SetMagFilter(MagTextureFilter magFilter, bool isAlreadyBound)
+	{
+		glTexParameteri(Type, GL_TEXTURE_MAG_FILTER, Impl::GetTextureFilterGL(magFilter.Filter));
 	}
 
 	void Texture::Dispose()
@@ -56,6 +90,174 @@ namespace GEE
 		if (ID > 0)
 			glDeleteTextures(1, &ID);
 		ID = 0;
+	}
+
+	GLenum Texture::Impl::GetTextureFilterGL(TextureFilter filter)
+	{
+		switch (filter)
+		{
+			case TextureFilter::Nearest: default: return GL_NEAREST;
+			case TextureFilter::Bilinear: return GL_LINEAR;
+			case TextureFilter::NearestClosestMipmap: return GL_NEAREST_MIPMAP_NEAREST;
+			case TextureFilter::BilinearClosestMipmap: return GL_LINEAR_MIPMAP_NEAREST;
+			case TextureFilter::NearestInterpolateMipmap: return GL_NEAREST_MIPMAP_LINEAR;
+			case TextureFilter::Trilinear: return GL_LINEAR_MIPMAP_LINEAR;
+		}
+	}
+
+	template <typename PixelChannelType>
+	Texture Texture::Loader::FromFile2D(const std::string& filepath, bool flip, MinTextureFilter minFilter, MagTextureFilter magFilter, GLenum internalFormat)
+	{
+		if (flip)
+			stbi_set_flip_vertically_on_load(true);
+
+		int width, height, nrChannels;
+		void* data = nullptr;
+		{
+			if (std::is_same<PixelChannelType, unsigned char>::value)
+				data = stbi_load(filepath.c_str(), &width, &height, &nrChannels, 0);
+			else if (std::is_same<PixelChannelType, float>::value)
+				data = stbi_loadf(filepath.c_str(), &width, &height, &nrChannels, 0);
+			else
+				std::cerr << "ERROR! Unrecognized type of T for file " + filepath + "\n";
+		}
+
+		if (!data)
+		{
+			std::cerr << "Can't load texture from " << filepath << '\n';
+			Texture tex = FromBuffer2D<float>(Vec2u(1, 1), Math::GetDataPtr(Vec3f(1.0f, 0.0f, 1.0f)), 3, GL_RGB);	//set the texture's color to pink so its obvious that this texture is missing
+			tex.SetMinFilter(MinTextureFilter::Nearest(), true, true);	//disable mipmaps
+			return tex;
+		}
+
+		Texture tex = FromBuffer2D<PixelChannelType>(Vec2u(width, height), data, nrChannels, internalFormat);
+		tex.SetPath(filepath);
+
+		tex.SetMinFilter(minFilter, true, true);
+		tex.SetMagFilter(magFilter, true);
+
+		tex.SetWrap(GL_REPEAT, GL_REPEAT, 0, true);
+
+		if (flip)
+			stbi_set_flip_vertically_on_load(false);
+
+		stbi_image_free(data);
+
+		return tex;
+	}
+
+	template Texture Texture::Loader::FromFile2D<unsigned char>(const std::string&, bool, MinTextureFilter, MagTextureFilter, GLenum);
+	template Texture Texture::Loader::FromFile2D<float>(const std::string&, bool, MinTextureFilter, MagTextureFilter, GLenum);
+
+	template<typename PixelChannelType>
+	Texture Texture::Loader::FromBuffer2D(unsigned int rowWidth, const void* buffer, GLenum internalFormat, int desiredChannels)
+	{
+		int width = 0, height = 0, nrChannels = 0;
+
+		void* data = nullptr;
+		if (std::is_same<PixelChannelType, unsigned char>::value) data = stbi_load_from_memory(reinterpret_cast<const stbi_uc*>(buffer), rowWidth, &width, &height, &nrChannels, desiredChannels);
+		else if (std::is_same<PixelChannelType, float>::value) data = stbi_loadf_from_memory(reinterpret_cast<const stbi_uc*>(buffer), rowWidth, &width, &height, &nrChannels, desiredChannels);
+		else std::cout << "ERROR: Cannot recognize type passed to FromBuffer2D.\n";
+
+		if (!data)
+			std::cerr << "ERROR: Cannot load pixels from memory in function FromBuffer2D.\n";
+
+		Texture result = FromBuffer2D<PixelChannelType>(Vec2u(width, height), data, nrChannels, internalFormat);
+
+		stbi_image_free(data);
+
+		return result;
+	}
+	template Texture Texture::Loader::FromBuffer2D<unsigned char>(unsigned int, const void*, GLenum, int);
+	template Texture Texture::Loader::FromBuffer2D<float>(unsigned int, const void*, GLenum, int);
+
+	template<typename PixelChannelType>
+	Texture Texture::Loader::FromBuffer2D(const Vec2u& size, const void* buffer, int nrChannels, GLenum internalFormat)
+	{
+		Texture tex = Impl::GenerateEmpty(GL_TEXTURE_2D, internalFormat);
+		GLenum format = nrChannelsToFormat(nrChannels, false, &internalFormat);
+
+		glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, size.x, size.y, 0, format, Impl::GetChannelTypeEnum<PixelChannelType>(), buffer);
+
+		tex.SetMinFilter(MinTextureFilter::Bilinear(), true, true);	//disable mipmaps by default
+
+		return tex;
+	}
+	template Texture Texture::Loader::FromBuffer2D<unsigned char>(const Vec2u&, const void*, int, GLenum);
+	template Texture Texture::Loader::FromBuffer2D<float>(const Vec2u&, const void*, int, GLenum);
+
+
+	template<typename PixelChannelType>
+	Texture Texture::Loader::FromBuffer2DArray(const Vec3u& size, const void* buffer, int nrChannels, GLenum internalFormat)
+	{
+		Texture tex = Impl::GenerateEmpty(GL_TEXTURE_2D_ARRAY, internalFormat);
+		GLenum format = nrChannelsToFormat(nrChannels, false, &internalFormat);
+
+		glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, internalFormat, size.x, size.y, size.z, 0, format, Impl::GetChannelTypeEnum<PixelChannelType>(), buffer);
+
+		tex.SetMinFilter(MinTextureFilter::Bilinear(), true, true);	//disable mipmaps by default
+
+		return tex;
+	}
+	template Texture Texture::Loader::FromBuffer2DArray<unsigned char>(const Vec3u&, const void*, int, GLenum);
+
+	template<typename PixelChannelType>
+	Texture Texture::Loader::FromBuffersCubemap(const Vec2u& oneSideSize, const void* buffers[6], int nrChannels, GLenum internalFormat)
+	{
+		Texture tex = Impl::GenerateEmpty(GL_TEXTURE_CUBE_MAP, internalFormat);
+
+		GLenum format = nrChannelsToFormat(nrChannels, false, &internalFormat);
+
+		for (int i = 0; i < ((bCubemap) ? (6) : (1)); i++)
+			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, internalformat, oneSideSize.x, oneSideSize.y, 0, format, Impl::GetChannelTypeEnum<PixelChannelType>(), buffers[i]);
+
+		tex.SetMinFilter(MinTextureFilter::Bilinear(), true, true);
+
+		return tex;
+	}
+
+	template <> GLenum Texture::Loader::Impl::GetChannelTypeEnum<unsigned char>() { return GL_UNSIGNED_BYTE; }
+	template <> GLenum Texture::Loader::Impl::GetChannelTypeEnum<float>() { return GL_FLOAT; }
+
+	template GLenum Texture::Loader::Impl::GetChannelTypeEnum<unsigned char>();
+	template GLenum Texture::Loader::Impl::GetChannelTypeEnum<float>();
+
+	Texture Texture::Loader::Impl::GenerateEmpty(GLenum texType, GLenum internalFormat)
+	{
+		Texture tex;
+		tex.GenerateID(texType);
+		tex.Bind();
+		tex.SetPath("buffer");		
+		tex.InternalFormat = internalFormat;
+
+		return tex;
+	}
+
+	template <typename PixelChannelType>
+	Texture Texture::Loader::ReserveEmpty2D(const Vec2u& size, GLenum internalFormat)
+	{
+		return FromBuffer2D<PixelChannelType>(size, nullptr, 3, internalFormat);
+	}
+
+	template<typename PixelChannelType>
+	Texture Texture::Loader::ReserveEmpty2DArray(const Vec3u& size, GLenum internalFormat)
+	{
+		return FromBuffer2DArray<PixelChannelType>(size, nullptr, 1, internalFormat);
+	}
+	template Texture Texture::Loader::ReserveEmpty2DArray<unsigned char>(const Vec3u&, GLenum);
+
+	template<typename PixelChannelType>
+	Texture Texture::Loader::ReserveEmptyCubemap(const Vec2u& oneSideSize, GLenum internalFormat)
+	{
+		return FromBuffersCubemap<PixelChannelType>(oneSideSize, { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr }, 3, internalFormat);
+	}
+
+	Texture Texture::Loader::Assimp::FromAssimpEmbedded(const aiTexture& assimpTex, bool sRGB, MinTextureFilter minFilter, MagTextureFilter magFilter)
+	{
+		Texture tex = FromBuffer2D(assimpTex.mWidth, &assimpTex.pcData[0].b, (sRGB) ? (GL_SRGB_ALPHA) : (GL_RGBA));
+		tex.SetMinFilter(minFilter, true, true);
+		tex.SetMagFilter(magFilter, true);
+		return tex;
 	}
 
 	NamedTexture::NamedTexture(Texture tex, std::string name) :
@@ -98,6 +300,7 @@ namespace GEE
 		switch (nrChannels)
 		{
 		case 1: return ((bBGRA) ? (GL_BLUE) : (GL_RED));
+		case 2: if (bBGRA) std::cout << "ERROR: in nrChannelsToFormat: No support for GL_BG format. Texture will be loaded as GL_RG\n"; return GL_RG;
 		default:
 			std::cout << "Info: Channel count " << nrChannels << " is not supported. Texture will be loaded as GL_RGB.\n";
 		case 3:
@@ -125,79 +328,6 @@ namespace GEE
 		return internalformat;
 	}
 
-	template <class T> Texture textureFromFile(std::string path, GLenum internalformat, GLenum magFilter, GLenum minFilter, bool flip)
-	{
-		if (flip)
-			stbi_set_flip_vertically_on_load(true);
-
-		unsigned int tex;
-		glGenTextures(1, &tex);
-		glBindTexture(GL_TEXTURE_2D, tex);
-
-		int width, height, nrChannels;
-		GLenum type = GL_UNSIGNED_BYTE;
-
-		void* data;
-		if (std::is_same<T, unsigned char>::value)
-			data = stbi_load(path.c_str(), &width, &height, &nrChannels, 0);
-		else if (std::is_same<T, float>::value)
-		{
-			data = stbi_loadf(path.c_str(), &width, &height, &nrChannels, 0);
-			type = GL_FLOAT;
-		}
-		else
-			std::cerr << "ERROR! Unrecognized type of T for file " + path + "\n";
-
-		if (!data)
-		{
-			std::cerr << "Can't load texture from " << path << '\n';
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 1, 1, 0, GL_RGB, GL_FLOAT, glm::value_ptr(glm::vec3(1.0f, 0.0f, 1.0f)));	//set the texture's color to pink so its obvious that this texture is missing
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-			return Texture(GL_TEXTURE_2D, internalformat, tex, path);
-		}
-		GLenum format = nrChannelsToFormat(nrChannels, false, &internalformat);
-
-		glTexImage2D(GL_TEXTURE_2D, 0, internalformat, width, height, 0, format, type, data);
-		if (path == "nanosuit/glass_dif.png")
-			std::cout << "***Crashing texture***\n Internalformat: " << internalformat << "\n Width: " << width << "\n Height:" << height << "\n Format: " << format << "\n Min filter: " << minFilter << "\n Is type GL_UNSIGNED_BYTE?: " << (type == GL_UNSIGNED_BYTE) << "\n Data pointer: " << data << "\n";
-
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, magFilter);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minFilter);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-		if (path == "nanosuit/glass_dif.png")
-			std::cout << glGetError() << "\n";
-		if (minFilter == GL_NEAREST_MIPMAP_NEAREST || minFilter == GL_LINEAR_MIPMAP_NEAREST || minFilter == GL_NEAREST_MIPMAP_LINEAR || minFilter == GL_LINEAR_MIPMAP_LINEAR)
-			glGenerateMipmap(GL_TEXTURE_2D);
-
-		if (path == "nanosuit/glass_dif.png")
-			std::cout << "TEX2\n";
-
-		if (flip)
-			stbi_set_flip_vertically_on_load(false);
-
-		stbi_image_free(data);
-
-		return Texture(GL_TEXTURE_2D, internalformat, tex, path);
-	}
-
-	Texture textureFromAiEmbedded(const aiTexture& tex, bool bSRGB)
-	{
-		std::cout << tex.mWidth << "   " << tex.mHeight << "!!!\n";
-		int width, height, nrChannels;
-
-		stbi_uc* data = stbi_load_from_memory(&tex.pcData[0].b, tex.mWidth, &width, &height, &nrChannels, 0);
-		std::cout << tex.mFilename.C_Str() << " Niby " << width << " " << height << "  |  " << nrChannels << "\n";
-
-		Texture result = textureFromBuffer(data, width, height, nrChannelsToFormat(nrChannels, false), nrChannelsToFormat(nrChannels, false), GL_UNSIGNED_BYTE);
-		result.SetPath(tex.mFilename.C_Str());
-
-		stbi_image_free(data);
-
-		return result;
-	}
-
 	Texture textureFromBuffer(const void* buffer, unsigned int width, unsigned int height, GLenum internalformat, GLenum format, GLenum type, GLenum magFilter, GLenum minFilter)
 	{
 		unsigned int tex;
@@ -215,7 +345,7 @@ namespace GEE
 		return Texture(GL_TEXTURE_2D, internalformat, tex);
 	}
 
-	std::shared_ptr<Texture> reserveTexture(glm::uvec2 size, GLenum internalformat, GLenum type, GLenum magFilter, GLenum minFilter, GLenum texType, unsigned int samples, std::string texName, GLenum format)
+	std::shared_ptr<Texture> reserveTexture(Vec2u size, GLenum internalformat, GLenum type, GLenum magFilter, GLenum minFilter, GLenum texType, unsigned int samples, std::string texName, GLenum format)
 	{
 		std::shared_ptr<Texture> tex = std::make_shared<NamedTexture>(NamedTexture(Texture(), texName));
 		tex->GenerateID(texType);
@@ -257,7 +387,7 @@ namespace GEE
 		return tex;
 	}
 
-	std::shared_ptr<Texture> reserveTexture(glm::uvec3 size, GLenum internalformat, GLenum type, GLenum magFilter, GLenum minFilter, GLenum texType, unsigned int samples, std::string texName, GLenum format)
+	std::shared_ptr<Texture> reserveTexture(Vec3u size, GLenum internalformat, GLenum type, GLenum magFilter, GLenum minFilter, GLenum texType, unsigned int samples, std::string texName, GLenum format)
 	{
 		std::shared_ptr<Texture> tex = std::make_shared<NamedTexture>(NamedTexture(Texture(), texName));
 		tex->GenerateID(texType);
@@ -284,8 +414,4 @@ namespace GEE
 
 		return tex;
 	}
-
-
-	template Texture textureFromFile<unsigned char>(std::string, GLenum, GLenum, GLenum, bool);
-	template Texture textureFromFile<float>(std::string, GLenum, GLenum, GLenum, bool);
 }

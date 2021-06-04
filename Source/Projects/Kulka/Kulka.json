@@ -102,7 +102,7 @@
                                 "data": {
                                     "BonesActorsNames": [],
                                     "BoneNames": [],
-                                    "GlobalInverseTransformCompPtrActorName": "Bullet0",
+                                    "GlobalInverseTransformCompPtrActorName": "Bullet1",
                                     "GlobalInverseTransformCompPtrName": "hqSphere/hqSphere.obj",
                                     "BatchID": 0,
                                     "BoneIDOffset": 0
@@ -242,15 +242,15 @@
                                 "Name": "An Actor's root",
                                 "ComponentTransform": {
                                     "Position": {
-                                        "x": 0.15621258318424226,
-                                        "y": -0.06800015270709992,
-                                        "z": 3.7311863899230959
+                                        "x": 1.4891853332519532,
+                                        "y": -0.06800034642219544,
+                                        "z": 2.2781124114990236
                                     },
                                     "Rotation": {
-                                        "x": -0.030095580965280534,
-                                        "y": 0.020932676270604135,
-                                        "z": 0.0006304049165919423,
-                                        "w": 0.9993276596069336
+                                        "x": -0.05864255875349045,
+                                        "y": 0.5145753026008606,
+                                        "z": 0.03530561178922653,
+                                        "w": 0.8547086715698242
                                     },
                                     "_Scale": {
                                         "x": 1.0,
@@ -967,6 +967,9 @@
                                                                                                 "w": 0.0
                                                                                             },
                                                                                             "Shininess": 0.0,
+                                                                                            "RoughnessColor": 0.0,
+                                                                                            "MetallicColor": 0.0,
+                                                                                            "AoColor": 0.0,
                                                                                             "DepthScale": 0.004999999888241291,
                                                                                             "RenderShaderName": "Geometry"
                                                                                         }
@@ -1092,15 +1095,15 @@
                                         "Name": "hqSphere/hqSphere.obj",
                                         "ComponentTransform": {
                                             "Position": {
-                                                "x": 2.671083450317383,
-                                                "y": -0.30000030994415285,
-                                                "z": 0.05045390874147415
+                                                "x": -7.894106388092041,
+                                                "y": -0.29999908804893496,
+                                                "z": -0.36001840233802798
                                             },
                                             "Rotation": {
-                                                "x": 0.5753604769706726,
-                                                "y": 0.331224262714386,
-                                                "z": 0.31014710664749148,
-                                                "w": 0.6804848909378052
+                                                "x": 0.2241402268409729,
+                                                "y": -0.00016254403453785926,
+                                                "z": -0.6664370894432068,
+                                                "w": -0.7110715508460999
                                             },
                                             "_Scale": {
                                                 "x": 0.20000000298023225,
@@ -1184,7 +1187,7 @@
                                                                                                                 "ShaderName": "albedo1",
                                                                                                                 "Texture": {
                                                                                                                     "Type": 3553,
-                                                                                                                    "InternalFormat": 35906,
+                                                                                                                    "InternalFormat": 6407,
                                                                                                                     "Path": "EngineMaterials/rustediron_albedo.png"
                                                                                                                 }
                                                                                                             }
@@ -1231,34 +1234,6 @@
                                                                                                                 }
                                                                                                             }
                                                                                                         }
-                                                                                                    },
-                                                                                                    {
-                                                                                                        "polymorphic_id": 1073741824,
-                                                                                                        "ptr_wrapper": {
-                                                                                                            "id": 2147483673,
-                                                                                                            "data": {
-                                                                                                                "ShaderName": "xd",
-                                                                                                                "Texture": {
-                                                                                                                    "Type": 3553,
-                                                                                                                    "InternalFormat": 6407,
-                                                                                                                    "Path": "C:\\Users\\48511\\source\\repos\\swetroniusz\\game-engine-engine\\Source\\EngineMaterials\\bricks_disp.jpg"
-                                                                                                                }
-                                                                                                            }
-                                                                                                        }
-                                                                                                    },
-                                                                                                    {
-                                                                                                        "polymorphic_id": 1073741824,
-                                                                                                        "ptr_wrapper": {
-                                                                                                            "id": 2147483674,
-                                                                                                            "data": {
-                                                                                                                "ShaderName": "albedo1",
-                                                                                                                "Texture": {
-                                                                                                                    "Type": 3553,
-                                                                                                                    "InternalFormat": 6407,
-                                                                                                                    "Path": "C:\\Users\\48511\\source\\repos\\swetroniusz\\game-engine-engine\\Source\\EngineMaterials\\brickwall.jpg"
-                                                                                                                }
-                                                                                                            }
-                                                                                                        }
                                                                                                     }
                                                                                                 ],
                                                                                                 "Color": {
@@ -1268,6 +1243,9 @@
                                                                                                     "w": 0.0
                                                                                                 },
                                                                                                 "Shininess": 0.0,
+                                                                                                "RoughnessColor": 0.0,
+                                                                                                "MetallicColor": 0.0,
+                                                                                                "AoColor": 0.0,
                                                                                                 "DepthScale": 0.0,
                                                                                                 "RenderShaderName": "Geometry"
                                                                                             }
@@ -1333,7 +1311,7 @@
             "ptr_wrapper": {
                 "valid": 1,
                 "data": {
-                    "Name": "Bullet0",
+                    "Name": "Bullet1",
                     "RootComponent": {
                         "polymorphic_id": 5,
                         "ptr_wrapper": {
@@ -1350,15 +1328,15 @@
                                         "Name": "hqSphere/hqSphere.obj",
                                         "ComponentTransform": {
                                             "Position": {
-                                                "x": -0.5954173803329468,
-                                                "y": -0.2999999523162842,
-                                                "z": 1.086174726486206
+                                                "x": -0.5216498970985413,
+                                                "y": -0.29999998211860659,
+                                                "z": 1.2357631921768189
                                             },
                                             "Rotation": {
-                                                "x": -0.7173672318458557,
-                                                "y": 0.5243925452232361,
-                                                "z": -0.45465606451034548,
-                                                "w": 0.0607004277408123
+                                                "x": -0.523883044719696,
+                                                "y": -0.7457723021507263,
+                                                "z": 0.21035607159137727,
+                                                "w": 0.35372409224510195
                                             },
                                             "_Scale": {
                                                 "x": 0.20000000298023225,
@@ -1375,7 +1353,7 @@
                                                     "Shapes": [
                                                         {
                                                             "ptr_wrapper": {
-                                                                "id": 2147483675,
+                                                                "id": 2147483673,
                                                                 "data": {
                                                                     "Type": 1,
                                                                     "ShapeTransform": {
@@ -1423,7 +1401,7 @@
                                                                         "MeshSpecificName": "Sphere",
                                                                         "MaterialInst": {
                                                                             "ptr_wrapper": {
-                                                                                "id": 2147483676,
+                                                                                "id": 2147483674,
                                                                                 "data": {
                                                                                     "MaterialName": "RustedIron",
                                                                                     "MaterialOptionalPath": "",

@@ -1,7 +1,6 @@
 #pragma once
 #include "Texture.h"
 #include "Viewport.h"
-#include <glm/glm.hpp>
 #include <vector>
 #include <string> 
 #include <memory>
@@ -30,25 +29,25 @@ namespace GEE
 		class Framebuffer
 		{
 			unsigned int FBO;
-			glm::uvec2 RenderSize;
+			Vec2u RenderSize;
 		public:
 			std::vector <std::shared_ptr<FramebufferAttachment>> ColorBuffers;
 			std::shared_ptr<FramebufferAttachment> DepthBuffer;
 
-			friend Framebuffer getDefaultFramebuffer(glm::uvec2);
+			friend Framebuffer getDefaultFramebuffer(Vec2u);
 		public:
 			Framebuffer();
 
 			bool IsLoaded() const;
 			unsigned int GetFBO() const;
-			glm::uvec2 GetSize() const;
+			Vec2u GetSize() const;
 			std::shared_ptr<FramebufferAttachment> GetColorBuffer(unsigned int index) const;
 			std::shared_ptr<FramebufferAttachment> GetColorBuffer(std::string name) const;
 			unsigned int GetNumberOfColorBuffers() const;
-			void SetAttachments(glm::uvec2 size = glm::uvec2(0), std::shared_ptr<FramebufferAttachment> colorBuffer = nullptr, std::shared_ptr<FramebufferAttachment> depthBuffer = nullptr, unsigned int samples = 0);
-			void SetAttachments(glm::uvec2 size, std::vector<std::shared_ptr<FramebufferAttachment>> colorBuffers, std::shared_ptr<FramebufferAttachment> depthBuffer = nullptr, unsigned int samples = 0);
-			void SetAttachments(glm::uvec2 size, const FramebufferAttachment& colorBuffer, FramebufferAttachment* depthBuffer = nullptr, unsigned int samples = 0);
-			void SetAttachments(glm::uvec2 size, const std::vector<FramebufferAttachment>& colorBuffers, FramebufferAttachment* depthBuffer = nullptr, unsigned int samples = 0);
+			void SetAttachments(Vec2u size = Vec2u(0), std::shared_ptr<FramebufferAttachment> colorBuffer = nullptr, std::shared_ptr<FramebufferAttachment> depthBuffer = nullptr, unsigned int samples = 0);
+			void SetAttachments(Vec2u size, std::vector<std::shared_ptr<FramebufferAttachment>> colorBuffers, std::shared_ptr<FramebufferAttachment> depthBuffer = nullptr, unsigned int samples = 0);
+			void SetAttachments(Vec2u size, const FramebufferAttachment& colorBuffer, FramebufferAttachment* depthBuffer = nullptr, unsigned int samples = 0);
+			void SetAttachments(Vec2u size, const std::vector<FramebufferAttachment>& colorBuffers, FramebufferAttachment* depthBuffer = nullptr, unsigned int samples = 0);
 			void BlitToFBO(unsigned int, int = 1);
 			void Bind(bool changeViewportSize = true, const Viewport* = nullptr) const;
 			void SetDrawBuffer(unsigned int index) const;	//Sets the buffer COLOR_ATTACHMENT0 + index, if available
@@ -57,11 +56,11 @@ namespace GEE
 		};
 		bool containsStencil(GLenum internalformat);
 
-		Framebuffer getDefaultFramebuffer(glm::uvec2 windowRes);
+		Framebuffer getDefaultFramebuffer(Vec2u windowRes);
 
-		std::shared_ptr<FramebufferAttachment> reserveColorBuffer(glm::uvec2 size, GLenum internalformat = GL_RGB, GLenum type = GL_UNSIGNED_BYTE, GLenum magFilter = GL_NEAREST, GLenum minFilter = GL_NEAREST, GLenum texType = GL_TEXTURE_2D, unsigned int samples = 0, std::string texName = "undefinedColorBuffer", GLenum format = GL_ZERO);
-		std::shared_ptr<FramebufferAttachment> reserveColorBuffer(glm::uvec3 size, GLenum internalformat = GL_RGB, GLenum type = GL_UNSIGNED_BYTE, GLenum magFilter = GL_NEAREST, GLenum minFilter = GL_NEAREST, GLenum texType = GL_TEXTURE_2D, unsigned int samples = 0, std::string texName = "undefinedColorBuffer", GLenum format = GL_ZERO);
-		std::shared_ptr<FramebufferAttachment> reserveDepthBuffer(glm::uvec2 size, GLenum internalformat = GL_RGB, GLenum type = GL_UNSIGNED_BYTE, GLenum magFilter = GL_NEAREST, GLenum minFilter = GL_NEAREST, GLenum texType = GL_TEXTURE_2D, unsigned int samples = 0, std::string texName = "undefinedDepthBuffer", GLenum format = GL_ZERO);
+		std::shared_ptr<FramebufferAttachment> reserveColorBuffer(Vec2u size, GLenum internalformat = GL_RGB, GLenum type = GL_UNSIGNED_BYTE, GLenum magFilter = GL_NEAREST, GLenum minFilter = GL_NEAREST, GLenum texType = GL_TEXTURE_2D, unsigned int samples = 0, std::string texName = "undefinedColorBuffer", GLenum format = GL_ZERO);
+		std::shared_ptr<FramebufferAttachment> reserveColorBuffer(Vec3u size, GLenum internalformat = GL_RGB, GLenum type = GL_UNSIGNED_BYTE, GLenum magFilter = GL_NEAREST, GLenum minFilter = GL_NEAREST, GLenum texType = GL_TEXTURE_2D, unsigned int samples = 0, std::string texName = "undefinedColorBuffer", GLenum format = GL_ZERO);
+		std::shared_ptr<FramebufferAttachment> reserveDepthBuffer(Vec2u size, GLenum internalformat = GL_RGB, GLenum type = GL_UNSIGNED_BYTE, GLenum magFilter = GL_NEAREST, GLenum minFilter = GL_NEAREST, GLenum texType = GL_TEXTURE_2D, unsigned int samples = 0, std::string texName = "undefinedDepthBuffer", GLenum format = GL_ZERO);
 	}
 	std::string debugFramebuffer();
 }

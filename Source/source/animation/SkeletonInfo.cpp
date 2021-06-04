@@ -51,13 +51,13 @@ namespace GEE
 		return true;
 	}
 
-	void SkeletonInfo::FillMatricesVec(std::vector<glm::mat4>& boneMats)
+	void SkeletonInfo::FillMatricesVec(std::vector<Mat4f>& boneMats)
 	{
 		//std::cout << "Filling " << Bones.size() << " bones\n";
 		if (Bones.size() == 0)
 			return;
 
-		glm::mat4 globalInverseMat = glm::inverse(GlobalInverseTransformCompPtr->GetTransform().GetWorldTransformMatrix());
+		Mat4f globalInverseMat = glm::inverse(GlobalInverseTransformCompPtr->GetTransform().GetWorldTransformMatrix());
 
 		//std::cout << "nr bones: " << Bones.size() << '\n';
 
@@ -87,14 +87,14 @@ namespace GEE
 	SkeletonBatch::SkeletonBatch() :
 		BoneCount(0)
 	{
-		std::array<glm::mat4, 1024> identities;
-		identities.fill(glm::mat4(1.0f));
-		BoneUBO.Generate(10, sizeof(glm::mat4) * 1024, &identities[0][0][0], GL_STREAM_DRAW);
+		std::array<Mat4f, 1024> identities;
+		identities.fill(Mat4f(1.0f));
+		BoneUBO.Generate(10, sizeof(Mat4f) * 1024, &identities[0][0][0], GL_STREAM_DRAW);
 	}
 
 	unsigned int SkeletonBatch::GetRemainingCapacity()
 	{
-		return (MaxUBOSize / sizeof(glm::mat4)) - BoneCount;
+		return (MaxUBOSize / sizeof(Mat4f)) - BoneCount;
 	}
 
 	int SkeletonBatch::GetInfoID(SkeletonInfo& info)
@@ -147,15 +147,15 @@ namespace GEE
 
 	void SkeletonBatch::BindToUBO()
 	{
-		std::vector<glm::mat4> boneMats;
-		boneMats.resize(BoneCount, glm::mat4(1.0f));
+		std::vector<Mat4f> boneMats;
+		boneMats.resize(BoneCount, Mat4f(1.0f));
 
 		for (int i = 0; i < static_cast<int>(Skeletons.size()); i++)
 		{
 			Skeletons[i]->FillMatricesVec(boneMats);
 		}
 
-		BoneUBO.SubData(BoneCount * sizeof(glm::mat4), &boneMats[0][0][0], 0);
+		BoneUBO.SubData(BoneCount * sizeof(Mat4f), &boneMats[0][0][0], 0);
 	}
 
 	void SkeletonBatch::VerifySkeletonsLives()

@@ -32,7 +32,7 @@ namespace GEE
 
 		void OverrideInstancesMaterial(Material* material);	//Overrides MeshInstances' materials with the one passed as the argument
 		void OverrideInstancesMaterialInstances(std::shared_ptr<MaterialInstance> matInst);	//Overrides MeshInstances' materials with the one passed as the argument
-		void SetLastFrameMVP(const glm::mat4& lastMVP) const;
+		void SetLastFrameMVP(const Mat4f& lastMVP) const;
 		void SetSkeletonInfo(SkeletonInfo*);
 		void SetRenderAsBillboard(bool billboard);
 
@@ -40,7 +40,7 @@ namespace GEE
 
 		int GetMeshInstanceCount() const;
 		const MeshInstance& GetMeshInstance(int index) const;
-		const glm::mat4& GetLastFrameMVP() const;
+		const Mat4f& GetLastFrameMVP() const;
 		SkeletonInfo* GetSkeletonInfo() const;
 
 		MeshInstance* FindMeshInstance(const std::string& nodeName, const std::string& specificMeshName = std::string());
@@ -74,7 +74,7 @@ namespace GEE
 		SkeletonInfo* SkelInfo;
 		bool RenderAsBillboard;
 
-		mutable glm::mat4 LastFrameMVP;	//for velocity buffer; this field is only updated when velocity buffer is needed (for temporal AA/motion blur), in any other case it will be set to an identity matrix
+		mutable Mat4f LastFrameMVP;	//for velocity buffer; this field is only updated when velocity buffer is needed (for temporal AA/motion blur), in any other case it will be set to an identity matrix
 
 	};
 
