@@ -11,7 +11,9 @@ in VS_OUT
 
 //out
 layout (location = 0) out vec4 fragColor;
+#ifdef ENABLE_BLOOM
 layout (location = 1) out vec4 brightColor;
+#endif
 #ifdef CALC_VELOCITY_BUFFER
 layout (location = VELOCITY_BUFFER_LOCATION) out vec2 velocity;
 #endif
@@ -32,5 +34,7 @@ void main()
 	velocity = (currentPos - previousPos);
 	#endif
 	
+	#ifdef ENABLE_BLOOM
 	brightColor = vec4(0.0);
+	#endif
 }

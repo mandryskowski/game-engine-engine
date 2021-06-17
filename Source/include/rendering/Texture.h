@@ -28,8 +28,14 @@ namespace GEE
 			Trilinear
 		};
 
+		friend class Material;
+	private:
+		Texture(GLenum type, GLenum internalFormat = GL_RGB, unsigned int id = 0, const std::string& path = "");
 	public:
-		Texture(GLenum type = GL_TEXTURE_2D, GLenum internalFormat = GL_RGB, unsigned int id = 0, std::string path = "");
+		/**
+		 * @brief Constructs undefined texture.
+		*/
+		Texture();
 		unsigned int GenerateID(GLenum type = GL_ZERO);
 
 		void Bind(int texSlot = -1) const;
@@ -133,6 +139,7 @@ namespace GEE
 				static Texture GenerateEmpty(GLenum texType, GLenum internalFormat);
 			};
 		};
+		static Texture FromGeneratedGlId(GLenum type, unsigned int glID, GLenum internalFormat);
 	};
 
 	class NamedTexture : public Texture
@@ -140,7 +147,7 @@ namespace GEE
 		std::string ShaderName;
 
 	public:
-		NamedTexture(Texture tex = Texture(), std::string name = "diffuse");
+		NamedTexture(const Texture& tex = Texture(), const std::string& name = "diffuse");
 
 		std::string GetShaderName();
 		void SetShaderName(std::string);
@@ -155,13 +162,12 @@ namespace GEE
 	GLenum nrChannelsToFormat(int nrChannels, bool bBGRA = false, GLenum* internalFormat = nullptr);
 
 	GLenum internalFormatToAlpha(GLenum);
-	Texture textureFromBuffer(const void* buffer, unsigned int width, unsigned int height, GLenum internalformat, GLenum format, GLenum type, GLenum magFilter = GL_NEAREST, GLenum minFilter = GL_LINEAR_MIPMAP_LINEAR);
 	std::shared_ptr<Texture> reserveTexture(Vec2u size, GLenum internalformat = GL_RGB, GLenum type = GL_UNSIGNED_BYTE, GLenum magFilter = GL_NEAREST, GLenum minFilter = GL_NEAREST, GLenum texType = GL_TEXTURE_2D, unsigned int samples = 0, std::string texName = "undefined2DTexture", GLenum format = GL_ZERO);	//Pass the last argument to override the default internalformat->format conversion
 	std::shared_ptr<Texture> reserveTexture(Vec3u size, GLenum internalformat = GL_RGB, GLenum type = GL_UNSIGNED_BYTE, GLenum magFilter = GL_NEAREST, GLenum minFilter = GL_NEAREST, GLenum texType = GL_TEXTURE_2D, unsigned int samples = 0, std::string texName = "undefined3DTexture", GLenum format = GL_ZERO);
 }
 
 namespace cereal
 {
-	template <class Archive>
+	template <typename Archive>
 	struct specialize<Archive, GEE::NamedTexture, cereal::specialization::member_serialize> {};
 }

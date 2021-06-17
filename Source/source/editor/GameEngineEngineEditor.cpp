@@ -55,7 +55,8 @@ namespace GEE
 		Settings = std::make_unique<GameSettings>(GameSettings(EngineDataLoader::LoadSettingsFromFile<GameSettings>("Settings.ini")));
 		Vec2f res = static_cast<Vec2f>(Settings->WindowSize);
 		//Settings->ViewportData = glm::uvec4(res.x * 0.3f, res.y * 0.4f, res.x * 0.4, res.y * 0.6f);
-		Settings->Video.Resolution = Vec2f(res.x * 0.4f, res.y * 0.6f);
+		//Settings->Video.Resolution = Vec2f(res.x * 0.4f, res.y * 0.6f);
+		Settings->Video.Resolution = Vec2f(res.x, res.y);
 		Settings->Video.Shading = ShadingModel::SHADING_PBR_COOK_TORRANCE;
 		Init(window);
 	}
@@ -267,7 +268,7 @@ namespace GEE
 							UIWindowActor& texPreviewWindow = window.CreateChildCanvas<UIWindowActor>("PreviewTexWindow");
 							ModelComponent& texPreviewQuad = texPreviewWindow.CreateChild<UIActorDefault>("TexPreviewActor").CreateComponent<ModelComponent>("TexPreviewQuad");
 							Material* mat = new Material("TexturePreviewMat", 0.0f, GetRenderEngineHandle()->FindShader("Forward_NoLight"));
-							mat->AddTexture(std::make_shared<NamedTexture>(Texture(GL_TEXTURE_2D, GL_RGB, *texID), "albedo1"));
+							mat->AddTexture(std::make_shared<NamedTexture>(Texture::FromGeneratedGlId(GL_TEXTURE_2D, *texID, GL_RGB), "albedo1"));
 							texPreviewQuad.AddMeshInst(MeshInstance(GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD), mat));
 
 							texPreviewWindow.AutoClampView();

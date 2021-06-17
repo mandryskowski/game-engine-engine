@@ -1051,16 +1051,20 @@ namespace GEE
 				bool bCalcVelocity = GameHandle->GetGameSettings()->Video.IsVelocityBufferNeeded() && info.MainPass;
 				bool jitter = info.MainPass && GameHandle->GetGameSettings()->Video.IsTemporalReprojectionEnabled();
 
-				Mat4f jitteredVP = (jitter) ? (Postprocessing.GetJitterMat(info.TbCollection.GetSettings(), (Postprocessing.GetFrameIndex() + 1) % 2) * info.VP) : (info.VP);
-				shader->BindMatrices(modelMat, &info.view, &info.projection, &jitteredVP);
+				shader->BindMatrices(modelMat, &info.view, &info.projection, &info.VP);
 
-				if (bCalcVelocity)
+				if (bCalcVelocity && lastFrameMVP)
 				{
-					if (!lastFrameMVP)
-						;// std::cerr << "ERROR: Velocity buffer calculation is enabled, but no lastFrameMVP is passed to render call.\n";
+					if (jitter)
+					{
+						Mat4f jitteredMVP = Postprocessing.GetJitterMat(info.TbCollection.GetSettings(), Postprocessing.GetFrameIndex()) * info.VP * modelMat;
+						shader->UniformMatrix4fv("MVP", jitteredMVP);
+						shader->UniformMatrix4fv("prevMVP", *lastFrameMVP);
+						*lastFrameMVP = jitteredMVP;
+					}
 					else
 					{
-						shader->UniformMatrix4fv("prevMVP", Postprocessing.GetJitterMat(info.TbCollection.GetSettings(), (Postprocessing.GetFrameIndex() + 1) % 2) * *lastFrameMVP);
+						shader->UniformMatrix4fv("prevMVP", *lastFrameMVP);
 						*lastFrameMVP = info.VP * modelMat;
 					}
 				}
@@ -1119,15 +1123,19 @@ namespace GEE
 				bool bCalcVelocity = GameHandle->GetGameSettings()->Video.IsVelocityBufferNeeded() && info.MainPass;
 				bool jitter = info.MainPass && GameHandle->GetGameSettings()->Video.IsTemporalReprojectionEnabled();
 
-				Mat4f jitteredVP = (jitter) ? (Postprocessing.GetJitterMat(info.TbCollection.GetSettings()) * info.VP) : (info.VP);
-				shader->BindMatrices(modelMat, &info.view, &info.projection, &jitteredVP);
+				shader->BindMatrices(modelMat, &info.view, &info.projection, &info.VP);
 				if (bCalcVelocity)
 				{
-					if (!lastFrameMVP)
-						;// std::cerr << "ERROR: Velocity buffer calculation is enabled, but no lastFrameMVP is passed to render call.\n";
+					if (jitter)
+					{
+						Mat4f jitteredMVP = info.VP * modelMat * Postprocessing.GetJitterMat(info.TbCollection.GetSettings(), Postprocessing.GetFrameIndex());
+						shader->UniformMatrix4fv("MVP", jitteredMVP);
+						shader->UniformMatrix4fv("prevMVP", *lastFrameMVP);
+						*lastFrameMVP = jitteredMVP;
+					}
 					else
 					{
-						shader->UniformMatrix4fv("prevMVP", Postprocessing.GetJitterMat(info.TbCollection.GetSettings(), (Postprocessing.GetFrameIndex() + 1) % 2) * *lastFrameMVP);
+						shader->UniformMatrix4fv("prevMVP", *lastFrameMVP);
 						*lastFrameMVP = info.VP * modelMat;
 					}
 				}

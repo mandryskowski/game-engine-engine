@@ -6,11 +6,16 @@
 
 namespace GEE
 {
-	Texture::Texture(GLenum type, GLenum internalFormat, unsigned int id, std::string path) :
+	Texture::Texture(GLenum type, GLenum internalFormat, unsigned int id, const std::string& path) :
 		Type(type),
 		InternalFormat(internalFormat),
 		ID(id),
 		Path(path)
+	{
+	}
+
+	Texture::Texture():
+		Texture(GL_TEXTURE_2D)
 	{
 	}
 
@@ -90,6 +95,11 @@ namespace GEE
 		if (ID > 0)
 			glDeleteTextures(1, &ID);
 		ID = 0;
+	}
+
+	Texture Texture::FromGeneratedGlId(GLenum type, unsigned int glID, GLenum internalFormat)
+	{
+		return Texture(type, internalFormat, glID);
 	}
 
 	GLenum Texture::Impl::GetTextureFilterGL(TextureFilter filter)
@@ -260,7 +270,7 @@ namespace GEE
 		return tex;
 	}
 
-	NamedTexture::NamedTexture(Texture tex, std::string name) :
+	NamedTexture::NamedTexture(const Texture& tex, const std::string& name) :
 		Texture(tex),
 		ShaderName(name)
 	{
@@ -326,23 +336,6 @@ namespace GEE
 		}
 
 		return internalformat;
-	}
-
-	Texture textureFromBuffer(const void* buffer, unsigned int width, unsigned int height, GLenum internalformat, GLenum format, GLenum type, GLenum magFilter, GLenum minFilter)
-	{
-		unsigned int tex;
-		glGenTextures(1, &tex);
-		glBindTexture(GL_TEXTURE_2D, tex);
-
-		glTexImage2D(GL_TEXTURE_2D, 0, internalformat, width, height, 0, format, type, buffer);
-
-		if (minFilter == GL_NEAREST_MIPMAP_NEAREST || minFilter == GL_LINEAR_MIPMAP_NEAREST || minFilter == GL_NEAREST_MIPMAP_LINEAR || minFilter == GL_LINEAR_MIPMAP_LINEAR)
-			glGenerateMipmap(GL_TEXTURE_2D);
-
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, magFilter);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minFilter);
-
-		return Texture(GL_TEXTURE_2D, internalformat, tex);
 	}
 
 	std::shared_ptr<Texture> reserveTexture(Vec2u size, GLenum internalformat, GLenum type, GLenum magFilter, GLenum minFilter, GLenum texType, unsigned int samples, std::string texName, GLenum format)

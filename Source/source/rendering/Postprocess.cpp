@@ -45,11 +45,6 @@ namespace GEE
 				Vec2f(-0.25f, 0.25f),
 				Vec2f(0.25f, -0.25f)
 			};
-
-			/*Vec2f jitters[] = {
-	Vec2f(10.0f, -10.0f),
-	Vec2f(-10.0f, 10.0f)
-	};*/
 			jitter = jitters[((optionalIndex >= 0) ? (optionalIndex) : (FrameIndex))];
 			break;
 		}
