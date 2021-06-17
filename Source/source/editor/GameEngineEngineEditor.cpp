@@ -194,29 +194,6 @@ namespace GEE
 		Actor& scenePreviewActor = editorScene.CreateActorAtRoot<Actor>("SceneViewportActor");
 		ModelComponent& scenePreviewQuad = scenePreviewActor.CreateComponent<ModelComponent>("SceneViewportQuad");
 
-		//SetCanvasContext(&editorScene.CreateActorAtRoot<UICanvasActor>("GEE_E_Canvas_Context"));
-
-		/*UICanvasActor& exampleCanvas = editorScene.CreateActorAtRoot<UICanvasActor>("ExampleCanvas");
-		exampleCanvas.SetTransform(Transform(Vec3f(0.7f, -0.4f, 0.0f), Vec3f(0.0f), Vec3f(0.3f)));
-		UIButtonActor& lolBackgroundButton = exampleCanvas.CreateChild<UIButtonActor>("VeryImportantButton");
-		lolBackgroundButton.SetTransform(Transform(Vec3f(0.0f, 0.0f, 0.0f), Vec3f(0.0f), Vec3f(1.0f)));
-
-		TextComponent& sampleText = exampleCanvas.CreateComponent<TextComponent>("SampleTextComp", Transform(Vec3f(0.9f, 0.0f, 0.0f), Vec3f(0.0f), Vec3f(0.1f)), "Sample Text");
-		sampleText.SetAlignment(TextAlignment::CENTER, TextAlignment::CENTER);
-
-		TextComponent& sampleText2 = exampleCanvas.CreateComponent<TextComponent>("SampleTextComp", Transform(Vec3f(1.9f, 0.0f, 0.0f), Vec3f(0.0f), Vec3f(0.1f)), "Very important text");
-
-		TextComponent& sampleText3 = exampleCanvas.CreateComponent<TextComponent>("SampleTextComp", Transform(Vec3f(1.9f, 1.5f, 0.0f), Vec3f(0.0f), Vec3f(0.1f)), "Mega ultra important text");
-
-		for (int y = -3; y <= 3; y++)
-		{
-			for (int x = -3; x <= 3; x++)
-			{
-				TextComponent& gridSampleText = exampleCanvas.CreateComponent<TextComponent>("SampleTextComp", Transform(Vec3f(x, y, 0.0f), Vec3f(0.0f), Vec3f(0.05f)), "Sample Text " + std::to_string(x) + "|||" + std::to_string(y));
-				gridSampleText.SetAlignment(TextAlignment::RIGHT, TextAlignment::TOP);
-			}
-		}*/
-
 		UIWindowActor& window1 = editorScene.CreateActorAtRoot<UIWindowActor>("MyTestWindow");
 		window1.SetTransform(Transform(Vec2f(0.0, -0.5f), Vec2f(0.2f)));
 
@@ -269,14 +246,34 @@ namespace GEE
 
 					window.AddField("Default font").GetTemplates().PathInput([this](const std::string& path) { Fonts.push_back(std::make_shared<Font>(*DefaultFont)); *DefaultFont = *EngineDataLoader::LoadFont(*this, path); }, [this]() {return GetDefaultFont()->GetPath(); }, { "*.ttf", "*.otf" });
 					window.AddField("Rebuild light probes").CreateChild<UIButtonActor>("RebuildProbesButton", "Rebuild", [this]() { RenderEng.PreLoopPass(); });
-					UIAutomaticListActor& aaSelectionList = window.AddField("Anti-aliasing").CreateChild<UIAutomaticListActor>("AASelectionList", Vec3f(2.0f, 0.0f, 0.0f));
 
-					std::function<void(AntiAliasingType)> setAAFunc = [this](AntiAliasingType type) { const_cast<GameSettings::VideoSettings&>(ViewportRenderCollection->GetSettings()).AAType = type; UpdateSettings(); };
-					aaSelectionList.CreateChild<UIButtonActor>("NoAAButton", "None", [=]() { setAAFunc(AntiAliasingType::AA_NONE); });
-					aaSelectionList.CreateChild<UIButtonActor>("SMAA1XButton", "SMAA1X", [=]() { setAAFunc(AntiAliasingType::AA_SMAA1X); });
-					aaSelectionList.CreateChild<UIButtonActor>("SMAAT2XButton", "SMAAT2X", [=]() { setAAFunc(AntiAliasingType::AA_SMAAT2X); });
+					{
+						auto& aaSelectionList = window.AddField("Anti-aliasing").CreateChild<UIAutomaticListActor>("AASelectionList", Vec3f(2.0f, 0.0f, 0.0f));
+						std::function<void(AntiAliasingType)> setAAFunc = [this](AntiAliasingType type) { const_cast<GameSettings::VideoSettings&>(ViewportRenderCollection->GetSettings()).AAType = type; UpdateSettings(); };
+						aaSelectionList.CreateChild<UIButtonActor>("NoAAButton", "None", [=]() { setAAFunc(AntiAliasingType::AA_NONE); });
+						aaSelectionList.CreateChild<UIButtonActor>("SMAA1XButton", "SMAA1X", [=]() { setAAFunc(AntiAliasingType::AA_SMAA1X); });
+						aaSelectionList.CreateChild<UIButtonActor>("SMAAT2XButton", "SMAAT2X", [=]() { setAAFunc(AntiAliasingType::AA_SMAAT2X); });
+						aaSelectionList.Refresh();
+					}
 
-					aaSelectionList.Refresh();
+					{
+						auto& viewTexField = window.AddField("View texture");
+						std::shared_ptr<unsigned int> texID = std::make_shared<unsigned int>(0);
+
+						viewTexField.CreateChild<UIInputBoxActor>("PreviewTexIDInputBox").SetOnInputFunc([texID](float val) { *texID = val; }, [texID]() { return *texID; });
+						viewTexField.CreateChild<UIButtonActor>("OKButton", "OK", [this, texID, &window]() {
+							if (!glIsTexture(*texID))
+								return;
+							UIWindowActor& texPreviewWindow = window.CreateChildCanvas<UIWindowActor>("PreviewTexWindow");
+							ModelComponent& texPreviewQuad = texPreviewWindow.CreateChild<UIActorDefault>("TexPreviewActor").CreateComponent<ModelComponent>("TexPreviewQuad");
+							Material* mat = new Material("TexturePreviewMat", 0.0f, GetRenderEngineHandle()->FindShader("Forward_NoLight"));
+							mat->AddTexture(std::make_shared<NamedTexture>(Texture(GL_TEXTURE_2D, GL_RGB, *texID), "albedo1"));
+							texPreviewQuad.AddMeshInst(MeshInstance(GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD), mat));
+
+							texPreviewWindow.AutoClampView();
+
+							}).GetTransform()->Move(Vec2f(2.0f, 0.0f));
+					}
 
 					window.FieldsList->Refresh();
 					window.AutoClampView();
@@ -303,7 +300,8 @@ namespace GEE
 						EditorScene = &editorScene;
 
 						EditorScene->FindActor("SceneViewportActor")->GetRoot()->GetComponent<ModelComponent>("SceneViewportQuad")->AddMeshInst(GetGameHandle()->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD));
-						EditorScene->FindActor("SceneViewportActor")->GetRoot()->GetComponent<ModelComponent>("SceneViewportQuad")->SetTransform(Transform(Vec2f(0.0f, 0.4f), Vec2f(0.4f, 0.6f)));
+						//EditorScene->FindActor("SceneViewportActor")->GetRoot()->GetComponent<ModelComponent>("SceneViewportQuad")->SetTransform(Transform(Vec2f(0.0f, 0.4f), Vec2f(0.4f, 0.6f)));
+						EditorScene->FindActor("SceneViewportActor")->GetRoot()->GetComponent<ModelComponent>("SceneViewportQuad")->SetTransform(Transform(Vec2f(0.0f, 0.4f), Vec2f(1.0f)));
 
 						std::shared_ptr<Material> scenePreviewMaterial = std::make_shared<Material>("GEE_3D_SCENE_PREVIEW_MATERIAL", 0.0f, GetGameHandle()->GetRenderEngineHandle()->FindShader("Forward_NoLight"));
 						RenderEng.AddMaterial(scenePreviewMaterial);

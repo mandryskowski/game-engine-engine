@@ -157,15 +157,8 @@ namespace GEE
 		if (GetHide())
 			return;
 
-		std::shared_ptr<AtlasMaterial> found = std::dynamic_pointer_cast<AtlasMaterial>(GameHandle->GetRenderEngineHandle()->FindMaterial("Kopec"));
-		if (Name == "KOPEC")
-		{
-			OverrideInstancesMaterialInstances(std::make_shared<MaterialInstance>(*found, found->GetTextureIDInterpolatorTemplate(Interpolation(0.0f, 0.2f, InterpolationType::LINEAR, true, AnimBehaviour::STOP, AnimBehaviour::REPEAT), 0.0f, 1.0f)));
-			Name = "Kopec";
-		}
-
 		if (SkelInfo && SkelInfo->GetBoneCount() > 0)
-			GameHandle->GetRenderEngineHandle()->RenderSkeletalMeshes(info, MeshInstances, GetTransform().GetWorldTransform(), shader, *SkelInfo);
+			GameHandle->GetRenderEngineHandle()->RenderSkeletalMeshes(info, MeshInstances, GetTransform().GetWorldTransform(), shader, *SkelInfo, &LastFrameMVP);
 		else
 		{
 			GameHandle->GetRenderEngineHandle()->RenderStaticMeshes((CanvasPtr) ? (CanvasPtr->BindForRender(info, GameHandle->GetGameSettings()->WindowSize)) : (info), MeshInstances, GetTransform().GetWorldTransform(), shader, &LastFrameMVP, nullptr, RenderAsBillboard);

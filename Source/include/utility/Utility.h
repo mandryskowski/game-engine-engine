@@ -40,6 +40,8 @@ namespace GEE
 		UniformBuffer();
 		void Generate(unsigned int blockBindingSlot, size_t size, float* = nullptr, GLenum = GL_DYNAMIC_DRAW);
 
+		void BindToSlot(unsigned int blockBindingSlot, bool isAlreadyBound);
+
 		bool HasBeenGenerated() const;
 
 		void SubData1i(int, size_t offset);

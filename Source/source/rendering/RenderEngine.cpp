@@ -681,7 +681,6 @@ namespace GEE
 				deferredTb->LightShaders[i]->UniformBlockBinding("Lights", sceneRenderData->LightsBuffer.BlockBindingSlot);
 			sceneRenderData->UpdateLightUniforms();
 			MainFramebuffer.Bind();
-
 			glClearBufferfv(GL_COLOR, 0, Math::GetDataPtr(Vec3f(0.0f, 0.0f, 0.0f)));
 			if (info.TbCollection.GetSettings().bBloom)
 				glClearBufferfv(GL_COLOR, 1, Math::GetDataPtr(Vec3f(0.0f)));
@@ -781,7 +780,12 @@ namespace GEE
 	void RenderEngine::PrepareFrame()
 	{
 		if (GameHandle->GetMainScene())
+		{
+			for (auto& it : GameHandle->GetMainScene()->GetRenderData()->SkeletonBatches)
+				it->SwapBoneUBOs();
+
 			BindSkeletonBatch(GameHandle->GetMainScene()->GetRenderData(), static_cast<unsigned int>(0));
+		}
 
 		//std::cout << "***Shaders deubg***\n";
 		//for (auto& it : Shaders)
@@ -1084,7 +1088,7 @@ namespace GEE
 		}
 	}
 
-	void RenderEngine::RenderSkeletalMeshes(const RenderInfo& info, const std::vector<std::unique_ptr<MeshInstance>>& meshes, const Transform& transform, Shader* shader, SkeletonInfo& skelInfo, Material* overrideMaterial)
+	void RenderEngine::RenderSkeletalMeshes(const RenderInfo& info, const std::vector<std::unique_ptr<MeshInstance>>& meshes, const Transform& transform, Shader* shader, SkeletonInfo& skelInfo, Mat4f* lastFrameMVP, Material* overrideMaterial)
 	{
 		if (meshes.empty())
 			return;
@@ -1117,6 +1121,16 @@ namespace GEE
 
 				Mat4f jitteredVP = (jitter) ? (Postprocessing.GetJitterMat(info.TbCollection.GetSettings()) * info.VP) : (info.VP);
 				shader->BindMatrices(modelMat, &info.view, &info.projection, &jitteredVP);
+				if (bCalcVelocity)
+				{
+					if (!lastFrameMVP)
+						;// std::cerr << "ERROR: Velocity buffer calculation is enabled, but no lastFrameMVP is passed to render call.\n";
+					else
+					{
+						shader->UniformMatrix4fv("prevMVP", Postprocessing.GetJitterMat(info.TbCollection.GetSettings(), (Postprocessing.GetFrameIndex() + 1) % 2) * *lastFrameMVP);
+						*lastFrameMVP = info.VP * modelMat;
+					}
+				}
 			}
 			if (skelInfo.GetBatchPtr() != BoundSkeletonBatch)
 				BindSkeletonBatch(skelInfo.GetBatchPtr());

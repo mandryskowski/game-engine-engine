@@ -20,6 +20,11 @@ namespace GEE
 		offsetCache = 0;
 		BlockBindingSlot = blockBindingSlot;
 	}
+	void UniformBuffer::BindToSlot(unsigned int blockBindingSlot, bool isAlreadyBound)
+	{
+		if (!isAlreadyBound) glBindBuffer(GL_UNIFORM_BUFFER, UBO);
+		glBindBufferBase(GL_UNIFORM_BUFFER, blockBindingSlot, UBO);
+	}
 	bool UniformBuffer::HasBeenGenerated() const
 	{
 		return UBO != 0;

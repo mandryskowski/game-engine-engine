@@ -182,10 +182,10 @@ namespace GEE
 	{
 		if (FBO == 0)
 			glDrawBuffer(GL_BACK);
-		else if (ColorBuffers.empty() || ColorBuffers.size() <= index)
-			glDrawBuffer(GL_NONE);
-		else
+		else if (index < ColorBuffers.size() && !IsBufferExcluded(*ColorBuffers[index]))
 			glDrawBuffer(GL_COLOR_ATTACHMENT0 + index);
+		else
+			glDrawBuffer(GL_NONE);
 	}
 
 	void GEE_FB::Framebuffer::SetDrawBuffers() const
@@ -198,10 +198,42 @@ namespace GEE
 		{
 			std::vector<GLenum> attachments;
 			for (unsigned int i = 0; i < ColorBuffers.size(); i++)
-				attachments.push_back(GL_COLOR_ATTACHMENT0 + i);
+				if (IsBufferExcluded(*ColorBuffers[i]))
+					continue;
+				else
+					attachments.push_back(GL_COLOR_ATTACHMENT0 + i);
 
 			glDrawBuffers(attachments.size(), &attachments[0]);
 		}
+	}
+
+	bool GEE_FB::Framebuffer::ExcludeDrawBuffer(const std::string& name)
+	{
+		if (std::find_if(ExcludedBuffers.begin(), ExcludedBuffers.end(), [&](FramebufferAttachment* buffer) { return buffer->GetShaderName() == name; }) != ExcludedBuffers.end())
+			return false;
+
+		for (auto& it : ColorBuffers)
+			if (it->GetShaderName() == name)
+			{
+				ExcludedBuffers.push_back(it.get());
+				return true;
+			}
+		return false;
+	}
+
+	bool GEE_FB::Framebuffer::DeexcludeDrawBuffer(const std::string& name)
+	{
+		bool found = false;
+		ExcludedBuffers.erase(std::remove_if(ExcludedBuffers.begin(), ExcludedBuffers.end(), [&](FramebufferAttachment* bufferVec) { if (bufferVec->GetShaderName() == name); return (found = true); return false; }), ExcludedBuffers.end());
+		return found;
+	}
+
+	bool GEE_FB::Framebuffer::IsBufferExcluded(FramebufferAttachment& buffer) const
+	{
+		for (auto& it : ExcludedBuffers)
+			if (it == &buffer)
+				return true;
+		return false;
 	}
 
 	void Framebuffer::Dispose(bool disposeBuffers)

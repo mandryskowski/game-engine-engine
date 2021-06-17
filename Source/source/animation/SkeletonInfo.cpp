@@ -84,12 +84,27 @@ namespace GEE
 		std::sort(Bones.begin(), Bones.end(), [](BoneComponent* bone1, BoneComponent* bone2) { return bone2->GetID() > bone1->GetID(); });
 	}
 
+	void SkeletonBatch::SwapBoneUBOs()
+	{
+		BoneUBOs[CurrentBoneUBOIndex].BindToSlot(11, false);
+		CurrentBoneUBOIndex = (CurrentBoneUBOIndex == 0) ? (1) : (0);
+
+		if (!BoneUBOs[1].HasBeenGenerated())
+		{
+			std::array<Mat4f, 1024> identities;
+			identities.fill(Mat4f(1.0f));
+			BoneUBOs[1].Generate(10, sizeof(Mat4f) * 1024, &identities[0][0][0], GL_STREAM_DRAW);
+		}
+		BoneUBOs[CurrentBoneUBOIndex].BindToSlot(10, false);
+	}
+
 	SkeletonBatch::SkeletonBatch() :
-		BoneCount(0)
+		BoneCount(0),
+		CurrentBoneUBOIndex(0)
 	{
 		std::array<Mat4f, 1024> identities;
 		identities.fill(Mat4f(1.0f));
-		BoneUBO.Generate(10, sizeof(Mat4f) * 1024, &identities[0][0][0], GL_STREAM_DRAW);
+		BoneUBOs[0].Generate(10, sizeof(Mat4f) * 1024, &identities[0][0][0], GL_STREAM_DRAW);
 	}
 
 	unsigned int SkeletonBatch::GetRemainingCapacity()
@@ -117,6 +132,11 @@ namespace GEE
 	int SkeletonBatch::GetBatchID()
 	{
 		return GameManager::DefaultScene->GetRenderData()->GetBatchID(*this);
+	}
+
+	UniformBuffer SkeletonBatch::GetBoneUBO()
+	{
+		return BoneUBOs[CurrentBoneUBOIndex];
 	}
 
 	void SkeletonBatch::RecalculateBoneCount()
@@ -155,7 +175,7 @@ namespace GEE
 			Skeletons[i]->FillMatricesVec(boneMats);
 		}
 
-		BoneUBO.SubData(BoneCount * sizeof(Mat4f), &boneMats[0][0][0], 0);
+		GetBoneUBO().SubData(BoneCount * sizeof(Mat4f), &boneMats[0][0][0], 0);
 	}
 
 	void SkeletonBatch::VerifySkeletonsLives()

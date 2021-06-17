@@ -100,14 +100,19 @@ namespace GEE
 	{
 		std::vector<std::shared_ptr<SkeletonInfo>> Skeletons;
 		unsigned int BoneCount;
-		UniformBuffer BoneUBO;
 
+		UniformBuffer BoneUBOs[2];
+		unsigned int CurrentBoneUBOIndex;
+
+		friend class RenderEngine;
+		void SwapBoneUBOs();
 	public:
 		SkeletonBatch();
 		unsigned int GetRemainingCapacity();
 		int GetInfoID(SkeletonInfo&);
 		SkeletonInfo* GetInfo(int ID);
 		int GetBatchID();
+		UniformBuffer GetBoneUBO();
 		void RecalculateBoneCount();
 		bool AddSkeleton(std::shared_ptr<SkeletonInfo>);
 		void BindToUBO();

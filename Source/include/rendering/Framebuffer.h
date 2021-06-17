@@ -34,6 +34,8 @@ namespace GEE
 			std::vector <std::shared_ptr<FramebufferAttachment>> ColorBuffers;
 			std::shared_ptr<FramebufferAttachment> DepthBuffer;
 
+			std::vector<FramebufferAttachment*> ExcludedBuffers;
+
 			friend Framebuffer getDefaultFramebuffer(Vec2u);
 		public:
 			Framebuffer();
@@ -52,6 +54,13 @@ namespace GEE
 			void Bind(bool changeViewportSize = true, const Viewport* = nullptr) const;
 			void SetDrawBuffer(unsigned int index) const;	//Sets the buffer COLOR_ATTACHMENT0 + index, if available
 			void SetDrawBuffers() const;
+
+			bool ExcludeDrawBuffer(const std::string&);
+			bool DeexcludeDrawBuffer(const std::string&);
+		private:
+			bool IsBufferExcluded(FramebufferAttachment&) const;
+		public:
+
 			void Dispose(bool disposeBuffers = false);
 		};
 		bool containsStencil(GLenum internalformat);

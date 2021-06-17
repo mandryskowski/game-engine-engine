@@ -113,6 +113,7 @@ namespace GEE
 
 		GeometryShader = AddShader(ShaderLoader::LoadShadersWithInclData("Geometry", settingsDefines, "Shaders/geometry.vs", "Shaders/geometry.fs"));
 		GeometryShader->UniformBlockBinding("BoneMatrices", 10);
+		GeometryShader->UniformBlockBinding("PreviousBoneMatrices", 11);
 		GeometryShader->SetTextureUnitNames(gShaderTextureUnits);
 		GeometryShader->SetExpectedMatrices(std::vector<MatrixType>{MatrixType::MODEL, MatrixType::MVP, MatrixType::NORMAL});
 	}
@@ -148,6 +149,8 @@ namespace GEE
 
 		MainFb = AddFramebuffer();
 		MainFb->SetAttachments(settings.Resolution, colorBuffers, sharedDepthStencil);	//color and blur buffers
+		if (settings.IsVelocityBufferNeeded())
+			MainFb->ExcludeDrawBuffer("velocityTex");
 
 		//////////////////////////////SHADER LOADING//////////////////////////////
 
