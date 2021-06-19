@@ -30,7 +30,7 @@ namespace GEE
 		glCullFace(GL_BACK);
 
 		//generate engine's empty texture
-		EmptyTexture = Texture::Loader::FromBuffer2D(Vec2u(1, 1), Math::GetDataPtr(Vec3f(0.5f, 0.5f, 1.0f)), 3);
+		EmptyTexture = Texture::Loader<>::FromBuffer2D(Vec2u(1, 1), Math::GetDataPtr(Vec3f(0.5f, 0.5f, 1.0f)), 3);
 		EmptyTexture.SetMinFilter(Texture::MinTextureFilter::Nearest(), true, true);
 		EmptyTexture.SetMagFilter(Texture::MagTextureFilter::Nearest(), true);
 	}
@@ -448,7 +448,7 @@ namespace GEE
 			glEnable(GL_CULL_FACE);
 			glDepthFunc(GL_ALWAYS);
 
-			framebuffer.SetDrawBuffers();
+			framebuffer.SetDrawTextures();
 
 			RenderInfo xdCopy = info;
 			xdCopy.view = Mat4f(1.0f);
@@ -498,7 +498,7 @@ namespace GEE
 		//info.projection = &p;
 
 		GEE_FB::Framebuffer framebuffer;
-		std::shared_ptr<GEE_FB::FramebufferAttachment> depthBuffer = GEE_FB::reserveDepthBuffer(Vec2u(1024), GL_DEPTH_COMPONENT, GL_FLOAT, GL_NEAREST, GL_NEAREST, GL_TEXTURE_2D);
+		GEE_FB::FramebufferAttachment depthBuffer = GEE_FB::reserveDepthBuffer(Vec2u(1024), GL_DEPTH_COMPONENT, GL_FLOAT, GL_NEAREST, GL_NEAREST, GL_TEXTURE_2D);
 		framebuffer.Bind();
 		framebuffer.SetAttachments(Vec2u(1024), GEE_FB::FramebufferAttachment(), nullptr);
 		framebuffer.Bind(true);
@@ -536,7 +536,7 @@ namespace GEE
 		//Init(Vec2u(GameHandle->GetGameSettings()->ViewportData.z, GameHandle->GetGameSettings()->ViewportData.w));
 		CurrentTbCollection = RenderTbCollections[0].get();
 		probeRenderingCollection.Dispose();
-		depthBuffer->Dispose();
+		depthBuffer.Dispose();
 
 		std::cout << "Initting done.\n";
 	}
@@ -674,7 +674,7 @@ namespace GEE
 			const Texture* SSAOtex = nullptr;
 
 			if (settings.AmbientOcclusionSamples > 0)
-				SSAOtex = Postprocessing.SSAOPass(info, GFramebuffer.GetColorBuffer(0).get(), GFramebuffer.GetColorBuffer(1).get());	//pass gPosition and gNormal
+				SSAOtex = Postprocessing.SSAOPass(info, GFramebuffer.GetColorTexture(0).get(), GFramebuffer.GetColorTexture(1).get());	//pass gPosition and gNormal
 
 			////////////////////3. Lighting pass
 			for (int i = 0; i < static_cast<int>(deferredTb->LightShaders.size()); i++)
@@ -687,7 +687,7 @@ namespace GEE
 
 			for (int i = 0; i < 4; i++)
 			{
-				GFramebuffer.GetColorBuffer(i)->Bind(i);
+				GFramebuffer.GetColorTexture(i).Bind(i);
 			}
 
 			if (SSAOtex)
@@ -772,7 +772,7 @@ namespace GEE
 			GameHandle->GetPhysicsHandle()->DebugRender(*GameHandle->GetMainScene()->GetPhysicsData(), *this, info);
 
 		////////////////////4. Postprocessing pass (Blur + Tonemapping & Gamma Correction)
-		Postprocessing.Render(info.TbCollection, target, &viewport, MainFramebuffer.GetColorBuffer(0).get(), (settings.bBloom) ? (MainFramebuffer.GetColorBuffer(1).get()) : (nullptr), MainFramebuffer.DepthBuffer.get(), (settings.IsVelocityBufferNeeded()) ? (MainFramebuffer.GetColorBuffer("velocityTex").get()) : (nullptr));
+		Postprocessing.Render(info.TbCollection, target, &viewport, MainFramebuffer.GetColorTexture(0), (settings.bBloom) ? (MainFramebuffer.GetColorTexture(1).get()) : (nullptr), MainFramebuffer.DepthBuffer.get(), (settings.IsVelocityBufferNeeded()) ? (MainFramebuffer.GetColorTexture("velocityTex").get()) : (nullptr));
 
 		PreviousFrameView = currentFrameView;
 	}
@@ -859,7 +859,7 @@ namespace GEE
 
 	void RenderEngine::RenderCubemapFromTexture(Texture targetTex, Texture tex, Vec2u size, Shader& shader, int* layer, int mipLevel)
 	{
-		CubemapData.DefaultFramebuffer.SetAttachments(size);
+		CubemapData.DefaultFramebuffer.Generate();
 		CubemapData.DefaultFramebuffer.Bind(true);
 		glActiveTexture(GL_TEXTURE0);
 		glDepthFunc(GL_LEQUAL);
@@ -1169,7 +1169,7 @@ namespace GEE
 	void RenderEngine::Dispose()
 	{
 		RenderTbCollections.clear();
-		CubemapData.DefaultFramebuffer.Dispose();
+		CubemapData.DefaultFramebuffer.Dispose(false);
 
 		Postprocessing.Dispose();
 		//ShadowFramebuffer.Dispose();

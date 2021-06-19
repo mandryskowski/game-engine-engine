@@ -70,12 +70,12 @@ namespace GEE
 			if (i == passes - 1)	//If the calling function specified the framebuffer to write the final result to, bind the given framebuffer for the last pass.
 			{
 				writeFramebuffer.Bind();
-				writeFramebuffer.SetDrawBuffer(writeColorBuffer);
+				writeFramebuffer.SetDrawTexture(writeColorBuffer);
 			}
 			else	//For any pass that doesn't match given criteria, just switch the ping pong fbos
 			{
 				tb.BlurFramebuffers[horizontal]->Bind();
-				const Texture* bindTex = (i == 0) ? (tex) : (tb.BlurFramebuffers[!horizontal]->GetColorBuffer(0).get());
+				const Texture* bindTex = (i == 0) ? (tex) : (tb.BlurFramebuffers[!horizontal]->GetColorTexture(0).get());
 				bindTex->Bind();
 			}
 			tb.GaussianBlurShader->Uniform1i("horizontal", horizontal);
@@ -86,8 +86,8 @@ namespace GEE
 
 		glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
-		tb.BlurFramebuffers[!horizontal]->GetColorBuffer(0).get();
-		return writeFramebuffer.GetColorBuffer(writeColorBuffer).get();
+		tb.BlurFramebuffers[!horizontal]->GetColorTexture(0).get();
+		return writeFramebuffer.GetColorTexture(writeColorBuffer).get();
 	}
 
 	const Texture* Postprocess::SSAOPass(RenderInfo& info, const Texture* gPosition, const Texture* gNormal)
@@ -119,8 +119,8 @@ namespace GEE
 		glEnable(GL_CULL_FACE);
 		glEnable(GL_DEPTH_TEST);
 
-		GaussianBlur(GetPPToolbox<GaussianBlurToolbox>(info.TbCollection), *tb->SSAOFb, nullptr, tb->SSAOFb->GetColorBuffer(0).get(), 4);
-		return tb->SSAOFb->GetColorBuffer(0).get();
+		GaussianBlur(GetPPToolbox<GaussianBlurToolbox>(info.TbCollection), *tb->SSAOFb, nullptr, tb->SSAOFb->GetColorTexture(0).get(), 4);
+		return tb->SSAOFb->GetColorTexture(0).get();
 	}
 
 	const Texture* Postprocess::SMAAPass(PPToolbox<SMAAToolbox> ppTb, const GEE_FB::Framebuffer& writeFramebuffer, const Viewport* viewport, const Texture* colorTex, const Texture* depthTex, const Texture* previousColorTex, const Texture* velocityTex, unsigned int writeColorBuffer, bool bT2x) const
@@ -148,7 +148,7 @@ namespace GEE
 		if (bT2x)
 			tb.SMAAShaders[1]->Uniform4fv("ssIndices", (FrameIndex == 0) ? (Vec4f(1, 1, 1, 0)) : (Vec4f(2, 2, 2, 0)));
 
-		tb.SMAAFb->GetColorBuffer(0)->Bind(0);	//bind edges texture to slot 0
+		tb.SMAAFb->GetColorTexture(0)->Bind(0);	//bind edges texture to slot 0
 		tb.SMAAAreaTex->Bind(1);
 		tb.SMAASearchTex->Bind(2);
 
@@ -162,7 +162,7 @@ namespace GEE
 		else
 		{
 			writeFramebuffer.Bind(true, viewport);
-			writeFramebuffer.SetDrawBuffer(writeColorBuffer);
+			writeFramebuffer.SetDrawTexture(writeColorBuffer);
 		}
 
 		//glEnable(GL_FRAMEBUFFER_SRGB);
@@ -170,7 +170,7 @@ namespace GEE
 		tb.SMAAShaders[2]->Use();
 
 		colorTex->Bind(0);
-		tb.SMAAFb->GetColorBuffer(1)->Bind(1); //bind weights texture to slot 0
+		tb.SMAAFb->GetColorTexture(1)->Bind(1); //bind weights texture to slot 0
 
 		if (velocityTex)
 		{
@@ -187,11 +187,11 @@ namespace GEE
 
 		///////////////4. Temporal resolve (optional)
 		writeFramebuffer.Bind(true);
-		writeFramebuffer.SetDrawBuffer(writeColorBuffer);
+		writeFramebuffer.SetDrawTexture(writeColorBuffer);
 
 		tb.SMAAShaders[3]->Use();
 
-		tb.SMAAFb->GetColorBuffer(2)->Bind(0);
+		tb.SMAAFb->GetColorTexture(2)->Bind(0);
 		previousColorTex->Bind(1);
 		velocityTex->Bind(2);
 
@@ -199,13 +199,13 @@ namespace GEE
 
 		glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
-		return writeFramebuffer.GetColorBuffer(writeColorBuffer).get();
+		return writeFramebuffer.GetColorTexture(writeColorBuffer).get();
 	}
 
 	const Texture* Postprocess::TonemapGammaPass(PPToolbox<ComposedImageStorageToolbox> tb, const GEE_FB::Framebuffer& writeFramebuffer, const Viewport* viewport, const Texture* colorTex, const Texture* blurTex) const
 	{
 		writeFramebuffer.Bind(true, viewport);
-		writeFramebuffer.SetDrawBuffer(0);
+		writeFramebuffer.SetDrawTexture(0);
 
 		glDisable(GL_DEPTH_TEST);
 		//glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -220,7 +220,7 @@ namespace GEE
 
 		tb.RenderFullscreenQuad(tb.GetTb().TonemapGammaShader);
 
-		return writeFramebuffer.GetColorBuffer(0).get();
+		return writeFramebuffer.GetColorTexture(0).get();
 	}
 
 	void Postprocess::Render(RenderToolboxCollection& tbCollection, const GEE_FB::Framebuffer& finalFramebuffer, const Viewport* viewport, const Texture* colorTex, const Texture* blurTex, const Texture* depthTex, const Texture* velocityTex) const
@@ -239,11 +239,11 @@ namespace GEE
 		{
 			PrevFrameStorageToolbox* storageTb = tbCollection.GetTb<PrevFrameStorageToolbox>();
 			const Texture* compositedTex = TonemapGammaPass(GetPPToolbox<ComposedImageStorageToolbox>(tbCollection), *tbCollection.GetTb<ComposedImageStorageToolbox>()->ComposedImageFb, nullptr, colorTex, blurTex);
-			unsigned int previousFrameIndex = (static_cast<int>(FrameIndex) - 1) % storageTb->StorageFb->GetNumberOfColorBuffers();
-			const Texture* SMAAresult = SMAAPass(GetPPToolbox<SMAAToolbox>(tbCollection), *storageTb->StorageFb, nullptr, compositedTex, depthTex, storageTb->StorageFb->GetColorBuffer(previousFrameIndex).get(), velocityTex, FrameIndex, true);
+			unsigned int previousFrameIndex = (static_cast<int>(FrameIndex) - 1) % storageTb->StorageFb->GetColorTextureCount();
+			const Texture* SMAAresult = SMAAPass(GetPPToolbox<SMAAToolbox>(tbCollection), *storageTb->StorageFb, nullptr, compositedTex, depthTex, storageTb->StorageFb->GetColorTexture(previousFrameIndex).get(), velocityTex, FrameIndex, true);
 
 			finalFramebuffer.Bind(true, viewport);
-			finalFramebuffer.SetDrawBuffer(0);
+			finalFramebuffer.SetDrawTexture(0);
 			glEnable(GL_FRAMEBUFFER_SRGB);
 			QuadShader->Use();
 
@@ -252,7 +252,7 @@ namespace GEE
 			RenderFullscreenQuad(tbCollection);
 			glDisable(GL_FRAMEBUFFER_SRGB);
 
-			FrameIndex = (FrameIndex + 1) % storageTb->StorageFb->GetNumberOfColorBuffers();
+			FrameIndex = (FrameIndex + 1) % storageTb->StorageFb->GetColorTextureCount();
 		}
 		else
 			TonemapGammaPass(GetPPToolbox<ComposedImageStorageToolbox>(tbCollection), finalFramebuffer, viewport, colorTex, blurTex);

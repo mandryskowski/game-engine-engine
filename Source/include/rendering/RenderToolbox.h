@@ -154,7 +154,7 @@ namespace GEE
 		GEE_FB::Framebuffer& GetFinalFramebuffer();
 		friend class RenderEngine;
 	private:
-		std::shared_ptr<GEE_FB::FramebufferAttachment> RenderTarget;
+		NamedTexture RenderTarget;
 		GEE_FB::Framebuffer* FinalFramebuffer;
 	};
 

@@ -96,15 +96,15 @@ namespace GEE
 
 		std::shared_ptr<AtlasMaterial> addIconMat = std::make_shared<AtlasMaterial>(Material("GEE_E_Add_Icon_Mat", 0.0f, RenderEng.FindShader("Forward_NoLight")), glm::ivec2(3, 1));
 		GetRenderEngineHandle()->AddMaterial(addIconMat);
-		addIconMat->AddTexture(std::make_shared<NamedTexture>(Texture::Loader::FromFile2D("EditorAssets/add_icon.png", false, Texture::MinTextureFilter::NearestInterpolateMipmap()), "albedo1"));
+		addIconMat->AddTexture(std::make_shared<NamedTexture>(Texture::Loader<>::FromFile2D("EditorAssets/add_icon.png", Texture::TextureFormat::RGBA(), false, Texture::MinTextureFilter::NearestInterpolateMipmap()), "albedo1"));
 
 		std::shared_ptr<AtlasMaterial> refreshIconMat = std::make_shared<AtlasMaterial>(Material("GEE_E_Refresh_Icon_Mat", 0.0f, RenderEng.FindShader("Forward_NoLight")), glm::ivec2(3, 1));
 		GetRenderEngineHandle()->AddMaterial(refreshIconMat);
-		refreshIconMat->AddTexture(std::make_shared<NamedTexture>(Texture::Loader::FromFile2D("EditorAssets/refresh_icon.png", false, Texture::MinTextureFilter::NearestInterpolateMipmap()), "albedo1"));
+		refreshIconMat->AddTexture(std::make_shared<NamedTexture>(Texture::Loader<>::FromFile2D("EditorAssets/refresh_icon.png", Texture::TextureFormat::RGBA(), false, Texture::MinTextureFilter::NearestInterpolateMipmap()), "albedo1"));
 		
 		std::shared_ptr<AtlasMaterial> moreMat = std::make_shared<AtlasMaterial>(Material("GEE_E_More_Mat", 0.0f, RenderEng.FindShader("Forward_NoLight")), glm::ivec2(3, 1));
 		GetRenderEngineHandle()->AddMaterial(moreMat);
-		moreMat->AddTexture(std::make_shared<NamedTexture>(Texture::Loader::FromFile2D("EditorAssets/more_icon.png", true), "albedo1"));
+		moreMat->AddTexture(std::make_shared<NamedTexture>(Texture::Loader<>::FromFile2D("EditorAssets/more_icon.png", Texture::TextureFormat::RGBA(), true), "albedo1"));
 
 		{
 			std::shared_ptr<Material> material = std::make_shared<Material>(Material("GEE_Default_Text_Material", 0.0f, RenderEng.FindShader("TextShader")));
@@ -140,12 +140,12 @@ namespace GEE
 		{
 			std::shared_ptr<Material> material = std::make_shared<Material>(Material("GEE_No_Camera_Icon", 0.0f, RenderEng.FindShader("Forward_NoLight")));
 			GetRenderEngineHandle()->AddMaterial(material);
-			material->AddTexture(std::make_shared<NamedTexture>(Texture::Loader::FromFile2D("EditorAssets/no_camera_icon.png", true, Texture::MinTextureFilter::NearestInterpolateMipmap(), Texture::MagTextureFilter::Bilinear()), "albedo1"));
+			material->AddTexture(std::make_shared<NamedTexture>(Texture::Loader<>::FromFile2D("EditorAssets/no_camera_icon.png", Texture::TextureFormat::RGBA(), true, Texture::MinTextureFilter::NearestInterpolateMipmap(), Texture::MagTextureFilter::Bilinear()), "albedo1"));
 		}
 
 		std::shared_ptr<AtlasMaterial> kopecMat = std::make_shared<AtlasMaterial>(Material("Kopec", 0.0f, RenderEng.FindShader("Forward_NoLight")), glm::ivec2(2, 1));
 		GetRenderEngineHandle()->AddMaterial(kopecMat);
-		kopecMat->AddTexture(std::make_shared<NamedTexture>(Texture::Loader::FromFile2D("kopec_tekstura.png", true, Texture::MinTextureFilter::NearestInterpolateMipmap(), Texture::MagTextureFilter::Bilinear()), "albedo1"));
+		kopecMat->AddTexture(std::make_shared<NamedTexture>(Texture::Loader<>::FromFile2D("kopec_tekstura.png", Texture::TextureFormat::RGBA(), true, Texture::MinTextureFilter::NearestInterpolateMipmap(), Texture::MagTextureFilter::Bilinear()), "albedo1"));
 
 		//LoadSceneFromFile("level.txt", "GEE_Main");
 		//SetMainScene(GetScene("GEE_Main"));
@@ -183,7 +183,7 @@ namespace GEE
 			return;
 		}
 		previewMaterial->Textures.clear();
-		previewMaterial->AddTexture(std::make_shared<NamedTexture>(*ViewportRenderCollection->GetTb<FinalRenderTargetToolbox>()->GetFinalFramebuffer().GetColorBuffer(0), "albedo1"));
+		previewMaterial->AddTexture(std::make_shared<NamedTexture>(*ViewportRenderCollection->GetTb<FinalRenderTargetToolbox>()->GetFinalFramebuffer().GetColorTexture(0), "albedo1"));
 	}
 
 	void GameEngineEngineEditor::SetupEditorScene()
@@ -268,7 +268,7 @@ namespace GEE
 							UIWindowActor& texPreviewWindow = window.CreateChildCanvas<UIWindowActor>("PreviewTexWindow");
 							ModelComponent& texPreviewQuad = texPreviewWindow.CreateChild<UIActorDefault>("TexPreviewActor").CreateComponent<ModelComponent>("TexPreviewQuad");
 							Material* mat = new Material("TexturePreviewMat", 0.0f, GetRenderEngineHandle()->FindShader("Forward_NoLight"));
-							mat->AddTexture(std::make_shared<NamedTexture>(Texture::FromGeneratedGlId(GL_TEXTURE_2D, *texID, GL_RGB), "albedo1"));
+							mat->AddTexture(std::make_shared<NamedTexture>(Texture::FromGeneratedGlId(GL_TEXTURE_2D, *texID, Texture::TextureFormat::RGBA()), "albedo1"));
 							texPreviewQuad.AddMeshInst(MeshInstance(GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD), mat));
 
 							texPreviewWindow.AutoClampView();
@@ -306,7 +306,7 @@ namespace GEE
 
 						std::shared_ptr<Material> scenePreviewMaterial = std::make_shared<Material>("GEE_3D_SCENE_PREVIEW_MATERIAL", 0.0f, GetGameHandle()->GetRenderEngineHandle()->FindShader("Forward_NoLight"));
 						RenderEng.AddMaterial(scenePreviewMaterial);
-						scenePreviewMaterial->AddTexture(std::make_shared<NamedTexture>(*ViewportRenderCollection->GetTb<FinalRenderTargetToolbox>()->GetFinalFramebuffer().GetColorBuffer(0), "albedo1"));
+						scenePreviewMaterial->AddTexture(std::make_shared<NamedTexture>(*ViewportRenderCollection->GetTb<FinalRenderTargetToolbox>()->GetFinalFramebuffer().GetColorTexture(0), "albedo1"));
 						EditorScene->FindActor("SceneViewportActor")->GetRoot()->GetComponent<ModelComponent>("SceneViewportQuad")->OverrideInstancesMaterial(scenePreviewMaterial.get());
 	}
 
@@ -567,7 +567,7 @@ namespace GEE
 		addActorButton.GetTransform()->SetScale(Vec2f(0.5f));
 
 		AtlasMaterial& addIconMat = *dynamic_cast<AtlasMaterial*>(GetRenderEngineHandle()->FindMaterial("GEE_E_Add_Icon_Mat").get());
-		addIconMat.AddTexture(std::make_shared<NamedTexture>(Texture::Loader::FromFile2D("EditorAssets/add_icon.png", false, Texture::MinTextureFilter::NearestInterpolateMipmap()), "albedo1"));
+		addIconMat.AddTexture(std::make_shared<NamedTexture>(Texture::Loader<>::FromFile2D("EditorAssets/add_icon.png", Texture::TextureFormat::RGBA(), false, Texture::MinTextureFilter::NearestInterpolateMipmap()), "albedo1"));
 		addActorButton.SetMatIdle(MaterialInstance(addIconMat));
 		addActorButton.SetMatHover(MaterialInstance(addIconMat, addIconMat.GetTextureIDInterpolatorTemplate(1.0f)));
 		addActorButton.SetMatClick(MaterialInstance(addIconMat, addIconMat.GetTextureIDInterpolatorTemplate(2.0f)));
@@ -639,7 +639,7 @@ namespace GEE
 		addActorButton.GetTransform()->SetScale(Vec2f(0.5f));
 
 		AtlasMaterial& addActorMat = *new AtlasMaterial(Material("GEE_E_Add_Actor_Material", 0.0f, RenderEng.FindShader("Forward_NoLight")), glm::ivec2(3, 1));
-		addActorMat.AddTexture(std::make_shared<NamedTexture>(Texture::Loader::FromFile2D("EditorAssets/add_icon.png", false, Texture::MinTextureFilter::NearestInterpolateMipmap()), "albedo1"));
+		addActorMat.AddTexture(std::make_shared<NamedTexture>(Texture::Loader<>::FromFile2D("EditorAssets/add_icon.png", Texture::TextureFormat::RGBA(), false, Texture::MinTextureFilter::NearestInterpolateMipmap()), "albedo1"));
 		addActorButton.SetMatIdle(MaterialInstance(addActorMat));
 		addActorButton.SetMatHover(MaterialInstance(addActorMat, addActorMat.GetTextureIDInterpolatorTemplate(1.0f)));
 		addActorButton.SetMatClick(MaterialInstance(addActorMat, addActorMat.GetTextureIDInterpolatorTemplate(2.0f)));

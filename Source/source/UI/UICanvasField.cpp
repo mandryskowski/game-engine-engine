@@ -217,7 +217,7 @@ void UIMultipleListActor::NestList(UIListActor& list)
 	void UIElementTemplates::TickBox(std::function<bool()> setFunc)
 	{
 		AtlasMaterial* tickMaterial = new AtlasMaterial(Material("TickMaterial", 0.0f, GameHandle.GetRenderEngineHandle()->FindShader("Forward_NoLight")), glm::ivec2(3, 1));
-		tickMaterial->AddTexture(std::make_shared<NamedTexture>(Texture::Loader::FromFile2D("EditorAssets/tick_icon.png", true), "albedo1"));
+		tickMaterial->AddTexture(std::make_shared<NamedTexture>(Texture::Loader<>::FromFile2D("EditorAssets/tick_icon.png", Texture::TextureFormat::RGBA(), true), "albedo1"));
 
 		UIButtonActor& billboardTickBoxActor = TemplateParent.CreateChild<UIButtonActor>("BillboardTickBox");
 
@@ -236,7 +236,7 @@ void UIMultipleListActor::NestList(UIListActor& list)
 	void UIElementTemplates::TickBox(std::function<void(bool)> setFunc, std::function<bool()> getFunc)
 	{
 		AtlasMaterial* tickMaterial = new AtlasMaterial(Material("TickMaterial", 0.0f, GameHandle.GetRenderEngineHandle()->FindShader("Forward_NoLight")), glm::ivec2(3, 1));
-		tickMaterial->AddTexture(std::make_shared<NamedTexture>(Texture::Loader::FromFile2D("EditorAssets/tick_icon.png", true), "albedo1"));
+		tickMaterial->AddTexture(std::make_shared<NamedTexture>(Texture::Loader<>::FromFile2D("EditorAssets/tick_icon.png", Texture::TextureFormat::RGBA(), true), "albedo1"));
 
 		UIButtonActor& billboardTickBoxActor = TemplateParent.CreateChild<UIButtonActor>("BillboardTickBox");
 

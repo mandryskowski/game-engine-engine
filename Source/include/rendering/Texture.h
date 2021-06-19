@@ -14,8 +14,9 @@ namespace GEE
 	class Texture
 	{
 	protected:
-		GLenum Type, InternalFormat;
+		GLenum Type;
 		unsigned int ID;
+		Vec2u Size;
 		std::string Path;
 
 		enum class TextureFilter
@@ -29,8 +30,6 @@ namespace GEE
 		};
 
 		friend class Material;
-	private:
-		Texture(GLenum type, GLenum internalFormat = GL_RGB, unsigned int id = 0, const std::string& path = "");
 	public:
 		/**
 		 * @brief Constructs undefined texture.
@@ -43,6 +42,9 @@ namespace GEE
 		GLenum GetType() const;
 		unsigned int GetID() const;
 		std::string GetPath() const;
+		Vec2u GetSize() const;
+
+		bool HasBeenGenerated() const;
 
 		void SetPath(const std::string&);
 		void SetWrap(GLenum wrapS = 0, GLenum wrapT = 0, GLenum wrapR = 0, bool isAlreadyBound = false);
@@ -81,6 +83,74 @@ namespace GEE
 			MagTextureFilter(TextureFilter filter) : Filter(filter) {}
 		};
 
+		class TextureFormat
+		{
+		public:
+			static TextureFormat Red() { return GL_RED; }
+			static TextureFormat Green() { return GL_GREEN; }
+			static TextureFormat Blue() { return GL_BLUE; }
+			static TextureFormat RG() { return GL_RG; }
+			static TextureFormat RGB() { return GL_RGB; }
+			static TextureFormat SRGB() { return GL_SRGB; }
+			static TextureFormat RGBA() { return GL_RGBA; }
+			static TextureFormat SRGBA() { return GL_SRGB_ALPHA; }
+			
+			static TextureFormat FromNrChannels(unsigned int nrChannels)
+			{
+				switch (nrChannels)
+				{
+				case 1: return Red();
+				case 2: return RG();
+				case 3: return RGB();
+				case 4: return RGBA();
+				}
+			}
+
+			struct Float16
+			{
+				static TextureFormat Red() { return GL_R16F; }
+				static TextureFormat RG() { return GL_RG16F; }
+				static TextureFormat RGB() { return GL_RGB16F; }
+				static TextureFormat RGBA() { return GL_RGBA16F; }
+
+				static TextureFormat FromNrChannels(unsigned int nrChannels)
+				{
+					switch (nrChannels)
+					{
+					case 1: return Red();
+					case 2: return RG();
+					case 3: return RGB();
+					case 4: return RGBA();
+					}
+				}
+			};
+			struct Float32
+			{
+				static TextureFormat Red() { return GL_R32F; }
+				static TextureFormat RG() { return GL_RG32F; }
+				static TextureFormat RGB() { return GL_RGB32F; }
+				static TextureFormat RGBA() { return GL_RGBA32F; }
+
+				static TextureFormat FromNrChannels(unsigned int nrChannels)
+				{
+					switch (nrChannels)
+					{
+					case 1: return Red();
+					case 2: return RG();
+					case 3: return RGB();
+					case 4: return RGBA();
+					}
+				}
+			};
+			GLenum GetFormatGl() const { return FormatGl; }
+			bool operator==(const TextureFormat& rhs) { return rhs.FormatGl == FormatGl; }
+		private:
+			friend class Loader;
+			friend class Texture;
+			TextureFormat(GLenum formatGl) : FormatGl(formatGl) {}
+			GLenum FormatGl;
+		};
+
 		/**
 		 * @brief 
 		 * @param minFilter: a MinTextureFilter object specifying the filtering used when the texture is minified.
@@ -102,31 +172,34 @@ namespace GEE
 
 		template <typename Archive> void Save(Archive& archive) const
 		{
-			archive(cereal::make_nvp("Type", Type), cereal::make_nvp("InternalFormat", InternalFormat), cereal::make_nvp("Path", Path));
+			archive(cereal::make_nvp("Type", Type), cereal::make_nvp("InternalFormat", InternalFormat.GetFormatGl()), cereal::make_nvp("Path", Path));
 		}
 		template <typename Archive> void Load(Archive& archive)
 		{
-			archive(cereal::make_nvp("Type", Type), cereal::make_nvp("InternalFormat", InternalFormat), cereal::make_nvp("Path", Path));
+			GLenum internalFormat;
+			archive(cereal::make_nvp("Type", Type), cereal::make_nvp("InternalFormat", internalFormat), cereal::make_nvp("Path", Path));
 			//if (!Path.empty() && Path.front() == '*')
 			//else
-			*this = Loader::FromFile2D(Path, false, MinTextureFilter::Trilinear(), MagTextureFilter::Bilinear(), InternalFormat);
+			*this = Loader<>::FromFile2D(Path, internalFormat, false, MinTextureFilter::Trilinear(), MagTextureFilter::Bilinear());
+			SetWrap(GL_REPEAT, GL_REPEAT, 0, true);
 		}
 
 		virtual void Dispose();
+		template <typename PixelChannelType = unsigned char>
 		struct Loader
 		{
-			template <typename PixelChannelType = unsigned char> static Texture FromFile2D(const std::string&, bool flip = false, MinTextureFilter = MinTextureFilter::Trilinear(), MagTextureFilter = MagTextureFilter::Bilinear(), GLenum internalFormat = GL_RGBA);
-			template <typename PixelChannelType> static Texture FromFileEquirectangularCubemap(const std::string&);
+			static Texture FromFile2D(const std::string&, TextureFormat internalFormat = TextureFormat::RGBA(), bool flip = false, MinTextureFilter = MinTextureFilter::Trilinear(), MagTextureFilter = MagTextureFilter::Bilinear());
+			static Texture FromFileEquirectangularCubemap(const std::string&);
 
-			template <typename PixelChannelType = unsigned char> static Texture FromBuffer2D(unsigned int width, const void* buffer, GLenum internalFormat = GL_RGBA, int desiredChannels = 0);
-			template <typename PixelChannelType = unsigned char> static Texture FromBuffer2D(const Vec2u& size, const void* buffer, int nrChannels = 3, GLenum internalFormat = GL_RGBA);
-			template <typename PixelChannelType = unsigned char> static Texture FromBuffer2DArray(const Vec3u& size, const void* buffer, int nrChannels = 3, GLenum internalFormat = GL_RGBA);
-			template <typename PixelChannelType = unsigned char> static Texture FromBuffersCubemap(const Vec2u& oneSideSize, const void* buffers[6] = { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr }, int nrChannels = 3, GLenum internalFormat = GL_RGBA);
+			static Texture FromBuffer2D(unsigned int width, const void* buffer, TextureFormat internalFormat = TextureFormat::RGBA(), int desiredChannels = 0);
+			static Texture FromBuffer2D(const Vec2u& size, const void* buffer, int nrChannels = 3, TextureFormat internalFormat = TextureFormat::RGBA());
+			static Texture FromBuffer2DArray(const Vec3u& size, const void* buffer, int nrChannels = 3, TextureFormat internalFormat = TextureFormat::RGBA());
+			static Texture FromBuffersCubemap(const Vec2u& oneSideSize, const void* buffers[6] = { }, int nrChannels = 3, TextureFormat internalFormat = TextureFormat::RGBA());
 
-			template <typename PixelChannelType = unsigned char> static Texture ReserveEmpty2D(const Vec2u& size, GLenum internalFormat = GL_RGBA);
-			template <typename PixelChannelType = unsigned char> static Texture ReserveEmpty2DArray(const Vec3u& size, GLenum internalFormat = GL_RGBA);
-			template <typename PixelChannelType = unsigned char> static Texture ReserveEmptyCubemap(const Vec2u& oneSideSize, GLenum internalFormat = GL_RGB);
-			template <typename PixelChannelType> static Texture ReserveEmptyCubemapArray(const Vec4u& size);
+			static Texture ReserveEmpty2D(const Vec2u& size, TextureFormat internalFormat = TextureFormat::RGBA());
+			static Texture ReserveEmpty2DArray(const Vec3u& size, TextureFormat internalFormat = TextureFormat::RGBA());
+			static Texture ReserveEmptyCubemap(const Vec2u& oneSideSize, TextureFormat internalFormat = TextureFormat::RGB());
+			static Texture ReserveEmptyCubemapArray(const Vec4u& size);
 
 			struct Assimp
 			{
@@ -135,11 +208,16 @@ namespace GEE
 
 			struct Impl
 			{
-				template <typename PixelChannelType> static GLenum GetChannelTypeEnum();
-				static Texture GenerateEmpty(GLenum texType, GLenum internalFormat);
+				static Texture GenerateEmpty(GLenum texType, TextureFormat internalFormat);
+				static GLenum GetChannelTypeEnum();
 			};
 		};
-		static Texture FromGeneratedGlId(GLenum type, unsigned int glID, GLenum internalFormat);
+		static Texture FromGeneratedGlId(GLenum type, unsigned int glID, TextureFormat internalFormat);
+
+		protected:
+			Texture(GLenum type, TextureFormat internalFormat = TextureFormat::RGBA(), unsigned int id = 0, const std::string& path = "");
+
+		TextureFormat InternalFormat;
 	};
 
 	class NamedTexture : public Texture
@@ -149,7 +227,7 @@ namespace GEE
 	public:
 		NamedTexture(const Texture& tex = Texture(), const std::string& name = "diffuse");
 
-		std::string GetShaderName();
+		std::string GetShaderName() const;
 		void SetShaderName(std::string);
 		template <typename Archive> void Serialize(Archive& archive)
 		{

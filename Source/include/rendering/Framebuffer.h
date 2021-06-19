@@ -19,57 +19,68 @@ namespace GEE
 			GLenum AttachmentEnum;
 
 		public:
-			FramebufferAttachment(NamedTexture tex = NamedTexture(Texture()), GLenum attachmentEnum = GL_ZERO);
-			bool WasCreated();
-			GLenum GetAttachmentEnum();
+			FramebufferAttachment(NamedTexture tex, GLenum attachmentEnum);
+			GLenum GetAttachmentEnum() const;
 			void SetAttachmentEnum(GLenum);
-			void BindToFramebuffer(GLenum target, GLenum attachment);
 		};
 
 		class Framebuffer
 		{
 			unsigned int FBO;
-			Vec2u RenderSize;
 		public:
-			std::vector <std::shared_ptr<FramebufferAttachment>> ColorBuffers;
-			std::shared_ptr<FramebufferAttachment> DepthBuffer;
+			std::vector <FramebufferAttachment> ColorBuffers;
+			FramebufferAttachment DepthBuffer;
 
-			std::vector<FramebufferAttachment*> ExcludedBuffers;
+			std::vector<GLenum> ExcludedBuffers;
 
 			friend Framebuffer getDefaultFramebuffer(Vec2u);
 		public:
 			Framebuffer();
 
-			bool IsLoaded() const;
+			bool HasBeenGenerated() const;
 			unsigned int GetFBO() const;
+			const FramebufferAttachment GetColorTexture(unsigned int index) const;
+			const FramebufferAttachment GetColorTexture(std::string name) const;
+			unsigned int GetColorTextureCount() const;
 			Vec2u GetSize() const;
-			std::shared_ptr<FramebufferAttachment> GetColorBuffer(unsigned int index) const;
-			std::shared_ptr<FramebufferAttachment> GetColorBuffer(std::string name) const;
-			unsigned int GetNumberOfColorBuffers() const;
-			void SetAttachments(Vec2u size = Vec2u(0), std::shared_ptr<FramebufferAttachment> colorBuffer = nullptr, std::shared_ptr<FramebufferAttachment> depthBuffer = nullptr, unsigned int samples = 0);
-			void SetAttachments(Vec2u size, std::vector<std::shared_ptr<FramebufferAttachment>> colorBuffers, std::shared_ptr<FramebufferAttachment> depthBuffer = nullptr, unsigned int samples = 0);
-			void SetAttachments(Vec2u size, const FramebufferAttachment& colorBuffer, FramebufferAttachment* depthBuffer = nullptr, unsigned int samples = 0);
-			void SetAttachments(Vec2u size, const std::vector<FramebufferAttachment>& colorBuffers, FramebufferAttachment* depthBuffer = nullptr, unsigned int samples = 0);
+			/**
+			 * @brief Generates the Framebuffer Object. If it is already generated, call the Dispose method first.
+			*/
+			void Generate();
+			void AttachTexture(std::vector<NamedTexture> colorTexture, const FramebufferAttachment& depthAttachment = FramebufferAttachment(NamedTexture(), GL_ZERO));
+			void AttachTexture(const NamedTexture& colorTexture, const FramebufferAttachment& depthAttachment = FramebufferAttachment(NamedTexture(), GL_ZERO));
+
 			void BlitToFBO(unsigned int, int = 1);
 			void Bind(bool changeViewportSize = true, const Viewport* = nullptr) const;
-			void SetDrawBuffer(unsigned int index) const;	//Sets the buffer COLOR_ATTACHMENT0 + index, if available
-			void SetDrawBuffers() const;
-
-			bool ExcludeDrawBuffer(const std::string&);
-			bool DeexcludeDrawBuffer(const std::string&);
+			void SetDrawTexture(unsigned int index) const;	//Sets the buffer COLOR_ATTACHMENT0 + index, if available
+			void SetDrawTextures() const;
+			
+			/**
+			 * @brief Excludes a texture attached to this Framebuffer from being a render target. From now on, the texture will not be modified by any draw calls.
+			 * @param texName: name of the texture
+			 * @return bool: a boolean indicating if a texture named texName was found and succesfully excluded.
+			*/
+			bool ExcludeColorTexture(const std::string& texName);
+			bool ReincludeColorTexture(const std::string& texName);
 		private:
-			bool IsBufferExcluded(FramebufferAttachment&) const;
-		public:
+			bool IsBufferExcluded(GLenum) const;
 
-			void Dispose(bool disposeBuffers = false);
+			bool AttachTextureGL(const FramebufferAttachment& texture);
+
+		public:
+			/**
+			 * @brief Disposes of the Framebuffer Object. Do not dispose of the attached textures if you wish to use them in the future.
+			 * @param disposeBuffers: a boolean indicating whether all of the attached textures should be disposed as well. If you want only some of them to be disposed, detach the ones you wish to keep.
+			*/
+			void Dispose(bool disposeTextures = false);
 		};
 		bool containsStencil(GLenum internalformat);
 
 		Framebuffer getDefaultFramebuffer(Vec2u windowRes);
 
-		std::shared_ptr<FramebufferAttachment> reserveColorBuffer(Vec2u size, GLenum internalformat = GL_RGB, GLenum type = GL_UNSIGNED_BYTE, GLenum magFilter = GL_NEAREST, GLenum minFilter = GL_NEAREST, GLenum texType = GL_TEXTURE_2D, unsigned int samples = 0, std::string texName = "undefinedColorBuffer", GLenum format = GL_ZERO);
-		std::shared_ptr<FramebufferAttachment> reserveColorBuffer(Vec3u size, GLenum internalformat = GL_RGB, GLenum type = GL_UNSIGNED_BYTE, GLenum magFilter = GL_NEAREST, GLenum minFilter = GL_NEAREST, GLenum texType = GL_TEXTURE_2D, unsigned int samples = 0, std::string texName = "undefinedColorBuffer", GLenum format = GL_ZERO);
-		std::shared_ptr<FramebufferAttachment> reserveDepthBuffer(Vec2u size, GLenum internalformat = GL_RGB, GLenum type = GL_UNSIGNED_BYTE, GLenum magFilter = GL_NEAREST, GLenum minFilter = GL_NEAREST, GLenum texType = GL_TEXTURE_2D, unsigned int samples = 0, std::string texName = "undefinedDepthBuffer", GLenum format = GL_ZERO);
+		NamedTexture reserveColorBuffer(Vec2u size, GLenum internalformat = GL_RGB, GLenum type = GL_UNSIGNED_BYTE, GLenum magFilter = GL_NEAREST, GLenum minFilter = GL_NEAREST, GLenum texType = GL_TEXTURE_2D, unsigned int samples = 0, std::string texName = "undefinedColorBuffer", GLenum format = GL_ZERO);
+		NamedTexture reserveColorBuffer(Vec3u size, GLenum internalformat = GL_RGB, GLenum type = GL_UNSIGNED_BYTE, GLenum magFilter = GL_NEAREST, GLenum minFilter = GL_NEAREST, GLenum texType = GL_TEXTURE_2D, unsigned int samples = 0, std::string texName = "undefinedColorBuffer", GLenum format = GL_ZERO);
+		FramebufferAttachment reserveDepthBuffer(Vec2u size, GLenum internalformat = GL_RGB, GLenum type = GL_UNSIGNED_BYTE, GLenum magFilter = GL_NEAREST, GLenum minFilter = GL_NEAREST, GLenum texType = GL_TEXTURE_2D, unsigned int samples = 0, std::string texName = "undefinedDepthBuffer", GLenum format = GL_ZERO);
 	}
 	std::string debugFramebuffer();
 }

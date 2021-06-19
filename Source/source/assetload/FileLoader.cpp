@@ -80,7 +80,7 @@ namespace GEE
 
 				if (!(path.size() > 3 && path.substr(0, 2) == "./"))
 					path = directory + path;
-				material->AddTexture(std::make_shared<NamedTexture>(Texture::Loader::FromFile2D(path, false, Texture::MinTextureFilter::Trilinear(), Texture::MagTextureFilter::Bilinear(), (toBool(isSRGB)) ? (GL_SRGB) : (GL_RGB)), shaderUniformName));
+				material->AddTexture(std::make_shared<NamedTexture>(Texture::Loader<>::FromFile2D(path, (toBool(isSRGB)) ? (Texture::TextureFormat::SRGBA()) : (Texture::TextureFormat::RGBA()), false, Texture::MinTextureFilter::Trilinear(), Texture::MagTextureFilter::Bilinear()), shaderUniformName));
 			}
 		}
 	}

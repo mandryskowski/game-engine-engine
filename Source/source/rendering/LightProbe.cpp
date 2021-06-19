@@ -37,7 +37,7 @@ Shader* LightProbe::GetRenderShader(const RenderToolboxCollection& renderCol) co
 		RenderEngineManager* renderHandle = probe.GetScene().GetGameHandle()->GetRenderEngineHandle();
 		probe.Shape = EngineBasicShape::QUAD;
 
-		Texture erTexture = Texture::Loader::FromFile2D<float>(filepath, true, Texture::MinTextureFilter::Bilinear(), Texture::MagTextureFilter::Bilinear(), GL_RGBA16F);	//load equirectangular hdr texture
+		Texture erTexture = Texture::Loader<float>::FromFile2D(filepath, Texture::TextureFormat::Float16::RGBA(), true, Texture::MinTextureFilter::Bilinear(), Texture::MagTextureFilter::Bilinear());	//load equirectangular hdr texture
 		int layer = probe.GetProbeIndex() * 6;
 
 		renderHandle->RenderCubemapFromTexture(probe.GetEnvironmentMap(), erTexture, Vec2u(1024), *renderHandle->FindShader("ErToCubemap"));
@@ -82,17 +82,17 @@ Shader* LightProbe::GetRenderShader(const RenderToolboxCollection& renderCol) co
 	{
 		RenderEngineManager* renderHandle = sceneRenderData->GetRenderHandle();
 		LightProbeTextureArrays* probeTexArrays = sceneRenderData->GetProbeTexArrays();
-		probeTexArrays->IrradianceMapArr = *GEE_FB::reserveColorBuffer(Vec3u(16, 16, 8), GL_RGB16F, GL_FLOAT, GL_LINEAR, GL_LINEAR, GL_TEXTURE_CUBE_MAP_ARRAY, 0, "Irradiance cubemap array");
-		probeTexArrays->PrefilterMapArr = *GEE_FB::reserveColorBuffer(Vec3u(256, 256, 8), GL_RGB16F, GL_FLOAT, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR, GL_TEXTURE_CUBE_MAP_ARRAY, 0, "Prefilter cubemap array");
+		probeTexArrays->IrradianceMapArr = GEE_FB::reserveColorBuffer(Vec3u(16, 16, 8), GL_RGB16F, GL_FLOAT, GL_LINEAR, GL_LINEAR, GL_TEXTURE_CUBE_MAP_ARRAY, 0, "Irradiance cubemap array");
+		probeTexArrays->PrefilterMapArr = GEE_FB::reserveColorBuffer(Vec3u(256, 256, 8), GL_RGB16F, GL_FLOAT, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR, GL_TEXTURE_CUBE_MAP_ARRAY, 0, "Prefilter cubemap array");
 		probeTexArrays->PrefilterMapArr.Bind();
 		glGenerateMipmap(GL_TEXTURE_CUBE_MAP_ARRAY);
 
-		probeTexArrays->BRDFLut = *GEE_FB::reserveColorBuffer(Vec2u(512), GL_RGB16F, GL_FLOAT, GL_LINEAR, GL_LINEAR, GL_TEXTURE_2D);
+		probeTexArrays->BRDFLut = GEE_FB::reserveColorBuffer(Vec2u(512), GL_RGB16F, GL_FLOAT, GL_LINEAR, GL_LINEAR, GL_TEXTURE_2D);
 
 		glDisable(GL_CULL_FACE);
 		glDisable(GL_DEPTH_TEST);
 		GEE_FB::Framebuffer framebuffer;
-		framebuffer.SetAttachments(Vec2u(512), GEE_FB::FramebufferAttachment(probeTexArrays->BRDFLut));
+		framebuffer.AttachTexture(probeTexArrays->BRDFLut);
 		framebuffer.Bind(true);
 		renderHandle->FindShader("BRDFLutGeneration")->Use();
 		renderHandle->RenderStaticMesh(RenderInfo(*renderHandle->GetCurrentTbCollection()), renderHandle->GetBasicShapeMesh(EngineBasicShape::QUAD), Transform(), renderHandle->FindShader("BRDFLutGeneration"));

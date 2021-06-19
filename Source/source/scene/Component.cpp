@@ -365,7 +365,7 @@ namespace GEE
 			return DebugRenderMat;
 
 		DebugRenderMat = std::make_shared<AtlasMaterial>(materialName, glm::ivec2(3, 1));
-		std::shared_ptr<NamedTexture> texture = std::make_shared<NamedTexture>(Texture::Loader::FromFile2D(path, true));
+		std::shared_ptr<NamedTexture> texture = std::make_shared<NamedTexture>(Texture::Loader<>::FromFile2D(path, Texture::TextureFormat::RGBA(), true));
 
 		texture->Bind();
 		texture->SetShaderName("albedo1");

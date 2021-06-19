@@ -147,12 +147,17 @@ namespace GEE
 		MaterialInstance(Material&, InterpolatorBase&, bool drawBefore = true, bool drawAfter = true);
 		MaterialInstance(const MaterialInstance&) = delete;
 		MaterialInstance(MaterialInstance&&);
+
 		Material& GetMaterialRef();
 		const Material& GetMaterialRef() const;
+		bool IsAnimated() const;
 		bool ShouldBeDrawn() const;
 		void SetInterp(InterpolatorBase*);
 		void SetDrawBeforeAnim(bool);
 		void SetDrawAfterAnim(bool);
+		/**
+		 * @brief Reset AnimationInterp of this MaterialInstance.
+		*/
 		void ResetAnimation();
 
 		void Update(float deltaTime);

@@ -28,11 +28,11 @@ namespace GEE
 	{
 		//////////////////////////////FBS LOADING//////////////////////////////
 		//1. Common attachments
-		std::shared_ptr<GEE_FB::FramebufferAttachment> sharedDepthStencil = GEE_FB::reserveDepthBuffer(settings.Resolution, GL_DEPTH24_STENCIL8, GL_UNSIGNED_INT_24_8, GL_NEAREST, GL_NEAREST, GL_TEXTURE_2D, 0, "depthStencilTex");	//we share this buffer between the geometry and main framebuffer - we want deferred-rendered objects depth to influence light volumes&forward rendered objects
-		std::shared_ptr<GEE_FB::FramebufferAttachment> velocityBuffer = GEE_FB::reserveColorBuffer(settings.Resolution, GL_RGB32F, GL_FLOAT, GL_NEAREST, GL_NEAREST, GL_TEXTURE_2D, 0, "velocityTex");
+		GEE_FB::FramebufferAttachment sharedDepthStencil = GEE_FB::reserveDepthBuffer(settings.Resolution, GL_DEPTH24_STENCIL8, GL_UNSIGNED_INT_24_8, GL_NEAREST, GL_NEAREST, GL_TEXTURE_2D, 0, "depthStencilTex");	//we share this buffer between the geometry and main framebuffer - we want deferred-rendered objects depth to influence light volumes&forward rendered objects
+		NamedTexture velocityBuffer = GEE_FB::reserveColorBuffer(settings.Resolution, GL_RGB32F, GL_FLOAT, GL_NEAREST, GL_NEAREST, GL_TEXTURE_2D, 0, "velocityTex");
 
 		//2. Geometry framebuffer attachments
-		std::vector<std::shared_ptr<GEE_FB::FramebufferAttachment>> gColorBuffers = {
+		std::vector<NamedTexture> gColorBuffers = {
 			GEE_FB::reserveColorBuffer(settings.Resolution, GL_RGB32F, GL_FLOAT, GL_NEAREST, GL_NEAREST, GL_TEXTURE_2D, 0, "gPosition"),			//gPosition texture
 			GEE_FB::reserveColorBuffer(settings.Resolution, GL_RGB32F, GL_FLOAT, GL_NEAREST, GL_NEAREST, GL_TEXTURE_2D, 0, "gNormal"),				//gNormal texture
 			GEE_FB::reserveColorBuffer(settings.Resolution, GL_RGB, GL_UNSIGNED_BYTE, GL_NEAREST, GL_NEAREST, GL_TEXTURE_2D, 0, "gAlbedoSpec")	//gAlbedoSpec texture
@@ -44,7 +44,7 @@ namespace GEE
 
 		GFb = AddFramebuffer();
 
-		GFb->SetAttachments(settings.Resolution, gColorBuffers, sharedDepthStencil);
+		GFb->AttachTexture(gColorBuffers, sharedDepthStencil);
 
 		//////////////////////////////SHADER LOADING//////////////////////////////
 		std::vector<std::string> lightShadersNames;
@@ -135,22 +135,22 @@ namespace GEE
 		if (deferredTb && !deferredTb->IsSetup())
 			deferredTb = nullptr;
 
-		std::shared_ptr<GEE_FB::FramebufferAttachment> sharedDepthStencil = ((deferredTb) ? (deferredTb->GFb->DepthBuffer) : (GEE_FB::reserveDepthBuffer(settings.Resolution, GL_DEPTH24_STENCIL8, GL_UNSIGNED_INT_24_8, GL_NEAREST, GL_NEAREST, GL_TEXTURE_2D, 0, "depthStencilTex")));
-		std::vector<std::shared_ptr<GEE_FB::FramebufferAttachment>> colorBuffers;
+		GEE_FB::FramebufferAttachment sharedDepthStencil = ((deferredTb) ? (deferredTb->GFb->DepthBuffer) : (GEE_FB::reserveDepthBuffer(settings.Resolution, GL_DEPTH24_STENCIL8, GL_UNSIGNED_INT_24_8, GL_NEAREST, GL_NEAREST, GL_TEXTURE_2D, 0, "depthStencilTex")));
+		std::vector<NamedTexture> colorBuffers;
 		colorBuffers.push_back(GEE_FB::reserveColorBuffer(settings.Resolution, GL_RGBA16F, GL_FLOAT, GL_LINEAR, GL_LINEAR));	//add color buffer
 
 		if (settings.bBloom)
 			colorBuffers.push_back(GEE_FB::reserveColorBuffer(settings.Resolution, GL_RGBA16F, GL_FLOAT, GL_LINEAR, GL_LINEAR));	//add blur buffer
 		if (settings.IsVelocityBufferNeeded())
 		{
-			std::shared_ptr<GEE_FB::FramebufferAttachment> velocityBuffer = ((deferredTb) ? (deferredTb->GFb->GetColorBuffer("velocityTex")) : (GEE_FB::reserveColorBuffer(settings.Resolution, GL_RGB16F, GL_FLOAT, GL_NEAREST, GL_NEAREST, GL_TEXTURE_2D, 0, "velocityTex")));
+			NamedTexture velocityBuffer = ((deferredTb) ? (deferredTb->GFb->GetColorTexture("velocityTex")) : (GEE_FB::reserveColorBuffer(settings.Resolution, GL_RGB16F, GL_FLOAT, GL_NEAREST, GL_NEAREST, GL_TEXTURE_2D, 0, "velocityTex")));
 			colorBuffers.push_back(velocityBuffer);
 		}
 
 		MainFb = AddFramebuffer();
-		MainFb->SetAttachments(settings.Resolution, colorBuffers, sharedDepthStencil);	//color and blur buffers
+		MainFb->AttachTexture(colorBuffers, sharedDepthStencil);	//color and blur buffers
 		if (settings.IsVelocityBufferNeeded())
-			MainFb->ExcludeDrawBuffer("velocityTex");
+			MainFb->ExcludeColorTexture("velocityTex");
 
 		//////////////////////////////SHADER LOADING//////////////////////////////
 
@@ -172,7 +172,7 @@ namespace GEE
 	{
 		//////////////////////////////FBS LOADING//////////////////////////////
 		SSAOFb = AddFramebuffer();
-		SSAOFb->SetAttachments(settings.Resolution, GEE_FB::reserveColorBuffer(settings.Resolution, GL_RED, GL_FLOAT, GL_LINEAR, GL_LINEAR));
+		SSAOFb->AttachTexture(GEE_FB::reserveColorBuffer(settings.Resolution, GL_RED, GL_FLOAT, GL_LINEAR, GL_LINEAR));
 
 		//////////////////////////////SHADER LOADING//////////////////////////////
 		Shaders.push_back(ShaderLoader::LoadShadersWithInclData("SSAO", settings.GetShaderDefines(), "Shaders/ssao.vs", "Shaders/ssao.fs"));
@@ -247,7 +247,7 @@ namespace GEE
 	{
 		StorageFb = AddFramebuffer();
 
-		StorageFb->SetAttachments(settings.Resolution, std::vector<std::shared_ptr<GEE_FB::FramebufferAttachment>>{ GEE_FB::reserveColorBuffer(settings.Resolution, GL_RGBA, GL_UNSIGNED_BYTE), GEE_FB::reserveColorBuffer(settings.Resolution, GL_RGBA, GL_UNSIGNED_BYTE) });
+		StorageFb->AttachTexture(std::vector<NamedTexture>{ GEE_FB::reserveColorBuffer(settings.Resolution, GL_RGBA, GL_UNSIGNED_BYTE), GEE_FB::reserveColorBuffer(settings.Resolution, GL_RGBA, GL_UNSIGNED_BYTE) });
 	}
 
 	SMAAToolbox::SMAAToolbox() :
@@ -270,7 +270,7 @@ namespace GEE
 
 		//////////////////////////////FBS LOADING//////////////////////////////
 		SMAAFb = AddFramebuffer();
-		SMAAFb->SetAttachments(settings.Resolution, std::vector<std::shared_ptr<FramebufferAttachment>>{ GEE_FB::reserveColorBuffer(settings.Resolution, GL_RGB, GL_UNSIGNED_BYTE, GL_LINEAR, GL_LINEAR), GEE_FB::reserveColorBuffer(settings.Resolution, GL_RGBA, GL_UNSIGNED_BYTE, GL_LINEAR, GL_LINEAR), GEE_FB::reserveColorBuffer(settings.Resolution, GL_RGBA, GL_UNSIGNED_BYTE, GL_LINEAR, GL_LINEAR) });
+		SMAAFb->AttachTexture({ GEE_FB::reserveColorBuffer(settings.Resolution, GL_RGB, GL_UNSIGNED_BYTE, GL_LINEAR, GL_LINEAR), GEE_FB::reserveColorBuffer(settings.Resolution, GL_RGBA, GL_UNSIGNED_BYTE, GL_LINEAR, GL_LINEAR), GEE_FB::reserveColorBuffer(settings.Resolution, GL_RGBA, GL_UNSIGNED_BYTE, GL_LINEAR, GL_LINEAR) });
 
 		//////////////////////////////SHADER LOADING//////////////////////////////
 		std::string smaaDefines = "#define SCR_WIDTH " + std::to_string(static_cast<float>(settings.Resolution.x)) + "\n" + "#define SCR_HEIGHT " + std::to_string(static_cast<float>(settings.Resolution.y)) + "\n";
@@ -320,11 +320,11 @@ namespace GEE
 		}
 
 		//////////////////////////////TEX GENERATION//////////////////////////////
-		SMAAAreaTex = AddTexture(Texture::Loader::FromBuffer2D(Vec2u(AREATEX_WIDTH, AREATEX_HEIGHT), areaTexBytes, 2, GL_RG));
+		SMAAAreaTex = AddTexture(Texture::Loader<>::FromBuffer2D(Vec2u(AREATEX_WIDTH, AREATEX_HEIGHT), areaTexBytes, 2, Texture::TextureFormat::RG()));
 		SMAAAreaTex->SetMinFilter(Texture::MinTextureFilter::Nearest());
 		SMAAAreaTex->SetMagFilter(Texture::MagTextureFilter::Nearest());
 		
-		SMAASearchTex = AddTexture(Texture::Loader::FromBuffer2D(Vec2u(SEARCHTEX_WIDTH, SEARCHTEX_HEIGHT), searchTexBytes, 1, GL_RED));
+		SMAASearchTex = AddTexture(Texture::Loader<>::FromBuffer2D(Vec2u(SEARCHTEX_WIDTH, SEARCHTEX_HEIGHT), searchTexBytes, 1, Texture::TextureFormat::Red()));
 		SMAASearchTex->SetMinFilter(Texture::MinTextureFilter::Nearest());
 		SMAASearchTex->SetMagFilter(Texture::MagTextureFilter::Nearest());
 	}
@@ -344,7 +344,7 @@ namespace GEE
 	void ComposedImageStorageToolbox::Setup(const GameSettings::VideoSettings& settings)
 	{
 		ComposedImageFb = AddFramebuffer();
-		ComposedImageFb->SetAttachments(settings.Resolution, GEE_FB::reserveColorBuffer(settings.Resolution, GL_RGB, GL_UNSIGNED_BYTE, GL_LINEAR, GL_LINEAR));
+		ComposedImageFb->AttachTexture(GEE_FB::reserveColorBuffer(settings.Resolution, GL_RGB, GL_UNSIGNED_BYTE, GL_LINEAR, GL_LINEAR));
 		TonemapGammaShader = AddShader(ShaderLoader::LoadShadersWithInclData("TonemapGamma", std::string((settings.TMType == ToneMappingType::TM_REINHARD) ? ("#define TM_REINHARD\n") : ("")) + settings.GetShaderDefines(settings.Resolution), "Shaders/tonemap_gamma.vs", "Shaders/tonemap_gamma.fs"));
 		TonemapGammaShader->Use();
 		TonemapGammaShader->Uniform1i("HDRbuffer", 0);
@@ -417,7 +417,7 @@ namespace GEE
 		for (int i = 0; i < 2; i++)
 		{
 			BlurFramebuffers[i] = AddFramebuffer();
-			BlurFramebuffers[i]->SetAttachments(settings.Resolution, GEE_FB::reserveColorBuffer(settings.Resolution, GL_RGB16F, GL_FLOAT, GL_LINEAR, GL_LINEAR));
+			BlurFramebuffers[i]->AttachTexture(GEE_FB::reserveColorBuffer(settings.Resolution, GL_RGB16F, GL_FLOAT, GL_LINEAR, GL_LINEAR));
 		}
 
 		GaussianBlurShader = AddShader(ShaderLoader::LoadShaders("GaussianBlur", "Shaders/gaussianblur.vs", "Shaders/gaussianblur.fs"));
@@ -458,7 +458,7 @@ namespace GEE
 		case SETTING_ULTRA: shadowMapSize = Vec2f(1024); break;
 		}
 		ShadowFramebuffer = AddFramebuffer();
-		ShadowFramebuffer->SetAttachments(shadowMapSize);
+		ShadowFramebuffer->Generate();
 
 
 		ShadowMapArray = AddTexture();
@@ -480,7 +480,6 @@ namespace GEE
 	}
 
 	FinalRenderTargetToolbox::FinalRenderTargetToolbox() :
-		RenderTarget(nullptr),
 		FinalFramebuffer(nullptr)
 	{
 	}
@@ -495,8 +494,8 @@ namespace GEE
 	{
 
 		FinalFramebuffer = AddFramebuffer();
-		FinalFramebuffer->SetAttachments(settings.Resolution, GEE_FB::reserveColorBuffer(settings.Resolution, GL_RGB, GL_UNSIGNED_BYTE, GL_LINEAR, GL_LINEAR, GL_TEXTURE_2D, 0, "FinalColorBuffer", GL_RGB));
-		RenderTarget = FinalFramebuffer->GetColorBuffer(0);
+		FinalFramebuffer->AttachTexture(GEE_FB::reserveColorBuffer(settings.Resolution, GL_RGB, GL_UNSIGNED_BYTE, GL_LINEAR, GL_LINEAR, GL_TEXTURE_2D, 0, "FinalColorBuffer", GL_RGB));
+		RenderTarget = FinalFramebuffer->GetColorTexture(0);
 
 		FinalFramebuffer->Bind(false);
 		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE)

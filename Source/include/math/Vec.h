@@ -59,3 +59,12 @@ namespace cereal
 			archive(cereal::make_nvp("row" + std::to_string(i), mat[i]));
 	}
 }
+
+template <unsigned int length, typename VecType>
+std::ostream& operator<<(std::ostream& os, const GEE::Vec<length, VecType>& vec)
+{
+	for (int i = 0; i < length - 1; i++) //add commas after all components except the last one
+		os << vec[i] << ", ";
+
+	return (os << vec[length - 1]);	//add the last component
+}

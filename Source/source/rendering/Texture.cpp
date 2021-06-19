@@ -6,10 +6,11 @@
 
 namespace GEE
 {
-	Texture::Texture(GLenum type, GLenum internalFormat, unsigned int id, const std::string& path) :
+	Texture::Texture(GLenum type, TextureFormat internalFormat, unsigned int id, const std::string& path) :
 		Type(type),
 		InternalFormat(internalFormat),
 		ID(id),
+		Size(Vec2u(0)),
 		Path(path)
 	{
 	}
@@ -47,6 +48,16 @@ namespace GEE
 	std::string Texture::GetPath() const
 	{
 		return Path;
+	}
+
+	Vec2u Texture::GetSize() const
+	{
+		return Size;
+	}
+
+	bool Texture::HasBeenGenerated() const
+	{
+		return ID != 0;
 	}
 
 	void Texture::SetPath(const std::string& path)
@@ -97,7 +108,7 @@ namespace GEE
 		ID = 0;
 	}
 
-	Texture Texture::FromGeneratedGlId(GLenum type, unsigned int glID, GLenum internalFormat)
+	Texture Texture::FromGeneratedGlId(GLenum type, unsigned int glID, TextureFormat internalFormat)
 	{
 		return Texture(type, internalFormat, glID);
 	}
@@ -116,7 +127,7 @@ namespace GEE
 	}
 
 	template <typename PixelChannelType>
-	Texture Texture::Loader::FromFile2D(const std::string& filepath, bool flip, MinTextureFilter minFilter, MagTextureFilter magFilter, GLenum internalFormat)
+	Texture Texture::Loader<PixelChannelType>::FromFile2D(const std::string& filepath, TextureFormat internalFormat, bool flip, MinTextureFilter minFilter, MagTextureFilter magFilter)
 	{
 		if (flip)
 			stbi_set_flip_vertically_on_load(true);
@@ -135,18 +146,18 @@ namespace GEE
 		if (!data)
 		{
 			std::cerr << "Can't load texture from " << filepath << '\n';
-			Texture tex = FromBuffer2D<float>(Vec2u(1, 1), Math::GetDataPtr(Vec3f(1.0f, 0.0f, 1.0f)), 3, GL_RGB);	//set the texture's color to pink so its obvious that this texture is missing
+			Texture tex = Texture::Loader<float>::FromBuffer2D(Vec2u(1, 1), Math::GetDataPtr(Vec3f(1.0f, 0.0f, 1.0f)), 3, TextureFormat::RGB());	//set the texture's color to pink so its obvious that this texture is missing
 			tex.SetMinFilter(MinTextureFilter::Nearest(), true, true);	//disable mipmaps
 			return tex;
 		}
 
-		Texture tex = FromBuffer2D<PixelChannelType>(Vec2u(width, height), data, nrChannels, internalFormat);
+		Texture tex = FromBuffer2D(Vec2u(width, height), data, nrChannels, internalFormat);
 		tex.SetPath(filepath);
 
 		tex.SetMinFilter(minFilter, true, true);
 		tex.SetMagFilter(magFilter, true);
 
-		tex.SetWrap(GL_REPEAT, GL_REPEAT, 0, true);
+		tex.SetWrap(GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, 0, true);
 
 		if (flip)
 			stbi_set_flip_vertically_on_load(false);
@@ -156,11 +167,9 @@ namespace GEE
 		return tex;
 	}
 
-	template Texture Texture::Loader::FromFile2D<unsigned char>(const std::string&, bool, MinTextureFilter, MagTextureFilter, GLenum);
-	template Texture Texture::Loader::FromFile2D<float>(const std::string&, bool, MinTextureFilter, MagTextureFilter, GLenum);
 
 	template<typename PixelChannelType>
-	Texture Texture::Loader::FromBuffer2D(unsigned int rowWidth, const void* buffer, GLenum internalFormat, int desiredChannels)
+	Texture Texture::Loader<PixelChannelType>::FromBuffer2D(unsigned int rowWidth, const void* buffer, TextureFormat internalFormat, int desiredChannels)
 	{
 		int width = 0, height = 0, nrChannels = 0;
 
@@ -172,67 +181,56 @@ namespace GEE
 		if (!data)
 			std::cerr << "ERROR: Cannot load pixels from memory in function FromBuffer2D.\n";
 
-		Texture result = FromBuffer2D<PixelChannelType>(Vec2u(width, height), data, nrChannels, internalFormat);
+		Texture result = FromBuffer2D(Vec2u(width, height), data, nrChannels, internalFormat);
 
 		stbi_image_free(data);
 
 		return result;
 	}
-	template Texture Texture::Loader::FromBuffer2D<unsigned char>(unsigned int, const void*, GLenum, int);
-	template Texture Texture::Loader::FromBuffer2D<float>(unsigned int, const void*, GLenum, int);
 
 	template<typename PixelChannelType>
-	Texture Texture::Loader::FromBuffer2D(const Vec2u& size, const void* buffer, int nrChannels, GLenum internalFormat)
+	Texture Texture::Loader<PixelChannelType>::FromBuffer2D(const Vec2u& size, const void* buffer, int nrChannels, TextureFormat internalFormat)
 	{
 		Texture tex = Impl::GenerateEmpty(GL_TEXTURE_2D, internalFormat);
-		GLenum format = nrChannelsToFormat(nrChannels, false, &internalFormat);
+		TextureFormat format = TextureFormat::FromNrChannels(nrChannels);
 
-		glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, size.x, size.y, 0, format, Impl::GetChannelTypeEnum<PixelChannelType>(), buffer);
+		glTexImage2D(GL_TEXTURE_2D, 0, internalFormat.GetFormatGl(), size.x, size.y, 0, format.GetFormatGl(), Impl::GetChannelTypeEnum(), buffer);
 
 		tex.SetMinFilter(MinTextureFilter::Bilinear(), true, true);	//disable mipmaps by default
 
 		return tex;
 	}
-	template Texture Texture::Loader::FromBuffer2D<unsigned char>(const Vec2u&, const void*, int, GLenum);
-	template Texture Texture::Loader::FromBuffer2D<float>(const Vec2u&, const void*, int, GLenum);
 
 
 	template<typename PixelChannelType>
-	Texture Texture::Loader::FromBuffer2DArray(const Vec3u& size, const void* buffer, int nrChannels, GLenum internalFormat)
+	Texture Texture::Loader<PixelChannelType>::FromBuffer2DArray(const Vec3u& size, const void* buffer, int nrChannels, TextureFormat internalFormat)
 	{
 		Texture tex = Impl::GenerateEmpty(GL_TEXTURE_2D_ARRAY, internalFormat);
-		GLenum format = nrChannelsToFormat(nrChannels, false, &internalFormat);
+		TextureFormat format = TextureFormat::FromNrChannels(nrChannels);
 
-		glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, internalFormat, size.x, size.y, size.z, 0, format, Impl::GetChannelTypeEnum<PixelChannelType>(), buffer);
+		glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, internalFormat.GetFormatGl(), size.x, size.y, size.z, 0, format.GetFormatGl(), Impl::GetChannelTypeEnum(), buffer);
 
 		tex.SetMinFilter(MinTextureFilter::Bilinear(), true, true);	//disable mipmaps by default
 
 		return tex;
 	}
-	template Texture Texture::Loader::FromBuffer2DArray<unsigned char>(const Vec3u&, const void*, int, GLenum);
 
 	template<typename PixelChannelType>
-	Texture Texture::Loader::FromBuffersCubemap(const Vec2u& oneSideSize, const void* buffers[6], int nrChannels, GLenum internalFormat)
+	Texture Texture::Loader<PixelChannelType>::FromBuffersCubemap(const Vec2u& oneSideSize, const void* buffers[6], int nrChannels, TextureFormat internalFormat)
 	{
 		Texture tex = Impl::GenerateEmpty(GL_TEXTURE_CUBE_MAP, internalFormat);
+		TextureFormat format = TextureFormat::FromNrChannels(nrChannels);
 
-		GLenum format = nrChannelsToFormat(nrChannels, false, &internalFormat);
-
-		for (int i = 0; i < ((bCubemap) ? (6) : (1)); i++)
-			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, internalformat, oneSideSize.x, oneSideSize.y, 0, format, Impl::GetChannelTypeEnum<PixelChannelType>(), buffers[i]);
+		for (int i = 0; i < 6; i++)
+			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, internalFormat.GetFormatGl(), oneSideSize.x, oneSideSize.y, 0, format.GetFormatGl(), Impl::GetChannelTypeEnum(), buffers[i]);
 
 		tex.SetMinFilter(MinTextureFilter::Bilinear(), true, true);
 
 		return tex;
 	}
 
-	template <> GLenum Texture::Loader::Impl::GetChannelTypeEnum<unsigned char>() { return GL_UNSIGNED_BYTE; }
-	template <> GLenum Texture::Loader::Impl::GetChannelTypeEnum<float>() { return GL_FLOAT; }
-
-	template GLenum Texture::Loader::Impl::GetChannelTypeEnum<unsigned char>();
-	template GLenum Texture::Loader::Impl::GetChannelTypeEnum<float>();
-
-	Texture Texture::Loader::Impl::GenerateEmpty(GLenum texType, GLenum internalFormat)
+	template <typename PixelChannelType>
+	Texture Texture::Loader<PixelChannelType>::Impl::GenerateEmpty(GLenum texType, TextureFormat internalFormat)
 	{
 		Texture tex;
 		tex.GenerateID(texType);
@@ -243,32 +241,38 @@ namespace GEE
 		return tex;
 	}
 
+	template <> GLenum Texture::Loader<unsigned char>::Impl::GetChannelTypeEnum() { return GL_UNSIGNED_BYTE; }
+	template <> GLenum Texture::Loader<float>::Impl::GetChannelTypeEnum() { return GL_FLOAT; }
+
 	template <typename PixelChannelType>
-	Texture Texture::Loader::ReserveEmpty2D(const Vec2u& size, GLenum internalFormat)
+	Texture Texture::Loader<PixelChannelType>::ReserveEmpty2D(const Vec2u& size, TextureFormat internalFormat)
 	{
-		return FromBuffer2D<PixelChannelType>(size, nullptr, 3, internalFormat);
+		return FromBuffer2D(size, nullptr, 3, internalFormat);
 	}
 
 	template<typename PixelChannelType>
-	Texture Texture::Loader::ReserveEmpty2DArray(const Vec3u& size, GLenum internalFormat)
+	Texture Texture::Loader<PixelChannelType>::ReserveEmpty2DArray(const Vec3u& size, TextureFormat internalFormat)
 	{
-		return FromBuffer2DArray<PixelChannelType>(size, nullptr, 1, internalFormat);
+		return FromBuffer2DArray(size, nullptr, 1, internalFormat);
 	}
-	template Texture Texture::Loader::ReserveEmpty2DArray<unsigned char>(const Vec3u&, GLenum);
 
 	template<typename PixelChannelType>
-	Texture Texture::Loader::ReserveEmptyCubemap(const Vec2u& oneSideSize, GLenum internalFormat)
+	Texture Texture::Loader<PixelChannelType>::ReserveEmptyCubemap(const Vec2u& oneSideSize, TextureFormat internalFormat)
 	{
-		return FromBuffersCubemap<PixelChannelType>(oneSideSize, { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr }, 3, internalFormat);
+		return FromBuffersCubemap(oneSideSize, { }, 3, internalFormat);
 	}
 
-	Texture Texture::Loader::Assimp::FromAssimpEmbedded(const aiTexture& assimpTex, bool sRGB, MinTextureFilter minFilter, MagTextureFilter magFilter)
+	template <typename PixelChannelType>
+	Texture Texture::Loader<PixelChannelType>::Assimp::FromAssimpEmbedded(const aiTexture& assimpTex, bool sRGB, MinTextureFilter minFilter, MagTextureFilter magFilter)
 	{
-		Texture tex = FromBuffer2D(assimpTex.mWidth, &assimpTex.pcData[0].b, (sRGB) ? (GL_SRGB_ALPHA) : (GL_RGBA));
+		Texture tex = FromBuffer2D(assimpTex.mWidth, &assimpTex.pcData[0].b, (sRGB) ? (TextureFormat::SRGBA()) : (TextureFormat::RGBA()));
 		tex.SetMinFilter(minFilter, true, true);
 		tex.SetMagFilter(magFilter, true);
 		return tex;
 	}
+
+	template Texture::Loader<unsigned char>;
+	template Texture::Loader<float>;
 
 	NamedTexture::NamedTexture(const Texture& tex, const std::string& name) :
 		Texture(tex),
@@ -276,7 +280,7 @@ namespace GEE
 	{
 	}
 
-	std::string NamedTexture::GetShaderName()
+	std::string NamedTexture::GetShaderName() const
 	{
 		return ShaderName;
 	}
