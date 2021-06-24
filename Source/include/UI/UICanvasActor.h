@@ -27,6 +27,13 @@ namespace GEE
 		virtual NDCViewport GetViewport() const override;
 		virtual const Transform* GetCanvasT() const override;
 
+		virtual void Update(float deltaTime) override
+		{
+			Actor::Update(deltaTime);
+			if (CanvasParent && CanvasParent->IsBeingKilled())
+				CanvasParent = nullptr;
+		}
+
 		virtual void SetCanvasView(const Transform&) override;
 
 		virtual Transform ToCanvasSpace(const Transform& worldTransform) const override;

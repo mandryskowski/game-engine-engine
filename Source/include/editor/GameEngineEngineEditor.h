@@ -20,8 +20,12 @@ namespace GEE
 		virtual GameManager* GetGameHandle() override;
 		virtual GameScene* GetSelectedScene() override;
 		virtual std::vector<GameScene*> GetScenes() override;
+		GameSettings* GetEditorSettings() override;
 		virtual void Init(GLFWwindow* window) override;
-		virtual void UpdateSettings() override;
+
+		virtual void UpdateGameSettings() override;
+		virtual void UpdateEditorSettings() override;
+
 		void SetupEditorScene();
 		void SetupMainMenu();
 		virtual void HandleEvents() override;
@@ -41,7 +45,11 @@ namespace GEE
 
 		RenderToolboxCollection* ViewportRenderCollection, * HUDRenderCollection;
 		GameScene* EditorScene;
+
+
 		GameSettings EditorSettings;
+		bool bDebugRenderComponents;
+
 
 		std::string ProjectName, ProjectFilepath;
 		std::string ExecutableFolder;

@@ -16,7 +16,7 @@ namespace GEE
 	protected:
 		GLenum Type;
 		unsigned int ID;
-		Vec2u Size;
+	public:	Vec3u Size; protected:
 		std::string Path;
 
 		enum class TextureFilter
@@ -42,7 +42,22 @@ namespace GEE
 		GLenum GetType() const;
 		unsigned int GetID() const;
 		std::string GetPath() const;
-		Vec2u GetSize() const;
+
+		/**
+		 * @brief Returns the 2D size of this Texture. For 2D textures and texture arrays it returns the size of a single texture, for cubemaps and cubemap arrays the size of a single side.
+		 * @return Vec2u: x - width of single texture, y - height of single texture
+		*/
+		Vec2u GetSize2D() const;
+		/**
+		 * @brief Returns the 3D size of this Texture. For 2D textures and cubemaps the z component should be ignored, for 2d texture arrays and cubemap arrays the z component contains the amount of textures in the array.
+		 * @return Vec3u: x - width of single texture, y - height of single texture, z - number of textures in the array
+		*/
+		Vec3u GetSize3D() const;
+
+	private:
+		void SetSize(const Vec2u& size);
+		void SetSize(const Vec3u& size);
+	public:
 
 		bool HasBeenGenerated() const;
 
@@ -146,6 +161,7 @@ namespace GEE
 			bool operator==(const TextureFormat& rhs) { return rhs.FormatGl == FormatGl; }
 		private:
 			friend class Loader;
+
 			friend class Texture;
 			TextureFormat(GLenum formatGl) : FormatGl(formatGl) {}
 			GLenum FormatGl;
@@ -212,10 +228,11 @@ namespace GEE
 				static GLenum GetChannelTypeEnum();
 			};
 		};
-		static Texture FromGeneratedGlId(GLenum type, unsigned int glID, TextureFormat internalFormat);
+		static Texture FromGeneratedGlId(const Vec2u& size, GLenum type, unsigned int glID, TextureFormat internalFormat);
 
 		protected:
-			Texture(GLenum type, TextureFormat internalFormat = TextureFormat::RGBA(), unsigned int id = 0, const std::string& path = "");
+		Texture(const Vec2u& size, GLenum type, TextureFormat internalFormat = TextureFormat::RGBA(), unsigned int id = 0, const std::string& path = "");
+		Texture(const Vec3u& size, GLenum type, TextureFormat internalFormat = TextureFormat::RGBA(), unsigned int id = 0, const std::string& path = "");
 
 		TextureFormat InternalFormat;
 	};
@@ -240,8 +257,8 @@ namespace GEE
 	GLenum nrChannelsToFormat(int nrChannels, bool bBGRA = false, GLenum* internalFormat = nullptr);
 
 	GLenum internalFormatToAlpha(GLenum);
-	std::shared_ptr<Texture> reserveTexture(Vec2u size, GLenum internalformat = GL_RGB, GLenum type = GL_UNSIGNED_BYTE, GLenum magFilter = GL_NEAREST, GLenum minFilter = GL_NEAREST, GLenum texType = GL_TEXTURE_2D, unsigned int samples = 0, std::string texName = "undefined2DTexture", GLenum format = GL_ZERO);	//Pass the last argument to override the default internalformat->format conversion
-	std::shared_ptr<Texture> reserveTexture(Vec3u size, GLenum internalformat = GL_RGB, GLenum type = GL_UNSIGNED_BYTE, GLenum magFilter = GL_NEAREST, GLenum minFilter = GL_NEAREST, GLenum texType = GL_TEXTURE_2D, unsigned int samples = 0, std::string texName = "undefined3DTexture", GLenum format = GL_ZERO);
+	NamedTexture reserveTexture(Vec2u size, GLenum internalformat = GL_RGB, GLenum type = GL_UNSIGNED_BYTE, GLenum magFilter = GL_NEAREST, GLenum minFilter = GL_NEAREST, GLenum texType = GL_TEXTURE_2D, unsigned int samples = 0, std::string texName = "undefined2DTexture", GLenum format = GL_ZERO);	//Pass the last argument to override the default internalformat->format conversion
+	NamedTexture reserveTexture(Vec3u size, GLenum internalformat = GL_RGB, GLenum type = GL_UNSIGNED_BYTE, GLenum magFilter = GL_NEAREST, GLenum minFilter = GL_NEAREST, GLenum texType = GL_TEXTURE_2D, unsigned int samples = 0, std::string texName = "undefined3DTexture", GLenum format = GL_ZERO);
 }
 
 namespace cereal

@@ -18,7 +18,7 @@ namespace GEE
 		template <typename Archive>
 		void Save(Archive& archive) const
 		{
-			std::string animManagerName = (AnimManager) ? (AnimManager->GetName()) : (std::string()), gunName = (Gun) ? (Gun->GetName()) : (std::string()), playerTargetName = (PlayerTarget) ? (PlayerTarget->GetName()) : (nullptr);
+			std::string animManagerName = (AnimManager) ? (AnimManager->GetName()) : (std::string()), gunName = (Gun) ? (Gun->GetName()) : (std::string()), playerTargetName = (PlayerTarget) ? (PlayerTarget->GetName()) : (std::string());
 
 			archive(cereal::make_nvp("AnimManagerName", animManagerName), CEREAL_NVP(AnimIndex), cereal::make_nvp("GunName", gunName), CEREAL_NVP(SpeedPerSec), cereal::make_nvp("PlayerTargetName", playerTargetName), cereal::make_nvp("Actor", cereal::base_class<Actor>(this)));
 		}

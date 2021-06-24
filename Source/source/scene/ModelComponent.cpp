@@ -210,7 +210,7 @@ namespace GEE
 
 					std::shared_ptr<Material> viewportMaterial = std::make_shared<Material>("GEE_E_Mesh_Preview_Viewport", 0.0f, renderHandle.FindShader("Forward_NoLight"));
 					renderHandle.AddMaterial(viewportMaterial);
-					viewportMaterial->AddTexture(std::make_shared<NamedTexture>(*renderTbCollection.GetTb<FinalRenderTargetToolbox>()->GetFinalFramebuffer().GetColorTexture(0), "albedo1"));
+					viewportMaterial->AddTexture(std::make_shared<NamedTexture>(renderTbCollection.GetTb<FinalRenderTargetToolbox>()->GetFinalFramebuffer().GetColorTexture(0), "albedo1"));
 					viewportButton.SetMatIdle(*viewportMaterial);
 					viewportButton.SetMatClick(*viewportMaterial);
 					viewportButton.SetMatHover(*viewportMaterial);

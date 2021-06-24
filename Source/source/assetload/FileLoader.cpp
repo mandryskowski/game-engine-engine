@@ -385,7 +385,7 @@ namespace GEE
 		}
 	}
 
-	void EngineDataLoader::LoadMeshFromAi(Mesh* meshPtr, const aiScene* scene, aiMesh* mesh, const HTreeObjectLoc& treeObjLoc, const std::string& directory, bool bLoadMaterial, MaterialLoadingData* matLoadingData, BoneMapping* boneMapping, bool keepVertsData)
+	void EngineDataLoader::LoadMeshFromAi(Mesh* meshPtr, const aiScene* scene, const aiMesh* mesh, const HTreeObjectLoc& treeObjLoc, const std::string& directory, bool bLoadMaterial, MaterialLoadingData* matLoadingData, BoneMapping* boneMapping, bool keepVertsData)
 	{
 		std::vector <Vertex> vertices;
 		std::vector <unsigned int> indices;
@@ -440,7 +440,7 @@ namespace GEE
 
 		for (int i = 0; i < static_cast<int>(mesh->mNumFaces); i++)
 		{
-			aiFace face = mesh->mFaces[i];
+			const aiFace& face = mesh->mFaces[i];
 			for (unsigned int j = 0; j < face.mNumIndices; j++)
 				indices.push_back(face.mIndices[j]);
 		}
@@ -717,7 +717,7 @@ namespace GEE
 		std::cout << "NUM MESHES: " << node->mNumMeshes << '\n';
 		for (unsigned int i = 0; i < node->mNumMeshes; i++)
 		{
-			aiMesh* assimpMesh = assimpScene->mMeshes[node->mMeshes[i]];
+			const aiMesh* assimpMesh = assimpScene->mMeshes[node->mMeshes[i]];
 			Mesh* mesh = new Mesh(Mesh::MeshLoc(treeObjLoc, node->mName.C_Str(), assimpScene->mMeshes[node->mMeshes[i]]->mName.C_Str()));
 
 			LoadMeshFromAi(mesh, assimpScene, assimpMesh, treeObjLoc, directory, true, matLoadingData, &boneMapping, keepVertsData);

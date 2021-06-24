@@ -167,7 +167,7 @@ namespace GEE
 		virtual std::shared_ptr<Material> FindMaterial(std::string) = 0;
 
 		virtual void RenderCubemapFromTexture(Texture targetTex, Texture tex, Vec2u size, Shader&, int* layer = nullptr, int mipLevel = 0) = 0;
-		virtual void RenderCubemapFromScene(RenderInfo info, GameSceneRenderData* sceneRenderData, GEE_FB::Framebuffer target, GEE_FB::FramebufferAttachment targetTex, GLenum attachmentType, Shader* shader = nullptr, int* layer = nullptr, bool fullRender = false) = 0;
+		virtual void RenderCubemapFromScene(RenderInfo info, GameSceneRenderData* sceneRenderData, GEE_FB::Framebuffer target, GEE_FB::FramebufferAttachment targetTex, Shader* shader = nullptr, int* layer = nullptr, bool fullRender = false) = 0;
 		virtual void RenderText(const RenderInfo& info, const Font& font, std::string content, Transform t, Vec3f color = Vec3f(1.0f), Shader* shader = nullptr, bool convertFromPx = false, const std::pair<TextAlignment, TextAlignment> & = std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::BOTTOM)) = 0; //Pass a shader if you do not want the default shader to be used.
 		virtual void RenderStaticMesh(const RenderInfo& info, const MeshInstance& mesh, const Transform& transform, Shader* shader, Mat4f* lastFrameMVP = nullptr, Material* overrideMaterial = nullptr, bool billboard = false) = 0; //Note: this function does not call the Use method of passed Shader. Do it manually.
 		virtual void RenderStaticMeshes(const RenderInfo&, const std::vector<std::unique_ptr<MeshInstance>>& meshes, const Transform& transform, Shader* shader, Mat4f* lastFrameMVP = nullptr, Material* overrideMaterial = nullptr, bool billboard = false) = 0; //Note: this function does not call the Use method of passed Shader. Do it manually.
@@ -227,10 +227,12 @@ namespace GEE
 		virtual void SelectScene(GameScene* scene, GameScene& editorScene) = 0;
 		template <typename T> void Select(T* obj, GameScene& editorScene);
 
-		virtual void UpdateSettings() = 0;
+		virtual void UpdateGameSettings() = 0;
+		virtual void UpdateEditorSettings() = 0;
 
 		virtual GameManager* GetGameHandle() = 0;
 		virtual GameScene* GetSelectedScene() = 0;
+		virtual GameSettings* GetEditorSettings() = 0;
 
 		virtual void PreviewHierarchyTree(HierarchyTemplate::HierarchyTreeT& tree) = 0;
 	};

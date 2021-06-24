@@ -109,10 +109,13 @@ namespace GEE
 
 	void UICanvas::EraseUIElement(UICanvasElement& element)
 	{
-		if (element.ParentElement)
-			element.ParentElement->EraseChildElement(element);
-		else
-			element.DetachFromCanvas();
+		auto found = std::find_if(UIElements.begin(), UIElements.end(), [&](std::reference_wrapper<UICanvasElement>& elementVec) { return &elementVec.get() == &element; });
+		if (found == UIElements.end())
+			return;
+
+		element.DetachFromCanvas();
+
+		UIElements.erase(found);
 	}
 
 

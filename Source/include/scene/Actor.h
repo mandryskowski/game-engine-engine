@@ -30,6 +30,21 @@ namespace GEE
 		Actor(const Actor&) = delete;
 		Actor(Actor&&);
 
+		void PassToDifferentParent(Actor& newParent)
+		{
+			if (ParentActor)
+			{
+				for (auto& it = ParentActor->Children.begin(); it != ParentActor->Children.end(); it++)
+					if (it->get() == this)
+					{
+						it->release();
+						ParentActor->Children.erase(it);
+						break;
+					}
+			}
+			newParent.AddChild(std::unique_ptr<Actor>(this));
+		}
+
 		virtual void OnStart();
 		virtual void OnStartAll();
 

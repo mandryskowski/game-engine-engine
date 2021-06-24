@@ -9,6 +9,7 @@ namespace GEE
 	{
 	public:
 		Viewport(const Vec2u& pos, const Vec2u& size);
+		Viewport(const Vec2u& size);
 		const Vec2u& GetSize() const;
 		void SetOpenGLState() const;
 		NDCViewport ToNDCViewport(const Vec2u& res) const;
@@ -23,6 +24,7 @@ namespace GEE
 	{
 	public:
 		NDCViewport(Vec2f pos, Vec2f size);
+		NDCViewport(Vec2f size);
 
 		const Vec2f& GetPosition() const;
 		const Vec2f& GetSize() const;

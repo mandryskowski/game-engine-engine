@@ -44,7 +44,7 @@ namespace GEE
 
 		GFb = AddFramebuffer();
 
-		GFb->AttachTexture(gColorBuffers, sharedDepthStencil);
+		GFb->AttachTextures(gColorBuffers, sharedDepthStencil);
 
 		//////////////////////////////SHADER LOADING//////////////////////////////
 		std::vector<std::string> lightShadersNames;
@@ -148,7 +148,7 @@ namespace GEE
 		}
 
 		MainFb = AddFramebuffer();
-		MainFb->AttachTexture(colorBuffers, sharedDepthStencil);	//color and blur buffers
+		MainFb->AttachTextures(colorBuffers, sharedDepthStencil);	//color and blur buffers
 		if (settings.IsVelocityBufferNeeded())
 			MainFb->ExcludeColorTexture("velocityTex");
 
@@ -247,7 +247,7 @@ namespace GEE
 	{
 		StorageFb = AddFramebuffer();
 
-		StorageFb->AttachTexture(std::vector<NamedTexture>{ GEE_FB::reserveColorBuffer(settings.Resolution, GL_RGBA, GL_UNSIGNED_BYTE), GEE_FB::reserveColorBuffer(settings.Resolution, GL_RGBA, GL_UNSIGNED_BYTE) });
+		StorageFb->AttachTextures(std::vector<NamedTexture>{ GEE_FB::reserveColorBuffer(settings.Resolution, GL_RGBA, GL_UNSIGNED_BYTE), GEE_FB::reserveColorBuffer(settings.Resolution, GL_RGBA, GL_UNSIGNED_BYTE) });
 	}
 
 	SMAAToolbox::SMAAToolbox() :
@@ -270,7 +270,7 @@ namespace GEE
 
 		//////////////////////////////FBS LOADING//////////////////////////////
 		SMAAFb = AddFramebuffer();
-		SMAAFb->AttachTexture({ GEE_FB::reserveColorBuffer(settings.Resolution, GL_RGB, GL_UNSIGNED_BYTE, GL_LINEAR, GL_LINEAR), GEE_FB::reserveColorBuffer(settings.Resolution, GL_RGBA, GL_UNSIGNED_BYTE, GL_LINEAR, GL_LINEAR), GEE_FB::reserveColorBuffer(settings.Resolution, GL_RGBA, GL_UNSIGNED_BYTE, GL_LINEAR, GL_LINEAR) });
+		SMAAFb->AttachTextures({ GEE_FB::reserveColorBuffer(settings.Resolution, GL_RGB, GL_UNSIGNED_BYTE, GL_LINEAR, GL_LINEAR), GEE_FB::reserveColorBuffer(settings.Resolution, GL_RGBA, GL_UNSIGNED_BYTE, GL_LINEAR, GL_LINEAR), GEE_FB::reserveColorBuffer(settings.Resolution, GL_RGBA, GL_UNSIGNED_BYTE, GL_LINEAR, GL_LINEAR) });
 
 		//////////////////////////////SHADER LOADING//////////////////////////////
 		std::string smaaDefines = "#define SCR_WIDTH " + std::to_string(static_cast<float>(settings.Resolution.x)) + "\n" + "#define SCR_HEIGHT " + std::to_string(static_cast<float>(settings.Resolution.y)) + "\n";
@@ -417,7 +417,7 @@ namespace GEE
 		for (int i = 0; i < 2; i++)
 		{
 			BlurFramebuffers[i] = AddFramebuffer();
-			BlurFramebuffers[i]->AttachTexture(GEE_FB::reserveColorBuffer(settings.Resolution, GL_RGB16F, GL_FLOAT, GL_LINEAR, GL_LINEAR));
+			BlurFramebuffers[i]->AttachTexture(GEE_FB::reserveColorBuffer(settings.Resolution, GL_RGB16F, GL_FLOAT, GL_LINEAR, GL_LINEAR, GL_TEXTURE_2D, 0, "gaussianBlur" + std::to_string(i)));
 		}
 
 		GaussianBlurShader = AddShader(ShaderLoader::LoadShaders("GaussianBlur", "Shaders/gaussianblur.vs", "Shaders/gaussianblur.fs"));
@@ -465,6 +465,7 @@ namespace GEE
 		ShadowMapArray->GenerateID(GL_TEXTURE_2D_ARRAY);
 		ShadowMapArray->Bind();
 		glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_DEPTH_COMPONENT, shadowMapSize.x, shadowMapSize.y, 16, 0, GL_DEPTH_COMPONENT, GL_FLOAT, (void*)(nullptr));
+		ShadowMapArray->Size = Vec3u(shadowMapSize, 1);
 		glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
@@ -475,6 +476,7 @@ namespace GEE
 		ShadowCubemapArray->GenerateID(GL_TEXTURE_CUBE_MAP_ARRAY);
 		ShadowCubemapArray->Bind();
 		glTexImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 0, GL_DEPTH_COMPONENT, shadowMapSize.x, shadowMapSize.y, 16 * 6, 0, GL_DEPTH_COMPONENT, GL_FLOAT, (void*)(nullptr));
+		ShadowCubemapArray->Size = Vec3u(shadowMapSize, 1);
 		glTexParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	}

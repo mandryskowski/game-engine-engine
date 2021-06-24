@@ -24,6 +24,7 @@ namespace GEE
 		CanvasParent(canvasParent)
 	{
 		Scene.AddBlockingCanvas(*this);
+		std::cout << "UICanvasActor, address: " << this << ", has a canvasparent " << CanvasParent << '\n';
 	}
 
 	UICanvasActor::UICanvasActor(GameScene& scene, Actor* parentActor, const std::string& name, const Transform& t) :
@@ -44,6 +45,7 @@ namespace GEE
 	{
 		FieldsList = dynamic_cast<UIListActor*>(canvasActor.FindActor(Name + "_Fields_List"));
 		Scene.AddBlockingCanvas(*this);
+		std::cout << "UICanvasActor, address: " << this << ", has a canvasparent " << CanvasParent << '\n';
 	}
 
 	void UICanvasActor::OnStart()

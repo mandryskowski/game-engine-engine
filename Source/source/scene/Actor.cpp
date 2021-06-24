@@ -283,6 +283,8 @@ namespace GEE
 
 		if (Scene.GetRootActor() == this)	//Disallow deleting the root of a scene
 			deleteButton.SetDisableInput(true);
+
+		descBuilder.AddField("Set parent to").GetTemplates().ObjectInput<Actor, Actor>(*Scene.GetRootActor(), [this](Actor* newParent) { if (newParent) PassToDifferentParent(*newParent); });
 	}
 
 }

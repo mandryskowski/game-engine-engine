@@ -55,7 +55,7 @@ namespace GEE
 		static std::shared_ptr<Physics::CollisionShape> LoadTriangleMeshCollisionShape(Physics::PhysicsEngineManager* physicsHandle, const aiScene* scene, aiMesh&);
 		static void LoadLightProbes(GameScene&, std::stringstream&);
 
-		static void LoadMeshFromAi(Mesh* meshPtr, const aiScene* scene, aiMesh* mesh, const HTreeObjectLoc& treeObjLoc, const std::string& directory = std::string(), bool bLoadMaterial = true, MaterialLoadingData* matLoadingData = nullptr, BoneMapping* = nullptr, bool keepVertsData = false);
+		static void LoadMeshFromAi(Mesh* meshPtr, const aiScene* scene, const aiMesh* mesh, const HTreeObjectLoc& treeObjLoc, const std::string& directory = std::string(), bool bLoadMaterial = true, MaterialLoadingData* matLoadingData = nullptr, BoneMapping* = nullptr, bool keepVertsData = false);
 
 		static void LoadTransform(std::stringstream&, Transform&);
 		static void LoadTransform(std::stringstream&, Transform&, std::string loadType);

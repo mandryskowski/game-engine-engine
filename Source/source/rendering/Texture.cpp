@@ -6,17 +6,20 @@
 
 namespace GEE
 {
-	Texture::Texture(GLenum type, TextureFormat internalFormat, unsigned int id, const std::string& path) :
+	Texture::Texture(const Vec2u& size, GLenum type, TextureFormat internalFormat, unsigned int id, const std::string& path):
+		Texture(Vec3u(size, 1.0f), type, internalFormat, id, path)
+	{}
+	Texture::Texture(const Vec3u& size, GLenum type, TextureFormat internalFormat, unsigned int id, const std::string& path) :
 		Type(type),
 		InternalFormat(internalFormat),
 		ID(id),
-		Size(Vec2u(0)),
+		Size(size),
 		Path(path)
 	{
 	}
 
 	Texture::Texture():
-		Texture(GL_TEXTURE_2D)
+		Texture(Vec2u(0), GL_TEXTURE_2D)
 	{
 	}
 
@@ -50,9 +53,24 @@ namespace GEE
 		return Path;
 	}
 
-	Vec2u Texture::GetSize() const
+	Vec2u Texture::GetSize2D() const
+	{
+		return static_cast<Vec2u>(Size);
+	}
+
+	Vec3u Texture::GetSize3D() const
 	{
 		return Size;
+	}
+
+	void Texture::SetSize(const Vec2u& size)
+	{
+		Size = Vec3u(size, 1.0f);
+	}
+
+	void Texture::SetSize(const Vec3u& size)
+	{
+		Size = size;
 	}
 
 	bool Texture::HasBeenGenerated() const
@@ -108,9 +126,9 @@ namespace GEE
 		ID = 0;
 	}
 
-	Texture Texture::FromGeneratedGlId(GLenum type, unsigned int glID, TextureFormat internalFormat)
+	Texture Texture::FromGeneratedGlId(const Vec2u& size, GLenum type, unsigned int glID, TextureFormat internalFormat)
 	{
-		return Texture(type, internalFormat, glID);
+		return Texture(size, type, internalFormat, glID);
 	}
 
 	GLenum Texture::Impl::GetTextureFilterGL(TextureFilter filter)
@@ -195,6 +213,7 @@ namespace GEE
 		TextureFormat format = TextureFormat::FromNrChannels(nrChannels);
 
 		glTexImage2D(GL_TEXTURE_2D, 0, internalFormat.GetFormatGl(), size.x, size.y, 0, format.GetFormatGl(), Impl::GetChannelTypeEnum(), buffer);
+		tex.SetSize(size);
 
 		tex.SetMinFilter(MinTextureFilter::Bilinear(), true, true);	//disable mipmaps by default
 
@@ -209,6 +228,7 @@ namespace GEE
 		TextureFormat format = TextureFormat::FromNrChannels(nrChannels);
 
 		glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, internalFormat.GetFormatGl(), size.x, size.y, size.z, 0, format.GetFormatGl(), Impl::GetChannelTypeEnum(), buffer);
+		tex.SetSize(size);
 
 		tex.SetMinFilter(MinTextureFilter::Bilinear(), true, true);	//disable mipmaps by default
 
@@ -223,6 +243,7 @@ namespace GEE
 
 		for (int i = 0; i < 6; i++)
 			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, internalFormat.GetFormatGl(), oneSideSize.x, oneSideSize.y, 0, format.GetFormatGl(), Impl::GetChannelTypeEnum(), buffers[i]);
+		tex.SetSize(oneSideSize);
 
 		tex.SetMinFilter(MinTextureFilter::Bilinear(), true, true);
 
@@ -342,11 +363,11 @@ namespace GEE
 		return internalformat;
 	}
 
-	std::shared_ptr<Texture> reserveTexture(Vec2u size, GLenum internalformat, GLenum type, GLenum magFilter, GLenum minFilter, GLenum texType, unsigned int samples, std::string texName, GLenum format)
+	NamedTexture reserveTexture(Vec2u size, GLenum internalformat, GLenum type, GLenum magFilter, GLenum minFilter, GLenum texType, unsigned int samples, std::string texName, GLenum format)
 	{
-		std::shared_ptr<Texture> tex = std::make_shared<NamedTexture>(NamedTexture(Texture(), texName));
-		tex->GenerateID(texType);
-		tex->Bind();
+		NamedTexture tex = NamedTexture(Texture(), texName);
+		tex.GenerateID(texType);
+		tex.Bind();
 
 		bool bCubemap = texType == GL_TEXTURE_CUBE_MAP || texType == GL_TEXTURE_CUBE_MAP_ARRAY;
 		bool bMultisample = texType == GL_TEXTURE_2D_MULTISAMPLE || texType == GL_TEXTURE_2D_MULTISAMPLE_ARRAY;
@@ -361,7 +382,7 @@ namespace GEE
 		if (format == GL_ZERO)
 			format = (containsAlphaChannel(internalformat)) ? (GL_RGBA) : (GL_RGB);
 
-		std::cout << "Reserving " << size.x << '\n';
+		std::cout << "Reserving " << size.x << " (" << texName << ")\n";
 
 		if (size.x == 546 && type == GL_UNSIGNED_BYTE)
 		{
@@ -376,6 +397,8 @@ namespace GEE
 				glTexImage2D(texImageType + i, 0, internalformat, size.x, size.y, 0, format, type, (void*)(nullptr));
 		}
 
+		tex.Size = Vec3u(size, 1);
+
 		glTexParameteri(texType, GL_TEXTURE_MAG_FILTER, magFilter);
 		glTexParameteri(texType, GL_TEXTURE_MIN_FILTER, minFilter);
 		glTexParameteri(texType, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -384,11 +407,11 @@ namespace GEE
 		return tex;
 	}
 
-	std::shared_ptr<Texture> reserveTexture(Vec3u size, GLenum internalformat, GLenum type, GLenum magFilter, GLenum minFilter, GLenum texType, unsigned int samples, std::string texName, GLenum format)
+	NamedTexture reserveTexture(Vec3u size, GLenum internalformat, GLenum type, GLenum magFilter, GLenum minFilter, GLenum texType, unsigned int samples, std::string texName, GLenum format)
 	{
-		std::shared_ptr<Texture> tex = std::make_shared<NamedTexture>(NamedTexture(Texture(), texName));
-		tex->GenerateID(texType);
-		tex->Bind();
+		NamedTexture tex(NamedTexture(Texture(), texName));
+		tex.GenerateID(texType);
+		tex.Bind();
 
 		bool bCubemap = texType == GL_TEXTURE_CUBE_MAP || texType == GL_TEXTURE_CUBE_MAP_ARRAY;
 		bool bMultisample = texType == GL_TEXTURE_2D_MULTISAMPLE || texType == GL_TEXTURE_2D_MULTISAMPLE_ARRAY;
@@ -403,6 +426,7 @@ namespace GEE
 			format = (containsAlphaChannel(internalformat)) ? (GL_RGBA) : (GL_RGB);
 
 		glTexImage3D(texType, 0, internalformat, size.x, size.y, size.z * ((bCubemap) ? (6) : (1)), 0, format, type, (void*)(nullptr));
+		tex.Size = Vec3u(size);
 
 		glTexParameteri(texType, GL_TEXTURE_MAG_FILTER, magFilter);
 		glTexParameteri(texType, GL_TEXTURE_MIN_FILTER, minFilter);

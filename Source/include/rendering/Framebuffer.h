@@ -27,6 +27,7 @@ namespace GEE
 		class Framebuffer
 		{
 			unsigned int FBO;
+			friend Framebuffer getDefaultFramebuffer(Vec2u);
 		public:
 			std::vector <FramebufferAttachment> ColorBuffers;
 			FramebufferAttachment DepthBuffer;
@@ -47,11 +48,11 @@ namespace GEE
 			 * @brief Generates the Framebuffer Object. If it is already generated, call the Dispose method first.
 			*/
 			void Generate();
-			void AttachTexture(std::vector<NamedTexture> colorTexture, const FramebufferAttachment& depthAttachment = FramebufferAttachment(NamedTexture(), GL_ZERO));
+			void AttachTextures(std::vector<NamedTexture> colorTexture, const FramebufferAttachment& depthAttachment = FramebufferAttachment(NamedTexture(), GL_ZERO));
 			void AttachTexture(const NamedTexture& colorTexture, const FramebufferAttachment& depthAttachment = FramebufferAttachment(NamedTexture(), GL_ZERO));
 
 			void BlitToFBO(unsigned int, int = 1);
-			void Bind(bool changeViewportSize = true, const Viewport* = nullptr) const;
+			void Bind(bool changeViewportSize = false, const Viewport* = nullptr) const;
 			void SetDrawTexture(unsigned int index) const;	//Sets the buffer COLOR_ATTACHMENT0 + index, if available
 			void SetDrawTextures() const;
 			

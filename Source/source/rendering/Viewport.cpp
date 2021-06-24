@@ -9,6 +9,10 @@ namespace GEE
 	{
 
 	}
+	Viewport::Viewport(const Vec2u& size):
+		Viewport(Vec2u(0), size)
+	{
+	}
 	const Vec2u& Viewport::GetSize() const
 	{
 		return Size;
@@ -32,6 +36,11 @@ namespace GEE
 			Position = Vec2f(0.0f);
 			Size = Vec2f(0.0f);
 		}
+	}
+
+	NDCViewport::NDCViewport(Vec2f size):
+		NDCViewport(Vec2u(0), size)
+	{
 	}
 
 	const Vec2f& NDCViewport::GetSize() const

@@ -16,7 +16,7 @@ namespace GEE
 		ProbeIndex(0),
 		ProbeIntensity(1.0f)
 	{
-		EnvironmentMap = *GEE_FB::reserveColorBuffer(Vec2u(1024, 1024), GL_RGB16F, GL_FLOAT, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR, GL_TEXTURE_CUBE_MAP, 0, "Environment cubemap");
+		EnvironmentMap = GEE_FB::reserveColorBuffer(Vec2u(1024, 1024), GL_RGB16F, GL_FLOAT, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR, GL_TEXTURE_CUBE_MAP, 0, "Environment cubemap");
 		Scene.GetRenderData()->AddLightProbe(*this);
 	}
 

@@ -31,7 +31,14 @@ namespace GEE
 	void EditorEventProcessor::Resize(GLFWwindow* window, int width, int height)
 	{
 		EditorHandle->GetGameHandle()->GetGameSettings()->WindowSize = Vec2u(width, height);
-		EditorHandle->UpdateSettings();
+		EditorHandle->GetGameHandle()->GetGameSettings()->Video.Resolution = Vec2u(width, height);
+		EditorHandle->UpdateGameSettings();
+
+		EditorHandle->GetEditorSettings()->WindowSize = Vec2u(width, height);
+		EditorHandle->GetEditorSettings()->Video.Resolution = Vec2u(width, height);
+		EditorHandle->UpdateEditorSettings();
+
+		std::cout << "New res " << EditorHandle->GetGameHandle()->GetGameSettings()->Video.Resolution << '\n';
 	}
 
 
@@ -40,7 +47,8 @@ namespace GEE
 		EditorScene(nullptr),
 		SelectedComp(nullptr),
 		SelectedActor(nullptr),
-		SelectedScene(nullptr)
+		SelectedScene(nullptr),
+		bDebugRenderComponents(true)
 		//CanvasContext(nullptr)
 	{
 		{
@@ -76,6 +84,11 @@ namespace GEE
 		std::vector<GameScene*> scenes(Scenes.size());
 		std::transform(Scenes.begin(), Scenes.end(), scenes.begin(), [](std::unique_ptr<GameScene>& sceneVec) {return sceneVec.get(); });
 		return scenes;
+	}
+
+	GameSettings* GameEngineEngineEditor::GetEditorSettings()
+	{
+		return &EditorSettings;
 	}
 
 	void GameEngineEngineEditor::Init(GLFWwindow* window)
@@ -172,10 +185,11 @@ namespace GEE
 		//SelectScene(ActiveScene, *EditorScene);
 	}
 
-	void GameEngineEngineEditor::UpdateSettings()
+	void GameEngineEngineEditor::UpdateGameSettings()
 	{
 		ViewportRenderCollection->AddTbsRequiredBySettings();
 
+		//Update scene preview texture, since we created a new one
 		Material* previewMaterial = RenderEng.FindMaterial("GEE_3D_SCENE_PREVIEW_MATERIAL").get();
 		if (!previewMaterial)
 		{
@@ -183,7 +197,12 @@ namespace GEE
 			return;
 		}
 		previewMaterial->Textures.clear();
-		previewMaterial->AddTexture(std::make_shared<NamedTexture>(*ViewportRenderCollection->GetTb<FinalRenderTargetToolbox>()->GetFinalFramebuffer().GetColorTexture(0), "albedo1"));
+		previewMaterial->AddTexture(std::make_shared<NamedTexture>(ViewportRenderCollection->GetTb<FinalRenderTargetToolbox>()->GetFinalFramebuffer().GetColorTexture(0), "albedo1"));
+	}
+
+	void GameEngineEngineEditor::UpdateEditorSettings()
+	{
+		HUDRenderCollection->AddTbsRequiredBySettings();
 	}
 
 	void GameEngineEngineEditor::SetupEditorScene()
@@ -240,17 +259,17 @@ namespace GEE
 				editorScene.CreateActorAtRoot<UIButtonActor>("SettingsButton", "Settings", [this, &editorScene]() {
 					UIWindowActor& window = editorScene.CreateActorAtRoot<UIWindowActor>("MainSceneSettingsWindow");
 					window.GetTransform()->SetScale(Vec2f(0.5f));
-					window.AddField("Bloom").GetTemplates().TickBox([this]() -> bool { bool updated = (GetGameSettings()->Video.bBloom = !GetGameSettings()->Video.bBloom); UpdateSettings(); return updated; });
+					window.AddField("Bloom").GetTemplates().TickBox([this]() -> bool { bool updated = (GetGameSettings()->Video.bBloom = !GetGameSettings()->Video.bBloom); UpdateGameSettings(); return updated; });
 
 					UIInputBoxActor& gammaInputBox = window.AddField("Gamma").CreateChild<UIInputBoxActor>("GammaInputBox");
-					gammaInputBox.SetOnInputFunc([this](float val) { GetGameSettings()->Video.MonitorGamma = val; UpdateSettings(); }, [this]()->float { return GetGameSettings()->Video.MonitorGamma; });
+					gammaInputBox.SetOnInputFunc([this](float val) { GetGameSettings()->Video.MonitorGamma = val; UpdateGameSettings(); }, [this]()->float { return GetGameSettings()->Video.MonitorGamma; });
 
 					window.AddField("Default font").GetTemplates().PathInput([this](const std::string& path) { Fonts.push_back(std::make_shared<Font>(*DefaultFont)); *DefaultFont = *EngineDataLoader::LoadFont(*this, path); }, [this]() {return GetDefaultFont()->GetPath(); }, { "*.ttf", "*.otf" });
 					window.AddField("Rebuild light probes").CreateChild<UIButtonActor>("RebuildProbesButton", "Rebuild", [this]() { RenderEng.PreLoopPass(); });
 
 					{
 						auto& aaSelectionList = window.AddField("Anti-aliasing").CreateChild<UIAutomaticListActor>("AASelectionList", Vec3f(2.0f, 0.0f, 0.0f));
-						std::function<void(AntiAliasingType)> setAAFunc = [this](AntiAliasingType type) { const_cast<GameSettings::VideoSettings&>(ViewportRenderCollection->GetSettings()).AAType = type; UpdateSettings(); };
+						std::function<void(AntiAliasingType)> setAAFunc = [this](AntiAliasingType type) { const_cast<GameSettings::VideoSettings&>(ViewportRenderCollection->GetSettings()).AAType = type; UpdateGameSettings(); };
 						aaSelectionList.CreateChild<UIButtonActor>("NoAAButton", "None", [=]() { setAAFunc(AntiAliasingType::AA_NONE); });
 						aaSelectionList.CreateChild<UIButtonActor>("SMAA1XButton", "SMAA1X", [=]() { setAAFunc(AntiAliasingType::AA_SMAA1X); });
 						aaSelectionList.CreateChild<UIButtonActor>("SMAAT2XButton", "SMAAT2X", [=]() { setAAFunc(AntiAliasingType::AA_SMAAT2X); });
@@ -268,13 +287,15 @@ namespace GEE
 							UIWindowActor& texPreviewWindow = window.CreateChildCanvas<UIWindowActor>("PreviewTexWindow");
 							ModelComponent& texPreviewQuad = texPreviewWindow.CreateChild<UIActorDefault>("TexPreviewActor").CreateComponent<ModelComponent>("TexPreviewQuad");
 							Material* mat = new Material("TexturePreviewMat", 0.0f, GetRenderEngineHandle()->FindShader("Forward_NoLight"));
-							mat->AddTexture(std::make_shared<NamedTexture>(Texture::FromGeneratedGlId(GL_TEXTURE_2D, *texID, Texture::TextureFormat::RGBA()), "albedo1"));
+							mat->AddTexture(std::make_shared<NamedTexture>(Texture::FromGeneratedGlId(Vec2u(0), GL_TEXTURE_2D, *texID, Texture::TextureFormat::RGBA()), "albedo1"));
 							texPreviewQuad.AddMeshInst(MeshInstance(GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD), mat));
 
 							texPreviewWindow.AutoClampView();
 
 							}).GetTransform()->Move(Vec2f(2.0f, 0.0f));
 					}
+
+					window.AddField("Render debug icons").GetTemplates().TickBox(bDebugRenderComponents);
 
 					window.FieldsList->Refresh();
 					window.AutoClampView();
@@ -306,7 +327,7 @@ namespace GEE
 
 						std::shared_ptr<Material> scenePreviewMaterial = std::make_shared<Material>("GEE_3D_SCENE_PREVIEW_MATERIAL", 0.0f, GetGameHandle()->GetRenderEngineHandle()->FindShader("Forward_NoLight"));
 						RenderEng.AddMaterial(scenePreviewMaterial);
-						scenePreviewMaterial->AddTexture(std::make_shared<NamedTexture>(*ViewportRenderCollection->GetTb<FinalRenderTargetToolbox>()->GetFinalFramebuffer().GetColorTexture(0), "albedo1"));
+						scenePreviewMaterial->AddTexture(std::make_shared<NamedTexture>(ViewportRenderCollection->GetTb<FinalRenderTargetToolbox>()->GetFinalFramebuffer().GetColorTexture(0), "albedo1"));
 						EditorScene->FindActor("SceneViewportActor")->GetRoot()->GetComponent<ModelComponent>("SceneViewportQuad")->OverrideInstancesMaterial(scenePreviewMaterial.get());
 	}
 
@@ -765,7 +786,7 @@ namespace GEE
 			RenderEng.PrepareScene(*ViewportRenderCollection, GetMainScene()->GetRenderData());
 			RenderEng.FullSceneRender(GetMainScene()->ActiveCamera->GetRenderInfo(*ViewportRenderCollection), GetMainScene()->GetRenderData(), &ViewportRenderCollection->GetTb<FinalRenderTargetToolbox>()->GetFinalFramebuffer());// , Viewport(Vec2f(0.0f), Settings->Video.Resolution)/*Viewport((static_cast<Vec2f>(Settings->WindowSize) - Settings->Video.Resolution) / Vec2f(2.0f, 1.0f), Vec2f(Settings->Video.Resolution.x, Settings->Video.Resolution.y))*/);
 			RenderEng.FindShader("Forward_NoLight")->Use();
-			GetMainScene()->GetRootActor()->DebugRenderAll(GetMainScene()->ActiveCamera->GetRenderInfo(*ViewportRenderCollection), RenderEng.FindShader("Forward_NoLight"));
+			if (bDebugRenderComponents)	GetMainScene()->GetRootActor()->DebugRenderAll(GetMainScene()->ActiveCamera->GetRenderInfo(*ViewportRenderCollection), RenderEng.FindShader("Forward_NoLight"));
 
 			if (SelectedActor && !GetInputRetriever().IsKeyPressed(Key::F2))
 			{

@@ -87,10 +87,10 @@ Shader* LightProbe::GetRenderShader(const RenderToolboxCollection& renderCol) co
 		probeTexArrays->PrefilterMapArr.Bind();
 		glGenerateMipmap(GL_TEXTURE_CUBE_MAP_ARRAY);
 
-		probeTexArrays->BRDFLut = GEE_FB::reserveColorBuffer(Vec2u(512), GL_RGB16F, GL_FLOAT, GL_LINEAR, GL_LINEAR, GL_TEXTURE_2D);
-
+		probeTexArrays->BRDFLut = GEE_FB::reserveColorBuffer(Vec2u(512), GL_RGB16F, GL_FLOAT, GL_LINEAR, GL_LINEAR, GL_TEXTURE_2D, 0, "brdfLutTex");
 		glDisable(GL_CULL_FACE);
 		glDisable(GL_DEPTH_TEST);
+
 		GEE_FB::Framebuffer framebuffer;
 		framebuffer.AttachTexture(probeTexArrays->BRDFLut);
 		framebuffer.Bind(true);

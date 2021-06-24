@@ -48,12 +48,13 @@ namespace GEE
 			return PPToolbox<ToolboxType>(*this, toolboxCol);
 		}
 
-		const Texture* GaussianBlur(PPToolbox<GaussianBlurToolbox> tb, const GEE_FB::Framebuffer& writeFramebuffer, const Viewport* viewport, const Texture* tex, int passes, unsigned int writeColorBuffer = 0) const;
-		const Texture* SSAOPass(RenderInfo&, const Texture* gPosition, const Texture* gNormal);
-		const Texture* SMAAPass(PPToolbox<SMAAToolbox> tb, const GEE_FB::Framebuffer& writeFramebuffer, const Viewport* viewport, const Texture* colorTex, const Texture* depthTex, const Texture* previousColorTex = nullptr, const Texture* velocityTex = nullptr, unsigned int writeColorBuffer = 0, bool bT2x = false) const;
-		const Texture* TonemapGammaPass(PPToolbox<ComposedImageStorageToolbox> tbCollection, const GEE_FB::Framebuffer& writeFramebuffer, const Viewport* viewport, const Texture* colorTex, const Texture* blurTex) const;	//converts from linear to gamma and from HDR data to LDR
-		void Render(RenderToolboxCollection& tbCollection, const GEE_FB::Framebuffer& finalFramebuffer, const Viewport* viewport, const Texture* colorTex, const Texture* blurTex = nullptr, const Texture* depthTex = nullptr, const Texture* velocityTex = nullptr) const;
-		void RenderFullscreenQuad(RenderToolboxCollection& tbCollection, Shader* shader = nullptr, bool useShader = true) const {
+		const Texture GaussianBlur(PPToolbox<GaussianBlurToolbox> tb, const GEE_FB::Framebuffer& writeFramebuffer, const Viewport* viewport, const Texture& tex, int passes, unsigned int writeColorBuffer = 0) const;
+		const Texture SSAOPass(RenderInfo&, const Texture& gPosition, const Texture& gNormal);
+		const Texture SMAAPass(PPToolbox<SMAAToolbox> tb, const GEE_FB::Framebuffer& writeFramebuffer, const Viewport* viewport, const Texture& colorTex, const Texture& depthTex, const Texture& previousColorTex = Texture(), const Texture& velocityTex = Texture(), unsigned int writeColorBuffer = 0, bool bT2x = false) const;
+		const Texture TonemapGammaPass(PPToolbox<ComposedImageStorageToolbox> tbCollection, const GEE_FB::Framebuffer& writeFramebuffer, const Viewport* viewport, const Texture& colorTex, const Texture& blurTex) const;	//converts from linear to gamma and from HDR data to LDR
+		void Render(RenderToolboxCollection& tbCollection, const GEE_FB::Framebuffer& finalFramebuffer, const Viewport* viewport, const Texture& colorTex, Texture blurTex = Texture(), const Texture& depthTex = Texture(), const Texture& velocityTex = Texture()) const;
+		void RenderFullscreenQuad(RenderToolboxCollection& tbCollection, Shader* shader = nullptr, bool useShader = true) const
+		{
 			RenderFullscreenQuad(RenderInfo(tbCollection, Mat4f(1.0f), Mat4f(1.0f), Mat4f(1.0f), Vec3f(0.0f), false), shader, useShader);
 		}
 		void RenderFullscreenQuad(RenderInfo& info, Shader* shader = nullptr, bool useShader = true) const {

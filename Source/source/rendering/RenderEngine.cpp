@@ -287,8 +287,13 @@ namespace GEE
 	void RenderEngine::RenderShadowMaps(RenderToolboxCollection& tbCollection, GameSceneRenderData* sceneRenderData, std::vector <std::reference_wrapper<LightComponent>> lights)
 	{
 		ShadowMappingToolbox* shadowsTb = tbCollection.GetTb<ShadowMappingToolbox>();
+		shadowsTb->ShadowFramebuffer->Bind();
 		bool dynamicShadowRender = tbCollection.GetSettings().ShadowLevel > SettingLevel::SETTING_MEDIUM;
-		shadowsTb->ShadowFramebuffer->Bind(true);
+		{
+			if (shadowsTb->ShadowCubemapArray->GetSize2D() != shadowsTb->ShadowMapArray->GetSize2D())
+				std::cout << "INFO: 2D size of shadow cubemap array does not match the 2D size of shadow map array. This is not currently supported - shadow map array size will be picked.\n";
+			Viewport(shadowsTb->ShadowMapArray->GetSize2D()).SetOpenGLState();
+		}
 		glEnable(GL_DEPTH_TEST);
 		glEnable(GL_CULL_FACE);
 		glCullFace(GL_FRONT);
@@ -336,8 +341,8 @@ namespace GEE
 
 
 				RenderInfo info(tbCollection, viewTranslation, projection, Mat4f(1.0f), Vec3f(0.0f), false, true, false);
-				shadowsTb->ShadowFramebuffer->DepthBuffer = std::make_shared<GEE_FB::FramebufferAttachment>(*shadowsTb->ShadowCubemapArray, GL_DEPTH_ATTACHMENT);
-				RenderCubemapFromScene(info, sceneRenderData, *shadowsTb->ShadowFramebuffer, *shadowsTb->ShadowFramebuffer->DepthBuffer, GL_DEPTH_ATTACHMENT, FindShader("DepthLinearize"), &cubemapFirst);
+				shadowsTb->ShadowFramebuffer->DepthBuffer = GEE_FB::FramebufferAttachment(*shadowsTb->ShadowCubemapArray, GL_DEPTH_ATTACHMENT);
+				RenderCubemapFromScene(info, sceneRenderData, *shadowsTb->ShadowFramebuffer, shadowsTb->ShadowFramebuffer->DepthBuffer, FindShader("DepthLinearize"), &cubemapFirst);
 			}
 			else
 			{
@@ -498,10 +503,9 @@ namespace GEE
 		//info.projection = &p;
 
 		GEE_FB::Framebuffer framebuffer;
-		GEE_FB::FramebufferAttachment depthBuffer = GEE_FB::reserveDepthBuffer(Vec2u(1024), GL_DEPTH_COMPONENT, GL_FLOAT, GL_NEAREST, GL_NEAREST, GL_TEXTURE_2D);
+		framebuffer.Generate();
 		framebuffer.Bind();
-		framebuffer.SetAttachments(Vec2u(1024), GEE_FB::FramebufferAttachment(), nullptr);
-		framebuffer.Bind(true);
+		Viewport(Vec2u(1024)).SetOpenGLState();
 
 		Shader* gShader = probeRenderingCollection.GetTb<DeferredShadingToolbox>()->GeometryShader;
 
@@ -521,11 +525,11 @@ namespace GEE
 			info.projection = p;
 			info.camPos = camPos;
 			gShader->Use();
-			RenderCubemapFromScene(info, sceneRenderData, framebuffer, GEE_FB::FramebufferAttachment(sceneRenderData->LightProbes[i]->GetEnvironmentMap()), GL_COLOR_ATTACHMENT0, gShader, 0, true);
+			RenderCubemapFromScene(info, sceneRenderData, framebuffer, GEE_FB::FramebufferAttachment(sceneRenderData->LightProbes[i]->GetEnvironmentMap(), GL_COLOR_ATTACHMENT0), gShader, 0, true);
 
 			sceneRenderData->LightProbes[i]->GetEnvironmentMap().Bind();
 			glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
-			;
+			
 			LightProbeLoader::ConvoluteLightProbe(*sceneRenderData->LightProbes[i], &sceneRenderData->LightProbes[i]->GetEnvironmentMap());
 			if (PrimitiveDebugger::bDebugProbeLoading)
 				printVector(camPos, "Rendering probe");
@@ -536,7 +540,7 @@ namespace GEE
 		//Init(Vec2u(GameHandle->GetGameSettings()->ViewportData.z, GameHandle->GetGameSettings()->ViewportData.w));
 		CurrentTbCollection = RenderTbCollections[0].get();
 		probeRenderingCollection.Dispose();
-		depthBuffer.Dispose();
+		framebuffer.Dispose();
 
 		std::cout << "Initting done.\n";
 	}
@@ -626,7 +630,7 @@ namespace GEE
 
 		const GEE_FB::Framebuffer& target = ((framebuffer) ? (*framebuffer) : (GEE_FB::getDefaultFramebuffer(GameHandle->GetGameSettings()->WindowSize)));
 		if (viewport.GetSize() == Vec2u(0))
-			viewport = Viewport(Vec2u(0), target.GetSize());
+			viewport = Viewport(target.GetSize());
 
 		//sceneRenderData->LightsBuffer.SubData4fv(info.camPos, 16); TO BYLO TU...
 
@@ -644,7 +648,7 @@ namespace GEE
 			GEE_FB::Framebuffer& GFramebuffer = *deferredTb->GFb;
 
 			{
-				Viewport onlySizeViewport(Vec2u(0), viewport.GetSize());
+				Viewport onlySizeViewport(viewport.GetSize());
 				GFramebuffer.Bind(true, &onlySizeViewport);
 			}
 			glEnable(GL_DEPTH_TEST);
@@ -671,10 +675,10 @@ namespace GEE
 				glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 			////////////////////2.5 SSAO pass
-			const Texture* SSAOtex = nullptr;
+			Texture SSAOtex;
 
 			if (settings.AmbientOcclusionSamples > 0)
-				SSAOtex = Postprocessing.SSAOPass(info, GFramebuffer.GetColorTexture(0).get(), GFramebuffer.GetColorTexture(1).get());	//pass gPosition and gNormal
+				SSAOtex = Postprocessing.SSAOPass(info, GFramebuffer.GetColorTexture(0), GFramebuffer.GetColorTexture(1));	//pass gPosition and gNormal
 
 			////////////////////3. Lighting pass
 			for (int i = 0; i < static_cast<int>(deferredTb->LightShaders.size()); i++)
@@ -690,8 +694,8 @@ namespace GEE
 				GFramebuffer.GetColorTexture(i).Bind(i);
 			}
 
-			if (SSAOtex)
-				SSAOtex->Bind(4);
+			if (SSAOtex.HasBeenGenerated())
+				SSAOtex.Bind(4);
 			std::vector<std::unique_ptr<RenderableVolume>> volumes;
 			volumes.resize(sceneRenderData->Lights.size());
 			std::transform(sceneRenderData->Lights.begin(), sceneRenderData->Lights.end(), volumes.begin(), [](const std::reference_wrapper<LightComponent>& light) {return std::make_unique<LightVolume>(LightVolume(light.get())); });
@@ -772,7 +776,7 @@ namespace GEE
 			GameHandle->GetPhysicsHandle()->DebugRender(*GameHandle->GetMainScene()->GetPhysicsData(), *this, info);
 
 		////////////////////4. Postprocessing pass (Blur + Tonemapping & Gamma Correction)
-		Postprocessing.Render(info.TbCollection, target, &viewport, MainFramebuffer.GetColorTexture(0), (settings.bBloom) ? (MainFramebuffer.GetColorTexture(1).get()) : (nullptr), MainFramebuffer.DepthBuffer.get(), (settings.IsVelocityBufferNeeded()) ? (MainFramebuffer.GetColorTexture("velocityTex").get()) : (nullptr));
+		Postprocessing.Render(info.TbCollection, target, &viewport, MainFramebuffer.GetColorTexture(0), (settings.bBloom) ? (MainFramebuffer.GetColorTexture(1)) : (Texture()), MainFramebuffer.DepthBuffer, (settings.IsVelocityBufferNeeded()) ? (MainFramebuffer.GetColorTexture("velocityTex")) : (Texture()));
 
 		PreviousFrameView = currentFrameView;
 	}
@@ -859,8 +863,12 @@ namespace GEE
 
 	void RenderEngine::RenderCubemapFromTexture(Texture targetTex, Texture tex, Vec2u size, Shader& shader, int* layer, int mipLevel)
 	{
+		CubemapData.DefaultFramebuffer.Dispose();
 		CubemapData.DefaultFramebuffer.Generate();
-		CubemapData.DefaultFramebuffer.Bind(true);
+		{
+			Viewport viewport(size);
+			CubemapData.DefaultFramebuffer.Bind(true, &viewport);
+		}
 		glActiveTexture(GL_TEXTURE0);
 		glDepthFunc(GL_LEQUAL);
 		glDisable(GL_CULL_FACE);
@@ -906,9 +914,12 @@ namespace GEE
 		glEnable(GL_DEPTH_TEST);
 	}
 
-	void RenderEngine::RenderCubemapFromScene(RenderInfo info, GameSceneRenderData* sceneRenderData, GEE_FB::Framebuffer target, GEE_FB::FramebufferAttachment targetTex, GLenum attachmentType, Shader* shader, int* layer, bool fullRender)
+	void RenderEngine::RenderCubemapFromScene(RenderInfo info, GameSceneRenderData* sceneRenderData, GEE_FB::Framebuffer target, GEE_FB::FramebufferAttachment targetTex, Shader* shader, int* layer, bool fullRender)
 	{
-		target.Bind(true);
+		{
+			Viewport viewport(targetTex.GetSize2D());
+			target.Bind(true, &viewport);
+		}
 		glActiveTexture(GL_TEXTURE0);
 
 		Mat4f viewTranslation = info.view;
@@ -918,8 +929,8 @@ namespace GEE
 			targetTex.Bind();
 			switch (targetTex.GetType())
 			{
-			case GL_TEXTURE_CUBE_MAP:		glFramebufferTexture2D(GL_FRAMEBUFFER, attachmentType, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, targetTex.GetID(), 0); break;
-			case GL_TEXTURE_CUBE_MAP_ARRAY: glFramebufferTextureLayer(GL_FRAMEBUFFER, attachmentType, targetTex.GetID(), 0, *layer); *layer = *layer + 1; break;
+			case GL_TEXTURE_CUBE_MAP:		glFramebufferTexture2D(GL_FRAMEBUFFER, targetTex.GetAttachmentEnum(), GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, targetTex.GetID(), 0); break;
+			case GL_TEXTURE_CUBE_MAP_ARRAY: glFramebufferTextureLayer(GL_FRAMEBUFFER, targetTex.GetAttachmentEnum(), targetTex.GetID(), 0, *layer); *layer = *layer + 1; break;
 			default:						std::cerr << "ERROR: Can't render a scene to cubemap texture, when the texture's type is " << targetTex.GetType() << ".\n"; return;
 			}
 			glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
@@ -928,7 +939,7 @@ namespace GEE
 			info.view = CubemapData.DefaultV[i] * viewTranslation;
 			info.CalculateVP();
 
-			(fullRender) ? (FullSceneRender(info, sceneRenderData, &target)) : (RenderRawScene(info, sceneRenderData, shader));
+			(fullRender) ? (FullSceneRender(info, sceneRenderData, &target, Viewport(targetTex.GetSize2D()))) : (RenderRawScene(info, sceneRenderData, shader));
 		}
 	}
 

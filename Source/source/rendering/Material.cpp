@@ -99,30 +99,18 @@ namespace GEE
 	{
 		//Load material's name
 		aiString name;
-		float shininess;
+		float shininess, roughness;
 		aiColor3D color(0.0f);
 		aiColor3D testColor(0.0f);
 		material->Get(AI_MATKEY_NAME, name);
 		material->Get(AI_MATKEY_SHININESS, shininess);
+		material->Get(AI_MATKEY_ROUGHNESS_FACTOR, roughness);
 		material->Get(AI_MATKEY_COLOR_DIFFUSE, color);
 		material->Get(AI_MATKEY_COLOR_SPECULAR, testColor);
 		Localization.Name = name.C_Str();
 		Shininess = shininess;
+		RoughnessColor = roughness;
 		Color = Vec4f(color.r, color.g, color.b, 1.0f);
-
-		material->Get(AI_MATKEY_COLOR_SPECULAR, testColor);
-		printVector(Vec3f(testColor.r, testColor.g, testColor.b), Localization.Name + " ROUGHNESS??");
-		material->Get(AI_MATKEY_COLOR_AMBIENT, testColor);
-		printVector(Vec3f(testColor.r, testColor.g, testColor.b), Localization.Name + " ROUGHNESS??");
-		material->Get(AI_MATKEY_COLOR_REFLECTIVE, testColor);
-		printVector(Vec3f(testColor.r, testColor.g, testColor.b), Localization.Name + " ROUGHNESS??");
-		material->Get(AI_MATKEY_COLOR_TRANSPARENT, testColor);
-		printVector(Vec3f(testColor.r, testColor.g, testColor.b), Localization.Name + " ROUGHNESS??");
-		std::cout << "SHININESS: " << shininess << '\n';
-		float shininessStrength = 0.0f;
-		RoughnessColor = 0.5f;
-		material->Get(AI_MATKEY_SHININESS_STRENGTH, shininessStrength);
-		std::cout << "SHININESS STRENGTH: " << shininessStrength << '\n';
 
 		//This vector should contain all of the texture types that the engine can process (or they will not be loaded)
 		std::vector<std::pair<aiTextureType, std::string>> materialTypes =
@@ -140,7 +128,8 @@ namespace GEE
 		};
 
 		aiString fileBaseColor, fileMetallicRoughness;
-		material->GetTexture(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_BASE_COLOR_TEXTURE, &fileBaseColor);
+
+		//material->GetTexture(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_BASE_COLOR_TEXTURE, &fileBaseColor);
 		material->GetTexture(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE, &fileMetallicRoughness);
 		std::cout << "Test " << fileBaseColor.C_Str() << ", " << fileMetallicRoughness.C_Str() << "\n";
 
