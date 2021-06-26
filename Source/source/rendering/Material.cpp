@@ -210,7 +210,7 @@ namespace GEE
 				}
 
 
-			std::shared_ptr<NamedTexture> tex = std::make_shared<NamedTexture>(Texture::Loader<unsigned char>::FromFile2D(pathStr, (sRGB) ? (Texture::TextureFormat::SRGBA()) : (Texture::TextureFormat::RGBA()), false, Texture::MinTextureFilter::Trilinear(), Texture::MagTextureFilter::Bilinear()), shaderName + std::to_string(i + 1));	//create a new Texture and pass the file path, the shader name (for example albedo1, roughness1, ...) and the sRGB info
+			std::shared_ptr<NamedTexture> tex = std::make_shared<NamedTexture>(Texture::Loader<unsigned char>::FromFile2D(pathStr, (sRGB) ? (Texture::Format::SRGBA()) : (Texture::Format::RGBA()), false, Texture::MinFilter::Trilinear(), Texture::MagFilter::Bilinear()), shaderName + std::to_string(i + 1));	//create a new Texture and pass the file path, the shader name (for example albedo1, roughness1, ...) and the sRGB info
 			tex->SetWrap(GL_REPEAT, GL_REPEAT, 0, true);
 			AddTexture(tex);
 			if (matLoadingData)
@@ -278,7 +278,7 @@ namespace GEE
 			texWindowDescBuilder.AddField("Shader name").CreateChild<UIInputBoxActor>("ShaderNameInputBox").SetOnInputFunc([shaderName](const std::string& input) { *shaderName = input; }, [shaderName]() { return *shaderName; });
 			texWindowDescBuilder.AddField("sRGB").GetTemplates().TickBox([sRGB]() { return *sRGB = !(*sRGB); });
 			texWindowDescBuilder.AddField("Add texture").CreateChild<UIButtonActor>("OKButton", "OK", [this, path, shaderName, sRGB, &addTextureButtonFunc, &list, &addTexWindow, descBuilder]() mutable {
-				auto tex = std::make_shared<NamedTexture>(Texture::Loader<>::FromFile2D(*path, (*sRGB) ? (Texture::TextureFormat::SRGBA()) : (Texture::TextureFormat::RGBA())), *shaderName);
+				auto tex = std::make_shared<NamedTexture>(Texture::Loader<>::FromFile2D(*path, (*sRGB) ? (Texture::Format::SRGBA()) : (Texture::Format::RGBA())), *shaderName);
 				AddTexture(tex);
 				addTextureButtonFunc(list, *tex);
 				addTexWindow.MarkAsKilled();

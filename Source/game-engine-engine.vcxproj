@@ -262,6 +262,7 @@
     <ClInclude Include="include\rendering\Viewport.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="ClassDiagram.cd" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>

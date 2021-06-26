@@ -74,13 +74,5 @@ namespace GEE
 	};
 
 
-	struct Dupa : public GameSettings
-	{
-		struct LOL : public GameSettings::VideoSettings
-		{
-
-		} Video;
-	};
-
 	template <class T> void LoadEnum(std::stringstream& filestr, T& var);
 }

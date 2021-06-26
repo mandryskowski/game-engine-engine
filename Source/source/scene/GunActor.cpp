@@ -114,7 +114,7 @@ namespace GEE
 		if (!rustedIronMaterial)
 		{
 			rustedIronMaterial = GameHandle->GetRenderEngineHandle()->AddMaterial(std::make_shared<Material>("RustedIron"));
-			rustedIronMaterial->AddTexture(std::make_shared<NamedTexture>(Texture::Loader<>::FromFile2D("EngineMaterials/rustediron_albedo.png", Texture::TextureFormat::SRGB(), false, Texture::MinTextureFilter::Trilinear(), Texture::MagTextureFilter::Bilinear()), "albedo1"));
+			rustedIronMaterial->AddTexture(std::make_shared<NamedTexture>(Texture::Loader<>::FromFile2D("EngineMaterials/rustediron_albedo.png", Texture::Format::SRGB(), false, Texture::MinFilter::Trilinear(), Texture::MagFilter::Bilinear()), "albedo1"));
 			rustedIronMaterial->AddTexture(std::make_shared<NamedTexture>(Texture::Loader<>::FromFile2D("EngineMaterials/rustediron_metallic.png"), "metallic1"));
 			rustedIronMaterial->AddTexture(std::make_shared<NamedTexture>(Texture::Loader<>::FromFile2D("EngineMaterials/rustediron_roughness.png"), "roughness1"));
 			rustedIronMaterial->AddTexture(std::make_shared<NamedTexture>(Texture::Loader<>::FromFile2D("EngineMaterials/rustediron_normal.png"), "normal1"));

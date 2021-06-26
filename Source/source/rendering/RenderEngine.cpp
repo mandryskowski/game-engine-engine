@@ -30,12 +30,12 @@ namespace GEE
 		glCullFace(GL_BACK);
 
 		//generate engine's empty texture
-		EmptyTexture = Texture::Loader<>::FromBuffer2D(Vec2u(1, 1), Math::GetDataPtr(Vec3f(0.5f, 0.5f, 1.0f)), 3);
-		EmptyTexture.SetMinFilter(Texture::MinTextureFilter::Nearest(), true, true);
-		EmptyTexture.SetMagFilter(Texture::MagTextureFilter::Nearest(), true);
+		EmptyTexture = Texture::Loader<>::FromBuffer2D(Vec2u(1, 1), Math::GetDataPtr(Vec3f(0.5f, 0.5f, 1.0f)), Texture::Format::RGBA(), 3);
+		EmptyTexture.SetMinFilter(Texture::MinFilter::Nearest(), true, true);
+		EmptyTexture.SetMagFilter(Texture::MagFilter::Nearest(), true);
 	}
 
-	void RenderEngine::Init(Vec2u resolution)
+	void RenderEngine::Init(Vec2u resolution) 
 	{
 		Resize(resolution);
 
@@ -927,6 +927,7 @@ namespace GEE
 		for (int i = 0; i < 6; i++)
 		{
 			targetTex.Bind();
+			//target.AttachTexture(targetTex); TERA OGARNIAM
 			switch (targetTex.GetType())
 			{
 			case GL_TEXTURE_CUBE_MAP:		glFramebufferTexture2D(GL_FRAMEBUFFER, targetTex.GetAttachmentEnum(), GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, targetTex.GetID(), 0); break;

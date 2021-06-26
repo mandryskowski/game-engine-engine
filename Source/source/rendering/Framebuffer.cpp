@@ -288,45 +288,13 @@ namespace GEE
 		return message;
 	}
 
-	bool GEE_FB::containsStencil(GLenum internalformat)
-	{
-		//attachmentType = GL_DEPTH_STENCIL_ATTACHMENT;
-		if (internalformat == GL_DEPTH24_STENCIL8 || internalformat == GL_DEPTH32F_STENCIL8)
-			return true;
-
-		//attachmentType = GL_DEPTH_ATTACHMENT;
-		return false;
-	}
-
 	Framebuffer GEE_FB::getDefaultFramebuffer(Vec2u windowRes)
 	{
 		Framebuffer fb;
 		fb.FBO = 0;
-		fb.ColorBuffers.push_back(FramebufferAttachment(NamedTexture(Texture::FromGeneratedGlId(windowRes, GL_TEXTURE_2D, 0, Texture::TextureFormat::RGB())), GL_COLOR_ATTACHMENT0));
+		fb.ColorBuffers.push_back(FramebufferAttachment(NamedTexture(Texture::FromGeneratedGlId(windowRes, GL_TEXTURE_2D, 0, Texture::Format::RGB())), GL_COLOR_ATTACHMENT0));
 
 		return fb;
-	}
-
-	NamedTexture GEE_FB::reserveColorBuffer(Vec2u size, GLenum internalformat, GLenum type, GLenum magFilter, GLenum minFilter, GLenum texType, unsigned int samples, std::string texName, GLenum format)
-	{
-		return reserveTexture(size, internalformat, type, magFilter, minFilter, texType, samples, texName, format);
-	}
-
-	NamedTexture GEE_FB::reserveColorBuffer(Vec3u size, GLenum internalformat, GLenum type, GLenum magFilter, GLenum minFilter, GLenum texType, unsigned int samples, std::string texName, GLenum format)
-	{
-		return reserveTexture(size, internalformat, type, magFilter, minFilter, texType, samples, texName, format);
-	}
-
-	FramebufferAttachment GEE_FB::reserveDepthBuffer(Vec2u size, GLenum internalformat, GLenum type, GLenum magFilter, GLenum minFilter, GLenum texType, unsigned int samples, std::string texName, GLenum format)
-	{
-		if (format == GL_ZERO)
-			format = ((GEE_FB::containsStencil(internalformat)) ? (GL_DEPTH_STENCIL) : (GL_DEPTH_COMPONENT));
-
-		FramebufferAttachment attachment(
-										reserveTexture(size, internalformat, type, magFilter, minFilter, texType, samples, texName, format),
-										(GEE_FB::containsStencil(internalformat)) ? (GL_DEPTH_STENCIL_ATTACHMENT) : (GL_DEPTH_ATTACHMENT));
-
-		return attachment;
 	}
 
 }

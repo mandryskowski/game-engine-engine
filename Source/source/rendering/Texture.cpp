@@ -4,12 +4,13 @@
 #include <assimp/texture.h>
 #include <vector>
 
+
 namespace GEE
 {
-	Texture::Texture(const Vec2u& size, GLenum type, TextureFormat internalFormat, unsigned int id, const std::string& path):
+	Texture::Texture(const Vec2u& size, GLenum type, Format internalFormat, unsigned int id, const std::string& path):
 		Texture(Vec3u(size, 1.0f), type, internalFormat, id, path)
 	{}
-	Texture::Texture(const Vec3u& size, GLenum type, TextureFormat internalFormat, unsigned int id, const std::string& path) :
+	Texture::Texture(const Vec3u& size, GLenum type, Format internalFormat, unsigned int id, const std::string& path) :
 		Type(type),
 		InternalFormat(internalFormat),
 		ID(id),
@@ -92,13 +93,18 @@ namespace GEE
 		if (wrapR != 0) glTexParameteri(GetType(), GL_TEXTURE_WRAP_R, wrapR);
 	}
 
+	void Texture::SetBorderColor(const Vec4f& color)
+	{
+		glTexParameterfv(Type, GL_TEXTURE_BORDER_COLOR, Math::GetDataPtr(color));
+	}
+
 	void Texture::GenerateMipmap(bool isAlreadyBound)
 	{
 		if (!isAlreadyBound) Bind();
 		glGenerateMipmap(Type);
 	}
 
-	void Texture::SetMinFilter(MinTextureFilter minFilter, bool generateMipmapIfPossible, bool isAlreadyBound)
+	void Texture::SetMinFilter(MinFilter minFilter, bool isAlreadyBound, bool generateMipmapIfPossible)
 	{
 		if (!isAlreadyBound) Bind();
 		glTexParameteri(Type, GL_TEXTURE_MIN_FILTER, Impl::GetTextureFilterGL(minFilter.Filter));
@@ -114,7 +120,7 @@ namespace GEE
 			}
 	}
 
-	void Texture::SetMagFilter(MagTextureFilter magFilter, bool isAlreadyBound)
+	void Texture::SetMagFilter(MagFilter magFilter, bool isAlreadyBound)
 	{
 		glTexParameteri(Type, GL_TEXTURE_MAG_FILTER, Impl::GetTextureFilterGL(magFilter.Filter));
 	}
@@ -126,7 +132,7 @@ namespace GEE
 		ID = 0;
 	}
 
-	Texture Texture::FromGeneratedGlId(const Vec2u& size, GLenum type, unsigned int glID, TextureFormat internalFormat)
+	Texture Texture::FromGeneratedGlId(const Vec2u& size, GLenum type, unsigned int glID, Format internalFormat)
 	{
 		return Texture(size, type, internalFormat, glID);
 	}
@@ -145,7 +151,7 @@ namespace GEE
 	}
 
 	template <typename PixelChannelType>
-	Texture Texture::Loader<PixelChannelType>::FromFile2D(const std::string& filepath, TextureFormat internalFormat, bool flip, MinTextureFilter minFilter, MagTextureFilter magFilter)
+	Texture Texture::Loader<PixelChannelType>::FromFile2D(const std::string& filepath, Format internalFormat, bool flip, MinFilter minFilter, MagFilter magFilter)
 	{
 		if (flip)
 			stbi_set_flip_vertically_on_load(true);
@@ -164,18 +170,16 @@ namespace GEE
 		if (!data)
 		{
 			std::cerr << "Can't load texture from " << filepath << '\n';
-			Texture tex = Texture::Loader<float>::FromBuffer2D(Vec2u(1, 1), Math::GetDataPtr(Vec3f(1.0f, 0.0f, 1.0f)), 3, TextureFormat::RGB());	//set the texture's color to pink so its obvious that this texture is missing
-			tex.SetMinFilter(MinTextureFilter::Nearest(), true, true);	//disable mipmaps
+			Texture tex = Texture::Loader<float>::FromBuffer2D(Vec2u(1, 1), Math::GetDataPtr(Vec3f(1.0f, 0.0f, 1.0f)), Format::RGB(), 3);	//set the texture's color to pink so its obvious that this texture is missing
+			tex.SetMinFilter(MinFilter::Nearest(), true, true);	//disable mipmaps
 			return tex;
 		}
 
-		Texture tex = FromBuffer2D(Vec2u(width, height), data, nrChannels, internalFormat);
+		Texture tex = FromBuffer2D(Vec2u(width, height), data, internalFormat, nrChannels);
 		tex.SetPath(filepath);
 
 		tex.SetMinFilter(minFilter, true, true);
 		tex.SetMagFilter(magFilter, true);
-
-		tex.SetWrap(GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, 0, true);
 
 		if (flip)
 			stbi_set_flip_vertically_on_load(false);
@@ -187,7 +191,7 @@ namespace GEE
 
 
 	template<typename PixelChannelType>
-	Texture Texture::Loader<PixelChannelType>::FromBuffer2D(unsigned int rowWidth, const void* buffer, TextureFormat internalFormat, int desiredChannels)
+	Texture Texture::Loader<PixelChannelType>::FromBuffer2D(unsigned int rowWidth, const void* buffer, Format internalFormat, int desiredChannels)
 	{
 		int width = 0, height = 0, nrChannels = 0;
 
@@ -199,59 +203,91 @@ namespace GEE
 		if (!data)
 			std::cerr << "ERROR: Cannot load pixels from memory in function FromBuffer2D.\n";
 
-		Texture result = FromBuffer2D(Vec2u(width, height), data, nrChannels, internalFormat);
-
+		Texture result = FromBuffer2D(Vec2u(width, height), data, internalFormat, nrChannels);
 		stbi_image_free(data);
 
 		return result;
 	}
 
 	template<typename PixelChannelType>
-	Texture Texture::Loader<PixelChannelType>::FromBuffer2D(const Vec2u& size, const void* buffer, int nrChannels, TextureFormat internalFormat)
+	Texture Texture::Loader<PixelChannelType>::FromBuffer2D(const Vec2u& size, const void* buffer, Format internalFormat, int nrChannels)
+	{
+		return FromBuffer2D(size, buffer, internalFormat, Format::FromNrChannels(nrChannels));
+	}
+
+	template<typename PixelChannelType>
+	Texture Texture::Loader<PixelChannelType>::FromBuffer2D(const Vec2u& size, const void* buffer, Format internalFormat, Format format)
 	{
 		Texture tex = Impl::GenerateEmpty(GL_TEXTURE_2D, internalFormat);
-		TextureFormat format = TextureFormat::FromNrChannels(nrChannels);
 
 		glTexImage2D(GL_TEXTURE_2D, 0, internalFormat.GetFormatGl(), size.x, size.y, 0, format.GetFormatGl(), Impl::GetChannelTypeEnum(), buffer);
 		tex.SetSize(size);
 
-		tex.SetMinFilter(MinTextureFilter::Bilinear(), true, true);	//disable mipmaps by default
+		tex.SetMinFilter(MinFilter::Bilinear(), true, true);	//disable mipmaps by default
+		tex.SetWrap(GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, 0, true);
 
 		return tex;
 	}
 
-
 	template<typename PixelChannelType>
-	Texture Texture::Loader<PixelChannelType>::FromBuffer2DArray(const Vec3u& size, const void* buffer, int nrChannels, TextureFormat internalFormat)
+	Texture Texture::Loader<PixelChannelType>::FromBuffer2DArray(const Vec3u& size, const void* buffer, Format internalFormat, Format format)
 	{
 		Texture tex = Impl::GenerateEmpty(GL_TEXTURE_2D_ARRAY, internalFormat);
-		TextureFormat format = TextureFormat::FromNrChannels(nrChannels);
 
 		glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, internalFormat.GetFormatGl(), size.x, size.y, size.z, 0, format.GetFormatGl(), Impl::GetChannelTypeEnum(), buffer);
 		tex.SetSize(size);
 
-		tex.SetMinFilter(MinTextureFilter::Bilinear(), true, true);	//disable mipmaps by default
+		tex.SetMinFilter(MinFilter::Bilinear(), true, true);	//disable mipmaps by default
+		tex.SetWrap(GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, 0, true);
+
+		return tex;
+	}
+
+
+	template<typename PixelChannelType>
+	Texture Texture::Loader<PixelChannelType>::FromBuffer2DArray(const Vec3u& size, const void* buffer, Format internalFormat, int nrChannels)
+	{
+		return FromBuffer2DArray(size, buffer, internalFormat, Format::FromNrChannels(nrChannels));
+	}
+
+	template<typename PixelChannelType>
+	Texture Texture::Loader<PixelChannelType>::FromBuffersCubemap(const Vec2u& oneSideSize, std::array<const void*, 6> buffers, Format internalFormat, int nrChannels)
+	{
+		Texture tex = Impl::GenerateEmpty(GL_TEXTURE_CUBE_MAP, internalFormat);
+		Format format = Format::FromNrChannels(nrChannels);
+		
+		for (int i = 0; i < 6; i++)
+			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, internalFormat.GetFormatGl(), oneSideSize.x, oneSideSize.y, 0, format.GetFormatGl(), Impl::GetChannelTypeEnum(), buffers[i]);
+		tex.SetSize(oneSideSize);
+
+		tex.SetMinFilter(MinFilter::Bilinear(), true, true);
+		tex.SetWrap(GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, true);
 
 		return tex;
 	}
 
 	template<typename PixelChannelType>
-	Texture Texture::Loader<PixelChannelType>::FromBuffersCubemap(const Vec2u& oneSideSize, const void* buffers[6], int nrChannels, TextureFormat internalFormat)
+	Texture Texture::Loader<PixelChannelType>::FromBuffersCubemapArray(const Vec3u& size, const void* buffer, Format internalFormat, Format format)
 	{
-		Texture tex = Impl::GenerateEmpty(GL_TEXTURE_CUBE_MAP, internalFormat);
-		TextureFormat format = TextureFormat::FromNrChannels(nrChannels);
+		Texture tex = Impl::GenerateEmpty(GL_TEXTURE_CUBE_MAP_ARRAY, internalFormat);
 
-		for (int i = 0; i < 6; i++)
-			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, internalFormat.GetFormatGl(), oneSideSize.x, oneSideSize.y, 0, format.GetFormatGl(), Impl::GetChannelTypeEnum(), buffers[i]);
-		tex.SetSize(oneSideSize);
+		glTexImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 0, internalFormat.GetFormatGl(), size.x, size.y, size.z * 6, 0, format.GetFormatGl(), Impl::GetChannelTypeEnum(), buffer);
+		tex.SetSize(size);
 
-		tex.SetMinFilter(MinTextureFilter::Bilinear(), true, true);
+		tex.SetMinFilter(MinFilter::Bilinear(), true, true);
+		tex.SetWrap(GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, true);
 
 		return tex;
 	}
 
+	template<typename PixelChannelType>
+	Texture Texture::Loader<PixelChannelType>::FromBuffersCubemapArray(const Vec3u& size, const void* buffer, Format internalFormat, int nrChannels)
+	{
+		return FromBuffersCubemapArray(size, buffer, internalFormat, Format::FromNrChannels(nrChannels));
+	}
+
 	template <typename PixelChannelType>
-	Texture Texture::Loader<PixelChannelType>::Impl::GenerateEmpty(GLenum texType, TextureFormat internalFormat)
+	Texture Texture::Loader<PixelChannelType>::Impl::GenerateEmpty(GLenum texType, Format internalFormat)
 	{
 		Texture tex;
 		tex.GenerateID(texType);
@@ -264,29 +300,36 @@ namespace GEE
 
 	template <> GLenum Texture::Loader<unsigned char>::Impl::GetChannelTypeEnum() { return GL_UNSIGNED_BYTE; }
 	template <> GLenum Texture::Loader<float>::Impl::GetChannelTypeEnum() { return GL_FLOAT; }
+	template <> GLenum Texture::Loader<Texture::LoaderArtificialType::Uint24_8>::Impl::GetChannelTypeEnum() { return GL_UNSIGNED_INT_24_8; }
 
 	template <typename PixelChannelType>
-	Texture Texture::Loader<PixelChannelType>::ReserveEmpty2D(const Vec2u& size, TextureFormat internalFormat)
+	Texture Texture::Loader<PixelChannelType>::ReserveEmpty2D(const Vec2u& size, Format internalFormat, Format format)
 	{
-		return FromBuffer2D(size, nullptr, 3, internalFormat);
+		return FromBuffer2D(size, nullptr, internalFormat, format);
 	}
 
 	template<typename PixelChannelType>
-	Texture Texture::Loader<PixelChannelType>::ReserveEmpty2DArray(const Vec3u& size, TextureFormat internalFormat)
+	Texture Texture::Loader<PixelChannelType>::ReserveEmpty2DArray(const Vec3u& size, Format internalFormat, Format format)
 	{
-		return FromBuffer2DArray(size, nullptr, 1, internalFormat);
+		return FromBuffer2DArray(size, nullptr, internalFormat, format);
 	}
 
 	template<typename PixelChannelType>
-	Texture Texture::Loader<PixelChannelType>::ReserveEmptyCubemap(const Vec2u& oneSideSize, TextureFormat internalFormat)
+	Texture Texture::Loader<PixelChannelType>::ReserveEmptyCubemap(const Vec2u& oneSideSize, Format internalFormat)
 	{
-		return FromBuffersCubemap(oneSideSize, { }, 3, internalFormat);
+		return FromBuffersCubemap(oneSideSize, { }, internalFormat, 3);
+	}
+
+	template<typename PixelChannelType>
+	Texture Texture::Loader<PixelChannelType>::ReserveEmptyCubemapArray(const Vec3u& size, Format internalFormat, Format format)
+	{
+		return FromBuffersCubemapArray(size, nullptr, internalFormat, format);
 	}
 
 	template <typename PixelChannelType>
-	Texture Texture::Loader<PixelChannelType>::Assimp::FromAssimpEmbedded(const aiTexture& assimpTex, bool sRGB, MinTextureFilter minFilter, MagTextureFilter magFilter)
+	Texture Texture::Loader<PixelChannelType>::Assimp::FromAssimpEmbedded(const aiTexture& assimpTex, bool sRGB, MinFilter minFilter, MagFilter magFilter)
 	{
-		Texture tex = FromBuffer2D(assimpTex.mWidth, &assimpTex.pcData[0].b, (sRGB) ? (TextureFormat::SRGBA()) : (TextureFormat::RGBA()));
+		Texture tex = FromBuffer2D(assimpTex.mWidth, &assimpTex.pcData[0].b, (sRGB) ? (Format::SRGBA()) : (Format::RGBA()));
 		tex.SetMinFilter(minFilter, true, true);
 		tex.SetMagFilter(magFilter, true);
 		return tex;
@@ -294,6 +337,7 @@ namespace GEE
 
 	template Texture::Loader<unsigned char>;
 	template Texture::Loader<float>;
+	template Texture::Loader<Texture::LoaderArtificialType::Uint24_8>;
 
 	NamedTexture::NamedTexture(const Texture& tex, const std::string& name) :
 		Texture(tex),
@@ -328,23 +372,6 @@ namespace GEE
 		}
 
 		return false;
-	}
-
-	GLenum nrChannelsToFormat(int nrChannels, bool bBGRA, GLenum* internalFormat)
-	{
-		switch (nrChannels)
-		{
-		case 1: return ((bBGRA) ? (GL_BLUE) : (GL_RED));
-		case 2: if (bBGRA) std::cout << "ERROR: in nrChannelsToFormat: No support for GL_BG format. Texture will be loaded as GL_RG\n"; return GL_RG;
-		default:
-			std::cout << "Info: Channel count " << nrChannels << " is not supported. Texture will be loaded as GL_RGB.\n";
-		case 3:
-			return ((bBGRA) ? (GL_BGR) : (GL_RGB));
-		case 4:
-			if (internalFormat)
-				*internalFormat = internalFormatToAlpha(*internalFormat);
-			return ((bBGRA) ? (GL_BGRA) : (GL_RGBA));
-		}
 	}
 
 	GLenum internalFormatToAlpha(GLenum internalformat)

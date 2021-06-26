@@ -8,36 +8,12 @@
 
 namespace GEE
 {
-	/*
-LightProbe::LightProbe(GameSceneRenderData* sceneRenderData)
-{
-	SceneRenderData = sceneRenderData;
-	ProbeNr = sceneRenderData->GetProbeTexArrays()->NextLightProbeNr++;
-	EnvironmentMap = *GEE_FB::reserveColorBuffer(Vec2u(1024, 1024), GL_RGB16F, GL_FLOAT, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR, GL_TEXTURE_CUBE_MAP, 0, "Environment cubemap");
-	RenderHandle = sceneRenderData->GetRenderHandle();
-}
-
-EngineBasicShape LightProbe::GetShape() const
-{
-	return EngineBasicShape::QUAD;
-}
-
-Transform LightProbe::GetTransform() const
-{
-	return Transform();
-}
-
-Shader* LightProbe::GetRenderShader(const RenderToolboxCollection& renderCol) const
-{
-	return renderCol.FindShader("CookTorranceIBL");
-}
-*/
 	void LightProbeLoader::LoadLightProbeFromFile(LightProbeComponent& probe, std::string filepath)
 	{
 		RenderEngineManager* renderHandle = probe.GetScene().GetGameHandle()->GetRenderEngineHandle();
 		probe.Shape = EngineBasicShape::QUAD;
 
-		Texture erTexture = Texture::Loader<float>::FromFile2D(filepath, Texture::TextureFormat::Float16::RGBA(), true, Texture::MinTextureFilter::Bilinear(), Texture::MagTextureFilter::Bilinear());	//load equirectangular hdr texture
+		Texture erTexture = Texture::Loader<float>::FromFile2D(filepath, Texture::Format::Float16::RGBA(), true, Texture::MinFilter::Bilinear(), Texture::MagFilter::Bilinear());	//load equirectangular hdr texture
 		int layer = probe.GetProbeIndex() * 6;
 
 		renderHandle->RenderCubemapFromTexture(probe.GetEnvironmentMap(), erTexture, Vec2u(1024), *renderHandle->FindShader("ErToCubemap"));
@@ -82,12 +58,11 @@ Shader* LightProbe::GetRenderShader(const RenderToolboxCollection& renderCol) co
 	{
 		RenderEngineManager* renderHandle = sceneRenderData->GetRenderHandle();
 		LightProbeTextureArrays* probeTexArrays = sceneRenderData->GetProbeTexArrays();
-		probeTexArrays->IrradianceMapArr = GEE_FB::reserveColorBuffer(Vec3u(16, 16, 8), GL_RGB16F, GL_FLOAT, GL_LINEAR, GL_LINEAR, GL_TEXTURE_CUBE_MAP_ARRAY, 0, "Irradiance cubemap array");
-		probeTexArrays->PrefilterMapArr = GEE_FB::reserveColorBuffer(Vec3u(256, 256, 8), GL_RGB16F, GL_FLOAT, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR, GL_TEXTURE_CUBE_MAP_ARRAY, 0, "Prefilter cubemap array");
-		probeTexArrays->PrefilterMapArr.Bind();
-		glGenerateMipmap(GL_TEXTURE_CUBE_MAP_ARRAY);
+		probeTexArrays->IrradianceMapArr = NamedTexture(Texture::Loader<float>::ReserveEmptyCubemapArray(Vec3u(16, 16, 8), Texture::Format::Float16::RGB()), "Irradiance cubemap array");
+		probeTexArrays->PrefilterMapArr = NamedTexture(Texture::Loader<float>::ReserveEmptyCubemapArray(Vec3u(256, 256, 8), Texture::Format::Float16::RGB()), "Prefilter cubemap array");
+		probeTexArrays->PrefilterMapArr.SetMinFilter(Texture::MinFilter::Trilinear(), true, true);
 
-		probeTexArrays->BRDFLut = GEE_FB::reserveColorBuffer(Vec2u(512), GL_RGB16F, GL_FLOAT, GL_LINEAR, GL_LINEAR, GL_TEXTURE_2D, 0, "brdfLutTex");
+		probeTexArrays->BRDFLut = NamedTexture(Texture::Loader<float>::ReserveEmpty2D(Vec2u(512), Texture::Format::Float16::RGB()), "brdfLutTex");
 		glDisable(GL_CULL_FACE);
 		glDisable(GL_DEPTH_TEST);
 
