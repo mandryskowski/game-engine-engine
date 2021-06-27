@@ -27,7 +27,10 @@ namespace GEE
 		class FramebufferAttachment : public NamedTexture
 		{
 		protected:
-			GLenum AttachmentEnum;
+			GLenum AttachmentEnum; // do usuniecia
+
+			unsigned int AttachmentSlot, TextureLayer;
+			GLenum OverrideTex;
 
 		public:
 			FramebufferAttachment(NamedTexture tex, GLenum attachmentEnum);

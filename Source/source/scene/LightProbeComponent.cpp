@@ -57,6 +57,11 @@ namespace GEE
 		return renderCol.FindShader("CookTorranceIBL");
 	}
 
+	bool LightProbeComponent::IsGlobalProbe() const
+	{
+		return Shape == EngineBasicShape::QUAD;
+	}
+
 	void LightProbeComponent::SetProbeIndex(unsigned int index)
 	{
 		ProbeIndex = index;

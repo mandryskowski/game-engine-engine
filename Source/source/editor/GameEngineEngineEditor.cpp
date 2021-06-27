@@ -34,14 +34,14 @@ namespace GEE
 			return;
 
 		Vec2u newSize(width, height);
-		if (EditorHandle->GetGameHandle()->GetGameSettings()->WindowSize != newSize || EditorHandle->GetGameHandle()->GetGameSettings()->Video.Resolution != newSize)
+		if (EditorHandle->GetGameHandle()->GetGameSettings()->WindowSize != newSize || EditorHandle->GetGameHandle()->GetGameSettings()->Video.Resolution != static_cast<Vec2f>(newSize))
 		{
 			EditorHandle->GetGameHandle()->GetGameSettings()->WindowSize = newSize;
-			EditorHandle->GetGameHandle()->GetGameSettings()->Video.Resolution = newSize;
+			EditorHandle->GetGameHandle()->GetGameSettings()->Video.Resolution = static_cast<Vec2f>(newSize) * Vec2f(0.4f, 0.6f);
 			EditorHandle->UpdateGameSettings();
 		}
 
-		if (EditorHandle->GetEditorSettings()->WindowSize != newSize || EditorHandle->GetEditorSettings()->Video.Resolution != newSize)
+		if (EditorHandle->GetEditorSettings()->WindowSize != newSize || EditorHandle->GetEditorSettings()->Video.Resolution != static_cast<Vec2f>(newSize))
 		{
 			EditorHandle->GetEditorSettings()->WindowSize = newSize;
 			EditorHandle->GetEditorSettings()->Video.Resolution = newSize;
@@ -73,8 +73,8 @@ namespace GEE
 		Settings = std::make_unique<GameSettings>(GameSettings(EngineDataLoader::LoadSettingsFromFile<GameSettings>("Settings.ini")));
 		Vec2f res = static_cast<Vec2f>(Settings->WindowSize);
 		//Settings->ViewportData = glm::uvec4(res.x * 0.3f, res.y * 0.4f, res.x * 0.4, res.y * 0.6f);
-		//Settings->Video.Resolution = Vec2f(res.x * 0.4f, res.y * 0.6f);
-		Settings->Video.Resolution = Vec2f(res.x, res.y);
+		Settings->Video.Resolution = Vec2f(res.x * 0.4f, res.y * 0.6f);
+		//Settings->Video.Resolution = Vec2f(res.x, res.y);
 		Settings->Video.Shading = ShadingModel::SHADING_PBR_COOK_TORRANCE;
 		Init(window);
 	}
@@ -332,8 +332,8 @@ namespace GEE
 						EditorScene = &editorScene;
 
 						EditorScene->FindActor("SceneViewportActor")->GetRoot()->GetComponent<ModelComponent>("SceneViewportQuad")->AddMeshInst(GetGameHandle()->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD));
-						//EditorScene->FindActor("SceneViewportActor")->GetRoot()->GetComponent<ModelComponent>("SceneViewportQuad")->SetTransform(Transform(Vec2f(0.0f, 0.4f), Vec2f(0.4f, 0.6f)));
-						EditorScene->FindActor("SceneViewportActor")->GetRoot()->GetComponent<ModelComponent>("SceneViewportQuad")->SetTransform(Transform(Vec2f(0.0f, 0.4f), Vec2f(1.0f)));
+						EditorScene->FindActor("SceneViewportActor")->GetRoot()->GetComponent<ModelComponent>("SceneViewportQuad")->SetTransform(Transform(Vec2f(0.0f, 0.4f), Vec2f(0.4f, 0.6f)));
+						//EditorScene->FindActor("SceneViewportActor")->GetRoot()->GetComponent<ModelComponent>("SceneViewportQuad")->SetTransform(Transform(Vec2f(0.0f, 0.4f), Vec2f(1.0f)));
 
 						std::shared_ptr<Material> scenePreviewMaterial = std::make_shared<Material>("GEE_3D_SCENE_PREVIEW_MATERIAL", 0.0f, GetGameHandle()->GetRenderEngineHandle()->FindShader("Forward_NoLight"));
 						RenderEng.AddMaterial(scenePreviewMaterial);

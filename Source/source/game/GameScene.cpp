@@ -228,7 +228,8 @@ namespace GEE
 		LightBlockBindingSlot(-1),
 		ProbesLoaded(false),
 		bIsAnUIScene(isAnUIScene),
-		bUIRenderableDepthsDirtyFlag(false)
+		bUIRenderableDepthsSortedDirtyFlag(false),
+		bLightProbesSortedDirtyFlag(false)
 	{
 		if (LightProbes.empty() && RenderHandle->GetShadingModel() == ShadingModel::SHADING_PBR_COOK_TORRANCE)
 		{
@@ -305,6 +306,8 @@ namespace GEE
 		for (int i = 0; i < static_cast<int>(LightProbes.size()); i++)
 			LightProbes[i]->SetProbeIndex(i);
 
+		bLightProbesSortedDirtyFlag = true;
+
 		if (!LightsBuffer.HasBeenGenerated())
 			SetupLights(LightBlockBindingSlot);
 	}
@@ -341,9 +344,27 @@ namespace GEE
 		LightProbes.erase(std::remove_if(LightProbes.begin(), LightProbes.end(), [&lightProbe](LightProbeComponent* lightProbeVec) {return lightProbeVec == &lightProbe; }), LightProbes.end());
 	}
 
+	std::vector<std::unique_ptr<RenderableVolume>> GameSceneRenderData::GetLightProbeVolumes(bool putGlobalProbeAtEnd)
+	{
+		//1. Ensure that probes are sorted so the global probe is the last element of the vector (optional)
+		if (putGlobalProbeAtEnd && bLightProbesSortedDirtyFlag)
+		{
+			std::sort(LightProbes.begin(), LightProbes.end(), [](LightProbeComponent* lhs, LightProbeComponent* rhs) { return rhs->IsGlobalProbe() && !lhs->IsGlobalProbe(); });	//move global probes to the end
+			for (auto& it : LightProbes)
+				std::cout << "Probe " << it->IsGlobalProbe() << "\n";
+			bLightProbesSortedDirtyFlag = false;
+		}
+		//2. Get volumes vector
+		std::vector<std::unique_ptr<RenderableVolume>> probeVolumes;
+		probeVolumes.resize(LightProbes.size());
+		std::transform(LightProbes.begin(), LightProbes.end(), probeVolumes.begin(), [](LightProbeComponent* probe) {return std::make_unique<LightProbeVolume>(LightProbeVolume(*probe)); });
+
+		return probeVolumes;
+	}
+
 	void GameSceneRenderData::MarkUIRenderableDepthsDirty()
 	{
-		bUIRenderableDepthsDirtyFlag = true;
+		bUIRenderableDepthsSortedDirtyFlag = true;
 	}
 
 	void GameSceneRenderData::SetupLights(unsigned int blockBindingSlot)
@@ -397,11 +418,11 @@ namespace GEE
 
 	void GameSceneRenderData::AssertThatUIRenderablesAreSorted()
 	{
-		if (!bUIRenderableDepthsDirtyFlag)
+		if (!bUIRenderableDepthsSortedDirtyFlag)
 			return;
 
 		std::stable_sort(Renderables.begin(), Renderables.end(), [](Renderable* lhs, Renderable* rhs) { return lhs->GetUIDepth() < rhs->GetUIDepth(); });
-		bUIRenderableDepthsDirtyFlag = false;
+		bUIRenderableDepthsSortedDirtyFlag = false;
 	}
 
 	/*

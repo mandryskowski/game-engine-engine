@@ -714,10 +714,9 @@ namespace GEE
 				shader->Uniform3fv("lightProbes[" + std::to_string(i) + "].position", probe->GetTransform().GetWorldTransform().Pos());
 			}
 
-			std::vector<std::unique_ptr<RenderableVolume>> probeVolumes;
-			probeVolumes.resize(sceneRenderData->LightProbes.size());
-			std::transform(sceneRenderData->LightProbes.begin(), sceneRenderData->LightProbes.end(), probeVolumes.begin(), [](LightProbeComponent* probe) {return std::make_unique<LightProbeVolume>(LightProbeVolume(*probe)); });
-			if (!probeVolumes.empty())	//TODO: DELETE. VERY NASTY!!!!!! ADD LOADING LIGHT PROBES FROM FILE AND DONT DELETE THE FIRST PROBE FOR NO REASON
+			auto probeVolumes = sceneRenderData->GetLightProbeVolumes();
+
+			if (!probeVolumes.empty())
 			{
 				//if (framebuffer)
 				;// probeVolumes.pop_back();

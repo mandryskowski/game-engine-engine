@@ -11,6 +11,7 @@ namespace GEE
 {
 	class GameScene;
 	class Event;
+	class RenderableVolume;
 
 	class GameSceneRenderData
 	{
@@ -20,6 +21,7 @@ namespace GEE
 		RenderEngineManager* GetRenderHandle();
 		LightProbeTextureArrays* GetProbeTexArrays();
 		int GetAvailableLightIndex();
+
 		bool ContainsLights() const;
 		bool ContainsLightProbes() const;
 		bool HasLightWithoutShadowMap() const;
@@ -32,6 +34,13 @@ namespace GEE
 		void EraseRenderable(Renderable&);
 		void EraseLight(LightComponent&);
 		void EraseLightProbe(LightProbeComponent&);
+
+		/**
+		 * @brief Get the volumes of all light probes in the scene.
+		 * @param putGlobalProbeAtEnd: ensure that the global probe is the final element of the vector. This is used in rendering the global probe only in areas without any local probe.
+		 * @return the volumes of all light probes in the scene.
+		*/
+		std::vector<std::unique_ptr<RenderableVolume>> GetLightProbeVolumes(bool putGlobalProbeAtEnd = true);
 
 		/**
 		 * @brief Applies if bIsAnUIScene is true. Should be called after the UIDepth of a Renderable has changed.
@@ -72,7 +81,7 @@ namespace GEE
 		 * This allows to render UIElements with different depths correctly
 		*/
 		bool bIsAnUIScene;
-		bool bUIRenderableDepthsDirtyFlag;
+		bool bUIRenderableDepthsSortedDirtyFlag, bLightProbesSortedDirtyFlag;
 
 		std::vector <std::shared_ptr <SkeletonBatch>> SkeletonBatches;
 		std::vector <LightProbeComponent*> LightProbes;

@@ -16,6 +16,8 @@ namespace GEE
 		float GetProbeIntensity() const;
 		Shader* GetRenderShader(const RenderToolboxCollection& renderCol) const;
 
+		bool IsGlobalProbe() const;
+
 		void SetProbeIndex(unsigned int);
 
 		virtual	MaterialInstance GetDebugMatInst(EditorIconState) override;
