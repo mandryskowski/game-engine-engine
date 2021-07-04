@@ -186,9 +186,11 @@ namespace GEE
 
 		float beforePxSpeed = glm::length(Velocity);
 		physx::PxExtendedVec3 prevPos = PxController->getPosition();
+
 		PxController->move(Physics::Util::toPx(Velocity * deltaTime), 0.001f, deltaTime, physx::PxControllerFilters());
+
 		if (isOnGround)
-			PxController->move(Physics::Util::toPx(Vec3f(0.0f, -0.2f, 0.0f)), 0.001f, 0.0f, physx::PxControllerFilters());
+			PxController->move(Physics::Util::toPx(Vec3f(0.0f, -0.2f, 0.0f)), 0.001f, deltaTime, physx::PxControllerFilters());
 		Velocity = Physics::Util::toGlm(PxController->getPosition() - prevPos) / deltaTime;
 
 		if (TextComponent* found = dynamic_cast<TextComponent*>(PossessedActor->GetRoot()->GetComponent("CameraText")))

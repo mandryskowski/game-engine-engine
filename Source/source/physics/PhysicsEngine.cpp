@@ -55,7 +55,7 @@ namespace GEE
 			if (!Cooking)
 				std::cerr << "ERROR! Can't initialize cooking.\n";
 
-			DefaultMaterial = Physics->createMaterial(0.5f, 1.0f, 0.6f);
+			DefaultMaterial = Physics->createMaterial(1.0f, 0.5f, 0.1f);
 		}
 
 		PxShape* PhysicsEngine::CreateTriangleMeshShape(CollisionShape* colShape, Vec3f scale)

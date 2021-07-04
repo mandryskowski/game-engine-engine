@@ -28,7 +28,7 @@ namespace GEE
 	{
 		//////////////////////////////FBS LOADING//////////////////////////////
 		//1. Common attachments
-		GEE_FB::FramebufferAttachment sharedDepthStencil(NamedTexture(Texture::Loader<Texture::LoaderArtificialType::Uint24_8>::ReserveEmpty2D(settings.Resolution, Texture::Format::Uint32::Depth24Stencil8(), Texture::Format::DepthStencil()), "depthStencilTex"), GL_DEPTH_STENCIL_ATTACHMENT);	//we share this buffer between the geometry and main framebuffer - we want deferred-rendered objects depth to influence light volumes&forward rendered objects
+		GEE_FB::FramebufferAttachment sharedDepthStencil(NamedTexture(Texture::Loader<Texture::LoaderArtificialType::Uint24_8>::ReserveEmpty2D(settings.Resolution, Texture::Format::Uint32::Depth24Stencil8(), Texture::Format::DepthStencil()), "depthStencilTex"), AttachmentSlot::DepthStencil());	//we share this buffer between the geometry and main framebuffer - we want deferred-rendered objects depth to influence light volumes&forward rendered objects
 		NamedTexture velocityBuffer(Texture::Loader<float>::ReserveEmpty2D(settings.Resolution, Texture::Format::Float32::RGB()), "velocityTex");
 
 		//2. Geometry framebuffer attachments
@@ -135,7 +135,7 @@ namespace GEE
 		if (deferredTb && !deferredTb->IsSetup())
 			deferredTb = nullptr;
 		
-		GEE_FB::FramebufferAttachment sharedDepthStencil = ((deferredTb) ? (deferredTb->GFb->DepthBuffer) : (GEE_FB::FramebufferAttachment(NamedTexture(Texture::Loader<Texture::LoaderArtificialType::Uint24_8>::ReserveEmpty2D(settings.Resolution, Texture::Format::Uint32::Depth24Stencil8(), Texture::Format::DepthStencil()), "depthStencilTex"), GL_DEPTH_STENCIL_ATTACHMENT)));
+		GEE_FB::FramebufferAttachment sharedDepthStencil = ((deferredTb) ? (deferredTb->GFb->GetAttachment(GEE_FB::AttachmentSlot::DepthStencil())) : (GEE_FB::FramebufferAttachment(NamedTexture(Texture::Loader<Texture::LoaderArtificialType::Uint24_8>::ReserveEmpty2D(settings.Resolution, Texture::Format::Uint32::Depth24Stencil8(), Texture::Format::DepthStencil()), "depthStencilTex"), AttachmentSlot::DepthStencil())));
 		std::vector<NamedTexture> colorBuffers;
 		colorBuffers.push_back(NamedTexture(Texture::Loader<float>::ReserveEmpty2D(settings.Resolution, Texture::Format::Float16::RGBA()), "hdrBuffer"));	//add color buffer
 
@@ -147,14 +147,14 @@ namespace GEE
 		}
 		if (settings.IsVelocityBufferNeeded())
 		{
-			NamedTexture velocityBuffer = ((deferredTb) ? (deferredTb->GFb->GetColorTexture("velocityTex")) : (NamedTexture(Texture::Loader<float>::ReserveEmpty2D(settings.Resolution, Texture::Format::Float16::RGB()), "velocityTex")));
+			NamedTexture velocityBuffer = ((deferredTb) ? (deferredTb->GFb->GetAttachment("velocityTex")) : (NamedTexture(Texture::Loader<float>::ReserveEmpty2D(settings.Resolution, Texture::Format::Float16::RGB()), "velocityTex")));
 			colorBuffers.push_back(velocityBuffer);
 		}
 
 		MainFb = AddFramebuffer();
 		MainFb->AttachTextures(colorBuffers, sharedDepthStencil);	//color and blur buffers
 		if (settings.IsVelocityBufferNeeded())
-			MainFb->ExcludeColorTexture("velocityTex");
+			MainFb->ExcludeDrawSlot(MainFb->GetAttachment("velocityTex").GetAttachmentSlot());
 
 		//////////////////////////////SHADER LOADING//////////////////////////////
 
@@ -176,7 +176,7 @@ namespace GEE
 	{
 		//////////////////////////////FBS LOADING//////////////////////////////
 		SSAOFb = AddFramebuffer();
-		SSAOFb->AttachTexture(NamedTexture(Texture::Loader<float>::ReserveEmpty2D(settings.Resolution, Texture::Format::Red()), "ssaoColorBuffer"));
+		SSAOFb->AttachTextures(NamedTexture(Texture::Loader<float>::ReserveEmpty2D(settings.Resolution, Texture::Format::Red()), "ssaoColorBuffer"));
 
 		//////////////////////////////SHADER LOADING//////////////////////////////
 		Shaders.push_back(ShaderLoader::LoadShadersWithInclData("SSAO", settings.GetShaderDefines(), "Shaders/ssao.vs", "Shaders/ssao.fs"));
@@ -341,7 +341,7 @@ namespace GEE
 	void ComposedImageStorageToolbox::Setup(const GameSettings::VideoSettings& settings)
 	{
 		ComposedImageFb = AddFramebuffer();
-		ComposedImageFb->AttachTexture(NamedTexture(Texture::Loader<>::ReserveEmpty2D(settings.Resolution, Texture::Format::RGB()), "composedImageBuffer"));
+		ComposedImageFb->AttachTextures(NamedTexture(Texture::Loader<>::ReserveEmpty2D(settings.Resolution, Texture::Format::RGB()), "composedImageBuffer"));
 		TonemapGammaShader = AddShader(ShaderLoader::LoadShadersWithInclData("TonemapGamma", std::string((settings.TMType == ToneMappingType::TM_REINHARD) ? ("#define TM_REINHARD\n") : ("")) + settings.GetShaderDefines(settings.Resolution), "Shaders/tonemap_gamma.vs", "Shaders/tonemap_gamma.fs"));
 		TonemapGammaShader->Use();
 		TonemapGammaShader->Uniform1i("HDRbuffer", 0);
@@ -418,7 +418,7 @@ namespace GEE
 			NamedTexture buffer(Texture::Loader<float>::ReserveEmpty2D(settings.Resolution, Texture::Format::Float16::RGBA()), "gaussianBlur" + std::to_string(i));
 			buffer.SetMinFilter(Texture::MinFilter::Bilinear(), true, true);
 			buffer.SetMagFilter(Texture::MagFilter::Bilinear(), true);
-			BlurFramebuffers[i]->AttachTexture(buffer);
+			BlurFramebuffers[i]->AttachTextures(buffer);
 		}
 
 		GaussianBlurShader = AddShader(ShaderLoader::LoadShaders("GaussianBlur", "Shaders/gaussianblur.vs", "Shaders/gaussianblur.fs"));
@@ -488,7 +488,7 @@ namespace GEE
 	{
 
 		FinalFramebuffer = AddFramebuffer();
-		FinalFramebuffer->AttachTexture(NamedTexture(Texture::Loader<>::ReserveEmpty2D(settings.Resolution, Texture::Format::RGB()), "FinalColorBuffer"));
+		FinalFramebuffer->AttachTextures(NamedTexture(Texture::Loader<>::ReserveEmpty2D(settings.Resolution, Texture::Format::RGB()), "FinalColorBuffer"));
 		RenderTarget = FinalFramebuffer->GetColorTexture(0);
 
 		FinalFramebuffer->Bind(false);

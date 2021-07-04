@@ -67,7 +67,7 @@ namespace GEE
 		glDisable(GL_DEPTH_TEST);
 
 		GEE_FB::Framebuffer framebuffer;
-		framebuffer.AttachTexture(probeTexArrays->BRDFLut);
+		framebuffer.AttachTextures(probeTexArrays->BRDFLut);
 		framebuffer.Bind(true);
 		renderHandle->FindShader("BRDFLutGeneration")->Use();
 		renderHandle->RenderStaticMesh(RenderInfo(*renderHandle->GetCurrentTbCollection()), renderHandle->GetBasicShapeMesh(EngineBasicShape::QUAD), Transform(), renderHandle->FindShader("BRDFLutGeneration"));

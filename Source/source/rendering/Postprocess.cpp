@@ -70,7 +70,7 @@ namespace GEE
 			if (i == passes - 1)	//If the calling function specified the framebuffer to write the final result to, bind the given framebuffer for the last pass.
 			{
 				writeFramebuffer.Bind();
-				writeFramebuffer.SetDrawTexture(writeColorBuffer);
+				writeFramebuffer.SetDrawSlot(writeColorBuffer);
 			}
 			else	//For any pass that doesn't match given criteria, just switch the ping pong fbos
 			{
@@ -161,8 +161,9 @@ namespace GEE
 		}
 		else
 		{
-			writeFramebuffer.Bind(true, viewport);
-			writeFramebuffer.SetDrawTexture(writeColorBuffer);
+			if (viewport) writeFramebuffer.Bind(*viewport);
+			else writeFramebuffer.Bind(true);
+			writeFramebuffer.SetDrawSlot(writeColorBuffer);
 		}
 
 		//glEnable(GL_FRAMEBUFFER_SRGB);
@@ -183,8 +184,9 @@ namespace GEE
 			return Texture();
 
 		///////////////4. Temporal resolve (optional)
-		writeFramebuffer.Bind(true);
-		writeFramebuffer.SetDrawTexture(writeColorBuffer);
+		if (viewport) writeFramebuffer.Bind(*viewport);
+		else writeFramebuffer.Bind(true);
+		writeFramebuffer.SetDrawSlot(writeColorBuffer);
 
 		tb.SMAAShaders[3]->Use();
 
@@ -201,8 +203,9 @@ namespace GEE
 
 	const Texture Postprocess::TonemapGammaPass(PPToolbox<ComposedImageStorageToolbox> tb, const GEE_FB::Framebuffer& writeFramebuffer, const Viewport* viewport, const Texture& colorTex, const Texture& blurTex) const
 	{
-		writeFramebuffer.Bind(true, viewport);
-		writeFramebuffer.SetDrawTexture(0);
+		if (viewport) writeFramebuffer.Bind(*viewport);
+		else writeFramebuffer.Bind(true);
+		writeFramebuffer.SetDrawSlot(0);
 
 		glDisable(GL_DEPTH_TEST);
 		//glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -239,8 +242,10 @@ namespace GEE
 			unsigned int previousFrameIndex = (static_cast<int>(FrameIndex) - 1) % storageTb->StorageFb->GetColorTextureCount();
 			const Texture& SMAAresult = SMAAPass(GetPPToolbox<SMAAToolbox>(tbCollection), *storageTb->StorageFb, nullptr, compositedTex, depthTex, storageTb->StorageFb->GetColorTexture(previousFrameIndex), velocityTex, FrameIndex, true);
 
-			finalFramebuffer.Bind(true, viewport);
-			finalFramebuffer.SetDrawTexture(0);
+			if (viewport) finalFramebuffer.Bind(*viewport);
+			else finalFramebuffer.Bind(true);
+
+			finalFramebuffer.SetDrawSlot(0);
 			glEnable(GL_FRAMEBUFFER_SRGB);
 			QuadShader->Use();
 

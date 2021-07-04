@@ -130,8 +130,10 @@ namespace GEE
 		}
 
 		std::unique_ptr<Physics::CollisionObject> dupa = std::make_unique<Physics::CollisionObject>(false, Physics::CollisionShapeType::COLLISION_SPHERE);
-		Physics::CollisionObject& col = *bulletModel->SetCollisionObject(std::move(dupa));
+		Physics::CollisionObject& col = *bulletModel->SetCollisionObject(std::move(dupa));	//dupa is no longer valid
 		GameHandle->GetPhysicsHandle()->ApplyForce(col, GetRoot()->GetTransform().GetWorldTransform().GetFrontVec() * 0.25f);
+		col.ActorPtr->is<physx::PxRigidDynamic>()->setLinearDamping(0.5f);
+		col.ActorPtr->is<physx::PxRigidDynamic>()->setAngularDamping(0.5f);
 
 		actor.ReplaceRoot(std::move(bulletModel));
 
