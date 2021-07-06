@@ -262,11 +262,10 @@ namespace GEE
 		};
 
 		GLenum Type;
+		Format InternalFormat;
 		unsigned int ID;
 		Vec3u Size;
 		std::string Path;
-
-		Format InternalFormat;
 	};
 
 	class NamedTexture : public Texture

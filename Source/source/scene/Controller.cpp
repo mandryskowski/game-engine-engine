@@ -24,7 +24,6 @@ namespace GEE
 		PreviousFramePos(Vec3f(0.0f)),
 		RotationEuler(Vec3f(0.0f))
 	{
-
 		int i = 0;
 		std::generate(MovementAxises.begin(), MovementAxises.end(),
 			[&i]()
@@ -60,7 +59,6 @@ namespace GEE
 		RotationEuler = Vec3f(0.0f);
 
 		PxController = GameHandle->GetPhysicsHandle()->CreateController(*Scene.GetPhysicsData(), PossessedActor->GetTransform()->GetWorldTransform());
-
 
 		std::unique_ptr<Physics::CollisionObject> colObject = std::make_unique<Physics::CollisionObject>(false);
 		colObject->ActorPtr = PxController->getActor();
@@ -304,5 +302,4 @@ namespace GEE
 
 		descBuilder.AddField("PossessedGunActor").GetTemplates().ObjectInput<Actor, GunActor>(*Scene.GetRootActor(), PossessedGunActor);
 	}
-
 }

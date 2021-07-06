@@ -2,7 +2,6 @@
 #include <stb/stb_image.h>
 #include <iostream>
 #include <assimp/texture.h>
-#include <vector>
 
 
 namespace GEE
@@ -106,6 +105,7 @@ namespace GEE
 				case TextureFilter::NearestInterpolateMipmap:
 				case TextureFilter::Trilinear:
 					GenerateMipmap(isAlreadyBound);
+				default: break;
 			}
 	}
 

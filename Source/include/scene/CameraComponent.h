@@ -13,7 +13,7 @@ namespace GEE
 	public:
 		CameraComponent(Actor&, Component* parentComp, std::string name, const Mat4f& projectionMatrix = glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f));
 		CameraComponent(CameraComponent&&);
-		Mat4f GetProjectionMat();		//returns the camera projection matrix - i've decided that each camera should have their own projection mat, because just as in the real world each cam has its own FoV and aspect ratio
+		Mat4f GetProjectionMat();		//returns the camera Projection matrix - i've decided that each camera should have their own Projection mat, because just as in the real world each cam has its own FoV and aspect ratio
 		RenderInfo GetRenderInfo(RenderToolboxCollection& renderCollection);
 
 		void RotateWithMouse(Vec2f);	//rotates camera - you should pass the mouse offset from the center

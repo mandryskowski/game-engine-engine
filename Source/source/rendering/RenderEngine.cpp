@@ -502,7 +502,7 @@ namespace GEE
 
 		//RenderInfo info;
 
-		//info.projection = &p;
+		//info.Projection = &p;
 
 		GEE_FB::Framebuffer framebuffer;
 		framebuffer.Generate();
@@ -607,7 +607,7 @@ namespace GEE
 			for (int i = 0; i < 2; i++)
 			{
 				GLenum error = glGetError();
-				std::cout << "pre initting probes error: " << "(" << sceneIndex << ") " << int(error) << "\n";
+				std::cout << "pre initting probes potential error " << "(" << sceneIndex << ") " << int(error) << "\n";
 				RenderLightProbes(ScenesRenderData[sceneIndex]);
 			}
 			ScenesRenderData[sceneIndex]->ProbesLoaded = true;
@@ -1056,13 +1056,13 @@ namespace GEE
 				if (billboard)
 					modelMat = modelMat * Mat4f(glm::inverse(transform.GetWorldTransform().GetRotationMatrix()) * glm::inverse(Mat3f(info.view)));
 
-				bool bCalcVelocity = GameHandle->GetGameSettings()->Video.IsVelocityBufferNeeded() && info.MainPass;
-				bool jitter = info.MainPass && GameHandle->GetGameSettings()->Video.IsTemporalReprojectionEnabled();
 
 				shader->BindMatrices(modelMat, &info.view, &info.projection, &info.VP);
 
+				bool bCalcVelocity = GameHandle->GetGameSettings()->Video.IsVelocityBufferNeeded() && info.MainPass;
 				if (bCalcVelocity && lastFrameMVP)
 				{
+					bool jitter = info.MainPass && GameHandle->GetGameSettings()->Video.IsTemporalReprojectionEnabled();
 					if (jitter)
 					{
 						Mat4f jitteredMVP = Postprocessing.GetJitterMat(info.TbCollection.GetSettings(), Postprocessing.GetFrameIndex()) * info.VP * modelMat;
@@ -1231,3 +1231,176 @@ namespace GEE
 		return Vec3f(0.0f, -1.0f, 0.0f);
 	}
 }
+
+const GEE::Mesh* GEE::BindingsGL::BoundMesh = nullptr;
+GEE::Shader* GEE::BindingsGL::UsedShader = nullptr;
+const GEE::Material* GEE::BindingsGL::BoundMaterial = nullptr;
+
+GEE::Renderer::Renderer(RenderEngineManager& engineHandle):
+	Impl(engineHandle)
+{
+}
+
+void GEE::Renderer::TextureToCubemap(const Texture& targetCubemap, const Texture& texture, Shader& shader, unsigned int layer, unsigned int mipLevel)
+{
+	GEE_FB::Framebuffer framebuffer;
+	framebuffer.Generate();
+	framebuffer.Bind(Viewport(targetCubemap.GetSize2D()));
+
+	glActiveTexture(GL_TEXTURE0);
+	glDepthFunc(GL_LEQUAL);
+	glDisable(GL_CULL_FACE);
+	glDisable(GL_DEPTH_TEST);
+
+	shader.Use();
+	Mesh cubeMesh = Impl.GetBasicShapeMesh(EngineBasicShape::CUBE);
+
+	if (PrimitiveDebugger::bDebugCubemapFromTex)
+	{
+		std::cout << "0: ";
+		debugFramebuffer();
+	}
+
+	framebuffer.SetDrawSlot(0);
+
+
+
+	for (int i = 0; i < 6; i++)
+	{
+		switch (targetCubemap.GetType())
+		{
+		case GL_TEXTURE_CUBE_MAP:		framebuffer.Attach(GEE_FB::FramebufferAttachment(targetCubemap, static_cast<GEE_FB::Axis>(i), GEE_FB::AttachmentSlot::Color(0), mipLevel), false, false); break;
+		case GL_TEXTURE_CUBE_MAP_ARRAY: framebuffer.Attach(GEE_FB::FramebufferAttachment(targetCubemap, layer++, GEE_FB::AttachmentSlot::Color(0), mipLevel), false, false); break;
+		default:						std::cerr << "ERROR: Can't render a scene to cubemap texture, when the texture's type is " << targetCubemap.GetType() << ".\n"; return;
+		}
+		if (PrimitiveDebugger::bDebugCubemapFromTex)
+		{
+			std::cout << "1: ";
+			debugFramebuffer();
+		}
+
+		texture.Bind();
+
+		MatrixInfoExt info;
+		Impl.SetCubemapSideVP(info, static_cast<GEE_FB::Axis>(i));
+		info.SetCareAboutShader(false);
+
+		Renderer::StaticMeshInstances(info, { cubeMesh }, Transform(), shader);
+		framebuffer.Detach(GEE_FB::AttachmentSlot::Color(0));
+	}
+
+	glEnable(GL_CULL_FACE);
+	glEnable(GL_DEPTH_TEST);
+}
+
+void GEE::Renderer::StaticMeshInstances(const MatrixInfoExt& info, const std::vector<MeshInstance>& meshes, const Transform& transform, Shader& shader, bool billboard)
+{
+	if (meshes.empty())
+		return;
+
+	bool handledShader = false;
+	for (int i = 0; i < static_cast<int>(meshes.size()); i++)
+	{
+		const MeshInstance& meshInst = meshes[i];
+		const Mesh& mesh = meshInst.GetMesh();
+		MaterialInstance* materialInst = meshInst.GetMaterialInst();
+		const Material* material = meshInst.GetMaterialPtr();
+
+		if ((info.GetCareAboutShader() && material && shader.GetName() != material->GetRenderShaderName()) || (info.GetOnlyShadowCasters() && !mesh.CanCastShadow()) || (materialInst && !materialInst->ShouldBeDrawn()))
+			continue;
+
+		if (!handledShader)
+		{
+			handledShader = true;
+
+			Mat4f modelMat = transform.GetWorldTransformMatrix();	//the ComponentTransform's world transform is cached
+			if (billboard)
+				modelMat = modelMat * Mat4f(glm::inverse(transform.GetWorldTransform().GetRotationMatrix()) * glm::inverse(Mat3f(info.GetView())));
+
+
+			shader.BindMatrices(modelMat, &info.GetView(), &info.GetProjection(), &info.GetVP());
+
+		}
+
+		////////////////////////////////////////Impl.BindMesh(&mesh);
+		////////////////////////////////////////Impl::MeshBind->Set(&mesh);
+
+		if (info.GetUseMaterials() && materialInst)
+			;//////////////////////////////////////// Impl::BindMaterialInstance(materialInst);
+
+		mesh.Render();
+	}
+}
+
+void GEE::Renderer::ImplUtil::SetCubemapSideVP(MatrixInfo& info, GEE_FB::Axis cubemapSide)
+{
+	static Mat4f defaultVPs[6] = { glm::lookAt(Vec3f(0.0f), Vec3f(1.0f, 0.0f, 0.0f), Vec3f(0.0f, -1.0f, 0.0f)),
+							glm::lookAt(Vec3f(0.0f), Vec3f(-1.0f, 0.0f, 0.0f), Vec3f(0.0f, -1.0f, 0.0f)),
+							glm::lookAt(Vec3f(0.0f), Vec3f(0.0f, 1.0f, 0.0f), Vec3f(0.0f, 0.0f, 1.0f)),
+							glm::lookAt(Vec3f(0.0f), Vec3f(0.0f, -1.0f, 0.0f), Vec3f(0.0f, 0.0f, -1.0f)),
+							glm::lookAt(Vec3f(0.0f), Vec3f(0.0f, 0.0f, 1.0f), Vec3f(0.0f, -1.0f, 0.0f)),
+							glm::lookAt(Vec3f(0.0f), Vec3f(0.0f, 0.0f, -1.0f), Vec3f(0.0f, -1.0f, 0.0f)), };
+
+	info.SetView(defaultVPs[static_cast<unsigned int>(cubemapSide)]);
+	info.SetProjection(glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, 0.0f, 2.0f));
+	info.CalculateVP();
+}
+
+GEE::Mesh GEE::Renderer::ImplUtil::GetBasicShapeMesh(EngineBasicShape shapeType)
+{
+	return EngineHandle.GetBasicShapeMesh(shapeType);
+}
+
+/*void GEE::Renderer::ImplUtil::BindMesh(const Mesh* mesh)
+{
+	if (Bindings::BoundMesh != mesh)
+	{
+		if (mesh) mesh->Bind();
+		Bindings::BoundMesh = mesh;
+	}
+}
+
+void GEE::Renderer::ImplUtil::UseShader(Shader* shader)
+{
+	if (Bindings::UsedShader != shader)
+	{
+		if (shader) shader->Use();
+		Bindings::UsedShader = shader;
+	}
+}
+
+void GEE::Renderer::Impl::BindMaterial(const Material* material)
+{
+	if (Bindings::BoundMaterial == material)
+		return;
+
+	if (material)
+	{
+		Texture t;
+		material->UpdateWholeUBOData(Bindings::UsedShader, t);
+	}
+	Bindings::BoundMaterial = material;
+}
+
+void GEE::Renderer::Impl::BindMaterialInstance(const MaterialInstance* materialInst)
+{
+	BindMaterial(&materialInst->MaterialRef);
+
+	if (materialInst)
+		materialInst->UpdateInstanceUBOData(Bindings::UsedShader);
+}
+
+void GEE::Renderer::Impl::MeshBinding::Set(const Mesh* mesh)
+{
+	if (BoundMesh != mesh)
+	{
+		if (mesh) mesh->Bind();
+		BoundMesh = mesh;
+	}
+}
+
+const GEE::Mesh* GEE::Renderer::Impl::MeshBinding::Get()
+{
+	return BoundMesh;
+}
+*/

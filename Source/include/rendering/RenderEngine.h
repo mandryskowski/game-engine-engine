@@ -2,6 +2,8 @@
 #include "Postprocess.h"
 #include <game/GameManager.h>
 #include "RenderToolbox.h"
+#include <input/Event.h>
+
 namespace GEE
 {
 	class LightProbe;
@@ -11,6 +13,53 @@ namespace GEE
 	class BoneComponent;
 	class TextComponent;
 	class SkeletonBatch;
+
+	namespace BindingsGL
+	{
+		extern const Mesh* BoundMesh;
+		extern Shader* UsedShader;
+		extern const Material* BoundMaterial;
+	}
+
+	struct Renderer
+	{
+		Renderer(RenderEngineManager&);
+
+		// Complete rendering function
+		void TextureToCubemap(const Texture& targetCubemap, const Texture& texture, Shader& shader, unsigned int layer = std::numeric_limits<unsigned int>::max(), unsigned int mipLevel = 0);
+
+		// Utility rendering function
+		void StaticMeshInstances(const MatrixInfoExt& info, const std::vector<MeshInstance>& meshes, const Transform& transform, Shader& shader, bool billboard = false); //Note: this function does not call the Use method of passed Shader. Do it manually.
+
+		struct Context
+		{
+			Context(const RenderInfo&);
+
+			void RenderVolume(EngineBasicShape, Shader&, const Transform* = nullptr);
+		};
+
+	private:
+		struct ImplUtil
+		{
+			ImplUtil(RenderEngineManager& engineHandle) : EngineHandle(engineHandle) {}
+			void SetCubemapSideVP(MatrixInfo& info, GEE_FB::Axis cubemapSide);
+			Mesh GetBasicShapeMesh(EngineBasicShape);
+
+			struct MeshBinding
+			{
+				static void Set(const Mesh*);
+				static const Mesh* Get();
+			private:
+				static const Mesh* BoundMesh;
+			};
+
+			/*void BindMesh(const Mesh* mesh);
+			void UseShader(Shader* shader);
+			void BindMaterial(const Material* material);
+			void BindMaterialInstance(const MaterialInstance* materialInst);*/
+			RenderEngineManager& EngineHandle;
+		} Impl;
+	};
 
 	class RenderEngine : public RenderEngineManager
 	{
@@ -43,7 +92,6 @@ namespace GEE
 
 		virtual std::shared_ptr<Material> FindMaterial(std::string) override;
 		virtual Shader* FindShader(std::string) override;
-
 
 		void RenderShadowMaps(RenderToolboxCollection& tbCollection, GameSceneRenderData* sceneRenderData, std::vector<std::reference_wrapper<LightComponent>>);
 		void RenderVolume(const RenderInfo&, EngineBasicShape, Shader&, const Transform* = nullptr);

@@ -15,7 +15,6 @@ namespace GEE
 
 		physx::PxFoundation* PhysicsEngine::Foundation = nullptr;
 
-
 		PhysicsEngine::PhysicsEngine(bool* debugmode) :
 			Physics(nullptr),
 			Dispatcher(nullptr),
@@ -204,7 +203,6 @@ namespace GEE
 			Physics::ApplyForce(obj, force);
 		}
 
-
 		void PhysicsEngine::SetupScene(GameScenePhysicsData& scenePhysicsData)
 		{
 			if (!Physics)
@@ -276,7 +274,6 @@ namespace GEE
 						obj->TransformPtr->SetRotationWorld(toGlm(pxTransform.q));
 
 					//obj->TransformPtr->SetMatrix(t.Matrix);
-
 				}
 			}
 		}
@@ -297,7 +294,6 @@ namespace GEE
 					pxTransform.p = toPx(worldTransform.Pos());
 					if (!obj->IgnoreRotation)
 						pxTransform.q = toPx(worldTransform.Rot());
-
 
 					physx::PxShape** shapes = new physx::PxShape * [obj->ActorPtr->getNbShapes()];
 					obj->ActorPtr->getShapes(shapes, obj->ActorPtr->getNbShapes());
@@ -353,7 +349,6 @@ namespace GEE
 
 						shapes[j]->setLocalPose(PxTransform(toPx(static_cast<Mat3f>(worldTransform.GetMatrix()) * shapeTransform->Pos()), (obj->IgnoreRotation) ? (physx::PxQuat()) : (toPx(shapeTransform->Rot()))));
 						obj->ActorPtr->attachShape(*shapes[j]);
-
 					}
 
 					obj->ActorPtr->setGlobalPose(pxTransform);
@@ -371,7 +366,6 @@ namespace GEE
 
 			const PxRenderBuffer& rb = scenePhysicsData.PhysXScene->getRenderBuffer();
 
-
 			std::vector<std::array<Vec3f, 2>> verts;
 			int sizeSum = rb.getNbPoints() + rb.getNbLines() * 2 + rb.getNbTriangles() * 3;
 			int v = 0;
@@ -384,7 +378,6 @@ namespace GEE
 				verts[v][0] = toGlm(point.pos);
 				verts[v++][1] = toVecColor(static_cast<PxDebugColor::Enum>(point.color));
 			}
-
 
 			for (int i = 0; i < static_cast<int>(rb.getNbLines()); i++)
 			{
@@ -407,7 +400,6 @@ namespace GEE
 				verts[v][0] = toGlm(triangle.pos2);
 				verts[v++][1] = toVecColor(static_cast<PxDebugColor::Enum>(triangle.color2));
 			}
-
 
 			glBindVertexArray(VAO);
 			glBindBuffer(GL_ARRAY_BUFFER, VBO);
@@ -439,8 +431,6 @@ namespace GEE
 			//Foundation->release();
 			std::cout << "Physics engine successfully destroyed!\n";
 		}
-
-
 
 		void ApplyForce(CollisionObject& obj, const Vec3f& force)
 		{

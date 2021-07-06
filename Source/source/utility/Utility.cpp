@@ -3,10 +3,11 @@
 
 namespace GEE
 {
-	UniformBuffer::UniformBuffer()
+	UniformBuffer::UniformBuffer():
+	UBO(0),
+	offsetCache(0),
+	BlockBindingSlot(0)
 	{
-		UBO = 0;
-		offsetCache = 0;
 	}
 	void UniformBuffer::Generate(unsigned int blockBindingSlot, size_t size, float* data, GLenum usage)
 	{

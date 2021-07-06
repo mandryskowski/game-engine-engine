@@ -42,7 +42,6 @@ namespace GEE
 		SetFireModel(GetRoot()->GetComponent<ModelComponent>("FireParticle"));
 		std::cout << "Wyszukalem se: " << FireModel << ".\n";
 
-
 		/*
 		GunModel->GetTransform()->AddInterpolator("position", 10.0f, 20.0f, Vec3f(0.0f, 0.0f, -10.0f), InterpolationType::LINEAR);
 		GunModel->GetTransform()->AddInterpolator("rotation", 10.0f, 5.0f, Vec3f(360.0f, 0.0f, 0.0f), InterpolationType::QUADRATIC, false, AnimBehaviour::STOP, AnimBehaviour::EXTRAPOLATE);
@@ -139,7 +138,6 @@ namespace GEE
 
 		actor.DebugHierarchy();
 
-
 		CooldownLeft = FireCooldown;
 	}
 	void GunActor::GetEditorDescription(EditorDescriptionBuilder descBuilder)
@@ -156,5 +154,4 @@ namespace GEE
 
 		//[this]() {}
 	}
-
 }
