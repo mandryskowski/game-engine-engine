@@ -1,4 +1,6 @@
 #include <game/GameSettings.h>
+#include <fstream>
+#include <sstream>
 
 namespace GEE
 {

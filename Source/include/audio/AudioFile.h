@@ -142,7 +142,7 @@ private:
     };
     
     //=============================================================
-    AudioFileFormat determineAudioFileFormat (std::vector<uint8_t>& fileData);
+    static AudioFileFormat determineAudioFileFormat (std::vector<uint8_t>& fileData);
     bool decodeWaveFile (std::vector<uint8_t>& fileData);
     bool decodeAiffFile (std::vector<uint8_t>& fileData);
     
@@ -156,28 +156,28 @@ private:
     //=============================================================
     int32_t fourBytesToInt (std::vector<uint8_t>& source, int startIndex, Endianness endianness = Endianness::LittleEndian);
     int16_t twoBytesToInt (std::vector<uint8_t>& source, int startIndex, Endianness endianness = Endianness::LittleEndian);
-    int getIndexOfString (std::vector<uint8_t>& source, std::string s);
+    static int getIndexOfString (std::vector<uint8_t>& source, std::string s);
     
     //=============================================================
-    T sixteenBitIntToSample (int16_t sample);
+    static T sixteenBitIntToSample (int16_t sample);
     int16_t sampleToSixteenBitInt (T sample);
     
     //=============================================================
     uint8_t sampleToSingleByte (T sample);
-    T singleByteToSample (uint8_t sample);
-    
-    uint32_t getAiffSampleRate (std::vector<uint8_t>& fileData, int sampleRateStartIndex);
-    bool tenByteMatch (std::vector<uint8_t>& v1, int startIndex1, std::vector<uint8_t>& v2, int startIndex2);
-    void addSampleRateToAiffData (std::vector<uint8_t>& fileData, uint32_t sampleRate);
+    static T singleByteToSample (uint8_t sample);
+
+    static uint32_t getAiffSampleRate (std::vector<uint8_t>& fileData, int sampleRateStartIndex);
+    static bool tenByteMatch (std::vector<uint8_t>& v1, int startIndex1, std::vector<uint8_t>& v2, int startIndex2);
+    static void addSampleRateToAiffData (std::vector<uint8_t>& fileData, uint32_t sampleRate);
     T clamp (T v1, T minValue, T maxValue);
     
     //=============================================================
-    void addStringToFileData (std::vector<uint8_t>& fileData, std::string s);
+    static void addStringToFileData (std::vector<uint8_t>& fileData, std::string s);
     void addInt32ToFileData (std::vector<uint8_t>& fileData, int32_t i, Endianness endianness = Endianness::LittleEndian);
     void addInt16ToFileData (std::vector<uint8_t>& fileData, int16_t i, Endianness endianness = Endianness::LittleEndian);
     
     //=============================================================
-    bool writeDataToFile (std::vector<uint8_t>& fileData, std::string filePath);
+    static bool writeDataToFile (std::vector<uint8_t>& fileData, std::string filePath);
     
     //=============================================================
     void reportError (std::string errorMessage);
@@ -607,7 +607,7 @@ bool AudioFile<T>::decodeAiffFile (std::vector<uint8_t>& fileData)
     int numBytesPerSample = bitDepth / 8;
     int numBytesPerFrame = numBytesPerSample * numChannels;
     int totalNumAudioSampleBytes = numSamplesPerChannel * numBytesPerFrame;
-    int samplesStartIndex = s + 16 + (int)offset;
+    int samplesStartIndex = s + 16 + offset;
         
     // sanity check the data
     if ((soundDataChunkSize - 8) != totalNumAudioSampleBytes || totalNumAudioSampleBytes > static_cast<long>(fileData.size() - samplesStartIndex))

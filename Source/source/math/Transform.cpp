@@ -349,13 +349,13 @@ namespace GEE
 	unsigned int Transform::AddDirtyFlag()
 	{
 		DirtyFlags.push_back(true);
-		return (unsigned int)DirtyFlags.size() - 1;
+		return DirtyFlags.size() - 1;
 	}
 
-	void Transform::AddInterpolator(std::string fieldName, std::shared_ptr<InterpolatorBase> interpolator, bool animateFromCurrent)
+	void Transform::AddInterpolator(std::string fieldName, SharedPtr<InterpolatorBase> interpolator, bool animateFromCurrent)
 	{
 		Interpolators.push_back(interpolator);
-		std::shared_ptr<InterpolatorBase> obj = Interpolators.back();
+		SharedPtr<InterpolatorBase> obj = Interpolators.back();
 		Interpolator<Vec3f>* vecCast = dynamic_cast<Interpolator<Vec3f>*>(obj.get());
 		Interpolator<Quatf>* quatCast = dynamic_cast<Interpolator<Quatf>*>(obj.get());
 
@@ -380,13 +380,13 @@ namespace GEE
 	template <class T>
 	void Transform::AddInterpolator(std::string fieldName, float begin, float end, T min, T max, InterpolationType interpType, bool fadeAway, AnimBehaviour before, AnimBehaviour after)
 	{
-		AddInterpolator(fieldName, std::make_unique<Interpolator<T>>(Interpolator<T>(begin, end, min, max, interpType, fadeAway, before, after, false)), false);
+		AddInterpolator(fieldName, MakeUnique<Interpolator<T>>(Interpolator<T>(begin, end, min, max, interpType, fadeAway, before, after, false)), false);
 	}
 
 	template <class T>
 	void Transform::AddInterpolator(std::string fieldName, float begin, float end, T max, InterpolationType interpType, bool fadeAway, AnimBehaviour before, AnimBehaviour after)
 	{
-		AddInterpolator(fieldName, std::make_unique<Interpolator<T>>(Interpolator<T>(begin, end, T(), max, interpType, fadeAway, before, after, true)), true);
+		AddInterpolator(fieldName, MakeUnique<Interpolator<T>>(Interpolator<T>(begin, end, T(), max, interpType, fadeAway, before, after, true)), true);
 	}
 
 	void Transform::Update(float deltaTime)
@@ -454,15 +454,15 @@ namespace GEE
 	{
 		FlagMyDirtiness();
 		Position += static_cast<Mat3f>(GetMatrix()) * t.Position;
-		Rotation *= (Quatf)t.Rotation;
-		_Scale *= (Vec3f)t._Scale;
+		Rotation *= t.Rotation;
+		_Scale *= t._Scale;
 		return *(this);
 	}
 
 	Transform& Transform::operator*=(Transform&& t)
 	{
 		FlagMyDirtiness();
-		return const_cast<Transform&>(*(this)) *= t;
+		return *this *= t;
 	}
 
 	Transform Transform::operator*(const Transform& t) const

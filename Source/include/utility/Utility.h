@@ -1,10 +1,25 @@
 #pragma once
-#include <rendering/Shader.h>
+#include <math/Vec.h>
 #include <vector>
 #include <memory>
+#include <glad/glad.h>
 
 namespace GEE
 {
+	template <typename T> using UniquePtr = std::unique_ptr<T>;
+	template <typename T, typename... Args>
+	constexpr UniquePtr<T> MakeUnique(Args&&... args)
+	{
+		return std::make_unique<T>(std::forward<Args>(args)...);
+	}
+
+	template <typename T> using SharedPtr = std::shared_ptr<T>;
+	template <typename T, typename... Args>
+	constexpr SharedPtr<T> MakeShared(Args&&... args)
+	{
+		return std::make_shared<T>(std::forward<Args>(args)...);
+	}
+
 	enum InterpolationType
 	{
 		CONSTANT,
@@ -38,7 +53,7 @@ namespace GEE
 	struct UniformBuffer
 	{
 		UniformBuffer();
-		void Generate(unsigned int blockBindingSlot, size_t size, float* = nullptr, GLenum = GL_DYNAMIC_DRAW);
+		void Generate(unsigned int blockBindingSlot, size_t size, const float* = nullptr, GLenum = GL_DYNAMIC_DRAW);
 
 		void BindToSlot(unsigned int blockBindingSlot, bool isAlreadyBound);
 
@@ -46,12 +61,12 @@ namespace GEE
 
 		void SubData1i(int, size_t offset);
 		void SubData1f(float, size_t offset);
-		void SubData(size_t size, float* data, size_t offset);
-		void SubData4fv(Vec3f, size_t offset);
+		void SubData(size_t size, const float* data, size_t offset);
+		void SubData4fv(const Vec3f&, size_t offset);
 		void SubData4fv(std::vector<Vec3f>, size_t offset);
-		void SubData4fv(Vec4f, size_t offset);
+		void SubData4fv(const Vec4f, size_t offset);
 		void SubData4fv(std::vector<Vec4f>, size_t offset);
-		void SubDataMatrix4fv(Mat4f, size_t offset);
+		void SubDataMatrix4fv(const Mat4f&, size_t offset);
 		void PadOffset();
 
 		void Dispose();
@@ -86,15 +101,15 @@ namespace GEE
 	void printMatrix(const Mat4f&, std::string title = std::string());
 
 	template<typename To, typename From>
-	std::unique_ptr<To> static_unique_pointer_cast(std::unique_ptr<From>&& old) {
-		return std::unique_ptr<To>{static_cast<To*>(old.release())};
-		//conversion: unique_ptr<FROM>->FROM*->TO*->unique_ptr<TO>
+	UniquePtr<To> static_unique_pointer_cast(UniquePtr<From>&& old) {
+		return UniquePtr<To>{static_cast<To*>(old.release())};
+		//conversion: UniquePtr<FROM>->FROM*->TO*->UniquePtr<TO>
 	}
 
 	template <typename BaseClass, typename ChildClass>
-	ChildClass& creator(std::unique_ptr<BaseClass>& objectOwner, ChildClass&& objectConstructor)
+	ChildClass& creator(UniquePtr<BaseClass>& objectOwner, ChildClass&& objectConstructor)
 	{
-		objectOwner = static_unique_pointer_cast<BaseClass>(std::make_unique<ChildClass>(std::move(objectConstructor)));
+		objectOwner = static_unique_pointer_cast<BaseClass>(MakeUnique<ChildClass>(std::move(objectConstructor)));
 		return dynamic_cast<ChildClass>(*objectOwner);
 	}
 

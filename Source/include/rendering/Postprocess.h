@@ -33,7 +33,7 @@ namespace GEE
 
 		friend class RenderEngine;	//usun to
 
-		std::shared_ptr<Shader> QuadShader;
+		SharedPtr<Shader> QuadShader;
 
 		mutable unsigned int FrameIndex;
 
@@ -48,10 +48,17 @@ namespace GEE
 			return PPToolbox<ToolboxType>(*this, toolboxCol);
 		}
 
-		const Texture GaussianBlur(PPToolbox<GaussianBlurToolbox> tb, const GEE_FB::Framebuffer& writeFramebuffer, const Viewport* viewport, const Texture& tex, int passes, unsigned int writeColorBuffer = 0) const;
-		const Texture SSAOPass(RenderInfo&, const Texture& gPosition, const Texture& gNormal);
-		const Texture SMAAPass(PPToolbox<SMAAToolbox> tb, const GEE_FB::Framebuffer& writeFramebuffer, const Viewport* viewport, const Texture& colorTex, const Texture& depthTex, const Texture& previousColorTex = Texture(), const Texture& velocityTex = Texture(), unsigned int writeColorBuffer = 0, bool bT2x = false) const;
-		const Texture TonemapGammaPass(PPToolbox<ComposedImageStorageToolbox> tbCollection, const GEE_FB::Framebuffer& writeFramebuffer, const Viewport* viewport, const Texture& colorTex, const Texture& blurTex) const;	//converts from linear to gamma and from HDR data to LDR
+		static Texture GaussianBlur(PPToolbox<GaussianBlurToolbox> tb, const GEE_FB::Framebuffer& writeFramebuffer,
+		                            const Viewport* viewport, const Texture& tex, int passes,
+		                            unsigned int writeColorBuffer = 0);
+		Texture SSAOPass(RenderInfo&, const Texture& gPosition, const Texture& gNormal) const;
+		Texture SMAAPass(PPToolbox<SMAAToolbox> tb, const GEE_FB::Framebuffer& writeFramebuffer,
+		                 const Viewport* viewport, const Texture& colorTex, const Texture& depthTex,
+		                 const Texture& previousColorTex = Texture(), const Texture& velocityTex = Texture(),
+		                 unsigned int writeColorBuffer = 0, bool bT2x = false) const;
+		static Texture TonemapGammaPass(PPToolbox<ComposedImageStorageToolbox> tbCollection,
+		                                const GEE_FB::Framebuffer& writeFramebuffer, const Viewport* viewport,
+		                                const Texture& colorTex, const Texture& blurTex);	//converts from linear to gamma and from HDR data to LDR
 		void Render(RenderToolboxCollection& tbCollection, const GEE_FB::Framebuffer& finalFramebuffer, const Viewport* viewport, const Texture& colorTex, Texture blurTex = Texture(), const Texture& depthTex = Texture(), const Texture& velocityTex = Texture()) const;
 		void RenderFullscreenQuad(RenderToolboxCollection& tbCollection, Shader* shader = nullptr, bool useShader = true) const
 		{
@@ -63,6 +70,6 @@ namespace GEE
 			RenderHandle->RenderStaticMesh(info, MeshInstance(RenderHandle->GetBasicShapeMesh(EngineBasicShape::QUAD), nullptr), Transform(), shader);
 		}
 
-		void Dispose();
+		static void Dispose();
 	};
 }

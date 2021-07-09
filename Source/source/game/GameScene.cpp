@@ -1,5 +1,4 @@
 #include <scene/Actor.h>
-#include <scene/BoneComponent.h>
 #include <rendering/LightProbe.h>
 #include <scene/RenderableComponent.h>
 #include <scene/LightComponent.h>
@@ -17,16 +16,16 @@
 namespace GEE
 {
 	GameScene::GameScene(GameManager& gameHandle, const std::string& name, bool isAnUIScene) :
-		RenderData(std::make_unique<GameSceneRenderData>(gameHandle.GetRenderEngineHandle(), isAnUIScene)),
-		PhysicsData(std::make_unique<Physics::GameScenePhysicsData>(gameHandle.GetPhysicsHandle())),
-		AudioData(std::make_unique<Audio::GameSceneAudioData>(gameHandle.GetAudioEngineHandle())),
+		RenderData(MakeUnique<GameSceneRenderData>(gameHandle.GetRenderEngineHandle(), isAnUIScene)),
+		PhysicsData(MakeUnique<Physics::GameScenePhysicsData>(gameHandle.GetPhysicsHandle())),
+		AudioData(MakeUnique<Audio::GameSceneAudioData>(gameHandle.GetAudioEngineHandle())),
 		ActiveCamera(nullptr),
 		Name(name),
 		GameHandle(&gameHandle),
 		bKillingProcessStarted(false),
 		CurrentBlockingCanvas(nullptr)
 	{
-		RootActor = std::make_unique<Actor>(*this, nullptr, "SceneRoot");
+		RootActor = MakeUnique<Actor>(*this, nullptr, "SceneRoot");
 		BlockingCanvases;
 	}
 
@@ -41,7 +40,7 @@ namespace GEE
 		bKillingProcessStarted(scene.bKillingProcessStarted),
 		CurrentBlockingCanvas(nullptr)
 	{
-		RootActor = std::make_unique<Actor>(*this, nullptr, "SceneRoot");
+		RootActor = MakeUnique<Actor>(*this, nullptr, "SceneRoot");
 	}
 
 	const std::string& GameScene::GetName() const
@@ -141,21 +140,21 @@ namespace GEE
 		return currentNameCandidate;
 	}
 
-	Actor& GameScene::AddActorToRoot(std::unique_ptr<Actor> actor)
+	Actor& GameScene::AddActorToRoot(UniquePtr<Actor> actor)
 	{
 		return RootActor->AddChild(std::move(actor));
 	}
 
 	HierarchyTemplate::HierarchyTreeT& GameScene::CreateHierarchyTree(const std::string& name)
 	{
-		HierarchyTrees.push_back(std::make_unique<HierarchyTemplate::HierarchyTreeT>(HierarchyTemplate::HierarchyTreeT(*this, name)));
+		HierarchyTrees.push_back(MakeUnique<HierarchyTemplate::HierarchyTreeT>(HierarchyTemplate::HierarchyTreeT(*this, name)));
 		std::cout << "Utworzono drzewo z root " << &HierarchyTrees.back()->GetRoot() << " - " << HierarchyTrees.back()->GetName() << '\n';
 		return *HierarchyTrees.back();
 	}
 
 	HierarchyTemplate::HierarchyTreeT* GameScene::FindHierarchyTree(const std::string& name, HierarchyTemplate::HierarchyTreeT* treeToIgnore)
 	{
-		auto found = std::find_if(HierarchyTrees.begin(), HierarchyTrees.end(), [name, treeToIgnore](const std::unique_ptr<HierarchyTemplate::HierarchyTreeT>& tree) { return tree->GetName() == name && tree.get() != treeToIgnore; });
+		auto found = std::find_if(HierarchyTrees.begin(), HierarchyTrees.end(), [name, treeToIgnore](const UniquePtr<HierarchyTemplate::HierarchyTreeT>& tree) { return tree->GetName() == name && tree.get() != treeToIgnore; });
 		if (found != HierarchyTrees.end())
 			return (*found).get();
 
@@ -164,7 +163,7 @@ namespace GEE
 
 	void GameScene::HandleEventAll(const Event& ev)
 	{
-		const Vec2f mouseNDC = static_cast<Vec2f>(GameHandle->GetInputRetriever().GetMousePositionNDC());
+		const Vec2f mouseNDC = GameHandle->GetInputRetriever().GetMousePositionNDC();
 		auto found = std::find_if(BlockingCanvases.rbegin(), BlockingCanvases.rend(), [&mouseNDC](UICanvas* canvas) { return canvas->ContainsMouseCheck(mouseNDC) && !(dynamic_cast<UICanvasActor*>(canvas)->IsBeingKilled()); });
 		if (found != BlockingCanvases.rend())
 			CurrentBlockingCanvas = *found;
@@ -224,7 +223,7 @@ namespace GEE
 
 	GameSceneRenderData::GameSceneRenderData(RenderEngineManager* renderHandle, bool isAnUIScene) :
 		RenderHandle(renderHandle),
-		ProbeTexArrays(std::make_shared<LightProbeTextureArrays>(LightProbeTextureArrays())),
+		ProbeTexArrays(MakeShared<LightProbeTextureArrays>(LightProbeTextureArrays())),
 		LightBlockBindingSlot(-1),
 		ProbesLoaded(false),
 		bIsAnUIScene(isAnUIScene),
@@ -312,12 +311,12 @@ namespace GEE
 			SetupLights(LightBlockBindingSlot);
 	}
 
-	std::shared_ptr<SkeletonInfo> GameSceneRenderData::AddSkeletonInfo()
+	SharedPtr<SkeletonInfo> GameSceneRenderData::AddSkeletonInfo()
 	{
-		std::shared_ptr<SkeletonInfo> info = std::make_shared<SkeletonInfo>(SkeletonInfo());
+		SharedPtr<SkeletonInfo> info = MakeShared<SkeletonInfo>(SkeletonInfo());
 		if (SkeletonBatches.empty() || !SkeletonBatches.back()->AddSkeleton(info))
 		{
-			SkeletonBatches.push_back(std::make_shared<SkeletonBatch>());
+			SkeletonBatches.push_back(MakeShared<SkeletonBatch>());
 			if (!SkeletonBatches.back()->AddSkeleton(info))
 				std::cerr << "CRITICAL ERROR! Too many bones in SkeletonInfo for a SkeletonBatch\n";
 		}
@@ -344,7 +343,7 @@ namespace GEE
 		LightProbes.erase(std::remove_if(LightProbes.begin(), LightProbes.end(), [&lightProbe](LightProbeComponent* lightProbeVec) {return lightProbeVec == &lightProbe; }), LightProbes.end());
 	}
 
-	std::vector<std::unique_ptr<RenderableVolume>> GameSceneRenderData::GetLightProbeVolumes(bool putGlobalProbeAtEnd)
+	std::vector<UniquePtr<RenderableVolume>> GameSceneRenderData::GetLightProbeVolumes(bool putGlobalProbeAtEnd)
 	{
 		//1. Ensure that probes are sorted so the global probe is the last element of the vector (optional)
 		if (putGlobalProbeAtEnd && bLightProbesSortedDirtyFlag)
@@ -355,9 +354,9 @@ namespace GEE
 			bLightProbesSortedDirtyFlag = false;
 		}
 		//2. Get volumes vector
-		std::vector<std::unique_ptr<RenderableVolume>> probeVolumes;
+		std::vector<UniquePtr<RenderableVolume>> probeVolumes;
 		probeVolumes.resize(LightProbes.size());
-		std::transform(LightProbes.begin(), LightProbes.end(), probeVolumes.begin(), [](LightProbeComponent* probe) {return std::make_unique<LightProbeVolume>(LightProbeVolume(*probe)); });
+		std::transform(LightProbes.begin(), LightProbes.end(), probeVolumes.begin(), [](LightProbeComponent* probe) {return MakeUnique<LightProbeVolume>(LightProbeVolume(*probe)); });
 
 		return probeVolumes;
 	}

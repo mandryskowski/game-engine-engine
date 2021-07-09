@@ -12,11 +12,15 @@
 
 #include <input/InputDevicesStateRetriever.h>
 
+#include <rendering/OutlineRenderer.h>
+
 namespace GEE
 {
 	RenderEngine::RenderEngine(GameManager* gameHandle) :
 		GameHandle(gameHandle),
+		Resolution(),
 		PreviousFrameView(Mat4f(1.0f)),
+		CubemapData(),
 		BoundSkeletonBatch(nullptr),
 		BoundMesh(nullptr),
 		BoundMaterial(nullptr),
@@ -30,7 +34,8 @@ namespace GEE
 		glCullFace(GL_BACK);
 
 		//generate engine's empty texture
-		EmptyTexture = Texture::Loader<>::FromBuffer2D(Vec2u(1, 1), Math::GetDataPtr(Vec3f(0.5f, 0.5f, 1.0f)), Texture::Format::RGBA(), 3);
+		EmptyTexture = Texture::Loader<>::FromBuffer2D(Vec2u(1, 1), Math::GetDataPtr(Vec3f(0.5f, 0.5f, 1.0f)),
+		                                               Texture::Format::RGBA(), 3);
 		EmptyTexture.SetMinFilter(Texture::MinFilter::Nearest(), true, true);
 		EmptyTexture.SetMagFilter(Texture::MagFilter::Nearest(), true);
 	}
@@ -159,8 +164,6 @@ namespace GEE
 	{
 		switch (type)
 		{
-		default:
-			std::cout << "ERROR! Enum value " << static_cast<int>(type) << " does not represent a basic shape mesh.\n";
 		case EngineBasicShape::QUAD:
 			return *GameHandle->FindHierarchyTree("ENG_QUAD")->FindMesh("Quad");
 		case EngineBasicShape::CUBE:
@@ -169,6 +172,8 @@ namespace GEE
 			return *GameHandle->FindHierarchyTree("ENG_SPHERE")->FindMesh("Sphere");
 		case EngineBasicShape::CONE:
 			return *GameHandle->FindHierarchyTree("ENG_CONE")->FindMesh("Cone");
+		default:
+			std::cout << "ERROR! Enum value " << static_cast<int>(type) << " does not represent a basic shape mesh.\n";
 		}
 	}
 
@@ -194,7 +199,7 @@ namespace GEE
 
 	RenderToolboxCollection& RenderEngine::AddRenderTbCollection(const RenderToolboxCollection& tbCollection, bool setupToolboxesAccordingToSettings)
 	{
-		RenderTbCollections.push_back(std::make_unique<RenderToolboxCollection>(tbCollection));
+		RenderTbCollections.push_back(MakeUnique<RenderToolboxCollection>(tbCollection));
 		if (setupToolboxesAccordingToSettings)
 			RenderTbCollections.back()->AddTbsRequiredBySettings();
 
@@ -203,7 +208,7 @@ namespace GEE
 		return *RenderTbCollections.back();
 	}
 
-	Material* RenderEngine::AddMaterial(std::shared_ptr<Material>  material)
+	Material* RenderEngine::AddMaterial(SharedPtr<Material>  material)
 	{
 		std::cout << "Adding material " << Materials.size() << " (" << material << ")";
 		if (material)
@@ -212,7 +217,7 @@ namespace GEE
 		return Materials.back().get();
 	}
 
-	std::shared_ptr<Shader> RenderEngine::AddShader(std::shared_ptr<Shader> shader, bool bForwardShader)
+	SharedPtr<Shader> RenderEngine::AddShader(SharedPtr<Shader> shader, bool bForwardShader)
 	{
 		if (bForwardShader)
 			ForwardShaders.push_back(shader);
@@ -242,22 +247,20 @@ namespace GEE
 
 	void RenderEngine::EraseRenderTbCollection(RenderToolboxCollection& tbCollection)
 	{
-		RenderTbCollections.erase(std::remove_if(RenderTbCollections.begin(), RenderTbCollections.end(), [&tbCollection](std::unique_ptr<RenderToolboxCollection>& tbColVec) {return tbColVec.get() == &tbCollection; }), RenderTbCollections.end());
+		RenderTbCollections.erase(std::remove_if(RenderTbCollections.begin(), RenderTbCollections.end(), [&tbCollection](UniquePtr<RenderToolboxCollection>& tbColVec) {return tbColVec.get() == &tbCollection; }), RenderTbCollections.end());
 	}
 
 	void RenderEngine::EraseMaterial(Material& mat)
 	{
-		Materials.erase(std::remove_if(Materials.begin(), Materials.end(), [&mat](std::shared_ptr<Material>& matVec) {return matVec.get() == &mat; }), Materials.end());
+		Materials.erase(std::remove_if(Materials.begin(), Materials.end(), [&mat](SharedPtr<Material>& matVec) {return matVec.get() == &mat; }), Materials.end());
 	}
 
-	std::shared_ptr<Material> RenderEngine::FindMaterial(std::string name)
+	SharedPtr<Material> RenderEngine::FindMaterial(std::string name)
 	{
 		if (name.empty())
 			return nullptr;
 
-		auto materialIt = std::find_if(Materials.begin(), Materials.end(), [name](const std::shared_ptr<Material>& material) {	return material->GetLocalization().Name == name; });
-
-		if (materialIt != Materials.end())
+		if (auto materialIt = std::find_if(Materials.begin(), Materials.end(), [name](const SharedPtr<Material>& material) {	return material->GetLocalization().Name == name; }); materialIt != Materials.end())
 			return *materialIt;
 
 		std::cerr << "INFO: Can't find material " << name << "!\n";
@@ -266,18 +269,8 @@ namespace GEE
 
 	Shader* RenderEngine::FindShader(std::string name)
 	{
-		//std::cout << "Searching for " + name + ".\n";
-		auto shaderIt = std::find_if(Shaders.begin(), Shaders.end(), [name](std::shared_ptr<Shader> shader) { return shader->GetName() == name; });
 
-		//std::cout << *shaderIt << '\n';
-		if (*shaderIt == nullptr)
-		{
-			std::cout << "Ups.\n";
-			for (int i = 0; i < Shaders.size(); i++)
-				std::cout << "zjebane: " << Shaders[i]->GetName() << ".\n";
-		}
-
-		if (shaderIt != Shaders.end())
+		if (auto shaderIt = std::find_if(Shaders.begin(), Shaders.end(), [name](SharedPtr<Shader> shader) { return shader->GetName() == name; }); shaderIt != Shaders.end())
 			return shaderIt->get();
 
 		std::cerr << "ERROR! Can't find a shader named " << name << "!\n";
@@ -377,7 +370,7 @@ namespace GEE
 		//std::cout << "Wyczyscilem sobie " << timeSum * 1000.0f << "ms.\n";
 	}
 
-	void RenderEngine::RenderVolume(const RenderInfo& info, EngineBasicShape shape, Shader& shader, const Transform* transform)
+	void RenderEngine::RenderVolume(const RenderInfo& info, EngineBasicShape shape, Shader& shader, const Transform& transform)
 	{
 		if (shape == EngineBasicShape::QUAD)
 			glDisable(GL_CULL_FACE);
@@ -385,7 +378,7 @@ namespace GEE
 		shader.Use();
 		BoundMaterial = nullptr;
 		BoundMesh = nullptr;
-		RenderStaticMesh(info, GetBasicShapeMesh(shape), (transform) ? (*transform) : (Transform()), &shader);
+		RenderStaticMesh(info, GetBasicShapeMesh(shape), transform, &shader);
 
 		if (shape == EngineBasicShape::QUAD)
 			glEnable(GL_CULL_FACE);
@@ -409,13 +402,11 @@ namespace GEE
 			boundShader->Use();
 		}
 
-		RenderVolume(info, volume->GetShape(), *boundShader, &volume->GetRenderTransform());
+		RenderVolume(info, volume->GetShape(), *boundShader, volume->GetRenderTransform());
 	}
 
-	void RenderEngine::RenderVolumes(const RenderInfo& info, const GEE_FB::Framebuffer& framebuffer, const std::vector<std::unique_ptr<RenderableVolume>>& volumes, bool bIBLPass)
+	void RenderEngine::RenderVolumes(const RenderInfo& info, const GEE_FB::Framebuffer& framebuffer, const std::vector<UniquePtr<RenderableVolume>>& volumes, bool bIBLPass)
 	{
-		Shader* boundShader = nullptr;
-
 		glEnable(GL_DEPTH_TEST);
 		glDepthMask(0x00);
 		glEnable(GL_CULL_FACE);
@@ -430,6 +421,7 @@ namespace GEE
 
 		for (unsigned int i = 0; i < volumes.size(); i++)
 		{
+			Shader * boundShader = nullptr;
 			//1st pass: stencil
 			if (volumes[i]->GetShape() != EngineBasicShape::QUAD)		//if this is a quad everything will be in range; don't waste time
 			{
@@ -532,7 +524,7 @@ namespace GEE
 			sceneRenderData->LightProbes[i]->GetEnvironmentMap().Bind();
 			glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
 			
-			LightProbeLoader::ConvoluteLightProbe(*sceneRenderData->LightProbes[i], &sceneRenderData->LightProbes[i]->GetEnvironmentMap());
+			LightProbeLoader::ConvoluteLightProbe(*sceneRenderData->LightProbes[i], sceneRenderData->LightProbes[i]->GetEnvironmentMap());
 			if (PrimitiveDebugger::bDebugProbeLoading)
 				printVector(camPos, "Rendering probe");
 		}
@@ -557,10 +549,11 @@ namespace GEE
 		BoundMaterial = nullptr;
 
 		for (unsigned int i = 0; i < sceneRenderData->Renderables.size(); i++)
+		{
 			if (info.OnlyShadowCasters && !sceneRenderData->Renderables[i]->CastsShadow())
 				continue;
-			else
-				sceneRenderData->Renderables[i]->Render(info, shader);
+			sceneRenderData->Renderables[i]->Render(info, shader);
+		}
 	}
 
 	void RenderEngine::RenderRawSceneUI(const RenderInfo& infoTemplate, GameSceneRenderData* sceneRenderData)
@@ -620,7 +613,7 @@ namespace GEE
 			RenderShadowMaps(tbCollection, sceneRenderData, sceneRenderData->Lights);
 	}
 
-
+	
 	void RenderEngine::FullSceneRender(RenderInfo& info, GameSceneRenderData* sceneRenderData, GEE_FB::Framebuffer* framebuffer, Viewport viewport, bool clearMainFB, bool modifyForwardsDepthForUI)
 	{
 		const GameSettings::VideoSettings& settings = info.TbCollection.Settings;
@@ -696,9 +689,9 @@ namespace GEE
 
 			if (SSAOtex.HasBeenGenerated())
 				SSAOtex.Bind(4);
-			std::vector<std::unique_ptr<RenderableVolume>> volumes;
+			std::vector<UniquePtr<RenderableVolume>> volumes;
 			volumes.resize(sceneRenderData->Lights.size());
-			std::transform(sceneRenderData->Lights.begin(), sceneRenderData->Lights.end(), volumes.begin(), [](const std::reference_wrapper<LightComponent>& light) {return std::make_unique<LightVolume>(LightVolume(light.get())); });
+			std::transform(sceneRenderData->Lights.begin(), sceneRenderData->Lights.end(), volumes.begin(), [](const std::reference_wrapper<LightComponent>& light) {return MakeUnique<LightVolume>(LightVolume(light.get())); });
 			RenderVolumes(info, MainFramebuffer, volumes, false);// Shading == ShadingModel::SHADING_PBR_COOK_TORRANCE);
 
 			info.TbCollection.FindShader("CookTorranceIBL")->Use();
@@ -719,7 +712,7 @@ namespace GEE
 			if (!probeVolumes.empty())
 			{
 				//if (framebuffer)
-				;// probeVolumes.pop_back();
+				// probeVolumes.pop_back();
 				sceneRenderData->ProbeTexArrays->IrradianceMapArr.Bind(12);
 				sceneRenderData->ProbeTexArrays->PrefilterMapArr.Bind(13);
 				sceneRenderData->ProbeTexArrays->BRDFLut.Bind(14);
@@ -767,9 +760,11 @@ namespace GEE
 
 		glDisable(GL_DEPTH_TEST);
 
+		if (Component* selectedComponent = dynamic_cast<EditorManager*>(GameHandle)->GetSelectedComponent(); selectedComponent && selectedComponent->GetScene().GetRenderData() == sceneRenderData)
+			OutlineRenderer(*this).RenderOutlineSilhouette(info, dynamic_cast<EditorManager*>(GameHandle)->GetSelectedComponent(), MainFramebuffer);
 
 		if (debugPhysics && GameHandle->GetMainScene()->GetRenderData() == sceneRenderData)
-			GameHandle->GetPhysicsHandle()->DebugRender(*GameHandle->GetMainScene()->GetPhysicsData(), *this, info);
+			GameHandle->GetPhysicsHandle()->DebugRender(*GameHandle->GetMainScene()->GetPhysicsData(), *this, info);	
 
 		////////////////////4. Postprocessing pass (Blur + Tonemapping & Gamma Correction)
 		Postprocessing.Render(info.TbCollection, target, &viewport, MainFramebuffer.GetColorTexture(0), (settings.bBloom) ? (MainFramebuffer.GetColorTexture(1)) : (Texture()), MainFramebuffer.GetAnyDepthAttachment(), (settings.IsVelocityBufferNeeded()) ? (MainFramebuffer.GetAttachment("velocityTex")) : (Texture()));
@@ -975,7 +970,7 @@ namespace GEE
 			info.MainPass = false;
 		}
 
-		Vec2f halfExtent = static_cast<Vec2f>(t.Scale());
+		Vec2f halfExtent = t.Scale();
 		//	halfExtent.y *= 1.0f - font.GetBaselineHeight() / 4.0f;	//Account for baseline height (we move the character quads by the height in the next line, so we have to shrink them a bit so that the text fits within halfExtent)
 		t.Move(Vec3f(0.0f, -t.Scale().y * 2.0f + font.GetBaselineHeight() * t.Scale().y * 2.0f, 0.0f));	//align to bottom (-t.ScaleRef.y), move down to the bottom of it (-t.ScaleRef.y), and then move up to baseline height (-t.ScaleRef.y * 2.0f + font.GetBaselineHeight() * halfExtent.y * 2.0f)
 
@@ -1011,11 +1006,11 @@ namespace GEE
 			shader->Uniform1i("glyphNr", content[i]);
 			const Character& c = font.GetCharacter(content[i]);
 
-			t.Move(textRot * Vec3f(static_cast<Vec2f>(c.Bearing) * halfExtent, 0.0f) * 2.0f);
+			t.Move(textRot * Vec3f(c.Bearing * halfExtent, 0.0f) * 2.0f);
 			t.SetScale(halfExtent);
 			//printVector(vp * t.GetWorldTransformMatrix() * Vec4f(0.0f, 0.0f, 0.0f, 1.0f), "Letter " + std::to_string(i));
 			RenderStaticMesh(info, GetBasicShapeMesh(EngineBasicShape::QUAD), t, shader, nullptr, &textMaterial);
-			t.Move(textRot * -Vec3f(static_cast<Vec2f>(c.Bearing) * halfExtent, 0.0f) * 2.0f);
+			t.Move(textRot * -Vec3f(c.Bearing * halfExtent, 0.0f) * 2.0f);
 
 			t.Move(textRot * Vec3f(c.Advance * halfExtent.x, 0.0f, 0.0f) * 2.0f);
 		}
@@ -1025,22 +1020,20 @@ namespace GEE
 
 	void RenderEngine::RenderStaticMesh(const RenderInfo& info, const MeshInstance& mesh, const Transform& transform, Shader* shader, Mat4f* lastFrameMVP, Material* material, bool billboard)
 	{
-		std::vector<std::unique_ptr<MeshInstance>> vec;
-		vec.push_back(std::make_unique<MeshInstance>(MeshInstance(mesh)));
-		RenderStaticMeshes(info, vec, transform, shader, lastFrameMVP, material, billboard);
+		RenderStaticMeshes(info, { mesh }, transform, shader, lastFrameMVP, material, billboard);
 	}
 
-	void RenderEngine::RenderStaticMeshes(const RenderInfo& info, const std::vector<std::unique_ptr<MeshInstance>>& meshes, const Transform& transform, Shader* shader, Mat4f* lastFrameMVP, Material* overrideMaterial, bool billboard)
+	void RenderEngine::RenderStaticMeshes(const RenderInfo& info, const std::vector<std::reference_wrapper<const MeshInstance>>& meshes, const Transform& transform, Shader* shader, Mat4f* lastFrameMVP, Material* overrideMaterial, bool billboard)
 	{
 		if (meshes.empty())
 			return;
 
-		std::unique_ptr<MaterialInstance> createdInstance = ((overrideMaterial) ? (std::make_unique<MaterialInstance>(MaterialInstance(*overrideMaterial))) : (nullptr));
+		UniquePtr<MaterialInstance> createdInstance = ((overrideMaterial) ? (MakeUnique<MaterialInstance>(MaterialInstance(*overrideMaterial))) : (nullptr));
 
 		bool handledShader = false;
 		for (int i = 0; i < static_cast<int>(meshes.size()); i++)
 		{
-			const MeshInstance& meshInst = *meshes[i];
+			const MeshInstance& meshInst = meshes[i];
 			const Mesh& mesh = meshInst.GetMesh();
 			MaterialInstance* materialInst = ((overrideMaterial) ? (createdInstance.get()) : (meshInst.GetMaterialInst()));
 			const Material* material = ((overrideMaterial) ? (overrideMaterial) : (meshInst.GetMaterialPtr()));
@@ -1058,6 +1051,7 @@ namespace GEE
 
 
 				shader->BindMatrices(modelMat, &info.view, &info.projection, &info.VP);
+				shader->CallPreRenderFunc();
 
 				bool bCalcVelocity = GameHandle->GetGameSettings()->Video.IsVelocityBufferNeeded() && info.MainPass;
 				if (bCalcVelocity && lastFrameMVP)
@@ -1100,12 +1094,12 @@ namespace GEE
 		}
 	}
 
-	void RenderEngine::RenderSkeletalMeshes(const RenderInfo& info, const std::vector<std::unique_ptr<MeshInstance>>& meshes, const Transform& transform, Shader* shader, SkeletonInfo& skelInfo, Mat4f* lastFrameMVP, Material* overrideMaterial)
+	void RenderEngine::RenderSkeletalMeshes(const RenderInfo& info, const std::vector<std::reference_wrapper<const MeshInstance>>& meshes, const Transform& transform, Shader* shader, SkeletonInfo& skelInfo, Mat4f* lastFrameMVP, Material* overrideMaterial)
 	{
 		if (meshes.empty())
 			return;
 
-		std::unique_ptr<MaterialInstance> createdInstance = ((overrideMaterial) ? (std::make_unique<MaterialInstance>(MaterialInstance(*overrideMaterial))) : (nullptr));
+		UniquePtr<MaterialInstance> createdInstance = ((overrideMaterial) ? (MakeUnique<MaterialInstance>(MaterialInstance(*overrideMaterial))) : (nullptr));
 
 
 		//TODO: Pass the bone matrices from the last frame to fix velocity buffer calculation
@@ -1113,7 +1107,7 @@ namespace GEE
 		bool handledShader = false;
 		for (int i = 0; i < static_cast<int>(meshes.size()); i++)
 		{
-			const MeshInstance& meshInst = *meshes[i];
+			const MeshInstance& meshInst = meshes[i];
 			const Mesh& mesh = meshInst.GetMesh();
 			MaterialInstance* materialInst = ((overrideMaterial) ? (createdInstance.get()) : (meshInst.GetMaterialInst()));
 			const Material* material = ((overrideMaterial) ? (overrideMaterial) : (meshInst.GetMaterialPtr()));
@@ -1132,6 +1126,8 @@ namespace GEE
 				bool jitter = info.MainPass && GameHandle->GetGameSettings()->Video.IsTemporalReprojectionEnabled();
 
 				shader->BindMatrices(modelMat, &info.view, &info.projection, &info.VP);
+				shader->CallPreRenderFunc();
+
 				if (bCalcVelocity)
 				{
 					if (jitter)
@@ -1348,7 +1344,7 @@ void GEE::Renderer::ImplUtil::SetCubemapSideVP(MatrixInfo& info, GEE_FB::Axis cu
 
 GEE::Mesh GEE::Renderer::ImplUtil::GetBasicShapeMesh(EngineBasicShape shapeType)
 {
-	return EngineHandle.GetBasicShapeMesh(shapeType);
+	return RenderHandle.GetBasicShapeMesh(shapeType);
 }
 
 /*void GEE::Renderer::ImplUtil::BindMesh(const Mesh* mesh)

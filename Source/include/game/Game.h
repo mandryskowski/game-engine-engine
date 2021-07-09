@@ -5,7 +5,6 @@
 #include "GameSettings.h"
 #include "GameScene.h"
 #include <input/Event.h>
-#include <scene/Actor.h>
 
 namespace GEE
 {
@@ -29,7 +28,7 @@ namespace GEE
 
 		void LoadSceneFromFile(const std::string& path, const std::string& name = std::string());
 		virtual GameScene& CreateScene(const std::string& name, bool isAnUIScene = false) override;
-		void AddScene(std::unique_ptr <GameScene> scene);
+		void AddScene(UniquePtr <GameScene> scene);
 		virtual void BindAudioListenerTransformPtr(Transform*) override;
 
 		/**
@@ -40,7 +39,7 @@ namespace GEE
 
 		virtual void PassMouseControl(Controller* controller) override; //pass nullptr to unbind any controller and allow moving the mouse around freely
 		virtual const Controller* GetCurrentMouseController() const override;
-		virtual std::shared_ptr<Font> GetDefaultFont() override;
+		virtual SharedPtr<Font> GetDefaultFont() override;
 		virtual bool HasStarted() const override;
 		InputDevicesStateRetriever GetInputRetriever() override;
 
@@ -56,7 +55,7 @@ namespace GEE
 		virtual void SetActiveScene(GameScene* scene) override;
 
 		virtual HierarchyTemplate::HierarchyTreeT* FindHierarchyTree(const std::string& name, HierarchyTemplate::HierarchyTreeT* treeToIgnore = nullptr) override;
-		virtual std::shared_ptr<Font> FindFont(const std::string& path) override;
+		virtual SharedPtr<Font> FindFont(const std::string& path) override;
 
 		virtual void PreGameLoop();
 		virtual bool GameLoopIteration(float timeStep, float deltaTime);
@@ -72,16 +71,16 @@ namespace GEE
 
 		GLFWwindow* Window;
 
-		std::vector <std::unique_ptr <GameScene>> Scenes;	//The first scene (Scenes[0]) is referred to as the Main Scene. If you only use 1 scene in your application, don't bother with passing arround GameScene pointers - the Main Scene will be chosen automatically.
+		std::vector <UniquePtr <GameScene>> Scenes;	//The first scene (Scenes[0]) is referred to as the Main Scene. If you only use 1 scene in your application, don't bother with passing arround GameScene pointers - the Main Scene will be chosen automatically.
 		GameScene* MainScene;
 		GameScene* ActiveScene;	//which scene currently handles events
 		EventHolder EventHolderObj;
 		Controller* MouseController;
 
-		std::unique_ptr<GameSettings> Settings;
+		UniquePtr<GameSettings> Settings;
 
-		std::vector<std::shared_ptr<Font>> Fonts;
-		std::shared_ptr<Font> DefaultFont;
+		std::vector<SharedPtr<Font>> Fonts;
+		SharedPtr<Font> DefaultFont;
 
 		RenderEngine RenderEng;
 		Physics::PhysicsEngine PhysicsEng;

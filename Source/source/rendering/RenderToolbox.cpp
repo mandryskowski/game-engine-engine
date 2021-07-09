@@ -195,18 +195,24 @@ namespace GEE
 
 		std::vector<Vec3f> ssaoSamples;
 		ssaoSamples.reserve(settings.AmbientOcclusionSamples);
+
+		// Use a treshold to discard samples parallel to the surface (and avoid depth resolution artifacts)	
+		const float minDotTreshold = 0.0f;	
+
 		for (unsigned int i = 0; i < settings.AmbientOcclusionSamples; i++)
 		{
-			Vec3f sample(
-				randomFloats(generator) * 2.0f - 1.0f,
-				randomFloats(generator) * 2.0f - 1.0f,
-				randomFloats(generator)
-			);
+			Vec3f sample;
+			do
+			{
+				sample = glm::normalize(Vec3f( randomFloats(generator) * 2.0f - 1.0f,
+								randomFloats(generator) * 2.0f - 1.0f,
+								randomFloats(generator)));
+			} while (glm::dot(sample, glm::vec3(0.0f, 0.0f, 1.0f)) < minDotTreshold);
 
-			sample = glm::normalize(sample) * randomFloats(generator);
+			sample *= randomFloats(generator); // modify length randomly between 0 and 1
 
 			float scale = (float)i / (float)settings.AmbientOcclusionSamples;
-			scale = glm::mix(0.1f, 1.0f, scale * scale);
+			scale = glm::mix(0.1f, 1.0f, scale * scale);	// put more samples closer to the fragment
 			sample *= scale;
 
 			SSAOShader->Uniform3fv("samples[" + std::to_string(i) + "]", sample);
@@ -273,7 +279,7 @@ namespace GEE
 		SMAAFb->AttachTextures({ NamedTexture(Texture::Loader<>::ReserveEmpty2D(settings.Resolution, Texture::Format::RGB()), "smaaEdges"), NamedTexture(Texture::Loader<>::ReserveEmpty2D(settings.Resolution, Texture::Format::RGBA()), "smaaWeight"), NamedTexture(Texture::Loader<>::ReserveEmpty2D(settings.Resolution, Texture::Format::RGBA()), "smaaNeighborhood") });
 
 		//////////////////////////////SHADER LOADING//////////////////////////////
-		std::string smaaDefines = "#define SCR_WIDTH " + std::to_string(static_cast<float>(settings.Resolution.x)) + "\n" + "#define SCR_HEIGHT " + std::to_string(static_cast<float>(settings.Resolution.y)) + "\n";
+		std::string smaaDefines = "#define SCR_WIDTH " + std::to_string(settings.Resolution.x) + "\n" + "#define SCR_HEIGHT " + std::to_string(settings.Resolution.y) + "\n";
 		switch (settings.AALevel)
 		{
 		case SettingLevel::SETTING_LOW: smaaDefines += "#define SMAA_PRESET_LOW 1\n"; break;
@@ -356,7 +362,7 @@ namespace GEE
 
 	Shader* RenderToolbox::FindShader(std::string name)
 	{
-		auto found = std::find_if(Shaders.begin(), Shaders.end(), [name](std::shared_ptr<Shader>& shader) { return shader->GetName() == name; });
+		auto found = std::find_if(Shaders.begin(), Shaders.end(), [name](SharedPtr<Shader>& shader) { return shader->GetName() == name; });
 		if (found != Shaders.end())
 			return found->get();
 
@@ -381,11 +387,11 @@ namespace GEE
 
 	GEE_FB::Framebuffer* RenderToolbox::AddFramebuffer()
 	{
-		Fbs.push_back(std::make_shared<GEE_FB::Framebuffer>());
+		Fbs.push_back(MakeShared<GEE_FB::Framebuffer>());
 		return Fbs.back().get();
 	}
 
-	Shader* RenderToolbox::AddShader(const std::shared_ptr<Shader>& shader)
+	Shader* RenderToolbox::AddShader(const SharedPtr<Shader>& shader)
 	{
 		Shaders.push_back(shader);
 		return Shaders.back().get();
@@ -393,7 +399,7 @@ namespace GEE
 
 	Texture* RenderToolbox::AddTexture(const Texture& tex)
 	{
-		Textures.push_back(std::make_shared<Texture>(Texture(tex)));
+		Textures.push_back(MakeShared<Texture>(Texture(tex)));
 		return Textures.back().get();
 	}
 

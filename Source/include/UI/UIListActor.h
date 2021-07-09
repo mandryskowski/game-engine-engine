@@ -60,7 +60,7 @@ namespace GEE
 
 		void AddElement(const UIListElement&);
 
-		Vec3f MoveElement(UIListElement& element, Vec3f nextElementBegin, float level);
+		static Vec3f MoveElement(UIListElement& element, Vec3f nextElementBegin, float level);
 		Vec3f MoveElements(unsigned int level = 0);
 
 		void EraseListElement(std::function<bool(const UIListElement&)>);
@@ -76,9 +76,9 @@ namespace GEE
 	{
 	public:
 		UIAutomaticListActor(GameScene& scene, Actor* parentActor, const std::string& name, Vec3f elementOffset = Vec3f(0.0, -2.0f, 0.0f));
-		UIAutomaticListActor(UIAutomaticListActor&&);
+		UIAutomaticListActor(UIAutomaticListActor&&) noexcept;
 
-		virtual Actor& AddChild(std::unique_ptr<Actor>) override;
+		virtual Actor& AddChild(UniquePtr<Actor>) override;
 
 	private:
 		Vec3f ElementOffset;

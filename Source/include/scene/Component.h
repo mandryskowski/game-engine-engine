@@ -1,8 +1,6 @@
 #pragma once
 #include <cereal/types/memory.hpp>
-#include <cereal/types/polymorphic.hpp>
 #include <cereal/types/vector.hpp>
-#include <cereal/archives/json.hpp>
 #include <game/GameScene.h>
 #include <math/Transform.h>
 #include <game/GameManager.h>
@@ -42,7 +40,7 @@ namespace GEE
 	class ComponentBase
 	{
 	public:
-		virtual Component& AddComponent(std::unique_ptr<Component> component) = 0;
+		virtual Component& AddComponent(UniquePtr<Component> component) = 0;
 	};
 
 	class Component : public ComponentBase
@@ -87,9 +85,9 @@ namespace GEE
 
 		void SetName(std::string name);
 		void SetTransform(Transform transform);
-		Physics::CollisionObject* SetCollisionObject(std::unique_ptr<Physics::CollisionObject>);
-		virtual Component& AddComponent(std::unique_ptr<Component> component) override;
-		void AddComponents(std::vector<std::unique_ptr<Component>> components);
+		Physics::CollisionObject* SetCollisionObject(UniquePtr<Physics::CollisionObject>);
+		virtual Component& AddComponent(UniquePtr<Component> component) override;
+		void AddComponents(std::vector<UniquePtr<Component>> components);
 
 		template<typename ChildClass, typename... Args> ChildClass& CreateComponent(Args&&... args);
 
@@ -101,12 +99,12 @@ namespace GEE
 		void QueueAnimationAll(Animation*);
 
 		virtual void QueueKeyFrame(AnimationChannel&);
-		void QueueKeyFrameAll(AnimationChannel&);
+		static void QueueKeyFrameAll(AnimationChannel&);
 
-		virtual void DebugRender(RenderInfo info, Shader* shader) const; //this method should only be called to render the component as something (usually a textured billboard) to debug the project.
+		virtual void DebugRender(RenderInfo info, Shader* shader, const Vec3f& debugIconScale = Vec3f(0.05f)) const; //this method should only be called to render the component as something (usually a textured billboard) to debug the project.
 		void DebugRenderAll(RenderInfo info, Shader* shader) const;
 
-		virtual std::shared_ptr<AtlasMaterial> LoadDebugRenderMaterial(const std::string& materialName, const std::string& path);
+		virtual SharedPtr<AtlasMaterial> LoadDebugRenderMaterial(const std::string& materialName, const std::string& path);
 		virtual MaterialInstance GetDebugMatInst(EditorIconState);
 
 		Component* SearchForComponent(std::string name);
@@ -194,15 +192,15 @@ namespace GEE
 
 	public:
 		friend class Actor;
-		std::unique_ptr<Component> DetachChild(Component& soughtChild);	//Find child in hierarchy and detach it from its parent
+		UniquePtr<Component> DetachChild(Component& soughtChild);	//Find child in hierarchy and detach it from its parent
 		void MoveChildren(Component& moveTo);
 		void Delete();
 
 		std::string Name;
 
 		Transform ComponentTransform;
-		std::vector <std::unique_ptr<Component>> Children;
-		std::unique_ptr<Physics::CollisionObject> CollisionObj;
+		std::vector <UniquePtr<Component>> Children;
+		UniquePtr<Physics::CollisionObject> CollisionObj;
 
 		GameScene& Scene; //The scene that this Component is present in
 		Actor& ActorRef;
@@ -211,15 +209,15 @@ namespace GEE
 
 		bool bKillingProcessStarted;
 
-		std::shared_ptr<AtlasMaterial> DebugRenderMat;
-		std::shared_ptr<MaterialInstance> DebugRenderMatInst;
+		SharedPtr<AtlasMaterial> DebugRenderMat;
+		SharedPtr<MaterialInstance> DebugRenderMatInst;
 		mutable Mat4f DebugRenderLastFrameMVP;
 	};
 
 	/*template<typename ChildClass>
 	inline ChildClass& Component::CreateComponent(ChildClass&& objectCRef)
 	{
-		std::unique_ptr<ChildClass> createdChild = std::make_unique<ChildClass>(std::move(objectCRef));
+		UniquePtr<ChildClass> createdChild = MakeUnique<ChildClass>(std::move(objectCRef));
 		ChildClass& childRef = *createdChild;
 		AddComponent(std::move(createdChild));
 
@@ -230,7 +228,7 @@ namespace GEE
 	template<typename ChildClass, typename... Args>
 	inline ChildClass& Component::CreateComponent(Args&&... args)
 	{
-		std::unique_ptr<ChildClass> createdChild = std::make_unique<ChildClass>(ActorRef, this, std::forward<Args>(args)...);
+		UniquePtr<ChildClass> createdChild = MakeUnique<ChildClass>(ActorRef, this, std::forward<Args>(args)...);
 		ChildClass& childRef = *createdChild;
 		AddComponent(std::move(createdChild));
 

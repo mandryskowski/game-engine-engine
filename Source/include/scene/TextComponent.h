@@ -8,7 +8,7 @@ namespace GEE
 	class TextComponent : public RenderableComponent, public UIComponent
 	{
 	public:
-		TextComponent(Actor&, Component* parentComp, const std::string& name = std::string(), const Transform& transform = Transform(), std::string content = std::string(), std::shared_ptr<Font> font = nullptr, std::pair<TextAlignment, TextAlignment> = std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::CENTER));
+		TextComponent(Actor&, Component* parentComp, const std::string& name = std::string(), const Transform& transform = Transform(), std::string content = std::string(), SharedPtr<Font> font = nullptr, std::pair<TextAlignment, TextAlignment> = std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::CENTER));
 		TextComponent(Actor&, Component* parentComp, const std::string& name = std::string(), const Transform& transform = Transform(), std::string content = std::string(), std::string fontPath = std::string(), std::pair<TextAlignment, TextAlignment> = std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::CENTER));
 		TextComponent(const TextComponent&) = delete;
 		TextComponent(TextComponent&&);
@@ -16,6 +16,7 @@ namespace GEE
 		const std::string& GetContent() const;
 		virtual Boxf<Vec2f> GetBoundingBox(bool world = true) override;	//Canvas space
 		float GetTextLength(bool world = true) const;
+		virtual std::vector<const Material*> GetMaterials() const override;
 
 		virtual void SetContent(const std::string&);
 		void SetMaterialInst(MaterialInstance&&);
@@ -50,8 +51,8 @@ namespace GEE
 
 	private:
 		std::string Content;
-		std::shared_ptr<Font> UsedFont;
-		std::unique_ptr<MaterialInstance> TextMatInst;
+		SharedPtr<Font> UsedFont;
+		UniquePtr<MaterialInstance> TextMatInst;
 
 		std::pair<TextAlignment, TextAlignment> Alignment;		/*Vertical and horziontal alignment. Alignment is in relation to Component::ComponentTransform::Position
 																  Default alignment is LEFT and BOTTOM. This means that Component::ComponentTransform::Position marks the bottom-left corner of the text.
@@ -67,7 +68,7 @@ namespace GEE
 		class TextConstantSizeComponent : public TextComponent
 	{
 	public:
-		TextConstantSizeComponent(Actor&, Component* parentComp, const std::string& name = std::string(), const Transform& transform = Transform(), std::string content = std::string(), std::shared_ptr<Font> font = nullptr, std::pair<TextAlignment, TextAlignment> = std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::BOTTOM));
+		TextConstantSizeComponent(Actor&, Component* parentComp, const std::string& name = std::string(), const Transform& transform = Transform(), std::string content = std::string(), SharedPtr<Font> font = nullptr, std::pair<TextAlignment, TextAlignment> = std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::BOTTOM));
 		TextConstantSizeComponent(Actor&, Component* parentComp, const std::string& name = std::string(), const Transform& transform = Transform(), std::string content = std::string(), std::string fontPath = std::string(), std::pair<TextAlignment, TextAlignment> = std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::BOTTOM));
 		TextConstantSizeComponent(const TextConstantSizeComponent&) = delete;
 		TextConstantSizeComponent(TextConstantSizeComponent&&);

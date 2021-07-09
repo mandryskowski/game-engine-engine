@@ -5,8 +5,6 @@
 #include <UI/Font.h>
 #include <UI/UICanvas.h>
 #include <math/Transform.h>
-#include <rendering/Mesh.h>
-#include <iostream>
 
 #include <scene/Actor.h>
 #include <UI/UICanvasActor.h>
@@ -15,7 +13,7 @@
 
 namespace GEE
 {
-	TextComponent::TextComponent(Actor& actor, Component* parentComp, const std::string& name, const Transform& transform, std::string content, std::shared_ptr<Font> font, std::pair<TextAlignment, TextAlignment> alignment) :
+	TextComponent::TextComponent(Actor& actor, Component* parentComp, const std::string& name, const Transform& transform, std::string content, SharedPtr<Font> font, std::pair<TextAlignment, TextAlignment> alignment) :
 		RenderableComponent(actor, parentComp, name, transform),
 		UIComponent(actor, parentComp),
 		UsedFont(font),
@@ -25,7 +23,7 @@ namespace GEE
 		Material& mat = *GameHandle->GetRenderEngineHandle()->FindMaterial("GEE_Default_Text_Material");
 		//mat-SetColor(Vec4f(0.7f, 0.2f, 0.6f, 1.0f));
 
-		TextMatInst = std::make_unique<MaterialInstance>(MaterialInstance(mat));
+		TextMatInst = MakeUnique<MaterialInstance>(MaterialInstance(mat));
 		SetAlignment(alignment);
 		SetContent(content);
 	}
@@ -79,6 +77,14 @@ namespace GEE
 		return advancesSum * scale.x;
 	}
 
+	std::vector<const Material*> TextComponent::GetMaterials() const
+	{
+		if (TextMatInst)
+			return { &TextMatInst->GetMaterialRef() };
+
+		return std::vector<const Material*>();
+	}
+
 	void TextComponent::SetContent(const std::string& content)
 	{
 		Content = content;
@@ -86,7 +92,7 @@ namespace GEE
 
 	void TextComponent::SetMaterialInst(MaterialInstance&& matInst)
 	{
-		TextMatInst = std::make_unique<MaterialInstance>(std::move(matInst));
+		TextMatInst = MakeUnique<MaterialInstance>(std::move(matInst));
 	}
 
 	void TextComponent::Render(const RenderInfo& info, Shader* shader)
@@ -152,7 +158,7 @@ namespace GEE
 		return GetElementDepth();
 	}
 
-	TextConstantSizeComponent::TextConstantSizeComponent(Actor& actor, Component* parentComp, const std::string& name, const Transform& transform, std::string content, std::shared_ptr<Font> font, std::pair<TextAlignment, TextAlignment> alignment) :
+	TextConstantSizeComponent::TextConstantSizeComponent(Actor& actor, Component* parentComp, const std::string& name, const Transform& transform, std::string content, SharedPtr<Font> font, std::pair<TextAlignment, TextAlignment> alignment) :
 		TextComponent(actor, parentComp, name, transform, "", font, alignment),
 		MaxSize(Vec2f(1.0f)),
 		ScaleRatio(glm::max(Vec2f(1.0f), Vec2f(transform.Scale().x / transform.Scale().y, transform.Scale().y / transform.Scale().x)))

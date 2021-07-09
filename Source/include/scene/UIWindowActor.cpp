@@ -38,15 +38,15 @@ namespace GEE
 		backgroundModel.AddMeshInst(GameHandle->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD));
 		backgroundModel.OverrideInstancesMaterial(GameHandle->GetRenderEngineHandle()->FindMaterial("GEE_E_Canvas_Background_Material").get());
 
-		AddUIElement((UICanvasElement&)backgroundModel);	//Add the background model as a UIElement to give it UIDepth
-		EraseUIElement((UICanvasElement&)backgroundModel);	//Erase it immediately because we do not want it to be an element of the canvas, but its background
+		AddUIElement(backgroundModel);	//Add the background model as a UIElement to give it UIDepth
+		EraseUIElement(backgroundModel);	//Erase it immediately because we do not want it to be an element of the canvas, but its background
 
 		CloseButton = &CreateChild<UIButtonActor>("GEE_E_Close_Button");
 		SetOnCloseFunc(nullptr);
 		CloseButton->SetTransform(Transform(Vec2f(1.15f, 1.15f), Vec2f(0.15f)));
 
 		AtlasMaterial& closeIconMat = *new AtlasMaterial(Material("GEE_Close_Icon_Material", 0.0f, GameHandle->GetRenderEngineHandle()->FindShader("Forward_NoLight")), glm::ivec2(3, 1));
-		closeIconMat.AddTexture(std::make_shared<NamedTexture>(Texture::Loader<>::FromFile2D("EditorAssets/close_icon.png", Texture::Format::RGBA(), false, Texture::MinFilter::NearestInterpolateMipmap()), "albedo1"));
+		closeIconMat.AddTexture(MakeShared<NamedTexture>(Texture::Loader<>::FromFile2D("EditorAssets/close_icon.png", Texture::Format::RGBA(), false, Texture::MinFilter::NearestInterpolateMipmap()), "albedo1"));
 		CloseButton->SetMatIdle(MaterialInstance(closeIconMat, closeIconMat.GetTextureIDInterpolatorTemplate(0.0f)));
 		CloseButton->SetMatHover(MaterialInstance(closeIconMat, closeIconMat.GetTextureIDInterpolatorTemplate(1.0f)));
 		CloseButton->SetMatClick(MaterialInstance(closeIconMat, closeIconMat.GetTextureIDInterpolatorTemplate(2.0f)));

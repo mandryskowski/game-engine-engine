@@ -5,20 +5,12 @@
 #include <editor/GameEngineEngineEditor.h>
 #include <scene/TextComponent.h>
 #include <scene/CameraComponent.h>
-#include <scene/UIWindowActor.h>
 #include <scene/ModelComponent.h>
-#include <scene/LightComponent.h>
 #include <scene/LightProbeComponent.h>
-#include <scene/UIInputBoxActor.h>
 #include <UI/UICanvasField.h>
-#include <UI/UIListActor.h>
 #include <scene/GunActor.h>
-#include <scene/PawnActor.h>
 #include <scene/Controller.h>
 #include <input/InputDevicesStateRetriever.h>
-#include <whereami.h>
-#include <scene/BoneComponent.h>
-#include <map>
 
 using namespace GEE;
 
@@ -54,9 +46,9 @@ int main(int argc, char** argv)
 	glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, true);
 	//glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
-	glm::dvec3 front(-0.80989, - 0.15385, - 0.56604);
-	glm::dvec3 rotationVec = glm::cross(front, glm::dvec3(0.0f, 0.0f, -1.0f));
-	double angle = std::atan2((double)glm::dot(front, glm::dvec3(0.0f, 1.0f, 0.0f)), 0.0);
+	Vec3d front(-0.80989, - 0.15385, - 0.56604);
+	Vec3d rotationVec = glm::cross(front, Vec3d(0.0f, 0.0f, -1.0f));
+	double angle = std::atan2(glm::dot(front, Vec3d(0.0f, 1.0f, 0.0f)), 0.0);
 	Quatf rot(glm::angleAxis(angle, rotationVec));
 	printVector(rot, "quick maths");
 

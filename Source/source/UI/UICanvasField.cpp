@@ -9,7 +9,6 @@
 #include <scene/SoundSourceComponent.h>
 #include <animation/AnimationManagerActor.h>
 #include <scene/GunActor.h>
-#include <UI/UICanvas.h>
 #include <input/InputDevicesStateRetriever.h>
 
 #include <tinyfiledialogs/tinyfiledialogs.h>
@@ -32,7 +31,7 @@ UIListActor::UIListActor(UIListActor&& listActor):
 {
 }
 
-Actor& UIListActor::AddChild(std::unique_ptr<Actor> actor)
+Actor& UIListActor::AddChild(UniquePtr<Actor> actor)
 {
 	Actor& actorRef = Actor::AddChild(std::move(actor));
 	return actorRef;
@@ -217,14 +216,14 @@ void UIMultipleListActor::NestList(UIListActor& list)
 	void UIElementTemplates::TickBox(std::function<bool()> setFunc)
 	{
 		AtlasMaterial* tickMaterial = new AtlasMaterial(Material("TickMaterial", 0.0f, GameHandle.GetRenderEngineHandle()->FindShader("Forward_NoLight")), glm::ivec2(3, 1));
-		tickMaterial->AddTexture(std::make_shared<NamedTexture>(Texture::Loader<>::FromFile2D("EditorAssets/tick_icon.png", Texture::Format::RGBA(), true), "albedo1"));
+		tickMaterial->AddTexture(MakeShared<NamedTexture>(Texture::Loader<>::FromFile2D("EditorAssets/tick_icon.png", Texture::Format::RGBA(), true), "albedo1"));
 
 		UIButtonActor& billboardTickBoxActor = TemplateParent.CreateChild<UIButtonActor>("BillboardTickBox");
 
 		ModelComponent& billboardTickModel = billboardTickBoxActor.CreateComponent<ModelComponent>("TickModel");
 		billboardTickModel.AddMeshInst(GameHandle.GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD));
 		billboardTickModel.SetHide(true);
-		billboardTickModel.OverrideInstancesMaterialInstances(std::make_shared<MaterialInstance>(MaterialInstance(*tickMaterial, tickMaterial->GetTextureIDInterpolatorTemplate(0.0f))));
+		billboardTickModel.OverrideInstancesMaterialInstances(MakeShared<MaterialInstance>(MaterialInstance(*tickMaterial, tickMaterial->GetTextureIDInterpolatorTemplate(0.0f))));
 
 		auto tickHideFunc = [&billboardTickModel, setFunc]() { billboardTickModel.SetHide(!setFunc()); };
 		billboardTickBoxActor.SetOnClickFunc(tickHideFunc);
@@ -236,14 +235,14 @@ void UIMultipleListActor::NestList(UIListActor& list)
 	void UIElementTemplates::TickBox(std::function<void(bool)> setFunc, std::function<bool()> getFunc)
 	{
 		AtlasMaterial* tickMaterial = new AtlasMaterial(Material("TickMaterial", 0.0f, GameHandle.GetRenderEngineHandle()->FindShader("Forward_NoLight")), glm::ivec2(3, 1));
-		tickMaterial->AddTexture(std::make_shared<NamedTexture>(Texture::Loader<>::FromFile2D("EditorAssets/tick_icon.png", Texture::Format::RGBA(), true), "albedo1"));
+		tickMaterial->AddTexture(MakeShared<NamedTexture>(Texture::Loader<>::FromFile2D("EditorAssets/tick_icon.png", Texture::Format::RGBA(), true), "albedo1"));
 
 		UIButtonActor& billboardTickBoxActor = TemplateParent.CreateChild<UIButtonActor>("BillboardTickBox");
 
 		ModelComponent& billboardTickModel = billboardTickBoxActor.CreateComponent<ModelComponent>("TickModel");
 		billboardTickModel.AddMeshInst(GameHandle.GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD));
 		billboardTickModel.SetHide(!getFunc());
-		billboardTickModel.OverrideInstancesMaterialInstances(std::make_shared<MaterialInstance>(MaterialInstance(*tickMaterial, tickMaterial->GetTextureIDInterpolatorTemplate(0.0f))));
+		billboardTickModel.OverrideInstancesMaterialInstances(MakeShared<MaterialInstance>(MaterialInstance(*tickMaterial, tickMaterial->GetTextureIDInterpolatorTemplate(0.0f))));
 
 		auto clickFunc = [&billboardTickModel, setFunc, getFunc]() { bool updatedVal = !getFunc(); setFunc(updatedVal); billboardTickModel.SetHide(!updatedVal);  };
 		billboardTickBoxActor.SetOnClickFunc(clickFunc);
@@ -334,55 +333,61 @@ void UIMultipleListActor::NestList(UIListActor& list)
 	}
 
 	template<typename ObjectBase, typename ObjectType>
-	void UIElementTemplates::ObjectInput(std::function<std::vector<ObjectBase*>()> getObjectsFunc, std::function<void(ObjectType*)> setFunc)
+	void UIElementTemplates::ObjectInput(std::function<std::vector<ObjectBase*>()> getObjectsFunc, std::function<void(ObjectType*)> setFunc, const std::string& currentObjName)
 	{
 		GameScene* scenePtr = &Scene;
-		UIButtonActor& compNameButton = TemplateParent.CreateChild<UIButtonActor>("CompNameBox", "", [scenePtr, getObjectsFunc, setFunc]() {
+		auto& compNameButton = TemplateParent.CreateChild<UIButtonActor>("CompNameBox", currentObjName);
+		compNameButton.SetTransform(Transform(Vec2f(2.0f, 0.0f), Vec2f(3.0f, 1.0f)));
+
+		compNameButton.SetOnClickFunc([scenePtr, getObjectsFunc, setFunc, &compNameButton]() {
 			UIWindowActor& window = scenePtr->CreateActorAtRoot<UIWindowActor>("CompInputWindow");
 			window.SetTransform(Transform(Vec2f(0.0f, -0.7f), Vec2f(0.25f)));
 
 			UIAutomaticListActor& list = window.CreateChild<UIAutomaticListActor>("Available comp list");
+
 			std::vector<ObjectType*> availableObjects = getObjectsFunc();
 
-			list.CreateChild<UIButtonActor>("Nullptr object button", "Nullptr", [&window, setFunc]() { setFunc(nullptr); window.MarkAsKilled(); });
+			list.CreateChild<UIButtonActor>("Nullptr object button", "Nullptr", [&window, setFunc, &compNameButton]() { setFunc(nullptr); window.MarkAsKilled(); if (auto buttonText = compNameButton.GetRoot()->GetComponent<TextConstantSizeComponent>("ButtonText")) buttonText->SetContent("nullptr"); });
 			for (auto& it : availableObjects)
-				list.CreateChild<UIButtonActor>(it->GetName() + ", Matching object button", it->GetName(), [&window, setFunc, it]() { setFunc(it); window.MarkAsKilled(); });
+				list.CreateChild<UIButtonActor>(it->GetName() + ", Matching object button", it->GetName(), [&window, setFunc, it, &compNameButton]() { setFunc(it); window.MarkAsKilled(); if (auto buttonText = compNameButton.GetRoot()->GetComponent<TextConstantSizeComponent>("ButtonText")) buttonText->SetContent(it->GetName()); });
 			list.Refresh();
 
 			std::cout << availableObjects.size() << " available objects.\n";
 			});
-		compNameButton.SetTransform(Transform(Vec2f(2.0f, 0.0f), Vec2f(3.0f, 1.0f)));
 	}
 
 	template<typename ObjectBase, typename ObjectType>
-	void UIElementTemplates::ObjectInput(ObjectBase& hierarchyRoot, std::function<void(ObjectType*)> setFunc)
+	void UIElementTemplates::ObjectInput(ObjectBase& hierarchyRoot, std::function<void(ObjectType*)> setFunc, const std::string& currentObjName)
 	{
 		GameScene* scenePtr = &Scene;
-		UIButtonActor& compNameButton = TemplateParent.CreateChild<UIButtonActor>("CompNameBox", "", [scenePtr, &hierarchyRoot, setFunc]() {
+		auto& compNameButton = TemplateParent.CreateChild<UIButtonActor>("CompNameBox", currentObjName);
+		compNameButton.SetTransform(Transform(Vec2f(2.0f, 0.0f), Vec2f(3.0f, 1.0f)));
+
+		compNameButton.SetOnClickFunc([scenePtr, &hierarchyRoot, setFunc, &compNameButton]() {
 			UIWindowActor& window = scenePtr->CreateActorAtRoot<UIWindowActor>("CompInputWindow");
 			window.SetTransform(Transform(Vec2f(0.0f, -0.7f), Vec2f(0.25f)));
 
 			UIAutomaticListActor& list = window.CreateChild<UIAutomaticListActor>("Available comp list");
+
 			std::vector<ObjectType*> availableObjects;
 			if (auto cast = dynamic_cast<ObjectType*>(&hierarchyRoot))
 				availableObjects.push_back(cast);
 
 			GetAllObjects<ObjectType>(hierarchyRoot, availableObjects);
 
-			list.CreateChild<UIButtonActor>("Nullptr object button", "Nullptr", [&window, setFunc]() { setFunc(nullptr); window.MarkAsKilled(); });
+			list.CreateChild<UIButtonActor>("Nullptr object button", "Nullptr", [&window, setFunc, &compNameButton]() { setFunc(nullptr); window.MarkAsKilled(); if (auto buttonText = compNameButton.GetRoot()->GetComponent<TextConstantSizeComponent>("ButtonText")) buttonText->SetContent("nullptr"); });
 			for (auto& it : availableObjects)
-				list.CreateChild<UIButtonActor>(it->GetName() + ", Matching object button", it->GetName(), [&window, setFunc, it]() { setFunc(it); window.MarkAsKilled(); });
+				list.CreateChild<UIButtonActor>(it->GetName() + ", Matching object button", it->GetName(), [&window, setFunc, it, &compNameButton]() { setFunc(it); window.MarkAsKilled(); if (auto buttonText = compNameButton.GetRoot()->GetComponent<TextConstantSizeComponent>("ButtonText")) buttonText->SetContent(it->GetName()); });
 			list.Refresh();
 
 			std::cout << availableObjects.size() << " available objects.\n";
 			});
-		compNameButton.SetTransform(Transform(Vec2f(2.0f, 0.0f), Vec2f(3.0f, 1.0f)));
 	}
 
 	template<typename ObjectBase, typename ObjectType>
 	void UIElementTemplates::ObjectInput(ObjectBase& hierarchyRoot, ObjectType*& inputTo)
 	{
-		ObjectInput<ObjectBase, ObjectType>(hierarchyRoot, [&inputTo](ObjectType* comp) { inputTo = comp; });
+		ObjectInput<ObjectBase, ObjectType>(hierarchyRoot, [&inputTo](ObjectType* comp) { inputTo = comp; }, (inputTo) ? (inputTo->GetName()) : (std::string()));
 	}
 
 	template<typename CompType>
@@ -395,7 +400,7 @@ void UIMultipleListActor::NestList(UIListActor& list)
 	void UIElementTemplates::ComponentInput(GameScene& scene, std::function<void(CompType*)> setFunc)
 	{
 		std::vector<Actor*> allActors;
-		const_cast<Actor*>(scene.GetRootActor())->GetAllActors(&allActors);
+		scene.GetRootActor()->GetAllActors(&allActors);
 
 		std::vector<CompType*> allComponents;
 		allComponents.resize(allActors.size());
@@ -445,20 +450,20 @@ void UIMultipleListActor::NestList(UIListActor& list)
 	template void UIElementTemplates::VecInput<Vec4f>(Vec4f&);
 	template void UIElementTemplates::VecInput<Quatf>(Quatf&);
 
-	template void UIElementTemplates::ObjectInput<Component, Component>(Component&, std::function<void(Component*)>);
-	template void UIElementTemplates::ObjectInput<Component, ModelComponent>(Component&, std::function<void(ModelComponent*)>);
-	template void UIElementTemplates::ObjectInput<Component, BoneComponent>(Component&, std::function<void(BoneComponent*)>);
-	template void UIElementTemplates::ObjectInput<Component, LightComponent>(Component&, std::function<void(LightComponent*)>);
-	template void UIElementTemplates::ObjectInput<Component, Audio::SoundSourceComponent>(Component&, std::function<void(Audio::SoundSourceComponent*)>);
-	template void UIElementTemplates::ObjectInput<Component, AnimationManagerComponent>(Component&, std::function<void(AnimationManagerComponent*)>);
+	template void UIElementTemplates::ObjectInput<Component, Component>(Component&, std::function<void(Component*)>, const std::string&);
+	template void UIElementTemplates::ObjectInput<Component, ModelComponent>(Component&, std::function<void(ModelComponent*)>, const std::string&);
+	template void UIElementTemplates::ObjectInput<Component, BoneComponent>(Component&, std::function<void(BoneComponent*)>, const std::string&);
+	template void UIElementTemplates::ObjectInput<Component, LightComponent>(Component&, std::function<void(LightComponent*)>, const std::string&);
+	template void UIElementTemplates::ObjectInput<Component, Audio::SoundSourceComponent>(Component&, std::function<void(Audio::SoundSourceComponent*)>, const std::string&);
+	template void UIElementTemplates::ObjectInput<Component, AnimationManagerComponent>(Component&, std::function<void(AnimationManagerComponent*)>, const std::string&);
 
-	template void UIElementTemplates::ObjectInput<Actor, Actor>(Actor&, std::function<void(Actor*)>);
+	template void UIElementTemplates::ObjectInput<Actor, Actor>(Actor&, std::function<void(Actor*)>, const std::string&);
 	template void UIElementTemplates::ObjectInput<Actor, Actor>(Actor&, Actor*&);
 	template void UIElementTemplates::ObjectInput<Actor, GunActor>(Actor&, GunActor*&);
 	template void UIElementTemplates::ObjectInput<Actor, GunActor>(Actor&, GunActor*&);
 
-	template void UIElementTemplates::ObjectInput<Actor, Actor>(std::function<std::vector<Actor*>()>, std::function<void(Actor*)>);
-	template void UIElementTemplates::ObjectInput<Material, Material>(std::function<std::vector<Material*>()>, std::function<void(Material*)>);
+	template void UIElementTemplates::ObjectInput<Actor, Actor>(std::function<std::vector<Actor*>()>, std::function<void(Actor*)>, const std::string&);
+	template void UIElementTemplates::ObjectInput<Material, Material>(std::function<std::vector<Material*>()>, std::function<void(Material*)>, const std::string&);
 
 	template void UIElementTemplates::ComponentInput<Component>(Component&, std::function<void(Component*)>);
 	template void UIElementTemplates::ComponentInput<ModelComponent>(Component&, std::function<void(ModelComponent*)>);

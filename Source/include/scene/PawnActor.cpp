@@ -70,7 +70,7 @@ namespace GEE
 			if (PlayerTarget)
 			{
 				Vec3f playerDir = glm::normalize(PlayerTarget->GetTransform()->GetWorldTransform().Pos() - GetTransform()->GetWorldTransform().Pos());
-				float distance = glm::distance((Vec3f)PlayerTarget->GetTransform()->GetWorldTransform().Pos(), GetTransform()->GetWorldTransform().Pos());
+				float distance = glm::distance(PlayerTarget->GetTransform()->GetWorldTransform().Pos(), GetTransform()->GetWorldTransform().Pos());
 	
 				if (Gun && glm::dot(playerDir, GetTransform()->Rot() * Vec3f(0.0f, 0.0f, -1.0f)) > glm::cos(glm::radians(30.0f)) && distance < 3.0f)
 				{
@@ -103,7 +103,7 @@ namespace GEE
 		dynamic_cast<UIInputBoxActor*>(descBuilder.GetDescriptionParent().FindActor("VecBox2"))->SetRetrieveContentEachFrame(true);
 
 		descBuilder.AddField("Gun").GetTemplates().ObjectInput<Actor, GunActor>(*this, Gun);
-		descBuilder.AddField("Player target").GetTemplates().ObjectInput<Actor, Actor>(const_cast<Actor&>(*Scene.GetRootActor()), PlayerTarget);
+		descBuilder.AddField("Player target").GetTemplates().ObjectInput<Actor, Actor>(*Scene.GetRootActor(), PlayerTarget);
 
 		UIInputBoxActor& speedInputBox = descBuilder.AddField("Speed").CreateChild<UIInputBoxActor>("SpeedInputBox");
 		speedInputBox.SetOnInputFunc([this](float val) { SpeedPerSec = val; }, [this]()->float { return SpeedPerSec; });

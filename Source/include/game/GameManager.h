@@ -99,6 +99,8 @@ namespace GEE
 	public:
 		virtual Mat4f GetJitterMat(const GameSettings::VideoSettings& usedSettings, int optionalIndex = -1) = 0;	//dont pass anything to receive the current jitter matrix
 		virtual unsigned int GetFrameIndex() = 0;
+
+		virtual ~PostprocessManager() = default;
 	};
 
 	namespace Physics
@@ -118,6 +120,8 @@ namespace GEE
 			virtual void ApplyForce(CollisionObject&, Vec3f force) = 0;
 
 			virtual void DebugRender(GameScenePhysicsData&, RenderEngine&, RenderInfo&) = 0;
+
+			virtual ~PhysicsEngineManager() = default;
 		protected:
 			virtual void RemoveScenePhysicsDataPtr(GameScenePhysicsData& scenePhysicsData) = 0;
 			friend class GameScene;
@@ -135,6 +139,8 @@ namespace GEE
 			virtual void CheckError() = 0;
 			virtual SoundBuffer FindBuffer(const std::string& path) = 0;
 			virtual void AddBuffer(const SoundBuffer&) = 0;
+
+			virtual ~AudioEngineManager() = default;
 		};
 	}
 
@@ -155,28 +161,49 @@ namespace GEE
 		 * @param setupToolboxesAccordingToSettings: pass false as the second argument to disable loading any toolboxes
 		 * @return a reference to the added RenderToolboxCollection
 		*/
-		virtual RenderToolboxCollection& AddRenderTbCollection(const RenderToolboxCollection& tbCollection, bool setupToolboxesAccordingToSettings = true) = 0;
+		virtual RenderToolboxCollection& AddRenderTbCollection(const RenderToolboxCollection& tbCollection,
+		                                                       bool setupToolboxesAccordingToSettings = true) = 0;
 
-		virtual Material* AddMaterial(std::shared_ptr<Material>) = 0;
-		virtual std::shared_ptr<Shader> AddShader(std::shared_ptr<Shader>, bool bForwardShader = false) = 0;
+		virtual Material* AddMaterial(SharedPtr<Material>) = 0;
+		virtual SharedPtr<Shader> AddShader(SharedPtr<Shader>, bool bForwardShader = false) = 0;
 
 		virtual void EraseRenderTbCollection(RenderToolboxCollection& tbCollection) = 0;
 		virtual void EraseMaterial(Material&) = 0;
 
 		virtual Shader* FindShader(std::string) = 0;
-		virtual std::shared_ptr<Material> FindMaterial(std::string) = 0;
+		virtual SharedPtr<Material> FindMaterial(std::string) = 0;
 
-		virtual void RenderCubemapFromTexture(Texture targetTex, Texture tex, Vec2u size, Shader&, int* layer = nullptr, int mipLevel = 0) = 0;
-		virtual void RenderCubemapFromScene(RenderInfo info, GameSceneRenderData* sceneRenderData, GEE_FB::Framebuffer target, GEE_FB::FramebufferAttachment targetTex, Shader* shader = nullptr, int* layer = nullptr, bool fullRender = false) = 0;
-		virtual void RenderText(const RenderInfo& info, const Font& font, std::string content, Transform t, Vec3f color = Vec3f(1.0f), Shader* shader = nullptr, bool convertFromPx = false, const std::pair<TextAlignment, TextAlignment> & = std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::BOTTOM)) = 0; //Pass a shader if you do not want the default shader to be used.
-		virtual void RenderStaticMesh(const RenderInfo& info, const MeshInstance& mesh, const Transform& transform, Shader* shader, Mat4f* lastFrameMVP = nullptr, Material* overrideMaterial = nullptr, bool billboard = false) = 0; //Note: this function does not call the Use method of passed Shader. Do it manually.
-		virtual void RenderStaticMeshes(const RenderInfo&, const std::vector<std::unique_ptr<MeshInstance>>& meshes, const Transform& transform, Shader* shader, Mat4f* lastFrameMVP = nullptr, Material* overrideMaterial = nullptr, bool billboard = false) = 0; //Note: this function does not call the Use method of passed Shader. Do it manually.
-		virtual void RenderSkeletalMeshes(const RenderInfo& info, const std::vector<std::unique_ptr<MeshInstance>>& meshes, const Transform& transform, Shader* shader, SkeletonInfo& skelInfo, Mat4f* lastFrameMVP, Material* overrideMaterial = nullptr) = 0; //Note: this function does not call the Use method of passed Shader. Do it manually
+		virtual void RenderCubemapFromTexture(Texture targetTex, Texture tex, Vec2u size, Shader&, int* layer = nullptr,
+		                                      int mipLevel = 0) = 0;
+		virtual void RenderCubemapFromScene(RenderInfo info, GameSceneRenderData* sceneRenderData,
+		                                    GEE_FB::Framebuffer target, GEE_FB::FramebufferAttachment targetTex,
+		                                    Shader* shader = nullptr, int* layer = nullptr,
+		                                    bool fullRender = false) = 0;
+		//Pass a shader if you do not want the default shader to be used.
+		virtual void RenderText(const RenderInfo& info, const Font& font, std::string content, Transform t,
+		                        Vec3f color = Vec3f(1.0f), Shader* shader = nullptr, bool convertFromPx = false,
+		                        const std::pair<TextAlignment, TextAlignment>& = std::pair<
+			                        TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::BOTTOM)) = 0;
+		//Note: this function does not call the Use method of passed Shader. Do it manually.
+		virtual void RenderStaticMesh(const RenderInfo& info, const MeshInstance& mesh, const Transform& transform,
+		                              Shader* shader, Mat4f* lastFrameMVP = nullptr,
+		                              Material* overrideMaterial = nullptr, bool billboard = false) = 0;
+		//Note: this function does not call the Use method of passed Shader. Do it manually.
+		virtual void RenderStaticMeshes(const RenderInfo&, const std::vector<std::reference_wrapper<const MeshInstance>>& meshes,
+		                                const Transform& transform, Shader* shader, Mat4f* lastFrameMVP = nullptr,
+		                                Material* overrideMaterial = nullptr, bool billboard = false) = 0;
+		//Note: this function does not call the Use method of passed Shader. Do it manually
+		virtual void RenderSkeletalMeshes(const RenderInfo& info, const std::vector<std::reference_wrapper<const MeshInstance>>& meshes,
+		                                  const Transform& transform, Shader* shader, SkeletonInfo& skelInfo,
+		                                  Mat4f* lastFrameMVP, Material* overrideMaterial = nullptr) = 0;
+
+		virtual ~RenderEngineManager() = default;
 	protected:
 		virtual void AddSceneRenderDataPtr(GameSceneRenderData&) = 0;
 		virtual void RemoveSceneRenderDataPtr(GameSceneRenderData&) = 0;
 		friend class GameScene;
 	};
+	
 
 	class GameManager
 	{
@@ -191,7 +218,7 @@ namespace GEE
 		virtual void PassMouseControl(Controller* controller) = 0;
 		virtual const Controller* GetCurrentMouseController() const = 0;
 		virtual InputDevicesStateRetriever GetInputRetriever() = 0;
-		virtual std::shared_ptr<Font> GetDefaultFont() = 0;
+		virtual SharedPtr<Font> GetDefaultFont() = 0;
 
 		virtual bool HasStarted() const = 0;
 
@@ -209,8 +236,9 @@ namespace GEE
 		virtual void SetActiveScene(GameScene* scene) = 0;
 
 		virtual HierarchyTemplate::HierarchyTreeT* FindHierarchyTree(const std::string& name, HierarchyTemplate::HierarchyTreeT* treeToIgnore = nullptr) = 0;
-		virtual std::shared_ptr<Font> FindFont(const std::string& path) = 0;
+		virtual SharedPtr<Font> FindFont(const std::string& path) = 0;
 
+		virtual ~GameManager() = default;
 	protected:
 		virtual void DeleteScene(GameScene&) = 0;
 	private:
@@ -225,16 +253,19 @@ namespace GEE
 		virtual void SelectComponent(Component* comp, GameScene& editorScene) = 0;
 		virtual void SelectActor(Actor* actor, GameScene& editorScene) = 0;
 		virtual void SelectScene(GameScene* scene, GameScene& editorScene) = 0;
-		template <typename T> void Select(T* obj, GameScene& editorScene);
+		template <typename T> void Select(T*, GameScene& editorScene);
 
 		virtual void UpdateGameSettings() = 0;
 		virtual void UpdateEditorSettings() = 0;
 
 		virtual GameManager* GetGameHandle() = 0;
+		virtual Component* GetSelectedComponent() = 0;
 		virtual GameScene* GetSelectedScene() = 0;
 		virtual GameSettings* GetEditorSettings() = 0;
 
 		virtual void PreviewHierarchyTree(HierarchyTemplate::HierarchyTreeT& tree) = 0;
+
+		virtual ~EditorManager() = default;
 	};
 
 	struct PrimitiveDebugger

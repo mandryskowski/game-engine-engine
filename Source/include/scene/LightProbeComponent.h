@@ -14,7 +14,7 @@ namespace GEE
 		Texture GetEnvironmentMap() const;
 		unsigned int GetProbeIndex() const;
 		float GetProbeIntensity() const;
-		Shader* GetRenderShader(const RenderToolboxCollection& renderCol) const;
+		static Shader* GetRenderShader(const RenderToolboxCollection& renderCol);
 
 		bool IsGlobalProbe() const;
 

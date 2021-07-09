@@ -12,8 +12,8 @@ namespace GEE
 
 		bool IsValid;
 
-		std::deque<std::unique_ptr<Interpolator<Vec3f>>> PosKeysLeft, ScaleKeysLeft;
-		std::deque<std::unique_ptr<Interpolator<Quatf>>> RotKeysLeft;
+		std::deque<UniquePtr<Interpolator<Vec3f>>> PosKeysLeft, ScaleKeysLeft;
+		std::deque<UniquePtr<Interpolator<Quatf>>> RotKeysLeft;
 
 		AnimationChannelInstance(AnimationChannel&, Component&);
 		void Restart();
@@ -34,7 +34,7 @@ namespace GEE
 	{
 		Animation& Anim;
 		Component& AnimRootComp;
-		std::vector<std::unique_ptr<AnimationChannelInstance>> ChannelInstances;
+		std::vector<UniquePtr<AnimationChannelInstance>> ChannelInstances;
 		float TimePassed;
 
 		bool IsValid;
@@ -79,7 +79,7 @@ namespace GEE
 
 	class AnimationManagerComponent : public Component
 	{
-		std::vector<std::unique_ptr<AnimationInstance>> AnimInstances;
+		std::vector<UniquePtr<AnimationInstance>> AnimInstances;
 		AnimationInstance* CurrentAnim;
 
 	public:

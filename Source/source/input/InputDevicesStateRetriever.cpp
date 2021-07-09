@@ -7,20 +7,20 @@ namespace GEE
 	{
 	}
 
-	glm::dvec2 InputDevicesStateRetriever::GetMousePosition() const
+	Vec2d InputDevicesStateRetriever::GetMousePosition() const
 	{
-		glm::dvec2 mousePos;
+		Vec2d mousePos;
 		glfwGetCursorPos(&WindowRef, &mousePos.x, &mousePos.y);
 
 		return mousePos;
 	}
 
-	glm::dvec2 InputDevicesStateRetriever::GetMousePositionNDC() const
+	Vec2d InputDevicesStateRetriever::GetMousePositionNDC() const
 	{
 		glm::ivec2 windowSize;
 		glfwGetWindowSize(&WindowRef, &windowSize.x, &windowSize.y);
 
-		glm::dvec2 mousePosition = GetMousePosition() / static_cast<glm::dvec2>(windowSize);
+		Vec2d mousePosition = GetMousePosition() / static_cast<Vec2d>(windowSize);
 		mousePosition.y = 1.0 - mousePosition.y;
 
 		return mousePosition * 2.0 - 1.0;

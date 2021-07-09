@@ -74,7 +74,7 @@ namespace GEE
 		return std::string(1, static_cast<unsigned char>(Unicode));
 	}
 
-	std::shared_ptr<Event> EventHolder::PollEvent()
+	SharedPtr<Event> EventHolder::PollEvent()
 	{
 		if (Events.empty())
 			return nullptr;

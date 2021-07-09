@@ -2,10 +2,7 @@
 #include <string>
 #include <glad/glad.h>
 #include <math/Vec.h>
-#include <memory>
 #include <cereal/access.hpp>
-#include <cereal/macros.hpp>
-#include <math/Vec.h>
 #include <array>
 
 struct aiTexture;
@@ -217,6 +214,12 @@ namespace GEE
 			struct Uint32
 			{
 				static Format Depth24Stencil8() { return GL_DEPTH24_STENCIL8; }
+				static Format RGBA() { return GL_RGBA32UI; }
+			};
+			
+			struct Integer
+			{
+				static Format RGBA() { return GL_RGBA_INTEGER; }
 			};
 
 			GLenum GetEnumGL() const { return FormatGl; }
@@ -276,7 +279,7 @@ namespace GEE
 		NamedTexture(const Texture& tex = Texture(), const std::string& name = "diffuse");
 
 		std::string GetShaderName() const;
-		void SetShaderName(std::string);
+		void SetShaderName(const std::string&);
 		template <typename Archive> void Serialize(Archive& archive)
 		{
 			archive(cereal::make_nvp("ShaderName", ShaderName), cereal::make_nvp("Texture", cereal::base_class<Texture>(this)));

@@ -1,7 +1,6 @@
 #pragma once
 
 #include <scene/Component.h>
-#include <animation/Animation.h>
 #include <assimp/types.h>
 #include <map>
 

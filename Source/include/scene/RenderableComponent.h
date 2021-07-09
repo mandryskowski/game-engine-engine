@@ -13,6 +13,7 @@ namespace GEE
 		void SetHide(bool hide) { Hide = hide; }
 		bool CastsShadow() const { return bCastsShadow; }
 		void SetCastsShadow(bool castsShadow) { bCastsShadow = castsShadow; }
+		virtual std::vector<const Material*> GetMaterials() const { return { nullptr }; }
 		~Renderable() { SceneRenderData.EraseRenderable(*this); }
 	protected:
 		virtual unsigned int GetUIDepth() const { return 0; }
@@ -34,7 +35,7 @@ namespace GEE
 		RenderableComponent(RenderableComponent&& comp) :
 			Component(std::move(comp)),
 			Renderable(std::move(comp)) {}
-		virtual void DebugRender(RenderInfo info, Shader* shader) const override {}
+		virtual void DebugRender(RenderInfo info, Shader* shader, const Vec3f& debugIconScale) const override {}
 		virtual void GetEditorDescription(EditorDescriptionBuilder) override;
 		template <typename Archive>
 		void Save(Archive& archive) const

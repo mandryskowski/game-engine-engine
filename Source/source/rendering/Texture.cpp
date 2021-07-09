@@ -54,7 +54,7 @@ namespace GEE
 
 	Vec2u Texture::GetSize2D() const
 	{
-		return static_cast<Vec2u>(Size);
+		return Size;
 	}
 
 	Vec3u Texture::GetSize3D() const
@@ -243,7 +243,7 @@ namespace GEE
 	Texture Texture::Loader<PixelChannelType>::FromBuffersCubemap(const Vec2u& oneSideSize, std::array<const void*, 6> buffers, Format internalFormat, int nrChannels)
 	{
 		Texture tex = Impl::GenerateEmpty(GL_TEXTURE_CUBE_MAP, internalFormat);
-		Format format = Format::FromNrChannels(nrChannels);
+		const Format format = Format::FromNrChannels(nrChannels);
 		
 		for (int i = 0; i < 6; i++)
 			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, internalFormat.GetEnumGL(), oneSideSize.x, oneSideSize.y, 0, format.GetEnumGL(), Impl::GetChannelTypeEnum(), buffers[i]);
@@ -288,6 +288,7 @@ namespace GEE
 	}
 
 	template <> GLenum Texture::Loader<unsigned char>::Impl::GetChannelTypeEnum() { return GL_UNSIGNED_BYTE; }
+	template <> GLenum Texture::Loader<unsigned int>::Impl::GetChannelTypeEnum() { return GL_UNSIGNED_INT; }
 	template <> GLenum Texture::Loader<float>::Impl::GetChannelTypeEnum() { return GL_FLOAT; }
 	template <> GLenum Texture::Loader<Texture::LoaderArtificialType::Uint24_8>::Impl::GetChannelTypeEnum() { return GL_UNSIGNED_INT_24_8; }
 
@@ -336,6 +337,7 @@ namespace GEE
 
 
 	template Texture::Loader<unsigned char>;
+	template Texture::Loader<unsigned int>;
 	template Texture::Loader<float>;
 	template Texture::Loader<Texture::LoaderArtificialType::Uint24_8>;
 
@@ -350,7 +352,7 @@ namespace GEE
 		return ShaderName;
 	}
 
-	void NamedTexture::SetShaderName(std::string name)
+	void NamedTexture::SetShaderName(const std::string& name)
 	{
 		ShaderName = name;
 	}

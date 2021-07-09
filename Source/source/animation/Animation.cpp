@@ -93,17 +93,17 @@ namespace GEE
 	*/
 
 	template <class ValType> Interpolator<ValType>::Interpolator(float begin, float end, ValType min, ValType max, InterpolationType type, bool fadeAway, AnimBehaviour before, AnimBehaviour after, bool updateMinOnBegin, ValType* valPtr) :
-		Interpolator(std::make_shared<Interpolation>(begin, end, type, fadeAway, before, after), min, max, updateMinOnBegin, valPtr)
+		Interpolator(MakeShared<Interpolation>(begin, end, type, fadeAway, before, after), min, max, updateMinOnBegin, valPtr)
 	{
 	}
 
 	template<class ValType>
 	Interpolator<ValType>::Interpolator(Interpolation&& interp, ValType min, ValType max, bool updateMinOnBegin, ValType* valPtr) :
-		Interpolator(std::make_shared<Interpolation>(interp), min, max, updateMinOnBegin, valPtr)
+		Interpolator(MakeShared<Interpolation>(interp), min, max, updateMinOnBegin, valPtr)
 	{
 	}
 
-	template <class ValType> Interpolator<ValType>::Interpolator(std::shared_ptr<Interpolation> interp, ValType min, ValType max, bool updateOnBegin, ValType* valPtr) :
+	template <class ValType> Interpolator<ValType>::Interpolator(SharedPtr<Interpolation> interp, ValType min, ValType max, bool updateOnBegin, ValType* valPtr) :
 		Interp(interp),
 		MinVal(min),
 		MaxVal(max),
@@ -120,7 +120,7 @@ namespace GEE
 		return HasEnded;
 	}
 
-	template <class ValType> std::shared_ptr<Interpolation> Interpolator<ValType>::GetInterp()
+	template <class ValType> SharedPtr<Interpolation> Interpolator<ValType>::GetInterp()
 	{
 		return Interp;
 	}
@@ -212,7 +212,7 @@ namespace GEE
 	{
 		for (int i = 0; i < static_cast<int>(anim->mNumChannels); i++)
 		{
-			Channels.push_back(std::make_shared<AnimationChannel>(AnimationChannel(anim->mChannels[i], anim->mTicksPerSecond)));
+			Channels.push_back(MakeShared<AnimationChannel>(AnimationChannel(anim->mChannels[i], anim->mTicksPerSecond)));
 		}
 	}
 
@@ -220,11 +220,11 @@ namespace GEE
 		Name(aiChannel->mNodeName.C_Str())
 	{
 		for (int i = 0; i < static_cast<int>(aiChannel->mNumPositionKeys); i++)
-			PosKeys.push_back(std::make_shared<AnimationVecKey>(AnimationVecKey(aiChannel->mPositionKeys[i].mTime / ticksPerSecond, aiToGlm(aiChannel->mPositionKeys[i].mValue))));
+			PosKeys.push_back(MakeShared<AnimationVecKey>(AnimationVecKey(aiChannel->mPositionKeys[i].mTime / ticksPerSecond, aiToGlm(aiChannel->mPositionKeys[i].mValue))));
 		for (int i = 0; i < static_cast<int>(aiChannel->mNumRotationKeys); i++)
-			RotKeys.push_back(std::make_shared<AnimationQuatKey>(AnimationQuatKey(aiChannel->mRotationKeys[i].mTime / ticksPerSecond, aiToGlm(aiChannel->mRotationKeys[i].mValue))));
+			RotKeys.push_back(MakeShared<AnimationQuatKey>(AnimationQuatKey(aiChannel->mRotationKeys[i].mTime / ticksPerSecond, aiToGlm(aiChannel->mRotationKeys[i].mValue))));
 		for (int i = 0; i < static_cast<int>(aiChannel->mNumScalingKeys); i++)
-			ScaleKeys.push_back(std::make_shared<AnimationVecKey>(AnimationVecKey(aiChannel->mScalingKeys[i].mTime / ticksPerSecond, aiToGlm(aiChannel->mScalingKeys[i].mValue))));
+			ScaleKeys.push_back(MakeShared<AnimationVecKey>(AnimationVecKey(aiChannel->mScalingKeys[i].mTime / ticksPerSecond, aiToGlm(aiChannel->mScalingKeys[i].mValue))));
 	}
 
 

@@ -1,7 +1,6 @@
 #pragma once
 #include <game/GameManager.h>
 #include <cereal/types/memory.hpp>
-#include <cereal/types/vector.hpp>
 #include <cereal/access.hpp>
 //#include <scene/BoneComponent.h>
 namespace GEE
@@ -98,7 +97,7 @@ namespace GEE
 
 	class SkeletonBatch
 	{
-		std::vector<std::shared_ptr<SkeletonInfo>> Skeletons;
+		std::vector<SharedPtr<SkeletonInfo>> Skeletons;
 		unsigned int BoneCount;
 
 		UniformBuffer BoneUBOs[2];
@@ -114,7 +113,7 @@ namespace GEE
 		int GetBatchID();
 		UniformBuffer GetBoneUBO();
 		void RecalculateBoneCount();
-		bool AddSkeleton(std::shared_ptr<SkeletonInfo>);
+		bool AddSkeleton(SharedPtr<SkeletonInfo>);
 		void BindToUBO();
 		void VerifySkeletonsLives();	//Call every frame
 

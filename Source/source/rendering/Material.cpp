@@ -85,7 +85,7 @@ namespace GEE
 		AoColor = ao;
 	}
 
-	void Material::AddTexture(std::shared_ptr<NamedTexture> tex)
+	void Material::AddTexture(SharedPtr<NamedTexture> tex)
 	{
 		Textures.push_back(tex);
 	}
@@ -142,14 +142,14 @@ namespace GEE
 			NamedTexture embeddedTex = NamedTexture(Texture::Loader<unsigned char>::Assimp::FromAssimpEmbedded(*scene->mTextures[std::stoi(std::string(fileBaseColor.C_Str()).substr(1))], true), "albedo1");
 			embeddedTex.SetPath(std::string("*") + scene->mTextures[std::stoi(std::string(fileBaseColor.C_Str()).substr(1))]->mFilename.C_Str());
 			embeddedTex.SetWrap(GL_REPEAT, GL_REPEAT, 0, true);
-			AddTexture(std::make_shared<NamedTexture>(embeddedTex));
+			AddTexture(MakeShared<NamedTexture>(embeddedTex));
 		}
 		if (fileMetallicRoughness.length > 0 && fileMetallicRoughness.data[0] == '*')
 		{
 			NamedTexture embeddedTex = NamedTexture(Texture::Loader<unsigned char>::Assimp::FromAssimpEmbedded(*scene->mTextures[std::stoi(std::string(fileMetallicRoughness.C_Str()).substr(1))], false), "combined1");
 			embeddedTex.SetPath(std::string("*") + scene->mTextures[std::stoi(std::string(fileMetallicRoughness.C_Str()).substr(1))]->mFilename.C_Str());
 			embeddedTex.SetWrap(GL_REPEAT, GL_REPEAT, 0, true);
-			AddTexture(std::make_shared<NamedTexture>(embeddedTex));
+			AddTexture(MakeShared<NamedTexture>(embeddedTex));
 		}
 		//if (fileMetallicRoughness.length > 0 && material->GetTextureCount(aiTextureType_SHININESS) == 0 && fileMetallicRoughness.data[0] == '*')
 			//AddTexture(new NamedTexture(Texture::Loader<>::Assimp::FromAssimpEmbedded(*scene->mTextures[std::stoi(std::string(fileMetallicRoughness.C_Str()).substr(1))], true), "roughness1"));
@@ -196,21 +196,21 @@ namespace GEE
 				NamedTexture embeddedTex = NamedTexture(Texture::Loader<unsigned char>::Assimp::FromAssimpEmbedded(*scene->mTextures[std::stoi(pathStr.substr(1))], sRGB), shaderName + std::to_string(i + 1));
 				embeddedTex.SetPath(std::string("*") + scene->mTextures[std::stoi(pathStr.substr(1))]->mFilename.C_Str());
 				embeddedTex.SetWrap(GL_REPEAT, GL_REPEAT, 0, true);
-				AddTexture(std::make_shared<NamedTexture>(embeddedTex));
+				AddTexture(MakeShared<NamedTexture>(embeddedTex));
 				continue;
 			}
 
 			pathStr = directory + pathStr;
 
 			if (matLoadingData)
-				if (std::shared_ptr<NamedTexture> found = matLoadingData->FindTexture(pathStr))
+				if (SharedPtr<NamedTexture> found = matLoadingData->FindTexture(pathStr))
 				{
 					Textures.push_back(found);
 					continue;
 				}
 
 
-			std::shared_ptr<NamedTexture> tex = std::make_shared<NamedTexture>(Texture::Loader<unsigned char>::FromFile2D(pathStr, (sRGB) ? (Texture::Format::SRGBA()) : (Texture::Format::RGBA()), false, Texture::MinFilter::Trilinear(), Texture::MagFilter::Bilinear()), shaderName + std::to_string(i + 1));	//create a new Texture and pass the file path, the shader name (for example albedo1, roughness1, ...) and the sRGB info
+			SharedPtr<NamedTexture> tex = MakeShared<NamedTexture>(Texture::Loader<unsigned char>::FromFile2D(pathStr, (sRGB) ? (Texture::Format::SRGBA()) : (Texture::Format::RGBA()), false, Texture::MinFilter::Trilinear(), Texture::MagFilter::Bilinear()), shaderName + std::to_string(i + 1));	//create a new Texture and pass the file path, the shader name (for example albedo1, roughness1, ...) and the sRGB info
 			tex->SetWrap(GL_REPEAT, GL_REPEAT, 0, true);
 			AddTexture(tex);
 			if (matLoadingData)
@@ -257,7 +257,7 @@ namespace GEE
 		std::function<void(UIAutomaticListActor&, NamedTexture&)> addTextureButtonFunc = [this, &list, descBuilder](UIAutomaticListActor& list, NamedTexture& tex) mutable {
 			std::string texName = tex.GetPath();
 			Material* dummyMaterial = new Material("dummy", 0.0f, descBuilder.GetEditorHandle().GetGameHandle()->GetRenderEngineHandle()->FindShader("Forward_NoLight"));
-			dummyMaterial->AddTexture(std::make_shared<NamedTexture>(NamedTexture((Texture)tex, "albedo1")));
+			dummyMaterial->AddTexture(MakeShared<NamedTexture>(NamedTexture((Texture)tex, "albedo1")));
 			UIButtonActor& texButton = list.CreateChild<UIButtonActor>(texName + "Button", texName);
 			texButton.SetMatDisabled(*dummyMaterial);
 			texButton.SetDisableInput(true);
@@ -268,9 +268,9 @@ namespace GEE
 		UIButtonActor& addTexToMaterialButton = list.CreateChild<UIButtonActor>("AddTextureToMaterialButton", [this, addTextureButtonFunc, &list, descBuilder]() mutable {
 			UIWindowActor& addTexWindow = dynamic_cast<UICanvasActor*>(&descBuilder.GetCanvas())->CreateChildCanvas<UIWindowActor>("AddTextureWindow");
 			EditorDescriptionBuilder texWindowDescBuilder(descBuilder.GetEditorHandle(), addTexWindow, addTexWindow);
-			std::shared_ptr<std::string> path = std::make_shared<std::string>();
-			std::shared_ptr<std::string> shaderName = std::make_shared<std::string>("albedo1");
-			std::shared_ptr<bool> sRGB = std::make_shared<bool>(false);
+			SharedPtr<std::string> path = MakeShared<std::string>();
+			SharedPtr<std::string> shaderName = MakeShared<std::string>("albedo1");
+			SharedPtr<bool> sRGB = MakeShared<bool>(false);
 
 			texWindowDescBuilder.AddField("Tex path").GetTemplates().PathInput([this, path](const std::string& str) {
 				*path = str;
@@ -278,7 +278,7 @@ namespace GEE
 			texWindowDescBuilder.AddField("Shader name").CreateChild<UIInputBoxActor>("ShaderNameInputBox").SetOnInputFunc([shaderName](const std::string& input) { *shaderName = input; }, [shaderName]() { return *shaderName; });
 			texWindowDescBuilder.AddField("sRGB").GetTemplates().TickBox([sRGB]() { return *sRGB = !(*sRGB); });
 			texWindowDescBuilder.AddField("Add texture").CreateChild<UIButtonActor>("OKButton", "OK", [this, path, shaderName, sRGB, &addTextureButtonFunc, &list, &addTexWindow, descBuilder]() mutable {
-				auto tex = std::make_shared<NamedTexture>(Texture::Loader<>::FromFile2D(*path, (*sRGB) ? (Texture::Format::SRGBA()) : (Texture::Format::RGBA())), *shaderName);
+				auto tex = MakeShared<NamedTexture>(Texture::Loader<>::FromFile2D(*path, (*sRGB) ? (Texture::Format::SRGBA()) : (Texture::Format::RGBA())), *shaderName);
 				AddTexture(tex);
 				addTextureButtonFunc(list, *tex);
 				addTexWindow.MarkAsKilled();
@@ -354,7 +354,7 @@ namespace GEE
 
 	Interpolator<float>& AtlasMaterial::GetTextureIDInterpolatorTemplate(const Interpolation& interp, float min, float max)
 	{
-		return *new Interpolator<float>(std::make_shared<Interpolation>(interp), min, max, false, &TextureID);
+		return *new Interpolator<float>(MakeShared<Interpolation>(interp), min, max, false, &TextureID);
 	}
 
 	void AtlasMaterial::GetEditorDescription(EditorDescriptionBuilder descBuilder)
@@ -472,16 +472,16 @@ namespace GEE
 		return *this;
 	}
 
-	std::shared_ptr<NamedTexture> MaterialLoadingData::FindTexture(const std::string& path) const
+	SharedPtr<NamedTexture> MaterialLoadingData::FindTexture(const std::string& path) const
 	{
-		auto found = std::find_if(LoadedTextures.begin(), LoadedTextures.end(), [path](const std::shared_ptr<NamedTexture>& tex) { return tex->GetPath() == path; });
+		auto found = std::find_if(LoadedTextures.begin(), LoadedTextures.end(), [path](const SharedPtr<NamedTexture>& tex) { return tex->GetPath() == path; });
 		if (found != LoadedTextures.end())
 			return *found;
 
 		return nullptr;
 	}
 
-	void MaterialLoadingData::AddTexture(std::shared_ptr<NamedTexture> tex)
+	void MaterialLoadingData::AddTexture(SharedPtr<NamedTexture> tex)
 	{
 		LoadedTextures.push_back(tex);
 	}

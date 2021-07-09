@@ -125,13 +125,13 @@ namespace GEE
 
 	GameScene& Game::CreateScene(const std::string& name, bool isAnUIScene)
 	{
-		AddScene(std::make_unique<GameScene>(*this, name, isAnUIScene));
+		AddScene(MakeUnique<GameScene>(*this, name, isAnUIScene));
 		return *Scenes.back();
 	}
 
-	void Game::AddScene(std::unique_ptr<GameScene> scene)
+	void Game::AddScene(UniquePtr<GameScene> scene)
 	{
-		Scenes.push_back(std::unique_ptr<GameScene>(scene.release()));		//"scene" does not work anymore
+		Scenes.push_back(UniquePtr<GameScene>(scene.release()));		//"scene" does not work anymore
 		RenderEng.AddSceneRenderDataPtr(*Scenes.back()->GetRenderData());
 		std::cout << "level loaded.\n";
 
@@ -177,7 +177,7 @@ namespace GEE
 		return mouseController;
 	}
 
-	std::shared_ptr<Font> Game::GetDefaultFont()
+	SharedPtr<Font> Game::GetDefaultFont()
 	{
 		return DefaultFont;
 	}
@@ -249,9 +249,9 @@ namespace GEE
 		return nullptr;
 	}
 
-	std::shared_ptr<Font> Game::FindFont(const std::string& path)
+	SharedPtr<Font> Game::FindFont(const std::string& path)
 	{
-		auto found = std::find_if(Fonts.begin(), Fonts.end(), [path](std::shared_ptr<Font> font) {return font->GetPath() == path; });
+		auto found = std::find_if(Fonts.begin(), Fonts.end(), [path](SharedPtr<Font> font) {return font->GetPath() == path; });
 		if (found != Fonts.end())
 			return *found;
 
@@ -275,8 +275,8 @@ namespace GEE
 
 		LoopBeginTime = (float)glfwGetTime();
 
-		//AddActorToScene(std::make_shared<Controller>(Controller(this, "MojTestowyController")));
-		//Scenes[0]->AddActorToRoot(std::make_shared<UIButtonActor>(UIButtonActor(Scenes[0].get(), "MojTestowyButton")));
+		//AddActorToScene(MakeShared<Controller>(Controller(this, "MojTestowyController")));
+		//Scenes[0]->AddActorToRoot(MakeShared<UIButtonActor>(UIButtonActor(Scenes[0].get(), "MojTestowyButton")));
 		for (int i = 0; i < static_cast<int>(Scenes.size()); i++)
 			Scenes[i]->RootActor->OnStartAll();
 
@@ -338,7 +338,7 @@ namespace GEE
 
 	void Game::HandleEvents()
 	{
-		while (std::shared_ptr<Event> polledEvent = EventHolderObj.PollEvent())
+		while (SharedPtr<Event> polledEvent = EventHolderObj.PollEvent())
 		{
 			for (int i = 0; i < static_cast<int>(Scenes.size()); i++)
 				Scenes[i]->RootActor->HandleEventAll(*polledEvent);
@@ -363,7 +363,7 @@ namespace GEE
 	void Game::DeleteScene(GameScene& scene)
 	{
 		std::cout << "Deleting scene " << scene.GetName() << '\n';
-		Scenes.erase(std::remove_if(Scenes.begin(), Scenes.end(), [&scene](std::unique_ptr<GameScene>& sceneVec) { return sceneVec.get() == &scene; }), Scenes.end());
+		Scenes.erase(std::remove_if(Scenes.begin(), Scenes.end(), [&scene](UniquePtr<GameScene>& sceneVec) { return sceneVec.get() == &scene; }), Scenes.end());
 	}
 
 	float pBegin = 0.0f;
@@ -371,7 +371,7 @@ namespace GEE
 
 	void GLFWEventProcessor::CursorPosCallback(GLFWwindow* window, double xpos, double ypos)
 	{
-		TargetHolder->Events.push(std::make_shared<CursorMoveEvent>(CursorMoveEvent(EventType::MouseMoved, Vec2f(static_cast<float>(xpos), static_cast<float>(ypos)))));
+		TargetHolder->Events.push(MakeShared<CursorMoveEvent>(CursorMoveEvent(EventType::MouseMoved, Vec2f(static_cast<float>(xpos), static_cast<float>(ypos)))));
 
 		if (!mouseController || !TargetHolder)
 			return;
@@ -379,32 +379,32 @@ namespace GEE
 		glm::ivec2 halfWindowSize(0);
 		glfwGetWindowSize(window, &halfWindowSize.x, &halfWindowSize.y);
 		halfWindowSize /= 2;
-		glfwSetCursorPos(window, (double)halfWindowSize.x, (double)halfWindowSize.y);
+		glfwSetCursorPos(window, halfWindowSize.x, halfWindowSize.y);
 		mouseController->RotateWithMouse(Vec2f(xpos - (float)halfWindowSize.x, ypos - (float)halfWindowSize.y)); //Implement it as an Event instead! TODO
 	}
 
 	void GLFWEventProcessor::MouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
 	{
-		TargetHolder->Events.push(std::make_shared<MouseButtonEvent>(MouseButtonEvent((action == GLFW_PRESS) ? (EventType::MousePressed) : (EventType::MouseReleased), static_cast<MouseButton>(button), mods)));
+		TargetHolder->Events.push(MakeShared<MouseButtonEvent>(MouseButtonEvent((action == GLFW_PRESS) ? (EventType::MousePressed) : (EventType::MouseReleased), static_cast<MouseButton>(button), mods)));
 	}
 
 	void GLFWEventProcessor::KeyPressedCallback(GLFWwindow*, int key, int scancode, int action, int mods)
 	{
-		TargetHolder->Events.push(std::make_shared<KeyEvent>(KeyEvent((action == GLFW_PRESS) ? (EventType::KeyPressed) : ((action == GLFW_REPEAT) ? (EventType::KeyRepeated) : (EventType::KeyReleased)), static_cast<Key>(key), mods)));
+		TargetHolder->Events.push(MakeShared<KeyEvent>(KeyEvent((action == GLFW_PRESS) ? (EventType::KeyPressed) : ((action == GLFW_REPEAT) ? (EventType::KeyRepeated) : (EventType::KeyReleased)), static_cast<Key>(key), mods)));
 	}
 
 	void GLFWEventProcessor::CharEnteredCallback(GLFWwindow*, unsigned int codepoint)
 	{
-		TargetHolder->Events.push(std::make_shared<CharEnteredEvent>(CharEnteredEvent(EventType::CharacterEntered, codepoint)));
+		TargetHolder->Events.push(MakeShared<CharEnteredEvent>(CharEnteredEvent(EventType::CharacterEntered, codepoint)));
 	}
 
 	void GLFWEventProcessor::ScrollCallback(GLFWwindow* window, double offsetX, double offsetY)
 	{
 		std::cout << "Scrolled " << offsetX << ", " << offsetY << "\n";
-		glm::dvec2 cursorPos(0.0);
+		Vec2d cursorPos(0.0);
 		glfwGetCursorPos(window, &cursorPos.x, &cursorPos.y);
-		TargetHolder->Events.push(std::make_shared<MouseScrollEvent>(MouseScrollEvent(EventType::MouseScrolled, Vec2f(static_cast<float>(-offsetX), static_cast<float>(offsetY)))));
-		TargetHolder->Events.push(std::make_shared<CursorMoveEvent>(CursorMoveEvent(EventType::MouseMoved, Vec2f(cursorPos))));	//When we scroll (e.g. a canvas), it is possible that some buttons or other objects relying on cursor position might be scrolled (moved) as well, so we need to create a CursorMoveEvent.
+		TargetHolder->Events.push(MakeShared<MouseScrollEvent>(MouseScrollEvent(EventType::MouseScrolled, Vec2f(static_cast<float>(-offsetX), static_cast<float>(offsetY)))));
+		TargetHolder->Events.push(MakeShared<CursorMoveEvent>(CursorMoveEvent(EventType::MouseMoved, Vec2f(cursorPos))));	//When we scroll (e.g. a canvas), it is possible that some buttons or other objects relying on cursor position might be scrolled (moved) as well, so we need to create a CursorMoveEvent.
 	}
 
 	void GLFWEventProcessor::FileDropCallback(GLFWwindow* window, int count, const char** paths)

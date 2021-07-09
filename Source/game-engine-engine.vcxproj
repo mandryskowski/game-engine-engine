@@ -205,7 +205,9 @@
     <ClInclude Include="include\animation\SkeletonInfo.h" />
     <ClInclude Include="include\editor\EditorManager.h" />
     <ClInclude Include="include\editor\GameEngineEngineEditor.h" />
+    <ClInclude Include="include\editor\MousePicking.h" />
     <ClInclude Include="include\math\Vec.h" />
+    <ClInclude Include="include\rendering\OutlineRenderer.h" />
     <ClInclude Include="include\scene\Actor.h" />
     <ClInclude Include="include\animation\Animation.h" />
     <ClInclude Include="include\audio\AudioEngine.h" />

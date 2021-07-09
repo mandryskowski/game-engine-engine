@@ -1,9 +1,7 @@
 #pragma once
+#include <utility/Utility.h>
 #include <glfw/glfw3.h>
-#include <memory>
 #include <queue>
-#include <string>
-#include <math/Vec.h>
 
 namespace GEE
 {
@@ -249,10 +247,10 @@ namespace GEE
 	class EventHolder
 	{
 	public:
-		std::shared_ptr<Event> PollEvent();
+		SharedPtr<Event> PollEvent();
 
 		friend struct GLFWEventProcessor;
 	private:
-		std::queue<std::shared_ptr<Event>> Events;
+		std::queue<SharedPtr<Event>> Events;
 	};
 }

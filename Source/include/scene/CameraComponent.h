@@ -1,6 +1,5 @@
 #pragma once
 #include <scene/Component.h>
-#include <game/GameSettings.h>
 #include <array>
 
 namespace GEE

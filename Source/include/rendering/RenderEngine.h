@@ -38,10 +38,10 @@ namespace GEE
 			void RenderVolume(EngineBasicShape, Shader&, const Transform* = nullptr);
 		};
 
-	private:
+	protected:
 		struct ImplUtil
 		{
-			ImplUtil(RenderEngineManager& engineHandle) : EngineHandle(engineHandle) {}
+			ImplUtil(RenderEngineManager& engineHandle) : RenderHandle(engineHandle) {}
 			void SetCubemapSideVP(MatrixInfo& info, GEE_FB::Axis cubemapSide);
 			Mesh GetBasicShapeMesh(EngineBasicShape);
 
@@ -57,7 +57,7 @@ namespace GEE
 			void UseShader(Shader* shader);
 			void BindMaterial(const Material* material);
 			void BindMaterialInstance(const MaterialInstance* materialInst);*/
-			RenderEngineManager& EngineHandle;
+			RenderEngineManager& RenderHandle;
 		} Impl;
 	};
 
@@ -81,8 +81,8 @@ namespace GEE
 		 * @return a reference to the added RenderToolboxCollection
 		*/
 		virtual RenderToolboxCollection& AddRenderTbCollection(const RenderToolboxCollection& tbCollection, bool setupToolboxesAccordingToSettings = true) override;
-		virtual Material* AddMaterial(std::shared_ptr<Material> material) override;
-		virtual std::shared_ptr<Shader> AddShader(std::shared_ptr<Shader> shader, bool bForwardShader = false) override;
+		virtual Material* AddMaterial(SharedPtr<Material> material) override;
+		virtual SharedPtr<Shader> AddShader(SharedPtr<Shader> shader, bool bForwardShader = false) override;
 
 		void BindSkeletonBatch(SkeletonBatch* batch);
 		void BindSkeletonBatch(GameSceneRenderData* sceneRenderData, unsigned int index);
@@ -90,13 +90,13 @@ namespace GEE
 		virtual void EraseRenderTbCollection(RenderToolboxCollection& tbCollection) override;
 		virtual void EraseMaterial(Material&) override;
 
-		virtual std::shared_ptr<Material> FindMaterial(std::string) override;
+		virtual SharedPtr<Material> FindMaterial(std::string) override;
 		virtual Shader* FindShader(std::string) override;
 
 		void RenderShadowMaps(RenderToolboxCollection& tbCollection, GameSceneRenderData* sceneRenderData, std::vector<std::reference_wrapper<LightComponent>>);
-		void RenderVolume(const RenderInfo&, EngineBasicShape, Shader&, const Transform* = nullptr);
+		void RenderVolume(const RenderInfo&, EngineBasicShape, Shader&, const Transform& = Transform());
 		void RenderVolume(const RenderInfo&, RenderableVolume*, Shader* boundShader, bool shadedRender);
-		void RenderVolumes(const RenderInfo&, const GEE_FB::Framebuffer& framebuffer, const std::vector<std::unique_ptr<RenderableVolume>>&, bool bIBLPass);
+		void RenderVolumes(const RenderInfo&, const GEE_FB::Framebuffer& framebuffer, const std::vector<UniquePtr<RenderableVolume>>&, bool bIBLPass);
 		void RenderLightProbes(GameSceneRenderData* sceneRenderData);
 		void RenderRawScene(const RenderInfo& info, GameSceneRenderData* sceneRenderData, Shader* shader = nullptr);
 		void RenderRawSceneUI(const RenderInfo& info, GameSceneRenderData* sceneRenderData);
@@ -108,7 +108,7 @@ namespace GEE
 		void FullSceneRender(RenderInfo& info, GameSceneRenderData* sceneRenderData, GEE_FB::Framebuffer* framebuffer = nullptr, Viewport = Viewport(Vec2f(0.0f), Vec2f(0.0f)), bool clearMainFB = true, bool modifyForwardsDepthForUI = false);	//This method renders a scene with lighting and some postprocessing that improve the visual quality (e.g. SSAO, if enabled).
 
 		void PrepareFrame();
-		void PostFrame();	//This method completes the postprocessing after everything has been rendered. Call it at the end of your frame rendering function to minimize overhead. Algorithms like anti-aliasing don't need to run multiple times.
+		static void PostFrame();	//This method completes the postprocessing after everything has been rendered. Call it at the end of your frame rendering function to minimize overhead. Algorithms like anti-aliasing don't need to run multiple times.
 		virtual void RenderFrame(RenderInfo& info);
 
 		void TestRenderCubemap(RenderInfo& info, GameSceneRenderData* sceneRenderData);
@@ -116,8 +116,8 @@ namespace GEE
 		virtual void RenderCubemapFromScene(RenderInfo info, GameSceneRenderData* sceneRenderData, GEE_FB::Framebuffer target, GEE_FB::FramebufferAttachment targetTex, Shader* shader = nullptr, int* layer = nullptr, bool fullRender = false) override;
 		virtual void RenderText(const RenderInfo& info, const Font& font, std::string content, Transform t = Transform(), Vec3f color = Vec3f(1.0f), Shader* shader = nullptr, bool convertFromPx = false, const std::pair<TextAlignment, TextAlignment> & = std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::BOTTOM)) override; //Pass a shader if you do not want the default shader to be used.
 		virtual void RenderStaticMesh(const RenderInfo& info, const MeshInstance& mesh, const Transform& transform, Shader* shader, Mat4f* lastFrameMVP = nullptr, Material* overrideMaterial = nullptr, bool billboard = false) override; //Note: this function does not call the Use method of passed Shader. Do it manually.
-		virtual void RenderStaticMeshes(const RenderInfo& info, const std::vector<std::unique_ptr<MeshInstance>>& meshes, const Transform& transform, Shader* shader, Mat4f* lastFrameMVP = nullptr, Material* overrideMaterial = nullptr, bool billboard = false) override; //Note: this function does not call the Use method of passed Shader. Do it manually.
-		virtual void RenderSkeletalMeshes(const RenderInfo& info, const std::vector<std::unique_ptr<MeshInstance>>& meshes, const Transform& transform, Shader* shader, SkeletonInfo& skelInfo, Mat4f* lastFrameMVP, Material* overrideMaterial = nullptr) override; //Note: this function does not call the Use method of passed Shader. Do it manually
+		virtual void RenderStaticMeshes(const RenderInfo& info, const std::vector<std::reference_wrapper<const MeshInstance>>& meshes, const Transform& transform, Shader* shader, Mat4f* lastFrameMVP = nullptr, Material* overrideMaterial = nullptr, bool billboard = false) override; //Note: this function does not call the Use method of passed Shader. Do it manually.
+		virtual void RenderSkeletalMeshes(const RenderInfo& info, const std::vector<std::reference_wrapper<const MeshInstance>>& meshes, const Transform& transform, Shader* shader, SkeletonInfo& skelInfo, Mat4f* lastFrameMVP, Material* overrideMaterial = nullptr) override; //Note: this function does not call the Use method of passed Shader. Do it manually
 
 		void Dispose();
 
@@ -136,12 +136,12 @@ namespace GEE
 
 		std::vector <GameSceneRenderData*> ScenesRenderData;
 	public:
-		std::vector <std::shared_ptr <Material>> Materials;
+		std::vector <SharedPtr <Material>> Materials;
 
-		std::vector <std::shared_ptr <Shader>> Shaders;
-		std::vector <std::shared_ptr <Shader>> UserShaders;
-		std::vector <std::shared_ptr <Shader>> ForwardShaders;		//We store forward shaders in a different vector to attempt rendering the scene at forward render stage. Putting non-forward-rendering shaders here will reduce performance.
-		//std::vector <std::shared_ptr <Shader>> SettingIndependentShaders;		//TODO: Put setting independent shaders here. When the user asks for a shader, search in CurrentTbCollection first. Then check here.
+		std::vector <SharedPtr <Shader>> Shaders;
+		std::vector <SharedPtr <Shader>> UserShaders;
+		std::vector <SharedPtr <Shader>> ForwardShaders;		//We store forward shaders in a different vector to attempt rendering the scene at forward render stage. Putting non-forward-rendering shaders here will reduce performance.
+		//std::vector <SharedPtr <Shader>> SettingIndependentShaders;		//TODO: Put setting independent shaders here. When the user asks for a shader, search in CurrentTbCollection first. Then check here.
 		std::vector <Shader*> LightShaders;		//Same with light shaders
 		Texture EmptyTexture;
 
@@ -149,7 +149,7 @@ namespace GEE
 		const Material* BoundMaterial;
 		SkeletonBatch* BoundSkeletonBatch;
 
-		std::vector <std::unique_ptr <RenderToolboxCollection>> RenderTbCollections;
+		std::vector <UniquePtr <RenderToolboxCollection>> RenderTbCollections;
 		RenderToolboxCollection* CurrentTbCollection;
 
 		Mat4f PreviousFrameView;

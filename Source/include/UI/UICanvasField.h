@@ -1,6 +1,5 @@
 #pragma once
 #include <UI/UIActor.h>
-#include <UI/UIElement.h>
 #include <functional>
 
 namespace GEE
@@ -30,8 +29,8 @@ namespace GEE
 		template <typename VecType> void VecInput(VecType& modifedVec);	//not encapsulated
 
 		//
-		template <typename ObjectBase, typename ObjectType> void ObjectInput(std::function<std::vector<ObjectBase*>()> getObjectsFunc, std::function<void(ObjectType*)> setFunc);	//encapsulated
-		template <typename ObjectBase, typename ObjectType> void ObjectInput(ObjectBase& hierarchyRoot, std::function<void(ObjectType*)> setFunc);	//encapsulated
+		template <typename ObjectBase, typename ObjectType> void ObjectInput(std::function<std::vector<ObjectBase*>()> getObjectsFunc, std::function<void(ObjectType*)> setFunc, const std::string& currentObjName = std::string());	//encapsulated
+		template <typename ObjectBase, typename ObjectType> void ObjectInput(ObjectBase& hierarchyRoot, std::function<void(ObjectType*)> setFunc, const std::string& currentObjName = std::string());	//encapsulated
 		template <typename ObjectBase, typename ObjectType> void ObjectInput(ObjectBase& hierarchyRoot, ObjectType*& inputTo);	//not encapsulated
 		template <typename CompType> void ComponentInput(Component& hierarchyRoot, std::function<void(CompType*)> setFunc);	//encapsulated
 		template <typename CompType> void ComponentInput(GameScene& scene, std::function<void(CompType*)> setFunc);	//encapsulated

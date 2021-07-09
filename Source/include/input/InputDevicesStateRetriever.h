@@ -7,8 +7,8 @@ namespace GEE
 	{
 	public:
 		InputDevicesStateRetriever(GLFWwindow&);
-		glm::dvec2 GetMousePosition() const;
-		glm::dvec2 GetMousePositionNDC() const;
+		Vec2d GetMousePosition() const;
+		Vec2d GetMousePositionNDC() const;
 		bool IsKeyPressed(const Key&) const;
 
 		friend class Game;

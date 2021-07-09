@@ -3,7 +3,6 @@
 #include <scene/UIButtonActor.h>
 #include <scene/Component.h>
 #include <cassert>
-#include <scene/UIButtonActor.h>
 #define assertm(exp, msg) assert(((void)msg, exp))
 
 namespace GEE
@@ -37,14 +36,14 @@ namespace GEE
 
 	Mat4f UICanvas::GetProjection() const
 	{
-		Vec2f size = static_cast<Vec2f>(CanvasView.Scale());
+		Vec2f size = CanvasView.Scale();
 		return glm::ortho(-size.x, size.x, -size.y, size.y, 1.0f, -2550.0f);
 	}
 
 	Boxf<Vec2f> UICanvas::GetBoundingBox() const
 	{
-		Vec2f canvasRightUpMax(0.0f);
 		Vec2f canvasLeftDownMin(0.0f);
+		Vec2f canvasRightUpMax(0.0f);
 
 		for (int i = 0; i < UIElements.size(); i++)
 		{
@@ -57,16 +56,14 @@ namespace GEE
 
 	//		std::cout << elementLeftDownMin.y << "??\n";
 
-			canvasRightUpMax = glm::max(canvasRightUpMax, elementRightUpMax);
 			canvasLeftDownMin = glm::min(canvasLeftDownMin, elementLeftDownMin);
+			canvasRightUpMax = glm::max(canvasRightUpMax, elementRightUpMax);
 		}
-
-		Vec2f center = (canvasLeftDownMin + canvasRightUpMax) / 2.0f;
 
 		//	std::cout << UIElements.size() << "\n";
 		//	std::cout << canvasLeftDownMin.x << ", " << canvasLeftDownMin.y << " --> " << canvasRightUpMax.x << ", " << canvasRightUpMax.y << "\n";
 
-		return Boxf<Vec2f>(center, canvasRightUpMax - center);
+		return Boxf<Vec2f>::FromMinMaxCorners(canvasLeftDownMin, canvasRightUpMax);
 	}
 
 	unsigned int UICanvas::GetCanvasDepth() const

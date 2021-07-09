@@ -52,7 +52,7 @@ namespace GEE
 		return ProbeIntensity;
 	}
 
-	Shader* LightProbeComponent::GetRenderShader(const RenderToolboxCollection& renderCol) const
+	Shader* LightProbeComponent::GetRenderShader(const RenderToolboxCollection& renderCol)
 	{
 		return renderCol.FindShader("CookTorranceIBL");
 	}
@@ -73,10 +73,6 @@ namespace GEE
 		return Component::GetDebugMatInst(state);
 	}
 
-#include <UI/UICanvasActor.h>
-#include <UI/UICanvasField.h>
-#include <rendering/LightProbe.h>
-#include <scene/UIInputBoxActor.h>
 	void LightProbeComponent::GetEditorDescription(EditorDescriptionBuilder descBuilder)
 	{
 		Component::GetEditorDescription(descBuilder);

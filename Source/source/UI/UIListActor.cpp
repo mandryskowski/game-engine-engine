@@ -102,13 +102,13 @@ namespace GEE
 	{
 	}
 
-	UIAutomaticListActor::UIAutomaticListActor(UIAutomaticListActor&& listActor) :
+	UIAutomaticListActor::UIAutomaticListActor(UIAutomaticListActor&& listActor) noexcept :
 		UIListActor(std::move(listActor)),
 		ElementOffset(listActor.ElementOffset)
 	{
 	}
 
-	Actor& UIAutomaticListActor::AddChild(std::unique_ptr<Actor> actor)
+	Actor& UIAutomaticListActor::AddChild(UniquePtr<Actor> actor)
 	{
 		AddElement(UIListElement(*actor, ElementOffset));
 		if (UIListActor* listCast = dynamic_cast<UIListActor*>(actor.get()))
@@ -151,7 +151,7 @@ namespace GEE
 
 	UIListElement& UIListElement::operator=(UIListElement&& element)
 	{
-		return (*this = static_cast<const UIListElement&>(element));
+		return (*this = element);
 	}
 
 	bool UIListElement::IsBeingKilled() const

@@ -3,7 +3,6 @@
 #include <scene/UIInputBoxActor.h>
 #include <UI/UICanvasActor.h>
 
-#include <UI/UICanvasActor.h>
 #include <UI/UICanvasField.h>
 
 namespace GEE
@@ -15,7 +14,7 @@ namespace GEE
 		Diffuse(diff),
 		Specular(spec),
 		Attenuation(settings.x),
-		ShadowBias(0.0f),
+		ShadowBias(0.001f),
 		bShadowMapCullFronts(true),
 		LightIndex(index),
 		ShadowMapNr(shadowNr),

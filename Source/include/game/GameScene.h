@@ -1,10 +1,6 @@
 #pragma once
 #include "GameManager.h"
 #include <utility/Utility.h>
-#include <cereal/access.hpp>
-#include <cereal/types/vector.hpp>
-#include <cereal/types/memory.hpp>
-#include <cereal/types/polymorphic.hpp>
 #include <animation/SkeletonInfo.h>
 
 namespace GEE
@@ -27,9 +23,10 @@ namespace GEE
 		bool HasLightWithoutShadowMap() const;
 
 		void AddRenderable(Renderable&);
-		void AddLight(LightComponent& light); // this function lets the engine know that the passed light component's data needs to be forwarded to shaders (therefore lighting our meshes)
+		void AddLight(LightComponent& light);
+		// this function lets the engine know that the passed light component's data needs to be forwarded to shaders (therefore lighting our meshes)
 		void AddLightProbe(LightProbeComponent& probe);
-		std::shared_ptr<SkeletonInfo> AddSkeletonInfo();
+		SharedPtr<SkeletonInfo> AddSkeletonInfo();
 
 		void EraseRenderable(Renderable&);
 		void EraseLight(LightComponent&);
@@ -40,7 +37,7 @@ namespace GEE
 		 * @param putGlobalProbeAtEnd: ensure that the global probe is the final element of the vector. This is used in rendering the global probe only in areas without any local probe.
 		 * @return the volumes of all light probes in the scene.
 		*/
-		std::vector<std::unique_ptr<RenderableVolume>> GetLightProbeVolumes(bool putGlobalProbeAtEnd = true);
+		std::vector<UniquePtr<RenderableVolume>> GetLightProbeVolumes(bool putGlobalProbeAtEnd = true);
 
 		/**
 		 * @brief Applies if bIsAnUIScene is true. Should be called after the UIDepth of a Renderable has changed.
@@ -58,11 +55,14 @@ namespace GEE
 
 		//RenderableComponent* FindRenderable(std::string name);
 
-		template<typename Archive> void SaveSkeletonBatches(Archive& archive) const
+		template <typename Archive>
+		void SaveSkeletonBatches(Archive& archive) const
 		{
 			archive(CEREAL_NVP(SkeletonBatches));
 		}
-		template<typename Archive> void LoadSkeletonBatches(Archive& archive)
+
+		template <typename Archive>
+		void LoadSkeletonBatches(Archive& archive)
 		{
 			SkeletonBatches.clear();
 			archive(CEREAL_NVP(SkeletonBatches));
@@ -75,7 +75,7 @@ namespace GEE
 	public:
 		RenderEngineManager* RenderHandle;
 
-		std::vector <Renderable*> Renderables;
+		std::vector<Renderable*> Renderables;
 		/**
 		 * @brief If bIsAnUIScene is true, Renderables are sorted by UI depth upon insertion.
 		 * This allows to render UIElements with different depths correctly
@@ -83,8 +83,8 @@ namespace GEE
 		bool bIsAnUIScene;
 		bool bUIRenderableDepthsSortedDirtyFlag, bLightProbesSortedDirtyFlag;
 
-		std::vector <std::shared_ptr <SkeletonBatch>> SkeletonBatches;
-		std::vector <LightProbeComponent*> LightProbes;
+		std::vector<SharedPtr<SkeletonBatch>> SkeletonBatches;
+		std::vector<LightProbeComponent*> LightProbes;
 
 		std::vector<std::reference_wrapper<LightComponent>> Lights;
 		UniformBuffer LightsBuffer;
@@ -92,7 +92,7 @@ namespace GEE
 		int LightBlockBindingSlot;
 		bool ProbesLoaded;
 
-		std::shared_ptr<LightProbeTextureArrays> ProbeTexArrays;
+		SharedPtr<LightProbeTextureArrays> ProbeTexArrays;
 	};
 
 	namespace Physics
@@ -109,7 +109,7 @@ namespace GEE
 
 		private:
 			Physics::PhysicsEngineManager* PhysicsHandle;
-			std::vector <CollisionObject*> CollisionObjects;
+			std::vector<CollisionObject*> CollisionObjects;
 			physx::PxScene* PhysXScene;
 			physx::PxControllerManager* PhysXControllerManager;
 			bool WasSetup;
@@ -128,11 +128,10 @@ namespace GEE
 			SoundSourceComponent* FindSource(std::string name);
 
 		private:
-			std::vector <std::reference_wrapper<SoundSourceComponent>> Sources;
+			std::vector<std::reference_wrapper<SoundSourceComponent>> Sources;
 			AudioEngineManager* AudioHandle;
 		};
 	}
-
 
 
 	class GameScene
@@ -176,7 +175,7 @@ namespace GEE
 		 * @see UICanvasActor::~UICanvasActor()
 		 * @param canvas: the canvas to be erased
 		*/
-		void EraseBlockingCanvas(UICanvas&);
+		void EraseBlockingCanvas(UICanvas& canvas);
 
 		/**
 		 * @brief Get the canvas that contains the cursor in this frame. Events handled by UIElements outside the canvas should be treated differently.
@@ -192,11 +191,13 @@ namespace GEE
 		std::string GetUniqueActorName(const std::string& name) const;
 
 		//You use this function to make the game interact (update, draw...) with the actor; without adding it to the scene, the Actor instance isnt updated real-time by default. Pass nullptr to use the Main Scene.
-		Actor& AddActorToRoot(std::unique_ptr<Actor> actor);
-		template <typename ActorClass, typename... Args> ActorClass& CreateActorAtRoot(Args&&...);
+		Actor& AddActorToRoot(UniquePtr<Actor> actor);
+		template <typename ActorClass, typename... Args>
+		ActorClass& CreateActorAtRoot(Args&&...);
 
 		HierarchyTemplate::HierarchyTreeT& CreateHierarchyTree(const std::string& name);
-		HierarchyTemplate::HierarchyTreeT* FindHierarchyTree(const std::string& name, HierarchyTemplate::HierarchyTreeT* treeToIgnore = nullptr);
+		HierarchyTemplate::HierarchyTreeT* FindHierarchyTree(const std::string& name,
+		                                                     HierarchyTemplate::HierarchyTreeT* treeToIgnore = nullptr);
 
 		void HandleEventAll(const Event&);
 		void Update(float deltaTime);
@@ -213,7 +214,7 @@ namespace GEE
 
 		~GameScene();
 		//private:
-		void MarkAsKilled();	//Note: this should probably be encapsulated
+		void MarkAsKilled(); //Note: this should probably be encapsulated
 
 
 	private:
@@ -228,12 +229,12 @@ namespace GEE
 		std::string Name;
 		GameManager* GameHandle;
 
-		std::unique_ptr<Actor> RootActor;
-		std::unique_ptr<GameSceneRenderData> RenderData;
-		std::unique_ptr<Physics::GameScenePhysicsData> PhysicsData;
-		std::unique_ptr<Audio::GameSceneAudioData> AudioData;
+		UniquePtr<Actor> RootActor;
+		UniquePtr<GameSceneRenderData> RenderData;
+		UniquePtr<Physics::GameScenePhysicsData> PhysicsData;
+		UniquePtr<Audio::GameSceneAudioData> AudioData;
 
-		std::vector<std::unique_ptr<HierarchyTemplate::HierarchyTreeT>> HierarchyTrees;
+		std::vector<UniquePtr<HierarchyTemplate::HierarchyTreeT>> HierarchyTrees;
 
 		/**
 		* @brief If the cursor is contained within one of these canvases, you most likely should disable some interaction with UI elements outside the canvas.
@@ -260,10 +261,9 @@ namespace GEE
 		friend class GameEngineEngineEditor;
 	};
 
-	template<typename ActorClass, typename... Args>
+	template <typename ActorClass, typename... Args>
 	inline ActorClass& GameScene::CreateActorAtRoot(Args&&... args)
 	{
 		return RootActor->CreateChild<ActorClass>(std::forward<Args>(args)...);
 	}
-
 }

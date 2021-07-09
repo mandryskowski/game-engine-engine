@@ -3,7 +3,6 @@
 #include <glfw/glfw3.h>
 #include <glm/gtx/euler_angles.hpp>
 #include <string>
-#include <cereal/access.hpp>
 #include <cereal/archives/json.hpp>
 #include "Vec.h"
 
@@ -27,7 +26,7 @@ namespace GEE
 	{
 		bool KUPA;
 		Transform* ParentTransform;
-		mutable std::unique_ptr<Transform> WorldTransformCache;
+		mutable UniquePtr<Transform> WorldTransformCache;
 		mutable Mat4f WorldTransformMatrixCache;
 		mutable Mat4f MatrixCache;
 
@@ -40,7 +39,7 @@ namespace GEE
 		mutable std::vector <bool> DirtyFlags;
 		mutable bool Empty;	//true if the Transform object has never been changed. Allows for a simple optimization - we skip it during world transform calculation
 	public:
-		std::vector <std::shared_ptr<InterpolatorBase>> Interpolators;
+		std::vector <SharedPtr<InterpolatorBase>> Interpolators;
 
 		void FlagMyDirtiness() const;
 		void FlagWorldDirtiness() const;
@@ -108,7 +107,7 @@ namespace GEE
 		void SetDirtyFlags(bool val = true);
 		unsigned int AddDirtyFlag();
 
-		void AddInterpolator(std::string fieldName, std::shared_ptr<InterpolatorBase>, bool animateFromCurrent = true);	//if animateFromCurrent is true, the method automatically changes the minimum value of the interpolator to be the current value of the interpolated variable.
+		void AddInterpolator(std::string fieldName, SharedPtr<InterpolatorBase>, bool animateFromCurrent = true);	//if animateFromCurrent is true, the method automatically changes the minimum value of the interpolator to be the current value of the interpolated variable.
 		template <class T> void AddInterpolator(std::string fieldName, float begin, float end, T min, T max, InterpolationType interpType = InterpolationType::LINEAR, bool fadeAway = false, AnimBehaviour before = AnimBehaviour::STOP, AnimBehaviour after = AnimBehaviour::STOP);
 		template <class T> void AddInterpolator(std::string fieldName, float begin, float end, T max, InterpolationType interpType = InterpolationType::LINEAR, bool fadeAway = false, AnimBehaviour before = AnimBehaviour::STOP, AnimBehaviour after = AnimBehaviour::STOP);
 		void Update(float deltaTime);

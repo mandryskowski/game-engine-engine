@@ -7,7 +7,6 @@
 #include <UI/UIActor.h>
 #include <UI/UICanvasField.h>
 #include <scene/UIButtonActor.h>
-#include <UI/UIListActor.h>
 
 namespace GEE
 {
@@ -80,7 +79,7 @@ namespace GEE
 		dynamic_cast<ModelComponent*>(FireModel->SearchForComponent("Quad"))->SetRenderAsBillboard(true);
 		ParticleMeshInst = FireModel->FindMeshInstance("Quad");
 
-		AtlasMaterial* fireMaterial = dynamic_cast<AtlasMaterial*>(const_cast<Material*>(&ParticleMeshInst->GetMaterialInst()->GetMaterialRef()));
+		AtlasMaterial* fireMaterial = dynamic_cast<AtlasMaterial*>(&ParticleMeshInst->GetMaterialInst()->GetMaterialRef());
 		if (!fireMaterial)
 			return;
 
@@ -107,16 +106,16 @@ namespace GEE
 
 		Actor& actor = Scene.CreateActorAtRoot<Actor>("Bullet" + std::to_string(FiredBullets));
 		//TODO: Change it so the bullet is fired at the barrel, not at the center
-		std::unique_ptr<ModelComponent> bulletModel = std::make_unique<ModelComponent>(ModelComponent(actor, nullptr, "BulletModel" + std::to_string(FiredBullets++), Transform(GetTransform()->GetWorldTransform().Pos(), Vec3f(0.0f), Vec3f(0.2f))));
+		UniquePtr<ModelComponent> bulletModel = MakeUnique<ModelComponent>(ModelComponent(actor, nullptr, "BulletModel" + std::to_string(FiredBullets++), Transform(GetTransform()->GetWorldTransform().Pos(), Vec3f(0.0f), Vec3f(0.2f))));
 		bulletModel->OnStart();
 		Material* rustedIronMaterial = GameHandle->GetRenderEngineHandle()->FindMaterial("RustedIron").get();
 		if (!rustedIronMaterial)
 		{
-			rustedIronMaterial = GameHandle->GetRenderEngineHandle()->AddMaterial(std::make_shared<Material>("RustedIron"));
-			rustedIronMaterial->AddTexture(std::make_shared<NamedTexture>(Texture::Loader<>::FromFile2D("EngineMaterials/rustediron_albedo.png", Texture::Format::SRGB(), false, Texture::MinFilter::Trilinear(), Texture::MagFilter::Bilinear()), "albedo1"));
-			rustedIronMaterial->AddTexture(std::make_shared<NamedTexture>(Texture::Loader<>::FromFile2D("EngineMaterials/rustediron_metallic.png"), "metallic1"));
-			rustedIronMaterial->AddTexture(std::make_shared<NamedTexture>(Texture::Loader<>::FromFile2D("EngineMaterials/rustediron_roughness.png"), "roughness1"));
-			rustedIronMaterial->AddTexture(std::make_shared<NamedTexture>(Texture::Loader<>::FromFile2D("EngineMaterials/rustediron_normal.png"), "normal1"));
+			rustedIronMaterial = GameHandle->GetRenderEngineHandle()->AddMaterial(MakeShared<Material>("RustedIron"));
+			rustedIronMaterial->AddTexture(MakeShared<NamedTexture>(Texture::Loader<>::FromFile2D("EngineMaterials/rustediron_albedo.png", Texture::Format::SRGB(), false, Texture::MinFilter::Trilinear(), Texture::MagFilter::Bilinear()), "albedo1"));
+			rustedIronMaterial->AddTexture(MakeShared<NamedTexture>(Texture::Loader<>::FromFile2D("EngineMaterials/rustediron_metallic.png"), "metallic1"));
+			rustedIronMaterial->AddTexture(MakeShared<NamedTexture>(Texture::Loader<>::FromFile2D("EngineMaterials/rustediron_roughness.png"), "roughness1"));
+			rustedIronMaterial->AddTexture(MakeShared<NamedTexture>(Texture::Loader<>::FromFile2D("EngineMaterials/rustediron_normal.png"), "normal1"));
 		}
 
 		{
@@ -128,7 +127,7 @@ namespace GEE
 				it->OverrideInstancesMaterial(rustedIronMaterial);
 		}
 
-		std::unique_ptr<Physics::CollisionObject> dupa = std::make_unique<Physics::CollisionObject>(false, Physics::CollisionShapeType::COLLISION_SPHERE);
+		UniquePtr<Physics::CollisionObject> dupa = MakeUnique<Physics::CollisionObject>(false, Physics::CollisionShapeType::COLLISION_SPHERE);
 		Physics::CollisionObject& col = *bulletModel->SetCollisionObject(std::move(dupa));	//dupa is no longer valid
 		GameHandle->GetPhysicsHandle()->ApplyForce(col, GetRoot()->GetTransform().GetWorldTransform().GetFrontVec() * 0.25f);
 		col.ActorPtr->is<physx::PxRigidDynamic>()->setLinearDamping(0.5f);

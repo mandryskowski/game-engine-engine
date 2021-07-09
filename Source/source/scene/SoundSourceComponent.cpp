@@ -6,7 +6,6 @@
 
 #include <UI/UICanvasActor.h>
 #include <UI/UICanvasField.h>
-#include <assetload/FileLoader.h>
 #include <scene/UIButtonActor.h>
 
 namespace GEE
@@ -87,7 +86,7 @@ namespace GEE
 		void SoundSourceComponent::Update(float deltaTime)
 		{
 			if (ALIndex != 0)
-				alSourcefv(ALIndex, AL_POSITION, Math::GetDataPtr((Vec3f)ComponentTransform.GetWorldTransform().Pos()));
+				alSourcefv(ALIndex, AL_POSITION, Math::GetDataPtr(ComponentTransform.GetWorldTransform().Pos()));
 		}
 
 		MaterialInstance SoundSourceComponent::GetDebugMatInst(EditorIconState state)

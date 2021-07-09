@@ -1,6 +1,5 @@
 #include <scene/Component.h>
 #include <assetload/FileLoader.h>
-#include <scene/BoneComponent.h>
 #include <scene/ModelComponent.h>
 #include <physics/CollisionObject.h>
 #include <rendering/RenderInfo.h>
@@ -12,7 +11,6 @@
 #include <UI/UICanvasField.h>
 #include <scene/UIWindowActor.h>
 #include <UI/UIListActor.h>
-#include <scene/TextComponent.h>
 
 #include <input/InputDevicesStateRetriever.h>
 
@@ -58,7 +56,7 @@ namespace GEE
 	{
 		Name = compT.Name;
 		ComponentTransform *= compT.ComponentTransform;
-		CollisionObj = (compT.CollisionObj) ? (std::make_unique<Physics::CollisionObject>(*compT.CollisionObj)) : (nullptr);
+		CollisionObj = (compT.CollisionObj) ? (MakeUnique<Physics::CollisionObject>(*compT.CollisionObj)) : (nullptr);
 		if (CollisionObj)
 			CollisionObj->TransformPtr = &ComponentTransform;
 		DebugRenderMat = compT.DebugRenderMat;
@@ -71,7 +69,7 @@ namespace GEE
 	void Component::OnStart()
 	{
 		if (!DebugRenderMatInst)
-			DebugRenderMatInst = std::make_shared<MaterialInstance>(GetDebugMatInst(EditorIconState::IDLE));
+			DebugRenderMatInst = MakeShared<MaterialInstance>(GetDebugMatInst(EditorIconState::IDLE));
 	}
 
 	void Component::OnStartAll()
@@ -153,7 +151,7 @@ namespace GEE
 	{
 		std::vector<Component*> children;
 		children.reserve(Children.size());
-		std::transform(Children.begin(), Children.end(), std::back_inserter(children), [](std::unique_ptr<Component>& child) -> Component* { return child.get(); });
+		std::transform(Children.begin(), Children.end(), std::back_inserter(children), [](UniquePtr<Component>& child) -> Component* { return child.get(); });
 		return children;
 	}
 
@@ -172,18 +170,18 @@ namespace GEE
 		return bKillingProcessStarted;
 	}
 
-	std::unique_ptr<Component> Component::DetachChild(Component& soughtChild)
+	UniquePtr<Component> Component::DetachChild(Component& soughtChild)
 	{
 		for (auto& it = Children.begin(); it != Children.end(); it++)
 			if (it->get() == &soughtChild)
 			{
-				std::unique_ptr<Component> temp = std::move(*it);
+				UniquePtr<Component> temp = std::move(*it);
 				Children.erase(it);
 				return std::move(temp);
 			}
 
 		for (auto& it : Children)
-			if (std::unique_ptr<Component> found = it->DetachChild(soughtChild))
+			if (UniquePtr<Component> found = it->DetachChild(soughtChild))
 				return std::move(found);
 
 		return nullptr;
@@ -191,14 +189,14 @@ namespace GEE
 
 	void Component::MoveChildren(Component& comp)
 	{
-		std::for_each(Children.begin(), Children.end(), [&comp](std::unique_ptr<Component>& child) { comp.AddComponent(std::move(child)); });
+		std::for_each(Children.begin(), Children.end(), [&comp](UniquePtr<Component>& child) { comp.AddComponent(std::move(child)); });
 		Children.clear();
 	}
 
 	void Component::Delete()
 	{
 		if (ParentComponent)
-			ParentComponent->Children.erase(std::remove_if(ParentComponent->Children.begin(), ParentComponent->Children.end(), [this](std::unique_ptr<Component>& child) { return child.get() == this; }), ParentComponent->Children.end());
+			ParentComponent->Children.erase(std::remove_if(ParentComponent->Children.begin(), ParentComponent->Children.end(), [this](UniquePtr<Component>& child) { return child.get() == this; }), ParentComponent->Children.end());
 	}
 
 	void Component::SetName(std::string name)
@@ -212,7 +210,7 @@ namespace GEE
 	}
 
 
-	Physics::CollisionObject* Component::SetCollisionObject(std::unique_ptr<Physics::CollisionObject> obj)
+	Physics::CollisionObject* Component::SetCollisionObject(UniquePtr<Physics::CollisionObject> obj)
 	{
 		CollisionObj = std::move(obj);
 		if (CollisionObj)
@@ -221,18 +219,18 @@ namespace GEE
 		return CollisionObj.get();
 	}
 
-	Component& Component::AddComponent(std::unique_ptr<Component> component)
+	Component& Component::AddComponent(UniquePtr<Component> component)
 	{
 		component->GetTransform().SetParentTransform(&this->ComponentTransform);
 		Children.push_back(std::move(component));
 		return *Children.back();
 	}
 
-	void Component::AddComponents(std::vector<std::unique_ptr<Component>> components)
+	void Component::AddComponents(std::vector<UniquePtr<Component>> components)
 	{
-		std::transform(components.begin(), components.end(), std::back_inserter(Children), [](std::unique_ptr<Component>& comp) { return std::move(comp); });
+		std::transform(components.begin(), components.end(), std::back_inserter(Children), [](UniquePtr<Component>& comp) { return std::move(comp); });
 		components.clear();
-		std::for_each(Children.begin(), Children.end(), [this](std::unique_ptr<Component>& comp) { comp->GetTransform().SetParentTransform(&this->ComponentTransform); });
+		std::for_each(Children.begin(), Children.end(), [this](UniquePtr<Component>& comp) { comp->GetTransform().SetParentTransform(&this->ComponentTransform); });
 	}
 
 	void Component::Update(float deltaTime)
@@ -263,13 +261,13 @@ namespace GEE
 			AnimationChannel& channel = *animation->Channels[i];
 
 			for (int j = 0; j < static_cast<int>(channel.PosKeys.size() - 1); j++)
-				ComponentTransform.AddInterpolator<Vec3f>("position", (float)channel.PosKeys[j]->Time, (float)channel.PosKeys[j + 1]->Time - (float)channel.PosKeys[j]->Time, channel.PosKeys[j]->Value, channel.PosKeys[j + 1]->Value);
+				ComponentTransform.AddInterpolator<Vec3f>("position", channel.PosKeys[j]->Time, channel.PosKeys[j + 1]->Time - channel.PosKeys[j]->Time, channel.PosKeys[j]->Value, channel.PosKeys[j + 1]->Value);
 
 			for (int j = 0; j < static_cast<int>(channel.RotKeys.size() - 1); j++)
-				ComponentTransform.AddInterpolator<Quatf>("rotation", (float)channel.RotKeys[j]->Time, (float)channel.RotKeys[j + 1]->Time - (float)channel.RotKeys[j]->Time, channel.RotKeys[j]->Value, channel.RotKeys[j + 1]->Value);
+				ComponentTransform.AddInterpolator<Quatf>("rotation", channel.RotKeys[j]->Time, channel.RotKeys[j + 1]->Time - channel.RotKeys[j]->Time, channel.RotKeys[j]->Value, channel.RotKeys[j + 1]->Value);
 
 			for (int j = 0; j < static_cast<int>(channel.ScaleKeys.size() - 1); j++)
-				ComponentTransform.AddInterpolator<Vec3f>("scale", (float)channel.ScaleKeys[j]->Time, (float)channel.ScaleKeys[j + 1]->Time - (float)channel.ScaleKeys[j]->Time, channel.ScaleKeys[j]->Value, channel.ScaleKeys[j + 1]->Value);
+				ComponentTransform.AddInterpolator<Vec3f>("scale", channel.ScaleKeys[j]->Time, channel.ScaleKeys[j + 1]->Time - channel.ScaleKeys[j]->Time, channel.ScaleKeys[j]->Value, channel.ScaleKeys[j + 1]->Value);
 		}
 	}
 
@@ -283,13 +281,13 @@ namespace GEE
 	void Component::QueueKeyFrame(AnimationChannel& channel)
 	{
 		for (int j = 0; j < static_cast<int>(channel.PosKeys.size() - 1); j++)
-			ComponentTransform.AddInterpolator<Vec3f>("position", (float)channel.PosKeys[j]->Time, (float)channel.PosKeys[j + 1]->Time - (float)channel.PosKeys[j]->Time, channel.PosKeys[j]->Value, channel.PosKeys[j + 1]->Value);
+			ComponentTransform.AddInterpolator<Vec3f>("position", channel.PosKeys[j]->Time, channel.PosKeys[j + 1]->Time - channel.PosKeys[j]->Time, channel.PosKeys[j]->Value, channel.PosKeys[j + 1]->Value);
 
 		for (int j = 0; j < static_cast<int>(channel.RotKeys.size() - 1); j++)
-			ComponentTransform.AddInterpolator<Quatf>("rotation", (float)channel.RotKeys[j]->Time, (float)channel.RotKeys[j + 1]->Time - (float)channel.RotKeys[j]->Time, channel.RotKeys[j]->Value, channel.RotKeys[j + 1]->Value);
+			ComponentTransform.AddInterpolator<Quatf>("rotation", channel.RotKeys[j]->Time, channel.RotKeys[j + 1]->Time - channel.RotKeys[j]->Time, channel.RotKeys[j]->Value, channel.RotKeys[j + 1]->Value);
 
 		for (int j = 0; j < static_cast<int>(channel.ScaleKeys.size() - 1); j++)
-			ComponentTransform.AddInterpolator<Vec3f>("scale", (float)channel.ScaleKeys[j]->Time, (float)channel.ScaleKeys[j + 1]->Time - (float)channel.ScaleKeys[j]->Time, channel.ScaleKeys[j]->Value, channel.ScaleKeys[j + 1]->Value);
+			ComponentTransform.AddInterpolator<Vec3f>("scale", channel.ScaleKeys[j]->Time, channel.ScaleKeys[j + 1]->Time - channel.ScaleKeys[j]->Time, channel.ScaleKeys[j]->Value, channel.ScaleKeys[j + 1]->Value);
 	}
 
 	void Component::QueueKeyFrameAll(AnimationChannel&)
@@ -333,7 +331,7 @@ namespace GEE
 		}
 	}
 
-	void Component::DebugRender(RenderInfo info, Shader* shader) const
+	void Component::DebugRender(RenderInfo info, Shader* shader, const Vec3f& debugIconScale) const
 	{
 		if (GameHandle->GetInputRetriever().IsKeyPressed(Key::F2))
 			return;
@@ -344,7 +342,7 @@ namespace GEE
 			;// CollisionObjRendering(info, *GameHandle, *CollisionObj, GetTransform().GetWorldTransform());
 
 		Transform transform = GetTransform().GetWorldTransform();
-		transform.SetScale(Vec3f(0.05f));
+		transform.SetScale(debugIconScale);
 		GameHandle->GetRenderEngineHandle()->RenderStaticMesh(info, MeshInstance(GameHandle->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD), DebugRenderMatInst), transform, shader, &DebugRenderLastFrameMVP, nullptr, true);
 	}
 
@@ -356,7 +354,7 @@ namespace GEE
 			Children[i]->DebugRenderAll(info, shader);
 	}
 
-	std::shared_ptr<AtlasMaterial> Component::LoadDebugRenderMaterial(const std::string& materialName, const std::string& path)
+	SharedPtr<AtlasMaterial> Component::LoadDebugRenderMaterial(const std::string& materialName, const std::string& path)
 	{
 		if (DebugRenderMat)
 			return DebugRenderMat;
@@ -364,8 +362,8 @@ namespace GEE
 		if (DebugRenderMat = std::dynamic_pointer_cast<AtlasMaterial>(GameHandle->GetRenderEngineHandle()->FindMaterial(materialName)))
 			return DebugRenderMat;
 
-		DebugRenderMat = std::make_shared<AtlasMaterial>(materialName, glm::ivec2(3, 1));
-		std::shared_ptr<NamedTexture> texture = std::make_shared<NamedTexture>(Texture::Loader<>::FromFile2D(path, Texture::Format::RGBA(), true));
+		DebugRenderMat = MakeShared<AtlasMaterial>(materialName, glm::ivec2(3, 1));
+		SharedPtr<NamedTexture> texture = MakeShared<NamedTexture>(Texture::Loader<>::FromFile2D(path, Texture::Format::RGBA(), true));
 
 		texture->Bind();
 		texture->SetShaderName("albedo1");
@@ -445,10 +443,10 @@ namespace GEE
 			shapeCreatorWindow.GetTransform()->SetScale(Vec2f(0.25f));
 			UIAutomaticListActor& buttonsList = shapeCreatorWindow.CreateChild<UIAutomaticListActor>("ButtonsList");
 
-			std::function <void(std::shared_ptr<Physics::CollisionShape>)> addShapeFunc = [this, descBuilder, &shapeCreatorWindow](std::shared_ptr<Physics::CollisionShape> shape) mutable {
+			std::function <void(SharedPtr<Physics::CollisionShape>)> addShapeFunc = [this, descBuilder, &shapeCreatorWindow](SharedPtr<Physics::CollisionShape> shape) mutable {
 				if (!CollisionObj)
 				{
-					std::unique_ptr<Physics::CollisionObject> colObj = std::make_unique<Physics::CollisionObject>(true);
+					UniquePtr<Physics::CollisionObject> colObj = MakeUnique<Physics::CollisionObject>(true);
 					colObj->AddShape(shape);
 					this->SetCollisionObject(std::move(colObj));
 				}
@@ -474,7 +472,7 @@ namespace GEE
 					UIElementTemplates(pathInputWindow).HierarchyTreeInput(*GameHandle, [this, &pathInputWindow, addShapeFunc](HierarchyTemplate::HierarchyTreeT& tree) {
 						pathInputWindow.MarkAsKilled();
 
-						std::shared_ptr<Physics::CollisionShape> shape = EngineDataLoader::LoadTriangleMeshCollisionShape(GameHandle->GetPhysicsHandle(), tree.GetMeshes()[0]);
+						SharedPtr<Physics::CollisionShape> shape = EngineDataLoader::LoadTriangleMeshCollisionShape(GameHandle->GetPhysicsHandle(), tree.GetMeshes()[0]);
 						addShapeFunc(shape);
 						});
 
@@ -486,12 +484,12 @@ namespace GEE
 
 							pathInputWindow.MarkAsKilled();
 
-							std::shared_ptr<CollisionShape> shape = EngineDataLoader::LoadTriangleMeshCollisionShape(GameHandle->GetPhysicsHandle(), tree->GetMeshes()[0]);
+							SharedPtr<CollisionShape> shape = EngineDataLoader::LoadTriangleMeshCollisionShape(GameHandle->GetPhysicsHandle(), tree->GetMeshes()[0]);
 							addShapeFunc(shape);
 						}, []() { return "Enter tree path"; });*/
 						});
 				else
-					shapeAddButton.SetOnClickFunc([shapeType, addShapeFunc]() { addShapeFunc(std::make_shared<Physics::CollisionShape>(shapeType)); });
+					shapeAddButton.SetOnClickFunc([shapeType, addShapeFunc]() { addShapeFunc(MakeShared<Physics::CollisionShape>(shapeType)); });
 			}
 			buttonsList.Refresh();
 			}).SetTransform(Transform(Vec2f(3.0f, 0.0f), Vec2f(0.25f)));
@@ -530,7 +528,7 @@ namespace GEE
 		//std::cout << "Erasing component " << Name << " " << this << ".\n";
 		if (ComponentTransform.GetParentTransform())
 			ComponentTransform.GetParentTransform()->RemoveChild(&ComponentTransform);
-		std::for_each(Children.begin(), Children.end(), [](std::unique_ptr<Component>& comp) {comp->GetTransform().SetParentTransform(nullptr); });
+		std::for_each(Children.begin(), Children.end(), [](UniquePtr<Component>& comp) {comp->GetTransform().SetParentTransform(nullptr); });
 		Children.clear();
 	}
 }

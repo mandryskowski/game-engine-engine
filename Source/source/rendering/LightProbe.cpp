@@ -2,7 +2,6 @@
 #include <rendering/Framebuffer.h>
 #include <rendering/Shader.h>
 #include <rendering/RenderInfo.h>
-#include <rendering/Mesh.h>
 #include <rendering/RenderToolbox.h>
 #include <scene/LightProbeComponent.h>
 
@@ -21,15 +20,15 @@ namespace GEE
 		probe.OptionalFilepath = filepath;
 		glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
 
-		ConvoluteLightProbe(probe, &probe.GetEnvironmentMap());
+		ConvoluteLightProbe(probe, probe.GetEnvironmentMap());
 	}
 
-	void LightProbeLoader::ConvoluteLightProbe(const LightProbeComponent& probe, Texture* envMap)
+	void LightProbeLoader::ConvoluteLightProbe(const LightProbeComponent& probe, const Texture& envMap)
 	{
 		RenderEngineManager* renderHandle = probe.GetScene().GetGameHandle()->GetRenderEngineHandle();
 		LightProbeTextureArrays* probeTexArrays = probe.GetScene().GetRenderData()->GetProbeTexArrays();
 
-		envMap->Bind();
+		envMap.Bind();
 		if (PrimitiveDebugger::bDebugProbeLoading)
 		{
 			std::cout << "Convoluting probe " << probe.GetProbeIndex() << ".\n";
@@ -38,7 +37,7 @@ namespace GEE
 		renderHandle->FindShader("CubemapToIrradiance")->Use();
 		int layer = probe.GetProbeIndex() * 6;
 
-		renderHandle->RenderCubemapFromTexture(probeTexArrays->IrradianceMapArr, *envMap, Vec2u(16), *renderHandle->FindShader("CubemapToIrradiance"), &layer);
+		renderHandle->RenderCubemapFromTexture(probeTexArrays->IrradianceMapArr, envMap, Vec2u(16), *renderHandle->FindShader("CubemapToIrradiance"), &layer);
 
 		if (PrimitiveDebugger::bDebugProbeLoading)
 			std::cout << "Prefiltering\n";
@@ -48,7 +47,7 @@ namespace GEE
 		{
 			layer = probe.GetProbeIndex() * 6;
 			renderHandle->FindShader("CubemapToPrefilter")->Uniform1f("roughness", static_cast<float>(mipmap) / 5.0f);
-			renderHandle->RenderCubemapFromTexture(probeTexArrays->PrefilterMapArr, *envMap, Vec2f(256.0f) / std::pow(2.0f, static_cast<float>(mipmap)), *renderHandle->FindShader("CubemapToPrefilter"), &layer, mipmap);
+			renderHandle->RenderCubemapFromTexture(probeTexArrays->PrefilterMapArr, envMap, Vec2f(256.0f) / std::pow(2.0f, static_cast<float>(mipmap)), *renderHandle->FindShader("CubemapToPrefilter"), &layer, mipmap);
 		}
 		if (PrimitiveDebugger::bDebugProbeLoading)
 			std::cout << "Ending\n";

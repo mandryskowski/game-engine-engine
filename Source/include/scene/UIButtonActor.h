@@ -45,7 +45,7 @@ namespace GEE
 		std::function<void()> OnClickFunc, WhileBeingClickedFunc;
 
 		ModelComponent* ButtonModel;
-		std::shared_ptr<MaterialInstance> MatIdle, MatHover, MatClick, MatDisabled;
+		SharedPtr<MaterialInstance> MatIdle, MatHover, MatClick, MatDisabled;
 		MaterialInstance* PrevDeducedMaterial;
 
 		EditorIconState State;
@@ -68,7 +68,7 @@ namespace GEE
 		virtual void DeduceMaterial() override;
 
 		std::function<void()> OnDeactivationFunc;
-		std::shared_ptr<MaterialInstance> MatActive;
+		SharedPtr<MaterialInstance> MatActive;
 	};
 
 	class UIScrollBarActor : public UIButtonActor

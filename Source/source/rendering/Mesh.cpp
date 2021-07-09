@@ -12,7 +12,8 @@ namespace GEE
 		IndicesData(nullptr),
 		DefaultMeshMaterial(nullptr),
 		Localization(name),
-		CastsShadow(true)
+		CastsShadow(true),
+		BoundingBox(Vec3f(0.0f), Vec3f(0.0f))
 	{
 		if (Localization.NodeName.find("_NoShadow") != std::string::npos || Localization.SpecificName.find("_NoShadow") != std::string::npos)
 			CastsShadow = false;
@@ -53,6 +54,11 @@ namespace GEE
 		return IndicesData.get();
 	}
 
+	Boxf<Vec3f> Mesh::GetBoundingBox() const
+	{
+		return BoundingBox;
+	}
+
 	void Mesh::RemoveVertsAndIndicesData() const
 	{
 		VertsData = nullptr;
@@ -68,6 +74,11 @@ namespace GEE
 	void Mesh::SetMaterial(Material* material)
 	{
 		DefaultMeshMaterial = material;
+	}
+
+	void Mesh::SetBoundingBox(const Boxf<Vec3f>& bbox)
+	{
+		BoundingBox = bbox;
 	}
 
 	void Mesh::Bind() const
@@ -117,13 +128,13 @@ namespace GEE
 		for (int i = 0; i < 7; i++)
 			glEnableVertexAttribArray(i);
 
-		VertexCount = (unsigned int)vertices.size();
-		IndexCount = (unsigned int)indices.size();
+		VertexCount = vertices.size();
+		IndexCount = indices.size();
 
 		if (keepVerts)
 		{
-			VertsData = std::make_shared<std::vector<Vertex>>(vertices);	//copy all vertices to heap
-			IndicesData = std::make_shared<std::vector<unsigned int>>(indices);	//copy all indices to heap
+			VertsData = MakeShared<std::vector<Vertex>>(vertices);	//copy all vertices to heap
+			IndicesData = MakeShared<std::vector<unsigned int>>(indices);	//copy all indices to heap
 			std::cout << "Keeping vertices for a mesh that has verts and index count: " << VertexCount << " " << IndexCount << '\n';
 		}
 	}
@@ -149,10 +160,10 @@ namespace GEE
 	{
 		Material* material = (overrideMaterial) ? (overrideMaterial) : (mesh.GetMaterial());
 		if (material)
-			MaterialInst = std::make_shared<MaterialInstance>(MaterialInstance(*material));
+			MaterialInst = MakeShared<MaterialInstance>(MaterialInstance(*material));
 	}
 
-	MeshInstance::MeshInstance(Mesh& mesh, std::shared_ptr<MaterialInstance> matInst) :
+	MeshInstance::MeshInstance(Mesh& mesh, SharedPtr<MaterialInstance> matInst) :
 		MeshInstance(mesh, nullptr)
 	{
 		SetMaterialInst(matInst);
@@ -163,7 +174,7 @@ namespace GEE
 		MeshRef(mesh.MeshRef)
 	{
 		if (mesh.MaterialInst)
-			MaterialInst = std::make_shared<MaterialInstance>(mesh.MaterialInst->GetMaterialRef());	//create another instance of the same material
+			MaterialInst = MakeShared<MaterialInstance>(mesh.MaterialInst->GetMaterialRef());	//create another instance of the same material
 	}
 
 
@@ -199,10 +210,10 @@ namespace GEE
 
 	void MeshInstance::SetMaterial(Material* mat)
 	{
-		MaterialInst = std::make_shared<MaterialInstance>(*mat);
+		MaterialInst = MakeShared<MaterialInstance>(*mat);
 	}
 
-	void MeshInstance::SetMaterialInst(std::shared_ptr<MaterialInstance> matInst)
+	void MeshInstance::SetMaterialInst(SharedPtr<MaterialInstance> matInst)
 	{
 		MaterialInst = matInst;
 	}

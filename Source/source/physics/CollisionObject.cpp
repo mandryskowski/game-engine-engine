@@ -21,7 +21,7 @@ namespace GEE
 		}
 
 		CollisionShape::CollisionShape(HTreeObjectLoc treeObjLoc, const std::string& meshName, CollisionShapeType type) :
-			OptionalLocalization(std::make_unique<ColShapeLoc>(Mesh::MeshLoc(treeObjLoc, meshName, meshName))),
+			OptionalLocalization(MakeUnique<ColShapeLoc>(Mesh::MeshLoc(treeObjLoc, meshName, meshName))),
 			Type(type)
 		{
 		}
@@ -33,7 +33,7 @@ namespace GEE
 
 		void CollisionShape::SetOptionalLocalization(ColShapeLoc loc)
 		{
-			OptionalLocalization = std::make_unique<ColShapeLoc>(loc);
+			OptionalLocalization = MakeUnique<ColShapeLoc>(loc);
 		}
 
 		CollisionObject::CollisionObject(bool isStatic) :
@@ -71,10 +71,10 @@ namespace GEE
 
 		CollisionShape& CollisionObject::AddShape(CollisionShapeType type)
 		{
-			return AddShape(std::make_shared<CollisionShape>(type));
+			return AddShape(MakeShared<CollisionShape>(type));
 		}
 
-		CollisionShape& CollisionObject::AddShape(std::shared_ptr<CollisionShape> shape)
+		CollisionShape& CollisionObject::AddShape(SharedPtr<CollisionShape> shape)
 		{
 			Shapes.push_back(shape);
 

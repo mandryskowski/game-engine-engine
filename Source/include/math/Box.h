@@ -38,5 +38,7 @@ namespace GEE
 
 		bool Contains(const VecType&) const;
 		bool Contains(const Boxf<VecType>&) const;
+
+		static Boxf<VecType> FromMinMaxCorners(const VecType& minCorner, const VecType& maxCorner);
 	};
 }

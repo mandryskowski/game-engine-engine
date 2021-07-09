@@ -377,6 +377,12 @@
     <ClInclude Include="include\math\Vec.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="include\editor\MousePicking.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\rendering\OutlineRenderer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

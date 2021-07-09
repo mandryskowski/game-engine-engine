@@ -6,8 +6,6 @@
 #include <UI/UICanvasField.h>
 #include <UI/UIListActor.h>
 
-#include <UI/UICanvasField.h>
-
 namespace GEE
 {
 	UICanvasActor::UICanvasActor(GameScene& scene, Actor* parentActor, UICanvasActor* canvasParent, const std::string& name, const Transform& t) :
@@ -114,7 +112,7 @@ namespace GEE
 		if (ScrollBarY) UpdateScrollBarT<VecAxis::Y>();
 	}
 
-	Actor& UICanvasActor::AddChild(std::unique_ptr<Actor> actor)
+	Actor& UICanvasActor::AddChild(UniquePtr<Actor> actor)
 	{
 		Actor& actorRef = Actor::AddChild(std::move(actor));	//actor becomes invalid (nullptr)
 		//if (UICanvasElement* elementCast = dynamic_cast<UICanvasElement*>(&actorRef))

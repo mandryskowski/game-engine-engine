@@ -7,7 +7,6 @@
 #include <game/GameScene.h>
 #include <game/GameManager.h>
 #include <cereal/archives/json.hpp>
-#include <cereal/access.hpp>
 
 #include <scene/hierarchy/HierarchyTree.h>
 
@@ -44,7 +43,7 @@ namespace GEE
 				Mesh OptionalCorrespondingMesh;
 				ColShapeLoc(Mesh::MeshLoc shapeMeshLoc);
 			};
-			std::shared_ptr<ColShapeLoc> OptionalLocalization;
+			SharedPtr<ColShapeLoc> OptionalLocalization;
 			Transform ShapeTransform;
 			std::vector<Vec3f> VertData;
 			std::vector<unsigned int> IndicesData;
@@ -93,7 +92,7 @@ namespace GEE
 		{
 			GameScenePhysicsData* ScenePhysicsData;
 			physx::PxRigidActor* ActorPtr;
-			std::vector <std::shared_ptr<CollisionShape>> Shapes;
+			std::vector <SharedPtr<CollisionShape>> Shapes;
 			Transform* TransformPtr;
 			unsigned int TransformDirtyFlag;
 			bool IgnoreRotation;
@@ -106,7 +105,7 @@ namespace GEE
 			CollisionObject(CollisionObject&& obj);
 			CollisionShape& AddShape(CollisionShapeType type);
 
-			CollisionShape& AddShape(std::shared_ptr<CollisionShape> shape);
+			CollisionShape& AddShape(SharedPtr<CollisionShape> shape);
 			CollisionShape* FindTriangleMeshCollisionShape(const std::string& meshNodeName, const std::string& meshSpecificName);
 			template <typename Archive> void Serialize(Archive& archive)
 			{

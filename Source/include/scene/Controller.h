@@ -29,7 +29,7 @@ namespace GEE
 
 		struct MovementAxis
 		{
-			std::unique_ptr<Interpolator<float>> MovementInterpolator;
+			UniquePtr<Interpolator<float>> MovementInterpolator;
 			bool Inversed;
 			Vec3f Direction;
 		};
@@ -52,7 +52,7 @@ namespace GEE
 		virtual void ReadMovementKeys();
 		virtual void Update(float deltaTime) override;
 		void RotateWithMouse(Vec2f);	//rotates camera - you should pass the mouse offset from the center
-		void HandleMovementAxis(bool pressed, MovementAxis& axis);
+		static void HandleMovementAxis(bool pressed, MovementAxis& axis);
 
 		template <typename Archive> void Save(Archive& archive) const
 		{

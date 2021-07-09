@@ -1,6 +1,5 @@
 #include <scene/Actor.h>
 #include <scene/Component.h>
-#include <rendering/Mesh.h>
 #include <rendering/RenderInfo.h>
 #include <vector>
 
@@ -21,7 +20,7 @@ namespace GEE
 		bKillingProcessStarted(false),
 		SetupStream(nullptr)
 	{
-		RootComponent = std::make_unique<Component>(*this, nullptr, Name + "'s root", t);
+		RootComponent = MakeUnique<Component>(*this, nullptr, Name + "'s root", t);
 		if (GameHandle->HasStarted())
 			RootComponent->OnStartAll();
 	}
@@ -37,7 +36,7 @@ namespace GEE
 		bKillingProcessStarted(moved.bKillingProcessStarted)
 	{
 		std::cout << "UWAGA: MOVE CONSTRUCTOR NIE DZIALA. (" + Name + ") (" + Scene.GetName() + ")\n";
-		RootComponent = std::make_unique<Component>(*this, nullptr, Name + "'s root", Transform());
+		RootComponent = MakeUnique<Component>(*this, nullptr, Name + "'s root", Transform());
 		//exit(-1);
 	}
 
@@ -79,7 +78,7 @@ namespace GEE
 	{
 		std::vector<Actor*> children;
 		children.reserve(Children.size());
-		std::transform(Children.begin(), Children.end(), std::back_inserter(children), [](std::unique_ptr<Actor>& child) -> Actor* { return child.get(); });
+		std::transform(Children.begin(), Children.end(), std::back_inserter(children), [](UniquePtr<Actor>& child) -> Actor* { return child.get(); });
 
 		return children;
 	}
@@ -134,7 +133,7 @@ namespace GEE
 			Children[i]->DebugActorHierarchy(nrTabs + 1);
 	}
 
-	void Actor::ReplaceRoot(std::unique_ptr<Component> component)
+	void Actor::ReplaceRoot(UniquePtr<Component> component)
 	{
 		RootComponent->MoveChildren(*component);
 		component->GetTransform().SetParentTransform(RootComponent->GetTransform().GetParentTransform());
@@ -155,12 +154,12 @@ namespace GEE
 		RootComponent->SetTransform(transform);
 	}
 
-	void Actor::AddComponent(std::unique_ptr<Component> component)
+	void Actor::AddComponent(UniquePtr<Component> component)
 	{
 		RootComponent->AddComponent(std::move(component));
 	}
 
-	Actor& Actor::AddChild(std::unique_ptr<Actor> child)
+	Actor& Actor::AddChild(UniquePtr<Actor> child)
 	{
 		Children.push_back(std::move(child));
 		Children.back()->GetTransform()->SetParentTransform(&RootComponent->GetTransform());
@@ -234,7 +233,7 @@ namespace GEE
 		if (!ParentActor)
 			std::cout << "INFO: Cannot delete actor " + GetName() + " because it doesn't have a parent (it is probably the root of a scene). Hopefully it will be deleted when the scene gets deleted.\n";
 		else
-			ParentActor->Children.erase(std::remove_if(ParentActor->Children.begin(), ParentActor->Children.end(), [this](std::unique_ptr<Actor>& child) { return child.get() == this; }), ParentActor->Children.end());
+			ParentActor->Children.erase(std::remove_if(ParentActor->Children.begin(), ParentActor->Children.end(), [this](UniquePtr<Actor>& child) { return child.get() == this; }), ParentActor->Children.end());
 	}
 
 	void Actor::DebugRender(RenderInfo info, Shader* shader) const

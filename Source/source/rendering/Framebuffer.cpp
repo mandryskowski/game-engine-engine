@@ -245,7 +245,11 @@ namespace GEE
 		if (FBO == 0)
 			glDrawBuffer(GL_BACK);
 		else if (!IsSlotExcluded(AttachmentSlot::Color(index)))
-			glDrawBuffer(GL_COLOR_ATTACHMENT0 + index);
+		{
+			std::vector<GLenum> attachmentsGL(index + 1, GL_NONE);
+			attachmentsGL[index] = GL_COLOR_ATTACHMENT0 + index;
+			glDrawBuffers(attachmentsGL.size(), &attachmentsGL[0]);
+		}
 	}
 
 	void GEE_FB::Framebuffer::SetDrawSlots() const
@@ -259,9 +263,23 @@ namespace GEE
 			std::vector<GLenum> attachmentsGL;
 			attachmentsGL.reserve(Attachments.size());
 
-			for (auto& it : Attachments)
-				if (it.GetAttachmentSlot().IsColorAttachment() && !IsSlotExcluded(it.GetAttachmentSlot()))
-					attachmentsGL.push_back(it.GetAttachmentSlot().GetEnumGL());
+			
+			GLenum currentColorAttachment = GL_COLOR_ATTACHMENT0;
+			for (auto& it: Attachments)
+			{
+				AttachmentSlot slot = it.GetAttachmentSlot();
+				if (!slot.IsColorAttachment() || IsSlotExcluded(slot))
+					continue;
+
+				while (currentColorAttachment < slot.GetEnumGL())
+				{
+					attachmentsGL.push_back(GL_NONE);
+					currentColorAttachment++;
+				}
+
+				attachmentsGL.push_back(slot.GetEnumGL());
+				currentColorAttachment++;
+			}
 
 			glDrawBuffers(attachmentsGL.size(), &attachmentsGL[0]);
 		}

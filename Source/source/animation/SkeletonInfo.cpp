@@ -149,7 +149,7 @@ namespace GEE
 		}
 	}
 
-	bool SkeletonBatch::AddSkeleton(std::shared_ptr<SkeletonInfo> info)
+	bool SkeletonBatch::AddSkeleton(SharedPtr<SkeletonInfo> info)
 	{
 		RecalculateBoneCount();
 		if (GetRemainingCapacity() < info->GetBoneCount())
@@ -180,7 +180,7 @@ namespace GEE
 
 	void SkeletonBatch::VerifySkeletonsLives()
 	{
-		Skeletons.erase(std::remove_if(Skeletons.begin(), Skeletons.end(), [](std::shared_ptr<SkeletonInfo>& skeleton) { return !skeleton->VerifyGlobalInverseCompPtrLife(); /* Remove if global inverse comp is not alive. */ }), Skeletons.end());
+		Skeletons.erase(std::remove_if(Skeletons.begin(), Skeletons.end(), [](SharedPtr<SkeletonInfo>& skeleton) { return !skeleton->VerifyGlobalInverseCompPtrLife(); /* Remove if global inverse comp is not alive. */ }), Skeletons.end());
 	}
 
 }

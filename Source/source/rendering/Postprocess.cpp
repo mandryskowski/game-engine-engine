@@ -1,18 +1,15 @@
 #include <rendering/Postprocess.h>
-#include "../SMAA/AreaTex.h"
-#include "../SMAA/SearchTex.h"
 #include <rendering/Mesh.h>
 #include <rendering/RenderInfo.h>
 #include <rendering/RenderToolbox.h>
-#include <random>
 
 namespace GEE
 {
 	using namespace GEE_FB;
 
 	Postprocess::Postprocess() :
-		FrameIndex(0),
-		RenderHandle(nullptr)
+		RenderHandle(nullptr),
+		FrameIndex(0)
 	{
 	}
 
@@ -49,11 +46,14 @@ namespace GEE
 			break;
 		}
 
-		jitter /= static_cast<Vec2f>(usedSettings.Resolution) * 0.5f;
+		jitter /= usedSettings.Resolution * 0.5f;
 		return glm::translate(Mat4f(1.0f), Vec3f(jitter, 0.0f));
 	}
 
-	const Texture Postprocess::GaussianBlur(PPToolbox<GaussianBlurToolbox> ppTb, const GEE_FB::Framebuffer& writeFramebuffer, const Viewport* viewport, const Texture& tex, int passes, unsigned int writeColorBuffer) const	//Implemented using ping-pong framebuffers (one gaussian blur pass is separable into two lower-cost passes) and linear filtering for performance
+	Texture Postprocess::GaussianBlur(PPToolbox<GaussianBlurToolbox> ppTb, const GEE_FB::Framebuffer& writeFramebuffer,
+	                                  const Viewport* viewport, const Texture& tex, int passes,
+	                                  unsigned int writeColorBuffer)
+	//Implemented using ping-pong framebuffers (one gaussian blur pass is separable into two lower-cost passes) and linear filtering for performance
 	{
 		if (passes == 0)
 			return tex;
@@ -75,7 +75,7 @@ namespace GEE
 			else	//For any pass that doesn't match given criteria, just switch the ping pong fbos
 			{
 				tb.BlurFramebuffers[horizontal]->Bind();
-				const Texture& bindTex = (i == 0) ? (tex) : (tb.BlurFramebuffers[!horizontal]->GetColorTexture(0));
+				const Texture& bindTex = (i == 0) ? (tex) : static_cast<Texture>(tb.BlurFramebuffers[!horizontal]->GetColorTexture(0));
 				bindTex.Bind();
 			}
 			tb.GaussianBlurShader->Uniform1i("horizontal", horizontal);
@@ -87,13 +87,13 @@ namespace GEE
 		glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
 		tb.BlurFramebuffers[!horizontal]->GetColorTexture(0);
-		return writeFramebuffer.GetColorTexture(writeColorBuffer);
+		return static_cast<Texture>(writeFramebuffer.GetColorTexture(writeColorBuffer));
 	}
 
-	const Texture Postprocess::SSAOPass(RenderInfo& info, const Texture& gPosition, const Texture& gNormal)
+	Texture Postprocess::SSAOPass(RenderInfo& info, const Texture& gPosition, const Texture& gNormal) const
 	{
 		SSAOToolbox* tb;
-		if (!(tb = info.TbCollection.GetTb<SSAOToolbox>()))
+		if ((tb = info.TbCollection.GetTb<SSAOToolbox>()) == nullptr)
 		{
 			std::cerr << "ERROR! Attempted to render SSAO image without calling the setup\n";
 			return Texture();
@@ -123,7 +123,10 @@ namespace GEE
 		return tb->SSAOFb->GetColorTexture(0);
 	}
 
-	const Texture Postprocess::SMAAPass(PPToolbox<SMAAToolbox> ppTb, const GEE_FB::Framebuffer& writeFramebuffer, const Viewport* viewport, const Texture& colorTex, const Texture& depthTex, const Texture& previousColorTex, const Texture& velocityTex, unsigned int writeColorBuffer, bool bT2x) const
+	Texture Postprocess::SMAAPass(PPToolbox<SMAAToolbox> ppTb, const GEE_FB::Framebuffer& writeFramebuffer,
+	                              const Viewport* viewport, const Texture& colorTex, const Texture& depthTex,
+	                              const Texture& previousColorTex, const Texture& velocityTex,
+	                              unsigned int writeColorBuffer, bool bT2x) const
 	{
 		SMAAToolbox& tb = ppTb.GetTb();
 		tb.SMAAFb->Bind();
@@ -201,7 +204,9 @@ namespace GEE
 		return writeFramebuffer.GetColorTexture(writeColorBuffer);
 	}
 
-	const Texture Postprocess::TonemapGammaPass(PPToolbox<ComposedImageStorageToolbox> tb, const GEE_FB::Framebuffer& writeFramebuffer, const Viewport* viewport, const Texture& colorTex, const Texture& blurTex) const
+	Texture Postprocess::TonemapGammaPass(PPToolbox<ComposedImageStorageToolbox> tb,
+	                                      const GEE_FB::Framebuffer& writeFramebuffer, const Viewport* viewport,
+	                                      const Texture& colorTex, const Texture& blurTex)
 	{
 		if (viewport) writeFramebuffer.Bind(*viewport);
 		else writeFramebuffer.Bind(true);
@@ -237,9 +242,9 @@ namespace GEE
 		}
 		else if (settings.AAType == AntiAliasingType::AA_SMAAT2X && velocityTex.HasBeenGenerated())
 		{
-			PrevFrameStorageToolbox* storageTb = tbCollection.GetTb<PrevFrameStorageToolbox>();
+			const auto storageTb = tbCollection.GetTb<PrevFrameStorageToolbox>();
 			const Texture& compositedTex = TonemapGammaPass(GetPPToolbox<ComposedImageStorageToolbox>(tbCollection), *tbCollection.GetTb<ComposedImageStorageToolbox>()->ComposedImageFb, nullptr, colorTex, blurTex);
-			unsigned int previousFrameIndex = (static_cast<int>(FrameIndex) - 1) % storageTb->StorageFb->GetColorTextureCount();
+			const unsigned int previousFrameIndex = (static_cast<int>(FrameIndex) - 1) % storageTb->StorageFb->GetColorTextureCount();
 			const Texture& SMAAresult = SMAAPass(GetPPToolbox<SMAAToolbox>(tbCollection), *storageTb->StorageFb, nullptr, compositedTex, depthTex, storageTb->StorageFb->GetColorTexture(previousFrameIndex), velocityTex, FrameIndex, true);
 
 			if (viewport) finalFramebuffer.Bind(*viewport);

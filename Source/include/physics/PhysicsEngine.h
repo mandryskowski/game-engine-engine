@@ -6,14 +6,11 @@
 
 #include <math/Vec.h>
 #include <glm/gtc/quaternion.hpp>
-#include <glm/gtc/matrix_transform.hpp>
 
 #include <game/GameScene.h>
 
 #include <vector>
 #include <game/GameManager.h>
-
-#include <math/Vec.h>
 
 namespace GEE
 {

@@ -57,12 +57,12 @@ namespace GEE
 
 	bool NDCViewport::Contains(const Vec2f& point) const
 	{
-		return Boxf<Vec2f>(Position + Size, Size).Contains(point);
+		return Boxf(Position + Size, Size).Contains(point);
 	}
 
 	bool NDCViewport::Contains(const Boxf<Vec2f>& box) const
 	{
-		return Boxf<Vec2f>(Position + Size, Size / 2.0f).Contains(box);
+		return Boxf(Position + Size, Size / 2.0f).Contains(box);
 	}
 
 }

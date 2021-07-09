@@ -1,6 +1,5 @@
 #pragma once
 #include <game/Game.h>
-#include <editor/EditorManager.h>
 #include <UI/UIListActor.h>
 
 namespace GEE
@@ -18,6 +17,7 @@ namespace GEE
 	public:
 		GameEngineEngineEditor(GLFWwindow* window, const GameSettings& settings);
 		virtual GameManager* GetGameHandle() override;
+		virtual Component* GetSelectedComponent() override;
 		virtual GameScene* GetSelectedScene() override;
 		virtual std::vector<GameScene*> GetScenes() override;
 		GameSettings* GetEditorSettings() override;
@@ -75,7 +75,6 @@ namespace GEE
 		elementText.SetContent(obj.GetName());
 
 		std::vector<T*> children = obj.GetChildren();
-		std::cout << "liczba dzieciakow of " << obj.GetName() << ": " << children.size() << '\n';
 		for (auto& child : children)
 		{
 			//AddActorToList(editorScene, *child, listParent.CreateChild(UIListActor(editorScene, "NextLevel")), canvas);

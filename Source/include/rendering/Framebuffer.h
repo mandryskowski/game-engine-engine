@@ -3,7 +3,6 @@
 #include "Viewport.h"
 #include <vector>
 #include <string> 
-#include <memory>
 
 namespace GEE
 {
@@ -143,11 +142,14 @@ namespace GEE
 			/**
 			 * @brief Set the only color slot to be used in rendering from now on.
 			 * @param index: the index of the color slot
+			 * @warning This function DOES NOT behave like glDrawBuffer. Instead, every fragment color is assigned to GL_NONE except of the one at slot index. Game Engine Engine assumes that fragment color locations are the same as the indices of color attachment slots, just to avoid confusion.
 			*/
 			void SetDrawSlot(unsigned int index) const;	//Sets the buffer COLOR_ATTACHMENT0 + index, if available
 			/**
 			 * @brief Set the color slots of all color buffers of this Framebuffer, except of those which are excluded, to be used in rendering from now on.
-			 * @see ExcludeDrawSlot(AttachmentSlot).
+			 * @see Framebuffer::ExcludeDrawSlot(AttachmentSlot).
+			 * @warning This function DOES NOT assign draw slots like glDrawBuffers. Be mindful of that when writing your own shaders.
+			 * @see Framebuffer::SetDrawSlot(unsigned int).
 			*/
 			void SetDrawSlots() const;
 

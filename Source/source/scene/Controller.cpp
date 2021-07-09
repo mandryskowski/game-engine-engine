@@ -1,6 +1,5 @@
 #include <scene/Controller.h>
 #include <scene/Component.h>
-#include <scene/CameraComponent.h>
 #include <physics/CollisionObject.h>
 #include <animation/Animation.h>
 #include <input/InputDevicesStateRetriever.h>
@@ -29,7 +28,7 @@ namespace GEE
 			[&i]()
 			{
 				MovementAxis dir;
-				dir.MovementInterpolator = nullptr;// std::make_unique<Interpolator<float>>(Interpolator<float>(0.0f, 0.15f, 0.0f, 1.0f, InterpolationType::LINEAR));
+				dir.MovementInterpolator = nullptr;// MakeUnique<Interpolator<float>>(Interpolator<float>(0.0f, 0.15f, 0.0f, 1.0f, InterpolationType::LINEAR));
 				dir.Inversed = false;
 
 				switch (static_cast<MovementDirections>(i))
@@ -60,7 +59,7 @@ namespace GEE
 
 		PxController = GameHandle->GetPhysicsHandle()->CreateController(*Scene.GetPhysicsData(), PossessedActor->GetTransform()->GetWorldTransform());
 
-		std::unique_ptr<Physics::CollisionObject> colObject = std::make_unique<Physics::CollisionObject>(false);
+		UniquePtr<Physics::CollisionObject> colObject = MakeUnique<Physics::CollisionObject>(false);
 		colObject->ActorPtr = PxController->getActor();
 		colObject->IgnoreRotation = true;
 		PossessedActor->GetRoot()->SetCollisionObject(std::move(colObject));

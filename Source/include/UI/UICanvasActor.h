@@ -45,7 +45,7 @@ namespace GEE
 
 		template <typename ChildClass, typename... Args> ChildClass& CreateChildCanvas(Args&&...);
 
-		virtual Actor& AddChild(std::unique_ptr<Actor>) override;
+		virtual Actor& AddChild(UniquePtr<Actor>) override;
 		virtual UICanvasFieldCategory& AddCategory(const std::string& name) override;
 		virtual UICanvasField& AddField(const std::string& name, std::function<Vec3f()> getElementOffset = nullptr) override;
 
