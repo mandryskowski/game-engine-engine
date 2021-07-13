@@ -29,7 +29,7 @@ namespace GEE
 		void SetAlignment(const std::pair<TextAlignment, TextAlignment>& alignment);	//Change what Component::ComponentTransform::Position
 
 		virtual void GetEditorDescription(EditorDescriptionBuilder) override;
-		virtual MaterialInstance GetDebugMatInst(EditorIconState) override;
+		virtual MaterialInstance LoadDebugMatInst(EditorIconState) override;
 
 		virtual unsigned int GetUIDepth() const override;
 

@@ -1018,7 +1018,7 @@ namespace GEE
 		skelInfo.SortBones();
 		if (tree.GetAnimationCount() > 0)
 		{
-			AnimationManagerComponent& animManager = comp.CreateComponent<AnimationManagerComponent>("animmanageractor");
+			AnimationManagerComponent& animManager = comp.CreateComponent<AnimationManagerComponent>("An AnimationManagerComponent");
 			for (int i = 0; i < tree.GetAnimationCount(); i++)
 				animManager.AddAnimationInstance(AnimationInstance(tree.GetAnimation(i), comp));
 

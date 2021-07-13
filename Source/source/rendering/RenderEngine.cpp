@@ -187,6 +187,11 @@ namespace GEE
 		return CurrentTbCollection;
 	}
 
+	Texture RenderEngine::GetEmptyTexture()
+	{
+		return EmptyTexture;
+	}
+
 	std::vector<Material*> RenderEngine::GetMaterials()
 	{
 		std::vector<Material*> materials;
@@ -195,6 +200,11 @@ namespace GEE
 			materials.push_back(it.get());
 
 		return materials;
+	}
+
+	void RenderEngine::SetBoundMaterial(Material* material)
+	{
+		BoundMaterial = material;
 	}
 
 	RenderToolboxCollection& RenderEngine::AddRenderTbCollection(const RenderToolboxCollection& tbCollection, bool setupToolboxesAccordingToSettings)
@@ -322,7 +332,7 @@ namespace GEE
 				}
 
 				Transform lightWorld = light.GetTransform().GetWorldTransform();
-				Vec3f lightPos = lightWorld.Pos();
+				Vec3f lightPos = lightWorld.GetPos();
 				Mat4f viewTranslation = glm::translate(Mat4f(1.0f), -lightPos);
 				Mat4f projection = light.GetProjection();
 
@@ -510,7 +520,7 @@ namespace GEE
 			LightProbeComponent* probe = sceneRenderData->LightProbes[i];
 			if (probe->GetShape() == EngineBasicShape::QUAD)
 				continue;
-			Vec3f camPos = probe->GetTransform().GetWorldTransform().Pos();
+			Vec3f camPos = probe->GetTransform().GetWorldTransform().GetPos();
 			Mat4f viewTranslation = glm::translate(Mat4f(1.0f), -camPos);
 			Mat4f p = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 100.0f);
 
@@ -614,7 +624,7 @@ namespace GEE
 	}
 
 	
-	void RenderEngine::FullSceneRender(RenderInfo& info, GameSceneRenderData* sceneRenderData, GEE_FB::Framebuffer* framebuffer, Viewport viewport, bool clearMainFB, bool modifyForwardsDepthForUI)
+	void RenderEngine::FullSceneRender(RenderInfo& info, GameSceneRenderData* sceneRenderData, GEE_FB::Framebuffer* framebuffer, Viewport viewport, bool clearMainFB, bool modifyForwardsDepthForUI, std::function<void(GEE_FB::Framebuffer&)>&& renderIconsFunc)
 	{
 		const GameSettings::VideoSettings& settings = info.TbCollection.Settings;
 		bool debugPhysics = GameHandle->GetInputRetriever().IsKeyPressed(Key::F2);
@@ -671,7 +681,7 @@ namespace GEE
 			Texture SSAOtex;
 
 			if (settings.AmbientOcclusionSamples > 0)
-				SSAOtex = Postprocessing.SSAOPass(info, GFramebuffer.GetColorTexture(0), GFramebuffer.GetColorTexture(1));	//pass gPosition and gNormal
+				SSAOtex = Postprocessing.SSAOPass(info, GFramebuffer.GetColorTexture(1), GFramebuffer.GetColorTexture(2));	//pass gPosition and gNormal
 
 			////////////////////3. Lighting pass
 			for (int i = 0; i < static_cast<int>(deferredTb->LightShaders.size()); i++)
@@ -704,7 +714,7 @@ namespace GEE
 				if (probe->GetShape() == EngineBasicShape::QUAD)
 					continue;
 
-				shader->Uniform3fv("lightProbes[" + std::to_string(i) + "].position", probe->GetTransform().GetWorldTransform().Pos());
+				shader->Uniform3fv("lightProbes[" + std::to_string(i) + "].position", probe->GetTransform().GetWorldTransform().GetPos());
 			}
 
 			auto probeVolumes = sceneRenderData->GetLightProbeVolumes();
@@ -759,6 +769,9 @@ namespace GEE
 		info.CareAboutShader = false;
 
 		glDisable(GL_DEPTH_TEST);
+
+		if (renderIconsFunc)
+			renderIconsFunc(MainFramebuffer);
 
 		if (Component* selectedComponent = dynamic_cast<EditorManager*>(GameHandle)->GetSelectedComponent(); selectedComponent && selectedComponent->GetScene().GetRenderData() == sceneRenderData)
 			OutlineRenderer(*this).RenderOutlineSilhouette(info, dynamic_cast<EditorManager*>(GameHandle)->GetSelectedComponent(), MainFramebuffer);
@@ -946,12 +959,16 @@ namespace GEE
 			shader->Use();
 		}
 
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-		glBlendEquation(GL_FUNC_ADD);
+		if (infoPreConvert.AllowBlending)
+		{
+			glEnable(GL_BLEND);
+			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+			glBlendEquation(GL_FUNC_ADD);
+		}
 
 
-		shader->Uniform3fv("color", color);
+		if (infoPreConvert.UseMaterials)	// TODO: Przetestuj - sprawdz czy nic nie zniknelo i czy moge usunac  info.UseMaterials = true;  z linijki 969
+			shader->Uniform4fv("material.color", Vec4f(color, 1.0f));
 		font.GetBitmapsArray().Bind(0);
 
 		Vec2f resolution(GameHandle->GetGameSettings()->WindowSize);// (GameHandle->GetGameSettings()->ViewportData.z, GameHandle->GetGameSettings()->ViewportData.w);s
@@ -964,15 +981,11 @@ namespace GEE
 			Mat4f vp = info.CalculateVP() * pxConvertMatrix;
 			info.projection = proj;
 			info.VP = vp;
-
-			info.UseMaterials = true;
-			info.CareAboutShader = true;
-			info.MainPass = false;
 		}
 
-		Vec2f halfExtent = t.Scale();
+		Vec2f halfExtent = t.GetScale();
 		//	halfExtent.y *= 1.0f - font.GetBaselineHeight() / 4.0f;	//Account for baseline height (we move the character quads by the height in the next line, so we have to shrink them a bit so that the text fits within halfExtent)
-		t.Move(Vec3f(0.0f, -t.Scale().y * 2.0f + font.GetBaselineHeight() * t.Scale().y * 2.0f, 0.0f));	//align to bottom (-t.ScaleRef.y), move down to the bottom of it (-t.ScaleRef.y), and then move up to baseline height (-t.ScaleRef.y * 2.0f + font.GetBaselineHeight() * halfExtent.y * 2.0f)
+		t.Move(Vec3f(0.0f, -t.GetScale().y * 2.0f + font.GetBaselineHeight() * t.GetScale().y * 2.0f, 0.0f));	//align to bottom (-t.ScaleRef.y), move down to the bottom of it (-t.ScaleRef.y), and then move up to baseline height (-t.ScaleRef.y * 2.0f + font.GetBaselineHeight() * halfExtent.y * 2.0f)
 
 		if (alignment.first != TextAlignment::LEFT)
 		{
@@ -980,11 +993,11 @@ namespace GEE
 			for (int i = 0; i < static_cast<int>(content.length()); i++)
 				advancesSum += (font.GetCharacter(content[i]).Advance);
 
-			t.Move(t.Rot() * Vec3f(-advancesSum * halfExtent.x * (static_cast<float>(alignment.first) - static_cast<float>(TextAlignment::LEFT)), 0.0f, 0.0f));
+			t.Move(t.GetRot() * Vec3f(-advancesSum * halfExtent.x * (static_cast<float>(alignment.first) - static_cast<float>(TextAlignment::LEFT)), 0.0f, 0.0f));
 		}
 
 		if (alignment.second != TextAlignment::BOTTOM)
-			t.Move(t.Rot() * Vec3f(0.0f, -t.Scale().y * (static_cast<float>(alignment.second) - static_cast<float>(TextAlignment::BOTTOM)), 0.0f));
+			t.Move(t.GetRot() * Vec3f(0.0f, -t.GetScale().y * (static_cast<float>(alignment.second) - static_cast<float>(TextAlignment::BOTTOM)), 0.0f));
 
 		//t.Move(Vec3f(0.0f, -64.0f, 0.0f));
 		//t.Move(Vec3f(0.0f, 11.0f, 0.0f) / scale);
@@ -995,6 +1008,8 @@ namespace GEE
 
 		Transform initialT = t;
 
+		info.UseMaterials = false;	// do not bind materials before rendering quads
+
 		for (int i = 0; i < static_cast<int>(content.length()); i++)
 		{
 			if (content[i] == '\n')
@@ -1003,7 +1018,7 @@ namespace GEE
 				t = initialT;
 				continue;
 			}
-			shader->Uniform1i("glyphNr", content[i]);
+			shader->Uniform1i("material.glyphNr", content[i]);
 			const Character& c = font.GetCharacter(content[i]);
 
 			t.Move(textRot * Vec3f(c.Bearing * halfExtent, 0.0f) * 2.0f);

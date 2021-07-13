@@ -80,13 +80,13 @@ namespace GEE
 			return Boxf<Vec2f>(Vec2f(0.0f), Vec2f(0.0f));
 
 		if (!world)
-			return Boxf<Vec2f>(GetTransform()->Pos(), GetTransform()->Scale());
+			return Boxf<Vec2f>(GetTransform()->GetPos(), GetTransform()->GetScale());
 
 		if (!CanvasPtr)
-			return Boxf<Vec2f>(GetTransform()->GetWorldTransform().Pos(), GetTransform()->GetWorldTransform().Scale());
+			return Boxf<Vec2f>(GetTransform()->GetWorldTransform().GetPos(), GetTransform()->GetWorldTransform().GetScale());
 
 		Transform canvasSpaceTransform = CanvasPtr->ToCanvasSpace(GetTransform()->GetWorldTransform());	//world == true, CanvasPtr isn't nullptr and this actor has got a Transform.
-		return Boxf<Vec2f>(canvasSpaceTransform.Pos(), canvasSpaceTransform.Scale());
+		return Boxf<Vec2f>(canvasSpaceTransform.GetPos(), canvasSpaceTransform.GetScale());
 	}
 
 	void UIButtonActor::SetMatIdle(MaterialInstance&& mat)
@@ -224,7 +224,7 @@ namespace GEE
 		{
 			if (!CanvasPtr->ContainsMouse())
 				return false;
-			Vec2f cursorCanvasSpace = glm::inverse(CanvasPtr->UICanvas::GetViewMatrix()) * Transform(Vec3f(0.0f), Vec3f(0.0f), CanvasPtr->UICanvas::GetViewT().Scale()).GetMatrix() * glm::inverse(CanvasPtr->GetCanvasT()->GetWorldTransformMatrix()) * Vec4f(cursorNDC, 0.0f, 1.0f);
+			Vec2f cursorCanvasSpace = glm::inverse(CanvasPtr->UICanvas::GetViewMatrix()) * Transform(Vec3f(0.0f), Vec3f(0.0f), CanvasPtr->UICanvas::GetViewT().GetScale()).GetMatrix() * glm::inverse(CanvasPtr->GetCanvasT()->GetWorldTransformMatrix()) * Vec4f(cursorNDC, 0.0f, 1.0f);
 			return CollisionTests::AlignedRectContainsPoint(CanvasPtr->ToCanvasSpace(worldT), cursorCanvasSpace);
 		}
 
@@ -266,8 +266,8 @@ namespace GEE
 
 	bool CollisionTests::AlignedRectContainsPoint(const Transform& rect, const Vec2f& point)
 	{
-		Vec2f rectLeftBottom = rect.Pos() - rect.Scale();
-		return point == glm::min(glm::max(rectLeftBottom, point), rectLeftBottom + Vec2f(rect.Scale()) * 2.0f);
+		Vec2f rectLeftBottom = rect.GetPos() - rect.GetScale();
+		return point == glm::min(glm::max(rectLeftBottom, point), rectLeftBottom + Vec2f(rect.GetScale()) * 2.0f);
 	}
 
 	UIActivableButtonActor::UIActivableButtonActor(GameScene& scene, Actor* parentActor, const std::string& name, std::function<void()> onClickFunc, std::function<void()> onDeactivationFunc) :

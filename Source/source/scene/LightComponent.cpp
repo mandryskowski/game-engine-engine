@@ -233,10 +233,10 @@ namespace GEE
 				lightsUBO->offsetCache += sizeof(Vec4f);
 				lightsUBO->SubData4fv(worldTransform.GetFrontVec(), lightsUBO->offsetCache); break;
 			case LightType::POINT:
-				lightsUBO->SubData4fv(worldTransform.Pos(), lightsUBO->offsetCache);
+				lightsUBO->SubData4fv(worldTransform.GetPos(), lightsUBO->offsetCache);
 				lightsUBO->offsetCache += sizeof(Vec4f); break;
 			case LightType::SPOT:
-				lightsUBO->SubData4fv(worldTransform.Pos(), lightsUBO->offsetCache);
+				lightsUBO->SubData4fv(worldTransform.GetPos(), lightsUBO->offsetCache);
 				lightsUBO->SubData4fv(worldTransform.GetFrontVec(), lightsUBO->offsetCache); break;
 			}
 		}
@@ -281,10 +281,10 @@ namespace GEE
 		return Ambient;
 	}
 
-	MaterialInstance LightComponent::GetDebugMatInst(EditorIconState state)
+	MaterialInstance LightComponent::LoadDebugMatInst(EditorIconState state)
 	{
 		LoadDebugRenderMaterial("GEE_Mat_Default_Debug_LightComponent", "EditorAssets/lightcomponent_icon.png");
-		return Component::GetDebugMatInst(state);
+		return Component::LoadDebugMatInst(state);
 	}
 
 	void LightComponent::GetEditorDescription(EditorDescriptionBuilder descBuilder)
@@ -329,7 +329,7 @@ namespace GEE
 	Transform LightVolume::GetRenderTransform() const
 	{
 		Transform lightTransform = LightCompPtr->GetTransform().GetWorldTransform();
-		lightTransform.SetScale(LightCompPtr->GetTransform().Scale());
+		lightTransform.SetScale(LightCompPtr->GetTransform().GetScale());
 
 		return lightTransform;
 	}

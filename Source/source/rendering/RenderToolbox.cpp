@@ -33,9 +33,9 @@ namespace GEE
 
 		//2. Geometry framebuffer attachments
 		std::vector<NamedTexture> gColorBuffers = {
+			NamedTexture(Texture::Loader<>::ReserveEmpty2D(settings.Resolution, Texture::Format::RGB()), "gAlbedoSpec"),				//gAlbedoSpec texture
 			NamedTexture(Texture::Loader<float>::ReserveEmpty2D(settings.Resolution, Texture::Format::Float32::RGB()), "gPosition"),	//gPosition texture
-			NamedTexture(Texture::Loader<float>::ReserveEmpty2D(settings.Resolution, Texture::Format::Float32::RGB()), "gNormal"),	//gNormal texture
-			NamedTexture(Texture::Loader<>::ReserveEmpty2D(settings.Resolution, Texture::Format::RGB()), "gAlbedoSpec")				//gAlbedoSpec texture
+			NamedTexture(Texture::Loader<float>::ReserveEmpty2D(settings.Resolution, Texture::Format::Float32::RGB()), "gNormal")		//gNormal texture
 		};
 
 		gColorBuffers.push_back(NamedTexture(Texture::Loader<>::ReserveEmpty2D(settings.Resolution, Texture::Format::RGB()), "gAlphaMetalAo")); //alpha, metallic, ao texture
@@ -90,9 +90,9 @@ namespace GEE
 		{
 			Shaders.push_back(ShaderLoader::LoadShadersWithInclData(lightShadersNames[i], settingsDefines + lightShadersDefines[i], lightShadersPath.first, lightShadersPath.second));
 			Shaders.back()->Use();
-			Shaders.back()->Uniform1i("gPosition", 0);
-			Shaders.back()->Uniform1i("gNormal", 1);
-			Shaders.back()->Uniform1i("gAlbedoSpec", 2);
+			Shaders.back()->Uniform1i("gAlbedoSpec", 0);
+			Shaders.back()->Uniform1i("gPosition", 1);
+			Shaders.back()->Uniform1i("gNormal", 2);
 			Shaders.back()->Uniform1i("gAlphaMetalAo", 3);
 			if (settings.AmbientOcclusionSamples > 0)
 				Shaders.back()->Uniform1i("ssaoTex", 4);

@@ -94,13 +94,13 @@ namespace GEE
 			auto compRenderableCast = dynamic_cast<RenderableComponent*>(comp);
 
 			// Get/create shader
-			Shader* shader;
+			Shader* shader = nullptr;
 			if (compRenderableCast)
 			{
 				if (auto materials = compRenderableCast->GetMaterials(); !materials.empty() && materials.front())
 					shader = (materials.front()->GetRenderShaderName() == "Geometry") ? (info.TbCollection.GetTb<DeferredShadingToolbox>()->FindShader("Geometry")) : (Impl.RenderHandle.FindShader(materials.front()->GetRenderShaderName()));
 			}
-			else
+			if (!shader)
 				shader = Impl.RenderHandle.FindShader("Forward_NoLight");
 
 			// Generate silhouetteFramebuffer
@@ -112,8 +112,7 @@ namespace GEE
 			NamedTexture silhouetteTexture(Texture::Loader<>::ReserveEmpty2D(targetFramebuffer.GetSize()), "silhouetteTexture");
 			silhouetteTexture.SetMagFilter(Texture::MagFilter::Nearest(), true);
 			silhouetteTexture.SetMinFilter(Texture::MinFilter::Nearest(), true);
-			silhouetteFramebuffer.Attach(GEE_FB::FramebufferAttachment(silhouetteTexture, GEE_FB::AttachmentSlot::Color((shader->GetName() == "Geometry") ? (2) : (0))), false);	// Geometry shader renders albedo to color slot 2 instead of 0.
-			silhouetteFramebuffer.Attach(targetFramebuffer.GetAnyDepthAttachment(), false, false);
+			silhouetteFramebuffer.AttachTextures(silhouetteTexture, targetFramebuffer.GetAnyDepthAttachment());
 
 			/*if (shader = Impl.RenderHandle.FindShader("Silhouette"); !shader)
 			{
@@ -137,6 +136,8 @@ namespace GEE
 			shader->Use();
 
 			// Pass 1: render component's silhouette:
+
+			Impl.RenderHandle.SetBoundMaterial(nullptr);
 			
 			if (compRenderableCast)
 				compRenderableCast->Render(info, shader);

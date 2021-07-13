@@ -58,7 +58,7 @@ namespace GEE
 			if (!ListenerTransformPtr)
 				return;
 
-			alListenerfv(AL_POSITION, Math::GetDataPtr(ListenerTransformPtr->GetWorldTransform().Pos()));
+			alListenerfv(AL_POSITION, Math::GetDataPtr(ListenerTransformPtr->GetWorldTransform().GetPos()));
 
 			Vec3f orientationVecs[2] = { ListenerTransformPtr->GetWorldTransform().GetFrontVec(), Vec3f(0.0f, 1.0f, 0.0f) };
 			alListenerfv(AL_ORIENTATION, &orientationVecs[0].x);

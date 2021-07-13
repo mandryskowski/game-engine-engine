@@ -151,9 +151,12 @@ namespace GEE
 		virtual Mesh& GetBasicShapeMesh(EngineBasicShape) = 0;
 		virtual Shader* GetLightShader(const RenderToolboxCollection& renderCol, LightType) = 0;
 		virtual RenderToolboxCollection* GetCurrentTbCollection() = 0;
+		virtual Texture GetEmptyTexture() = 0;
 
 		//TODO: THIS SHOULD NOT BE HERE
 		virtual std::vector<Material*> GetMaterials() = 0;
+
+		virtual void SetBoundMaterial(Material*) = 0;
 
 		/**
 		 * @brief Add a new RenderToolboxCollection to the render engine to enable updating shadow maps automatically. By default, we load every toolbox that will be needed according to RenderToolboxCollection::Settings

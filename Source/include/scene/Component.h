@@ -80,6 +80,7 @@ namespace GEE
 		std::vector<Component*> GetChildren();
 		GameScene& GetScene() const;
 		Physics::CollisionObject* GetCollisionObj() const;
+		MaterialInstance* GetDebugMatInst();
 
 		bool IsBeingKilled() const;
 
@@ -105,7 +106,6 @@ namespace GEE
 		void DebugRenderAll(RenderInfo info, Shader* shader) const;
 
 		virtual SharedPtr<AtlasMaterial> LoadDebugRenderMaterial(const std::string& materialName, const std::string& path);
-		virtual MaterialInstance GetDebugMatInst(EditorIconState);
 
 		Component* SearchForComponent(std::string name);
 		template <class CompClass = Component> CompClass* GetComponent(const std::string& name)
@@ -195,6 +195,8 @@ namespace GEE
 		UniquePtr<Component> DetachChild(Component& soughtChild);	//Find child in hierarchy and detach it from its parent
 		void MoveChildren(Component& moveTo);
 		void Delete();
+
+		virtual MaterialInstance LoadDebugMatInst(EditorIconState);
 
 		std::string Name;
 

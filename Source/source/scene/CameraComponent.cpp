@@ -29,7 +29,7 @@ namespace GEE
 
 	RenderInfo CameraComponent::GetRenderInfo(RenderToolboxCollection& renderCollection)
 	{
-		return RenderInfo(renderCollection, GetTransform().GetWorldTransform().GetViewMatrix(), GetProjectionMat(), Mat4f(1.0f), GetTransform().GetWorldTransform().Pos());
+		return RenderInfo(renderCollection, GetTransform().GetWorldTransform().GetViewMatrix(), GetProjectionMat(), Mat4f(1.0f), GetTransform().GetWorldTransform().GetPos());
 	}
 
 	void CameraComponent::RotateWithMouse(Vec2f mouseOffset)
@@ -88,10 +88,10 @@ namespace GEE
 		Component::Update(deltaTime);
 	}
 
-	MaterialInstance CameraComponent::GetDebugMatInst(EditorIconState state)
+	MaterialInstance CameraComponent::LoadDebugMatInst(EditorIconState state)
 	{
 		LoadDebugRenderMaterial("GEE_Mat_Default_Debug_CameraComponent", "EditorAssets/cameracomponent_icon.png");
-		return Component::GetDebugMatInst(state);
+		return Component::LoadDebugMatInst(state);
 	}
 
 	void CameraComponent::GetEditorDescription(EditorDescriptionBuilder descBuilder)

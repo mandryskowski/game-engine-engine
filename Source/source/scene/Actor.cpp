@@ -124,8 +124,8 @@ namespace GEE
 		std::cout << tabs + "-" + Name + "  ";
 		if (GetTransform())
 		{
-			std::cout << GetTransform()->Pos().x << " " << GetTransform()->Pos().y << "       ";
-			std::cout << GetTransform()->Scale().x << " " << GetTransform()->Scale().y;
+			std::cout << GetTransform()->GetPos().x << " " << GetTransform()->GetPos().y << "       ";
+			std::cout << GetTransform()->GetScale().x << " " << GetTransform()->GetScale().y;
 		}
 		std::cout << "\n";
 

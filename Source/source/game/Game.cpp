@@ -12,7 +12,7 @@ namespace GEE
 	bool PrimitiveDebugger::bDebugMeshTrees = false;
 	bool PrimitiveDebugger::bDebugProbeLoading = false;
 	bool PrimitiveDebugger::bDebugCubemapFromTex = false;
-	bool PrimitiveDebugger::bDebugFramebuffers = true;
+	bool PrimitiveDebugger::bDebugFramebuffers = false;
 	bool PrimitiveDebugger::bDebugHierarchy = false;
 
 	Controller* mouseController = nullptr;  //there are 2 similiar camera variables: ActiveCamera and global MouseController. the first one is basically the camera we use to see the world (view mat); the second one is updated by mouse controls.

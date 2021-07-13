@@ -24,7 +24,7 @@ namespace GEE
 
 	Mat4f UICanvas::GetViewMatrix() const
 	{
-		assertm(CanvasView.Scale().x != 0.0f && CanvasView.Scale().y != 0.0f && CanvasView.Scale().z != 0.0f, "Scale component equal to 0.");
+		assertm(CanvasView.GetScale().x != 0.0f && CanvasView.GetScale().y != 0.0f && CanvasView.GetScale().z != 0.0f, "Scale component equal to 0.");
 
 		return glm::inverse(CanvasView.GetMatrix());
 	}
@@ -36,7 +36,7 @@ namespace GEE
 
 	Mat4f UICanvas::GetProjection() const
 	{
-		Vec2f size = CanvasView.Scale();
+		Vec2f size = CanvasView.GetScale();
 		return glm::ortho(-size.x, size.x, -size.y, size.y, 1.0f, -2550.0f);
 	}
 
@@ -79,10 +79,10 @@ namespace GEE
 	void UICanvas::ClampViewToElements()
 	{
 		Boxf<Vec2f> bBox = GetBoundingBox();
-		Vec2f canvasRightUp = bBox.Position + bBox.Size - glm::pow(static_cast<Vec2f>(CanvasView.Scale()), Vec2f(2.0f));	//Canvas space
-		Vec2f canvasLeftDown = bBox.Position - bBox.Size + glm::pow(static_cast<Vec2f>(CanvasView.Scale()), Vec2f(2.0f));	//Canvas space
+		Vec2f canvasRightUp = bBox.Position + bBox.Size - glm::pow(static_cast<Vec2f>(CanvasView.GetScale()), Vec2f(2.0f));	//Canvas space
+		Vec2f canvasLeftDown = bBox.Position - bBox.Size + glm::pow(static_cast<Vec2f>(CanvasView.GetScale()), Vec2f(2.0f));	//Canvas space
 
-		Vec2f adjustedViewPos = glm::clamp(Vec2f(CanvasView.Pos()), canvasLeftDown, canvasRightUp);
+		Vec2f adjustedViewPos = glm::clamp(Vec2f(CanvasView.GetPos()), canvasLeftDown, canvasRightUp);
 
 		if (canvasLeftDown.x > canvasRightUp.x)
 			adjustedViewPos.x = bBox.Position.x;

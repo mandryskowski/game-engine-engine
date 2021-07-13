@@ -86,13 +86,13 @@ namespace GEE
 		void SoundSourceComponent::Update(float deltaTime)
 		{
 			if (ALIndex != 0)
-				alSourcefv(ALIndex, AL_POSITION, Math::GetDataPtr(ComponentTransform.GetWorldTransform().Pos()));
+				alSourcefv(ALIndex, AL_POSITION, Math::GetDataPtr(ComponentTransform.GetWorldTransform().GetPos()));
 		}
 
-		MaterialInstance SoundSourceComponent::GetDebugMatInst(EditorIconState state)
+		MaterialInstance SoundSourceComponent::LoadDebugMatInst(EditorIconState state)
 		{
 			LoadDebugRenderMaterial("GEE_Mat_Default_Debug_SoundSourceComponent", "EditorAssets/soundsourcecomponent_debug.png");
-			return Component::GetDebugMatInst(state);
+			return Component::LoadDebugMatInst(state);
 		}
 
 		void SoundSourceComponent::GetEditorDescription(EditorDescriptionBuilder descBuilder)

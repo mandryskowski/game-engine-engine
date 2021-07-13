@@ -40,7 +40,7 @@ namespace GEE
 		MatrixCache(Mat4f(1.0f)),
 		Position(pos),
 		Rotation(rot),
-		_Scale(scale),
+		Scale(scale),
 		DirtyFlags(3, true),
 		Empty(false)
 	{
@@ -50,14 +50,14 @@ namespace GEE
 	}
 
 	Transform::Transform(const Transform& t) :
-		Transform(t.Position, t.Rotation, t._Scale)
+		Transform(t.Position, t.Rotation, t.Scale)
 	{
 		/* if (t.ParentTransform)
 			t.ParentTransform->AddChild(this); */
 	}
 
 	Transform::Transform(Transform&& t) noexcept :
-		Transform(t.Position, t.Rotation, t._Scale)
+		Transform(t.Position, t.Rotation, t.Scale)
 	{
 		/*
 		if (t.ParentTransform)
@@ -67,26 +67,6 @@ namespace GEE
 		}  */
 	}
 
-	bool Transform::IsEmpty() const
-	{
-		return Empty;
-	}
-
-	const Vec3f& Transform::Pos() const
-	{
-		return Position;
-	}
-
-	const Quatf& Transform::Rot() const
-	{
-		return Rotation;
-	}
-
-	const Vec3f& Transform::Scale() const
-	{
-		return _Scale;
-	}
-
 	Vec3f Transform::GetFrontVec() const
 	{
 		return Rotation * Vec3f(0.0f, 0.0f, -1.0f);
@@ -94,7 +74,7 @@ namespace GEE
 
 	Transform Transform::GetInverse() const
 	{
-		return Transform((Mat3f)glm::inverse(GetMatrix()) * -Pos(), glm::inverse(Rot()), 1.0f / glm::max(Scale(), Vec3f(0.001f)));
+		return Transform((Mat3f)glm::inverse(GetMatrix()) * -GetPos(), glm::inverse(GetRot()), 1.0f / glm::max(GetScale(), Vec3f(0.001f)));
 	}
 
 	Mat3f Transform::GetRotationMatrix(float scalar) const
@@ -116,7 +96,7 @@ namespace GEE
 
 		MatrixCache = glm::translate(Mat4f(1.0f), Position);
 		MatrixCache *= glm::mat4_cast(Rotation);
-		MatrixCache = glm::scale(MatrixCache, _Scale);
+		MatrixCache = glm::scale(MatrixCache, Scale);
 
 		DirtyFlags[0] = false;
 
@@ -135,7 +115,7 @@ namespace GEE
 
 		if (!ParentTransform)
 		{
-			WorldTransformCache.reset(new Transform(Position, Rotation, _Scale));
+			WorldTransformCache.reset(new Transform(Position, Rotation, Scale));
 			DirtyFlags[1] = false;
 			return *WorldTransformCache;
 		}
@@ -214,7 +194,7 @@ namespace GEE
 	{
 		Quatf localRot = q;
 		if (ParentTransform)
-			localRot = glm::inverse(ParentTransform->GetWorldTransform().Rot()) * localRot;
+			localRot = glm::inverse(ParentTransform->GetWorldTransform().GetRot()) * localRot;
 
 		SetRotation(localRot);
 	}
@@ -243,23 +223,23 @@ namespace GEE
 		sY = scale.y;
 		CacheVariable<float, Transform> sZ(ScaleRef.z, *this);
 		sZ = scale.z;*/
-		_Scale = scale;
+		Scale = scale;
 		FlagMyDirtiness();
 	}
 
 	void Transform::ApplyScale(float scale)
 	{
-		SetScale(Scale() * scale);
+		SetScale(GetScale() * scale);
 	}
 
 	void Transform::ApplyScale(const Vec2f& scale)
 	{
-		SetScale(static_cast<Vec2f>(Scale()) * scale);
+		SetScale(static_cast<Vec2f>(GetScale()) * scale);
 	}
 
 	void Transform::ApplyScale(const Vec3f& scale)
 	{
-		SetScale(Scale() * scale);
+		SetScale(GetScale() * scale);
 	}
 
 	void Transform::Set(int index, const Vec3f& vec)
@@ -288,9 +268,9 @@ namespace GEE
 			//TODO: zmien to kurwa bo siara jak ktos zobaczy
 			Transform parentWorld = parent->GetWorldTransform();
 			Transform worldTransform = GetWorldTransform();
-			Position = worldTransform.Position - parentWorld.Pos();
-			Position = Vec3f(parentWorld.GetRotationMatrix(-1.0f) * Pos());
-			Rotation = worldTransform.Rotation = parentWorld.Rot();
+			Position = worldTransform.Position - parentWorld.GetPos();
+			Position = Vec3f(parentWorld.GetRotationMatrix(-1.0f) * GetPos());
+			Rotation = worldTransform.Rotation = parentWorld.GetRot();
 
 
 			/*
@@ -364,7 +344,7 @@ namespace GEE
 		else if (fieldName == "rotation" && quatCast)
 			quatCast->SetValPtr(&Rotation);
 		else if (fieldName == "scale" && vecCast)
-			vecCast->SetValPtr(&_Scale);
+			vecCast->SetValPtr(&Scale);
 		else
 		{
 			std::string type = (vecCast) ? ("Vec3f") : ((quatCast) ? ("Quatf") : ("unknown"));
@@ -414,9 +394,9 @@ namespace GEE
 
 	void Transform::GetEditorDescription(EditorDescriptionBuilder descBuilder)
 	{
-		descBuilder.AddField("Position").GetTemplates().VecInput<Vec3f>([this](float x, float val) {Vec3f pos = Pos(); pos[x] = val; SetPosition(pos); }, [this](float x) { return Pos()[x]; });
-		descBuilder.AddField("Rotation").GetTemplates().VecInput<Quatf>([this](float x, float val) {Quatf rot = Rot(); rot[x] = val; SetRotation(glm::normalize(rot)); }, [this](float x) { return Rot()[x]; });
-		descBuilder.AddField("Scale").GetTemplates().VecInput<Vec3f>([this](float x, float val) {Vec3f scale = Scale(); scale[x] = val; SetScale(scale); }, [this](float x) { return Scale()[x]; });
+		descBuilder.AddField("Position").GetTemplates().VecInput<Vec3f>([this](float x, float val) {Vec3f pos = GetPos(); pos[x] = val; SetPosition(pos); }, [this](float x) { return GetPos()[x]; });
+		descBuilder.AddField("Rotation").GetTemplates().VecInput<Quatf>([this](float x, float val) {Quatf rot = GetRot(); rot[x] = val; SetRotation(glm::normalize(rot)); }, [this](float x) { return GetRot()[x]; });
+		descBuilder.AddField("Scale").GetTemplates().VecInput<Vec3f>([this](float x, float val) {Vec3f scale = GetScale(); scale[x] = val; SetScale(scale); }, [this](float x) { return GetScale()[x]; });
 	}
 
 	void Transform::Print(std::string name) const
@@ -424,15 +404,15 @@ namespace GEE
 		std::cout << "===Transform " + name + ", child of " << ParentTransform << "===\n";
 		printVector(Position, "Position");
 		printVector(Rotation, "Rotation");
-		printVector(_Scale, "Scale");
+		printVector(Scale, "Scale");
 		std::cout << "VVVVVV\n";
 	}
 
 	Transform& Transform::operator=(const Transform& t)
 	{
-		Position = t.Pos();
-		Rotation = t.Rot();
-		_Scale = t.Scale();
+		Position = t.GetPos();
+		Rotation = t.GetRot();
+		Scale = t.GetScale();
 
 		FlagMyDirtiness();
 
@@ -441,9 +421,9 @@ namespace GEE
 
 	Transform& Transform::operator=(Transform&& t) noexcept
 	{
-		Position = t.Pos();
-		Rotation = t.Rot();
-		_Scale = t.Scale();
+		Position = t.GetPos();
+		Rotation = t.GetRot();
+		Scale = t.GetScale();
 
 		FlagMyDirtiness();
 
@@ -455,7 +435,7 @@ namespace GEE
 		FlagMyDirtiness();
 		Position += static_cast<Mat3f>(GetMatrix()) * t.Position;
 		Rotation *= t.Rotation;
-		_Scale *= t._Scale;
+		Scale *= t.Scale;
 		return *(this);
 	}
 

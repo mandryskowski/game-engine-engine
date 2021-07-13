@@ -252,64 +252,31 @@ namespace GEE
 
 				for (auto it : allActors)
 				{
-					allComponents.push_back(it->GetRoot());
-					it->GetRoot()->GetAllComponents<Component>(&allComponents);
+					if (bDebugRenderComponents)
+					{
+						allComponents.push_back(it->GetRoot());
+						it->GetRoot()->GetAllComponents<Component>(&allComponents);
+					}
+					else
+					{
+						if (dynamic_cast<RenderableComponent*>(it->GetRoot()))
+							allComponents.push_back(it->GetRoot());
+						it->GetRoot()->GetAllComponents<Component, RenderableComponent>(&allComponents);
+					}
 				}
 			}
 
 			MousePickingRenderer renderer(RenderEng);
 			RenderInfo info = scene.GetActiveCamera()->GetRenderInfo(*ViewportRenderCollection);
-			Component* closestComponent = renderer.PickComponent(info, scene, GetGameSettings()->Video.Resolution, static_cast<Vec2u>((localMousePos * 0.5f + 0.5f) * static_cast<Vec2f>(GetGameSettings()->Video.Resolution)), allComponents);
+			Component* pickedComponent = renderer.PickComponent(info, scene, GetGameSettings()->Video.Resolution, static_cast<Vec2u>((localMousePos * 0.5f + 0.5f) * static_cast<Vec2f>(GetGameSettings()->Video.Resolution)), allComponents);
 
-			/*
-
-			// Get camera ViewProjection matrix
-			Mat4f cameraView(1.0f), cameraProj(1.0f), cameraVP(1.0f);
-			if (auto sceneCamera = GetScene("GEE_Main")->GetActiveCamera())
+			if (pickedComponent && pickedComponent != GetSelectedComponent())
 			{
-				cameraView = sceneCamera->GetTransform().GetWorldTransform().GetViewMatrix();
-				cameraProj = sceneCamera->GetProjectionMat();
-				cameraVP = cameraProj * cameraView;
+				SelectActor(&pickedComponent->GetActor(), editorScene);
+				SelectComponent(pickedComponent, editorScene);
 			}
-			// Find any quads that contain the mouse
-			std::vector<Component*> pickedComponents;
-			std::pair<Component*, float> closestComponent(nullptr, 1.0f);
-			for (auto it : allComponents)
-			{
-				// VP * Model * Point in the center of quad
-				Vec4f projQuadPos = cameraVP * it->GetTransform().GetWorldTransformMatrix() * Vec4f(0.0f, 0.0f, 0.0f, 1.0f);
-
-				// Ignore if it is behind the camera
-				if (projQuadPos.z < 0.0f)
-					continue;	
-
-				// perspective divide
-				Vec2f quadPos2D = static_cast<Vec2f>(projQuadPos) / projQuadPos.w;
-
-				Vec2f quadSize(0.0f);
-				{
-					//Mat4f billboardModel = it->GetTransform().GetWorldTransformMatrix() * Mat4f(glm::inverse(it->GetTransform().GetWorldTransform().GetRotationMatrix()) * glm::inverse(Mat3f(cameraView)));
-					//Vec4f projQuadSize = cameraVP * Vec4f(Vec3f(billboardModel * Vec4f(0.5f, 0.0f, 0.0f, 1.0f)), 1.0f);
-					Vec4f projQuadSize = cameraProj * glm::translate(Mat4f(1.0f), Vec3f(0.05f, 0.05f, 0.0f)) * cameraView * Vec4f(it->GetTransform().GetWorldTransform().Pos(), 1.0f);
-					quadSize = static_cast<Vec2f>(projQuadSize) / projQuadSize.w - quadPos2D;
-				}
-				if (Boxf<Vec2f>(quadPos2D, Vec2f(quadSize)).Contains(localMousePos))
-				{
-					pickedComponents.push_back(it);
-					std::cout << "#** Picked component " + it->GetName() + " (" + it->GetActor().GetName() + ") " << quadPos2D << '\n';
-					std::cout << "#^^ Quad size: " << quadSize << '\n';
-					std::cout << "#^^ Quad depth: " << projQuadPos.z / projQuadPos.w << '\n';
-
-					if (closestComponent.second > projQuadPos.z / projQuadPos.w)
-						closestComponent = std::pair<Component*, float>(it, projQuadPos.z / projQuadPos.w);
-				}
-			}
-			*/
-			if (closestComponent)
-			{
-				SelectActor(&closestComponent->GetActor(), editorScene);
-				SelectComponent(closestComponent, editorScene);
-			}
+			else
+				SelectActor(nullptr, editorScene);
 			
 			});
 
@@ -628,8 +595,8 @@ namespace GEE
 
 		UICanvasField& componentsListField = canvas.AddField("List of components");
 		UIAutomaticListActor& listActor = componentsListField.CreateChild<UIAutomaticListActor>("ListActor");
-		canvas.FieldsList->SetListElementOffset(canvas.FieldsList->GetListElementCount() - 1, [&listActor, &componentsListField]() { std::cout << "List offset: " << (static_cast<Mat3f>(componentsListField.GetTransform()->GetMatrix()) * listActor.GetListOffset()).y << '\n';  return static_cast<Mat3f>(componentsListField.GetTransform()->GetMatrix()) * (listActor.GetListOffset()); });
-		canvas.FieldsList->SetListCenterOffset(canvas.FieldsList->GetListElementCount() - 1, [&componentsListField]() -> Vec3f { return Vec3f(0.0f, -componentsListField.GetTransform()->Scale().y, 0.0f); });
+		canvas.FieldsList->SetListElementOffset(canvas.FieldsList->GetListElementCount() - 1, [&listActor, &componentsListField]() { return static_cast<Mat3f>(componentsListField.GetTransform()->GetMatrix()) * (listActor.GetListOffset()); });
+		canvas.FieldsList->SetListCenterOffset(canvas.FieldsList->GetListElementCount() - 1, [&componentsListField]() -> Vec3f { return Vec3f(0.0f, -componentsListField.GetTransform()->GetScale().y, 0.0f); });
 		listActor.GetTransform()->Move(Vec2f(0.5f, 0.0f));
 
 		AddActorToList<Component>(editorScene, *actor->GetRoot(), listActor, canvas);
@@ -668,9 +635,9 @@ namespace GEE
 
 				Component& exampleComponent = createCompFunc();
 
-				compButton.SetMatIdle(exampleComponent.GetDebugMatInst(EditorIconState::IDLE));
-				compButton.SetMatHover(exampleComponent.GetDebugMatInst(EditorIconState::HOVER));
-				compButton.SetMatClick(exampleComponent.GetDebugMatInst(EditorIconState::BEING_CLICKED_INSIDE));
+				compButton.SetMatIdle(exampleComponent.LoadDebugMatInst(EditorIconState::IDLE));
+				compButton.SetMatHover(exampleComponent.LoadDebugMatInst(EditorIconState::HOVER));
+				compButton.SetMatClick(exampleComponent.LoadDebugMatInst(EditorIconState::BEING_CLICKED_INSIDE));
 
 				actor->GetRoot()->DetachChild(exampleComponent);
 			};
@@ -700,7 +667,7 @@ namespace GEE
 		else
 		{
 			canvas.AutoClampView();
-			canvas.SetViewScale(static_cast<Vec2f>(canvas.CanvasView.Scale()) * Vec2f(1.0f, glm::sqrt(0.5f / 0.32f)));
+			canvas.SetViewScale(static_cast<Vec2f>(canvas.CanvasView.GetScale()) * Vec2f(1.0f, glm::sqrt(0.5f / 0.32f)));
 		}
 	}
 
@@ -779,7 +746,7 @@ namespace GEE
 		EditorScene->GetRootActor()->DebugActorHierarchy();
 
 		canvas.AutoClampView();
-		canvas.SetViewScale(static_cast<Vec2f>(canvas.CanvasView.Scale()) * Vec2f(1.0f, glm::sqrt(0.32f / 0.32f)));
+		canvas.SetViewScale(static_cast<Vec2f>(canvas.CanvasView.GetScale()) * Vec2f(1.0f, glm::sqrt(0.32f / 0.32f)));
 	}
 
 	void GameEngineEngineEditor::PreviewHierarchyTree(HierarchyTemplate::HierarchyTreeT& tree)
@@ -840,12 +807,12 @@ namespace GEE
 		std::function<void(Actor&)> func = [&previewWindow, &func](Actor& actor) {
 			if (TextComponent* text = actor.GetRoot()->GetComponent<TextComponent>("TEXTTEXT"))
 			{
-				std::string str1 = std::to_string(previewWindow.ToCanvasSpace(actor.GetTransform()->GetWorldTransform()).Pos().x);
+				std::string str1 = std::to_string(previewWindow.ToCanvasSpace(actor.GetTransform()->GetWorldTransform()).GetPos().x);
 				str1 = str1.erase(str1.find_last_not_of('0') + 1, std::string::npos);
 				if (str1.back() == '.')
 					str1 = str1.substr(0, str1.length() - 1);
 
-				std::string str2 = std::to_string(previewWindow.ToCanvasSpace(actor.GetTransform()->GetWorldTransform()).Pos().y);
+				std::string str2 = std::to_string(previewWindow.ToCanvasSpace(actor.GetTransform()->GetWorldTransform()).GetPos().y);
 				str2 = str2.erase(str2.find_last_not_of('0') + 1, std::string::npos);
 				if (str2.back() == '.')
 					str2 = str2.substr(0, str2.length() - 1);
@@ -886,9 +853,16 @@ namespace GEE
 		{
 			//Render 3D scene
 			RenderEng.PrepareScene(*ViewportRenderCollection, GetMainScene()->GetRenderData());
-			RenderEng.FullSceneRender(GetMainScene()->ActiveCamera->GetRenderInfo(*ViewportRenderCollection), GetMainScene()->GetRenderData(), &ViewportRenderCollection->GetTb<FinalRenderTargetToolbox>()->GetFinalFramebuffer());// , Viewport(Vec2f(0.0f), Settings->Video.Resolution)/*Viewport((static_cast<Vec2f>(Settings->WindowSize) - Settings->Video.Resolution) / Vec2f(2.0f, 1.0f), Vec2f(Settings->Video.Resolution.x, Settings->Video.Resolution.y))*/);
-			RenderEng.FindShader("Forward_NoLight")->Use();
-			if (bDebugRenderComponents)	GetMainScene()->GetRootActor()->DebugRenderAll(GetMainScene()->ActiveCamera->GetRenderInfo(*ViewportRenderCollection), RenderEng.FindShader("Forward_NoLight"));
+			RenderEng.FullSceneRender(GetMainScene()->ActiveCamera->GetRenderInfo(*ViewportRenderCollection), GetMainScene()->GetRenderData(), &ViewportRenderCollection->GetTb<FinalRenderTargetToolbox>()->GetFinalFramebuffer(), Viewport(Vec2f(0.0f)), true, false,
+				[&](GEE_FB::Framebuffer& mainFramebuffer) {
+				if (bDebugRenderComponents)
+				{
+					mainFramebuffer.SetDrawSlot(0);
+					RenderEng.FindShader("Forward_NoLight")->Use();
+					GetMainScene()->GetRootActor()->DebugRenderAll(GetMainScene()->ActiveCamera->GetRenderInfo(*ViewportRenderCollection), RenderEng.FindShader("Forward_NoLight"));
+					mainFramebuffer.SetDrawSlots();
+				}
+				});// , Viewport(Vec2f(0.0f), Settings->Video.Resolution)/*Viewport((static_cast<Vec2f>(Settings->WindowSize) - Settings->Video.Resolution) / Vec2f(2.0f, 1.0f), Vec2f(Settings->Video.Resolution.x, Settings->Video.Resolution.y))*/);
 
 			if (SelectedActor && !GetInputRetriever().IsKeyPressed(Key::F2))
 			{

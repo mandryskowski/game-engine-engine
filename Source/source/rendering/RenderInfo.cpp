@@ -2,7 +2,7 @@
 
 namespace GEE
 {
-	RenderInfo::RenderInfo(RenderToolboxCollection& tbCollection, const Mat4f& v, const Mat4f& p, const Mat4f& vp, const Vec3f& camPos, bool materials, bool onlyshadow, bool careAboutShader, bool mainPass) :
+	RenderInfo::RenderInfo(RenderToolboxCollection& tbCollection, const Mat4f& v, const Mat4f& p, const Mat4f& vp, const Vec3f& camPos, bool materials, bool onlyshadow, bool careAboutShader, bool mainPass, bool allowBlending) :
 		TbCollection(tbCollection),
 		camPos(camPos),
 		view(v),
@@ -12,7 +12,8 @@ namespace GEE
 		UseMaterials(materials),
 		OnlyShadowCasters(onlyshadow),
 		CareAboutShader(careAboutShader),
-		MainPass(mainPass)
+		MainPass(mainPass),
+		AllowBlending(allowBlending)
 	{
 		CalculateVP();
 	}

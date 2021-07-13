@@ -71,8 +71,11 @@ namespace GEE
 		virtual Mesh& GetBasicShapeMesh(EngineBasicShape) override;
 		virtual Shader* GetLightShader(const RenderToolboxCollection& renderCol, LightType type) override;
 		virtual RenderToolboxCollection* GetCurrentTbCollection() override;
+		virtual Texture GetEmptyTexture() override;
 
 		virtual std::vector<Material*> GetMaterials() override;
+
+		virtual void SetBoundMaterial(Material*) override;
 
 		/**
 		 * @brief Add a new RenderToolboxCollection to the render engine to enable updating shadow maps automatically. By default, we load every toolbox that will be needed according to RenderToolboxCollection::Settings
@@ -105,7 +108,7 @@ namespace GEE
 		void PreLoopPass();
 
 		void PrepareScene(RenderToolboxCollection& tbCollection, GameSceneRenderData* sceneRenderData);	//Call this method once per frame for each scene that will be rendered in order to prepare stuff like shadow maps
-		void FullSceneRender(RenderInfo& info, GameSceneRenderData* sceneRenderData, GEE_FB::Framebuffer* framebuffer = nullptr, Viewport = Viewport(Vec2f(0.0f), Vec2f(0.0f)), bool clearMainFB = true, bool modifyForwardsDepthForUI = false);	//This method renders a scene with lighting and some postprocessing that improve the visual quality (e.g. SSAO, if enabled).
+		void FullSceneRender(RenderInfo& info, GameSceneRenderData* sceneRenderData, GEE_FB::Framebuffer* framebuffer = nullptr, Viewport = Viewport(Vec2f(0.0f), Vec2f(0.0f)), bool clearMainFB = true, bool modifyForwardsDepthForUI = false, std::function<void(GEE_FB::Framebuffer&)>&& renderIconsFunc = nullptr);	//This method renders a scene with lighting and some postprocessing that improve the visual quality (e.g. SSAO, if enabled).
 
 		void PrepareFrame();
 		static void PostFrame();	//This method completes the postprocessing after everything has been rendered. Call it at the end of your frame rendering function to minimize overhead. Algorithms like anti-aliasing don't need to run multiple times.

@@ -22,7 +22,6 @@ namespace GEE
 		CanvasParent(canvasParent)
 	{
 		Scene.AddBlockingCanvas(*this);
-		std::cout << "UICanvasActor, address: " << this << ", has a canvasparent " << CanvasParent << '\n';
 	}
 
 	UICanvasActor::UICanvasActor(GameScene& scene, Actor* parentActor, const std::string& name, const Transform& t) :
@@ -43,7 +42,6 @@ namespace GEE
 	{
 		FieldsList = dynamic_cast<UIListActor*>(canvasActor.FindActor(Name + "_Fields_List"));
 		Scene.AddBlockingCanvas(*this);
-		std::cout << "UICanvasActor, address: " << this << ", has a canvasparent " << CanvasParent << '\n';
 	}
 
 	void UICanvasActor::OnStart()
@@ -65,7 +63,7 @@ namespace GEE
 
 	NDCViewport UICanvasActor::GetViewport() const
 	{
-		return NDCViewport(GetTransform()->GetWorldTransform().Pos() - GetTransform()->GetWorldTransform().Scale(), GetTransform()->GetWorldTransform().Scale());
+		return NDCViewport(GetTransform()->GetWorldTransform().GetPos() - GetTransform()->GetWorldTransform().GetScale(), GetTransform()->GetWorldTransform().GetScale());
 	}
 
 	const Transform* UICanvasActor::GetCanvasT() const
@@ -157,7 +155,7 @@ namespace GEE
 
 		if (GameHandle->GetInputRetriever().IsKeyPressed(Key::LeftControl))
 		{
-			Vec2f newScale = static_cast<Vec2f>(CanvasView.Scale()) * glm::pow(Vec2f(0.5f), Vec2f(scrolledEv.GetOffset().y));
+			Vec2f newScale = static_cast<Vec2f>(CanvasView.GetScale()) * glm::pow(Vec2f(0.5f), Vec2f(scrolledEv.GetOffset().y));
 			printVector(newScale, "new scale");
 			SetViewScale(newScale);
 		}
@@ -256,7 +254,7 @@ namespace GEE
 		ResizeBarX->SetTransform(Transform(Vec2f(0.0f, -1.2625f), Vec2f(1.0f, 0.0375f)));
 		ResizeBarX->SetWhileBeingClickedFunc([this]() {
 			float scale = ResizeBarX->GetClickPosNDC().y - GameHandle->GetInputRetriever().GetMousePositionNDC().y;
-			this->GetTransform()->SetScale((Vec2f)this->GetTransform()->Scale() * (1.0f + scale));
+			this->GetTransform()->SetScale((Vec2f)this->GetTransform()->GetScale() * (1.0f + scale));
 			ResizeBarX->SetClickPosNDC(GameHandle->GetInputRetriever().GetMousePositionNDC());
 			});
 
@@ -273,10 +271,10 @@ namespace GEE
 		unsigned int axisIndex = static_cast<unsigned int>(barAxis);
 		Boxf<Vec2f> canvasBBox = GetBoundingBox();
 
-		float barSize = glm::min(1.0f, glm::pow(CanvasView.Scale()[axisIndex], 2.0f) / canvasBBox.Size[axisIndex]);
+		float barSize = glm::min(1.0f, glm::pow(CanvasView.GetScale()[axisIndex], 2.0f) / canvasBBox.Size[axisIndex]);
 
-		float viewMovePos = CanvasView.Pos()[axisIndex] - glm::pow(CanvasView.Scale()[axisIndex], 2.0f) - ((barAxis == VecAxis::X) ? (canvasBBox.GetLeft()) : (canvasBBox.GetBottom()));
-		float viewMoveSize = (canvasBBox.Size[axisIndex] - glm::pow(CanvasView.Scale()[axisIndex], 2.0f)) * 2.0f;
+		float viewMovePos = CanvasView.GetPos()[axisIndex] - glm::pow(CanvasView.GetScale()[axisIndex], 2.0f) - ((barAxis == VecAxis::X) ? (canvasBBox.GetLeft()) : (canvasBBox.GetBottom()));
+		float viewMoveSize = (canvasBBox.Size[axisIndex] - glm::pow(CanvasView.GetScale()[axisIndex], 2.0f)) * 2.0f;
 
 		float barPos = 0.0F;
 		if (viewMoveSize > 0.0f)

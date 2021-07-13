@@ -25,20 +25,13 @@ namespace GEE
 			framebuffer.Generate();
 
 			// Generate and attach textures
-			NamedTexture compIDTexture(Texture::Loader<unsigned int>::ReserveEmpty2D(resolution, Texture::Format::Uint32::RGBA(), Texture::Format::Integer::RGBA()), "compIDTexture");
+			NamedTexture compIDTexture(Texture::Loader<float>::ReserveEmpty2D(resolution, Texture::Format::Float32::RGB()), "compIDTexture");
 			NamedTexture depthTexture(Texture::Loader<Texture::LoaderArtificialType::Uint24_8>::ReserveEmpty2D(resolution, Texture::Format::Uint32::Depth24Stencil8(), Texture::Format::DepthStencil()), "depthTex");
-			framebuffer.AttachTextures(compIDTexture, GEE_FB::FramebufferAttachment(depthTexture, GEE_FB::AttachmentSlot::DepthStencil()));
+			framebuffer.Attach(GEE_FB::FramebufferAttachment(compIDTexture, GEE_FB::AttachmentSlot::Color(0)));
+			framebuffer.Attach(GEE_FB::FramebufferAttachment(depthTexture, GEE_FB::AttachmentSlot::DepthStencil()));
 
 			// Get/create shader
-			Shader* shader;
-			if (shader = Impl.RenderHandle.FindShader("MousePicking"); !shader)
-			{
-				auto createdShader = ShaderLoader::LoadShadersWithInclData("MousePicking", "#define MOUSE_PICKING 1\n", "Shaders/depth.vs", "Shaders/depth.fs");
-				Impl.RenderHandle.AddShader(createdShader);
-				shader = createdShader.get();
-				shader->SetExpectedMatrices({ MatrixType::MVP });
-				shader->UniformBlockBinding("BoneMatrices", 10);
-			}
+			Shader* debugShader = Impl.RenderHandle.FindShader("Forward_NoLight");
 
 			// Setup framebuffer, viewport and rasterizer state
 			framebuffer.Bind(true);
@@ -52,8 +45,8 @@ namespace GEE
 			{
 				unsigned int currentComponentIndex = 1;
 
-				shader->Use();
 				info.UseMaterials = false;
+				info.AllowBlending = false;
 
 				std::vector<std::pair<Component*, unsigned int>> notRenderables;
 				notRenderables.reserve(components.size());	// avoid some overhead
@@ -61,38 +54,60 @@ namespace GEE
 				glEnable(GL_DEPTH_TEST);
 				glEnable(GL_CULL_FACE);
 
+				// Unbind current texture
+				glActiveTexture(GL_TEXTURE0);
+				glBindTexture(GL_TEXTURE_2D, 0);
+
 				// Render renderables first
 				for (auto comp : components)
 				{
-					shader->Uniform4fv("compIDUniform", Vec4f(currentComponentIndex, 0, 0, 1));
-					if (auto compRenderable = dynamic_cast<RenderableComponent*>(comp))
-						compRenderable->Render(info, shader);
-					else
-						notRenderables.push_back(std::pair<Component*, unsigned int>(comp, currentComponentIndex));
-					currentComponentIndex++;
+					auto compRenderableCast = dynamic_cast<RenderableComponent*>(comp);
+					if (!compRenderableCast)
+					{
+						notRenderables.push_back(std::pair<Component*, unsigned int>(comp, currentComponentIndex++));
+						continue;
+					}
+
+					Shader* shader;
+					if (compRenderableCast)
+						if (auto materials = compRenderableCast->GetMaterials(); !materials.empty() && materials.front())
+							shader = (materials.front()->GetRenderShaderName() == "Geometry") ? (info.TbCollection.GetTb<DeferredShadingToolbox>()->FindShader("Geometry")) : (Impl.RenderHandle.FindShader(materials.front()->GetRenderShaderName()));
+
+					shader->Use();
+					shader->Uniform4fv("material.color", Vec4f(currentComponentIndex++, 0, 0, 1));
+
+					compRenderableCast->Render(info, shader);
 				}
 
 				glDisable(GL_DEPTH_TEST);
 				glDisable(GL_CULL_FACE);
+
+				debugShader->Use();
+				debugShader->Uniform<bool>("material.useAlbedoAsMask", true);
+				//info.UseMaterials = true;
 				
 				// Render the debug icon of nonrenderables on top
 				for (auto it : notRenderables)
 				{
-					shader->Uniform4fv("compIDUniform", Vec4f(it.second, 0, 0, 1));
-					it.first->DebugRender(info, shader);
+					if (it.first->GetDebugMatInst())
+						it.first->GetDebugMatInst()->UpdateWholeUBOData(debugShader, Impl.RenderHandle.GetEmptyTexture());
+					debugShader->Uniform4fv("material.color", Vec4f(it.second, 0, 0, 1));
+					it.first->DebugRender(info, debugShader);
 				}
+
+				debugShader->Uniform<bool>("material.useAlbedoAsMask", false);
 			}
 
 			// Read one pixel at mousePos
-			Vec4u pickedPixelIndex(0);
-			glReadPixels(mousePos.x, mousePos.y, 1, 1, Texture::Format::Integer::RGBA().GetEnumGL(), GL_UNSIGNED_INT, &pickedPixelIndex[0]);
+			Vec4f pickedPixelIndex(0);
+			glReadPixels(mousePos.x, mousePos.y, 1, 1, Texture::Format::RGBA().GetEnumGL(), GL_FLOAT, &pickedPixelIndex[0]);
+			std::cout << "#$# Picked pixel " << pickedPixelIndex << '\n';
 
 			// Clean up after everything
 			framebuffer.Dispose(true);
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 			glEnable(GL_DEPTH_TEST);
 			glEnable(GL_DITHER);
-			glEnable(GL_BLEND);
 
 			return (pickedPixelIndex.x > 0 && pickedPixelIndex.x <= components.size()) ? (components[pickedPixelIndex.x - 1]) : (nullptr);
 		}

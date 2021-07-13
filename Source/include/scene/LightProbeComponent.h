@@ -20,7 +20,7 @@ namespace GEE
 
 		void SetProbeIndex(unsigned int);
 
-		virtual	MaterialInstance GetDebugMatInst(EditorIconState) override;
+		virtual	MaterialInstance LoadDebugMatInst(EditorIconState) override;
 		virtual void GetEditorDescription(EditorDescriptionBuilder) override;
 		template <typename Archive> void Save(Archive& archive) const
 		{

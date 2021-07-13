@@ -10,8 +10,8 @@ namespace GEE
 	}
 
 	template <typename VecType> Boxf<VecType>::Boxf(const Transform& t) :
-		Position(t.Pos()),
-		Size(t.Scale())
+		Position(t.GetPos()),
+		Size(t.GetScale())
 	{
 	}
 

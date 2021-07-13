@@ -148,7 +148,7 @@ namespace GEE
 
 
 	template <> void Shader::Uniform<int>(const std::string& name, const int& val)		{ glUniform1i(FindLocation(name), val); }
-
+	template <> void Shader::Uniform<bool>(const std::string& name, const bool& val)	{ glUniform1i(FindLocation(name), val); }
 	template <> void Shader::Uniform<float>(const std::string& name, const float& val)	{ glUniform1f(FindLocation(name), val);	}
 
 	template <> void Shader::Uniform<Vec2f>(const std::string& name, const Vec2f& val) { glUniform2fv(FindLocation(name), 1, Math::GetDataPtr(val)); }

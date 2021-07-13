@@ -106,7 +106,7 @@ namespace GEE
 
 		Actor& actor = Scene.CreateActorAtRoot<Actor>("Bullet" + std::to_string(FiredBullets));
 		//TODO: Change it so the bullet is fired at the barrel, not at the center
-		UniquePtr<ModelComponent> bulletModel = MakeUnique<ModelComponent>(ModelComponent(actor, nullptr, "BulletModel" + std::to_string(FiredBullets++), Transform(GetTransform()->GetWorldTransform().Pos(), Vec3f(0.0f), Vec3f(0.2f))));
+		UniquePtr<ModelComponent> bulletModel = MakeUnique<ModelComponent>(ModelComponent(actor, nullptr, "BulletModel" + std::to_string(FiredBullets++), Transform(GetTransform()->GetWorldTransform().GetPos(), Vec3f(0.0f), Vec3f(0.2f))));
 		bulletModel->OnStart();
 		Material* rustedIronMaterial = GameHandle->GetRenderEngineHandle()->FindMaterial("RustedIron").get();
 		if (!rustedIronMaterial)

@@ -67,10 +67,10 @@ namespace GEE
 		ProbeIndex = index;
 	}
 
-	MaterialInstance LightProbeComponent::GetDebugMatInst(EditorIconState state)
+	MaterialInstance LightProbeComponent::LoadDebugMatInst(EditorIconState state)
 	{
 		LoadDebugRenderMaterial("GEE_Mat_Default_Debug_LightProbeComponent", "EditorAssets/lightprobecomponent_icon.png");
-		return Component::GetDebugMatInst(state);
+		return Component::LoadDebugMatInst(state);
 	}
 
 	void LightProbeComponent::GetEditorDescription(EditorDescriptionBuilder descBuilder)

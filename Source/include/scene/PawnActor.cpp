@@ -52,7 +52,7 @@ namespace GEE
 
 		if (CurrentTargetPos != Vec3f(0.0f))
 		{
-			if (glm::distance(CurrentTargetPos, GetTransform()->GetWorldTransform().Pos()) < 0.05f)
+			if (glm::distance(CurrentTargetPos, GetTransform()->GetWorldTransform().GetPos()) < 0.05f)
 			{
 				CurrentTargetPos = Vec3f(0.0f);
 				if (AnimManager->GetCurrentAnim())
@@ -64,15 +64,15 @@ namespace GEE
 			if (!AnimManager->GetCurrentAnim())
 				AnimManager->SelectAnimation(AnimManager->GetAnimInstance(AnimIndex));
 
-			Vec3f posDir = CurrentTargetPos - GetTransform()->GetWorldTransform().Pos();
+			Vec3f posDir = CurrentTargetPos - GetTransform()->GetWorldTransform().GetPos();
 			posDir.y = 0.0f;
 			posDir = glm::normalize(posDir);
 			if (PlayerTarget)
 			{
-				Vec3f playerDir = glm::normalize(PlayerTarget->GetTransform()->GetWorldTransform().Pos() - GetTransform()->GetWorldTransform().Pos());
-				float distance = glm::distance(PlayerTarget->GetTransform()->GetWorldTransform().Pos(), GetTransform()->GetWorldTransform().Pos());
+				Vec3f playerDir = glm::normalize(PlayerTarget->GetTransform()->GetWorldTransform().GetPos() - GetTransform()->GetWorldTransform().GetPos());
+				float distance = glm::distance(PlayerTarget->GetTransform()->GetWorldTransform().GetPos(), GetTransform()->GetWorldTransform().GetPos());
 	
-				if (Gun && glm::dot(playerDir, GetTransform()->Rot() * Vec3f(0.0f, 0.0f, -1.0f)) > glm::cos(glm::radians(30.0f)) && distance < 3.0f)
+				if (Gun && glm::dot(playerDir, GetTransform()->GetRot() * Vec3f(0.0f, 0.0f, -1.0f)) > glm::cos(glm::radians(30.0f)) && distance < 3.0f)
 				{
 					Gun->FireWeapon();
 					//Gun->GetTransform()->SetRotationWorld(quatFromDirectionVec(-playerDir));
@@ -83,7 +83,7 @@ namespace GEE
 
 			GetTransform()->SetRotation(quatFromDirectionVec(-posDir));
 
-			Vec3f velocity = GetTransform()->GetWorldTransform().Rot() * Vec3f(0.0f, 0.0f, -1.0f * SpeedPerSec * deltaTime);
+			Vec3f velocity = GetTransform()->GetWorldTransform().GetRot() * Vec3f(0.0f, 0.0f, -1.0f * SpeedPerSec * deltaTime);
 
 			GetTransform()->Move(velocity);
 		}

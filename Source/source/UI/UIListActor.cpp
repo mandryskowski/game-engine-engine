@@ -35,7 +35,7 @@ namespace GEE
 		if (ListElements.empty())
 			return Vec3f(0.0f);
 
-		return ListElements.front().GetActorRef().GetTransform()->Pos() - ListElements.front().GetCenterOffset();
+		return ListElements.front().GetActorRef().GetTransform()->GetPos() - ListElements.front().GetCenterOffset();
 	}
 
 	int UIListActor::GetListElementCount() const

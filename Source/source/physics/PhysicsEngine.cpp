@@ -109,7 +109,7 @@ namespace GEE
 				std::cerr << "ERROR! The given CollisionObject does not have a pointer to any Transform object.\n";
 				return;
 			}
-			Vec3f worldObjectScale = object.TransformPtr->GetWorldTransform().Scale();
+			Vec3f worldObjectScale = object.TransformPtr->GetWorldTransform().GetScale();
 
 			for (int i = 0; i < static_cast<int>(object.Shapes.size()); i++)
 				CreatePxShape(*object.Shapes[i], object);
@@ -126,11 +126,11 @@ namespace GEE
 
 		void PhysicsEngine::CreatePxShape(CollisionShape& shape, CollisionObject& object)
 		{
-			Vec3f worldObjectScale = object.TransformPtr->GetWorldTransform().Scale();
+			Vec3f worldObjectScale = object.TransformPtr->GetWorldTransform().GetScale();
 
 			PxShape* pxShape = nullptr;
 			const Transform& shapeT = shape.ShapeTransform;
-			Vec3f shapeScale = shapeT.Scale() * worldObjectScale;
+			Vec3f shapeScale = shapeT.GetScale() * worldObjectScale;
 
 			switch (shape.Type)
 			{
@@ -150,7 +150,7 @@ namespace GEE
 			if (!pxShape)
 				return;
 
-			pxShape->setLocalPose(PxTransform(toPx(static_cast<Mat3f>(object.TransformPtr->GetWorldTransformMatrix()) * shapeT.Pos()), (object.IgnoreRotation) ? (physx::PxQuat()) : (toPx(shapeT.Rot()))));
+			pxShape->setLocalPose(PxTransform(toPx(static_cast<Mat3f>(object.TransformPtr->GetWorldTransformMatrix()) * shapeT.GetPos()), (object.IgnoreRotation) ? (physx::PxQuat()) : (toPx(shapeT.GetRot()))));
 			pxShape->userData = &shape.ShapeTransform;
 
 			if (!object.ActorPtr)
@@ -181,7 +181,7 @@ namespace GEE
 			desc.height = 0.6f;
 			desc.material = DefaultMaterial;
 			desc.position = PxExtendedVec3(0.0f, 0.0f, 0.0f);
-			desc.position = PxExtendedVec3(t.Pos().x, t.Pos().y, t.Pos().z);
+			desc.position = PxExtendedVec3(t.GetPos().x, t.GetPos().y, t.GetPos().z);
 			//desc.maxJumpHeight = 0.5f;
 			//desc.invisibleWallHeight = 0.5f;
 			desc.contactOffset = desc.radius * 0.1f;
@@ -291,9 +291,9 @@ namespace GEE
 					const Transform& worldTransform = obj->TransformPtr->GetWorldTransform();
 
 					PxTransform pxTransform = obj->ActorPtr->getGlobalPose();
-					pxTransform.p = toPx(worldTransform.Pos());
+					pxTransform.p = toPx(worldTransform.GetPos());
 					if (!obj->IgnoreRotation)
-						pxTransform.q = toPx(worldTransform.Rot());
+						pxTransform.q = toPx(worldTransform.GetRot());
 
 					physx::PxShape** shapes = new physx::PxShape * [obj->ActorPtr->getNbShapes()];
 					obj->ActorPtr->getShapes(shapes, obj->ActorPtr->getNbShapes());
@@ -313,7 +313,7 @@ namespace GEE
 						{
 							physx::PxTriangleMeshGeometry meshGeom;
 							shapes[j]->getTriangleMeshGeometry(meshGeom);
-							meshGeom.scale = toPx(worldTransform.Scale() * shapeTransform->Scale());
+							meshGeom.scale = toPx(worldTransform.GetScale() * shapeTransform->GetScale());
 
 							obj->ActorPtr->detachShape(*shapes[j]);
 							shapes[j]->setGeometry(meshGeom);
@@ -323,7 +323,7 @@ namespace GEE
 						{
 							physx::PxBoxGeometry boxGeom;
 							shapes[j]->getBoxGeometry(boxGeom);
-							boxGeom.halfExtents = toPx(worldTransform.Scale() * shapeTransform->Scale());
+							boxGeom.halfExtents = toPx(worldTransform.GetScale() * shapeTransform->GetScale());
 
 							obj->ActorPtr->detachShape(*shapes[j]);
 							shapes[j]->setGeometry(boxGeom);
@@ -333,7 +333,7 @@ namespace GEE
 						{
 							physx::PxSphereGeometry sphereGeom;
 							shapes[j]->getSphereGeometry(sphereGeom);
-							sphereGeom.radius = worldTransform.Scale().x * shapeTransform->Scale().x;
+							sphereGeom.radius = worldTransform.GetScale().x * shapeTransform->GetScale().x;
 
 							obj->ActorPtr->detachShape(*shapes[j]);
 							shapes[j]->setGeometry(sphereGeom);
@@ -347,7 +347,7 @@ namespace GEE
 							obj->ActorPtr->detachShape(*shapes[j]);
 						}
 
-						shapes[j]->setLocalPose(PxTransform(toPx(static_cast<Mat3f>(worldTransform.GetMatrix()) * shapeTransform->Pos()), (obj->IgnoreRotation) ? (physx::PxQuat()) : (toPx(shapeTransform->Rot()))));
+						shapes[j]->setLocalPose(PxTransform(toPx(static_cast<Mat3f>(worldTransform.GetMatrix()) * shapeTransform->GetPos()), (obj->IgnoreRotation) ? (physx::PxQuat()) : (toPx(shapeTransform->GetRot()))));
 						obj->ActorPtr->attachShape(*shapes[j]);
 					}
 

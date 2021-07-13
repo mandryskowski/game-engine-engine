@@ -69,7 +69,7 @@ namespace GEE
 	void Component::OnStart()
 	{
 		if (!DebugRenderMatInst)
-			DebugRenderMatInst = MakeShared<MaterialInstance>(GetDebugMatInst(EditorIconState::IDLE));
+			DebugRenderMatInst = MakeShared<MaterialInstance>(LoadDebugMatInst(EditorIconState::IDLE));
 	}
 
 	void Component::OnStartAll()
@@ -163,6 +163,11 @@ namespace GEE
 	Physics::CollisionObject* Component::GetCollisionObj() const
 	{
 		return CollisionObj.get();
+	}
+
+	MaterialInstance* Component::GetDebugMatInst()
+	{
+		return DebugRenderMatInst.get();
 	}
 
 	bool Component::IsBeingKilled() const
@@ -374,22 +379,6 @@ namespace GEE
 		return DebugRenderMat;
 	}
 
-	MaterialInstance Component::GetDebugMatInst(EditorIconState state)
-	{
-		DebugRenderMat = LoadDebugRenderMaterial("GEE_Mat_Default_Debug_Component", "EditorAssets/component_icon.png");
-		switch (state)
-		{
-		case EditorIconState::IDLE:
-		default:
-			return MaterialInstance(*DebugRenderMat, DebugRenderMat->GetTextureIDInterpolatorTemplate(0.0f));
-		case EditorIconState::HOVER:
-		case EditorIconState::BEING_CLICKED_OUTSIDE:
-			return MaterialInstance(*DebugRenderMat, DebugRenderMat->GetTextureIDInterpolatorTemplate(1.0f));
-		case EditorIconState::BEING_CLICKED_INSIDE:
-			return MaterialInstance(*DebugRenderMat, DebugRenderMat->GetTextureIDInterpolatorTemplate(2.0f));
-		}
-	}
-
 	Component* Component::SearchForComponent(std::string name)
 	{
 		if (Name == name)
@@ -435,7 +424,7 @@ namespace GEE
 		UICanvasField& shapesListField = descBuilder.AddField("Collision object");
 		UIAutomaticListActor& shapesList = shapesListField.CreateChild<UIAutomaticListActor>("ShapesList");
 		dynamic_cast<UICanvasActor*>(shapesListField.GetCanvasPtr())->FieldsList->SetListElementOffset(dynamic_cast<UICanvasActor*>(shapesListField.GetCanvasPtr())->FieldsList->GetListElementCount() - 1, [&shapesListField, &shapesList]()-> Vec3f { return static_cast<Mat3f>(shapesListField.GetTransform()->GetMatrix()) * (shapesList.GetListOffset()); });
-		dynamic_cast<UICanvasActor*>(shapesListField.GetCanvasPtr())->FieldsList->SetListCenterOffset(dynamic_cast<UICanvasActor*>(shapesListField.GetCanvasPtr())->FieldsList->GetListElementCount() - 1, [&shapesListField]()-> Vec3f { return Vec3f(0.0f, -shapesListField.GetTransform()->Scale().y, 0.0f); });
+		dynamic_cast<UICanvasActor*>(shapesListField.GetCanvasPtr())->FieldsList->SetListCenterOffset(dynamic_cast<UICanvasActor*>(shapesListField.GetCanvasPtr())->FieldsList->GetListElementCount() - 1, [&shapesListField]()-> Vec3f { return Vec3f(0.0f, -shapesListField.GetTransform()->GetScale().y, 0.0f); });
 		UIButtonActor& colObjectPresenceButton = shapesList.CreateChild<UIButtonActor>("CollisionObjectButton", (CollisionObj) ? ("V") : ("X"));
 
 		shapesListField.CreateChild<UIButtonActor>("AddColShape", "+", [this, descBuilder]() mutable {
@@ -521,6 +510,22 @@ namespace GEE
 			ActorRef.MarkAsKilled();
 		for (auto& it : Children)
 			it->MarkAsKilled();
+	}
+
+	MaterialInstance Component::LoadDebugMatInst(EditorIconState state)
+	{
+		DebugRenderMat = LoadDebugRenderMaterial("GEE_Mat_Default_Debug_Component", "EditorAssets/component_icon.png");
+		switch (state)
+		{
+		case EditorIconState::IDLE:
+		default:
+			return MaterialInstance(*DebugRenderMat, DebugRenderMat->GetTextureIDInterpolatorTemplate(0.0f));
+		case EditorIconState::HOVER:
+		case EditorIconState::BEING_CLICKED_OUTSIDE:
+			return MaterialInstance(*DebugRenderMat, DebugRenderMat->GetTextureIDInterpolatorTemplate(1.0f));
+		case EditorIconState::BEING_CLICKED_INSIDE:
+			return MaterialInstance(*DebugRenderMat, DebugRenderMat->GetTextureIDInterpolatorTemplate(2.0f));
+		}
 	}
 
 	Component::~Component()

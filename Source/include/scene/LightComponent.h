@@ -44,7 +44,7 @@ namespace GEE
 		void UpdateUBOData(UniformBuffer*, size_t = -1);
 		Vec3f& operator[](unsigned int);
 
-		virtual	MaterialInstance GetDebugMatInst(EditorIconState) override;
+		virtual	MaterialInstance LoadDebugMatInst(EditorIconState) override;
 		virtual void GetEditorDescription(EditorDescriptionBuilder) override;
 
 		template <typename Archive> void Save(Archive& archive) const

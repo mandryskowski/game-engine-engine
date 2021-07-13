@@ -140,7 +140,7 @@ namespace GEE
 
 			PxTransform toPx(const Transform& t)
 			{
-				return PxTransform(toPx(t.Pos()), toPx(t.Rot()));
+				return PxTransform(toPx(t.GetPos()), toPx(t.GetRot()));
 			}
 			Transform toTransform(const physx::PxTransform& t)
 			{

@@ -34,7 +34,7 @@ namespace GEE
 
 		Vec3f Position;
 		Quatf Rotation;
-		Vec3f _Scale;
+		Vec3f Scale;
 
 		mutable std::vector <bool> DirtyFlags;
 		mutable bool Empty;	//true if the Transform object has never been changed. Allows for a simple optimization - we skip it during world transform calculation
@@ -51,11 +51,11 @@ namespace GEE
 		Transform(const Transform&);
 		Transform(Transform&&) noexcept;
 
-		bool IsEmpty() const;
+		bool IsEmpty() const { return Empty; }
 
-		const Vec3f& Pos() const;
-		const Quatf& Rot() const;
-		const Vec3f& Scale() const;
+		const Vec3f& GetPos() const { return Position; }
+		const Quatf& GetRot() const { return Rotation; }
+		const Vec3f& GetScale() const { return Scale; }
 
 		Vec3f Transform::GetFrontVec() const;
 		Transform GetInverse() const;
@@ -91,8 +91,8 @@ namespace GEE
 			{
 			case TVec::POSITION: Position[axisIndex] = val; break;
 			case TVec::ROTATION: Rotation[axisIndex] = val; break;
-			case TVec::ROTATION_EULER: Vec3f euler = toEuler(Rot()); euler[axisIndex] = val; SetRotation(euler); break;
-			case TVec::SCALE: _Scale[axisIndex] = val; break;
+			case TVec::ROTATION_EULER: Vec3f euler = toEuler(GetRot()); euler[axisIndex] = val; SetRotation(euler); break;
+			case TVec::SCALE: Scale[axisIndex] = val; break;
 			}
 
 			FlagMyDirtiness();
@@ -114,7 +114,7 @@ namespace GEE
 
 		template <typename Archive> void Serialize(Archive& archive)
 		{
-			archive(CEREAL_NVP(Position), CEREAL_NVP(Rotation), CEREAL_NVP(_Scale));
+			archive(CEREAL_NVP(Position), CEREAL_NVP(Rotation), CEREAL_NVP(Scale));
 			FlagMyDirtiness();
 		}
 

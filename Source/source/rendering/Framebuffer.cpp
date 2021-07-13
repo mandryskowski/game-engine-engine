@@ -175,7 +175,7 @@ namespace GEE
 			std::cout << "ERROR: Cannot attach texture to framebuffer in method AttachTexture; no textures are present in the vector nor the depthAttachment is valid.\n";
 			return;
 		}
-		std::cout << "Started attaching, fbo: " << FBO << '\n';
+		
 		if (!HasBeenGenerated())
 			Generate();
 		Bind(false);

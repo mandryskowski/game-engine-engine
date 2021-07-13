@@ -287,8 +287,8 @@ namespace GEE
 		const MouseButtonEvent& pressedEv = *dynamic_cast<const MouseButtonEvent*>(&ev);
 		if (pressedEv.GetButton() == MouseButton::Right)
 		{
-			printVector(PossessedGunActor->GetTransform()->Rot(), "Prawdziwa rotacja");
-			printVector(PossessedGunActor->GetTransform()->GetWorldTransform().Pos(), "Pozycja gracza");
+			printVector(PossessedGunActor->GetTransform()->GetRot(), "Prawdziwa rotacja");
+			printVector(PossessedGunActor->GetTransform()->GetWorldTransform().GetPos(), "Pozycja gracza");
 			printVector(PossessedGunActor->GetTransform()->GetWorldTransform().GetFrontVec(), "Front");
 		}
 		if (pressedEv.GetButton() == MouseButton::Left)
