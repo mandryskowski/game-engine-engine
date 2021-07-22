@@ -279,10 +279,10 @@ namespace GEE
 		unsigned int axisIndex = static_cast<unsigned int>(barAxis);
 		Boxf<Vec2f> canvasBBox = GetBoundingBox();
 
-		float barSize = glm::min(1.0f, glm::pow(CanvasView.GetScale()[axisIndex], 2.0f) / canvasBBox.Size[axisIndex]);
+		float barSize = glm::min(1.0f, CanvasView.GetScale()[axisIndex] / canvasBBox.Size[axisIndex]);
 
-		float viewMovePos = CanvasView.GetPos()[axisIndex] - glm::pow(CanvasView.GetScale()[axisIndex], 2.0f) - ((barAxis == VecAxis::X) ? (canvasBBox.GetLeft()) : (canvasBBox.GetBottom()));
-		float viewMoveSize = (canvasBBox.Size[axisIndex] - glm::pow(CanvasView.GetScale()[axisIndex], 2.0f)) * 2.0f;
+		float viewMovePos = CanvasView.GetPos()[axisIndex] - CanvasView.GetScale()[axisIndex] - ((barAxis == VecAxis::X) ? (canvasBBox.GetLeft()) : (canvasBBox.GetBottom()));
+		float viewMoveSize = (canvasBBox.Size[axisIndex] - CanvasView.GetScale()[axisIndex]) * 2.0f;
 
 		float barPos = 0.0F;
 		if (viewMoveSize > 0.0f)

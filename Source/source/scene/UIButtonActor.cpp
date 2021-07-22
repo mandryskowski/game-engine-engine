@@ -66,8 +66,8 @@ namespace GEE
 	UIButtonActor::UIButtonActor(GameScene& scene, Actor* parentActor, const std::string& name, const std::string& buttonTextContent, std::function<void()> onClickFunc, std::function<void()> whileBeingClickedFunc, const Transform& t) :
 		UIButtonActor(scene, parentActor, name, onClickFunc, whileBeingClickedFunc, t)
 	{
-		//CreateComponent<TextConstantSizeComponent>("ButtonText", Transform(Vec2f(0.0f), Vec2f(1.0f)), buttonTextContent, "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER)).SetMaxSize(Vec2f(0.8f));
-		CreateComponent<ScrollingTextComponent>("ButtonText", Transform(Vec2f(-1.0f, 0.0f), Vec2f(1.0f)), buttonTextContent, "", std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::CENTER));
+		CreateComponent<TextConstantSizeComponent>("ButtonText", Transform(Vec2f(0.0f), Vec2f(1.0f)), buttonTextContent, "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER)).SetMaxSize(Vec2f(0.8f));
+		//CreateComponent<ScrollingTextComponent>("ButtonText", Transform(Vec2f(-1.0f, 0.0f), Vec2f(1.0f)), buttonTextContent, "", std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::CENTER));
 	}
 
 	ModelComponent* UIButtonActor::GetButtonModel()
@@ -225,7 +225,8 @@ namespace GEE
 		{
 			if (!CanvasPtr->ContainsMouse())
 				return false;
-			Vec2f cursorCanvasSpace = glm::inverse(CanvasPtr->UICanvas::GetViewMatrix()) * Transform(Vec3f(0.0f), Vec3f(0.0f), CanvasPtr->UICanvas::GetViewT().GetScale()).GetMatrix() * glm::inverse(CanvasPtr->GetCanvasT()->GetWorldTransformMatrix()) * Vec4f(cursorNDC, 0.0f, 1.0f);
+			Vec2f cursorCanvasSpace = glm::inverse(CanvasPtr->UICanvas::GetViewMatrix()) * glm::inverse(CanvasPtr->GetCanvasT()->GetWorldTransformMatrix()) * Vec4f(cursorNDC, 0.0f, 1.0f);
+			std::cout << "$*# Cursor canvas space: " << cursorCanvasSpace << '\n';
 			return CollisionTests::AlignedRectContainsPoint(CanvasPtr->ToCanvasSpace(worldT), cursorCanvasSpace);
 		}
 

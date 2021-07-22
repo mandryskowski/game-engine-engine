@@ -37,7 +37,7 @@ namespace GEE
 	Mat4f UICanvas::GetProjection() const
 	{
 		Vec2f size = CanvasView.GetScale();
-		return glm::ortho(-size.x, size.x, -size.y, size.y, 1.0f, -2550.0f);
+		return glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, 1.0f, -2550.0f);
 	}
 
 	Boxf<Vec2f> UICanvas::GetBoundingBox() const
@@ -79,8 +79,8 @@ namespace GEE
 	void UICanvas::ClampViewToElements()
 	{
 		Boxf<Vec2f> bBox = GetBoundingBox();
-		Vec2f canvasRightUp = bBox.Position + bBox.Size - glm::pow(static_cast<Vec2f>(CanvasView.GetScale()), Vec2f(2.0f));	//Canvas space
-		Vec2f canvasLeftDown = bBox.Position - bBox.Size + glm::pow(static_cast<Vec2f>(CanvasView.GetScale()), Vec2f(2.0f));	//Canvas space
+		Vec2f canvasRightUp = bBox.Position + bBox.Size - static_cast<Vec2f>(CanvasView.GetScale());	//Canvas space
+		Vec2f canvasLeftDown = bBox.Position - bBox.Size + static_cast<Vec2f>(CanvasView.GetScale());	//Canvas space
 
 		Vec2f adjustedViewPos = glm::clamp(Vec2f(CanvasView.GetPos()), canvasLeftDown, canvasRightUp);
 
@@ -95,7 +95,7 @@ namespace GEE
 	void UICanvas::AutoClampView(bool trueHorizontalFalseVertical)
 	{
 		float size = (trueHorizontalFalseVertical) ? (GetBoundingBox().Size.x) : (GetBoundingBox().Size.y);
-		SetViewScale(Vec2f(glm::sqrt(size)));
+		SetViewScale(Vec2f(size));
 	}
 
 	void UICanvas::AddUIElement(UICanvasElement& element)
