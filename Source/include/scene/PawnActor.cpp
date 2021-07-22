@@ -95,7 +95,7 @@ namespace GEE
 	{
 		Actor::GetEditorDescription(descBuilder);
 
-		descBuilder.AddField("Anim Manager").GetTemplates().ComponentInput<AnimationManagerComponent>(*GetRoot(), [this](AnimationManagerComponent* animManager) {AnimManager = animManager; UpdateAnimsListInEditor(animManager); });
+		descBuilder.AddField("Anim Manager").GetTemplates().ObjectInput<Component, AnimationManagerComponent>(*GetRoot(), [this](AnimationManagerComponent* animManager) {AnimManager = animManager; UpdateAnimsListInEditor(animManager); });
 		descBuilder.AddField("Target position").GetTemplates().VecInput(CurrentTargetPos);
 
 		dynamic_cast<UIInputBoxActor*>(descBuilder.GetDescriptionParent().FindActor("VecBox0"))->SetRetrieveContentEachFrame(true);

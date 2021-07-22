@@ -6,7 +6,7 @@
 
 namespace GEE
 {
-	template <unsigned int length, typename VecType> using Vec = glm::vec<length, VecType>;
+	template <unsigned int length, typename T> using Vec = glm::vec<length, T>;
 	using Vec2i = Vec<2, int>;
 	using Vec3i = Vec<3, int>;
 	using Vec4i = Vec<4, int>;
@@ -23,10 +23,10 @@ namespace GEE
 	using Vec3d = Vec<3, double>;
 	using Vec4d = Vec<4, double>;
 
-	template <typename QuatType> using Quat = glm::qua<QuatType>;
+	template <typename T> using Quat = glm::qua<T>;
 	using Quatf = Quat<float>;
 
-	template <unsigned int C, unsigned int R, typename MatType> using Mat = glm::mat<C, R, MatType>;
+	template <unsigned int C, unsigned int R, typename T> using Mat = glm::mat<C, R, T>;
 	using Mat2f = Mat<2, 2, float>;
 	using Mat3f = Mat<3, 3, float>;
 	using Mat4f = Mat<4, 4, float>;
@@ -48,29 +48,29 @@ namespace GEE
 
 namespace cereal
 {
-	template <int length, typename VecType, typename Archive>
-	void Serialize(Archive& archive, GEE::Vec<length, VecType>& vec)
+	template <int length, typename T, typename Archive>
+	void Serialize(Archive& archive, GEE::Vec<length, T>& vec)
 	{
 		const std::string axisNames[] = { "x", "y", "z", "w" };
 		for (int i = 0; i < length; i++)
 			archive(cereal::make_nvp(axisNames[i], vec[i]));
 	}
-	template <typename QuatType, typename Archive>
-	void Serialize(Archive& archive, GEE::Quat<QuatType>& q)
+	template <typename T, typename Archive>
+	void Serialize(Archive& archive, GEE::Quat<T>& q)
 	{
 		archive(cereal::make_nvp("x", q.x), cereal::make_nvp("y", q.y), cereal::make_nvp("z", q.z), cereal::make_nvp("w", q.w));
 	}
 
-	template <unsigned int C, unsigned int R, typename MatType, typename Archive>
-	void Serialize(Archive& archive, GEE::Mat<C, R, MatType>& mat)
+	template <unsigned int C, unsigned int R, typename T, typename Archive>
+	void Serialize(Archive& archive, GEE::Mat<C, R, T>& mat)
 	{
 		for (int i = 0; i < static_cast<int>(R); i++)
 			archive(cereal::make_nvp("row" + std::to_string(i), mat[i]));
 	}
 }
 
-template <unsigned int length, typename VecType>
-std::ostream& operator<<(std::ostream& os, const GEE::Vec<length, VecType>& vec)
+template <unsigned int length, typename T>
+std::ostream& operator<<(std::ostream& os, const GEE::Vec<length, T>& vec)
 {
 	for (int i = 0; i < length - 1; i++) //add commas after all components except the last one
 		os << vec[i] << ", ";
@@ -78,8 +78,8 @@ std::ostream& operator<<(std::ostream& os, const GEE::Vec<length, VecType>& vec)
 	return (os << vec[length - 1]);	//add the last component
 }
 
-template <unsigned int C, unsigned int R, typename MatType>
-std::ostream& operator<<(std::ostream& os, const GEE::Mat<C, R, MatType>& mat)
+template <unsigned int C, unsigned int R, typename T>
+std::ostream& operator<<(std::ostream& os, const GEE::Mat<C, R, T>& mat)
 {
 	auto prevPrecision = os.precision();
 	os.precision(3);

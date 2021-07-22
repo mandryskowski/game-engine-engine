@@ -46,6 +46,10 @@ namespace GEE
 	{
 		return Size;
 	}
+	Mat4f NDCViewport::GetOrthoProjectionMatrix() const
+	{
+		return glm::ortho(Position.x - Size.x, Position.x + Size.x, Position.y - Size.y, Position.y + Size.y, 1.0f, -2550.0f);
+	}
 	void NDCViewport::SetOpenGLState(const Vec2u& res) const
 	{
 		ToPxViewport(res).SetOpenGLState();

@@ -250,7 +250,7 @@ namespace GEE
 	void Material::GetEditorDescription(EditorDescriptionBuilder descBuilder)
 	{
 		descBuilder.AddField("Shader name").CreateChild<UIInputBoxActor>("ShaderNameButton", [=](const std::string& shaderName) { SetRenderShaderName(shaderName); }, [=]() { return GetRenderShaderName(); });// .SetDisableInput(true);
-		descBuilder.AddField("Color").GetTemplates().VecInput<Vec4f>(Color);
+		descBuilder.AddField("Color").GetTemplates().VecInput<4, float>(Color);
 		UICanvasFieldCategory& texturesCat = descBuilder.AddCategory("Textures");
 		UIAutomaticListActor& list = texturesCat.CreateChild<UIAutomaticListActor>("TexturesList");
 

@@ -40,7 +40,8 @@ namespace GEE
 
 		void RefreshFieldsList();
 
-		void HideScrollBars();
+		void KillScrollBars();
+		void KillResizeBars();
 		virtual void ClampViewToElements() override;
 
 		template <typename ChildClass, typename... Args> ChildClass& CreateChildCanvas(Args&&...);

@@ -11,6 +11,8 @@
 #include <UI/UICanvasField.h>
 #include <scene/UIInputBoxActor.h>
 
+#include <input/InputDevicesStateRetriever.h>
+
 namespace GEE
 {
 	TextComponent::TextComponent(Actor& actor, Component* parentComp, const std::string& name, const Transform& transform, std::string content, SharedPtr<Font> font, std::pair<TextAlignment, TextAlignment> alignment) :
@@ -83,6 +85,21 @@ namespace GEE
 			return { &TextMatInst->GetMaterialRef() };
 
 		return std::vector<const Material*>();
+	}
+
+	Font* TextComponent::GetUsedFont()
+	{
+		return UsedFont.get();
+	}
+
+	MaterialInstance* TextComponent::GetTextMatInst()
+	{
+		return TextMatInst.get();
+	}
+
+	std::pair<TextAlignment, TextAlignment> TextComponent::GetAlignment() const
+	{
+		return Alignment;
 	}
 
 	void TextComponent::SetContent(const std::string& content)
@@ -204,6 +221,61 @@ namespace GEE
 		float scale = glm::min(MaxSize.y, MaxSize.x / textLength);
 
 		GetTransform().SetScale(Vec2f(scale) * ScaleRatio);
+	}
+
+	ScrollingTextComponent::ScrollingTextComponent(Actor& actorRef, Component* parentComp, const std::string& name, const Transform& transform, std::string content, SharedPtr<Font> font, std::pair<TextAlignment, TextAlignment> alignment):
+		TextComponent(actorRef, parentComp, name, transform, content, font, alignment),
+		MaxLength(2.0f),
+		TimeSinceScrollReset(0.0f),
+		ScrollResetTime(5.0f),
+		ScrollCooldownTime(1.0f)
+	{
+	}
+
+	ScrollingTextComponent::ScrollingTextComponent(Actor& actorRef, Component* parentComp, const std::string& name, const Transform& transform, std::string content, std::string fontPath, std::pair<TextAlignment, TextAlignment> alignment):
+		TextComponent(actorRef, parentComp, name, transform, content, fontPath, alignment),
+		MaxLength(2.0f),
+		TimeSinceScrollReset(0.0f),
+		ScrollResetTime(5.0f),
+		ScrollCooldownTime(1.0f)
+	{
+	}
+
+	void ScrollingTextComponent::Update(float deltaTime)
+	{
+		TimeSinceScrollReset += deltaTime;
+		if (TimeSinceScrollReset > ScrollResetTime + ScrollCooldownTime)
+			TimeSinceScrollReset -= (ScrollResetTime + ScrollCooldownTime) + ScrollCooldownTime;	// Two cooldowns: one after the text has been fully scrolled and one before scrolling. That's why we substract two cooldowns
+	}
+
+	void ScrollingTextComponent::Render(const RenderInfo& infoBeforeChange, Shader* shader)
+	{
+		if (!GetUsedFont() || GetHide())
+			return;
+
+		bool bubadupa = GameHandle->GetInputRetriever().IsKeyPressed(Key::F4);
+
+		//Transform renderTransform = (CanvasPtr) ? (CanvasPtr->ToCanvasSpace(GetTransform().GetWorldTransform())) : (GetTransform().GetWorldTransform());
+		Transform renderTransform = GetTransform();
+		RenderInfo info = infoBeforeChange;// (CanvasPtr) ? (CanvasPtr->BindForRender(infoBeforeChange, GameHandle->GetGameSettings()->WindowSize)) : (infoBeforeChange);
+
+		auto parentWorldT = GetTransform().GetParentTransform()->GetWorldTransform();
+		//if (bubadupa && CanvasPtr) parentWorldT = CanvasPtr->ToCanvasSpace(parentWorldT);
+		NDCViewport(parentWorldT.GetPos() - parentWorldT.GetScale(), parentWorldT.GetScale()).SetOpenGLState(GameHandle->GetGameSettings()->WindowSize);
+
+		float scroll = (glm::max(glm::min(TimeSinceScrollReset, ScrollResetTime), 0.0f) / ScrollResetTime);
+		info.view = Transform(Vec2f(0.0f + scroll * (GetTextLength(false) * 2.0f - 2.0f), 0.0f), Vec2f(1.0f)).GetViewMatrix();
+		if (bubadupa && CanvasPtr)
+			info.view = CanvasPtr->GetViewMatrix() * Transform(Vec2f(0.0f + scroll * (GetTextLength(false)), 0.0f), Vec2f(1.0f)).GetViewMatrix();
+		info.projection = glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, 1.0f, -2550.0f);
+		info.CalculateVP();
+
+		//std::cout << "*%* Text length: " << GetTextLength(false) << "\n";
+
+		GameHandle->GetRenderEngineHandle()->RenderText(info, *GetUsedFont(), GetContent(), renderTransform, GetTextMatInst()->GetMaterialRef().GetColor(), shader, false, GetAlignment());
+		if (CanvasPtr)
+			CanvasPtr->UnbindForRender(GameHandle->GetGameSettings()->WindowSize);
+		Viewport(Vec2u(0), GameHandle->GetGameSettings()->WindowSize).SetOpenGLState();
 	}
 
 }

@@ -11,7 +11,8 @@ namespace GEE
 	UIWindowActor::UIWindowActor(GameScene& scene, Actor* parentActor, UICanvasActor* parentCanvas, const std::string& name, const Transform& t) :
 		UICanvasActor(scene, parentActor, parentCanvas, name, t),
 		CloseButton(nullptr),
-		DragButton(nullptr)
+		DragButton(nullptr),
+		bCloseIfClickedOutside(false)
 	{
 	}
 
@@ -24,7 +25,8 @@ namespace GEE
 	UIWindowActor::UIWindowActor(UIWindowActor&& actor) :
 		UICanvasActor(std::move(actor)),
 		CloseButton(nullptr),
-		DragButton(nullptr)
+		DragButton(nullptr),
+		bCloseIfClickedOutside(false)
 	{
 		CloseButton = dynamic_cast<UIButtonActor*>(actor.FindActor("GEE_E_Close_Button"));
 		DragButton = dynamic_cast<UIScrollBarActor*>(actor.FindActor("GEE_E_Drag_Button"));
@@ -77,6 +79,34 @@ namespace GEE
 			onClick = [this]() { this->MarkAsKilled(); };
 
 		CloseButton->SetOnClickFunc(onClick);
+	}
+
+	void UIWindowActor::SetCloseIfClickedOutside(bool close)
+	{
+		bCloseIfClickedOutside = close;
+	}
+
+	void UIWindowActor::KillCloseButton()
+	{
+		if (CloseButton)
+			CloseButton->MarkAsKilled();
+		CloseButton = nullptr;
+	}
+
+	void UIWindowActor::KillDragButton()
+	{
+		if (DragButton)
+			DragButton->MarkAsKilled();
+		DragButton = nullptr;
+	}
+
+
+	void UIWindowActor::HandleEvent(const Event& ev)
+	{
+		UICanvasActor::HandleEvent(ev);
+
+		if (bCloseIfClickedOutside && ev.GetType() == EventType::MouseReleased && dynamic_cast<const MouseButtonEvent*>(&ev)->GetButton() == MouseButton::Left && !ContainsMouse())
+			MarkAsKilled();
 	}
 
 	void UIWindowActor::GetExternalButtons(std::vector<UIButtonActor*>& buttons) const

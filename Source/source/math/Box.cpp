@@ -40,7 +40,7 @@ namespace GEE
 		VecType thisRightUp = Position + Size;
 		VecType thisLeftDown = Position - Size;
 
-		return BoxBase::Contains(point, thisLeftDown, thisRightUp);
+		return GeomTests::Contains(point, thisLeftDown, thisRightUp);
 	}
 
 	template <typename VecType> bool Boxf<VecType>::Contains(const Boxf<VecType>& rhs) const
@@ -51,7 +51,7 @@ namespace GEE
 		VecType rhsRightUp = rhs.Position + rhs.Size;
 		VecType rhsLeftDown = rhs.Position - rhs.Size;
 
-		return BoxBase::Contains(thisLeftDown, thisRightUp, rhsLeftDown, rhsRightUp);
+		return GeomTests::Contains(thisLeftDown, thisRightUp, rhsLeftDown, rhsRightUp);
 	}
 
 	template<typename VecType>

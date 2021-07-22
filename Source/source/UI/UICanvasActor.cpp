@@ -93,13 +93,21 @@ namespace GEE
 		}
 	}
 
-	void UICanvasActor::HideScrollBars()
+	void UICanvasActor::KillScrollBars()
 	{
-		ScrollBarX->MarkAsKilled();
-		ScrollBarY->MarkAsKilled();
-		BothScrollBarsButton->MarkAsKilled();
+		if (ScrollBarX) ScrollBarX->MarkAsKilled();
+		if (ScrollBarY) ScrollBarY->MarkAsKilled();
+		if (BothScrollBarsButton) BothScrollBarsButton->MarkAsKilled();
 
 		ScrollBarX = ScrollBarY = BothScrollBarsButton = nullptr;
+	}
+
+	void UICanvasActor::KillResizeBars()
+	{
+		if (ResizeBarX) ResizeBarX->MarkAsKilled();
+		if (ResizeBarY) ResizeBarY->MarkAsKilled();
+
+		ResizeBarX = ResizeBarY = nullptr;
 	}
 
 	void UICanvasActor::ClampViewToElements()

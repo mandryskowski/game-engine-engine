@@ -17,6 +17,9 @@ namespace GEE
 		virtual Boxf<Vec2f> GetBoundingBox(bool world = true) override;	//Canvas space
 		float GetTextLength(bool world = true) const;
 		virtual std::vector<const Material*> GetMaterials() const override;
+		Font* GetUsedFont();
+		MaterialInstance* GetTextMatInst();
+		std::pair<TextAlignment, TextAlignment> GetAlignment() const;
 
 		virtual void SetContent(const std::string&);
 		void SetMaterialInst(MaterialInstance&&);
@@ -65,7 +68,7 @@ namespace GEE
 
 
 
-		class TextConstantSizeComponent : public TextComponent
+	class TextConstantSizeComponent : public TextComponent
 	{
 	public:
 		TextConstantSizeComponent(Actor&, Component* parentComp, const std::string& name = std::string(), const Transform& transform = Transform(), std::string content = std::string(), SharedPtr<Font> font = nullptr, std::pair<TextAlignment, TextAlignment> = std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::BOTTOM));
@@ -78,6 +81,22 @@ namespace GEE
 	private:
 		Vec2f MaxSize;
 		Vec2f ScaleRatio;
+	};
+
+	class ScrollingTextComponent : public TextComponent
+	{
+	public:
+		ScrollingTextComponent(Actor&, Component* parentComp, const std::string& name = std::string(), const Transform& transform = Transform(), std::string content = std::string(), SharedPtr<Font> font = nullptr, std::pair<TextAlignment, TextAlignment> = std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::BOTTOM));
+		ScrollingTextComponent(Actor&, Component* parentComp, const std::string& name = std::string(), const Transform& transform = Transform(), std::string content = std::string(), std::string fontPath = std::string(), std::pair<TextAlignment, TextAlignment> = std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::BOTTOM));
+
+		void SetMaxLength(float);
+
+		virtual void Update(float deltaTime);
+		virtual void Render(const RenderInfo& info, Shader* shader) override;
+	public:
+		float MaxLength;
+
+		float TimeSinceScrollReset, ScrollResetTime, ScrollCooldownTime;
 	};
 }
 CEREAL_REGISTER_TYPE(GEE::TextComponent)

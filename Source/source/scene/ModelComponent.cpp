@@ -239,7 +239,9 @@ namespace GEE
 					});
 			});
 
-		descBuilder.AddField("Override materials").GetTemplates().ObjectInput<Material, Material>([this]() { return GameHandle->GetRenderEngineHandle()->GetMaterials(); }, [this](Material* material) { OverrideInstancesMaterial(material); });
+		descBuilder.AddField("Override materials").GetTemplates().ObjectInput<Material>(
+			[this]() { return GameHandle->GetRenderEngineHandle()->GetMaterials(); },
+			[this](Material* material) { OverrideInstancesMaterial(material); });
 	}
 
 	unsigned int ModelComponent::GetUIDepth() const

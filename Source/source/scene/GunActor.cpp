@@ -144,9 +144,9 @@ namespace GEE
 		Actor::GetEditorDescription(descBuilder);
 
 		UICanvasField& blastField = descBuilder.AddField("Blast sound");
-		blastField.GetTemplates().ComponentInput<Audio::SoundSourceComponent>(*GetRoot(), GunBlast);
+		blastField.GetTemplates().ObjectInput<Component, Audio::SoundSourceComponent>(*GetRoot(), GunBlast);
 
-		descBuilder.AddField("Fire model").GetTemplates().ComponentInput<ModelComponent>(*GetRoot(), [this](ModelComponent* model) { SetFireModel(model); });
+		descBuilder.AddField("Fire model").GetTemplates().ObjectInput<Component, ModelComponent>(*GetRoot(), [this](ModelComponent* model) { SetFireModel(model); });
 
 		UICanvasField& fireField = descBuilder.AddField("Fire");
 		fireField.CreateChild<UIButtonActor>("FireButton", "Fire", [this]() { FireWeapon(); });

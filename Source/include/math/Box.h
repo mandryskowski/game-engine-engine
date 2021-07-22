@@ -9,20 +9,7 @@ class Vec3f;*/
 
 namespace GEE
 {
-	class BoxBase
-	{
-	public:
-		template <typename VecType> bool Contains(const VecType& point, const VecType& leftDown, const VecType& rightUp) const
-		{
-			return glm::step(leftDown, point) * glm::step(point, rightUp) == VecType(1.0f);
-		}
-		template <typename VecType> bool Contains(const VecType& leftDown1, const VecType& rightUp1, const VecType& leftDown2, const VecType& rightUp2) const
-		{
-			return (glm::step(leftDown1, rightUp2) * glm::step(rightUp2, rightUp1) == VecType(1.0f)) && (glm::step(leftDown1, leftDown2) * glm::step(leftDown2, rightUp1) == VecType(1.0f));
-		}
-	};
-
-	template <typename VecType = Vec2f> class Boxf : public BoxBase
+	template <typename VecType = Vec2f> class Boxf
 	{
 	public:
 		VecType Position;
@@ -39,6 +26,20 @@ namespace GEE
 		bool Contains(const VecType&) const;
 		bool Contains(const Boxf<VecType>&) const;
 
+		
+
 		static Boxf<VecType> FromMinMaxCorners(const VecType& minCorner, const VecType& maxCorner);
 	};
+
+	namespace GeomTests
+	{
+		template <typename VecType> bool Contains(const VecType& point, const VecType& leftDown, const VecType& rightUp)
+		{
+			return glm::step(leftDown, point) * glm::step(point, rightUp) == VecType(1.0f);
+		}
+		template <typename VecType> bool Contains(const VecType& leftDown1, const VecType& rightUp1, const VecType& leftDown2, const VecType& rightUp2)
+		{
+			return (glm::step(leftDown1, rightUp2) * glm::step(rightUp2, rightUp1) == VecType(1.0f)) && (glm::step(leftDown1, leftDown2) * glm::step(leftDown2, rightUp1) == VecType(1.0f));
+		}
+	}
 }

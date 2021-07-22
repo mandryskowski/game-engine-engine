@@ -28,6 +28,7 @@ namespace GEE
 
 		const Vec2f& GetPosition() const;
 		const Vec2f& GetSize() const;
+		Mat4f GetOrthoProjectionMatrix() const;
 
 		void SetOpenGLState(const Vec2u& res) const;
 		Viewport ToPxViewport(const Vec2u& res) const;

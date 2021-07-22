@@ -394,9 +394,9 @@ namespace GEE
 
 	void Transform::GetEditorDescription(EditorDescriptionBuilder descBuilder)
 	{
-		descBuilder.AddField("Position").GetTemplates().VecInput<Vec3f>([this](float x, float val) {Vec3f pos = GetPos(); pos[x] = val; SetPosition(pos); }, [this](float x) { return GetPos()[x]; });
-		descBuilder.AddField("Rotation").GetTemplates().VecInput<Quatf>([this](float x, float val) {Quatf rot = GetRot(); rot[x] = val; SetRotation(glm::normalize(rot)); }, [this](float x) { return GetRot()[x]; });
-		descBuilder.AddField("Scale").GetTemplates().VecInput<Vec3f>([this](float x, float val) {Vec3f scale = GetScale(); scale[x] = val; SetScale(scale); }, [this](float x) { return GetScale()[x]; });
+		descBuilder.AddField("Position").GetTemplates().VecInput<3, float>([this](int x, float val) {Vec3f pos = GetPos(); pos[x] = val; SetPosition(pos); }, [this](int x) { return GetPos()[x]; });
+		descBuilder.AddField("Rotation").GetTemplates().VecInput<4, float>([this](int x, float val) {Quatf rot = GetRot(); rot[x] = val; SetRotation(glm::normalize(rot)); }, [this](int x) { return GetRot()[x]; });
+		descBuilder.AddField("Scale").GetTemplates().VecInput<3, float>([this](int x, float val) {Vec3f scale = GetScale(); scale[x] = val; SetScale(scale); }, [this](int x) { return GetScale()[x]; });
 	}
 
 	void Transform::Print(std::string name) const

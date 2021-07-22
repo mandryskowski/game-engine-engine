@@ -269,7 +269,9 @@ namespace GEE
 	{
 		Actor::GetEditorDescription(descBuilder);
 
-		descBuilder.AddField("Target camera").GetTemplates().ObjectInput<Actor, Actor>([this]() { std::vector<Actor*> actors; Scene.GetRootActor()->GetAllActors(&actors); return actors; }, [this](Actor* actor) { SetPossessedActor(actor); });
+		descBuilder.AddField("Target camera").GetTemplates().ObjectInput<Actor>(
+			[this]() { std::vector<Actor*> actors; Scene.GetRootActor()->GetAllActors(&actors); return actors; },
+			[this](Actor* actor) { SetPossessedActor(actor); });
 	}
 
 	ShootingController::ShootingController(GameScene& scene, Actor* parentActor, const std::string& name) :
