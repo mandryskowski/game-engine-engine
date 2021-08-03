@@ -36,7 +36,6 @@ namespace GEE
 
 	Mat4f UICanvas::GetProjection() const
 	{
-		Vec2f size = CanvasView.GetScale();
 		return glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, 1.0f, -2550.0f);
 	}
 

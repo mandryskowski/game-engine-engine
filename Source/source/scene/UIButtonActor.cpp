@@ -226,7 +226,6 @@ namespace GEE
 			if (!CanvasPtr->ContainsMouse())
 				return false;
 			Vec2f cursorCanvasSpace = glm::inverse(CanvasPtr->UICanvas::GetViewMatrix()) * glm::inverse(CanvasPtr->GetCanvasT()->GetWorldTransformMatrix()) * Vec4f(cursorNDC, 0.0f, 1.0f);
-			std::cout << "$*# Cursor canvas space: " << cursorCanvasSpace << '\n';
 			return CollisionTests::AlignedRectContainsPoint(CanvasPtr->ToCanvasSpace(worldT), cursorCanvasSpace);
 		}
 

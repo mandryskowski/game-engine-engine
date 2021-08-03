@@ -57,11 +57,11 @@ namespace GEE
 		if (GetCanvasPtr() && world)
 			transform = GetCanvasPtr()->ToCanvasSpace(transform);
 
-		float textLength = GetTextLength(world);
+		float halfTextLength = GetTextLength(world) / 2.0f;
 
-		Vec2f alignmentOffset((static_cast<float>(Alignment.first) - static_cast<float>(TextAlignment::CENTER)) * -textLength, (static_cast<float>(Alignment.second) - static_cast<float>(TextAlignment::CENTER)) * -transform.GetScale().y);
+		Vec2f alignmentOffset((static_cast<float>(Alignment.first) - static_cast<float>(TextAlignment::CENTER)) * -halfTextLength, (static_cast<float>(Alignment.second) - static_cast<float>(TextAlignment::CENTER)) * -transform.GetScale().y);
 
-		return Boxf<Vec2f>(Vec2f(transform.GetPos()) + alignmentOffset, Vec2f(textLength, transform.GetScale().y));
+		return Boxf<Vec2f>(Vec2f(transform.GetPos()) + alignmentOffset, Vec2f(halfTextLength, transform.GetScale().y));
 	}
 
 	float TextComponent::GetTextLength(bool world) const
@@ -76,7 +76,7 @@ namespace GEE
 		for (auto it : Content)
 			advancesSum += UsedFont->GetCharacter(it).Advance;
 
-		return advancesSum * scale.x;
+		return advancesSum * scale.x * 2.0f;
 	}
 
 	std::vector<const Material*> TextComponent::GetMaterials() const
@@ -217,7 +217,7 @@ namespace GEE
 
 	void TextConstantSizeComponent::UpdateSize()
 	{
-		float textLength = glm::max(GetTextLength(false) / GetTransform().GetScale().x, 0.001f);
+		float textLength = glm::max((GetTextLength(false) / 2.0f) / GetTransform().GetScale().x, 0.001f);
 		float scale = glm::min(MaxSize.y, MaxSize.x / textLength);
 
 		GetTransform().SetScale(Vec2f(scale) * ScaleRatio);
@@ -255,27 +255,43 @@ namespace GEE
 
 		bool bubadupa = GameHandle->GetInputRetriever().IsKeyPressed(Key::F4);
 
-		//Transform renderTransform = (CanvasPtr) ? (CanvasPtr->ToCanvasSpace(GetTransform().GetWorldTransform())) : (GetTransform().GetWorldTransform());
-		Transform renderTransform = GetTransform();
-		RenderInfo info = infoBeforeChange;// (CanvasPtr) ? (CanvasPtr->BindForRender(infoBeforeChange, GameHandle->GetGameSettings()->WindowSize)) : (infoBeforeChange);
+		// Copy info
+		Transform renderTransform = GetTransform().GetWorldTransform();
+		RenderInfo info = infoBeforeChange;
+		glEnable(GL_SCISSOR_TEST);
+		if (!bubadupa)
+		{
 
-		auto parentWorldT = GetTransform().GetParentTransform()->GetWorldTransform();
-		//if (bubadupa && CanvasPtr) parentWorldT = CanvasPtr->ToCanvasSpace(parentWorldT);
-		NDCViewport(parentWorldT.GetPos() - parentWorldT.GetScale(), parentWorldT.GetScale()).SetOpenGLState(GameHandle->GetGameSettings()->WindowSize);
 
-		float scroll = (glm::max(glm::min(TimeSinceScrollReset, ScrollResetTime), 0.0f) / ScrollResetTime);
-		info.view = Transform(Vec2f(0.0f + scroll * (GetTextLength(false) * 2.0f - 2.0f), 0.0f), Vec2f(1.0f)).GetViewMatrix();
-		if (bubadupa && CanvasPtr)
-			info.view = CanvasPtr->GetViewMatrix() * Transform(Vec2f(0.0f + scroll * (GetTextLength(false)), 0.0f), Vec2f(1.0f)).GetViewMatrix();
-		info.projection = glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, 1.0f, -2550.0f);
-		info.CalculateVP();
+			// Set viewport
+			
+			auto parentWorldT = GetTransform().GetParentTransform()->GetWorldTransform();
+			NDCViewport(parentWorldT.GetPos() - parentWorldT.GetScale(), parentWorldT.GetScale()).ToPxViewport(GameHandle->GetGameSettings()->WindowSize).SetScissor();
 
-		//std::cout << "*%* Text length: " << GetTextLength(false) << "\n";
 
-		GameHandle->GetRenderEngineHandle()->RenderText(info, *GetUsedFont(), GetContent(), renderTransform, GetTextMatInst()->GetMaterialRef().GetColor(), shader, false, GetAlignment());
-		if (CanvasPtr)
-			CanvasPtr->UnbindForRender(GameHandle->GetGameSettings()->WindowSize);
+			// Set view matrix
+			float scroll = (glm::max(glm::min(TimeSinceScrollReset, ScrollResetTime), 0.0f) / ScrollResetTime);
+			info.view *= Transform(Vec2f(0.0f + scroll * (GetTextLength(true) - Vec4f(renderTransform.GetMatrix() * Vec4f(2.0f, 0.0f, 0.0f, 0.0f)).x), 0.0f), Vec2f(1.0f)).GetViewMatrix();
+			//if (bubadupa && CanvasPtr)
+				//info.view *= CanvasPtr->GetViewMatrix() * Transform(Vec2f(0.0f + scroll * (GetTextLength(true) - 2.0f), 0.0f), Vec2f(1.0f)).GetViewMatrix();
+			info.CalculateVP();
+
+			// Render
+			GameHandle->GetRenderEngineHandle()->RenderText(info, *GetUsedFont(), GetContent(), renderTransform, GetTextMatInst()->GetMaterialRef().GetColor(), shader, false, GetAlignment());
+		}
+		else
+		{
+			auto parentWorldT = GetTransform().GetParentTransform()->GetWorldTransform();
+			NDCViewport(parentWorldT.GetPos() - parentWorldT.GetScale(), parentWorldT.GetScale()).ToPxViewport(GameHandle->GetGameSettings()->WindowSize).SetScissor();
+			GameHandle->GetRenderEngineHandle()->RenderText((CanvasPtr) ? (CanvasPtr->BindForRender(info, GameHandle->GetGameSettings()->WindowSize)) : (info), *GetUsedFont(), GetContent(), GetTransform().GetWorldTransform(), GetTextMatInst()->GetMaterialRef().GetColor(), shader, false, GetAlignment());
+			if (CanvasPtr)
+				CanvasPtr->UnbindForRender(GameHandle->GetGameSettings()->WindowSize);
+		}
+
+		// Clean up after everything
+		
 		Viewport(Vec2u(0), GameHandle->GetGameSettings()->WindowSize).SetOpenGLState();
+		glDisable(GL_SCISSOR_TEST);
 	}
 
 }

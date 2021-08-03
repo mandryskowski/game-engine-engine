@@ -20,6 +20,10 @@ namespace GEE
 	{
 		glViewport(Position.x, Position.y, Size.x, Size.y);
 	}
+	void Viewport::SetScissor() const
+	{
+		glScissor(Position.x, Position.y, Size.x, Size.y);
+	}
 	NDCViewport Viewport::ToNDCViewport(const Vec2u& res) const
 	{
 		return NDCViewport(static_cast<Vec2f>(Position) / static_cast<Vec2f>(res), static_cast<Vec2f>(Size) / static_cast<Vec2f>(res));

@@ -12,6 +12,7 @@ namespace GEE
 		Viewport(const Vec2u& size);
 		const Vec2u& GetSize() const;
 		void SetOpenGLState() const;
+		void SetScissor() const;
 		NDCViewport ToNDCViewport(const Vec2u& res) const;
 
 

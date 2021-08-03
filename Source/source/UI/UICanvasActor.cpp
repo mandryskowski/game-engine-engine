@@ -197,7 +197,6 @@ namespace GEE
 	{
 		RenderInfo convertedInfo = info;
 		convertedInfo.view = GetViewMatrix() * info.view;
-		convertedInfo.projection = GetProjection();
 		convertedInfo.CalculateVP();
 		GetViewport().SetOpenGLState(res);
 
