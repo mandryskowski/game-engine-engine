@@ -36,6 +36,7 @@ namespace GEE
 
 		virtual void SetCanvasView(const Transform&) override;
 
+		virtual Transform FromCanvasSpace(const Transform& canvasSpaceTransform) const override;
 		virtual Transform ToCanvasSpace(const Transform& worldTransform) const override;
 
 		void RefreshFieldsList();
@@ -68,8 +69,8 @@ namespace GEE
 		UIActorDefault* ScaleActor;
 		UIListActor* FieldsList;
 		Vec3f FieldSize;
-		UIScrollBarActor* ScrollBarX, * ScrollBarY, * BothScrollBarsButton;
-		UIScrollBarActor* ResizeBarX, * ResizeBarY;
+		UIScrollBarActor* ScrollBarX, *ScrollBarY, *BothScrollBarsButton;
+		UIScrollBarActor* ResizeBarX, *ResizeBarY;
 
 		UICanvasActor* CanvasParent;
 	};
@@ -98,6 +99,7 @@ namespace GEE
 	class EditorDescriptionBuilder
 	{
 	public:
+		EditorDescriptionBuilder(EditorManager& editorHandle, UICanvasFieldCategory&);
 		EditorDescriptionBuilder(EditorManager&, UIActorDefault&);
 		EditorDescriptionBuilder(EditorManager&, Actor&, UICanvas&);
 		GameScene& GetEditorScene();
@@ -120,6 +122,8 @@ namespace GEE
 		GameScene& EditorScene;
 		Actor& DescriptionParent;
 		UICanvas& CanvasRef;
+
+		UICanvasFieldCategory* OptionalCategory;
 	};
 
 	template <typename ChildClass, typename... Args>

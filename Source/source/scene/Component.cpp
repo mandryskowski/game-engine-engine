@@ -406,7 +406,8 @@ namespace GEE
 
 		//textActor.DeleteButtonModel();
 
-		ComponentTransform.GetEditorDescription(descBuilder);
+		auto& transformCategory = descBuilder.AddCategory("Transform");
+		ComponentTransform.GetEditorDescription(EditorDescriptionBuilder(descBuilder.GetEditorHandle(), transformCategory));
 
 		UIButtonActor& deleteButton = descBuilder.AddField("Delete").CreateChild<UIButtonActor>("DeleteButton", "Delete", [this, descBuilder]() mutable
 			{
@@ -420,6 +421,7 @@ namespace GEE
 
 		if (&ActorRef == Scene.GetRootActor() && !ParentComponent)	//Disallow deleting the root of a scene
 			deleteButton.SetDisableInput(true);
+
 
 		UICanvasField& shapesListField = descBuilder.AddField("Collision object");
 		UIAutomaticListActor& shapesList = shapesListField.CreateChild<UIAutomaticListActor>("ShapesList");

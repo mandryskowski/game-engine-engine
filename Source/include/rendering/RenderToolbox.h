@@ -37,6 +37,8 @@ namespace GEE
 		DeferredShadingToolbox(const GameSettings::VideoSettings& settings);
 		void Setup(const GameSettings::VideoSettings& settings);
 
+		const GEE_FB::Framebuffer* GetGeometryFramebuffer() const { return GFb; }
+
 		friend class MainFramebufferToolbox;
 		friend class RenderEngine;
 	private:

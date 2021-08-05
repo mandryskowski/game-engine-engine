@@ -49,9 +49,7 @@ namespace GEE
 
 		AtlasMaterial& closeIconMat = *new AtlasMaterial(Material("GEE_Close_Icon_Material", 0.0f, GameHandle->GetRenderEngineHandle()->FindShader("Forward_NoLight")), glm::ivec2(3, 1));
 		closeIconMat.AddTexture(MakeShared<NamedTexture>(Texture::Loader<>::FromFile2D("EditorAssets/close_icon.png", Texture::Format::RGBA(), false, Texture::MinFilter::NearestInterpolateMipmap()), "albedo1"));
-		CloseButton->SetMatIdle(MaterialInstance(closeIconMat, closeIconMat.GetTextureIDInterpolatorTemplate(0.0f)));
-		CloseButton->SetMatHover(MaterialInstance(closeIconMat, closeIconMat.GetTextureIDInterpolatorTemplate(1.0f)));
-		CloseButton->SetMatClick(MaterialInstance(closeIconMat, closeIconMat.GetTextureIDInterpolatorTemplate(2.0f)));
+		uiButtonActorUtil::ButtonMatsFromAtlas(*CloseButton, closeIconMat, 0.0f, 1.0f, 2.0f);
 
 		DragButton = &CreateChild<UIScrollBarActor>("GEE_E_Drag_Button");
 		DragButton->SetWhileBeingClickedFunc([this]() { this->GetTransform()->Move(static_cast<Vec2f>(GameHandle->GetInputRetriever().GetMousePositionNDC()) - DragButton->GetClickPosNDC()); DragButton->SetClickPosNDC(GameHandle->GetInputRetriever().GetMousePositionNDC()); });

@@ -116,7 +116,7 @@ void UIMultipleListActor::NestList(UIListActor& list)
 	{
 		Actor::OnStart();
 
-		CreateComponent<TextComponent>("ElementText", Transform(Vec2f(-2.0f, 0.0f), Vec2f(1.0f)), Name, "", std::pair<TextAlignment, TextAlignment>(TextAlignment::RIGHT, TextAlignment::CENTER));
+		uiCanvasFieldUtil::SetupComponents(*this);
 	}
 
 	UIElementTemplates UICanvasField::GetTemplates()
@@ -158,7 +158,8 @@ void UIMultipleListActor::NestList(UIListActor& list)
 	{
 		UIListActor::OnStart();
 
-		CreateComponent<TextComponent>("CategoryText", Transform(Vec2f(-2.0f, 2.0f), Vec2f(1.0f)), Name, "", std::pair<TextAlignment, TextAlignment>(TextAlignment::RIGHT, TextAlignment::CENTER));
+		uiCanvasFieldUtil::SetupComponents(*this, Vec2f(0.0f, 2.0f), Vec4f(0.045f, 0.06f, 0.09f, 1.0f));
+		//CreateComponent<TextComponent>("CategoryText", Transform(Vec2f(-2.0f, 2.0f), Vec2f(1.0f)), Name, "", std::pair<TextAlignment, TextAlignment>(TextAlignment::RIGHT, TextAlignment::CENTER));
 	}
 
 	UIButtonActor* UICanvasFieldCategory::GetExpandButton()
@@ -307,4 +308,24 @@ void UIMultipleListActor::NestList(UIListActor& list)
 		selectFileActor.SetTransform(Transform(Vec2f(6.0f, 0.0f), Vec2f(1.0f, 1.0f)));
 		selectFileActor.SetOnClickFunc([&pathInputBox]() { const char* path = tinyfd_selectFolderDialog("Select folder", "C:\\"); if (path) pathInputBox.PutString(path); });
 	}
+
+	void uiCanvasFieldUtil::SetupComponents(Actor& actor, const Vec2f& pos, const Vec4f& backgroundColor, const Vec4f& separatorColor)
+	{
+		auto& backgroundQuad = actor.CreateComponent<ModelComponent>("BackgroundQuad", Transform(Vec2f(0.0f, pos.y), Vec2f(30.0f, 1.0f)));
+		backgroundQuad.AddMeshInst(actor.GetGameHandle()->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD));
+
+		auto backgroundMaterial = new Material("BackgroundMaterial", 0.0f, actor.GetGameHandle()->GetRenderEngineHandle()->FindShader("Forward_NoLight"));
+		backgroundMaterial->SetColor(backgroundColor);
+		backgroundQuad.OverrideInstancesMaterial(backgroundMaterial);
+
+		actor.CreateComponent<TextComponent>("ElementText", Transform(Vec2f(-2.0f, pos.y), Vec2f(1.0f)), actor.GetName(), "", std::pair<TextAlignment, TextAlignment>(TextAlignment::RIGHT, TextAlignment::CENTER));
+		
+		auto& separatorLine = actor.CreateComponent<ModelComponent>("SeparatorLine", Transform(Vec2f(-1.5f, pos.y), Vec2f(0.08f, 0.8f)));
+		separatorLine.AddMeshInst(actor.GetGameHandle()->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD));
+
+		auto separatorMaterial = new Material("SeparatorColor", 0.0f, actor.GetGameHandle()->GetRenderEngineHandle()->FindShader("Forward_NoLight"));
+		separatorMaterial->SetColor(separatorColor);
+		separatorLine.OverrideInstancesMaterial(separatorMaterial);
+	}
+
 }

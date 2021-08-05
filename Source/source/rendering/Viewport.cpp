@@ -46,6 +46,11 @@ namespace GEE
 	{
 	}
 
+	const Vec2f& NDCViewport::GetPosition() const
+	{
+		return Position;
+	}
+
 	const Vec2f& NDCViewport::GetSize() const
 	{
 		return Size;

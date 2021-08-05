@@ -89,11 +89,13 @@ namespace GEE
 		ScrollingTextComponent(Actor&, Component* parentComp, const std::string& name = std::string(), const Transform& transform = Transform(), std::string content = std::string(), SharedPtr<Font> font = nullptr, std::pair<TextAlignment, TextAlignment> = std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::BOTTOM));
 		ScrollingTextComponent(Actor&, Component* parentComp, const std::string& name = std::string(), const Transform& transform = Transform(), std::string content = std::string(), std::string fontPath = std::string(), std::pair<TextAlignment, TextAlignment> = std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::BOTTOM));
 
+		virtual Boxf<Vec2f> GetBoundingBox(bool world = true) override;	//Canvas space
 		void SetMaxLength(float);
 
 		virtual void Update(float deltaTime);
 		virtual void Render(const RenderInfo& info, Shader* shader) override;
 	public:
+		Transform GetParentWorldTransform() const;
 		float MaxLength;
 
 		float TimeSinceScrollReset, ScrollResetTime, ScrollCooldownTime;

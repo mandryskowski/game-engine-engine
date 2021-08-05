@@ -18,6 +18,10 @@ namespace GEE
 		UIElementTemplates GetTemplates();
 	};
 
+	namespace uiCanvasFieldUtil
+	{
+		void SetupComponents(Actor& actor, const Vec2f& pos = Vec2f(0.0f), const Vec4f& backgroundColor = Vec4f(hsvToRgb(Vec3f(218.0f, 0.521f, 0.188f)), 1.0f), const Vec4f& separatorColor = Vec4f(0.18f, 0.25f, 0.39f, 1.0f));
+	}
 
 	class UIElementTemplates
 	{

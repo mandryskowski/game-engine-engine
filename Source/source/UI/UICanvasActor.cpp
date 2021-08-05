@@ -25,7 +25,7 @@ namespace GEE
 	}
 
 	UICanvasActor::UICanvasActor(GameScene& scene, Actor* parentActor, const std::string& name, const Transform& t) :
-		UICanvasActor(scene, parentActor, nullptr, name)
+		UICanvasActor(scene, parentActor, nullptr, name, t)
 	{}
 
 	UICanvasActor::UICanvasActor(UICanvasActor&& canvasActor) :
@@ -77,6 +77,11 @@ namespace GEE
 		ClampViewToElements();
 		if (ScrollBarX) UpdateScrollBarT<VecAxis::X>();
 		if (ScrollBarY) UpdateScrollBarT<VecAxis::Y>();
+	}
+
+	Transform UICanvasActor::FromCanvasSpace(const Transform& canvasSpaceTransform) const
+	{
+		return GetCanvasT()->GetWorldTransform() * canvasSpaceTransform;
 	}
 
 	Transform UICanvasActor::ToCanvasSpace(const Transform& worldTransform) const
@@ -133,7 +138,7 @@ namespace GEE
 			FieldsList = &ScaleActor->CreateChild<UIListActor>(Name + "_Fields_List");
 
 		UICanvasFieldCategory& category = FieldsList->CreateChild<UICanvasFieldCategory>(name);
-		category.SetTransform(Transform(Vec2f(0.0f), Vec2f(FieldSize)));	//position doesn't matter if this is not the first field
+		category.SetTransform(Transform(Vec2f(0.0f, -1.0f), Vec2f(FieldSize)));	//position doesn't matter if this is not the first field
 		FieldsList->AddElement(UIListElement(category, [&category]() { category.Refresh(); return category.GetListOffset(); }, [&category]() { return Vec3f(0.0f, -1.5f, 0.0f); }));
 		category.SetOnExpansionFunc([this]() { RefreshFieldsList(); });
 
@@ -304,6 +309,15 @@ namespace GEE
 		bool hide = floatComparison(barSize, 1.0f, std::numeric_limits<float>().epsilon());	//hide if we can't scroll on this axis
 		scrollBar->GetButtonModel()->SetHide(hide);
 		scrollBar->SetDisableInput(hide);
+
+		// If the both scroll bars button exists and there are no visible scroll bars, hide the button.
+		if (BothScrollBarsButton)
+		{
+			bool hideButton = (!ScrollBarX || ScrollBarX->GetButtonModel()->GetHide()) || (!ScrollBarY || ScrollBarY->GetButtonModel()->GetHide());
+			BothScrollBarsButton->GetButtonModel()->SetHide(hideButton);
+			BothScrollBarsButton->SetDisableInput(hideButton);
+		}
+
 	}
 
 	template void UICanvasActor::UpdateScrollBarT<VecAxis::X>();
@@ -314,13 +328,19 @@ namespace GEE
 		return element.GetCanvasPtr()->AddField(name, getFieldOffsetFunc);
 	}
 
+	EditorDescriptionBuilder::EditorDescriptionBuilder(EditorManager& editorHandle, UICanvasFieldCategory& cat):
+		EditorDescriptionBuilder(editorHandle, cat, *cat.GetCanvasPtr())
+	{
+		OptionalCategory = &cat;
+	}
+
 	EditorDescriptionBuilder::EditorDescriptionBuilder(EditorManager& editorHandle, UIActorDefault& descriptionParent) :
 		EditorDescriptionBuilder(editorHandle, descriptionParent, *descriptionParent.GetCanvasPtr())
 	{
 	}
 
 	EditorDescriptionBuilder::EditorDescriptionBuilder(EditorManager& editorHandle, Actor& descriptionParent, UICanvas& canvas) :
-		EditorHandle(editorHandle), EditorScene(descriptionParent.GetScene()), DescriptionParent(descriptionParent), CanvasRef(canvas)
+		EditorHandle(editorHandle), EditorScene(descriptionParent.GetScene()), DescriptionParent(descriptionParent), CanvasRef(canvas), OptionalCategory(nullptr)
 	{
 	}
 
@@ -346,7 +366,7 @@ namespace GEE
 
 	UICanvasField& EditorDescriptionBuilder::AddField(const std::string& name, std::function<Vec3f()> getFieldOffsetFunc)
 	{
-		return GetCanvas().AddField(name, getFieldOffsetFunc);
+		return (OptionalCategory) ? (OptionalCategory->AddField(name, getFieldOffsetFunc)) : (GetCanvas().AddField(name, getFieldOffsetFunc));
 	}
 
 	UICanvasFieldCategory& EditorDescriptionBuilder::AddCategory(const std::string& name)

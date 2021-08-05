@@ -241,6 +241,16 @@ namespace GEE
 	{
 	}
 
+	Boxf<Vec2f> ScrollingTextComponent::GetBoundingBox(bool world)
+	{
+		Transform transform = (world) ? (GetTransform().GetWorldTransform()) : (GetTransform());
+		if (GetCanvasPtr() && world)
+			transform = GetCanvasPtr()->ToCanvasSpace(transform);
+
+		return Boxf<Vec2f>(transform.GetPos(), transform.GetScale());
+	}
+
+
 	void ScrollingTextComponent::Update(float deltaTime)
 	{
 		TimeSinceScrollReset += deltaTime;
@@ -253,45 +263,52 @@ namespace GEE
 		if (!GetUsedFont() || GetHide())
 			return;
 
-		bool bubadupa = GameHandle->GetInputRetriever().IsKeyPressed(Key::F4);
-
 		// Copy info
 		Transform renderTransform = GetTransform().GetWorldTransform();
+		if (GetActor().GetName() == "RecentFilepathButton")
+		{
+			std::cout << "### Recent filepath text (" << GetName() << ") scale: " << renderTransform.GetScale() << "\n";
+		}
 		RenderInfo info = infoBeforeChange;
+
+		// Set view matrix
+		float scroll = (glm::max(glm::min(TimeSinceScrollReset, ScrollResetTime), 0.0f) / ScrollResetTime);
+		if (CanvasPtr) scroll *= CanvasPtr->GetCanvasT()->GetScale().x;
+		const float scrollLength = (GetTextLength(true) - Vec4f(((CanvasPtr) ? (CanvasPtr->ToCanvasSpace(renderTransform)) : (renderTransform)).GetMatrix() * Vec4f(2.0f, 0.0f, 0.0f, 0.0f)).x);
+		if (scrollLength <= 0.0f)
+		{
+			TextComponent::Render(info, shader);
+			return;
+		}
+		const float posX = scroll * scrollLength;
+		const Mat4f scrollMat = Transform(Vec2f(posX + renderTransform.GetScale().x, 0.0f), Vec2f(1.0f)).GetViewMatrix();
+
+		info.view *= scrollMat;
+		info.CalculateVP();
+
+
+		// Set viewport
 		glEnable(GL_SCISSOR_TEST);
-		if (!bubadupa)
-		{
+		auto parentWorldT = GetTransform()./*GetParentTransform()->*/GetWorldTransform();
+		if (CanvasPtr) parentWorldT = CanvasPtr->FromCanvasSpace(CanvasPtr->GetViewT().GetInverse() * CanvasPtr->ToCanvasSpace(parentWorldT));
+		auto viewport = NDCViewport(parentWorldT.GetPos() - parentWorldT.GetScale(), parentWorldT.GetScale());
+		viewport.ToPxViewport(GameHandle->GetGameSettings()->WindowSize).SetScissor();
 
-
-			// Set viewport
-			
-			auto parentWorldT = GetTransform().GetParentTransform()->GetWorldTransform();
-			NDCViewport(parentWorldT.GetPos() - parentWorldT.GetScale(), parentWorldT.GetScale()).ToPxViewport(GameHandle->GetGameSettings()->WindowSize).SetScissor();
-
-
-			// Set view matrix
-			float scroll = (glm::max(glm::min(TimeSinceScrollReset, ScrollResetTime), 0.0f) / ScrollResetTime);
-			info.view *= Transform(Vec2f(0.0f + scroll * (GetTextLength(true) - Vec4f(renderTransform.GetMatrix() * Vec4f(2.0f, 0.0f, 0.0f, 0.0f)).x), 0.0f), Vec2f(1.0f)).GetViewMatrix();
-			//if (bubadupa && CanvasPtr)
-				//info.view *= CanvasPtr->GetViewMatrix() * Transform(Vec2f(0.0f + scroll * (GetTextLength(true) - 2.0f), 0.0f), Vec2f(1.0f)).GetViewMatrix();
-			info.CalculateVP();
-
-			// Render
-			GameHandle->GetRenderEngineHandle()->RenderText(info, *GetUsedFont(), GetContent(), renderTransform, GetTextMatInst()->GetMaterialRef().GetColor(), shader, false, GetAlignment());
-		}
-		else
-		{
-			auto parentWorldT = GetTransform().GetParentTransform()->GetWorldTransform();
-			NDCViewport(parentWorldT.GetPos() - parentWorldT.GetScale(), parentWorldT.GetScale()).ToPxViewport(GameHandle->GetGameSettings()->WindowSize).SetScissor();
-			GameHandle->GetRenderEngineHandle()->RenderText((CanvasPtr) ? (CanvasPtr->BindForRender(info, GameHandle->GetGameSettings()->WindowSize)) : (info), *GetUsedFont(), GetContent(), GetTransform().GetWorldTransform(), GetTextMatInst()->GetMaterialRef().GetColor(), shader, false, GetAlignment());
-			if (CanvasPtr)
-				CanvasPtr->UnbindForRender(GameHandle->GetGameSettings()->WindowSize);
-		}
+		// Render
+		GameHandle->GetRenderEngineHandle()->RenderText((CanvasPtr) ? (CanvasPtr->BindForRender(info, GameHandle->GetGameSettings()->WindowSize)) : (info), *GetUsedFont(), GetContent(), renderTransform, GetTextMatInst()->GetMaterialRef().GetColor(), shader, false, std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, GetAlignment().second));
 
 		// Clean up after everything
-		
+		if (CanvasPtr)
+			CanvasPtr->UnbindForRender(GameHandle->GetGameSettings()->WindowSize);
 		Viewport(Vec2u(0), GameHandle->GetGameSettings()->WindowSize).SetOpenGLState();
 		glDisable(GL_SCISSOR_TEST);
+	}
+
+	Transform ScrollingTextComponent::GetParentWorldTransform() const
+	{
+		if (GetTransform().GetParentTransform())
+			return GetTransform().GetParentTransform()->GetWorldTransform();
+		return Transform();
 	}
 
 }

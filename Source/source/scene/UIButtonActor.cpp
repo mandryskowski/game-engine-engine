@@ -66,8 +66,12 @@ namespace GEE
 	UIButtonActor::UIButtonActor(GameScene& scene, Actor* parentActor, const std::string& name, const std::string& buttonTextContent, std::function<void()> onClickFunc, std::function<void()> whileBeingClickedFunc, const Transform& t) :
 		UIButtonActor(scene, parentActor, name, onClickFunc, whileBeingClickedFunc, t)
 	{
-		CreateComponent<TextConstantSizeComponent>("ButtonText", Transform(Vec2f(0.0f), Vec2f(1.0f)), buttonTextContent, "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER)).SetMaxSize(Vec2f(0.8f));
-		//CreateComponent<ScrollingTextComponent>("ButtonText", Transform(Vec2f(-1.0f, 0.0f), Vec2f(1.0f)), buttonTextContent, "", std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::CENTER));
+		//CreateComponent<TextConstantSizeComponent>("ButtonText", Transform(Vec2f(0.0f), Vec2f(1.0f)), buttonTextContent, "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER)).SetMaxSize(Vec2f(0.8f));
+		//CreateComponent<ScrollingTextComponent>("ButtonText", Transform(Vec2f(0.0f), Vec2f(1.0f)), buttonTextContent, "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
+		if (Name == "RecentFilepathButton")
+			CreateComponent<TextConstantSizeComponent>("ButtonText", Transform(Vec2f(0.0f), Vec2f(1.0f / 9.0f, 1.0f)), buttonTextContent, "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER)).SetMaxSize(Vec2f(0.8f));
+		else 
+			CreateComponent<ScrollingTextComponent>("ButtonText", Transform(Vec2f(0.0f), Vec2f(1.0f)), buttonTextContent, "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
 	}
 
 	ModelComponent* UIButtonActor::GetButtonModel()
@@ -368,4 +372,11 @@ namespace GEE
 		ClickPosNDC = pos;
 	}
 
+	void uiButtonActorUtil::ButtonMatsFromAtlas(UIButtonActor& button, AtlasMaterial& atlasMat, float idleID, float hoverID, float clickID, float disabledID)
+	{
+		button.SetMatIdle(MaterialInstance(atlasMat, atlasMat.GetTextureIDInterpolatorTemplate(idleID)));
+		if (hoverID >= 0.0f) button.SetMatHover(MaterialInstance(atlasMat, atlasMat.GetTextureIDInterpolatorTemplate(hoverID)));
+		if (clickID >= 0.0f) button.SetMatClick(MaterialInstance(atlasMat, atlasMat.GetTextureIDInterpolatorTemplate(clickID)));
+		if (disabledID >= 0.0f) button.SetMatDisabled(MaterialInstance(atlasMat, atlasMat.GetTextureIDInterpolatorTemplate(disabledID)));
+	}
 }
