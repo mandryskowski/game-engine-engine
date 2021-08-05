@@ -1,4 +1,5 @@
 #include <scene/hierarchy/HierarchyNode.h>
+#include <scene/Actor.h>
 
 namespace GEE
 {
@@ -15,11 +16,11 @@ namespace GEE
 	{
 		CompT = node.CompT;
 		if (node.CollisionObj)
-			CollisionObj = std::make_unique<Physics::CollisionObject>(*node.CollisionObj);
+			CollisionObj = MakeUnique<Physics::CollisionObject>(*node.CollisionObj);
 		if (copyChildren)
 		{
 			Children.reserve(node.Children.size());
-			std::transform(node.Children.begin(), node.Children.end(), std::back_inserter(Children), [&tempActor, copyChildren](const std::unique_ptr<HierarchyNodeBase>& child) { return child->Copy(tempActor, copyChildren); });
+			std::transform(node.Children.begin(), node.Children.end(), std::back_inserter(Children), [&tempActor, copyChildren](const UniquePtr<HierarchyNodeBase>& child) { return child->Copy(tempActor, copyChildren); });
 		}
 	}
 
@@ -31,7 +32,7 @@ namespace GEE
 
 	/*
 	template<typename CompType>
-	std::unique_ptr<CompType> HierarchyTemplate::HierarchyNode<CompType>::Instantiate(Component& parent, const std::string& name) const
+	UniquePtr<CompType> HierarchyTemplate::HierarchyNode<CompType>::Instantiate(Component& parent, const std::string& name) const
 	{
 		InstantiateToComp(parent.CreateComponent<CompType>(name));
 	}*/
@@ -47,7 +48,7 @@ namespace GEE
 			comp = CompT;
 
 		if (CollisionObj)
-			comp.SetCollisionObject(std::make_unique<Physics::CollisionObject>(*CollisionObj));
+			comp.SetCollisionObject(MakeUnique<Physics::CollisionObject>(*CollisionObj));
 	}
 
 	template<typename CompType>
@@ -96,7 +97,7 @@ namespace GEE
 	}
 
 	template<typename CompType>
-	HierarchyNodeBase& HierarchyTemplate::HierarchyNode<CompType>::AddChild(std::unique_ptr<HierarchyNodeBase> child)
+	HierarchyNodeBase& HierarchyTemplate::HierarchyNode<CompType>::AddChild(UniquePtr<HierarchyNodeBase> child)
 	{
 		Children.push_back(std::move(child));
 		return *Children.back().get();
@@ -116,22 +117,22 @@ namespace GEE
 	}
 
 	template<typename CompType>
-	std::unique_ptr<HierarchyNodeBase> HierarchyTemplate::HierarchyNode<CompType>::Copy(Actor& tempActor, bool copyChildren) const
+	UniquePtr<HierarchyNodeBase> HierarchyTemplate::HierarchyNode<CompType>::Copy(Actor& tempActor, bool copyChildren) const
 	{
-		return static_unique_pointer_cast<HierarchyNodeBase>(std::make_unique<HierarchyNode<CompType>>(*this, tempActor, copyChildren));
+		return static_unique_pointer_cast<HierarchyNodeBase>(MakeUnique<HierarchyNode<CompType>>(*this, tempActor, copyChildren));
 	}
 
 	template<typename CompType>
-	void HierarchyTemplate::HierarchyNode<CompType>::SetCollisionObject(std::unique_ptr<Physics::CollisionObject> collisionObj)
+	void HierarchyTemplate::HierarchyNode<CompType>::SetCollisionObject(UniquePtr<Physics::CollisionObject> collisionObj)
 	{
 		CollisionObj = std::move(collisionObj);
 	}
 
 	template<typename CompType>
-	void HierarchyTemplate::HierarchyNode<CompType>::AddCollisionShape(std::shared_ptr<Physics::CollisionShape> shape)
+	void HierarchyTemplate::HierarchyNode<CompType>::AddCollisionShape(SharedPtr<Physics::CollisionShape> shape)
 	{
 		if (!CollisionObj)
-			CollisionObj = std::make_unique<Physics::CollisionObject>();
+			CollisionObj = MakeUnique<Physics::CollisionObject>();
 
 		CollisionObj->AddShape(shape);
 	}
@@ -148,11 +149,11 @@ namespace GEE
 	{
 		CompT = node.CompT;
 		if (node.CollisionObj)
-			CollisionObj = std::make_unique<Physics::CollisionObject>(*node.CollisionObj);
+			CollisionObj = MakeUnique<Physics::CollisionObject>(*node.CollisionObj);
 		if (copyChildren)
 		{
 			Children.reserve(node.Children.size());
-			std::transform(node.Children.begin(), node.Children.end(), std::back_inserter(Children), [&tempActor, copyChildren](const std::unique_ptr<HierarchyNodeBase>& child) { return child->Copy(tempActor, copyChildren); });
+			std::transform(node.Children.begin(), node.Children.end(), std::back_inserter(Children), [&tempActor, copyChildren](const UniquePtr<HierarchyNodeBase>& child) { return child->Copy(tempActor, copyChildren); });
 		}
 		CompT.GetScene().GetRenderData()->EraseRenderable(CompT);
 	}

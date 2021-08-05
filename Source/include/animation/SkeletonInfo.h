@@ -1,7 +1,6 @@
 #pragma once
 #include <game/GameManager.h>
 #include <cereal/types/memory.hpp>
-#include <cereal/types/vector.hpp>
 #include <cereal/access.hpp>
 //#include <scene/BoneComponent.h>
 namespace GEE
@@ -24,7 +23,7 @@ namespace GEE
 		void SetGlobalInverseTransformCompPtr(const Component* comp);
 		void SetBatchData(SkeletonBatch* batch, unsigned int idOffset);
 		bool VerifyGlobalInverseCompPtrLife();	//Call every frame
-		void FillMatricesVec(std::vector<glm::mat4>&);
+		void FillMatricesVec(std::vector<Mat4f>&);
 		void AddBone(BoneComponent&);
 		void EraseBone(BoneComponent&);
 		void SortBones();	//Sorts bones by id. May improve performance
@@ -98,18 +97,23 @@ namespace GEE
 
 	class SkeletonBatch
 	{
-		std::vector<std::shared_ptr<SkeletonInfo>> Skeletons;
+		std::vector<SharedPtr<SkeletonInfo>> Skeletons;
 		unsigned int BoneCount;
-		UniformBuffer BoneUBO;
 
+		UniformBuffer BoneUBOs[2];
+		unsigned int CurrentBoneUBOIndex;
+
+		friend class RenderEngine;
+		void SwapBoneUBOs();
 	public:
 		SkeletonBatch();
 		unsigned int GetRemainingCapacity();
 		int GetInfoID(SkeletonInfo&);
 		SkeletonInfo* GetInfo(int ID);
 		int GetBatchID();
+		UniformBuffer GetBoneUBO();
 		void RecalculateBoneCount();
-		bool AddSkeleton(std::shared_ptr<SkeletonInfo>);
+		bool AddSkeleton(SharedPtr<SkeletonInfo>);
 		void BindToUBO();
 		void VerifySkeletonsLives();	//Call every frame
 

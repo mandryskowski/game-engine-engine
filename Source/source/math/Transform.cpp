@@ -28,36 +28,36 @@ namespace GEE
 	{
 	}
 
-	Transform::Transform(const glm::vec2& pos, const glm::vec2& scale, const glm::quat& rot) :
-		Transform(glm::vec3(pos, 0.0f), rot, glm::vec3(scale, 1.0f))
+	Transform::Transform(const Vec2f& pos, const Vec2f& scale, const Quatf& rot) :
+		Transform(Vec3f(pos, 0.0f), rot, Vec3f(scale, 1.0f))
 	{
 	}
 
-	Transform::Transform(const glm::vec3& pos, const glm::quat& rot, const glm::vec3& scale) :
+	Transform::Transform(const Vec3f& pos, const Quatf& rot, const Vec3f& scale) :
 		ParentTransform(nullptr),
 		WorldTransformCache(nullptr),
-		WorldTransformMatrixCache(glm::mat4(1.0f)),
-		MatrixCache(glm::mat4(1.0f)),
+		WorldTransformMatrixCache(Mat4f(1.0f)),
+		MatrixCache(Mat4f(1.0f)),
 		Position(pos),
 		Rotation(rot),
-		_Scale(scale),
+		Scale(scale),
 		DirtyFlags(3, true),
 		Empty(false)
 	{
-		if (pos == glm::vec3(0.0f) && rot == glm::quat(glm::vec3(0.0f)) && scale == glm::vec3(1.0f))
+		if (pos == Vec3f(0.0f) && rot == Quatf(Vec3f(0.0f)) && scale == Vec3f(1.0f))
 			Empty = true;
 		KUPA = false;
 	}
 
 	Transform::Transform(const Transform& t) :
-		Transform(t.Position, t.Rotation, t._Scale)
+		Transform(t.Position, t.Rotation, t.Scale)
 	{
 		/* if (t.ParentTransform)
 			t.ParentTransform->AddChild(this); */
 	}
 
 	Transform::Transform(Transform&& t) noexcept :
-		Transform(t.Position, t.Rotation, t._Scale)
+		Transform(t.Position, t.Rotation, t.Scale)
 	{
 		/*
 		if (t.ParentTransform)
@@ -67,39 +67,19 @@ namespace GEE
 		}  */
 	}
 
-	bool Transform::IsEmpty() const
+	Vec3f Transform::GetFrontVec() const
 	{
-		return Empty;
-	}
-
-	const Vec3f& Transform::Pos() const
-	{
-		return Position;
-	}
-
-	const Quatf& Transform::Rot() const
-	{
-		return Rotation;
-	}
-
-	const Vec3f& Transform::Scale() const
-	{
-		return _Scale;
-	}
-
-	glm::vec3 Transform::GetFrontVec() const
-	{
-		return Rotation * glm::vec3(0.0f, 0.0f, -1.0f);
+		return Rotation * Vec3f(0.0f, 0.0f, -1.0f);
 	}
 
 	Transform Transform::GetInverse() const
 	{
-		return Transform((glm::mat3)glm::inverse(GetMatrix()) * -Pos(), glm::inverse(Rot()), 1.0f / glm::max(Scale(), glm::vec3(0.001f)));
+		return Transform((Mat3f)glm::inverse(GetMatrix()) * -GetPos(), glm::inverse(GetRot()), 1.0f / glm::max(GetScale(), Vec3f(0.001f)));
 	}
 
-	glm::mat3 Transform::GetRotationMatrix(float scalar) const
+	Mat3f Transform::GetRotationMatrix(float scalar) const
 	{
-		glm::quat rot = Rotation;
+		Quatf rot = Rotation;
 		if (scalar == -1.0f)
 			rot = glm::inverse(rot);
 
@@ -107,25 +87,25 @@ namespace GEE
 
 	}
 
-	glm::mat4 Transform::GetMatrix() const
+	Mat4f Transform::GetMatrix() const
 	{
 		if (!DirtyFlags[0])
 			return MatrixCache;
 		if (Empty)
-			return glm::mat4(1.0f);
+			return Mat4f(1.0f);
 
-		MatrixCache = glm::translate(glm::mat4(1.0f), Position);
+		MatrixCache = glm::translate(Mat4f(1.0f), Position);
 		MatrixCache *= glm::mat4_cast(Rotation);
-		MatrixCache = glm::scale(MatrixCache, _Scale);
+		MatrixCache = glm::scale(MatrixCache, Scale);
 
 		DirtyFlags[0] = false;
 
 		return MatrixCache;
 	}
 
-	glm::mat4 Transform::GetViewMatrix() const
+	Mat4f Transform::GetViewMatrix() const
 	{
-		return glm::lookAt(Position, Position + GetFrontVec(), glm::vec3(0.0f, 1.0f, 0.0f));
+		return glm::lookAt(Position, Position + GetFrontVec(), Vec3f(0.0f, 1.0f, 0.0f));
 	}
 
 	const Transform& Transform::GetWorldTransform() const
@@ -135,7 +115,7 @@ namespace GEE
 
 		if (!ParentTransform)
 		{
-			WorldTransformCache.reset(new Transform(Position, Rotation, _Scale));
+			WorldTransformCache.reset(new Transform(Position, Rotation, Scale));
 			DirtyFlags[1] = false;
 			return *WorldTransformCache;
 		}
@@ -148,7 +128,7 @@ namespace GEE
 		return *WorldTransformCache;
 	}
 
-	const glm::mat4& Transform::GetWorldTransformMatrix() const
+	const Mat4f& Transform::GetWorldTransformMatrix() const
 	{
 		if (!DirtyFlags[2])
 			return WorldTransformMatrixCache;
@@ -164,12 +144,12 @@ namespace GEE
 		return ParentTransform;
 	}
 
-	void Transform::SetPosition(const glm::vec2& pos)
+	void Transform::SetPosition(const Vec2f& pos)
 	{
-		SetPosition(glm::vec3(pos, 0.0f));
+		SetPosition(Vec3f(pos, 0.0f));
 	}
 
-	void Transform::SetPosition(const glm::vec3& pos)
+	void Transform::SetPosition(const Vec3f& pos)
 	{
 		/*CacheVariableInterface<float>(PositionRef.x, *this) = 0.0f;
 		CacheVariableInterface<float> sX(PositionRef.x, *this);
@@ -182,59 +162,59 @@ namespace GEE
 		FlagMyDirtiness();
 	}
 
-	void Transform::SetPositionWorld(const glm::vec3& worldPos)
+	void Transform::SetPositionWorld(const Vec3f& worldPos)
 	{
-		glm::vec3 localPos = (ParentTransform) ? (glm::vec3(glm::inverse(ParentTransform->GetWorldTransformMatrix()) * glm::vec4(worldPos, 1.0f))) : (worldPos);
+		Vec3f localPos = (ParentTransform) ? (Vec3f(glm::inverse(ParentTransform->GetWorldTransformMatrix()) * Vec4f(worldPos, 1.0f))) : (worldPos);
 		SetPosition(localPos);
 	}
 
-	void Transform::Move(const glm::vec2& offset)
+	void Transform::Move(const Vec2f& offset)
 	{
-		Move(glm::vec3(offset, 0.0f));
+		Move(Vec3f(offset, 0.0f));
 	}
 
-	void Transform::Move(const glm::vec3& offset)
+	void Transform::Move(const Vec3f& offset)
 	{
 		SetPosition(Position + offset);
 	}
 
-	void Transform::SetRotation(const glm::vec3& euler)
+	void Transform::SetRotation(const Vec3f& euler)
 	{
 		Rotation = toQuat(euler);
 		FlagMyDirtiness();
 	}
 
-	void Transform::SetRotation(const glm::quat& q)
+	void Transform::SetRotation(const Quatf& q)
 	{
 		Rotation = q;
 		FlagMyDirtiness();
 	}
 
-	void Transform::SetRotationWorld(const glm::quat& q)
+	void Transform::SetRotationWorld(const Quatf& q)
 	{
-		glm::quat localRot = q;
+		Quatf localRot = q;
 		if (ParentTransform)
-			localRot = glm::inverse(ParentTransform->GetWorldTransform().Rot()) * localRot;
+			localRot = glm::inverse(ParentTransform->GetWorldTransform().GetRot()) * localRot;
 
 		SetRotation(localRot);
 	}
 
-	void Transform::Rotate(const glm::vec3& euler)
+	void Transform::Rotate(const Vec3f& euler)
 	{
 		SetRotation(Rotation * toQuat(euler));
 	}
 
-	void Transform::Rotate(const glm::quat& q)
+	void Transform::Rotate(const Quatf& q)
 	{
 		SetRotation(Rotation * q);
 	}
 
-	void Transform::SetScale(const glm::vec2& scale)
+	void Transform::SetScale(const Vec2f& scale)
 	{
-		SetScale(glm::vec3(scale, 1.0f));
+		SetScale(Vec3f(scale, 1.0f));
 	}
 
-	void Transform::SetScale(const glm::vec3& scale)
+	void Transform::SetScale(const Vec3f& scale)
 	{/*
 
 		CacheVariable<float, Transform> sX(ScaleRef.x, *this);
@@ -243,26 +223,26 @@ namespace GEE
 		sY = scale.y;
 		CacheVariable<float, Transform> sZ(ScaleRef.z, *this);
 		sZ = scale.z;*/
-		_Scale = scale;
+		Scale = scale;
 		FlagMyDirtiness();
 	}
 
 	void Transform::ApplyScale(float scale)
 	{
-		SetScale(Scale() * scale);
+		SetScale(GetScale() * scale);
 	}
 
-	void Transform::ApplyScale(const glm::vec2& scale)
+	void Transform::ApplyScale(const Vec2f& scale)
 	{
-		SetScale(static_cast<glm::vec2>(Scale()) * scale);
+		SetScale(static_cast<Vec2f>(GetScale()) * scale);
 	}
 
-	void Transform::ApplyScale(const glm::vec3& scale)
+	void Transform::ApplyScale(const Vec3f& scale)
 	{
-		SetScale(Scale() * scale);
+		SetScale(GetScale() * scale);
 	}
 
-	void Transform::Set(int index, const glm::vec3& vec)
+	void Transform::Set(int index, const Vec3f& vec)
 	{
 		switch (index)
 		{
@@ -288,14 +268,14 @@ namespace GEE
 			//TODO: zmien to kurwa bo siara jak ktos zobaczy
 			Transform parentWorld = parent->GetWorldTransform();
 			Transform worldTransform = GetWorldTransform();
-			Position = worldTransform.Position - parentWorld.Pos();
-			Position = glm::vec3(parentWorld.GetRotationMatrix(-1.0f) * Pos());
-			Rotation = worldTransform.Rotation = parentWorld.Rot();
+			Position = worldTransform.Position - parentWorld.GetPos();
+			Position = Vec3f(parentWorld.GetRotationMatrix(-1.0f) * GetPos());
+			Rotation = worldTransform.Rotation = parentWorld.GetRot();
 
 
 			/*
-			glm::mat4 parentWorldMat = parent->GetWorldTransformMatrix();
-			Position = glm::vec3(glm::inverse(parentWorldMat) * glm::vec4(Position, 1.0f));
+			Mat4f parentWorldMat = parent->GetWorldTransformMatrix();
+			Position = Vec3f(glm::inverse(parentWorldMat) * Vec4f(Position, 1.0f));
 			Rotation = glm::inverse(parent->GetWorldTransform().RotationRef) * Rotation;
 			Rotation = parent->GetWorldTransform().RotationRef;*/
 		}
@@ -349,25 +329,25 @@ namespace GEE
 	unsigned int Transform::AddDirtyFlag()
 	{
 		DirtyFlags.push_back(true);
-		return (unsigned int)DirtyFlags.size() - 1;
+		return DirtyFlags.size() - 1;
 	}
 
-	void Transform::AddInterpolator(std::string fieldName, std::shared_ptr<InterpolatorBase> interpolator, bool animateFromCurrent)
+	void Transform::AddInterpolator(std::string fieldName, SharedPtr<InterpolatorBase> interpolator, bool animateFromCurrent)
 	{
 		Interpolators.push_back(interpolator);
-		std::shared_ptr<InterpolatorBase> obj = Interpolators.back();
-		Interpolator<glm::vec3>* vecCast = dynamic_cast<Interpolator<glm::vec3>*>(obj.get());
-		Interpolator<glm::quat>* quatCast = dynamic_cast<Interpolator<glm::quat>*>(obj.get());
+		SharedPtr<InterpolatorBase> obj = Interpolators.back();
+		Interpolator<Vec3f>* vecCast = dynamic_cast<Interpolator<Vec3f>*>(obj.get());
+		Interpolator<Quatf>* quatCast = dynamic_cast<Interpolator<Quatf>*>(obj.get());
 
 		if (fieldName == "position" && vecCast)
 			vecCast->SetValPtr(&Position);
 		else if (fieldName == "rotation" && quatCast)
 			quatCast->SetValPtr(&Rotation);
 		else if (fieldName == "scale" && vecCast)
-			vecCast->SetValPtr(&_Scale);
+			vecCast->SetValPtr(&Scale);
 		else
 		{
-			std::string type = (vecCast) ? ("glm::vec3") : ((quatCast) ? ("glm::quat") : ("unknown"));
+			std::string type = (vecCast) ? ("Vec3f") : ((quatCast) ? ("Quatf") : ("unknown"));
 			std::cerr << "ERROR! Unrecognized interpolator " << fieldName << " of type " + type << ".\n";
 			return;
 		}
@@ -380,13 +360,13 @@ namespace GEE
 	template <class T>
 	void Transform::AddInterpolator(std::string fieldName, float begin, float end, T min, T max, InterpolationType interpType, bool fadeAway, AnimBehaviour before, AnimBehaviour after)
 	{
-		AddInterpolator(fieldName, std::make_unique<Interpolator<T>>(Interpolator<T>(begin, end, min, max, interpType, fadeAway, before, after, false)), false);
+		AddInterpolator(fieldName, MakeUnique<Interpolator<T>>(Interpolator<T>(begin, end, min, max, interpType, fadeAway, before, after, false)), false);
 	}
 
 	template <class T>
 	void Transform::AddInterpolator(std::string fieldName, float begin, float end, T max, InterpolationType interpType, bool fadeAway, AnimBehaviour before, AnimBehaviour after)
 	{
-		AddInterpolator(fieldName, std::make_unique<Interpolator<T>>(Interpolator<T>(begin, end, T(), max, interpType, fadeAway, before, after, true)), true);
+		AddInterpolator(fieldName, MakeUnique<Interpolator<T>>(Interpolator<T>(begin, end, T(), max, interpType, fadeAway, before, after, true)), true);
 	}
 
 	void Transform::Update(float deltaTime)
@@ -414,9 +394,9 @@ namespace GEE
 
 	void Transform::GetEditorDescription(EditorDescriptionBuilder descBuilder)
 	{
-		descBuilder.AddField("Position").GetTemplates().VecInput<glm::vec3>([this](float x, float val) {glm::vec3 pos = Pos(); pos[x] = val; SetPosition(pos); }, [this](float x) { return Pos()[x]; });
-		descBuilder.AddField("Rotation").GetTemplates().VecInput<glm::quat>([this](float x, float val) {glm::quat rot = Rot(); rot[x] = val; SetRotation(glm::normalize(rot)); }, [this](float x) { return Rot()[x]; });
-		descBuilder.AddField("Scale").GetTemplates().VecInput<glm::vec3>([this](float x, float val) {glm::vec3 scale = Scale(); scale[x] = val; SetScale(scale); }, [this](float x) { return Scale()[x]; });
+		descBuilder.AddField("Position").GetTemplates().VecInput<3, float>([this](int x, float val) {Vec3f pos = GetPos(); pos[x] = val; SetPosition(pos); }, [this](int x) { return GetPos()[x]; });
+		descBuilder.AddField("Rotation").GetTemplates().VecInput<4, float>([this](int x, float val) {Quatf rot = GetRot(); rot[x] = val; SetRotation(glm::normalize(rot)); }, [this](int x) { return GetRot()[x]; });
+		descBuilder.AddField("Scale").GetTemplates().VecInput<3, float>([this](int x, float val) {Vec3f scale = GetScale(); scale[x] = val; SetScale(scale); }, [this](int x) { return GetScale()[x]; });
 	}
 
 	void Transform::Print(std::string name) const
@@ -424,15 +404,15 @@ namespace GEE
 		std::cout << "===Transform " + name + ", child of " << ParentTransform << "===\n";
 		printVector(Position, "Position");
 		printVector(Rotation, "Rotation");
-		printVector(_Scale, "Scale");
+		printVector(Scale, "Scale");
 		std::cout << "VVVVVV\n";
 	}
 
 	Transform& Transform::operator=(const Transform& t)
 	{
-		Position = t.Pos();
-		Rotation = t.Rot();
-		_Scale = t.Scale();
+		Position = t.GetPos();
+		Rotation = t.GetRot();
+		Scale = t.GetScale();
 
 		FlagMyDirtiness();
 
@@ -441,9 +421,9 @@ namespace GEE
 
 	Transform& Transform::operator=(Transform&& t) noexcept
 	{
-		Position = t.Pos();
-		Rotation = t.Rot();
-		_Scale = t.Scale();
+		Position = t.GetPos();
+		Rotation = t.GetRot();
+		Scale = t.GetScale();
 
 		FlagMyDirtiness();
 
@@ -453,16 +433,16 @@ namespace GEE
 	Transform& Transform::operator*=(const Transform& t)
 	{
 		FlagMyDirtiness();
-		Position += static_cast<glm::mat3>(GetMatrix()) * t.Position;
-		Rotation *= (glm::quat)t.Rotation;
-		_Scale *= (glm::vec3)t._Scale;
+		Position += static_cast<Mat3f>(GetMatrix()) * t.Position;
+		Rotation *= t.Rotation;
+		Scale *= t.Scale;
 		return *(this);
 	}
 
 	Transform& Transform::operator*=(Transform&& t)
 	{
 		FlagMyDirtiness();
-		return const_cast<Transform&>(*(this)) *= t;
+		return *this *= t;
 	}
 
 	Transform Transform::operator*(const Transform& t) const
@@ -471,25 +451,25 @@ namespace GEE
 		return copy *= t;
 	}
 
-	template void Transform::AddInterpolator<glm::vec3>(std::string, float, float, glm::vec3, glm::vec3, InterpolationType, bool, AnimBehaviour, AnimBehaviour);
-	template void Transform::AddInterpolator<glm::vec3>(std::string, float, float, glm::vec3, InterpolationType, bool, AnimBehaviour, AnimBehaviour);
+	template void Transform::AddInterpolator<Vec3f>(std::string, float, float, Vec3f, Vec3f, InterpolationType, bool, AnimBehaviour, AnimBehaviour);
+	template void Transform::AddInterpolator<Vec3f>(std::string, float, float, Vec3f, InterpolationType, bool, AnimBehaviour, AnimBehaviour);
 
-	template void Transform::AddInterpolator<glm::quat>(std::string, float, float, glm::quat, glm::quat, InterpolationType, bool, AnimBehaviour, AnimBehaviour);
-	template void Transform::AddInterpolator<glm::quat>(std::string, float, float, glm::quat, InterpolationType, bool, AnimBehaviour, AnimBehaviour);
+	template void Transform::AddInterpolator<Quatf>(std::string, float, float, Quatf, Quatf, InterpolationType, bool, AnimBehaviour, AnimBehaviour);
+	template void Transform::AddInterpolator<Quatf>(std::string, float, float, Quatf, InterpolationType, bool, AnimBehaviour, AnimBehaviour);
 
-	glm::quat quatFromDirectionVec(const glm::vec3& dirVec, glm::vec3 up)
+	Quatf quatFromDirectionVec(const Vec3f& dirVec, Vec3f up)
 	{
-		glm::vec3 right = glm::normalize(glm::cross(up, dirVec));
+		Vec3f right = glm::normalize(glm::cross(up, dirVec));
 		up = glm::normalize(glm::cross(dirVec, right));
 
-		return glm::quat(glm::mat3(right, up, dirVec));
+		return Quatf(Mat3f(right, up, dirVec));
 	}
 
-	Transform decompose(const glm::mat4& mat)
+	Transform decompose(const Mat4f& mat)
 	{
-		glm::vec3 position, scale, skew;
-		glm::vec4 perspective;
-		glm::quat rotation;
+		Vec3f position, scale, skew;
+		Vec4f perspective;
+		Quatf rotation;
 
 		glm::decompose(mat, scale, rotation, position, skew, perspective);
 

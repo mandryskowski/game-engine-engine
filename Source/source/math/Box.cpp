@@ -1,6 +1,5 @@
 #include <math/Box.h>
 #include <math/Transform.h>
-#include <iostream>
 
 
 namespace GEE
@@ -11,8 +10,8 @@ namespace GEE
 	}
 
 	template <typename VecType> Boxf<VecType>::Boxf(const Transform& t) :
-		Position(t.Pos()),
-		Size(t.Scale())
+		Position(t.GetPos()),
+		Size(t.GetScale())
 	{
 	}
 
@@ -41,7 +40,7 @@ namespace GEE
 		VecType thisRightUp = Position + Size;
 		VecType thisLeftDown = Position - Size;
 
-		return BoxBase::Contains(point, thisLeftDown, thisRightUp);
+		return GeomTests::Contains(point, thisLeftDown, thisRightUp);
 	}
 
 	template <typename VecType> bool Boxf<VecType>::Contains(const Boxf<VecType>& rhs) const
@@ -52,7 +51,13 @@ namespace GEE
 		VecType rhsRightUp = rhs.Position + rhs.Size;
 		VecType rhsLeftDown = rhs.Position - rhs.Size;
 
-		return BoxBase::Contains(thisLeftDown, thisRightUp, rhsLeftDown, rhsRightUp);
+		return GeomTests::Contains(thisLeftDown, thisRightUp, rhsLeftDown, rhsRightUp);
+	}
+
+	template<typename VecType>
+	Boxf<VecType> Boxf<VecType>::FromMinMaxCorners(const VecType& minCorner, const VecType& maxCorner)
+	{
+		return Boxf<VecType>((minCorner + maxCorner) / 2.0f, (maxCorner - minCorner) / 2.0f);
 	}
 
 	template class Boxf<Vec2f>;

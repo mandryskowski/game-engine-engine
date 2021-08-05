@@ -45,7 +45,7 @@ namespace GEE
 	struct LightProbeLoader
 	{
 		static void LoadLightProbeFromFile(LightProbeComponent& probe, std::string path);
-		static void ConvoluteLightProbe(const LightProbeComponent&, Texture* envMap = nullptr);	//Note: this light probe should have an environment map located at LightProbe::ProbeNr of texture array LightProbeTextureArrays::EnvironmentMapArr
+		static void ConvoluteLightProbe(const LightProbeComponent&, const Texture& envMap);	//Note: this light probe should have an environment map located at LightProbe::ProbeNr of texture array LightProbeTextureArrays::EnvironmentMapArr
 		static void LoadLightProbeTextureArrays(GameSceneRenderData* sceneRenderData);	//Important: Call this function before loading any light probes!
 	};
 

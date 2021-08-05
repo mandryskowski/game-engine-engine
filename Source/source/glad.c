@@ -71,7 +71,7 @@ int open_gl(void) {
 static
 void close_gl(void) {
     if(libGL != NULL) {
-        FreeLibrary((HMODULE) libGL);
+        FreeLibrary(libGL);
         libGL = NULL;
     }
 }
@@ -136,7 +136,7 @@ void* get_proc(const char *namez) {
 #endif
     if(result == NULL) {
 #if defined(_WIN32) || defined(__CYGWIN__)
-        result = (void*)GetProcAddress((HMODULE) libGL, namez);
+        result = (void*)GetProcAddress(libGL, namez);
 #else
         result = dlsym(libGL, namez);
 #endif
@@ -192,7 +192,7 @@ static int get_exts(void) {
             const char *gl_str_tmp = (const char*)glGetStringi(GL_EXTENSIONS, index);
             size_t len = strlen(gl_str_tmp);
 
-            char *local_str = (char*)malloc((len+1) * sizeof(char));
+            char *local_str = malloc((len+1) * sizeof(char));
             if(local_str != NULL) {
                 memcpy(local_str, gl_str_tmp, (len+1) * sizeof(char));
             }
@@ -207,9 +207,9 @@ static void free_exts(void) {
     if (exts_i != NULL) {
         int index;
         for(index = 0; index < num_exts_i; index++) {
-            free((char *)exts_i[index]);
+            free(exts_i[index]);
         }
-        free((void *)exts_i);
+        free(exts_i);
         exts_i = NULL;
     }
 }

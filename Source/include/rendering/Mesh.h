@@ -1,23 +1,24 @@
 #pragma once
 #include "Material.h"
+#include <math/Box.h>
 
 namespace GEE
 {
 	struct VertexBoneData
 	{
 		glm::ivec4 BoneIDs;
-		glm::vec4 BoneWeights;
+		Vec4f BoneWeights;
 		VertexBoneData();
 		void AddWeight(unsigned int boneID, float boneWeight);
 	};
 
 	struct Vertex
 	{
-		glm::vec3 Position;
-		glm::vec3 Normal;
-		glm::vec2 TexCoord;
-		glm::vec3 Tangent;
-		glm::vec3 Bitangent;
+		Vec3f Position;
+		Vec3f Normal;
+		Vec2f TexCoord;
+		Vec3f Tangent;
+		Vec3f Bitangent;
 		VertexBoneData BoneData;
 	};
 
@@ -45,10 +46,12 @@ namespace GEE
 		const Material* GetMaterial() const;
 		std::vector<Vertex>* GetVertsData() const;
 		std::vector<unsigned int>* GetIndicesData() const;
+		Boxf<Vec3f> GetBoundingBox() const;
 		void RemoveVertsAndIndicesData() const;
 		bool CanCastShadow() const;
 
 		void SetMaterial(Material*);
+		void SetBoundingBox(const Boxf<Vec3f>&);
 
 		void Bind() const;
 		void LoadFromGLBuffers(unsigned int vertexCount, unsigned int VAO, unsigned int VBO, unsigned int indexCount = 0, unsigned int EBO = 0);
@@ -83,8 +86,10 @@ namespace GEE
 		unsigned int VertexCount, IndexCount;
 		Material* DefaultMeshMaterial;
 
-		mutable std::shared_ptr<std::vector<Vertex>> VertsData;
-		mutable std::shared_ptr<std::vector<unsigned int>> IndicesData;
+		mutable SharedPtr<std::vector<Vertex>> VertsData;
+		mutable SharedPtr<std::vector<unsigned int>> IndicesData;
+
+		Boxf<Vec3f> BoundingBox;
 
 		bool CastsShadow;
 	};
@@ -92,11 +97,11 @@ namespace GEE
 	class MeshInstance
 	{
 		Mesh& MeshRef;
-		std::shared_ptr<MaterialInstance> MaterialInst;
+		SharedPtr<MaterialInstance> MaterialInst;
 
 	public:
 		MeshInstance(Mesh& mesh, Material* overrideMaterial = nullptr);
-		MeshInstance(Mesh& mesh, std::shared_ptr<MaterialInstance>);
+		MeshInstance(Mesh& mesh, SharedPtr<MaterialInstance>);
 		MeshInstance(const MeshInstance&);
 		MeshInstance(MeshInstance&&) noexcept;
 
@@ -106,12 +111,12 @@ namespace GEE
 		MaterialInstance* GetMaterialInst() const;
 
 		void SetMaterial(Material*);
-		void SetMaterialInst(std::shared_ptr<MaterialInstance>);
+		void SetMaterialInst(SharedPtr<MaterialInstance>);
 
 		template <typename Archive> void Save(Archive& archive)	const
 		{
 			Mesh mesh = MeshRef;
-			std::shared_ptr<MaterialInstance> materialInst = MaterialInst;
+			SharedPtr<MaterialInstance> materialInst = MaterialInst;
 			if (&MaterialInst->GetMaterialRef() == mesh.GetMaterial())
 				materialInst = nullptr;	//don't save the material instance if its the same as the mesh default material.
 
@@ -134,7 +139,7 @@ namespace GEE
 				exit(0);
 			}
 
-			std::shared_ptr<MaterialInstance> materialInst;
+			SharedPtr<MaterialInstance> materialInst;
 			archive(cereal::make_nvp("MaterialInst", materialInst));
 
 			if (materialInst)

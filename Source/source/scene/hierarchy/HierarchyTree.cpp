@@ -3,6 +3,7 @@
 #include <scene/BoneComponent.h>
 #include <rendering/Mesh.h>
 #include <animation/Animation.h>
+#include <scene/Actor.h>
 
 namespace GEE
 {
@@ -12,23 +13,23 @@ namespace GEE
 		Scene(scene),
 		Name(name),
 		Root(nullptr),
-		TempActor(std::make_unique<Actor>(scene, nullptr, name + "TempActor")),
+		TempActor(MakeUnique<Actor>(scene, nullptr, name + "TempActor")),
 		TreeBoneMapping(nullptr)
 	{
-		Root = static_unique_pointer_cast<HierarchyNodeBase>(std::make_unique<HierarchyNode<Component>>(*TempActor, name));	//root has the same name as the tree
+		Root = static_unique_pointer_cast<HierarchyNodeBase>(MakeUnique<HierarchyNode<Component>>(*TempActor, name));	//root has the same name as the tree
 	}
 
 	HierarchyTreeT::HierarchyTreeT(const HierarchyTreeT& tree) :
 		Scene(tree.Scene),
 		Name(tree.Name),
 		Root(nullptr),
-		TempActor(std::make_unique<Actor>(tree.Scene, nullptr, tree.Name + "TempActor")),
-		TreeBoneMapping((tree.TreeBoneMapping) ? (std::make_unique<BoneMapping>(*tree.TreeBoneMapping)) : (nullptr))
+		TempActor(MakeUnique<Actor>(tree.Scene, nullptr, tree.Name + "TempActor")),
+		TreeBoneMapping((tree.TreeBoneMapping) ? (MakeUnique<BoneMapping>(*tree.TreeBoneMapping)) : (nullptr))
 	{
 		if (tree.Root)
 			Root = tree.Root->Copy(*TempActor, true);
 		else
-			Root = static_unique_pointer_cast<HierarchyNodeBase>(std::make_unique<HierarchyNode<Component>>(*TempActor, Name));	//root has the same name as the tree
+			Root = static_unique_pointer_cast<HierarchyNodeBase>(MakeUnique<HierarchyNode<Component>>(*TempActor, Name));	//root has the same name as the tree
 	}
 
 	HierarchyTreeT::HierarchyTreeT(HierarchyTreeT&& tree) :
@@ -39,9 +40,9 @@ namespace GEE
 		TreeBoneMapping((tree.TreeBoneMapping) ? (std::move(tree.TreeBoneMapping)) : (nullptr))
 	{
 		if (!Root)
-			Root = static_unique_pointer_cast<HierarchyNodeBase>(std::make_unique<HierarchyNode<Component>>(*TempActor, Name));	//root has the same name as the tree
+			Root = static_unique_pointer_cast<HierarchyNodeBase>(MakeUnique<HierarchyNode<Component>>(*TempActor, Name));	//root has the same name as the tree
 		if (!TempActor)
-			TempActor = std::make_unique<Actor>(Scene, nullptr, Name + "TempActor");
+			TempActor = MakeUnique<Actor>(Scene, nullptr, Name + "TempActor");
 	}
 
 	const std::string& HierarchyTreeT::GetName() const
@@ -57,7 +58,7 @@ namespace GEE
 	BoneMapping& HierarchyTreeT::GetBoneMapping() const
 	{
 		if (!TreeBoneMapping)
-			TreeBoneMapping = std::make_unique<BoneMapping>();
+			TreeBoneMapping = MakeUnique<BoneMapping>();
 		return *TreeBoneMapping;
 	}
 
@@ -71,14 +72,14 @@ namespace GEE
 		return TreeAnimations.size();
 	}
 
-	void HierarchyTreeT::SetRoot(std::unique_ptr<HierarchyNodeBase> root)
+	void HierarchyTreeT::SetRoot(UniquePtr<HierarchyNodeBase> root)
 	{
 		Root = std::move(root);
 	}
 
 	void HierarchyTreeT::AddAnimation(const Animation& anim)
 	{
-		TreeAnimations.push_back(std::make_unique<Animation>(anim));
+		TreeAnimations.push_back(MakeUnique<Animation>(anim));
 	}
 
 	Mesh* HierarchyTreeT::FindMesh(const std::string& nodeName, const std::string& specificMeshName)	//pass empty string to ignore one of the names
@@ -87,7 +88,7 @@ namespace GEE
 			if (auto cast = dynamic_cast<HierarchyNode<ModelComponent>*>(&node))
 			{
 				if (MeshInstance* found = cast->GetCompT().FindMeshInstance(nodeName, specificMeshName))
-					return const_cast<Mesh*>(&found->GetMesh());
+					return &found->GetMesh();
 			}
 
 			for (int i = 0; i < static_cast<int>(node.GetChildCount()); i++)

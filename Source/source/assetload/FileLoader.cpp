@@ -3,6 +3,8 @@
 #define CEREAL_SERIALIZE_FUNCTION_NAME Serialize
 #include <rendering/Mesh.h>
 #include <assimp/scene.h>
+#include <assimp/Importer.hpp>
+#include <assimp/postprocess.h>
 #include <scene/GunActor.h>
 #include <scene/CameraComponent.h>
 #include <scene/BoneComponent.h>
@@ -22,6 +24,7 @@
 #include <ft2build.h>
 #include FT_FREETYPE_H
 #include <functional>
+#include <fstream>
 
 #include <animation/AnimationManagerActor.h>
 
@@ -48,7 +51,7 @@ namespace GEE
 
 		while (!isNextWordEqual(filestr, "end"))
 		{
-			std::shared_ptr<Material> material = nullptr;
+			SharedPtr<Material> material = nullptr;
 			std::string materialName, shaderName;
 			float shininess, depthScale;
 			Shader* shader = nullptr;
@@ -58,12 +61,12 @@ namespace GEE
 
 			if (isNextWordEqual(filestr, "atlas"))
 			{
-				glm::vec2 size(0.0f);
+				Vec2f size(0.0f);
 				filestr >> size.x >> size.y;
-				material = std::make_shared<AtlasMaterial>(materialName, size);
+				material = MakeShared<AtlasMaterial>(materialName, size);
 			}
 			else
-				material = std::make_shared<Material>(materialName);
+				material = MakeShared<Material>(materialName);
 
 			filestr >> shaderName >> shininess >> depthScale >> texCount;
 
@@ -80,7 +83,7 @@ namespace GEE
 
 				if (!(path.size() > 3 && path.substr(0, 2) == "./"))
 					path = directory + path;
-				material->AddTexture(std::make_shared<NamedTexture>(textureFromFile(path, (toBool(isSRGB)) ? (GL_SRGB) : (GL_RGB)), shaderUniformName));
+				material->AddTexture(MakeShared<NamedTexture>(Texture::Loader<>::FromFile2D(path, (toBool(isSRGB)) ? (Texture::Format::SRGBA()) : (Texture::Format::RGBA()), false, Texture::MinFilter::Trilinear(), Texture::MagFilter::Bilinear()), shaderUniformName));
 			}
 		}
 	}
@@ -102,7 +105,7 @@ namespace GEE
 					paths[i] = directory + paths[i];
 			}
 
-			std::shared_ptr<Shader> shader = ShaderLoader::LoadShaders(name, paths[0], paths[1], paths[2]);
+			SharedPtr<Shader> shader = ShaderLoader::LoadShaders(name, paths[0], paths[1], paths[2]);
 
 			unsigned int expectedMatricesCount, texUnitsCount;
 
@@ -174,10 +177,10 @@ namespace GEE
 			HierarchyTemplate::HierarchyTreeT* tree = LoadHierarchyTree(scene, path);
 			if (tree)
 			{
-				std::unique_ptr<HierarchyTemplate::HierarchyTreeT> tempTreeCopyForEdit = nullptr;
+				UniquePtr<HierarchyTemplate::HierarchyTreeT> tempTreeCopyForEdit = nullptr;
 				if (isNextWordEqual(filestr, "edit"))
 				{
-					tempTreeCopyForEdit = std::make_unique<HierarchyTemplate::HierarchyTreeT>(*tree);
+					tempTreeCopyForEdit = MakeUnique<HierarchyTemplate::HierarchyTreeT>(*tree);
 					tree = tempTreeCopyForEdit.get();
 					LoadCustomHierarchyNode(scene, filestr, nullptr, tree);
 				}
@@ -194,7 +197,7 @@ namespace GEE
 			std::string lightType;
 			filestr >> lightType;
 
-			glm::mat4 projection;
+			Mat4f projection;
 			if (lightType == "point" || lightType == "spot")
 				projection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
 			else
@@ -206,7 +209,7 @@ namespace GEE
 				for (unsigned int axis = 0; axis < 3; axis++)
 					filestr >> (light)[vector][axis];	//TODO: sprawdzic czy sie wywala
 
-			glm::vec3 additionalData(0.0f);
+			Vec3f additionalData(0.0f);
 			for (unsigned int i = 0; i < 3; i++)
 				filestr >> additionalData[i];
 			light.SetAdditionalData(additionalData);
@@ -219,7 +222,7 @@ namespace GEE
 			float speedPerSec;
 			filestr >> speedPerSec;
 
-			CameraComponent& cam = parent->CreateComponent<CameraComponent>(name, glm::perspective(glm::radians(90.0f), ((float)scene.GetGameHandle()->GetGameSettings()->Video.Resolution.x / (float)scene.GetGameHandle()->GetGameSettings()->Video.Resolution.y), 0.01f, 100.0f));
+			CameraComponent& cam = parent->CreateComponent<CameraComponent>(name, glm::perspective(glm::radians(90.0f), (scene.GetGameHandle()->GetGameSettings()->Video.Resolution.x / scene.GetGameHandle()->GetGameSettings()->Video.Resolution.y), 0.01f, 100.0f));
 			if (isNextWordEqual(filestr, "active"))
 				scene.BindActiveCamera(&cam);
 			if (isNextWordEqual(filestr, "automousecontrol"))
@@ -274,9 +277,9 @@ namespace GEE
 			std::cerr << "ERROR: There is no ''end'' after component's " << name << " definition! Detected word: " << lastWord << ".\n";
 	}
 
-	std::unique_ptr<Physics::CollisionObject> EngineDataLoader::LoadCollisionObject(GameScene& scene, std::stringstream& filestr)
+	UniquePtr<Physics::CollisionObject> EngineDataLoader::LoadCollisionObject(GameScene& scene, std::stringstream& filestr)
 	{
-		std::unique_ptr<Physics::CollisionObject> obj = std::make_unique<Physics::CollisionObject>();
+		UniquePtr<Physics::CollisionObject> obj = MakeUnique<Physics::CollisionObject>();
 
 		if (isNextWordEqual(filestr, "dynamic"))
 			obj->IsStatic = false;
@@ -325,9 +328,9 @@ namespace GEE
 		return obj;
 	}
 
-	std::shared_ptr<Physics::CollisionShape> EngineDataLoader::LoadTriangleMeshCollisionShape(Physics::PhysicsEngineManager* physicsHandle, const Mesh& mesh)
+	SharedPtr<Physics::CollisionShape> EngineDataLoader::LoadTriangleMeshCollisionShape(Physics::PhysicsEngineManager* physicsHandle, const Mesh& mesh)
 	{
-		std::shared_ptr<Physics::CollisionShape> shape = std::make_shared<Physics::CollisionShape>(Physics::CollisionShape(Physics::CollisionShapeType::COLLISION_TRIANGLE_MESH));
+		SharedPtr<Physics::CollisionShape> shape = MakeShared<Physics::CollisionShape>(Physics::CollisionShape(Physics::CollisionShapeType::COLLISION_TRIANGLE_MESH));
 
 		shape->SetOptionalLocalization(mesh.GetLocalization());
 
@@ -348,9 +351,9 @@ namespace GEE
 		return shape;
 	}
 
-	std::shared_ptr<Physics::CollisionShape> EngineDataLoader::LoadTriangleMeshCollisionShape(Physics::PhysicsEngineManager* physicsHandle, const aiScene* scene, aiMesh& mesh)
+	SharedPtr<Physics::CollisionShape> EngineDataLoader::LoadTriangleMeshCollisionShape(Physics::PhysicsEngineManager* physicsHandle, const aiScene* scene, aiMesh& mesh)
 	{
-		return std::shared_ptr<Physics::CollisionShape>();
+		return SharedPtr<Physics::CollisionShape>();
 	}
 
 	void EngineDataLoader::LoadLightProbes(GameScene& scene, std::stringstream& filestr)
@@ -385,10 +388,13 @@ namespace GEE
 		}
 	}
 
-	void EngineDataLoader::LoadMeshFromAi(Mesh* meshPtr, const aiScene* scene, aiMesh* mesh, const HTreeObjectLoc& treeObjLoc, const std::string& directory, bool bLoadMaterial, MaterialLoadingData* matLoadingData, BoneMapping* boneMapping, bool keepVertsData)
+	void EngineDataLoader::LoadMeshFromAi(Mesh* meshPtr, const aiScene* scene, const aiMesh* mesh, const HTreeObjectLoc& treeObjLoc, const std::string& directory, bool bLoadMaterial, MaterialLoadingData* matLoadingData, BoneMapping* boneMapping, bool keepVertsData)
 	{
 		std::vector <Vertex> vertices;
 		std::vector <unsigned int> indices;
+
+		// For bounding box
+		Vec3f minCorner(std::numeric_limits<float>::max()), maxCorner(std::numeric_limits<float>::min());
 
 		vertices.reserve(mesh->mNumVertices);
 		indices.reserve(mesh->mNumFaces * 3);
@@ -406,6 +412,9 @@ namespace GEE
 			vert.Position.y = pos.y;
 			vert.Position.z = pos.z;
 
+			minCorner = glm::min(minCorner, vert.Position);
+			maxCorner = glm::max(maxCorner, vert.Position);
+
 			if (bNormals)
 			{
 				aiVector3D normal = mesh->mNormals[i];
@@ -420,7 +429,7 @@ namespace GEE
 				vert.TexCoord.y = mesh->mTextureCoords[0][i].y;
 			}
 			else
-				vert.TexCoord = glm::vec2(0.0f);
+				vert.TexCoord = Vec2f(0.0f);
 
 			if (bTangentsBitangents)
 			{
@@ -438,9 +447,12 @@ namespace GEE
 			vertices.push_back(vert);
 		}
 
+		meshPtr->SetBoundingBox(Boxf<Vec3f>::FromMinMaxCorners(minCorner, maxCorner));
+		
+
 		for (int i = 0; i < static_cast<int>(mesh->mNumFaces); i++)
 		{
-			aiFace face = mesh->mFaces[i];
+			const aiFace& face = mesh->mFaces[i];
 			for (unsigned int j = 0; j < face.mNumIndices; j++)
 				indices.push_back(face.mIndices[j]);
 		}
@@ -504,15 +516,15 @@ namespace GEE
 			}
 
 			
-			std::shared_ptr<Material> material = nullptr;
+			SharedPtr<Material> material = nullptr;
 			
 			std::string materialNameStr = materialName.C_Str();
 			if (materialNameStr.size() > 6 && materialNameStr.substr(materialNameStr.size() - 6) == "_atlas")
 			{
-				material = std::static_pointer_cast<Material>(std::make_shared<AtlasMaterial>(Material(Material::MaterialLoc(treeObjLoc, materialNameStr), 0.0f, GameManager::Get().GetRenderEngineHandle()->FindShader("Forward_NoLight")), glm::ivec2(4, 2)));	//TODO: remove this ivec2(4, 2)
+				material = std::static_pointer_cast<Material>(MakeShared<AtlasMaterial>(Material(Material::MaterialLoc(treeObjLoc, materialNameStr), 0.0f, GameManager::Get().GetRenderEngineHandle()->FindShader("Forward_NoLight")), glm::ivec2(4, 2)));	//TODO: remove this ivec2(4, 2)
 			}
 			else
-				material = std::make_shared<Material>(Material::MaterialLoc(treeObjLoc, materialNameStr));	//we name all materials "undefined" by default; their name should be contained in the files
+				material = MakeShared<Material>(Material::MaterialLoc(treeObjLoc, materialNameStr));	//we name all materials "undefined" by default; their name should be contained in the files
 
 			material->LoadFromAiMaterial(scene, assimpMaterial, directory, matLoadingData);
 
@@ -533,12 +545,12 @@ namespace GEE
 
 		for (int transformField = 0; transformField < 4; transformField++)
 		{
-			glm::vec3 value(0.0f);
+			Vec3f value(0.0f);
 			bool skipped = false;
 
 			for (int i = 0; i < 3; i++)
 			{
-				size_t pos = (size_t)filestr.tellg();
+				size_t pos = filestr.tellg();
 				filestr >> input;
 				if (input == "skip")
 				{
@@ -582,7 +594,7 @@ namespace GEE
 				return;
 			}
 
-			glm::vec3 data(0.0f);
+			Vec3f data(0.0f);
 			for (int j = 0; j < 3; j++)
 				filestr >> data[j];
 
@@ -717,7 +729,7 @@ namespace GEE
 		std::cout << "NUM MESHES: " << node->mNumMeshes << '\n';
 		for (unsigned int i = 0; i < node->mNumMeshes; i++)
 		{
-			aiMesh* assimpMesh = assimpScene->mMeshes[node->mMeshes[i]];
+			const aiMesh* assimpMesh = assimpScene->mMeshes[node->mMeshes[i]];
 			Mesh* mesh = new Mesh(Mesh::MeshLoc(treeObjLoc, node->mName.C_Str(), assimpScene->mMeshes[node->mMeshes[i]]->mName.C_Str()));
 
 			LoadMeshFromAi(mesh, assimpScene, assimpMesh, treeObjLoc, directory, true, matLoadingData, &boneMapping, keepVertsData);
@@ -749,7 +761,7 @@ namespace GEE
 					{
 						Mesh mesh(Mesh::MeshLoc(treeObjLoc, meshName, meshName));
 						LoadMeshFromAi(&mesh, assimpScene, assimpScene->mMeshes[node->mChildren[i]->mMeshes[j]], treeObjLoc, directory, false, nullptr, nullptr, true);
-						std::shared_ptr<Physics::CollisionShape> shape = LoadTriangleMeshCollisionShape(gameHandle.GetPhysicsHandle(), mesh);
+						SharedPtr<Physics::CollisionShape> shape = LoadTriangleMeshCollisionShape(gameHandle.GetPhysicsHandle(), mesh);
 
 
 						hierarchyNode.AddCollisionShape(shape);
@@ -828,7 +840,7 @@ namespace GEE
 					cereal::LoadAndConstruct<Actor>::ScenePtr = &scene;
 					scene.GetRenderData()->LoadSkeletonBatches(archive);
 					LightProbeLoader::LoadLightProbeTextureArrays(scene.GetRenderData());
-					const_cast<Actor*>(scene.GetRootActor())->Load(archive);
+					scene.GetRootActor()->Load(archive);
 
 					archive.serializeDeferments();
 
@@ -838,7 +850,7 @@ namespace GEE
 				{
 					std::cout << "ERROR: While loading scene: " << ex.what() << '\n';
 				}
-				const_cast<Actor*>(scene.GetRootActor())->DebugHierarchy();
+				scene.GetRootActor()->DebugHierarchy();
 			}
 			GameManager::DefaultScene = nullptr;
 		}
@@ -846,7 +858,7 @@ namespace GEE
 		{
 			std::string type;
 			Actor* currentActor = nullptr;
-			std::unique_ptr<Actor> currentActorUniquePtr = nullptr;
+			UniquePtr<Actor> currentActorUniquePtr = nullptr;
 
 			while (filestr >> type)
 			{
@@ -867,9 +879,9 @@ namespace GEE
 					}
 
 					if (typeName == "GunActor")
-						currentActor = (currentActorUniquePtr = std::make_unique<GunActor>(GunActor(scene, nullptr, actorName))).get();
+						currentActor = (currentActorUniquePtr = MakeUnique<GunActor>(GunActor(scene, nullptr, actorName))).get();
 					else if (typeName == "Actor")
-						currentActor = (currentActorUniquePtr = std::make_unique<Actor>(Actor(scene, nullptr, actorName))).get();
+						currentActor = (currentActorUniquePtr = MakeUnique<Actor>(Actor(scene, nullptr, actorName))).get();
 					else
 					{
 						std::cerr << "ERROR! Unrecognized actor type " << typeName << ".\n";
@@ -962,7 +974,7 @@ namespace GEE
 		const aiScene* assimpScene;
 		MaterialLoadingData matLoadingData;
 
-		assimpScene = importer.ReadFile(path, aiProcess_GenUVCoords | aiProcess_TransformUVCoords | aiProcess_OptimizeMeshes | aiProcess_SplitLargeMeshes | aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_GenNormals | aiProcess_CalcTangentSpace | aiProcess_LimitBoneWeights | aiProcess_JoinIdenticalVertices | aiProcess_ValidateDataStructure);
+		assimpScene = importer.ReadFile(path, aiProcess_GenUVCoords | aiProcess_TransformUVCoords | aiProcess_OptimizeMeshes | aiProcess_SplitLargeMeshes | aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_GenSmoothNormals | aiProcess_CalcTangentSpace | aiProcess_LimitBoneWeights | aiProcess_JoinIdenticalVertices | aiProcess_ValidateDataStructure);
 		if (!assimpScene || assimpScene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !assimpScene->mRootNode)
 		{
 			std::cerr << "Can't load mesh scene " << path << ".\n";
@@ -1006,7 +1018,7 @@ namespace GEE
 		skelInfo.SortBones();
 		if (tree.GetAnimationCount() > 0)
 		{
-			AnimationManagerComponent& animManager = comp.CreateComponent<AnimationManagerComponent>("animmanageractor");
+			AnimationManagerComponent& animManager = comp.CreateComponent<AnimationManagerComponent>("An AnimationManagerComponent");
 			for (int i = 0; i < tree.GetAnimationCount(); i++)
 				animManager.AddAnimationInstance(AnimationInstance(tree.GetAnimation(i), comp));
 
@@ -1017,7 +1029,7 @@ namespace GEE
 		skelInfo.GetBatchPtr()->RecalculateBoneCount();
 	}
 
-	std::shared_ptr<Font> EngineDataLoader::LoadFont(GameManager& gameHandle, const std::string& path)
+	SharedPtr<Font> EngineDataLoader::LoadFont(GameManager& gameHandle, const std::string& path)
 	{
 		if (!FTLib)
 		{
@@ -1043,7 +1055,7 @@ namespace GEE
 
 		FT_Set_Pixel_Sizes(face, 0, 48);
 
-		std::shared_ptr<Font> font = std::make_shared<Font>(Font(path));
+		SharedPtr<Font> font = MakeShared<Font>(Font(path));
 		glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 		const float advanceUnit = 1.0f / 64.0f;
 		const float pixelScale = 1.0f / 64.0f;
@@ -1062,14 +1074,14 @@ namespace GEE
 			glTexSubImage3D(font->GetBitmapsArray().GetType(), 0, 0, 0, i, face->glyph->bitmap.width, face->glyph->bitmap.rows, 1, GL_RED, GL_UNSIGNED_BYTE, face->glyph->bitmap.buffer);
 			Character character = Character();
 			character.ID = i;
-			character.Size = glm::vec2(face->glyph->bitmap.width, face->glyph->bitmap.rows) * pixelScale;
-			character.Bearing = glm::vec2(face->glyph->bitmap_left, face->glyph->bitmap_top) * pixelScale;
+			character.Size = Vec2f(face->glyph->bitmap.width, face->glyph->bitmap.rows) * pixelScale;
+			character.Bearing = Vec2f(face->glyph->bitmap_left, face->glyph->bitmap_top) * pixelScale;
 			character.Advance = static_cast<float>(face->glyph->advance.x) * pixelScale * advanceUnit;
 
 			font->AddCharacter(character);
 		}
 
-		glGenerateMipmap(font->GetBitmapsArray().GetType());
+		font->GetBitmapsArray().GenerateMipmap();
 
 		return font;
 	}
@@ -1115,9 +1127,9 @@ namespace GEE
 		return nullptr;
 	}
 
-	glm::mat4 toGlm(const aiMatrix4x4& aiMat)
+	Mat4f toGlm(const aiMatrix4x4& aiMat)
 	{
-		return glm::mat4(aiMat.a1, aiMat.b1, aiMat.c1, aiMat.d1,
+		return Mat4f(aiMat.a1, aiMat.b1, aiMat.c1, aiMat.d1,
 			aiMat.a2, aiMat.b2, aiMat.c2, aiMat.d2,
 			aiMat.a3, aiMat.b3, aiMat.c3, aiMat.d3,
 			aiMat.a4, aiMat.b4, aiMat.c4, aiMat.d4);

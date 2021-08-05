@@ -42,20 +42,20 @@ namespace GEE
 
 		static void InstantiateTree(Component& comp, HierarchyTemplate::HierarchyTreeT&, Material* overrideMaterial = nullptr);
 
-		static std::shared_ptr<Font> LoadFont(GameManager& gameHandle, const std::string& path);
+		static SharedPtr<Font> LoadFont(GameManager& gameHandle, const std::string& path);
 		template <class T = GameSettings> static T LoadSettingsFromFile(std::string path);
 
-		static std::shared_ptr<Physics::CollisionShape> LoadTriangleMeshCollisionShape(Physics::PhysicsEngineManager* physicsHandle, const Mesh& mesh);
+		static SharedPtr<Physics::CollisionShape> LoadTriangleMeshCollisionShape(Physics::PhysicsEngineManager* physicsHandle, const Mesh& mesh);
 
 	private:
 		static void LoadMaterials(RenderEngineManager*, std::string path, std::string directory);
 		static void LoadShaders(RenderEngineManager*, std::stringstream&, std::string path);
 		static void LoadComponentData(GameManager*, std::stringstream&, Actor* currentActor, GameScene& scene);
-		static std::unique_ptr<Physics::CollisionObject> LoadCollisionObject(GameScene& scene, std::stringstream&);
-		static std::shared_ptr<Physics::CollisionShape> LoadTriangleMeshCollisionShape(Physics::PhysicsEngineManager* physicsHandle, const aiScene* scene, aiMesh&);
+		static UniquePtr<Physics::CollisionObject> LoadCollisionObject(GameScene& scene, std::stringstream&);
+		static SharedPtr<Physics::CollisionShape> LoadTriangleMeshCollisionShape(Physics::PhysicsEngineManager* physicsHandle, const aiScene* scene, aiMesh&);
 		static void LoadLightProbes(GameScene&, std::stringstream&);
 
-		static void LoadMeshFromAi(Mesh* meshPtr, const aiScene* scene, aiMesh* mesh, const HTreeObjectLoc& treeObjLoc, const std::string& directory = std::string(), bool bLoadMaterial = true, MaterialLoadingData* matLoadingData = nullptr, BoneMapping* = nullptr, bool keepVertsData = false);
+		static void LoadMeshFromAi(Mesh* meshPtr, const aiScene* scene, const aiMesh* mesh, const HTreeObjectLoc& treeObjLoc, const std::string& directory = std::string(), bool bLoadMaterial = true, MaterialLoadingData* matLoadingData = nullptr, BoneMapping* = nullptr, bool keepVertsData = false);
 
 		static void LoadTransform(std::stringstream&, Transform&);
 		static void LoadTransform(std::stringstream&, Transform&, std::string loadType);
@@ -72,5 +72,5 @@ namespace GEE
 	};
 
 	aiBone* CastAiNodeToBone(const aiScene* scene, aiNode* node, const aiMesh** ownerMesh = nullptr);
-	glm::mat4 toGlm(const aiMatrix4x4&);
+	Mat4f toGlm(const aiMatrix4x4&);
 }

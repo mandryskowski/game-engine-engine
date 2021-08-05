@@ -8,44 +8,69 @@
 namespace GEE
 {
 	using namespace GEE_FB;
-	FramebufferAttachment::FramebufferAttachment(NamedTexture tex, GLenum attachmentEnum) :
+
+	FramebufferAttachment::FramebufferAttachment(const NamedTexture& tex, AttachmentSlot specifySlot, unsigned int mipLevel):
+		FramebufferAttachment(tex, std::numeric_limits<unsigned int>::max(), specifySlot, mipLevel)
+	{
+	}
+
+	FramebufferAttachment::FramebufferAttachment(const NamedTexture& tex, Axis cubemapSide, AttachmentSlot specifySlot, unsigned int mipLevel):
 		NamedTexture(tex),
-		AttachmentEnum(attachmentEnum)
+		SpecifiedSlot(specifySlot),
+		TextureLayer(std::numeric_limits<unsigned int>::max()),
+		MipLevel(mipLevel),
+		OverrideTexType(GL_TEXTURE_CUBE_MAP_POSITIVE_X + static_cast<unsigned int>(cubemapSide))
 	{
 	}
 
-	bool FramebufferAttachment::WasCreated()
+	FramebufferAttachment::FramebufferAttachment(const NamedTexture& tex, unsigned int layer, AttachmentSlot specifySlot, unsigned int mipLevel):
+		NamedTexture(tex),
+		SpecifiedSlot(specifySlot),
+		TextureLayer(layer),
+		MipLevel(mipLevel),
+		OverrideTexType(GL_ZERO)
 	{
-		return ID != 0;
 	}
 
-	GLenum FramebufferAttachment::GetAttachmentEnum()
+	AttachmentSlot FramebufferAttachment::GetAttachmentSlot() const
 	{
-		return AttachmentEnum;
+		return SpecifiedSlot;
 	}
 
-	void FramebufferAttachment::SetAttachmentEnum(GLenum attachmentType)
+	void FramebufferAttachment::SetAttachmentSlot(AttachmentSlot slot)
 	{
-		AttachmentEnum = attachmentType;
+		SpecifiedSlot = slot;
 	}
 
-	void FramebufferAttachment::BindToFramebuffer(GLenum target, GLenum attachment)
+	GLenum FramebufferAttachment::GetAttachedType() const
 	{
-		Bind();
-		if (Type == GL_TEXTURE_CUBE_MAP)
-			glFramebufferTexture(target, attachment, ID, 0);
-		else
-			glFramebufferTexture2D(target, attachment, Type, ID, 0);
+		if (OverrideTexType != GL_ZERO)
+			return OverrideTexType;
+
+		return GetType();
 	}
 
-	Framebuffer::Framebuffer()
+	unsigned int GEE_FB::FramebufferAttachment::GetTextureLayer() const
 	{
-		FBO = 0;
-		RenderSize = glm::uvec2(0, 0);
-		DepthBuffer = nullptr;
+		return TextureLayer;
 	}
 
-	bool Framebuffer::IsLoaded() const
+	unsigned int GEE_FB::FramebufferAttachment::GetMipLevel() const
+	{
+		return MipLevel;
+	}
+
+	void GEE_FB::FramebufferAttachment::SetMipLevel(unsigned int mipLevel)
+	{
+		MipLevel = mipLevel;
+	}
+
+	Framebuffer::Framebuffer():
+		FBO(0)
+	{
+	}
+
+	bool Framebuffer::HasBeenGenerated() const
 	{
 		if (FBO == 0)
 			return false;
@@ -57,90 +82,124 @@ namespace GEE
 		return FBO;
 	}
 
-	glm::uvec2 Framebuffer::GetSize() const
+	const FramebufferAttachment Framebuffer::GetColorTexture(unsigned int index) const
 	{
-		return RenderSize;
-	}
-
-	std::shared_ptr<FramebufferAttachment> Framebuffer::GetColorBuffer(unsigned int index) const
-	{
-		if (index >= ColorBuffers.size())
+		if (index >= Attachments.size())
 		{
 			if (FBO != 0 || index != 0)
-				;// std::cerr << "Can't find colorbuffer " << index << '\n';
-			return nullptr;
+				std::cerr << "Can't find colorbuffer " << index << '\n';
+			return FramebufferAttachment(NamedTexture(), AttachmentSlot::None());
 		}
-		return ColorBuffers[index];
+		return Attachments[index];
 	}
 
-	std::shared_ptr<FramebufferAttachment> Framebuffer::GetColorBuffer(std::string name) const
+	const FramebufferAttachment Framebuffer::GetAttachment(std::string name) const
 	{
-		auto found = std::find_if(ColorBuffers.begin(), ColorBuffers.end(), [name](const std::shared_ptr<FramebufferAttachment>& colorBuffer) {  return colorBuffer->GetShaderName() == name; });
-		if (found == ColorBuffers.end())
+		auto found = std::find_if(Attachments.begin(), Attachments.end(), [name](const FramebufferAttachment& colorBuffer) {  return colorBuffer.GetShaderName() == name; });
+		if (found == Attachments.end())
 		{
 			std::cerr << "Can't find colorbuffer " << name << '\n';
-			return nullptr;
+			return FramebufferAttachment(NamedTexture(), AttachmentSlot::None());
 		}
 		return *found;
 	}
 
-	unsigned int Framebuffer::GetNumberOfColorBuffers() const
+	const FramebufferAttachment GEE_FB::Framebuffer::GetAttachment(AttachmentSlot slot) const
 	{
-		return ColorBuffers.size();
+		for (auto& it : Attachments)
+			if (it.GetAttachmentSlot() == slot)
+				return it;
+
+		std::cout << "ERROR: Could not get framebuffer attachment. No attachment exists at the passed slot (GLenum of AttachmentSlot: " << slot.GetEnumGL() << ")\n";
+		return FramebufferAttachment(NamedTexture(), AttachmentSlot::None());
 	}
 
-	void Framebuffer::SetAttachments(glm::uvec2 size, std::shared_ptr<FramebufferAttachment> colorBuffer, std::shared_ptr<FramebufferAttachment> depthBuffer, unsigned int samples)
+	const FramebufferAttachment GEE_FB::Framebuffer::GetAnyDepthAttachment() const
 	{
-		std::vector<std::shared_ptr<FramebufferAttachment>> colorBuffers;
-		if (colorBuffer)
-			colorBuffers.push_back(colorBuffer);
+		for (auto& it : Attachments)
+			if (it.GetAttachmentSlot() == AttachmentSlot::Depth() || it.GetAttachmentSlot() == AttachmentSlot::DepthStencil())
+				return it;
 
-		SetAttachments(size, colorBuffers, depthBuffer, samples);
+		std::cout << "ERROR: Could not get any framebuffer depth attachment. No Depth nor DepthStencil attachment exists.\n";
+		return FramebufferAttachment(NamedTexture(), AttachmentSlot::None());
 	}
-	void Framebuffer::SetAttachments(glm::uvec2 size, std::vector <std::shared_ptr<FramebufferAttachment>> colorBuffers, std::shared_ptr<FramebufferAttachment> depthBuffer, unsigned int samples)
-	{
-		RenderSize = size;
 
-		if (!IsLoaded())
+	unsigned int Framebuffer::GetColorTextureCount() const
+	{
+		return Attachments.size();
+	}
+
+	Vec2u GEE_FB::Framebuffer::GetSize() const
+	{
+		if (Attachments.empty())
+			return Vec2u(0); 
+		
+		return Attachments.front().GetSize2D();
+	}
+
+	void Framebuffer::Generate()
+	{
+		if (HasBeenGenerated())
 		{
-			glGenFramebuffers(1, &FBO);
-			glBindFramebuffer(GL_FRAMEBUFFER, FBO);
+			std::cout << "ERROR: Cannot generate a Framebuffer that has been generated already. Call the Dispose function before you generate it again.\n";
+			return;
+		}
+		glGenFramebuffers(1, &FBO);
+	}
+
+	void Framebuffer::Attach(const FramebufferAttachment& attachment, bool bindFramebuffer, bool autoSetDrawTextures)
+	{
+		if (bindFramebuffer)	//if the caller assures that this Framebuffer is bound, it must have been generated as well
+		{
+			if (!HasBeenGenerated())
+				Generate();
+			Bind(false);
 		}
 
-		std::vector <GLenum> attachments;
-		ColorBuffers = colorBuffers;
+		Attachments.push_back(attachment);
+		AttachTextureGL(attachment);
+
+		if (autoSetDrawTextures)
+			SetDrawSlots();
+	}
+
+	void Framebuffer::AttachTextures(const NamedTexture& colorTexture, const FramebufferAttachment& depthAttachment)
+	{
+		AttachTextures(std::vector<NamedTexture>({ colorTexture }), depthAttachment);
+	}
+
+	void Framebuffer::AttachTextures(std::vector<NamedTexture> colorBuffers, const FramebufferAttachment& depthAttachment)
+	{
+		if (colorBuffers.empty() && !depthAttachment.HasBeenGenerated())
+		{
+			std::cout << "ERROR: Cannot attach texture to framebuffer in method AttachTexture; no textures are present in the vector nor the depthAttachment is valid.\n";
+			return;
+		}
+		
+		if (!HasBeenGenerated())
+			Generate();
+		Bind(false);
 
 		for (unsigned int i = 0; i < colorBuffers.size(); i++)
 		{
-			attachments.push_back(GL_COLOR_ATTACHMENT0 + i);
-			ColorBuffers[i]->BindToFramebuffer(GL_FRAMEBUFFER, attachments[i]);
+			Attach(FramebufferAttachment(colorBuffers[i], AttachmentSlot::Color(i)), false, false);
 			if (PrimitiveDebugger::bDebugFramebuffers)
-				std::cout << "Adding color buffer " + std::to_string(ColorBuffers[i]->GetID()) + " " + ColorBuffers[i]->GetShaderName() + " to slot " + std::to_string(i) + ".\n";
+				std::cout << "Adding color buffer " + std::to_string(Attachments[i].GetID()) + " " + Attachments[i].GetShaderName() + " to slot " + std::to_string(i) + ".\n";
 		}
 
-		SetDrawBuffers();
+		SetDrawSlots();
 
-		DepthBuffer = depthBuffer;
-		if (DepthBuffer)
-			DepthBuffer->BindToFramebuffer(GL_FRAMEBUFFER, DepthBuffer->GetAttachmentEnum());/*(1DepthBuffer->ContainsStencil(internalformat) ? (GL_DEPTH_STENCIL_ATTACHMENT) : (GL_DEPTH_ATTACHMENT));*/
+		if (depthAttachment.HasBeenGenerated())
+			Attach(depthAttachment, false, false);
+				
 
-		if ((colorBuffers.size() > 0 || depthBuffer) && PrimitiveDebugger::bDebugFramebuffers)
+		if (PrimitiveDebugger::bDebugFramebuffers)
 			debugFramebuffer();
-
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	}
 
-	void Framebuffer::SetAttachments(glm::uvec2 size, const FramebufferAttachment& colorBuffer, FramebufferAttachment* depthBuffer, unsigned int samples)
+	void Framebuffer::Detach(AttachmentSlot slot, bool dispose)
 	{
-		SetAttachments(size, std::make_shared<FramebufferAttachment>(colorBuffer), (depthBuffer) ? (std::make_shared<FramebufferAttachment>(*depthBuffer)) : (nullptr), samples);
-	}
-	void Framebuffer::SetAttachments(glm::uvec2 size, const std::vector<FramebufferAttachment>& colorBuffers, FramebufferAttachment* depthBuffer, unsigned int samples)
-	{
-		std::vector<std::shared_ptr<FramebufferAttachment>> createdColorBuffers;
-		createdColorBuffers.resize(colorBuffers.size());
-		std::transform(colorBuffers.begin(), colorBuffers.end(), createdColorBuffers.begin(), [](const FramebufferAttachment& colorBuffer) { return std::make_shared<FramebufferAttachment>(colorBuffer); });
-
-		SetAttachments(size, createdColorBuffers, (depthBuffer) ? (std::make_shared<FramebufferAttachment>(*depthBuffer)) : (nullptr), samples);
+		Attachments.erase(std::remove_if(Attachments.begin(), Attachments.end(), [&](FramebufferAttachment& attachmentVec) { if (slot != attachmentVec.GetAttachmentSlot()) return false; if (dispose) attachmentVec.Dispose(); return true; }), Attachments.end());
 	}
 
 	void Framebuffer::BlitToFBO(unsigned int fbo2, int bufferCount)
@@ -152,72 +211,142 @@ namespace GEE
 			glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo2);
 			glDrawBuffer(GL_COLOR_ATTACHMENT0 + i);
 
-			glBlitFramebuffer(0, 0, RenderSize.x, RenderSize.y, 0, 0, RenderSize.x, RenderSize.y, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+			const Vec2u size = GetSize();
+			glBlitFramebuffer(0, 0, size.x, size.y, 0, 0, size.x, size.y, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		}
 	}
 
-	void Framebuffer::Bind(bool changeViewportSize, const Viewport* viewport) const
+	void Framebuffer::Bind(bool changeViewportSize) const
 	{
 		glBindFramebuffer(GL_FRAMEBUFFER, FBO);
 		if (!changeViewportSize)
 			return;
 
-		if (viewport)
+		if (GetSize() == Vec2u(0))
+			std::cout << "ERROR: Cannot change viewport size to the size of the bound Framebuffer, because its size is 0.\nNb of attachments: " << Attachments.size() << '\n';
+		else
+			Viewport(GetSize()).SetOpenGLState();
+
+	}
+
+	void GEE_FB::Framebuffer::Bind(const Viewport& viewport) const
+	{
+		Bind(false);
+
+		viewport.SetOpenGLState();
+		if (viewport.GetSize().x > GetSize().x && viewport.GetSize().y > GetSize().y)
+			std::cerr << "INFO: Viewport is set to " << viewport.GetSize() << ", but bound Framebuffer is smaller, of size " << GetSize() << ".\n";
+	}
+
+	void Framebuffer::SetDrawSlot(unsigned int index) const
+	{
+		if (FBO == 0)
+			glDrawBuffer(GL_BACK);
+		else if (!IsSlotExcluded(AttachmentSlot::Color(index)))
 		{
-			if (viewport->GetSize().x <= RenderSize.x && viewport->GetSize().y <= RenderSize.y)
+			std::vector<GLenum> attachmentsGL(index + 1, GL_NONE);
+			attachmentsGL[index] = GL_COLOR_ATTACHMENT0 + index;
+			glDrawBuffers(attachmentsGL.size(), &attachmentsGL[0]);
+		}
+	}
+
+	void GEE_FB::Framebuffer::SetDrawSlots() const
+	{
+		if (FBO == 0)
+			glDrawBuffer(GL_BACK);
+		else if (Attachments.empty())
+			glDrawBuffer(GL_NONE);
+		else
+		{
+			std::vector<GLenum> attachmentsGL;
+			attachmentsGL.reserve(Attachments.size());
+
+			
+			GLenum currentColorAttachment = GL_COLOR_ATTACHMENT0;
+			for (auto& it: Attachments)
 			{
-				viewport->SetOpenGLState();
-				return;
+				AttachmentSlot slot = it.GetAttachmentSlot();
+				if (!slot.IsColorAttachment() || IsSlotExcluded(slot))
+					continue;
+
+				while (currentColorAttachment < slot.GetEnumGL())
+				{
+					attachmentsGL.push_back(GL_NONE);
+					currentColorAttachment++;
+				}
+
+				attachmentsGL.push_back(slot.GetEnumGL());
+				currentColorAttachment++;
 			}
 
-			std::cerr << "ERROR! Cannot resize viewport to " << viewport->GetSize().x << ", " << viewport->GetSize().y << ". Framebuffer is too small.\n";
+			glDrawBuffers(attachmentsGL.size(), &attachmentsGL[0]);
 		}
-
-		glViewport(0, 0, RenderSize.x, RenderSize.y);
 	}
 
-	void Framebuffer::SetDrawBuffer(unsigned int index) const
+	void GEE_FB::Framebuffer::ExcludeDrawSlot(AttachmentSlot excludedSlot)
 	{
-		if (FBO == 0)
-			glDrawBuffer(GL_BACK);
-		else if (ColorBuffers.empty() || ColorBuffers.size() <= index)
-			glDrawBuffer(GL_NONE);
-		else
-			glDrawBuffer(GL_COLOR_ATTACHMENT0 + index);
+		ExcludedSlots.push_back(excludedSlot);
 	}
 
-	void GEE_FB::Framebuffer::SetDrawBuffers() const
+	bool GEE_FB::Framebuffer::ReincludeDrawSlot(AttachmentSlot reincludedSlot)
 	{
-		if (FBO == 0)
-			glDrawBuffer(GL_BACK);
-		else if (ColorBuffers.empty())
-			glDrawBuffer(GL_NONE);
-		else
+		bool found = false;
+		ExcludedSlots.erase(std::remove_if(ExcludedSlots.begin(), ExcludedSlots.end(), [&](AttachmentSlot slotVec) { if (reincludedSlot != slotVec) { return false; } found = true; return true; }), ExcludedSlots.end());
+
+		return found;
+	}
+
+	bool GEE_FB::Framebuffer::IsSlotExcluded(AttachmentSlot slot) const
+	{
+		for (auto& it : ExcludedSlots)
+			if (it == slot)
+				return true;
+		return false;
+	}
+
+	bool GEE_FB::Framebuffer::AttachTextureGL(const FramebufferAttachment& texture)
+	{
+		if (!texture.HasBeenGenerated())
 		{
-			std::vector<GLenum> attachments;
-			for (unsigned int i = 0; i < ColorBuffers.size(); i++)
-				attachments.push_back(GL_COLOR_ATTACHMENT0 + i);
-
-			glDrawBuffers(attachments.size(), &attachments[0]);
+			std::cout << "ERROR: Cannot attach texture " + texture.GetShaderName() << " to a framebuffer, because the texture has not been generated.\n";
+			return false;
 		}
+		else if (texture.GetSize2D() != GetSize() && GetSize() != Vec2u(0))
+		{
+			std::cout << "ERROR: Cannot attach texture " + texture.GetShaderName() << " of size " << texture.GetSize2D() << " to a framebuffer of size " << GetSize() << '\n';
+			return false;
+		}
+
+		texture.Bind();
+
+
+		if (texture.GetTextureLayer() != std::numeric_limits<unsigned int>::max())
+			glFramebufferTextureLayer(GL_FRAMEBUFFER, texture.GetAttachmentSlot().GetEnumGL(), texture.GetID(), texture.GetMipLevel(), texture.GetTextureLayer());
+		else if (texture.GetAttachedType() == GL_TEXTURE_CUBE_MAP)
+			glFramebufferTexture(GL_FRAMEBUFFER, texture.GetAttachmentSlot().GetEnumGL(), texture.GetID(), texture.GetMipLevel());
+		else
+			glFramebufferTexture2D(GL_FRAMEBUFFER, texture.GetAttachmentSlot().GetEnumGL(), texture.GetAttachedType(), texture.GetID(), texture.GetMipLevel());
+
+
+		return true;
 	}
 
-	void Framebuffer::Dispose(bool disposeBuffers)
+	void Framebuffer::Dispose(bool disposeTextures)
 	{
-		if (disposeBuffers)
+		if (disposeTextures)
 		{
-			for (int i = 0; i < static_cast<int>(ColorBuffers.size()); i++)
-				ColorBuffers[i]->Dispose();
-			if (DepthBuffer)
-				DepthBuffer->Dispose();
+			for (int i = 0; i < static_cast<int>(Attachments.size()); i++)
+				Attachments[i].Dispose();
 		}
 
-		glDeleteFramebuffers(1, &FBO);
-		FBO = 0;
-		ColorBuffers.clear();
-		DepthBuffer = nullptr;
+		if (HasBeenGenerated())
+		{
+			glDeleteFramebuffers(1, &FBO);
+			FBO = 0;
+		}
+		Attachments.clear();
 	}
 
 	std::string debugFramebuffer()
@@ -241,50 +370,13 @@ namespace GEE
 		return message;
 	}
 
-	bool GEE_FB::containsStencil(GLenum internalformat)
-	{
-		//attachmentType = GL_DEPTH_STENCIL_ATTACHMENT;
-		if (internalformat == GL_DEPTH24_STENCIL8 || internalformat == GL_DEPTH32F_STENCIL8)
-			return true;
-
-		//attachmentType = GL_DEPTH_ATTACHMENT;
-		return false;
-	}
-
-	Framebuffer GEE_FB::getDefaultFramebuffer(glm::uvec2 windowRes)
+	Framebuffer GEE_FB::getDefaultFramebuffer(Vec2u windowRes)
 	{
 		Framebuffer fb;
 		fb.FBO = 0;
-		fb.RenderSize = windowRes;
+		fb.Attachments.push_back(FramebufferAttachment(NamedTexture(Texture::FromGeneratedGlId(windowRes, GL_TEXTURE_2D, 0, Texture::Format::RGB())), AttachmentSlot::Color(0)));
 
 		return fb;
-	}
-
-	std::shared_ptr<FramebufferAttachment> GEE_FB::reserveColorBuffer(glm::uvec2 size, GLenum internalformat, GLenum type, GLenum magFilter, GLenum minFilter, GLenum texType, unsigned int samples, std::string texName, GLenum format)
-	{
-		std::shared_ptr<FramebufferAttachment> tex = std::make_shared<FramebufferAttachment>(FramebufferAttachment(NamedTexture(*reserveTexture(size, internalformat, type, magFilter, minFilter, texType, samples, texName, format), texName)));
-		tex->SetAttachmentEnum(GL_COLOR_ATTACHMENT0);
-
-		return tex;
-	}
-
-	std::shared_ptr<FramebufferAttachment> GEE_FB::reserveColorBuffer(glm::uvec3 size, GLenum internalformat, GLenum type, GLenum magFilter, GLenum minFilter, GLenum texType, unsigned int samples, std::string texName, GLenum format)
-	{
-		std::shared_ptr<FramebufferAttachment> tex = std::make_shared<FramebufferAttachment>(FramebufferAttachment(NamedTexture(*reserveTexture(size, internalformat, type, magFilter, minFilter, texType, samples, texName, format), texName)));
-		tex->SetAttachmentEnum(GL_COLOR_ATTACHMENT0);
-
-		return tex;
-	}
-
-	std::shared_ptr<FramebufferAttachment> GEE_FB::reserveDepthBuffer(glm::uvec2 size, GLenum internalformat, GLenum type, GLenum magFilter, GLenum minFilter, GLenum texType, unsigned int samples, std::string texName, GLenum format)
-	{
-		if (format == GL_ZERO)
-			format = ((GEE_FB::containsStencil(internalformat)) ? (GL_DEPTH_STENCIL) : (GL_DEPTH_COMPONENT));
-
-		std::shared_ptr<FramebufferAttachment> tex = std::make_shared<FramebufferAttachment>(FramebufferAttachment(NamedTexture(*reserveTexture(size, internalformat, type, magFilter, minFilter, texType, samples, texName, format), texName)));
-		tex->SetAttachmentEnum((GEE_FB::containsStencil(internalformat)) ? (GL_DEPTH_STENCIL_ATTACHMENT) : (GL_DEPTH_ATTACHMENT));
-
-		return tex;
 	}
 
 }

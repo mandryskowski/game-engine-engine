@@ -21,12 +21,13 @@ namespace GEE
 		UICanvas(const UICanvas&);
 		UICanvas(UICanvas&&);
 		virtual NDCViewport GetViewport() const = 0;
-		virtual glm::mat4 GetViewMatrix() const = 0;
+		virtual Mat4f GetViewMatrix() const = 0;
 		virtual const Transform& GetViewT() const;
 		virtual const Transform* GetCanvasT() const = 0;
+		virtual Transform FromCanvasSpace(const Transform& canvasSpaceTransform) const = 0;
 		virtual Transform ToCanvasSpace(const Transform& worldTransform) const = 0;
 
-		virtual glm::mat4 GetProjection() const;
+		virtual Mat4f GetProjection() const;
 
 		Boxf<Vec2f> GetBoundingBox() const;	//Canvas space
 
@@ -38,15 +39,15 @@ namespace GEE
 		void AutoClampView(bool trueHorizontalFalseVertical = true);	//Set to false to set view scale to 100% of vertical size, or leave it as it is to set it to 100% of horizontal size
 
 		virtual UICanvasFieldCategory& AddCategory(const std::string& name) = 0;
-		virtual UICanvasField& AddField(const std::string& name, std::function<glm::vec3()> getElementOffset = nullptr) = 0;
+		virtual UICanvasField& AddField(const std::string& name, std::function<Vec3f()> getElementOffset = nullptr) = 0;
 
 		void AddUIElement(UICanvasElement&);
 		void EraseUIElement(UICanvasElement&);
 
 		void ScrollView(Vec2f offset);
-		void SetViewScale(glm::vec2 scale);
-		virtual RenderInfo BindForRender(const RenderInfo&, const glm::uvec2& res) = 0;
-		virtual void UnbindForRender(const glm::uvec2& res) = 0;
+		void SetViewScale(Vec2f scale);
+		virtual RenderInfo BindForRender(const RenderInfo&, const Vec2u& res) = 0;
+		virtual void UnbindForRender(const Vec2u& res) = 0;
 
 		bool ContainsMouse() const; //Returns cached value. Guaranteed to be valid if called in HandleEvent() or HandleEventAll() of a child of UICanvasActor.
 

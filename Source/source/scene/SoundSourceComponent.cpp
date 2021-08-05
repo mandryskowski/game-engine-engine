@@ -1,13 +1,11 @@
 #include <scene/SoundSourceComponent.h>
 #include <rendering/Material.h>
 #include <iostream>
-#include <glm/gtc/type_ptr.hpp>
 #include <math/Transform.h>
 #include <audio/AudioFile.h>
 
 #include <UI/UICanvasActor.h>
 #include <UI/UICanvasField.h>
-#include <assetload/FileLoader.h>
 #include <scene/UIButtonActor.h>
 
 namespace GEE
@@ -88,13 +86,13 @@ namespace GEE
 		void SoundSourceComponent::Update(float deltaTime)
 		{
 			if (ALIndex != 0)
-				alSourcefv(ALIndex, AL_POSITION, glm::value_ptr((glm::vec3)ComponentTransform.GetWorldTransform().Pos()));
+				alSourcefv(ALIndex, AL_POSITION, Math::GetDataPtr(ComponentTransform.GetWorldTransform().GetPos()));
 		}
 
-		MaterialInstance SoundSourceComponent::GetDebugMatInst(EditorIconState state)
+		MaterialInstance SoundSourceComponent::LoadDebugMatInst(EditorIconState state)
 		{
 			LoadDebugRenderMaterial("GEE_Mat_Default_Debug_SoundSourceComponent", "EditorAssets/soundsourcecomponent_debug.png");
-			return Component::GetDebugMatInst(state);
+			return Component::LoadDebugMatInst(state);
 		}
 
 		void SoundSourceComponent::GetEditorDescription(EditorDescriptionBuilder descBuilder)
@@ -125,8 +123,8 @@ namespace GEE
 				alDeleteSources(1, &ALIndex);
 
 			alGenSources(1, &ALIndex);
-			alSourcefv(ALIndex, AL_POSITION, glm::value_ptr(glm::vec3(0.0f)));
-			alSourcefv(ALIndex, AL_VELOCITY, glm::value_ptr(glm::vec3(0.0f)));
+			alSourcefv(ALIndex, AL_POSITION, Math::GetDataPtr(Vec3f(0.0f)));
+			alSourcefv(ALIndex, AL_VELOCITY, Math::GetDataPtr(Vec3f(0.0f)));
 			alSourcei(ALIndex, AL_BUFFER, SndBuffer.ALIndex);
 		}
 

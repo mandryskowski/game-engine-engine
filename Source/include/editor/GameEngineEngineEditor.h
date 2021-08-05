@@ -1,6 +1,5 @@
 #pragma once
 #include <game/Game.h>
-#include <editor/EditorManager.h>
 #include <UI/UIListActor.h>
 
 namespace GEE
@@ -18,10 +17,15 @@ namespace GEE
 	public:
 		GameEngineEngineEditor(GLFWwindow* window, const GameSettings& settings);
 		virtual GameManager* GetGameHandle() override;
+		virtual Component* GetSelectedComponent() override;
 		virtual GameScene* GetSelectedScene() override;
 		virtual std::vector<GameScene*> GetScenes() override;
+		GameSettings* GetEditorSettings() override;
 		virtual void Init(GLFWwindow* window) override;
-		virtual void UpdateSettings() override;
+
+		virtual void UpdateGameSettings() override;
+		virtual void UpdateEditorSettings() override;
+
 		void SetupEditorScene();
 		void SetupMainMenu();
 		virtual void HandleEvents() override;
@@ -41,7 +45,11 @@ namespace GEE
 
 		RenderToolboxCollection* ViewportRenderCollection, * HUDRenderCollection;
 		GameScene* EditorScene;
+
+
 		GameSettings EditorSettings;
+		bool bDebugRenderComponents;
+
 
 		std::string ProjectName, ProjectFilepath;
 		std::string ExecutableFolder;
@@ -61,13 +69,12 @@ namespace GEE
 			return;
 
 		UIButtonActor& element = listParent.CreateChild<UIButtonActor>(obj.GetName() + "'s Button", [this, &obj, &editorScene]() {this->Select(&obj, editorScene); });//*this, obj, &EditorManager::Select<T>));
-		element.SetTransform(Transform(glm::vec2(1.5f, 0.0f), glm::vec2(3.0f, 1.0f)));
-		TextConstantSizeComponent& elementText = element.CreateComponent<TextConstantSizeComponent>(obj.GetName() + "'s Text", Transform(glm::vec2(0.0f), glm::vec2(0.4f / 3.0f, 0.4f)), "", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
+		element.SetTransform(Transform(Vec2f(1.5f, 0.0f), Vec2f(3.0f, 1.0f)));
+		TextConstantSizeComponent& elementText = element.CreateComponent<TextConstantSizeComponent>(obj.GetName() + "'s Text", Transform(Vec2f(0.0f), Vec2f(0.4f / 3.0f, 0.4f)), "", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
 		elementText.SetMaxSize(Vec2f(0.9f));
 		elementText.SetContent(obj.GetName());
 
 		std::vector<T*> children = obj.GetChildren();
-		std::cout << "liczba dzieciakow of " << obj.GetName() << ": " << children.size() << '\n';
 		for (auto& child : children)
 		{
 			//AddActorToList(editorScene, *child, listParent.CreateChild(UIListActor(editorScene, "NextLevel")), canvas);

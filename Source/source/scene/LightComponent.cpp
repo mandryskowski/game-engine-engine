@@ -3,19 +3,18 @@
 #include <scene/UIInputBoxActor.h>
 #include <UI/UICanvasActor.h>
 
-#include <UI/UICanvasActor.h>
 #include <UI/UICanvasField.h>
 
 namespace GEE
 {
-	LightComponent::LightComponent(Actor& actor, Component* parentComp, std::string name, LightType type, unsigned int index, unsigned int shadowNr, float far, glm::mat4 projection, glm::vec3 amb, glm::vec3 diff, glm::vec3 spec, glm::vec3 settings) :
+	LightComponent::LightComponent(Actor& actor, Component* parentComp, std::string name, LightType type, unsigned int index, unsigned int shadowNr, float far, Mat4f projection, Vec3f amb, Vec3f diff, Vec3f spec, Vec3f settings) :
 		Component(actor, parentComp, name, Transform()),
 		Type(type),
 		Ambient(amb),
 		Diffuse(diff),
 		Specular(spec),
 		Attenuation(settings.x),
-		ShadowBias(0.0f),
+		ShadowBias(0.001f),
 		bShadowMapCullFronts(true),
 		LightIndex(index),
 		ShadowMapNr(shadowNr),
@@ -76,7 +75,7 @@ namespace GEE
 		return ShadowMapNr;
 	}
 
-	glm::mat4 LightComponent::GetProjection() const
+	Mat4f LightComponent::GetProjection() const
 	{
 		return Projection;
 	}
@@ -86,7 +85,7 @@ namespace GEE
 		switch (Type)
 		{
 		case SPOT:
-			if (Ambient == glm::vec3(0.0f))
+			if (Ambient == Vec3f(0.0f))
 				return EngineBasicShape::CONE;
 		case POINT:
 			return EngineBasicShape::SPHERE;
@@ -147,19 +146,19 @@ namespace GEE
 		Far = radius;
 		Projection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, Far);
 
-		ComponentTransform.SetScale(glm::vec3(radius));
+		ComponentTransform.SetScale(Vec3f(radius));
 
 		///////////////////////////////////////////////////////////////////////////////////
 		///////////////////////////////////////////////////////////////////////////////////
 
-		if (Type == LightType::SPOT && Ambient == glm::vec3(0.0f))	//If we are a spotlight and we don't emit any ambient light, we can set the light volume to a cone instead of a sphere - more sweet FPS
+		if (Type == LightType::SPOT && Ambient == Vec3f(0.0f))	//If we are a spotlight and we don't emit any ambient light, we can set the light volume to a cone instead of a sphere - more sweet FPS
 		{
 			float scale = radius * glm::tan(glm::acos(OuterCutOff));	//radius == height in our code
-			ComponentTransform.SetScale(glm::vec3(scale, scale, radius));
+			ComponentTransform.SetScale(Vec3f(scale, scale, radius));
 		}
 	}
 
-	void LightComponent::SetAdditionalData(glm::vec3 data)
+	void LightComponent::SetAdditionalData(Vec3f data)
 	{
 		float prevCutOff = CutOff, prevOuterCutOff = OuterCutOff;
 
@@ -231,22 +230,22 @@ namespace GEE
 			switch (Type)
 			{
 			case LightType::DIRECTIONAL:
-				lightsUBO->offsetCache += sizeof(glm::vec4);
+				lightsUBO->offsetCache += sizeof(Vec4f);
 				lightsUBO->SubData4fv(worldTransform.GetFrontVec(), lightsUBO->offsetCache); break;
 			case LightType::POINT:
-				lightsUBO->SubData4fv(worldTransform.Pos(), lightsUBO->offsetCache);
-				lightsUBO->offsetCache += sizeof(glm::vec4); break;
+				lightsUBO->SubData4fv(worldTransform.GetPos(), lightsUBO->offsetCache);
+				lightsUBO->offsetCache += sizeof(Vec4f); break;
 			case LightType::SPOT:
-				lightsUBO->SubData4fv(worldTransform.Pos(), lightsUBO->offsetCache);
+				lightsUBO->SubData4fv(worldTransform.GetPos(), lightsUBO->offsetCache);
 				lightsUBO->SubData4fv(worldTransform.GetFrontVec(), lightsUBO->offsetCache); break;
 			}
 		}
 		else
-			lightsUBO->offsetCache += sizeof(glm::vec4) * 2;
+			lightsUBO->offsetCache += sizeof(Vec4f) * 2;
 
 		if (DirtyFlag)
 		{
-			lightsUBO->SubData4fv(std::vector <glm::vec4> {Vec4f(Ambient, ShadowBias), Vec4f(Diffuse, 0.0f), Vec4f(Specular, 0.0f)}, lightsUBO->offsetCache);
+			lightsUBO->SubData4fv(std::vector <Vec4f> {Vec4f(Ambient, ShadowBias), Vec4f(Diffuse, 0.0f), Vec4f(Specular, 0.0f)}, lightsUBO->offsetCache);
 			float additionalData[3] = { Attenuation, CutOff, OuterCutOff };
 			lightsUBO->SubData(12, additionalData, lightsUBO->offsetCache);
 			lightsUBO->SubData1f(Type, lightsUBO->offsetCache);
@@ -261,12 +260,12 @@ namespace GEE
 		if (transformDirtyFlag)
 			lightsUBO->SubDataMatrix4fv(Projection * worldTransform.GetViewMatrix(), lightsUBO->offsetCache + 8);
 		else
-			lightsUBO->offsetCache += sizeof(glm::mat4);
+			lightsUBO->offsetCache += sizeof(Mat4f);
 
 		lightsUBO->PadOffset();
 	}
 
-	glm::vec3& LightComponent::operator[](unsigned int i)
+	Vec3f& LightComponent::operator[](unsigned int i)
 	{
 		DirtyFlag = true;
 		switch (i)
@@ -282,10 +281,10 @@ namespace GEE
 		return Ambient;
 	}
 
-	MaterialInstance LightComponent::GetDebugMatInst(EditorIconState state)
+	MaterialInstance LightComponent::LoadDebugMatInst(EditorIconState state)
 	{
 		LoadDebugRenderMaterial("GEE_Mat_Default_Debug_LightComponent", "EditorAssets/lightcomponent_icon.png");
-		return Component::GetDebugMatInst(state);
+		return Component::LoadDebugMatInst(state);
 	}
 
 	void LightComponent::GetEditorDescription(EditorDescriptionBuilder descBuilder)
@@ -309,7 +308,7 @@ namespace GEE
 		UICanvasField& typeField = descBuilder.AddField("Type");
 		const std::string types[] = { "Directional", "Point", "Spot" };
 		for (int i = 0; i < 3; i++)
-			typeField.CreateChild<UIButtonActor>(types[i] + "TypeButton", types[i], [this, i]() {SetType(static_cast<LightType>(i)); CalculateLightRadius(); }).GetTransform()->Move(glm::vec2(static_cast<float>(i) * 2.0f, 0.0f));
+			typeField.CreateChild<UIButtonActor>(types[i] + "TypeButton", types[i], [this, i]() {SetType(static_cast<LightType>(i)); CalculateLightRadius(); }).GetTransform()->Move(Vec2f(static_cast<float>(i) * 2.0f, 0.0f));
 	}
 
 	LightComponent::~LightComponent()
@@ -330,7 +329,7 @@ namespace GEE
 	Transform LightVolume::GetRenderTransform() const
 	{
 		Transform lightTransform = LightCompPtr->GetTransform().GetWorldTransform();
-		lightTransform.SetScale(LightCompPtr->GetTransform().Scale());
+		lightTransform.SetScale(LightCompPtr->GetTransform().GetScale());
 
 		return lightTransform;
 	}

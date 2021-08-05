@@ -6,15 +6,13 @@
 #include <UI/UICanvasField.h>
 #include <UI/UIListActor.h>
 
-#include <UI/UICanvasField.h>
-
 namespace GEE
 {
 	UICanvasActor::UICanvasActor(GameScene& scene, Actor* parentActor, UICanvasActor* canvasParent, const std::string& name, const Transform& t) :
 		Actor(scene, parentActor, name, t),
 		UICanvas((canvasParent) ? (canvasParent->GetCanvasDepth() + 1) : (1)),	//CanvasDepth starts at 1 (because it has to be higher than depth outside any canvas)
 		FieldsList(nullptr),
-		FieldSize(glm::vec3(0.5f)),
+		FieldSize(Vec3f(0.5f)),
 		ScrollBarX(nullptr),
 		ScrollBarY(nullptr),
 		BothScrollBarsButton(nullptr),
@@ -27,7 +25,7 @@ namespace GEE
 	}
 
 	UICanvasActor::UICanvasActor(GameScene& scene, Actor* parentActor, const std::string& name, const Transform& t) :
-		UICanvasActor(scene, parentActor, nullptr, name)
+		UICanvasActor(scene, parentActor, nullptr, name, t)
 	{}
 
 	UICanvasActor::UICanvasActor(UICanvasActor&& canvasActor) :
@@ -58,14 +56,14 @@ namespace GEE
 		return ScaleActor;
 	}
 
-	glm::mat4 UICanvasActor::GetViewMatrix() const
+	Mat4f UICanvasActor::GetViewMatrix() const
 	{
 		return UICanvas::GetViewMatrix() * glm::inverse(GetTransform()->GetWorldTransformMatrix());
 	}
 
 	NDCViewport UICanvasActor::GetViewport() const
 	{
-		return NDCViewport(GetTransform()->GetWorldTransform().Pos() - GetTransform()->GetWorldTransform().Scale(), GetTransform()->GetWorldTransform().Scale());
+		return NDCViewport(GetTransform()->GetWorldTransform().GetPos() - GetTransform()->GetWorldTransform().GetScale(), GetTransform()->GetWorldTransform().GetScale());
 	}
 
 	const Transform* UICanvasActor::GetCanvasT() const
@@ -79,6 +77,11 @@ namespace GEE
 		ClampViewToElements();
 		if (ScrollBarX) UpdateScrollBarT<VecAxis::X>();
 		if (ScrollBarY) UpdateScrollBarT<VecAxis::Y>();
+	}
+
+	Transform UICanvasActor::FromCanvasSpace(const Transform& canvasSpaceTransform) const
+	{
+		return GetCanvasT()->GetWorldTransform() * canvasSpaceTransform;
 	}
 
 	Transform UICanvasActor::ToCanvasSpace(const Transform& worldTransform) const
@@ -95,13 +98,21 @@ namespace GEE
 		}
 	}
 
-	void UICanvasActor::HideScrollBars()
+	void UICanvasActor::KillScrollBars()
 	{
-		ScrollBarX->MarkAsKilled();
-		ScrollBarY->MarkAsKilled();
-		BothScrollBarsButton->MarkAsKilled();
+		if (ScrollBarX) ScrollBarX->MarkAsKilled();
+		if (ScrollBarY) ScrollBarY->MarkAsKilled();
+		if (BothScrollBarsButton) BothScrollBarsButton->MarkAsKilled();
 
 		ScrollBarX = ScrollBarY = BothScrollBarsButton = nullptr;
+	}
+
+	void UICanvasActor::KillResizeBars()
+	{
+		if (ResizeBarX) ResizeBarX->MarkAsKilled();
+		if (ResizeBarY) ResizeBarY->MarkAsKilled();
+
+		ResizeBarX = ResizeBarY = nullptr;
 	}
 
 	void UICanvasActor::ClampViewToElements()
@@ -112,7 +123,7 @@ namespace GEE
 		if (ScrollBarY) UpdateScrollBarT<VecAxis::Y>();
 	}
 
-	Actor& UICanvasActor::AddChild(std::unique_ptr<Actor> actor)
+	Actor& UICanvasActor::AddChild(UniquePtr<Actor> actor)
 	{
 		Actor& actorRef = Actor::AddChild(std::move(actor));	//actor becomes invalid (nullptr)
 		//if (UICanvasElement* elementCast = dynamic_cast<UICanvasElement*>(&actorRef))
@@ -127,22 +138,22 @@ namespace GEE
 			FieldsList = &ScaleActor->CreateChild<UIListActor>(Name + "_Fields_List");
 
 		UICanvasFieldCategory& category = FieldsList->CreateChild<UICanvasFieldCategory>(name);
-		category.SetTransform(Transform(glm::vec2(0.0f), Vec2f(FieldSize)));	//position doesn't matter if this is not the first field
+		category.SetTransform(Transform(Vec2f(0.0f, -1.0f), Vec2f(FieldSize)));	//position doesn't matter if this is not the first field
 		FieldsList->AddElement(UIListElement(category, [&category]() { category.Refresh(); return category.GetListOffset(); }, [&category]() { return Vec3f(0.0f, -1.5f, 0.0f); }));
 		category.SetOnExpansionFunc([this]() { RefreshFieldsList(); });
 
 		return category;
 	}
 
-	UICanvasField& UICanvasActor::AddField(const std::string& name, std::function<glm::vec3()> getElementOffset)
+	UICanvasField& UICanvasActor::AddField(const std::string& name, std::function<Vec3f()> getElementOffset)
 	{
 		if (!FieldsList)
 			FieldsList = &ScaleActor->CreateChild<UIListActor>(Name + "_Fields_List");
 
 		UICanvasField& field = FieldsList->CreateChild<UICanvasField>(name);
-		(getElementOffset) ? (FieldsList->AddElement(UIListElement(field, getElementOffset))) : (FieldsList->AddElement(UIListElement(field, glm::vec3(0.0f, -FieldSize.y * 2.0f, 0.0f))));
+		(getElementOffset) ? (FieldsList->AddElement(UIListElement(field, getElementOffset))) : (FieldsList->AddElement(UIListElement(field, Vec3f(0.0f, -FieldSize.y * 2.0f, 0.0f))));
 
-		field.SetTransform(Transform(glm::vec2(0.0f), glm::vec2(FieldSize)));	//position doesn't matter if this is not the first field
+		field.SetTransform(Transform(Vec2f(0.0f), Vec2f(FieldSize)));	//position doesn't matter if this is not the first field
 
 
 		return field;
@@ -150,14 +161,14 @@ namespace GEE
 
 	void UICanvasActor::HandleEvent(const Event& ev)
 	{
-		if (ev.GetType() != EventType::MOUSE_SCROLLED || Scene.GetCurrentBlockingCanvas() != this)
+		if (ev.GetType() != EventType::MouseScrolled || Scene.GetCurrentBlockingCanvas() != this)
 			return;
 
 		const MouseScrollEvent& scrolledEv = dynamic_cast<const MouseScrollEvent&>(ev);
 
-		if (GameHandle->GetInputRetriever().IsKeyPressed(Key::LEFT_CONTROL))
+		if (GameHandle->GetInputRetriever().IsKeyPressed(Key::LeftControl))
 		{
-			glm::vec2 newScale = static_cast<glm::vec2>(CanvasView.Scale()) * glm::pow(glm::vec2(0.5f), glm::vec2(scrolledEv.GetOffset().y));
+			Vec2f newScale = static_cast<Vec2f>(CanvasView.GetScale()) * glm::pow(Vec2f(0.5f), Vec2f(scrolledEv.GetOffset().y));
 			printVector(newScale, "new scale");
 			SetViewScale(newScale);
 		}
@@ -187,20 +198,19 @@ namespace GEE
 		}*/
 	}
 
-	RenderInfo UICanvasActor::BindForRender(const RenderInfo& info, const glm::uvec2& res)	//Note: RenderInfo is a relatively big object for real-time standards. HOPEFULLY the compiler will optimize here using NRVO and convertedInfo won't be copied D:
+	RenderInfo UICanvasActor::BindForRender(const RenderInfo& info, const Vec2u& res)	//Note: RenderInfo is a relatively big object for real-time standards. HOPEFULLY the compiler will optimize here using NRVO and convertedInfo won't be copied D:
 	{
 		RenderInfo convertedInfo = info;
 		convertedInfo.view = GetViewMatrix() * info.view;
-		convertedInfo.projection = GetProjection();
 		convertedInfo.CalculateVP();
 		GetViewport().SetOpenGLState(res);
 
 		return convertedInfo;
 	}
 
-	void UICanvasActor::UnbindForRender(const glm::uvec2& res)
+	void UICanvasActor::UnbindForRender(const Vec2u& res)
 	{
-		Viewport(glm::uvec2(0), res).SetOpenGLState();
+		Viewport(Vec2u(0), res).SetOpenGLState();
 	}
 
 	UICanvasActor::~UICanvasActor()
@@ -223,17 +233,17 @@ namespace GEE
 	void UICanvasActor::CreateScrollBars()
 	{
 		ScrollBarX = &CreateChild<UIScrollBarActor>("ScrollBarX");
-		ScrollBarX->SetTransform(Transform(glm::vec2(0.0f, -1.10f), glm::vec2(0.05f, 0.1f)));
+		ScrollBarX->SetTransform(Transform(Vec2f(0.0f, -1.10f), Vec2f(0.05f, 0.1f)));
 		ScrollBarX->SetWhileBeingClickedFunc([this]() {
-			ScrollView(glm::vec2((glm::inverse(GetCanvasT()->GetWorldTransformMatrix()) * glm::vec4(static_cast<float>(GameHandle->GetInputRetriever().GetMousePositionNDC().x) - ScrollBarX->GetClickPosNDC().x, 0.0f, 0.0f, 0.0f)).x * GetBoundingBox().Size.x, 0.0f));
+			ScrollView(Vec2f((glm::inverse(GetCanvasT()->GetWorldTransformMatrix()) * Vec4f(static_cast<float>(GameHandle->GetInputRetriever().GetMousePositionNDC().x) - ScrollBarX->GetClickPosNDC().x, 0.0f, 0.0f, 0.0f)).x * GetBoundingBox().Size.x, 0.0f));
 			UpdateScrollBarT<VecAxis::X>();
 			ScrollBarX->SetClickPosNDC(GameHandle->GetInputRetriever().GetMousePositionNDC());
 			});
 
 		ScrollBarY = &CreateChild<UIScrollBarActor>("ScrollBarY");
-		ScrollBarY->SetTransform(Transform(glm::vec2(1.10f, 0.0f), glm::vec2(0.1f, 0.05f)));
+		ScrollBarY->SetTransform(Transform(Vec2f(1.10f, 0.0f), Vec2f(0.1f, 0.05f)));
 		ScrollBarY->SetWhileBeingClickedFunc([this]() {
-			ScrollView(glm::vec2(0.0f, (glm::inverse(GetCanvasT()->GetWorldTransformMatrix()) * glm::vec4(0.0f, static_cast<float>(GameHandle->GetInputRetriever().GetMousePositionNDC().y) - ScrollBarY->GetClickPosNDC().y, 0.0f, 0.0f)).y * GetBoundingBox().Size.y));
+			ScrollView(Vec2f(0.0f, (glm::inverse(GetCanvasT()->GetWorldTransformMatrix()) * Vec4f(0.0f, static_cast<float>(GameHandle->GetInputRetriever().GetMousePositionNDC().y) - ScrollBarY->GetClickPosNDC().y, 0.0f, 0.0f)).y * GetBoundingBox().Size.y));
 			UpdateScrollBarT<VecAxis::Y>();
 			ScrollBarY->SetClickPosNDC(GameHandle->GetInputRetriever().GetMousePositionNDC());
 			});
@@ -245,7 +255,7 @@ namespace GEE
 			ScrollBarX->WhileBeingClicked();
 			ScrollBarY->WhileBeingClicked();
 			});
-		BothScrollBarsButton->SetTransform(Transform(glm::vec2(1.10f, -1.10f), glm::vec2(0.1f)));
+		BothScrollBarsButton->SetTransform(Transform(Vec2f(1.10f, -1.10f), Vec2f(0.1f)));
 
 
 		UpdateScrollBarT<VecAxis::X>();
@@ -253,10 +263,10 @@ namespace GEE
 
 
 		ResizeBarX = &CreateChild<UIScrollBarActor>("ResizeBarX");
-		ResizeBarX->SetTransform(Transform(glm::vec2(0.0f, -1.2625f), glm::vec2(1.0f, 0.0375f)));
+		ResizeBarX->SetTransform(Transform(Vec2f(0.0f, -1.2625f), Vec2f(1.0f, 0.0375f)));
 		ResizeBarX->SetWhileBeingClickedFunc([this]() {
 			float scale = ResizeBarX->GetClickPosNDC().y - GameHandle->GetInputRetriever().GetMousePositionNDC().y;
-			this->GetTransform()->SetScale((glm::vec2)this->GetTransform()->Scale() * (1.0f + scale));
+			this->GetTransform()->SetScale((Vec2f)this->GetTransform()->GetScale() * (1.0f + scale));
 			ResizeBarX->SetClickPosNDC(GameHandle->GetInputRetriever().GetMousePositionNDC());
 			});
 
@@ -273,10 +283,10 @@ namespace GEE
 		unsigned int axisIndex = static_cast<unsigned int>(barAxis);
 		Boxf<Vec2f> canvasBBox = GetBoundingBox();
 
-		float barSize = glm::min(1.0f, glm::pow(CanvasView.Scale()[axisIndex], 2.0f) / canvasBBox.Size[axisIndex]);
+		float barSize = glm::min(1.0f, CanvasView.GetScale()[axisIndex] / canvasBBox.Size[axisIndex]);
 
-		float viewMovePos = CanvasView.Pos()[axisIndex] - glm::pow(CanvasView.Scale()[axisIndex], 2.0f) - ((barAxis == VecAxis::X) ? (canvasBBox.GetLeft()) : (canvasBBox.GetBottom()));
-		float viewMoveSize = (canvasBBox.Size[axisIndex] - glm::pow(CanvasView.Scale()[axisIndex], 2.0f)) * 2.0f;
+		float viewMovePos = CanvasView.GetPos()[axisIndex] - CanvasView.GetScale()[axisIndex] - ((barAxis == VecAxis::X) ? (canvasBBox.GetLeft()) : (canvasBBox.GetBottom()));
+		float viewMoveSize = (canvasBBox.Size[axisIndex] - CanvasView.GetScale()[axisIndex]) * 2.0f;
 
 		float barPos = 0.0F;
 		if (viewMoveSize > 0.0f)
@@ -299,14 +309,29 @@ namespace GEE
 		bool hide = floatComparison(barSize, 1.0f, std::numeric_limits<float>().epsilon());	//hide if we can't scroll on this axis
 		scrollBar->GetButtonModel()->SetHide(hide);
 		scrollBar->SetDisableInput(hide);
+
+		// If the both scroll bars button exists and there are no visible scroll bars, hide the button.
+		if (BothScrollBarsButton)
+		{
+			bool hideButton = (!ScrollBarX || ScrollBarX->GetButtonModel()->GetHide()) || (!ScrollBarY || ScrollBarY->GetButtonModel()->GetHide());
+			BothScrollBarsButton->GetButtonModel()->SetHide(hideButton);
+			BothScrollBarsButton->SetDisableInput(hideButton);
+		}
+
 	}
 
 	template void UICanvasActor::UpdateScrollBarT<VecAxis::X>();
 	template void UICanvasActor::UpdateScrollBarT<VecAxis::Y>();
 
-	UICanvasField& AddFieldToCanvas(const std::string& name, UICanvasElement& element, std::function<glm::vec3()> getFieldOffsetFunc)
+	UICanvasField& AddFieldToCanvas(const std::string& name, UICanvasElement& element, std::function<Vec3f()> getFieldOffsetFunc)
 	{
 		return element.GetCanvasPtr()->AddField(name, getFieldOffsetFunc);
+	}
+
+	EditorDescriptionBuilder::EditorDescriptionBuilder(EditorManager& editorHandle, UICanvasFieldCategory& cat):
+		EditorDescriptionBuilder(editorHandle, cat, *cat.GetCanvasPtr())
+	{
+		OptionalCategory = &cat;
 	}
 
 	EditorDescriptionBuilder::EditorDescriptionBuilder(EditorManager& editorHandle, UIActorDefault& descriptionParent) :
@@ -315,7 +340,7 @@ namespace GEE
 	}
 
 	EditorDescriptionBuilder::EditorDescriptionBuilder(EditorManager& editorHandle, Actor& descriptionParent, UICanvas& canvas) :
-		EditorHandle(editorHandle), EditorScene(descriptionParent.GetScene()), DescriptionParent(descriptionParent), CanvasRef(canvas)
+		EditorHandle(editorHandle), EditorScene(descriptionParent.GetScene()), DescriptionParent(descriptionParent), CanvasRef(canvas), OptionalCategory(nullptr)
 	{
 	}
 
@@ -339,9 +364,9 @@ namespace GEE
 		return EditorHandle;
 	}
 
-	UICanvasField& EditorDescriptionBuilder::AddField(const std::string& name, std::function<glm::vec3()> getFieldOffsetFunc)
+	UICanvasField& EditorDescriptionBuilder::AddField(const std::string& name, std::function<Vec3f()> getFieldOffsetFunc)
 	{
-		return GetCanvas().AddField(name, getFieldOffsetFunc);
+		return (OptionalCategory) ? (OptionalCategory->AddField(name, getFieldOffsetFunc)) : (GetCanvas().AddField(name, getFieldOffsetFunc));
 	}
 
 	UICanvasFieldCategory& EditorDescriptionBuilder::AddCategory(const std::string& name)

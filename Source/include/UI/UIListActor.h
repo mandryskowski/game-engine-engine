@@ -22,8 +22,8 @@ namespace GEE
 			T* Ptr;
 		};
 	public:
-		UIListElement(Actor& actorRef, std::function<glm::vec3()> getElementOffset, std::function<glm::vec3()> getCenterOffset = nullptr);
-		UIListElement(Actor& actorRef, const glm::vec3& constElementOffset);
+		UIListElement(Actor& actorRef, std::function<Vec3f()> getElementOffset, std::function<Vec3f()> getCenterOffset = nullptr);
+		UIListElement(Actor& actorRef, const Vec3f& constElementOffset);
 		UIListElement(const UIListElement&);
 		UIListElement(UIListElement&&);
 		UIListElement& operator=(const UIListElement&);
@@ -31,15 +31,15 @@ namespace GEE
 		bool IsBeingKilled() const;
 		Actor& GetActorRef();
 		const Actor& GetActorRef() const;
-		glm::vec3 GetElementOffset() const;
-		glm::vec3 GetCenterOffset() const;
+		Vec3f GetElementOffset() const;
+		Vec3f GetCenterOffset() const;
 
-		void SetGetElementOffsetFunc(std::function<glm::vec3()>);
-		void SetGetCenterOffsetFunc(std::function<glm::vec3()>);
+		void SetGetElementOffsetFunc(std::function<Vec3f()>);
+		void SetGetCenterOffsetFunc(std::function<Vec3f()>);
 
 	private:
 		NonNullPtr<Actor> ActorPtr;
-		std::function<glm::vec3()> GetElementOffsetFunc, GetCenterOffsetFunc;
+		std::function<Vec3f()> GetElementOffsetFunc, GetCenterOffsetFunc;
 	};
 
 	class UIListActor : public UIActorDefault
@@ -50,18 +50,18 @@ namespace GEE
 
 		void Refresh();
 
-		virtual glm::vec3 GetListOffset();
-		glm::vec3 GetListBegin();
+		virtual Vec3f GetListOffset();
+		Vec3f GetListBegin();
 
 		int GetListElementCount() const;
 
-		void SetListElementOffset(int index, std::function<glm::vec3()> getElementOffset);
-		void SetListCenterOffset(int index, std::function<glm::vec3()> getCenterOffset);
+		void SetListElementOffset(int index, std::function<Vec3f()> getElementOffset);
+		void SetListCenterOffset(int index, std::function<Vec3f()> getCenterOffset);
 
 		void AddElement(const UIListElement&);
 
-		glm::vec3 MoveElement(UIListElement& element, glm::vec3 nextElementBegin, float level);
-		glm::vec3 MoveElements(unsigned int level = 0);
+		static Vec3f MoveElement(UIListElement& element, Vec3f nextElementBegin, float level);
+		Vec3f MoveElements(unsigned int level = 0);
 
 		void EraseListElement(std::function<bool(const UIListElement&)>);
 		void EraseListElement(Actor&);
@@ -75,12 +75,12 @@ namespace GEE
 	class UIAutomaticListActor : public UIListActor
 	{
 	public:
-		UIAutomaticListActor(GameScene& scene, Actor* parentActor, const std::string& name, glm::vec3 elementOffset = glm::vec3(0.0, -2.0f, 0.0f));
-		UIAutomaticListActor(UIAutomaticListActor&&);
+		UIAutomaticListActor(GameScene& scene, Actor* parentActor, const std::string& name, Vec3f elementOffset = Vec3f(0.0, -2.0f, 0.0f));
+		UIAutomaticListActor(UIAutomaticListActor&&) noexcept;
 
-		virtual Actor& AddChild(std::unique_ptr<Actor>) override;
+		virtual Actor& AddChild(UniquePtr<Actor>) override;
 
 	private:
-		glm::vec3 ElementOffset;
+		Vec3f ElementOffset;
 	};
 }

@@ -1,7 +1,9 @@
+#define TEXTURE_ALPHA_DISCARD_THRESHOLD 0.5
 struct Material
 {
 	vec4 color;
 	sampler2D albedo1;
+	bool useAlbedoAsMask;
 };
 
 //in
@@ -20,14 +22,20 @@ uniform Material material;
 void main()
 {
 	fragColor = mix(texture(material.albedo1, texCoord1), texture(material.albedo1, texCoord2), blend);
-	if (material.color.rgb != vec3(0.0) && fragColor.rgb == vec3(0.0))
+	
+	if (material.useAlbedoAsMask)
+	{
+		if (fragColor.a < TEXTURE_ALPHA_DISCARD_THRESHOLD)
+			discard;
+		fragColor = vec4(material.color.rgb, material.color.a * fragColor.a);
+	}
+	else if (material.color.rgb != vec3(0.0) && fragColor.rgb == vec3(0.0))	// use material.color if no texture is found
 		fragColor = material.color;
+	else if (fragColor.a < TEXTURE_ALPHA_DISCARD_THRESHOLD)
+		discard;
 	brightColor = fragColor;
 	
 	//fragColor = vec4(texCoord1, 0.0, 1.0);
-	
-	if (fragColor.a < 0.5)
-		discard;
 		
 	//fragColor.rgb *= fragColor.rgb + 1.0;
 	//if (abs(textureSize(material.albedo1, 0).x - 546) < 2.0)

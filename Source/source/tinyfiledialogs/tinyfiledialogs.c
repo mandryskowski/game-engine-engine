@@ -1417,7 +1417,7 @@ name = 'txt_input' value = '' style = 'float:left;width:100%' ><BR>\n\
 		memset(lBuff, 0, MAX_PATH_OR_CMD * sizeof(wchar_t) );
 
 #ifdef TINYFD_NOCCSUNICODE
-		fgets((char *)lBuff, 2*MAX_PATH_OR_CMD, lIn);
+		fgets(lBuff, 2*MAX_PATH_OR_CMD, lIn);
 #else
 		fgetws(lBuff, MAX_PATH_OR_CMD, lIn);
 #endif
@@ -1598,7 +1598,7 @@ wchar_t * tinyfd_openFileDialogW(
 
 		free(lBuff);
 		lBuff = NULL;
-		if (aAllowMultipleSelects < 0) return (wchar_t *)0;
+		if (aAllowMultipleSelects < 0) return 0;
 
 		if (aTitle&&!wcscmp(aTitle, L"tinyfd_query")){ strcpy(tinyfd_response, "windows_wchar"); return (wchar_t *)1; }
 
@@ -1758,7 +1758,7 @@ static int __stdcall BrowseCallbackProcW(HWND hwnd, UINT uMsg, LPARAM lp, LPARAM
 {
     switch (uMsg) {
         case BFFM_INITIALIZED:
-            SendMessage(hwnd, BFFM_SETSELECTIONW, TRUE, (LPARAM)pData);
+            SendMessage(hwnd, BFFM_SETSELECTIONW, TRUE, pData);
             break;
         case BFFM_SELCHANGED:
             EnumChildWindows(hwnd, BrowseCallbackProcW_enum, 0);
@@ -2065,7 +2065,7 @@ static char * saveFileDialogWinGui(
 		lTitle,
 		lDefaultPathAndFile,
 		aNumOfFilterPatterns,
-		(wchar_t const**) lFilterPatterns, /*stupid cast for gcc*/
+		lFilterPatterns, /*stupid cast for gcc*/
 		lSingleFilterDescription);
 
 	for (i = 0; i < aNumOfFilterPatterns; i++)
@@ -2137,7 +2137,7 @@ static char * openFileDialogWinGui(
 		lTitle,
 		lDefaultPathAndFile,
 		aNumOfFilterPatterns,
-		(wchar_t const**) lFilterPatterns, /*stupid cast for gcc*/
+		lFilterPatterns, /*stupid cast for gcc*/
 		lSingleFilterDescription,
 		aAllowMultipleSelects);
 
@@ -2865,14 +2865,14 @@ char * tinyfd_inputBox(
 	}
     else if ( dialogPresent() )
     {
-        if (aTitle&&!strcmp(aTitle,"tinyfd_query")){strcpy(tinyfd_response,"dialog");return (char *)0;}
+        if (aTitle&&!strcmp(aTitle,"tinyfd_query")){strcpy(tinyfd_response,"dialog");return 0;}
         lBuff[0]='\0';
 		if (inputBoxWinConsole(lBuff, aTitle, aMessage, aDefaultInput) ) return lBuff;
 		else return NULL;
 	}
     else
     {
-      if (aTitle&&!strcmp(aTitle,"tinyfd_query")){strcpy(tinyfd_response,"basicinput");return (char *)0;}
+      if (aTitle&&!strcmp(aTitle,"tinyfd_query")){strcpy(tinyfd_response,"basicinput");return 0;}
       lBuff[0]='\0';
       if (!gWarningDisplayed && !tinyfd_forceConsole)
       {
@@ -2992,16 +2992,16 @@ char * tinyfd_saveFileDialog(
         {
             if (aTitle&&!strcmp(aTitle,"tinyfd_query")){strcpy(tinyfd_response,"windows");return (char *)1;}
             p = saveFileDialogWinGui(lBuff,
-				aTitle, aDefaultPathAndFile, aNumOfFilterPatterns, (char const * const *)aFilterPatterns, aSingleFilterDescription);
+				aTitle, aDefaultPathAndFile, aNumOfFilterPatterns, aFilterPatterns, aSingleFilterDescription);
         }
 		else if (dialogPresent())
 		{
-			if (aTitle&&!strcmp(aTitle, "tinyfd_query")){ strcpy(tinyfd_response, "dialog"); return (char *)0; }
+			if (aTitle&&!strcmp(aTitle, "tinyfd_query")){ strcpy(tinyfd_response, "dialog"); return 0; }
 			p = saveFileDialogWinConsole(lBuff, aTitle, aDefaultPathAndFile);
 		}
 		else
 		{
-			if (aTitle&&!strcmp(aTitle, "tinyfd_query")){ strcpy(tinyfd_response, "basicinput"); return (char *)0; }
+			if (aTitle&&!strcmp(aTitle, "tinyfd_query")){ strcpy(tinyfd_response, "basicinput"); return 0; }
 			strcpy(lBuff, "Save file in ");
 			strcat(lBuff, getCurDir());
 
@@ -3059,16 +3059,16 @@ char * tinyfd_openFileDialog(
         {
                 if (aTitle&&!strcmp(aTitle,"tinyfd_query")){strcpy(tinyfd_response,"windows");return (char *)1;}
                 p = openFileDialogWinGui( aTitle, aDefaultPathAndFile, aNumOfFilterPatterns,
-					(char const * const *)aFilterPatterns, aSingleFilterDescription, aAllowMultipleSelects);
+					aFilterPatterns, aSingleFilterDescription, aAllowMultipleSelects);
         }
 		else if (dialogPresent())
 		{
-			if (aTitle&&!strcmp(aTitle, "tinyfd_query")){ strcpy(tinyfd_response, "dialog"); return (char *)0; }
+			if (aTitle&&!strcmp(aTitle, "tinyfd_query")){ strcpy(tinyfd_response, "dialog"); return 0; }
 			p = openFileDialogWinConsole(aTitle, aDefaultPathAndFile);
 		}
 		else
 		{
-			if (aTitle&&!strcmp(aTitle, "tinyfd_query")){ strcpy(tinyfd_response, "basicinput"); return (char *)0; }
+			if (aTitle&&!strcmp(aTitle, "tinyfd_query")){ strcpy(tinyfd_response, "basicinput"); return 0; }
 			strcpy(lBuff, "Open file from ");
 			strcat(lBuff, getCurDir());
 			lPointerInputBox = tinyfd_inputBox(NULL, NULL, NULL); /* obtain a pointer on the current content of tinyfd_inputBox */
@@ -3085,7 +3085,7 @@ char * tinyfd_openFileDialog(
         }
         if ( aAllowMultipleSelects && strchr(p, '|') )
         {
-                p = ensureFilesExist( (char *) p , p ) ;
+                p = ensureFilesExist( p , p ) ;
         }
         else if ( ! fileExists(p) )
         {
@@ -3117,12 +3117,12 @@ char * tinyfd_selectFolderDialog(
 		else
 		if (dialogPresent())
 		{
-			if (aTitle&&!strcmp(aTitle, "tinyfd_query")){ strcpy(tinyfd_response, "dialog"); return (char *)0; }
+			if (aTitle&&!strcmp(aTitle, "tinyfd_query")){ strcpy(tinyfd_response, "dialog"); return 0; }
 			p = selectFolderDialogWinConsole(lBuff, aTitle, aDefaultPath);
 		}
 		else
 		{
-			if (aTitle&&!strcmp(aTitle, "tinyfd_query")){ strcpy(tinyfd_response, "basicinput"); return (char *)0; }
+			if (aTitle&&!strcmp(aTitle, "tinyfd_query")){ strcpy(tinyfd_response, "basicinput"); return 0; }
 			strcpy(lBuff, "Select folder from ");
 			strcat(lBuff, getCurDir());
 			lPointerInputBox = tinyfd_inputBox(NULL, NULL, NULL); /* obtain a pointer on the current content of tinyfd_inputBox */
@@ -3176,11 +3176,11 @@ char * tinyfd_colorChooser(
     }
 	else if (dialogPresent())
 	{
-		if (aTitle&&!strcmp(aTitle, "tinyfd_query")){ strcpy(tinyfd_response, "dialog"); return (char *)0; }
+		if (aTitle&&!strcmp(aTitle, "tinyfd_query")){ strcpy(tinyfd_response, "dialog"); return 0; }
 	}
 	else
 	{
-		if (aTitle&&!strcmp(aTitle, "tinyfd_query")){ strcpy(tinyfd_response, "basicinput"); return (char *)0; }
+		if (aTitle&&!strcmp(aTitle, "tinyfd_query")){ strcpy(tinyfd_response, "basicinput"); return 0; }
 	}
 
 	if (aDefaultHexRGB)
@@ -3203,7 +3203,7 @@ char * tinyfd_colorChooser(
     }
     for ( i = 1 ; i < 7 ; i ++ )
     {
-            if ( ! isxdigit( (int) p[i] ) )
+            if ( ! isxdigit( p[i] ) )
             {
                     return NULL ;
             }

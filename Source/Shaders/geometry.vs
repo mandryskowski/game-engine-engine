@@ -33,6 +33,10 @@ layout (std140) uniform BoneMatrices
 {
 	mat4 boneMatrices[BONE_MATS_BATCH_SIZE];
 };
+layout (std140) uniform PreviousBoneMatrices
+{
+	mat4 prevBoneMatrices[BONE_MATS_BATCH_SIZE];
+};
 
 void main()
 {
@@ -59,10 +63,18 @@ void main()
 	vs_out.TBN = mat3(T, B, N);
 	
 	vec4 projCoords = MVP * bonePosition;
-	
+
 	#ifdef CALC_VELOCITY_BUFFER
 	vs_out.currMVPPosition = projCoords;
-	vs_out.prevMVPPosition = prevMVP * vec4(vPosition, 1.0);
+	
+	mat4 prevBoneMatrix = prevBoneMatrices[vBoneIDs[0] + boneIDOffset] * vBoneWeights[0];
+	for (int i = 1; i < 4; i++)
+		prevBoneMatrix += prevBoneMatrices[vBoneIDs[i] + boneIDOffset] * vBoneWeights[i];
+		
+	if (vBoneIDs.x == 0 && vBoneWeights.x == 0.0)
+		prevBoneMatrix = mat4(1.0);
+	
+	vs_out.prevMVPPosition = prevMVP * prevBoneMatrix * vec4(vPosition, 1.0);
 	#endif
 
 	gl_Position = projCoords;

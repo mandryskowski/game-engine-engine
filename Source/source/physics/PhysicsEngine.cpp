@@ -15,7 +15,6 @@ namespace GEE
 
 		physx::PxFoundation* PhysicsEngine::Foundation = nullptr;
 
-
 		PhysicsEngine::PhysicsEngine(bool* debugmode) :
 			Physics(nullptr),
 			Dispatcher(nullptr),
@@ -55,10 +54,10 @@ namespace GEE
 			if (!Cooking)
 				std::cerr << "ERROR! Can't initialize cooking.\n";
 
-			DefaultMaterial = Physics->createMaterial(0.5f, 1.0f, 0.6f);
+			DefaultMaterial = Physics->createMaterial(1.0f, 0.5f, 0.1f);
 		}
 
-		PxShape* PhysicsEngine::CreateTriangleMeshShape(CollisionShape* colShape, glm::vec3 scale)
+		PxShape* PhysicsEngine::CreateTriangleMeshShape(CollisionShape* colShape, Vec3f scale)
 		{
 			if (colShape->VertData.empty() || colShape->IndicesData.empty())
 			{
@@ -68,7 +67,7 @@ namespace GEE
 
 			PxTriangleMeshDesc desc;
 			desc.points.count = colShape->VertData.size();
-			desc.points.stride = sizeof(glm::vec3);
+			desc.points.stride = sizeof(Vec3f);
 			desc.points.data = &colShape->VertData[0];
 
 			desc.triangles.count = colShape->IndicesData.size() / 3;
@@ -110,7 +109,7 @@ namespace GEE
 				std::cerr << "ERROR! The given CollisionObject does not have a pointer to any Transform object.\n";
 				return;
 			}
-			Vec3f worldObjectScale = object.TransformPtr->GetWorldTransform().Scale();
+			Vec3f worldObjectScale = object.TransformPtr->GetWorldTransform().GetScale();
 
 			for (int i = 0; i < static_cast<int>(object.Shapes.size()); i++)
 				CreatePxShape(*object.Shapes[i], object);
@@ -127,11 +126,11 @@ namespace GEE
 
 		void PhysicsEngine::CreatePxShape(CollisionShape& shape, CollisionObject& object)
 		{
-			Vec3f worldObjectScale = object.TransformPtr->GetWorldTransform().Scale();
+			Vec3f worldObjectScale = object.TransformPtr->GetWorldTransform().GetScale();
 
 			PxShape* pxShape = nullptr;
 			const Transform& shapeT = shape.ShapeTransform;
-			Vec3f shapeScale = shapeT.Scale() * worldObjectScale;
+			Vec3f shapeScale = shapeT.GetScale() * worldObjectScale;
 
 			switch (shape.Type)
 			{
@@ -151,7 +150,7 @@ namespace GEE
 			if (!pxShape)
 				return;
 
-			pxShape->setLocalPose(PxTransform(toPx(static_cast<glm::mat3>(object.TransformPtr->GetWorldTransformMatrix()) * shapeT.Pos()), (object.IgnoreRotation) ? (physx::PxQuat()) : (toPx(shapeT.Rot()))));
+			pxShape->setLocalPose(PxTransform(toPx(static_cast<Mat3f>(object.TransformPtr->GetWorldTransformMatrix()) * shapeT.GetPos()), (object.IgnoreRotation) ? (physx::PxQuat()) : (toPx(shapeT.GetRot()))));
 			pxShape->userData = &shape.ShapeTransform;
 
 			if (!object.ActorPtr)
@@ -182,7 +181,7 @@ namespace GEE
 			desc.height = 0.6f;
 			desc.material = DefaultMaterial;
 			desc.position = PxExtendedVec3(0.0f, 0.0f, 0.0f);
-			desc.position = PxExtendedVec3(t.Pos().x, t.Pos().y, t.Pos().z);
+			desc.position = PxExtendedVec3(t.GetPos().x, t.GetPos().y, t.GetPos().z);
 			//desc.maxJumpHeight = 0.5f;
 			//desc.invisibleWallHeight = 0.5f;
 			desc.contactOffset = desc.radius * 0.1f;
@@ -199,11 +198,10 @@ namespace GEE
 			return controller;
 		}
 
-		void PhysicsEngine::ApplyForce(CollisionObject& obj, glm::vec3 force)
+		void PhysicsEngine::ApplyForce(CollisionObject& obj, Vec3f force)
 		{
 			Physics::ApplyForce(obj, force);
 		}
-
 
 		void PhysicsEngine::SetupScene(GameScenePhysicsData& scenePhysicsData)
 		{
@@ -276,7 +274,6 @@ namespace GEE
 						obj->TransformPtr->SetRotationWorld(toGlm(pxTransform.q));
 
 					//obj->TransformPtr->SetMatrix(t.Matrix);
-
 				}
 			}
 		}
@@ -294,10 +291,9 @@ namespace GEE
 					const Transform& worldTransform = obj->TransformPtr->GetWorldTransform();
 
 					PxTransform pxTransform = obj->ActorPtr->getGlobalPose();
-					pxTransform.p = toPx(worldTransform.Pos());
+					pxTransform.p = toPx(worldTransform.GetPos());
 					if (!obj->IgnoreRotation)
-						pxTransform.q = toPx(worldTransform.Rot());
-
+						pxTransform.q = toPx(worldTransform.GetRot());
 
 					physx::PxShape** shapes = new physx::PxShape * [obj->ActorPtr->getNbShapes()];
 					obj->ActorPtr->getShapes(shapes, obj->ActorPtr->getNbShapes());
@@ -317,7 +313,7 @@ namespace GEE
 						{
 							physx::PxTriangleMeshGeometry meshGeom;
 							shapes[j]->getTriangleMeshGeometry(meshGeom);
-							meshGeom.scale = toPx(worldTransform.Scale() * shapeTransform->Scale());
+							meshGeom.scale = toPx(worldTransform.GetScale() * shapeTransform->GetScale());
 
 							obj->ActorPtr->detachShape(*shapes[j]);
 							shapes[j]->setGeometry(meshGeom);
@@ -327,7 +323,7 @@ namespace GEE
 						{
 							physx::PxBoxGeometry boxGeom;
 							shapes[j]->getBoxGeometry(boxGeom);
-							boxGeom.halfExtents = toPx(worldTransform.Scale() * shapeTransform->Scale());
+							boxGeom.halfExtents = toPx(worldTransform.GetScale() * shapeTransform->GetScale());
 
 							obj->ActorPtr->detachShape(*shapes[j]);
 							shapes[j]->setGeometry(boxGeom);
@@ -337,7 +333,7 @@ namespace GEE
 						{
 							physx::PxSphereGeometry sphereGeom;
 							shapes[j]->getSphereGeometry(sphereGeom);
-							sphereGeom.radius = worldTransform.Scale().x * shapeTransform->Scale().x;
+							sphereGeom.radius = worldTransform.GetScale().x * shapeTransform->GetScale().x;
 
 							obj->ActorPtr->detachShape(*shapes[j]);
 							shapes[j]->setGeometry(sphereGeom);
@@ -351,9 +347,8 @@ namespace GEE
 							obj->ActorPtr->detachShape(*shapes[j]);
 						}
 
-						shapes[j]->setLocalPose(PxTransform(toPx(static_cast<glm::mat3>(worldTransform.GetMatrix()) * shapeTransform->Pos()), (obj->IgnoreRotation) ? (physx::PxQuat()) : (toPx(shapeTransform->Rot()))));
+						shapes[j]->setLocalPose(PxTransform(toPx(static_cast<Mat3f>(worldTransform.GetMatrix()) * shapeTransform->GetPos()), (obj->IgnoreRotation) ? (physx::PxQuat()) : (toPx(shapeTransform->GetRot()))));
 						obj->ActorPtr->attachShape(*shapes[j]);
-
 					}
 
 					obj->ActorPtr->setGlobalPose(pxTransform);
@@ -371,8 +366,7 @@ namespace GEE
 
 			const PxRenderBuffer& rb = scenePhysicsData.PhysXScene->getRenderBuffer();
 
-
-			std::vector<std::array<glm::vec3, 2>> verts;
+			std::vector<std::array<Vec3f, 2>> verts;
 			int sizeSum = rb.getNbPoints() + rb.getNbLines() * 2 + rb.getNbTriangles() * 3;
 			int v = 0;
 			verts.resize(sizeSum);
@@ -384,7 +378,6 @@ namespace GEE
 				verts[v][0] = toGlm(point.pos);
 				verts[v++][1] = toVecColor(static_cast<PxDebugColor::Enum>(point.color));
 			}
-
 
 			for (int i = 0; i < static_cast<int>(rb.getNbLines()); i++)
 			{
@@ -408,14 +401,13 @@ namespace GEE
 				verts[v++][1] = toVecColor(static_cast<PxDebugColor::Enum>(triangle.color2));
 			}
 
-
 			glBindVertexArray(VAO);
 			glBindBuffer(GL_ARRAY_BUFFER, VBO);
-			glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * 2 * verts.size(), &verts[0][0], GL_STATIC_DRAW);
+			glBufferData(GL_ARRAY_BUFFER, sizeof(Vec3f) * 2 * verts.size(), &verts[0][0], GL_STATIC_DRAW);
 
-			renderEng.RenderBoundInDebug(info, GL_POINTS, 0, rb.getNbPoints(), glm::vec3(0.0f));
-			renderEng.RenderBoundInDebug(info, GL_LINES, rb.getNbPoints(), rb.getNbLines() * 2, glm::vec3(0.0f));
-			renderEng.RenderBoundInDebug(info, GL_TRIANGLES, rb.getNbPoints() + rb.getNbLines() * 2, rb.getNbTriangles() * 3, glm::vec3(0.0f));
+			renderEng.RenderBoundInDebug(info, GL_POINTS, 0, rb.getNbPoints(), Vec3f(0.0f));
+			renderEng.RenderBoundInDebug(info, GL_LINES, rb.getNbPoints(), rb.getNbLines() * 2, Vec3f(0.0f));
+			renderEng.RenderBoundInDebug(info, GL_TRIANGLES, rb.getNbPoints() + rb.getNbLines() * 2, rb.getNbTriangles() * 3, Vec3f(0.0f));
 		}
 
 		PhysicsEngine::~PhysicsEngine()
@@ -440,8 +432,6 @@ namespace GEE
 			std::cout << "Physics engine successfully destroyed!\n";
 		}
 
-
-
 		void ApplyForce(CollisionObject& obj, const Vec3f& force)
 		{
 			PxRigidDynamic* body = obj.ActorPtr->is<PxRigidDynamic>();
@@ -452,25 +442,25 @@ namespace GEE
 
 		namespace Util
 		{
-			glm::vec3 toVecColor(PxDebugColor::Enum col)
+			Vec3f toVecColor(PxDebugColor::Enum col)
 			{
 				switch (col)
 				{
-				case PxDebugColor::eARGB_BLACK: return glm::vec3(0.0f);
-				case PxDebugColor::eARGB_BLUE: return glm::vec3(0.0f, 0.0f, 1.0f);
-				case PxDebugColor::eARGB_CYAN: return glm::vec3(0.5f, 0.5f, 1.0f);
-				case PxDebugColor::eARGB_DARKBLUE: return glm::vec3(0.0f, 0.0f, 0.75f);
-				case PxDebugColor::eARGB_DARKGREEN: return glm::vec3(0.0f, 0.75f, 0.0f);
-				case PxDebugColor::eARGB_DARKRED: return glm::vec3(0.75f, 0.0f, 0.0f);
-				case PxDebugColor::eARGB_GREEN: return glm::vec3(0.0f, 1.0f, 0.0f);
-				case PxDebugColor::eARGB_GREY: return glm::vec3(0.5f, 0.5f, 0.5f);
-				case PxDebugColor::eARGB_MAGENTA: return glm::vec3(1.0f, 0.0f, 1.0f);
-				case PxDebugColor::eARGB_RED: return glm::vec3(1.0f, 0.0f, 0.0f);
-				case PxDebugColor::eARGB_WHITE: return glm::vec3(1.0f);
-				case PxDebugColor::eARGB_YELLOW: return glm::vec3(1.0f, 1.0f, 0.0f);
+				case PxDebugColor::eARGB_BLACK: return Vec3f(0.0f);
+				case PxDebugColor::eARGB_BLUE: return Vec3f(0.0f, 0.0f, 1.0f);
+				case PxDebugColor::eARGB_CYAN: return Vec3f(0.5f, 0.5f, 1.0f);
+				case PxDebugColor::eARGB_DARKBLUE: return Vec3f(0.0f, 0.0f, 0.75f);
+				case PxDebugColor::eARGB_DARKGREEN: return Vec3f(0.0f, 0.75f, 0.0f);
+				case PxDebugColor::eARGB_DARKRED: return Vec3f(0.75f, 0.0f, 0.0f);
+				case PxDebugColor::eARGB_GREEN: return Vec3f(0.0f, 1.0f, 0.0f);
+				case PxDebugColor::eARGB_GREY: return Vec3f(0.5f, 0.5f, 0.5f);
+				case PxDebugColor::eARGB_MAGENTA: return Vec3f(1.0f, 0.0f, 1.0f);
+				case PxDebugColor::eARGB_RED: return Vec3f(1.0f, 0.0f, 0.0f);
+				case PxDebugColor::eARGB_WHITE: return Vec3f(1.0f);
+				case PxDebugColor::eARGB_YELLOW: return Vec3f(1.0f, 1.0f, 0.0f);
 				}
 
-				return glm::vec3(0.0f);
+				return Vec3f(0.0f);
 			}
 		}
 	}

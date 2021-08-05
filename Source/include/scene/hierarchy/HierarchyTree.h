@@ -44,7 +44,7 @@ namespace GEE
 			Animation& GetAnimation(unsigned int index);
 			unsigned int GetAnimationCount();
 
-			void SetRoot(std::unique_ptr<HierarchyNodeBase> root);
+			void SetRoot(UniquePtr<HierarchyNodeBase> root);
 
 			void AddAnimation(const Animation& anim);
 			Mesh* FindMesh(const std::string& nodeName, const std::string& specificMeshName = std::string());
@@ -59,11 +59,11 @@ namespace GEE
 		private:
 			std::string Name;	//(this can also be referred to as the path)
 			GameScene& Scene;
-			std::unique_ptr<HierarchyNodeBase> Root;
-			std::unique_ptr<Actor> TempActor;
+			UniquePtr<HierarchyNodeBase> Root;
+			UniquePtr<Actor> TempActor;
 
-			std::vector<std::unique_ptr<Animation>> TreeAnimations;
-			mutable std::unique_ptr<BoneMapping> TreeBoneMapping;
+			std::vector<UniquePtr<Animation>> TreeAnimations;
+			mutable UniquePtr<BoneMapping> TreeBoneMapping;
 		};
 	}
 }

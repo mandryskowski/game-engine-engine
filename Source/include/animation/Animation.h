@@ -1,7 +1,6 @@
 #pragma once
 #include <utility/Utility.h>
 #include <game/GameManager.h> //for HTreeObjectLoc
-#include <glfw/glfw3.h>
 #include <assimp/types.h>
 
 struct aiNodeAnim;
@@ -52,7 +51,7 @@ namespace GEE
 	{
 	public:
 		virtual bool GetHasEnded() = 0;
-		virtual std::shared_ptr<Interpolation> GetInterp() = 0;
+		virtual SharedPtr<Interpolation> GetInterp() = 0;
 		virtual void ResetMinVal() = 0;
 		virtual void Update(float deltaTime) = 0;
 		virtual void UpdateInterpolatedValPtr() = 0;	//Call to update the interpolated value ptr (if passed)
@@ -62,7 +61,7 @@ namespace GEE
 	class Interpolator : public InterpolatorBase
 	{
 	public: //TODO erase this
-		std::shared_ptr<Interpolation> Interp;
+		SharedPtr<Interpolation> Interp;
 		ValType MinVal;
 		ValType MaxVal;
 		ValType LastInterpResult;
@@ -75,10 +74,10 @@ namespace GEE
 	public:
 		Interpolator(float begin, float end, ValType min, ValType max, InterpolationType type, bool fadeAway = false, AnimBehaviour before = AnimBehaviour::STOP, AnimBehaviour after = AnimBehaviour::STOP, bool updateMinOnBegin = false, ValType* valPtr = nullptr);
 		Interpolator(Interpolation&& interp, ValType min, ValType max, bool updateMinOnBegin = true, ValType* valPtr = nullptr);
-		Interpolator(std::shared_ptr<Interpolation> interp, ValType min, ValType max, bool updateMinOnBegin = true, ValType* valPtr = nullptr);
+		Interpolator(SharedPtr<Interpolation> interp, ValType min, ValType max, bool updateMinOnBegin = true, ValType* valPtr = nullptr);
 
 		virtual bool GetHasEnded() override;
-		virtual std::shared_ptr<Interpolation> GetInterp() override;
+		virtual SharedPtr<Interpolation> GetInterp() override;
 		ValType GetCurrentValue();
 		void SetValPtr(ValType* valPtr);
 
@@ -104,8 +103,8 @@ namespace GEE
 
 	struct AnimationVecKey : public AnimationKey
 	{
-		glm::vec3 Value;
-		AnimationVecKey(float time, glm::vec3 value) :
+		Vec3f Value;
+		AnimationVecKey(float time, Vec3f value) :
 			AnimationKey(time),
 			Value(value)
 		{
@@ -114,8 +113,8 @@ namespace GEE
 
 	struct AnimationQuatKey : public AnimationKey
 	{
-		glm::quat Value;
-		AnimationQuatKey(float time, glm::quat value) :
+		Quatf Value;
+		AnimationQuatKey(float time, Quatf value) :
 			AnimationKey(time),
 			Value(value)
 		{
@@ -125,15 +124,15 @@ namespace GEE
 	struct AnimationChannel
 	{
 		std::string Name;
-		std::vector<std::shared_ptr<AnimationVecKey>> PosKeys;
-		std::vector<std::shared_ptr<AnimationQuatKey>> RotKeys;
-		std::vector<std::shared_ptr<AnimationVecKey>> ScaleKeys;
+		std::vector<SharedPtr<AnimationVecKey>> PosKeys;
+		std::vector<SharedPtr<AnimationQuatKey>> RotKeys;
+		std::vector<SharedPtr<AnimationVecKey>> ScaleKeys;
 		AnimationChannel(aiNodeAnim*, float tickPerSecond);
 	};
 
 	struct Animation
 	{
-		std::vector<std::shared_ptr<AnimationChannel>> Channels;
+		std::vector<SharedPtr<AnimationChannel>> Channels;
 		struct AnimationLoc : public HTreeObjectLoc	//exact localization of the animation
 		{
 			std::string Name;
@@ -144,6 +143,6 @@ namespace GEE
 		Animation(const HierarchyTemplate::HierarchyTreeT& tree, aiAnimation*);
 	};
 
-	glm::vec3 aiToGlm(const aiVector3D&);
-	glm::quat aiToGlm(const aiQuaternion&);
+	Vec3f aiToGlm(const aiVector3D&);
+	Quatf aiToGlm(const aiQuaternion&);
 }

@@ -51,13 +51,13 @@ namespace GEE
 		return true;
 	}
 
-	void SkeletonInfo::FillMatricesVec(std::vector<glm::mat4>& boneMats)
+	void SkeletonInfo::FillMatricesVec(std::vector<Mat4f>& boneMats)
 	{
 		//std::cout << "Filling " << Bones.size() << " bones\n";
 		if (Bones.size() == 0)
 			return;
 
-		glm::mat4 globalInverseMat = glm::inverse(GlobalInverseTransformCompPtr->GetTransform().GetWorldTransformMatrix());
+		Mat4f globalInverseMat = glm::inverse(GlobalInverseTransformCompPtr->GetTransform().GetWorldTransformMatrix());
 
 		//std::cout << "nr bones: " << Bones.size() << '\n';
 
@@ -84,17 +84,32 @@ namespace GEE
 		std::sort(Bones.begin(), Bones.end(), [](BoneComponent* bone1, BoneComponent* bone2) { return bone2->GetID() > bone1->GetID(); });
 	}
 
-	SkeletonBatch::SkeletonBatch() :
-		BoneCount(0)
+	void SkeletonBatch::SwapBoneUBOs()
 	{
-		std::array<glm::mat4, 1024> identities;
-		identities.fill(glm::mat4(1.0f));
-		BoneUBO.Generate(10, sizeof(glm::mat4) * 1024, &identities[0][0][0], GL_STREAM_DRAW);
+		BoneUBOs[CurrentBoneUBOIndex].BindToSlot(11, false);
+		CurrentBoneUBOIndex = (CurrentBoneUBOIndex == 0) ? (1) : (0);
+
+		if (!BoneUBOs[1].HasBeenGenerated())
+		{
+			std::array<Mat4f, 1024> identities;
+			identities.fill(Mat4f(1.0f));
+			BoneUBOs[1].Generate(10, sizeof(Mat4f) * 1024, &identities[0][0][0], GL_STREAM_DRAW);
+		}
+		BoneUBOs[CurrentBoneUBOIndex].BindToSlot(10, false);
+	}
+
+	SkeletonBatch::SkeletonBatch() :
+		BoneCount(0),
+		CurrentBoneUBOIndex(0)
+	{
+		std::array<Mat4f, 1024> identities;
+		identities.fill(Mat4f(1.0f));
+		BoneUBOs[0].Generate(10, sizeof(Mat4f) * 1024, &identities[0][0][0], GL_STREAM_DRAW);
 	}
 
 	unsigned int SkeletonBatch::GetRemainingCapacity()
 	{
-		return (MaxUBOSize / sizeof(glm::mat4)) - BoneCount;
+		return (MaxUBOSize / sizeof(Mat4f)) - BoneCount;
 	}
 
 	int SkeletonBatch::GetInfoID(SkeletonInfo& info)
@@ -119,6 +134,11 @@ namespace GEE
 		return GameManager::DefaultScene->GetRenderData()->GetBatchID(*this);
 	}
 
+	UniformBuffer SkeletonBatch::GetBoneUBO()
+	{
+		return BoneUBOs[CurrentBoneUBOIndex];
+	}
+
 	void SkeletonBatch::RecalculateBoneCount()
 	{
 		BoneCount = 0;
@@ -129,7 +149,7 @@ namespace GEE
 		}
 	}
 
-	bool SkeletonBatch::AddSkeleton(std::shared_ptr<SkeletonInfo> info)
+	bool SkeletonBatch::AddSkeleton(SharedPtr<SkeletonInfo> info)
 	{
 		RecalculateBoneCount();
 		if (GetRemainingCapacity() < info->GetBoneCount())
@@ -147,20 +167,20 @@ namespace GEE
 
 	void SkeletonBatch::BindToUBO()
 	{
-		std::vector<glm::mat4> boneMats;
-		boneMats.resize(BoneCount, glm::mat4(1.0f));
+		std::vector<Mat4f> boneMats;
+		boneMats.resize(BoneCount, Mat4f(1.0f));
 
 		for (int i = 0; i < static_cast<int>(Skeletons.size()); i++)
 		{
 			Skeletons[i]->FillMatricesVec(boneMats);
 		}
 
-		BoneUBO.SubData(BoneCount * sizeof(glm::mat4), &boneMats[0][0][0], 0);
+		GetBoneUBO().SubData(BoneCount * sizeof(Mat4f), &boneMats[0][0][0], 0);
 	}
 
 	void SkeletonBatch::VerifySkeletonsLives()
 	{
-		Skeletons.erase(std::remove_if(Skeletons.begin(), Skeletons.end(), [](std::shared_ptr<SkeletonInfo>& skeleton) { return !skeleton->VerifyGlobalInverseCompPtrLife(); /* Remove if global inverse comp is not alive. */ }), Skeletons.end());
+		Skeletons.erase(std::remove_if(Skeletons.begin(), Skeletons.end(), [](SharedPtr<SkeletonInfo>& skeleton) { return !skeleton->VerifyGlobalInverseCompPtrLife(); /* Remove if global inverse comp is not alive. */ }), Skeletons.end());
 	}
 
 }

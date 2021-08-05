@@ -81,7 +81,7 @@ namespace GEE
 		return glm::mix(y1, y2, T);
 	}
 
-	template<> glm::quat Interpolation::InterpolateValues<glm::quat>(glm::quat y1, glm::quat y2)
+	template<> Quatf Interpolation::InterpolateValues<Quatf>(Quatf y1, Quatf y2)
 	{
 		return glm::slerp(y1, y2, T);
 	}
@@ -93,17 +93,17 @@ namespace GEE
 	*/
 
 	template <class ValType> Interpolator<ValType>::Interpolator(float begin, float end, ValType min, ValType max, InterpolationType type, bool fadeAway, AnimBehaviour before, AnimBehaviour after, bool updateMinOnBegin, ValType* valPtr) :
-		Interpolator(std::make_shared<Interpolation>(begin, end, type, fadeAway, before, after), min, max, updateMinOnBegin, valPtr)
+		Interpolator(MakeShared<Interpolation>(begin, end, type, fadeAway, before, after), min, max, updateMinOnBegin, valPtr)
 	{
 	}
 
 	template<class ValType>
 	Interpolator<ValType>::Interpolator(Interpolation&& interp, ValType min, ValType max, bool updateMinOnBegin, ValType* valPtr) :
-		Interpolator(std::make_shared<Interpolation>(interp), min, max, updateMinOnBegin, valPtr)
+		Interpolator(MakeShared<Interpolation>(interp), min, max, updateMinOnBegin, valPtr)
 	{
 	}
 
-	template <class ValType> Interpolator<ValType>::Interpolator(std::shared_ptr<Interpolation> interp, ValType min, ValType max, bool updateOnBegin, ValType* valPtr) :
+	template <class ValType> Interpolator<ValType>::Interpolator(SharedPtr<Interpolation> interp, ValType min, ValType max, bool updateOnBegin, ValType* valPtr) :
 		Interp(interp),
 		MinVal(min),
 		MaxVal(max),
@@ -120,7 +120,7 @@ namespace GEE
 		return HasEnded;
 	}
 
-	template <class ValType> std::shared_ptr<Interpolation> Interpolator<ValType>::GetInterp()
+	template <class ValType> SharedPtr<Interpolation> Interpolator<ValType>::GetInterp()
 	{
 		return Interp;
 	}
@@ -212,7 +212,7 @@ namespace GEE
 	{
 		for (int i = 0; i < static_cast<int>(anim->mNumChannels); i++)
 		{
-			Channels.push_back(std::make_shared<AnimationChannel>(AnimationChannel(anim->mChannels[i], anim->mTicksPerSecond)));
+			Channels.push_back(MakeShared<AnimationChannel>(AnimationChannel(anim->mChannels[i], anim->mTicksPerSecond)));
 		}
 	}
 
@@ -220,22 +220,22 @@ namespace GEE
 		Name(aiChannel->mNodeName.C_Str())
 	{
 		for (int i = 0; i < static_cast<int>(aiChannel->mNumPositionKeys); i++)
-			PosKeys.push_back(std::make_shared<AnimationVecKey>(AnimationVecKey(aiChannel->mPositionKeys[i].mTime / ticksPerSecond, aiToGlm(aiChannel->mPositionKeys[i].mValue))));
+			PosKeys.push_back(MakeShared<AnimationVecKey>(AnimationVecKey(aiChannel->mPositionKeys[i].mTime / ticksPerSecond, aiToGlm(aiChannel->mPositionKeys[i].mValue))));
 		for (int i = 0; i < static_cast<int>(aiChannel->mNumRotationKeys); i++)
-			RotKeys.push_back(std::make_shared<AnimationQuatKey>(AnimationQuatKey(aiChannel->mRotationKeys[i].mTime / ticksPerSecond, aiToGlm(aiChannel->mRotationKeys[i].mValue))));
+			RotKeys.push_back(MakeShared<AnimationQuatKey>(AnimationQuatKey(aiChannel->mRotationKeys[i].mTime / ticksPerSecond, aiToGlm(aiChannel->mRotationKeys[i].mValue))));
 		for (int i = 0; i < static_cast<int>(aiChannel->mNumScalingKeys); i++)
-			ScaleKeys.push_back(std::make_shared<AnimationVecKey>(AnimationVecKey(aiChannel->mScalingKeys[i].mTime / ticksPerSecond, aiToGlm(aiChannel->mScalingKeys[i].mValue))));
+			ScaleKeys.push_back(MakeShared<AnimationVecKey>(AnimationVecKey(aiChannel->mScalingKeys[i].mTime / ticksPerSecond, aiToGlm(aiChannel->mScalingKeys[i].mValue))));
 	}
 
 
-	glm::vec3 aiToGlm(const aiVector3D& aiVec)
+	Vec3f aiToGlm(const aiVector3D& aiVec)
 	{
-		return glm::vec3(aiVec.x, aiVec.y, aiVec.z);
+		return Vec3f(aiVec.x, aiVec.y, aiVec.z);
 	}
 
-	glm::quat aiToGlm(const aiQuaternion& aiQuat)
+	Quatf aiToGlm(const aiQuaternion& aiQuat)
 	{
-		return glm::quat(aiQuat.w, aiQuat.x, aiQuat.y, aiQuat.z);
+		return Quatf(aiQuat.w, aiQuat.x, aiQuat.y, aiQuat.z);
 	}
 
 	/*
@@ -245,9 +245,9 @@ namespace GEE
 	*/
 
 	template float Interpolation::InterpolateValues<float>(float y1, float y2);
-	template glm::vec3 Interpolation::InterpolateValues<glm::vec3>(glm::vec3 y1, glm::vec3 y2);
+	template Vec3f Interpolation::InterpolateValues<Vec3f>(Vec3f y1, Vec3f y2);
 
 	template class Interpolator<float>;
-	template class Interpolator<glm::vec3>;
-	template class Interpolator<glm::quat>;
+	template class Interpolator<Vec3f>;
+	template class Interpolator<Quatf>;
 }

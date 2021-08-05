@@ -2,13 +2,13 @@
 #include <game/GameManager.h>
 #include <game/GameSettings.h>
 #include "Framebuffer.h"
-#include <typeinfo>
+
 namespace GEE
 {
 	struct ToolboxCollectionInfo
 	{
 		std::string Name;
-		glm::vec2 Resolution;
+		Vec2f Resolution;
 		GameSettings Settings;
 		ShadingModel Shading;
 	};
@@ -22,12 +22,12 @@ namespace GEE
 		void Dispose();
 	protected:
 		GEE_FB::Framebuffer* AddFramebuffer();
-		Shader* AddShader(const std::shared_ptr<Shader>& shader);
+		Shader* AddShader(const SharedPtr<Shader>& shader);
 		Texture* AddTexture(const Texture & = Texture());
 
-		std::vector<std::shared_ptr<GEE_FB::Framebuffer>> Fbs;
-		std::vector<std::shared_ptr<Shader>> Shaders;	//add type ShaderVariant?
-		std::vector<std::shared_ptr<Texture>> Textures;
+		std::vector<SharedPtr<GEE_FB::Framebuffer>> Fbs;
+		std::vector<SharedPtr<Shader>> Shaders;	//add type ShaderVariant?
+		std::vector<SharedPtr<Texture>> Textures;
 	};
 
 	class DeferredShadingToolbox : public RenderToolbox
@@ -36,6 +36,8 @@ namespace GEE
 		DeferredShadingToolbox();
 		DeferredShadingToolbox(const GameSettings::VideoSettings& settings);
 		void Setup(const GameSettings::VideoSettings& settings);
+
+		const GEE_FB::Framebuffer* GetGeometryFramebuffer() const { return GFb; }
 
 		friend class MainFramebufferToolbox;
 		friend class RenderEngine;
@@ -154,7 +156,7 @@ namespace GEE
 		GEE_FB::Framebuffer& GetFinalFramebuffer();
 		friend class RenderEngine;
 	private:
-		std::shared_ptr<GEE_FB::FramebufferAttachment> RenderTarget;
+		NamedTexture RenderTarget;
 		GEE_FB::Framebuffer* FinalFramebuffer;
 	};
 
@@ -192,7 +194,7 @@ namespace GEE
 				DisposeOfTb<T>();
 			}
 
-			Tbs.push_back(std::make_shared<T>(T(obj)));
+			Tbs.push_back(MakeShared<T>(T(obj)));
 		}
 		virtual void AddTbsRequiredBySettings()
 		{
@@ -252,7 +254,8 @@ namespace GEE
 				it++;
 			}
 		}
-		bool ShouldLoadToolbox(RenderToolbox* toolbox, bool loadIfNotPresent)
+
+		static bool ShouldLoadToolbox(RenderToolbox* toolbox, bool loadIfNotPresent)
 		{
 			if ((toolbox != nullptr && toolbox->IsSetup()) || (!loadIfNotPresent))
 				return false;
@@ -260,7 +263,7 @@ namespace GEE
 			return true;
 		}
 
-		std::vector<std::shared_ptr<RenderToolbox>> Tbs;
+		std::vector<SharedPtr<RenderToolbox>> Tbs;
 
 		std::string Name;
 		const GameSettings::VideoSettings& Settings;

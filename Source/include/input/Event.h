@@ -1,52 +1,50 @@
 #pragma once
+#include <utility/Utility.h>
 #include <glfw/glfw3.h>
-#include <glm/glm.hpp>
-#include <memory>
 #include <queue>
-#include <string>
 
 namespace GEE
 {
 
 	enum class MouseButton
 	{
-		LEFT = GLFW_MOUSE_BUTTON_LEFT,
-		RIGHT = GLFW_MOUSE_BUTTON_RIGHT,
-		MIDDLE = GLFW_MOUSE_BUTTON_MIDDLE,
+		Left = GLFW_MOUSE_BUTTON_LEFT,
+		Right = GLFW_MOUSE_BUTTON_RIGHT,
+		Middle = GLFW_MOUSE_BUTTON_MIDDLE,
 
-		MOUSE_1 = GLFW_MOUSE_BUTTON_1,
-		MOUSE_2 = GLFW_MOUSE_BUTTON_2,
-		MOUSE_3 = GLFW_MOUSE_BUTTON_3,
-		MOUSE_4 = GLFW_MOUSE_BUTTON_4,
-		MOUSE_5 = GLFW_MOUSE_BUTTON_5,
-		MOUSE_6 = GLFW_MOUSE_BUTTON_6,
-		MOUSE_7 = GLFW_MOUSE_BUTTON_7,
-		MOUSE_8 = GLFW_MOUSE_BUTTON_8,
+		Mouse1 = GLFW_MOUSE_BUTTON_1,
+		Mouse2 = GLFW_MOUSE_BUTTON_2,
+		Mouse3 = GLFW_MOUSE_BUTTON_3,
+		Mouse4 = GLFW_MOUSE_BUTTON_4,
+		Mouse5 = GLFW_MOUSE_BUTTON_5,
+		Mouse6 = GLFW_MOUSE_BUTTON_6,
+		Mouse7 = GLFW_MOUSE_BUTTON_7,
+		Mouse8 = GLFW_MOUSE_BUTTON_8,
 
-		LAST = MOUSE_8
+		Last = Mouse8
 	};
 
 	enum class Key
 	{
-		UNKNOWN = GLFW_KEY_UNKNOWN,
-		SPACE = GLFW_KEY_SPACE,
-		APOSTROPHE = GLFW_KEY_APOSTROPHE, /* ' */
-		COMMA = GLFW_KEY_COMMA, /* , */
-		MINUS = GLFW_KEY_MINUS, /* - */
-		PERIOD = GLFW_KEY_PERIOD, /* . */
-		SLASH = GLFW_KEY_SLASH, /* / */
-		D0 = GLFW_KEY_0,
-		D1 = GLFW_KEY_1,
-		D2 = GLFW_KEY_2,
-		D3 = GLFW_KEY_3,
-		D4 = GLFW_KEY_4,
-		D5 = GLFW_KEY_5,
-		D6 = GLFW_KEY_6,
-		D7 = GLFW_KEY_7,
-		D8 = GLFW_KEY_8,
-		D9 = GLFW_KEY_9,
-		SEMICOLON = GLFW_KEY_SEMICOLON, /* ; */
-		EQUAL = GLFW_KEY_EQUAL, /* = */
+		Unknown = GLFW_KEY_UNKNOWN,
+		Space = GLFW_KEY_SPACE,
+		Apostrophe = GLFW_KEY_APOSTROPHE, /* ' */
+		Comma = GLFW_KEY_COMMA, /* , */
+		Minus = GLFW_KEY_MINUS, /* - */
+		Period = GLFW_KEY_PERIOD, /* . */
+		Slash = GLFW_KEY_SLASH, /* / */
+		Zero = GLFW_KEY_0,
+		One = GLFW_KEY_1,
+		Two = GLFW_KEY_2,
+		Three = GLFW_KEY_3,
+		Four = GLFW_KEY_4,
+		Five = GLFW_KEY_5,
+		Six = GLFW_KEY_6,
+		Seven = GLFW_KEY_7,
+		Eight = GLFW_KEY_8,
+		Nine = GLFW_KEY_9,
+		Semicolon = GLFW_KEY_SEMICOLON, /* ; */
+		Equal = GLFW_KEY_EQUAL, /* = */
 		A = GLFW_KEY_A,
 		B = GLFW_KEY_B,
 		C = GLFW_KEY_C,
@@ -73,31 +71,31 @@ namespace GEE
 		X = GLFW_KEY_X,
 		Y = GLFW_KEY_Y,
 		Z = GLFW_KEY_Z,
-		LEFT_BRACKET = GLFW_KEY_LEFT_BRACKET, /* [ */
-		BACKSLASH = GLFW_KEY_BACKSLASH, /* \ */
-		RIGHT_BRACKET = GLFW_KEY_RIGHT_BRACKET, /* ] */
-		GRAVE_ACCENT = GLFW_KEY_GRAVE_ACCENT, /* ` */
-		WORLD_1 = GLFW_KEY_WORLD_1, /* non-US #1 */
-		WORLD_2 = GLFW_KEY_WORLD_2, /* non-US #2 */
-		ESCAPE = GLFW_KEY_ESCAPE,
-		ENTER = GLFW_KEY_ENTER,
-		TAB = GLFW_KEY_TAB,
-		BACKSPACE = GLFW_KEY_BACKSPACE,
-		INSERT = GLFW_KEY_INSERT,
-		DELETE = GLFW_KEY_DELETE,
-		RIGHT = GLFW_KEY_RIGHT,
-		LEFT = GLFW_KEY_LEFT,
-		DOWN = GLFW_KEY_DOWN,
-		UP = GLFW_KEY_UP,
-		PAGE_UP = GLFW_KEY_PAGE_UP,
-		PAGE_DOWN = GLFW_KEY_PAGE_DOWN,
-		HOME = GLFW_KEY_HOME,
-		END = GLFW_KEY_END,
-		CAPS_LOCK = GLFW_KEY_CAPS_LOCK,
-		SCROLL_LOCK = GLFW_KEY_SCROLL_LOCK,
-		NUM_LOCK = GLFW_KEY_NUM_LOCK,
-		PRINT_SCREEN = GLFW_KEY_PRINT_SCREEN,
-		PAUSE = GLFW_KEY_PAUSE,
+		LeftBracket = GLFW_KEY_LEFT_BRACKET, /* [ */
+		Backslash = GLFW_KEY_BACKSLASH, /* \ */
+		RightBracket = GLFW_KEY_RIGHT_BRACKET, /* ] */
+		GraveAccent = GLFW_KEY_GRAVE_ACCENT, /* ` */
+		World1 = GLFW_KEY_WORLD_1, /* non-US #1 */
+		World2 = GLFW_KEY_WORLD_2, /* non-US #2 */
+		Escape = GLFW_KEY_ESCAPE,
+		Enter = GLFW_KEY_ENTER,
+		Tab = GLFW_KEY_TAB,
+		Backspace = GLFW_KEY_BACKSPACE,
+		Insert = GLFW_KEY_INSERT,
+		Delete = GLFW_KEY_DELETE,
+		RightArrow = GLFW_KEY_RIGHT,
+		LeftArrow = GLFW_KEY_LEFT,
+		DownArrow = GLFW_KEY_DOWN,
+		UpArrow = GLFW_KEY_UP,
+		PageUp = GLFW_KEY_PAGE_UP,
+		PageDown = GLFW_KEY_PAGE_DOWN,
+		Home = GLFW_KEY_HOME,
+		End = GLFW_KEY_END,
+		CapsLock = GLFW_KEY_CAPS_LOCK,
+		ScrollLock = GLFW_KEY_SCROLL_LOCK,
+		NumLock = GLFW_KEY_NUM_LOCK,
+		PrintScreen = GLFW_KEY_PRINT_SCREEN,
+		Pause = GLFW_KEY_PAUSE,
 		F1 = GLFW_KEY_F1,
 		F2 = GLFW_KEY_F2,
 		F3 = GLFW_KEY_F3,
@@ -123,58 +121,58 @@ namespace GEE
 		F23 = GLFW_KEY_F23,
 		F24 = GLFW_KEY_F24,
 		F25 = GLFW_KEY_F25,
-		KP_0 = GLFW_KEY_KP_0,
-		KP_1 = GLFW_KEY_KP_1,
-		KP_2 = GLFW_KEY_KP_2,
-		KP_3 = GLFW_KEY_KP_3,
-		KP_4 = GLFW_KEY_KP_4,
-		KP_5 = GLFW_KEY_KP_5,
-		KP_6 = GLFW_KEY_KP_6,
-		KP_7 = GLFW_KEY_KP_7,
-		KP_8 = GLFW_KEY_KP_8,
-		KP_9 = GLFW_KEY_KP_9,
-		KP_DECIMAL = GLFW_KEY_KP_DECIMAL,
-		KP_DIVIDE = GLFW_KEY_KP_DIVIDE,
-		KP_MULTIPLY = GLFW_KEY_KP_MULTIPLY,
-		KP_SUBTRACT = GLFW_KEY_KP_SUBTRACT,
-		KP_ADD = GLFW_KEY_KP_ADD,
-		KP_ENTER = GLFW_KEY_KP_ENTER,
-		KP_EQUAL = GLFW_KEY_KP_EQUAL,
-		LEFT_SHIFT = GLFW_KEY_LEFT_SHIFT,
-		LEFT_CONTROL = GLFW_KEY_LEFT_CONTROL,
-		LEFT_ALT = GLFW_KEY_LEFT_ALT,
-		LEFT_SUPER = GLFW_KEY_LEFT_SUPER,
-		RIGHT_SHIFT = GLFW_KEY_RIGHT_SHIFT,
-		RIGHT_CONTROL = GLFW_KEY_RIGHT_CONTROL,
-		RIGHT_ALT = GLFW_KEY_RIGHT_ALT,
+		Keypad0 = GLFW_KEY_KP_0,
+		Keypad1 = GLFW_KEY_KP_1,
+		Keypad2 = GLFW_KEY_KP_2,
+		Keypad3 = GLFW_KEY_KP_3,
+		Keypad4 = GLFW_KEY_KP_4,
+		Keypad5 = GLFW_KEY_KP_5,
+		Keypad6 = GLFW_KEY_KP_6,
+		Keypad7 = GLFW_KEY_KP_7,
+		Keypad8 = GLFW_KEY_KP_8,
+		Keypad9 = GLFW_KEY_KP_9,
+		KeypadDecimal = GLFW_KEY_KP_DECIMAL,
+		KeypadDivide = GLFW_KEY_KP_DIVIDE,
+		KeypadMultiply = GLFW_KEY_KP_MULTIPLY,
+		KeypadSubtract= GLFW_KEY_KP_SUBTRACT,
+		KeypadAdd = GLFW_KEY_KP_ADD,
+		KeypadEnter= GLFW_KEY_KP_ENTER,
+		KeypadEqual= GLFW_KEY_KP_EQUAL,
+		LeftShift = GLFW_KEY_LEFT_SHIFT,
+		LeftControl = GLFW_KEY_LEFT_CONTROL,
+		LeftAlt = GLFW_KEY_LEFT_ALT,
+		LeftSuper = GLFW_KEY_LEFT_SUPER,
+		RightShift = GLFW_KEY_RIGHT_SHIFT,
+		RightControl = GLFW_KEY_RIGHT_CONTROL,
+		RightAlt = GLFW_KEY_RIGHT_ALT,
 
-		RIGHT_SUPER = GLFW_KEY_RIGHT_SUPER,
-		MENU = GLFW_KEY_MENU,
-		LAST = MENU
+		RightSuper = GLFW_KEY_RIGHT_SUPER,
+		Menu = GLFW_KEY_MENU,
+		Last = Menu
 	};
 
 	enum KeyModifierFlags
 	{
-		SHIFT = GLFW_MOD_SHIFT,
-		CONTROL = GLFW_MOD_CONTROL,
-		ALT = GLFW_MOD_ALT,
-		SUPER = GLFW_MOD_SUPER,
-		CAPS_LOCK = GLFW_MOD_CAPS_LOCK,
-		NUM_LOCK = GLFW_MOD_NUM_LOCK
+		Shift = GLFW_MOD_SHIFT,
+		Control = GLFW_MOD_CONTROL,
+		Alt = GLFW_MOD_ALT,
+		Super = GLFW_MOD_SUPER,
+		CapsLock = GLFW_MOD_CAPS_LOCK,
+		NumLock = GLFW_MOD_NUM_LOCK
 	};
 
 	enum class EventType
 	{
-		WINDOW_CLOSED,
-		KEY_PRESSED,
-		KEY_REPEATED,
-		KEY_RELEASED,
-		CHARACTER_ENTERED,
-		MOUSE_MOVED,
-		MOUSE_SCROLLED,
-		MOUSE_PRESSED,
-		MOUSE_RELEASED,
-		FOCUS_SWITCHED
+		WindowClosed,
+		KeyPressed,
+		KeyRepeated,
+		KeyReleased,
+		CharacterEntered,
+		MouseMoved,
+		MouseScrolled,
+		MousePressed,
+		MouseReleased,
+		FocusSwitched
 	};
 
 
@@ -195,11 +193,11 @@ namespace GEE
 	class CursorMoveEvent : public Event
 	{
 	public:
-		CursorMoveEvent(EventType, glm::uvec2 newPosition);
-		glm::uvec2 GetNewPosition() const;
+		CursorMoveEvent(EventType, Vec2u newPosition);
+		Vec2u GetNewPosition() const;
 
 	private:
-		glm::uvec2 NewPosition;
+		Vec2u NewPosition;
 	};
 
 	class MouseButtonEvent : public Event
@@ -217,11 +215,11 @@ namespace GEE
 	class MouseScrollEvent : public Event
 	{
 	public:
-		MouseScrollEvent(EventType, glm::vec2 offset);
-		glm::vec2 GetOffset() const;
+		MouseScrollEvent(EventType, Vec2f offset);
+		Vec2f GetOffset() const;
 
 	private:
-		glm::vec2 Offset;
+		Vec2f Offset;
 	};
 
 	class KeyEvent : public Event
@@ -249,10 +247,10 @@ namespace GEE
 	class EventHolder
 	{
 	public:
-		std::shared_ptr<Event> PollEvent();
+		SharedPtr<Event> PollEvent();
 
 		friend struct GLFWEventProcessor;
 	private:
-		std::queue<std::shared_ptr<Event>> Events;
+		std::queue<SharedPtr<Event>> Events;
 	};
 }

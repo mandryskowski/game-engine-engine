@@ -12,12 +12,12 @@ namespace GEE
 		return Type;
 	}
 
-	CursorMoveEvent::CursorMoveEvent(EventType type, glm::uvec2 newPosition) :
+	CursorMoveEvent::CursorMoveEvent(EventType type, Vec2u newPosition) :
 		Event(type), NewPosition(newPosition)
 	{
 	}
 
-	glm::uvec2 CursorMoveEvent::GetNewPosition() const
+	Vec2u CursorMoveEvent::GetNewPosition() const
 	{
 		return NewPosition;
 	}
@@ -37,13 +37,13 @@ namespace GEE
 		return ModifierBits;
 	}
 
-	MouseScrollEvent::MouseScrollEvent(EventType type, glm::vec2 offset) :
+	MouseScrollEvent::MouseScrollEvent(EventType type, Vec2f offset) :
 		Event(type),
 		Offset(offset)
 	{
 	}
 
-	glm::vec2 MouseScrollEvent::GetOffset() const
+	Vec2f MouseScrollEvent::GetOffset() const
 	{
 		return Offset;
 	}
@@ -74,7 +74,7 @@ namespace GEE
 		return std::string(1, static_cast<unsigned char>(Unicode));
 	}
 
-	std::shared_ptr<Event> EventHolder::PollEvent()
+	SharedPtr<Event> EventHolder::PollEvent()
 	{
 		if (Events.empty())
 			return nullptr;

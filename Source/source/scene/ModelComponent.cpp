@@ -2,7 +2,6 @@
 #include <game/GameScene.h>
 #include <rendering/RenderInfo.h>
 #include <UI/UICanvasActor.h>
-#include <scene/UIInputBoxActor.h>
 #include <rendering/Texture.h>
 #include <scene/TextComponent.h>
 #include <UI/UICanvasField.h>
@@ -21,7 +20,7 @@ namespace GEE
 	ModelComponent::ModelComponent(Actor& actor, Component* parentComp, const std::string& name, const Transform& transform, SkeletonInfo* info, Material* overrideMat) :
 		RenderableComponent(actor, parentComp, name, transform),
 		UIComponent(actor, parentComp),
-		LastFrameMVP(glm::mat4(1.0f)),
+		LastFrameMVP(Mat4f(1.0f)),
 		SkelInfo(info),
 		RenderAsBillboard(false)
 	{
@@ -57,13 +56,13 @@ namespace GEE
 			it->SetMaterial(overrideMat);
 	}
 
-	void ModelComponent::OverrideInstancesMaterialInstances(std::shared_ptr<MaterialInstance> overrideMatInst)
+	void ModelComponent::OverrideInstancesMaterialInstances(SharedPtr<MaterialInstance> overrideMatInst)
 	{
 		for (auto& it : MeshInstances)
 			it->SetMaterialInst(overrideMatInst);
 	}
 
-	void ModelComponent::SetLastFrameMVP(const glm::mat4& lastMVP) const
+	void ModelComponent::SetLastFrameMVP(const Mat4f& lastMVP) const
 	{
 		LastFrameMVP = lastMVP;
 	}
@@ -96,7 +95,7 @@ namespace GEE
 		return *MeshInstances[index];
 	}
 
-	const glm::mat4& ModelComponent::GetLastFrameMVP() const
+	const Mat4f& ModelComponent::GetLastFrameMVP() const
 	{
 		return LastFrameMVP;
 	}
@@ -106,12 +105,24 @@ namespace GEE
 		return SkelInfo;
 	}
 
+	std::vector<const Material*> ModelComponent::GetMaterials() const
+	{
+		std::vector<const Material*> materials;
+		for (auto& it : MeshInstances)
+		{
+			if (std::find(materials.begin(), materials.end(), it->GetMaterialPtr()) == materials.end())	// do not repeat any materials
+				materials.push_back(it->GetMaterialPtr());
+		}
+
+		return materials;
+	}
+
 	MeshInstance* ModelComponent::FindMeshInstance(const std::string& nodeName, const std::string& specificMeshName)
 	{
 		/*for (int i = 0; i < 2; i++)	//Search 2 times; first look at the specific names and then at node names.
 		{
 			std::function<bool(const std::string&, const std::string&)> checkEqual = [](const std::string& str1, const std::string& str2) -> bool { return !str1.empty() && str1 == str2; };
-			for (std::unique_ptr<MeshInstance>& it : MeshInstances)
+			for (UniquePtr<MeshInstance>& it : MeshInstances)
 				if ((i == 0 && (checkEqual(specificMeshName, it->GetMesh().GetLocalization().SpecificName)) || checkEqual(specificMeshName, it->GetMesh().GetLocalization().NodeName) ||
 					(i == 1 && (checkEqual(nodeName, it->GetMesh().GetLocalization().SpecificName)) || checkEqual(nodeName, it->GetMesh().GetLocalization().NodeName))))
 					return it.get();
@@ -121,7 +132,7 @@ namespace GEE
 			return nullptr;
 
 		std::function<bool(const std::string&, const std::string&)> checkEqual = [](const std::string& str1, const std::string& str2) -> bool { return str1.empty() || str1 == str2; };
-		for (std::unique_ptr<MeshInstance>& it : MeshInstances)
+		for (UniquePtr<MeshInstance>& it : MeshInstances)
 			if ((checkEqual(nodeName, it->GetMesh().GetLocalization().NodeName)) && checkEqual(specificMeshName, it->GetMesh().GetLocalization().SpecificName))
 				return it.get();
 
@@ -139,7 +150,7 @@ namespace GEE
 
 	void ModelComponent::AddMeshInst(const MeshInstance& meshInst)
 	{
-		MeshInstances.push_back(std::make_unique<MeshInstance>(meshInst));
+		MeshInstances.push_back(MakeUnique<MeshInstance>(meshInst));
 	}
 
 	void ModelComponent::Update(float deltaTime)
@@ -149,7 +160,7 @@ namespace GEE
 				it->GetMaterialInst()->Update(deltaTime);
 
 		if (Name == "MeshPreviewModel")
-			ComponentTransform.SetRotation((glm::mat3)glm::rotate(glm::mat4(1.0f), (float)glfwGetTime(), glm::vec3(0.0f, 1.0f, 0.0f)));
+			ComponentTransform.SetRotation(glm::rotate(Mat4f(1.0f), (float)glfwGetTime(), Vec3f(0.0f, 1.0f, 0.0f)));
 	}
 
 	void ModelComponent::Render(const RenderInfo& info, Shader* shader)
@@ -157,18 +168,14 @@ namespace GEE
 		if (GetHide())
 			return;
 
-		std::shared_ptr<AtlasMaterial> found = std::dynamic_pointer_cast<AtlasMaterial>(GameHandle->GetRenderEngineHandle()->FindMaterial("Kopec"));
-		if (Name == "KOPEC")
-		{
-			OverrideInstancesMaterialInstances(std::make_shared<MaterialInstance>(*found, found->GetTextureIDInterpolatorTemplate(Interpolation(0.0f, 0.2f, InterpolationType::LINEAR, true, AnimBehaviour::STOP, AnimBehaviour::REPEAT), 0.0f, 1.0f)));
-			Name = "Kopec";
-		}
+		std::vector<std::reference_wrapper<const MeshInstance>> meshInstances;
+		std::transform(MeshInstances.begin(), MeshInstances.end(), std::back_inserter(meshInstances), [](UniquePtr<MeshInstance>& instVec) { return std::reference_wrapper<const MeshInstance>(*instVec); });
 
 		if (SkelInfo && SkelInfo->GetBoneCount() > 0)
-			GameHandle->GetRenderEngineHandle()->RenderSkeletalMeshes(info, MeshInstances, GetTransform().GetWorldTransform(), shader, *SkelInfo);
+			GameHandle->GetRenderEngineHandle()->RenderSkeletalMeshes(info, meshInstances, GetTransform().GetWorldTransform(), shader, *SkelInfo, &LastFrameMVP);
 		else
 		{
-			GameHandle->GetRenderEngineHandle()->RenderStaticMeshes((CanvasPtr) ? (CanvasPtr->BindForRender(info, GameHandle->GetGameSettings()->WindowSize)) : (info), MeshInstances, GetTransform().GetWorldTransform(), shader, &LastFrameMVP, nullptr, RenderAsBillboard);
+			GameHandle->GetRenderEngineHandle()->RenderStaticMeshes((CanvasPtr) ? (CanvasPtr->BindForRender(info, GameHandle->GetGameSettings()->WindowSize)) : (info), meshInstances, GetTransform().GetWorldTransform(), shader, &LastFrameMVP, nullptr, RenderAsBillboard);
 			if (CanvasPtr)
 				CanvasPtr->UnbindForRender(GameHandle->GetGameSettings()->WindowSize);
 		}
@@ -178,15 +185,12 @@ namespace GEE
 	{
 		RenderableComponent::GetEditorDescription(descBuilder);
 
-		Material* tickMaterial = new Material("TickMaterial", 0.0f, GameHandle->GetRenderEngineHandle()->FindShader("Forward_NoLight"));
-		tickMaterial->AddTexture(std::make_shared<NamedTexture>(textureFromFile("EditorAssets/tick_icon.png", GL_SRGB_ALPHA, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR, true), "albedo1"));
-
 		descBuilder.AddField("Render as billboard").GetTemplates().TickBox(RenderAsBillboard);
 		descBuilder.AddField("Hide").GetTemplates().TickBox(Hide);
 
 		UICanvasFieldCategory& cat = descBuilder.GetCanvas().AddCategory("Mesh instances");
 		cat.GetExpandButton()->CreateComponent<TextConstantSizeComponent>("NrMeshInstancesText", Transform(), std::to_string(MeshInstances.size()), "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
-		cat.GetTemplates().ListSelection<std::unique_ptr<MeshInstance>>(MeshInstances.begin(), MeshInstances.end(), [this, descBuilder](UIAutomaticListActor& listActor, std::unique_ptr<MeshInstance>& meshInst)
+		cat.GetTemplates().ListSelection<UniquePtr<MeshInstance>>(MeshInstances.begin(), MeshInstances.end(), [this, descBuilder](UIAutomaticListActor& listActor, UniquePtr<MeshInstance>& meshInst)
 			{
 				std::string name = meshInst->GetMesh().GetLocalization().NodeName + " (" + meshInst->GetMesh().GetLocalization().SpecificName + ")";
 				listActor.CreateChild<UIButtonActor>(name + "Button", name, [this, descBuilder, &meshInst]() mutable {
@@ -215,21 +219,29 @@ namespace GEE
 
 					GameSettings* settings = new GameSettings(*GameHandle->GetGameSettings());
 
-					settings->WindowSize = glm::uvec2(1024);
+					settings->WindowSize = Vec2u(1024);
 					RenderToolboxCollection& renderTbCollection = renderHandle.AddRenderTbCollection(RenderToolboxCollection("GEE_E_Mesh_Preview_Toolbox_Collection", settings->Video));
 
-					std::shared_ptr<Material> viewportMaterial = std::make_shared<Material>("GEE_E_Mesh_Preview_Viewport", 0.0f, renderHandle.FindShader("Forward_NoLight"));
+					SharedPtr<Material> viewportMaterial = MakeShared<Material>("GEE_E_Mesh_Preview_Viewport", 0.0f, renderHandle.FindShader("Forward_NoLight"));
 					renderHandle.AddMaterial(viewportMaterial);
-					viewportMaterial->AddTexture(std::make_shared<NamedTexture>(*renderTbCollection.GetTb<FinalRenderTargetToolbox>()->GetFinalFramebuffer().GetColorBuffer(0), "albedo1"));
+					viewportMaterial->AddTexture(MakeShared<NamedTexture>(renderTbCollection.GetTb<FinalRenderTargetToolbox>()->GetFinalFramebuffer().GetColorTexture(0), "albedo1"));
 					viewportButton.SetMatIdle(*viewportMaterial);
 					viewportButton.SetMatClick(*viewportMaterial);
 					viewportButton.SetMatHover(*viewportMaterial);
+
+					{
+						std::stringstream boxSizeStream;
+						boxSizeStream << meshInst->GetMesh().GetBoundingBox().Size;
+						window.CreateChild<UIActorDefault>("MeshSizeTextActor").CreateComponent<TextConstantSizeComponent>("MeshSizeText", Transform(Vec2f(1.0f, -1.0f), Vec2f(0.2f)), "Size: " + boxSizeStream.str(), "", std::pair<TextAlignment, TextAlignment>(TextAlignment::RIGHT, TextAlignment::BOTTOM));
+					}
 
 					window.SetOnCloseFunc([&meshPreviewScene, &renderHandle, viewportMaterial, &renderTbCollection]() { meshPreviewScene.MarkAsKilled();  renderHandle.EraseMaterial(*viewportMaterial); renderHandle.EraseRenderTbCollection(renderTbCollection); });
 					});
 			});
 
-		descBuilder.AddField("Override materials").GetTemplates().ObjectInput<Material, Material>([this]() { return GameHandle->GetRenderEngineHandle()->GetMaterials(); }, [this](Material* material) { OverrideInstancesMaterial(material); });
+		descBuilder.AddField("Override materials").GetTemplates().ObjectInput<Material>(
+			[this]() { return GameHandle->GetRenderEngineHandle()->GetMaterials(); },
+			[this](Material* material) { OverrideInstancesMaterial(material); });
 	}
 
 	unsigned int ModelComponent::GetUIDepth() const

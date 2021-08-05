@@ -6,16 +6,15 @@
 #include <map>
 #include <cereal/archives/json.hpp>
 #include <cereal/types/polymorphic.hpp>
-#include <cereal/types/vector.hpp>
-#include <cereal/types/base_class.hpp>
-	
+
 struct GLFWwindow;
 namespace GEE
 {
 
 	template <typename SavedClass> class ClassSaveInfo
 	{
-		template <typename SavedVar> void RegisterVar(SavedVar& var)
+		template <typename SavedVar>
+		static void RegisterVar(SavedVar& var)
 		{
 
 		}
@@ -29,6 +28,21 @@ namespace GEE
 		Actor(GameScene&, Actor* parentActor, const std::string& name, const Transform& t = Transform());
 		Actor(const Actor&) = delete;
 		Actor(Actor&&);
+
+		void PassToDifferentParent(Actor& newParent)
+		{
+			if (ParentActor)
+			{
+				for (auto& it = ParentActor->Children.begin(); it != ParentActor->Children.end(); it++)
+					if (it->get() == this)
+					{
+						it->release();
+						ParentActor->Children.erase(it);
+						break;
+					}
+			}
+			newParent.AddChild(UniquePtr<Actor>(this));
+		}
 
 		virtual void OnStart();
 		virtual void OnStartAll();
@@ -47,11 +61,11 @@ namespace GEE
 		void DebugHierarchy(int nrTabs = 0);
 		void DebugActorHierarchy(int nrTabs = 0);
 
-		void ReplaceRoot(std::unique_ptr<Component>);
+		void ReplaceRoot(UniquePtr<Component>);
 		void MoveCompToRoot(Component&);
 		void SetTransform(Transform);
-		void AddComponent(std::unique_ptr<Component>);
-		virtual Actor& AddChild(std::unique_ptr<Actor>);
+		void AddComponent(UniquePtr<Component>);
+		virtual Actor& AddChild(UniquePtr<Actor>);
 		template <typename ChildClass, typename... Args> ChildClass& CreateChild(Args&&...);
 		template <typename CompClass, typename... Args> CompClass& CreateComponent(Args&&...);	//Adds a new component that is a child of RootComponent.
 		template <typename CompClass, typename... Args> CompClass& CreateComponent(CompClass&&, Component* parent);	//Adds a new component that is a child of parent. Pass nullptr as the second argument to make this created component the new RootComponent.
@@ -124,8 +138,8 @@ namespace GEE
 		virtual ~Actor() {}
 
 	protected:
-		std::unique_ptr<Component> RootComponent;
-		std::vector<std::unique_ptr<Actor>> Children;
+		UniquePtr<Component> RootComponent;
+		std::vector<UniquePtr<Actor>> Children;
 		Actor* ParentActor;
 		std::string Name;
 		std::stringstream* SetupStream;
@@ -139,7 +153,7 @@ namespace GEE
 	template <typename ChildClass, typename... Args>
 	inline ChildClass& Actor::CreateChild(Args&&... args)
 	{
-		std::unique_ptr<ChildClass> createdChild = std::make_unique<ChildClass>(Scene, this, std::forward<Args>(args)...);
+		UniquePtr<ChildClass> createdChild = MakeUnique<ChildClass>(Scene, this, std::forward<Args>(args)...);
 		ChildClass& childRef = *createdChild.get();
 		AddChild(std::move(createdChild));
 

@@ -17,11 +17,18 @@ namespace GEE
 		 * @param func: the function to be called upon closing the window
 		*/
 		void SetOnCloseFunc(std::function<void()> func);
+		void SetCloseIfClickedOutside(bool);
+
+		void KillDragButton();
+		void KillCloseButton(); 
+
+		virtual void HandleEvent(const Event& ev) override;
 
 	private:
 		virtual void GetExternalButtons(std::vector<UIButtonActor*>&) const override;
 
 		UIButtonActor* CloseButton;
 		UIScrollBarActor* DragButton;
+		bool bCloseIfClickedOutside;
 	};
 }

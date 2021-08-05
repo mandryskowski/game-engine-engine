@@ -32,5 +32,7 @@ namespace GEE
 		std::function<void()> ValueGetter;
 		TextConstantSizeComponent* ContentTextComp;
 		bool RetrieveContentEachFrame;
+
+
 	};
 }

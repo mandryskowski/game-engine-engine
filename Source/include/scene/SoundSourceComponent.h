@@ -33,7 +33,7 @@ namespace GEE
 
 			virtual void Update(float) override;
 
-			virtual	MaterialInstance GetDebugMatInst(EditorIconState) override;
+			virtual	MaterialInstance LoadDebugMatInst(EditorIconState) override;
 
 			virtual void GetEditorDescription(EditorDescriptionBuilder) override;
 			template <typename Archive> void Save(Archive& archive) const

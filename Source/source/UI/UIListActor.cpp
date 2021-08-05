@@ -21,21 +21,21 @@ namespace GEE
 		MoveElements();
 	}
 
-	glm::vec3 UIListActor::GetListOffset()
+	Vec3f UIListActor::GetListOffset()
 	{
-		glm::vec3 offset(0.0f);
+		Vec3f offset(0.0f);
 		for (auto& it : ListElements)
 			offset += it.GetElementOffset();
 
-		return glm::mat3(GetTransform()->GetMatrix()) * offset;
+		return Mat3f(GetTransform()->GetMatrix()) * offset;
 	}
 
-	glm::vec3 UIListActor::GetListBegin()
+	Vec3f UIListActor::GetListBegin()
 	{
 		if (ListElements.empty())
-			return glm::vec3(0.0f);
+			return Vec3f(0.0f);
 
-		return ListElements.front().GetActorRef().GetTransform()->Pos() - ListElements.front().GetCenterOffset();
+		return ListElements.front().GetActorRef().GetTransform()->GetPos() - ListElements.front().GetCenterOffset();
 	}
 
 	int UIListActor::GetListElementCount() const
@@ -43,7 +43,7 @@ namespace GEE
 		return static_cast<int>(ListElements.size());
 	}
 
-	void UIListActor::SetListElementOffset(int index, std::function<glm::vec3()> getElementOffset)
+	void UIListActor::SetListElementOffset(int index, std::function<Vec3f()> getElementOffset)
 	{
 		if (index < 0 || index > ListElements.size() || !getElementOffset)
 			return;
@@ -51,7 +51,7 @@ namespace GEE
 		ListElements[index].SetGetElementOffsetFunc(getElementOffset);
 	}
 
-	void UIListActor::SetListCenterOffset(int index, std::function<glm::vec3()> getCenterOffset)
+	void UIListActor::SetListCenterOffset(int index, std::function<Vec3f()> getCenterOffset)
 	{
 		if (index < 0 || index > ListElements.size() || !getCenterOffset)
 			return;
@@ -64,17 +64,17 @@ namespace GEE
 		ListElements.push_back(element);
 	}
 
-	glm::vec3 UIListActor::MoveElement(UIListElement& element, glm::vec3 nextElementBegin, float level)
+	Vec3f UIListActor::MoveElement(UIListElement& element, Vec3f nextElementBegin, float level)
 	{
-		const glm::vec3& elementOffset = element.GetElementOffset();
+		const Vec3f& elementOffset = element.GetElementOffset();
 		element.GetActorRef().GetTransform()->SetPosition(nextElementBegin + element.GetCenterOffset());
-		return glm::vec3(nextElementBegin + elementOffset);
+		return Vec3f(nextElementBegin + elementOffset);
 	}
 
-	glm::vec3 UIListActor::MoveElements(unsigned int level)
+	Vec3f UIListActor::MoveElements(unsigned int level)
 	{
 		EraseListElement([](const UIListElement& element) { return element.IsBeingKilled(); });
-		glm::vec3 nextElementBegin = GetListBegin();
+		Vec3f nextElementBegin = GetListBegin();
 
 		for (auto& element : ListElements)
 		{
@@ -96,19 +96,19 @@ namespace GEE
 		EraseListElement([&actor](const UIListElement& listElement) { return &listElement.GetActorRef() == &actor; });
 	}
 
-	UIAutomaticListActor::UIAutomaticListActor(GameScene& scene, Actor* parentActor, const std::string& name, glm::vec3 elementOffset) :
+	UIAutomaticListActor::UIAutomaticListActor(GameScene& scene, Actor* parentActor, const std::string& name, Vec3f elementOffset) :
 		UIListActor(scene, parentActor, name),
 		ElementOffset(elementOffset)
 	{
 	}
 
-	UIAutomaticListActor::UIAutomaticListActor(UIAutomaticListActor&& listActor) :
+	UIAutomaticListActor::UIAutomaticListActor(UIAutomaticListActor&& listActor) noexcept :
 		UIListActor(std::move(listActor)),
 		ElementOffset(listActor.ElementOffset)
 	{
 	}
 
-	Actor& UIAutomaticListActor::AddChild(std::unique_ptr<Actor> actor)
+	Actor& UIAutomaticListActor::AddChild(UniquePtr<Actor> actor)
 	{
 		AddElement(UIListElement(*actor, ElementOffset));
 		if (UIListActor* listCast = dynamic_cast<UIListActor*>(actor.get()))
@@ -117,16 +117,16 @@ namespace GEE
 		return UIListActor::AddChild(std::move(actor));
 	}
 
-	UIListElement::UIListElement(Actor& actorRef, std::function<glm::vec3()> getElementOffset, std::function<glm::vec3()> getCenterOffset) :
+	UIListElement::UIListElement(Actor& actorRef, std::function<Vec3f()> getElementOffset, std::function<Vec3f()> getCenterOffset) :
 		ActorPtr(actorRef),
 		GetElementOffsetFunc(getElementOffset),
 		GetCenterOffsetFunc(getCenterOffset)
 	{
 		if (!GetCenterOffsetFunc)
-			GetCenterOffsetFunc = [this]() -> glm::vec3 { return (GetElementOffsetFunc) ? (GetElementOffsetFunc() / 2.0f) : (glm::vec3(0.0f)); };
+			GetCenterOffsetFunc = [this]() -> Vec3f { return (GetElementOffsetFunc) ? (GetElementOffsetFunc() / 2.0f) : (Vec3f(0.0f)); };
 	}
 
-	UIListElement::UIListElement(Actor& actorRef, const glm::vec3& constElementOffset) :
+	UIListElement::UIListElement(Actor& actorRef, const Vec3f& constElementOffset) :
 		UIListElement(actorRef, [constElementOffset]() { return constElementOffset; }, [constElementOffset]() { return constElementOffset / 2.0f; })
 	{
 	}
@@ -151,7 +151,7 @@ namespace GEE
 
 	UIListElement& UIListElement::operator=(UIListElement&& element)
 	{
-		return (*this = static_cast<const UIListElement&>(element));
+		return (*this = element);
 	}
 
 	bool UIListElement::IsBeingKilled() const
@@ -169,22 +169,22 @@ namespace GEE
 		return ActorPtr.Get();
 	}
 
-	glm::vec3 UIListElement::GetElementOffset() const
+	Vec3f UIListElement::GetElementOffset() const
 	{
-		return (GetElementOffsetFunc) ? (GetElementOffsetFunc()) : (glm::vec3(0.0f));
+		return (GetElementOffsetFunc) ? (GetElementOffsetFunc()) : (Vec3f(0.0f));
 	}
 
-	glm::vec3 UIListElement::GetCenterOffset() const
+	Vec3f UIListElement::GetCenterOffset() const
 	{
-		return (GetCenterOffsetFunc) ? (GetCenterOffsetFunc()) : (glm::vec3(0.0f));
+		return (GetCenterOffsetFunc) ? (GetCenterOffsetFunc()) : (Vec3f(0.0f));
 	}
 
-	void UIListElement::SetGetElementOffsetFunc(std::function<glm::vec3()> getElementOffset)
+	void UIListElement::SetGetElementOffsetFunc(std::function<Vec3f()> getElementOffset)
 	{
 		GetElementOffsetFunc = getElementOffset;
 	}
 
-	void UIListElement::SetGetCenterOffsetFunc(std::function<glm::vec3()> getCenterOffset)
+	void UIListElement::SetGetCenterOffsetFunc(std::function<Vec3f()> getCenterOffset)
 	{
 		GetCenterOffsetFunc = getCenterOffset;
 	}

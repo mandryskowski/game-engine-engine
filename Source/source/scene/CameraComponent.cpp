@@ -8,8 +8,8 @@
 
 namespace GEE
 {
-	CameraComponent::CameraComponent(Actor& actor, Component* parentComp, std::string name, const glm::mat4& projectionMatrix) :
-		Component(actor, parentComp, name, Transform(glm::vec3(0.0f), glm::vec3(0.0f), glm::vec3(1.0f))),
+	CameraComponent::CameraComponent(Actor& actor, Component* parentComp, std::string name, const Mat4f& projectionMatrix) :
+		Component(actor, parentComp, name, Transform(Vec3f(0.0f), Vec3f(0.0f), Vec3f(1.0f))),
 		RotationEuler(0.0f),
 		Projection(projectionMatrix)
 	{
@@ -22,17 +22,17 @@ namespace GEE
 	{
 	}
 
-	glm::mat4 CameraComponent::GetProjectionMat()
+	Mat4f CameraComponent::GetProjectionMat()
 	{
 		return Projection;
 	}
 
 	RenderInfo CameraComponent::GetRenderInfo(RenderToolboxCollection& renderCollection)
 	{
-		return RenderInfo(renderCollection, GetTransform().GetWorldTransform().GetViewMatrix(), GetProjectionMat(), glm::mat4(1.0f), GetTransform().GetWorldTransform().Pos());
+		return RenderInfo(renderCollection, GetTransform().GetWorldTransform().GetViewMatrix(), GetProjectionMat(), Mat4f(1.0f), GetTransform().GetWorldTransform().GetPos());
 	}
 
-	void CameraComponent::RotateWithMouse(glm::vec2 mouseOffset)
+	void CameraComponent::RotateWithMouse(Vec2f mouseOffset)
 	{
 		float sensitivity = 0.15f;
 		RotationEuler.x -= mouseOffset.y * sensitivity;
@@ -47,10 +47,10 @@ namespace GEE
 		std::vector <CollisionComponent*> collisionChildren;
 		GetAllComponents<CollisionComponent, BBox>(&collisionChildren);
 
-		glm::vec3 minSize(0.1f);
+		Vec3f minSize(0.1f);
 		for (unsigned int i = 0; i < collisionChildren.size(); i++)
 		{
-			glm::vec3 childSize = collisionChildren[i]->GetTransform()->ScaleRef;
+			Vec3f childSize = collisionChildren[i]->GetTransform()->ScaleRef;
 
 			if (i == 0)
 			{
@@ -63,9 +63,9 @@ namespace GEE
 		}
 
 
-		std::vector <glm::vec3> bounceNormals;
+		std::vector <Vec3f> bounceNormals;
 		CollisionEng->CheckForCollision(collisionChildren, &bounceNormals);
-		std::vector <glm::vec3> bNormals;
+		std::vector <Vec3f> bNormals;
 
 		while (CollisionEng->CheckForCollision(collisionChildren, &bNormals))
 		{
@@ -75,9 +75,9 @@ namespace GEE
 
 			for (unsigned int i = 0; i < bounceNormals.size(); i++)
 			{
-				glm::mat3 inverseRotMat = ComponentTransform.GetParentTransform()->GetWorldTransform().GetRotationMatrix(-1.0f);
+				Mat3f inverseRotMat = ComponentTransform.GetParentTransform()->GetWorldTransform().GetRotationMatrix(-1.0f);
 				bounceNormals[i] = inverseRotMat * bounceNormals[i];
-				ComponentTransform.Move(bounceNormals[i] * minSize * glm::vec3(0.01f)); //mnozymy normalna przez czesc rozmiaru obiektu kolizji, aby odsunac go od sciany
+				ComponentTransform.Move(bounceNormals[i] * minSize * Vec3f(0.01f)); //mnozymy normalna przez czesc rozmiaru obiektu kolizji, aby odsunac go od sciany
 			}
 		}
 		*/
@@ -88,10 +88,10 @@ namespace GEE
 		Component::Update(deltaTime);
 	}
 
-	MaterialInstance CameraComponent::GetDebugMatInst(EditorIconState state)
+	MaterialInstance CameraComponent::LoadDebugMatInst(EditorIconState state)
 	{
 		LoadDebugRenderMaterial("GEE_Mat_Default_Debug_CameraComponent", "EditorAssets/cameracomponent_icon.png");
-		return Component::GetDebugMatInst(state);
+		return Component::LoadDebugMatInst(state);
 	}
 
 	void CameraComponent::GetEditorDescription(EditorDescriptionBuilder descBuilder)

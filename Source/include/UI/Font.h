@@ -1,5 +1,5 @@
 #pragma once
-#include <glm/glm.hpp>
+#include <math/Vec.h>
 #include <vector>
 #include <rendering/Texture.h>
 
@@ -9,8 +9,8 @@ namespace GEE
 	struct Character
 	{
 		unsigned int ID;
-		glm::vec2 Size;
-		glm::vec2 Bearing;
+		Vec2f Size;
+		Vec2f Bearing;
 		float Advance;
 	};
 

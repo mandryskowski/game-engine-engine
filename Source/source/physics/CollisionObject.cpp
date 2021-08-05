@@ -21,7 +21,7 @@ namespace GEE
 		}
 
 		CollisionShape::CollisionShape(HTreeObjectLoc treeObjLoc, const std::string& meshName, CollisionShapeType type) :
-			OptionalLocalization(std::make_unique<ColShapeLoc>(Mesh::MeshLoc(treeObjLoc, meshName, meshName))),
+			OptionalLocalization(MakeUnique<ColShapeLoc>(Mesh::MeshLoc(treeObjLoc, meshName, meshName))),
 			Type(type)
 		{
 		}
@@ -33,7 +33,7 @@ namespace GEE
 
 		void CollisionShape::SetOptionalLocalization(ColShapeLoc loc)
 		{
-			OptionalLocalization = std::make_unique<ColShapeLoc>(loc);
+			OptionalLocalization = MakeUnique<ColShapeLoc>(loc);
 		}
 
 		CollisionObject::CollisionObject(bool isStatic) :
@@ -71,10 +71,10 @@ namespace GEE
 
 		CollisionShape& CollisionObject::AddShape(CollisionShapeType type)
 		{
-			return AddShape(std::make_shared<CollisionShape>(type));
+			return AddShape(MakeShared<CollisionShape>(type));
 		}
 
-		CollisionShape& CollisionObject::AddShape(std::shared_ptr<CollisionShape> shape)
+		CollisionShape& CollisionObject::AddShape(SharedPtr<CollisionShape> shape)
 		{
 			Shapes.push_back(shape);
 
@@ -118,29 +118,29 @@ namespace GEE
 				return "CannotCastCollisionShapeToString";
 			}
 
-			glm::vec3 toGlm(PxVec3 pxVec)
+			Vec3f toGlm(PxVec3 pxVec)
 			{
-				return glm::vec3(pxVec.x, pxVec.y, pxVec.z);
+				return Vec3f(pxVec.x, pxVec.y, pxVec.z);
 			}
 
-			glm::quat toGlm(PxQuat pxQuat)
+			Quatf toGlm(PxQuat pxQuat)
 			{
-				return glm::quat(pxQuat.w, pxQuat.x, pxQuat.y, pxQuat.z);
+				return Quatf(pxQuat.w, pxQuat.x, pxQuat.y, pxQuat.z);
 			}
 
-			PxVec3 toPx(const glm::vec3& glmVec)
+			PxVec3 toPx(const Vec3f& glmVec)
 			{
 				return PxVec3(glmVec.x, glmVec.y, glmVec.z);
 			}
 
-			PxQuat toPx(const glm::quat& glmQuat)
+			PxQuat toPx(const Quatf& glmQuat)
 			{
 				return PxQuat(glmQuat.x, glmQuat.y, glmQuat.z, glmQuat.w);
 			}
 
 			PxTransform toPx(const Transform& t)
 			{
-				return PxTransform(toPx(t.Pos()), toPx(t.Rot()));
+				return PxTransform(toPx(t.GetPos()), toPx(t.GetRot()));
 			}
 			Transform toTransform(const physx::PxTransform& t)
 			{

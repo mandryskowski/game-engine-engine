@@ -7,7 +7,6 @@
 #include <UI/UIActor.h>
 #include <UI/UICanvasField.h>
 #include <scene/UIButtonActor.h>
-#include <UI/UIListActor.h>
 
 namespace GEE
 {
@@ -42,11 +41,10 @@ namespace GEE
 		SetFireModel(GetRoot()->GetComponent<ModelComponent>("FireParticle"));
 		std::cout << "Wyszukalem se: " << FireModel << ".\n";
 
-
 		/*
-		GunModel->GetTransform()->AddInterpolator("position", 10.0f, 20.0f, glm::vec3(0.0f, 0.0f, -10.0f), InterpolationType::LINEAR);
-		GunModel->GetTransform()->AddInterpolator("rotation", 10.0f, 5.0f, glm::vec3(360.0f, 0.0f, 0.0f), InterpolationType::QUADRATIC, false, AnimBehaviour::STOP, AnimBehaviour::EXTRAPOLATE);
-		GunModel->GetTransform()->AddInterpolator("scale", 10.0f, 10.0f, glm::vec3(0.3f, 0.3f, 0.2f), InterpolationType::CONSTANT);*/
+		GunModel->GetTransform()->AddInterpolator("position", 10.0f, 20.0f, Vec3f(0.0f, 0.0f, -10.0f), InterpolationType::LINEAR);
+		GunModel->GetTransform()->AddInterpolator("rotation", 10.0f, 5.0f, Vec3f(360.0f, 0.0f, 0.0f), InterpolationType::QUADRATIC, false, AnimBehaviour::STOP, AnimBehaviour::EXTRAPOLATE);
+		GunModel->GetTransform()->AddInterpolator("scale", 10.0f, 10.0f, Vec3f(0.3f, 0.3f, 0.2f), InterpolationType::CONSTANT);*/
 
 		GunBlast = Scene.GetAudioData()->FindSource("DoubleBarrelBlast");
 
@@ -81,7 +79,7 @@ namespace GEE
 		dynamic_cast<ModelComponent*>(FireModel->SearchForComponent("Quad"))->SetRenderAsBillboard(true);
 		ParticleMeshInst = FireModel->FindMeshInstance("Quad");
 
-		AtlasMaterial* fireMaterial = dynamic_cast<AtlasMaterial*>(const_cast<Material*>(&ParticleMeshInst->GetMaterialInst()->GetMaterialRef()));
+		AtlasMaterial* fireMaterial = dynamic_cast<AtlasMaterial*>(&ParticleMeshInst->GetMaterialInst()->GetMaterialRef());
 		if (!fireMaterial)
 			return;
 
@@ -96,25 +94,28 @@ namespace GEE
 			return;
 
 		if (ParticleMeshInst)
-			ParticleMeshInst->GetMaterialInst()->ResetAnimation();
+			if (ParticleMeshInst->GetMaterialInst()->IsAnimated())
+				ParticleMeshInst->GetMaterialInst()->ResetAnimation();
+			else
+				SetFireModel(FireModel);	//update fire model
 		if (GunBlast)
 			GunBlast->Play();
 
-		GetRoot()->GetTransform().AddInterpolator<glm::quat>("rotation", 0.0f, 0.25f, glm::quat(glm::vec3(0.0f)), toQuat(glm::vec3(30.0f, 0.0f, 0.0f)), InterpolationType::QUINTIC, true);
-		GetRoot()->GetTransform().AddInterpolator<glm::quat>("rotation", 0.25f, 1.25f, glm::quat(glm::vec3(0.0f)), InterpolationType::QUADRATIC, true);
+		GetRoot()->GetTransform().AddInterpolator<Quatf>("rotation", 0.0f, 0.25f, Quatf(Vec3f(0.0f)), toQuat(Vec3f(30.0f, 0.0f, 0.0f)), InterpolationType::QUINTIC, true);
+		GetRoot()->GetTransform().AddInterpolator<Quatf>("rotation", 0.25f, 1.25f, Quatf(Vec3f(0.0f)), InterpolationType::QUADRATIC, true);
 
 		Actor& actor = Scene.CreateActorAtRoot<Actor>("Bullet" + std::to_string(FiredBullets));
 		//TODO: Change it so the bullet is fired at the barrel, not at the center
-		std::unique_ptr<ModelComponent> bulletModel = std::make_unique<ModelComponent>(ModelComponent(actor, nullptr, "BulletModel" + std::to_string(FiredBullets++), Transform(GetTransform()->GetWorldTransform().Pos(), glm::vec3(0.0f), glm::vec3(0.2f))));
+		UniquePtr<ModelComponent> bulletModel = MakeUnique<ModelComponent>(ModelComponent(actor, nullptr, "BulletModel" + std::to_string(FiredBullets++), Transform(GetTransform()->GetWorldTransform().GetPos(), Vec3f(0.0f), Vec3f(0.2f))));
 		bulletModel->OnStart();
 		Material* rustedIronMaterial = GameHandle->GetRenderEngineHandle()->FindMaterial("RustedIron").get();
 		if (!rustedIronMaterial)
 		{
-			rustedIronMaterial = GameHandle->GetRenderEngineHandle()->AddMaterial(std::make_shared<Material>("RustedIron"));
-			rustedIronMaterial->AddTexture(std::make_shared<NamedTexture>(textureFromFile("EngineMaterials/rustediron_albedo.png", GL_SRGB), "albedo1"));
-			rustedIronMaterial->AddTexture(std::make_shared<NamedTexture>(textureFromFile("EngineMaterials/rustediron_metallic.png", GL_RGB), "metallic1"));
-			rustedIronMaterial->AddTexture(std::make_shared<NamedTexture>(textureFromFile("EngineMaterials/rustediron_roughness.png", GL_RGB), "roughness1"));
-			rustedIronMaterial->AddTexture(std::make_shared<NamedTexture>(textureFromFile("EngineMaterials/rustediron_normal.png", GL_RGB), "normal1"));
+			rustedIronMaterial = GameHandle->GetRenderEngineHandle()->AddMaterial(MakeShared<Material>("RustedIron"));
+			rustedIronMaterial->AddTexture(MakeShared<NamedTexture>(Texture::Loader<>::FromFile2D("EngineMaterials/rustediron_albedo.png", Texture::Format::SRGB(), false, Texture::MinFilter::Trilinear(), Texture::MagFilter::Bilinear()), "albedo1"));
+			rustedIronMaterial->AddTexture(MakeShared<NamedTexture>(Texture::Loader<>::FromFile2D("EngineMaterials/rustediron_metallic.png"), "metallic1"));
+			rustedIronMaterial->AddTexture(MakeShared<NamedTexture>(Texture::Loader<>::FromFile2D("EngineMaterials/rustediron_roughness.png"), "roughness1"));
+			rustedIronMaterial->AddTexture(MakeShared<NamedTexture>(Texture::Loader<>::FromFile2D("EngineMaterials/rustediron_normal.png"), "normal1"));
 		}
 
 		{
@@ -126,14 +127,15 @@ namespace GEE
 				it->OverrideInstancesMaterial(rustedIronMaterial);
 		}
 
-		std::unique_ptr<Physics::CollisionObject> dupa = std::make_unique<Physics::CollisionObject>(false, Physics::CollisionShapeType::COLLISION_SPHERE);
-		Physics::CollisionObject& col = *bulletModel->SetCollisionObject(std::move(dupa));
+		UniquePtr<Physics::CollisionObject> dupa = MakeUnique<Physics::CollisionObject>(false, Physics::CollisionShapeType::COLLISION_SPHERE);
+		Physics::CollisionObject& col = *bulletModel->SetCollisionObject(std::move(dupa));	//dupa is no longer valid
 		GameHandle->GetPhysicsHandle()->ApplyForce(col, GetRoot()->GetTransform().GetWorldTransform().GetFrontVec() * 0.25f);
+		col.ActorPtr->is<physx::PxRigidDynamic>()->setLinearDamping(0.5f);
+		col.ActorPtr->is<physx::PxRigidDynamic>()->setAngularDamping(0.5f);
 
 		actor.ReplaceRoot(std::move(bulletModel));
 
 		actor.DebugHierarchy();
-
 
 		CooldownLeft = FireCooldown;
 	}
@@ -142,14 +144,13 @@ namespace GEE
 		Actor::GetEditorDescription(descBuilder);
 
 		UICanvasField& blastField = descBuilder.AddField("Blast sound");
-		blastField.GetTemplates().ComponentInput<Audio::SoundSourceComponent>(*GetRoot(), GunBlast);
+		blastField.GetTemplates().ObjectInput<Component, Audio::SoundSourceComponent>(*GetRoot(), GunBlast);
 
-		descBuilder.AddField("Fire model").GetTemplates().ComponentInput<ModelComponent>(*GetRoot(), [this](ModelComponent* model) { SetFireModel(model); });
+		descBuilder.AddField("Fire model").GetTemplates().ObjectInput<Component, ModelComponent>(*GetRoot(), [this](ModelComponent* model) { SetFireModel(model); });
 
 		UICanvasField& fireField = descBuilder.AddField("Fire");
 		fireField.CreateChild<UIButtonActor>("FireButton", "Fire", [this]() { FireWeapon(); });
 
 		//[this]() {}
 	}
-
 }

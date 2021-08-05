@@ -25,7 +25,7 @@ namespace GEE
 
 	Boxf<Vec2f> UICanvasElement::GetBoundingBox(bool world)
 	{
-		return Boxf<Vec2f>(glm::vec2(0.0f), glm::vec2(0.0f));
+		return Boxf<Vec2f>(Vec2f(0.0f), Vec2f(0.0f));
 	}
 
 	UICanvas* UICanvasElement::GetCanvasPtr()
@@ -55,8 +55,7 @@ namespace GEE
 
 	void UICanvasElement::EraseChildElement(UICanvasElement& element)
 	{
-		element.DetachFromCanvas();
-		ChildElements.erase(std::remove_if(ChildElements.begin(), ChildElements.end(), [&element](UICanvasElement* elementVec) {return elementVec == &element; }), ChildElements.end());
+		GetCanvasPtr()->EraseUIElement(element);
 	}
 
 	void UICanvasElement::AttachToCanvas(UICanvas& canvas)
@@ -68,12 +67,18 @@ namespace GEE
 
 	void UICanvasElement::DetachFromCanvas()
 	{
+		if (ParentElement)
+		{
+			ParentElement->ChildElements.erase(std::remove_if(ChildElements.begin(), ChildElements.end(), [this](UICanvasElement* elementVec) {return elementVec == this; }), ChildElements.end());
+			ParentElement = nullptr;
+		}
+
 		for (auto& it : ChildElements)
-			it->DetachFromCanvas();
+			EraseChildElement(*it);
+
 
 		ChildElements.clear();
 		CanvasPtr = nullptr;
-		ParentElement = nullptr;
 	}
 
 	UICanvasElement::~UICanvasElement()

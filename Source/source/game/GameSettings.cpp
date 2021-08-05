@@ -1,10 +1,12 @@
 #include <game/GameSettings.h>
+#include <fstream>
+#include <sstream>
 
 namespace GEE
 {
 	GameSettings::GameSettings()
 	{
-		WindowSize = glm::uvec2(800, 600);
+		WindowSize = Vec2u(800, 600);
 		bWindowFullscreen = false;
 		WindowTitle = "kulki";
 	}
@@ -76,10 +78,10 @@ namespace GEE
 		TMType = ToneMappingType::TM_REINHARD;
 	}
 
-	std::string GameSettings::VideoSettings::GetShaderDefines(glm::uvec2 resolution) const
+	std::string GameSettings::VideoSettings::GetShaderDefines(Vec2u resolution) const
 	{
-		if (resolution == glm::uvec2(0))
-			resolution = glm::uvec2(Resolution);
+		if (resolution == Vec2u(0))
+			resolution = Vec2u(Resolution);
 
 		//Cast width and height to float so the macro in shader is also float.
 		std::string shaderDefines = "#define SCR_WIDTH " + std::to_string(static_cast<float>(resolution.x)) +

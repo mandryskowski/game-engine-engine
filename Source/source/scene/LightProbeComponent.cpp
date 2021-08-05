@@ -16,7 +16,8 @@ namespace GEE
 		ProbeIndex(0),
 		ProbeIntensity(1.0f)
 	{
-		EnvironmentMap = *GEE_FB::reserveColorBuffer(glm::uvec2(1024, 1024), GL_RGB16F, GL_FLOAT, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR, GL_TEXTURE_CUBE_MAP, 0, "Environment cubemap");
+		EnvironmentMap = NamedTexture(Texture::Loader<float>::ReserveEmptyCubemap(Vec2u(1024), Texture::Format::Float16::RGB()), "Environment cubemap");
+		EnvironmentMap.SetMinFilter(Texture::MinFilter::Trilinear(), true, false);
 		Scene.GetRenderData()->AddLightProbe(*this);
 	}
 
@@ -51,9 +52,14 @@ namespace GEE
 		return ProbeIntensity;
 	}
 
-	Shader* LightProbeComponent::GetRenderShader(const RenderToolboxCollection& renderCol) const
+	Shader* LightProbeComponent::GetRenderShader(const RenderToolboxCollection& renderCol)
 	{
 		return renderCol.FindShader("CookTorranceIBL");
+	}
+
+	bool LightProbeComponent::IsGlobalProbe() const
+	{
+		return Shape == EngineBasicShape::QUAD;
 	}
 
 	void LightProbeComponent::SetProbeIndex(unsigned int index)
@@ -61,16 +67,12 @@ namespace GEE
 		ProbeIndex = index;
 	}
 
-	MaterialInstance LightProbeComponent::GetDebugMatInst(EditorIconState state)
+	MaterialInstance LightProbeComponent::LoadDebugMatInst(EditorIconState state)
 	{
 		LoadDebugRenderMaterial("GEE_Mat_Default_Debug_LightProbeComponent", "EditorAssets/lightprobecomponent_icon.png");
-		return Component::GetDebugMatInst(state);
+		return Component::LoadDebugMatInst(state);
 	}
 
-#include <UI/UICanvasActor.h>
-#include <UI/UICanvasField.h>
-#include <rendering/LightProbe.h>
-#include <scene/UIInputBoxActor.h>
 	void LightProbeComponent::GetEditorDescription(EditorDescriptionBuilder descBuilder)
 	{
 		Component::GetEditorDescription(descBuilder);

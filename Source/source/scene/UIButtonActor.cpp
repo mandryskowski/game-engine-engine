@@ -23,40 +23,40 @@ namespace GEE
 	{
 		ButtonModel = &CreateComponent<ModelComponent>(Name + "'s_Button_Model");
 
-		std::shared_ptr<Material> matIdle, matHover, matClick, matDisabled;
+		SharedPtr<Material> matIdle, matHover, matClick, matDisabled;
 		if ((matIdle = GameHandle->GetRenderEngineHandle()->FindMaterial("GEE_Button_Idle")) == nullptr)
 		{
-			matIdle = std::make_shared<Material>("GEE_Button_Idle");
+			matIdle = MakeShared<Material>("GEE_Button_Idle");
 			matIdle->SetColor(Vec4f(0.520841f, 0.680359f, 0.773018f, 1.0f));
 			matIdle->SetRenderShaderName("Forward_NoLight");
 			GameHandle->GetRenderEngineHandle()->AddMaterial(matIdle);
 		}
 		if ((matHover = GameHandle->GetRenderEngineHandle()->FindMaterial("GEE_Button_Hover")) == nullptr)
 		{
-			matHover = std::make_shared<Material>("GEE_Button_Hover");
+			matHover = MakeShared<Material>("GEE_Button_Hover");
 			matHover->SetColor(Vec4f(0.831684f, 0.2f, 0.2f, 1.0f));
 			matHover->SetRenderShaderName("Forward_NoLight");
 			GameHandle->GetRenderEngineHandle()->AddMaterial(matHover);
 		}
 		if ((matClick = GameHandle->GetRenderEngineHandle()->FindMaterial("GEE_Button_Click")) == nullptr)
 		{
-			matClick = std::make_shared<Material>("GEE_Button_Click");
+			matClick = MakeShared<Material>("GEE_Button_Click");
 			matClick->SetColor(Vec4f(0.773018f, 0.773018f, 0.773018f, 1.0f));
 			matClick->SetRenderShaderName("Forward_NoLight");
 			GameHandle->GetRenderEngineHandle()->AddMaterial(matClick);
 		}
 		if ((matDisabled = GameHandle->GetRenderEngineHandle()->FindMaterial("GEE_Button_Disabled")) == nullptr)
 		{
-			matDisabled = std::make_shared<Material>("GEE_Button_Disabled");
+			matDisabled = MakeShared<Material>("GEE_Button_Disabled");
 			matDisabled->SetColor(Vec4f(0.3f, 0.3f, 0.3f, 1.0f));
 			matDisabled->SetRenderShaderName("Forward_NoLight");
 			GameHandle->GetRenderEngineHandle()->AddMaterial(matDisabled);
 		}
 
-		MatIdle = std::make_shared<MaterialInstance>(MaterialInstance(*matIdle));
-		MatHover = std::make_shared<MaterialInstance>(MaterialInstance(*matHover));
-		MatClick = std::make_shared<MaterialInstance>(MaterialInstance(*matClick));
-		MatDisabled = std::make_shared<MaterialInstance>(MaterialInstance(*matDisabled));
+		MatIdle = MakeShared<MaterialInstance>(MaterialInstance(*matIdle));
+		MatHover = MakeShared<MaterialInstance>(MaterialInstance(*matHover));
+		MatClick = MakeShared<MaterialInstance>(MaterialInstance(*matClick));
+		MatDisabled = MakeShared<MaterialInstance>(MaterialInstance(*matDisabled));
 
 
 		ButtonModel->AddMeshInst(MeshInstance(GameHandle->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD), MatIdle));
@@ -66,7 +66,12 @@ namespace GEE
 	UIButtonActor::UIButtonActor(GameScene& scene, Actor* parentActor, const std::string& name, const std::string& buttonTextContent, std::function<void()> onClickFunc, std::function<void()> whileBeingClickedFunc, const Transform& t) :
 		UIButtonActor(scene, parentActor, name, onClickFunc, whileBeingClickedFunc, t)
 	{
-		CreateComponent<TextConstantSizeComponent>("ComponentsNameActorTextComp", Transform(glm::vec2(0.0f), glm::vec2(1.0f)), buttonTextContent, "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER)).SetMaxSize(Vec2f(0.8f));
+		//CreateComponent<TextConstantSizeComponent>("ButtonText", Transform(Vec2f(0.0f), Vec2f(1.0f)), buttonTextContent, "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER)).SetMaxSize(Vec2f(0.8f));
+		//CreateComponent<ScrollingTextComponent>("ButtonText", Transform(Vec2f(0.0f), Vec2f(1.0f)), buttonTextContent, "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
+		if (Name == "RecentFilepathButton")
+			CreateComponent<TextConstantSizeComponent>("ButtonText", Transform(Vec2f(0.0f), Vec2f(1.0f / 9.0f, 1.0f)), buttonTextContent, "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER)).SetMaxSize(Vec2f(0.8f));
+		else 
+			CreateComponent<ScrollingTextComponent>("ButtonText", Transform(Vec2f(0.0f), Vec2f(1.0f)), buttonTextContent, "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
 	}
 
 	ModelComponent* UIButtonActor::GetButtonModel()
@@ -77,39 +82,39 @@ namespace GEE
 	Boxf<Vec2f> UIButtonActor::GetBoundingBox(bool world)
 	{
 		if (!GetTransform())
-			return Boxf<Vec2f>(glm::vec2(0.0f), glm::vec2(0.0f));
+			return Boxf<Vec2f>(Vec2f(0.0f), Vec2f(0.0f));
 
 		if (!world)
-			return Boxf<Vec2f>(GetTransform()->Pos(), GetTransform()->Scale());
+			return Boxf<Vec2f>(GetTransform()->GetPos(), GetTransform()->GetScale());
 
 		if (!CanvasPtr)
-			return Boxf<Vec2f>(GetTransform()->GetWorldTransform().Pos(), GetTransform()->GetWorldTransform().Scale());
+			return Boxf<Vec2f>(GetTransform()->GetWorldTransform().GetPos(), GetTransform()->GetWorldTransform().GetScale());
 
 		Transform canvasSpaceTransform = CanvasPtr->ToCanvasSpace(GetTransform()->GetWorldTransform());	//world == true, CanvasPtr isn't nullptr and this actor has got a Transform.
-		return Boxf<Vec2f>(canvasSpaceTransform.Pos(), canvasSpaceTransform.Scale());
+		return Boxf<Vec2f>(canvasSpaceTransform.GetPos(), canvasSpaceTransform.GetScale());
 	}
 
 	void UIButtonActor::SetMatIdle(MaterialInstance&& mat)
 	{
-		MatIdle = std::make_shared<MaterialInstance>(std::move(mat));
+		MatIdle = MakeShared<MaterialInstance>(std::move(mat));
 		DeduceMaterial();
 	}
 
 	void UIButtonActor::SetMatHover(MaterialInstance&& mat)
 	{
-		MatHover = std::make_shared<MaterialInstance>(std::move(mat));
+		MatHover = MakeShared<MaterialInstance>(std::move(mat));
 		DeduceMaterial();
 	}
 
 	void UIButtonActor::SetMatClick(MaterialInstance&& mat)
 	{
-		MatClick = std::make_shared<MaterialInstance>(std::move(mat));
+		MatClick = MakeShared<MaterialInstance>(std::move(mat));
 		DeduceMaterial();
 	}
 
 	void UIButtonActor::SetMatDisabled(MaterialInstance&& mat)
 	{
-		MatDisabled = std::make_shared<MaterialInstance>(std::move(mat));
+		MatDisabled = MakeShared<MaterialInstance>(std::move(mat));
 		DeduceMaterial();
 	}
 
@@ -145,13 +150,13 @@ namespace GEE
 		if (bInputDisabled)
 			return;
 
-		if (ev.GetType() == EventType::MOUSE_MOVED)
+		if (ev.GetType() == EventType::MouseMoved)
 		{
-			glm::vec2 cursorPos = static_cast<glm::vec2>(dynamic_cast<const CursorMoveEvent*>(&ev)->GetNewPosition());
-			glm::vec2 windowSize((glm::vec2)GameHandle->GetGameSettings()->WindowSize);
-			glm::vec2 windowBottomLeft(0.0f);
+			Vec2f cursorPos = dynamic_cast<const CursorMoveEvent*>(&ev)->GetNewPosition();
+			Vec2f windowSize((GameHandle->GetGameSettings()->WindowSize));
+			Vec2f windowBottomLeft(0.0f);
 
-			glm::vec2 cursorNDC = (glm::vec2(cursorPos.x, windowSize.y - cursorPos.y) - windowBottomLeft) / windowSize * 2.0f - 1.0f;
+			Vec2f cursorNDC = (Vec2f(cursorPos.x, windowSize.y - cursorPos.y) - windowBottomLeft) / windowSize * 2.0f - 1.0f;
 
 			bool bMouseInside = (Scene.GetCurrentBlockingCanvas() && !Scene.GetCurrentBlockingCanvas()->ShouldAcceptBlockedEvents(*this)) ? (false) : (ContainsMouse(cursorNDC));
 
@@ -164,16 +169,16 @@ namespace GEE
 			else if (State == EditorIconState::HOVER || State == EditorIconState::BEING_CLICKED_INSIDE)
 				OnUnhover();
 		}
-		else if (ev.GetType() == EventType::MOUSE_PRESSED && dynamic_cast<const MouseButtonEvent&>(ev).GetButton() == MouseButton::LEFT && State == EditorIconState::HOVER)
+		else if (ev.GetType() == EventType::MousePressed && dynamic_cast<const MouseButtonEvent&>(ev).GetButton() == MouseButton::Left && State == EditorIconState::HOVER)
 			OnBeingClicked();
-		else if (ev.GetType() == EventType::MOUSE_RELEASED && dynamic_cast<const MouseButtonEvent&>(ev).GetButton() == MouseButton::LEFT)
+		else if (ev.GetType() == EventType::MouseReleased && dynamic_cast<const MouseButtonEvent&>(ev).GetButton() == MouseButton::Left)
 		{
 			if (State == EditorIconState::BEING_CLICKED_INSIDE)
 				OnClick();
 			else if (State == EditorIconState::BEING_CLICKED_OUTSIDE)
 				State = EditorIconState::IDLE;
 		}
-		else if (ev.GetType() == EventType::FOCUS_SWITCHED)
+		else if (ev.GetType() == EventType::FocusSwitched)
 			State = EditorIconState::IDLE;
 
 		if (State == EditorIconState::BEING_CLICKED_INSIDE || State == EditorIconState::BEING_CLICKED_OUTSIDE)
@@ -216,7 +221,7 @@ namespace GEE
 		return State;
 	}
 
-	bool UIButtonActor::ContainsMouse(glm::vec2 cursorNDC)
+	bool UIButtonActor::ContainsMouse(Vec2f cursorNDC)
 	{
 		const Transform& worldT = GetTransform()->GetWorldTransform();
 
@@ -224,7 +229,7 @@ namespace GEE
 		{
 			if (!CanvasPtr->ContainsMouse())
 				return false;
-			glm::vec2 cursorCanvasSpace = glm::inverse(CanvasPtr->UICanvas::GetViewMatrix()) * Transform(glm::vec3(0.0f), glm::vec3(0.0f), CanvasPtr->UICanvas::GetViewT().Scale()).GetMatrix() * glm::inverse(CanvasPtr->GetCanvasT()->GetWorldTransformMatrix()) * glm::vec4(cursorNDC, 0.0f, 1.0f);
+			Vec2f cursorCanvasSpace = glm::inverse(CanvasPtr->UICanvas::GetViewMatrix()) * glm::inverse(CanvasPtr->GetCanvasT()->GetWorldTransformMatrix()) * Vec4f(cursorNDC, 0.0f, 1.0f);
 			return CollisionTests::AlignedRectContainsPoint(CanvasPtr->ToCanvasSpace(worldT), cursorCanvasSpace);
 		}
 
@@ -236,7 +241,7 @@ namespace GEE
 		if (!ButtonModel)
 			return;
 
-		std::shared_ptr<MaterialInstance>* currentMatInst = nullptr;
+		SharedPtr<MaterialInstance>* currentMatInst = nullptr;
 		if (!bInputDisabled)
 		{
 			switch (State)
@@ -264,10 +269,10 @@ namespace GEE
 		}
 	}
 
-	bool CollisionTests::AlignedRectContainsPoint(const Transform& rect, const glm::vec2& point)
+	bool CollisionTests::AlignedRectContainsPoint(const Transform& rect, const Vec2f& point)
 	{
-		glm::vec2 rectLeftBottom = rect.Pos() - rect.Scale();
-		return point == glm::min(glm::max(rectLeftBottom, point), rectLeftBottom + glm::vec2(rect.Scale()) * 2.0f);
+		Vec2f rectLeftBottom = rect.GetPos() - rect.GetScale();
+		return point == glm::min(glm::max(rectLeftBottom, point), rectLeftBottom + Vec2f(rect.GetScale()) * 2.0f);
 	}
 
 	UIActivableButtonActor::UIActivableButtonActor(GameScene& scene, Actor* parentActor, const std::string& name, std::function<void()> onClickFunc, std::function<void()> onDeactivationFunc) :
@@ -275,21 +280,21 @@ namespace GEE
 		OnDeactivationFunc(onDeactivationFunc)
 	{
 
-		std::shared_ptr<Material> matActive;
+		SharedPtr<Material> matActive;
 		if ((matActive = GameHandle->GetRenderEngineHandle()->FindMaterial("GEE_Button_Active")) == nullptr)
 		{
-			matActive = std::make_shared<Material>("GEE_Button_Active");
-			matActive->SetColor(glm::vec4(1.0f));
+			matActive = MakeShared<Material>("GEE_Button_Active");
+			matActive->SetColor(Vec4f(1.0f));
 			matActive->SetRenderShaderName("Forward_NoLight");
 			GameHandle->GetRenderEngineHandle()->AddMaterial(matActive);
 		}
 
-		MatActive = std::make_shared<MaterialInstance>(MaterialInstance(*matActive));
+		MatActive = MakeShared<MaterialInstance>(MaterialInstance(*matActive));
 	}
 
 	void UIActivableButtonActor::SetMatActive(MaterialInstance&& mat)
 	{
-		MatActive = std::make_shared<MaterialInstance>(std::move(mat));
+		MatActive = MakeShared<MaterialInstance>(std::move(mat));
 		DeduceMaterial();
 	}
 
@@ -302,10 +307,10 @@ namespace GEE
 	{
 		bool wasActive = State == EditorIconState::ACTIVATED;
 		bool isActive = wasActive;
-		if ((ev.GetType() == EventType::MOUSE_RELEASED && dynamic_cast<const MouseButtonEvent&>(ev).GetButton() == MouseButton::LEFT) || (ev.GetType() == EventType::FOCUS_SWITCHED))	//When the user releases LMB anywhere or our scene is de-focused, we disable writing to the InputBox.
+		if ((ev.GetType() == EventType::MouseReleased && dynamic_cast<const MouseButtonEvent&>(ev).GetButton() == MouseButton::Left) || (ev.GetType() == EventType::FocusSwitched))	//When the user releases LMB anywhere or our scene is de-focused, we disable writing to the InputBox.
 			isActive = false;
 
-		if ((!isActive && wasActive) || (isActive && (ev.GetType() == EventType::KEY_PRESSED || ev.GetType() == EventType::KEY_REPEATED) && dynamic_cast<const KeyEvent&>(ev).GetKeyCode() == Key::ENTER))
+		if ((!isActive && wasActive) || (isActive && (ev.GetType() == EventType::KeyPressed || ev.GetType() == EventType::KeyRepeated) && dynamic_cast<const KeyEvent&>(ev).GetKeyCode() == Key::Enter))
 			OnDeactivation();
 
 		UIButtonActor::HandleEvent(ev);	//If LMB is released while the mouse is hovering over the InputBox, OnClick() will be called and writing will be enabled.
@@ -341,7 +346,7 @@ namespace GEE
 
 	UIScrollBarActor::UIScrollBarActor(GameScene& scene, Actor* parentActor, const std::string& name, std::function<void()> onClickFunc, std::function<void()> beingClickedFunc) :
 		UIButtonActor(scene, parentActor, name, onClickFunc, beingClickedFunc),
-		ClickPosNDC(glm::vec2(0.0f))
+		ClickPosNDC(Vec2f(0.0f))
 	{
 	}
 
@@ -357,14 +362,21 @@ namespace GEE
 		ClickPosNDC = GameHandle->GetInputRetriever().GetMousePositionNDC();
 	}
 
-	const glm::vec2& UIScrollBarActor::GetClickPosNDC()
+	const Vec2f& UIScrollBarActor::GetClickPosNDC()
 	{
 		return ClickPosNDC;
 	}
 
-	void UIScrollBarActor::SetClickPosNDC(const glm::vec2& pos)
+	void UIScrollBarActor::SetClickPosNDC(const Vec2f& pos)
 	{
 		ClickPosNDC = pos;
 	}
 
+	void uiButtonActorUtil::ButtonMatsFromAtlas(UIButtonActor& button, AtlasMaterial& atlasMat, float idleID, float hoverID, float clickID, float disabledID)
+	{
+		button.SetMatIdle(MaterialInstance(atlasMat, atlasMat.GetTextureIDInterpolatorTemplate(idleID)));
+		if (hoverID >= 0.0f) button.SetMatHover(MaterialInstance(atlasMat, atlasMat.GetTextureIDInterpolatorTemplate(hoverID)));
+		if (clickID >= 0.0f) button.SetMatClick(MaterialInstance(atlasMat, atlasMat.GetTextureIDInterpolatorTemplate(clickID)));
+		if (disabledID >= 0.0f) button.SetMatDisabled(MaterialInstance(atlasMat, atlasMat.GetTextureIDInterpolatorTemplate(disabledID)));
+	}
 }

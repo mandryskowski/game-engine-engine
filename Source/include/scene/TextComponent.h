@@ -8,7 +8,7 @@ namespace GEE
 	class TextComponent : public RenderableComponent, public UIComponent
 	{
 	public:
-		TextComponent(Actor&, Component* parentComp, const std::string& name = std::string(), const Transform& transform = Transform(), std::string content = std::string(), std::shared_ptr<Font> font = nullptr, std::pair<TextAlignment, TextAlignment> = std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::CENTER));
+		TextComponent(Actor&, Component* parentComp, const std::string& name = std::string(), const Transform& transform = Transform(), std::string content = std::string(), SharedPtr<Font> font = nullptr, std::pair<TextAlignment, TextAlignment> = std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::CENTER));
 		TextComponent(Actor&, Component* parentComp, const std::string& name = std::string(), const Transform& transform = Transform(), std::string content = std::string(), std::string fontPath = std::string(), std::pair<TextAlignment, TextAlignment> = std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::CENTER));
 		TextComponent(const TextComponent&) = delete;
 		TextComponent(TextComponent&&);
@@ -16,6 +16,10 @@ namespace GEE
 		const std::string& GetContent() const;
 		virtual Boxf<Vec2f> GetBoundingBox(bool world = true) override;	//Canvas space
 		float GetTextLength(bool world = true) const;
+		virtual std::vector<const Material*> GetMaterials() const override;
+		Font* GetUsedFont();
+		MaterialInstance* GetTextMatInst();
+		std::pair<TextAlignment, TextAlignment> GetAlignment() const;
 
 		virtual void SetContent(const std::string&);
 		void SetMaterialInst(MaterialInstance&&);
@@ -28,7 +32,7 @@ namespace GEE
 		void SetAlignment(const std::pair<TextAlignment, TextAlignment>& alignment);	//Change what Component::ComponentTransform::Position
 
 		virtual void GetEditorDescription(EditorDescriptionBuilder) override;
-		virtual MaterialInstance GetDebugMatInst(EditorIconState) override;
+		virtual MaterialInstance LoadDebugMatInst(EditorIconState) override;
 
 		virtual unsigned int GetUIDepth() const override;
 
@@ -50,8 +54,8 @@ namespace GEE
 
 	private:
 		std::string Content;
-		std::shared_ptr<Font> UsedFont;
-		std::unique_ptr<MaterialInstance> TextMatInst;
+		SharedPtr<Font> UsedFont;
+		UniquePtr<MaterialInstance> TextMatInst;
 
 		std::pair<TextAlignment, TextAlignment> Alignment;		/*Vertical and horziontal alignment. Alignment is in relation to Component::ComponentTransform::Position
 																  Default alignment is LEFT and BOTTOM. This means that Component::ComponentTransform::Position marks the bottom-left corner of the text.
@@ -64,19 +68,37 @@ namespace GEE
 
 
 
-		class TextConstantSizeComponent : public TextComponent
+	class TextConstantSizeComponent : public TextComponent
 	{
 	public:
-		TextConstantSizeComponent(Actor&, Component* parentComp, const std::string& name = std::string(), const Transform& transform = Transform(), std::string content = std::string(), std::shared_ptr<Font> font = nullptr, std::pair<TextAlignment, TextAlignment> = std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::BOTTOM));
+		TextConstantSizeComponent(Actor&, Component* parentComp, const std::string& name = std::string(), const Transform& transform = Transform(), std::string content = std::string(), SharedPtr<Font> font = nullptr, std::pair<TextAlignment, TextAlignment> = std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::BOTTOM));
 		TextConstantSizeComponent(Actor&, Component* parentComp, const std::string& name = std::string(), const Transform& transform = Transform(), std::string content = std::string(), std::string fontPath = std::string(), std::pair<TextAlignment, TextAlignment> = std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::BOTTOM));
 		TextConstantSizeComponent(const TextConstantSizeComponent&) = delete;
 		TextConstantSizeComponent(TextConstantSizeComponent&&);
-		void SetMaxSize(const glm::vec2&);
+		void SetMaxSize(const Vec2f&);
 		virtual void SetContent(const std::string&) override;
 		void UpdateSize();
 	private:
-		glm::vec2 MaxSize;
-		glm::vec2 ScaleRatio;
+		Vec2f MaxSize;
+		Vec2f ScaleRatio;
+	};
+
+	class ScrollingTextComponent : public TextComponent
+	{
+	public:
+		ScrollingTextComponent(Actor&, Component* parentComp, const std::string& name = std::string(), const Transform& transform = Transform(), std::string content = std::string(), SharedPtr<Font> font = nullptr, std::pair<TextAlignment, TextAlignment> = std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::BOTTOM));
+		ScrollingTextComponent(Actor&, Component* parentComp, const std::string& name = std::string(), const Transform& transform = Transform(), std::string content = std::string(), std::string fontPath = std::string(), std::pair<TextAlignment, TextAlignment> = std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::BOTTOM));
+
+		virtual Boxf<Vec2f> GetBoundingBox(bool world = true) override;	//Canvas space
+		void SetMaxLength(float);
+
+		virtual void Update(float deltaTime);
+		virtual void Render(const RenderInfo& info, Shader* shader) override;
+	public:
+		Transform GetParentWorldTransform() const;
+		float MaxLength;
+
+		float TimeSinceScrollReset, ScrollResetTime, ScrollCooldownTime;
 	};
 }
 CEREAL_REGISTER_TYPE(GEE::TextComponent)

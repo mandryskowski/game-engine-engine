@@ -12,13 +12,13 @@ namespace GEE
 		virtual void OnStart() override;
 		virtual void Update(float deltaTime);
 		virtual void GetEditorDescription(EditorDescriptionBuilder) override;
-		void MoveToPosition(const glm::vec3& worldPos);
+		void MoveToPosition(const Vec3f& worldPos);
 		void MoveAlongPath();
 
 		template <typename Archive>
 		void Save(Archive& archive) const
 		{
-			std::string animManagerName = (AnimManager) ? (AnimManager->GetName()) : (std::string()), gunName = (Gun) ? (Gun->GetName()) : (std::string()), playerTargetName = (PlayerTarget) ? (PlayerTarget->GetName()) : (nullptr);
+			std::string animManagerName = (AnimManager) ? (AnimManager->GetName()) : (std::string()), gunName = (Gun) ? (Gun->GetName()) : (std::string()), playerTargetName = (PlayerTarget) ? (PlayerTarget->GetName()) : (std::string());
 
 			archive(cereal::make_nvp("AnimManagerName", animManagerName), CEREAL_NVP(AnimIndex), cereal::make_nvp("GunName", gunName), CEREAL_NVP(SpeedPerSec), cereal::make_nvp("PlayerTargetName", playerTargetName), cereal::make_nvp("Actor", cereal::base_class<Actor>(this)));
 		}
@@ -38,13 +38,13 @@ namespace GEE
 		//Component* RootBone;
 		AnimationManagerComponent* AnimManager;
 		int AnimIndex;
-		glm::vec3 PreAnimBonePos;
+		Vec3f PreAnimBonePos;
 
-		glm::vec3 CurrentTargetPos;
+		Vec3f CurrentTargetPos;
 		float SpeedPerSec;
 
 		int PathIndex;
-		glm::vec3 Waypoints[4];
+		Vec3f Waypoints[4];
 
 		GunActor* Gun;
 		Actor* PlayerTarget;

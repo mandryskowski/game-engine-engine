@@ -33,28 +33,36 @@ namespace GEE
 
 		friend class RenderEngine;	//usun to
 
-		std::shared_ptr<Shader> QuadShader;
+		SharedPtr<Shader> QuadShader;
 
 		mutable unsigned int FrameIndex;
 
 	public:
 		Postprocess();
-		void Init(GameManager* gameHandle, glm::uvec2 resolution);
+		void Init(GameManager* gameHandle, Vec2u resolution);
 
 		virtual unsigned int GetFrameIndex() override;
-		virtual glm::mat4 GetJitterMat(const GameSettings::VideoSettings& usedSettings, int optionalIndex = -1) override;	//dont pass anything to receive the current jitter matrix
+		virtual Mat4f GetJitterMat(const GameSettings::VideoSettings& usedSettings, int optionalIndex = -1) override;	//dont pass anything to receive the current jitter matrix
 		template <typename ToolboxType> PPToolbox<ToolboxType> GetPPToolbox(RenderToolboxCollection& toolboxCol) const
 		{
 			return PPToolbox<ToolboxType>(*this, toolboxCol);
 		}
 
-		const Texture* GaussianBlur(PPToolbox<GaussianBlurToolbox> tb, const GEE_FB::Framebuffer& writeFramebuffer, const Viewport* viewport, const Texture* tex, int passes, unsigned int writeColorBuffer = 0) const;
-		const Texture* SSAOPass(RenderInfo&, const Texture* gPosition, const Texture* gNormal);
-		const Texture* SMAAPass(PPToolbox<SMAAToolbox> tb, const GEE_FB::Framebuffer& writeFramebuffer, const Viewport* viewport, const Texture* colorTex, const Texture* depthTex, const Texture* previousColorTex = nullptr, const Texture* velocityTex = nullptr, unsigned int writeColorBuffer = 0, bool bT2x = false) const;
-		const Texture* TonemapGammaPass(PPToolbox<ComposedImageStorageToolbox> tbCollection, const GEE_FB::Framebuffer& writeFramebuffer, const Viewport* viewport, const Texture* colorTex, const Texture* blurTex) const;	//converts from linear to gamma and from HDR data to LDR
-		void Render(RenderToolboxCollection& tbCollection, const GEE_FB::Framebuffer& finalFramebuffer, const Viewport* viewport, const Texture* colorTex, const Texture* blurTex = nullptr, const Texture* depthTex = nullptr, const Texture* velocityTex = nullptr) const;
-		void RenderFullscreenQuad(RenderToolboxCollection& tbCollection, Shader* shader = nullptr, bool useShader = true) const {
-			RenderFullscreenQuad(RenderInfo(tbCollection, glm::mat4(1.0f), glm::mat4(1.0f), glm::mat4(1.0f), glm::vec3(0.0f), false), shader, useShader);
+		static Texture GaussianBlur(PPToolbox<GaussianBlurToolbox> tb, const GEE_FB::Framebuffer& writeFramebuffer,
+		                            const Viewport* viewport, const Texture& tex, int passes,
+		                            unsigned int writeColorBuffer = 0);
+		Texture SSAOPass(RenderInfo&, const Texture& gPosition, const Texture& gNormal) const;
+		Texture SMAAPass(PPToolbox<SMAAToolbox> tb, const GEE_FB::Framebuffer& writeFramebuffer,
+		                 const Viewport* viewport, const Texture& colorTex, const Texture& depthTex,
+		                 const Texture& previousColorTex = Texture(), const Texture& velocityTex = Texture(),
+		                 unsigned int writeColorBuffer = 0, bool bT2x = false) const;
+		static Texture TonemapGammaPass(PPToolbox<ComposedImageStorageToolbox> tbCollection,
+		                                const GEE_FB::Framebuffer& writeFramebuffer, const Viewport* viewport,
+		                                const Texture& colorTex, const Texture& blurTex);	//converts from linear to gamma and from HDR data to LDR
+		void Render(RenderToolboxCollection& tbCollection, const GEE_FB::Framebuffer& finalFramebuffer, const Viewport* viewport, const Texture& colorTex, Texture blurTex = Texture(), const Texture& depthTex = Texture(), const Texture& velocityTex = Texture()) const;
+		void RenderFullscreenQuad(RenderToolboxCollection& tbCollection, Shader* shader = nullptr, bool useShader = true) const
+		{
+			RenderFullscreenQuad(RenderInfo(tbCollection, Mat4f(1.0f), Mat4f(1.0f), Mat4f(1.0f), Vec3f(0.0f), false), shader, useShader);
 		}
 		void RenderFullscreenQuad(RenderInfo& info, Shader* shader = nullptr, bool useShader = true) const {
 			if (!shader) shader = RenderHandle->FindShader("Quad");
@@ -62,6 +70,6 @@ namespace GEE
 			RenderHandle->RenderStaticMesh(info, MeshInstance(RenderHandle->GetBasicShapeMesh(EngineBasicShape::QUAD), nullptr), Transform(), shader);
 		}
 
-		void Dispose();
+		static void Dispose();
 	};
 }

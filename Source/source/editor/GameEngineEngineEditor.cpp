@@ -14,8 +14,12 @@
 #include <scene/PawnActor.h>
 #include <scene/Controller.h>
 #include <input/InputDevicesStateRetriever.h>
+#include <math/Box.h>
 #include <whereami.h>
-#include <map>
+#include <sstream>
+#include <fstream>
+
+#include <editor/MousePicking.h>
 
 namespace GEE
 {
@@ -30,8 +34,25 @@ namespace GEE
 
 	void EditorEventProcessor::Resize(GLFWwindow* window, int width, int height)
 	{
-		EditorHandle->GetGameHandle()->GetGameSettings()->WindowSize = glm::uvec2(width, height);
-		EditorHandle->UpdateSettings();
+		if (width <= 0 || height <= 0)
+			return;
+
+		Vec2u newSize(width, height);
+		if (EditorHandle->GetGameHandle()->GetGameSettings()->WindowSize != newSize || EditorHandle->GetGameHandle()->GetGameSettings()->Video.Resolution != static_cast<Vec2f>(newSize))
+		{
+			EditorHandle->GetGameHandle()->GetGameSettings()->WindowSize = newSize;
+			EditorHandle->GetGameHandle()->GetGameSettings()->Video.Resolution = static_cast<Vec2f>(newSize) * Vec2f(0.4f, 0.6f);
+			EditorHandle->UpdateGameSettings();
+		}
+
+		if (EditorHandle->GetEditorSettings()->WindowSize != newSize || EditorHandle->GetEditorSettings()->Video.Resolution != static_cast<Vec2f>(newSize))
+		{
+			EditorHandle->GetEditorSettings()->WindowSize = newSize;
+			EditorHandle->GetEditorSettings()->Video.Resolution = newSize;
+			EditorHandle->UpdateEditorSettings();
+		}
+
+		std::cout << "New res " << EditorHandle->GetGameHandle()->GetGameSettings()->Video.Resolution << '\n';
 	}
 
 
@@ -40,7 +61,8 @@ namespace GEE
 		EditorScene(nullptr),
 		SelectedComp(nullptr),
 		SelectedActor(nullptr),
-		SelectedScene(nullptr)
+		SelectedScene(nullptr),
+		bDebugRenderComponents(true)
 		//CanvasContext(nullptr)
 	{
 		{
@@ -52,10 +74,11 @@ namespace GEE
 			std::cout << "Executable folder: " << ExecutableFolder << '\n';
 		}
 
-		Settings = std::make_unique<GameSettings>(GameSettings(EngineDataLoader::LoadSettingsFromFile<GameSettings>("Settings.ini")));
-		glm::vec2 res = static_cast<glm::vec2>(Settings->WindowSize);
+		Settings = MakeUnique<GameSettings>(GameSettings(EngineDataLoader::LoadSettingsFromFile<GameSettings>("Settings.ini")));
+		Vec2f res = Settings->WindowSize;
 		//Settings->ViewportData = glm::uvec4(res.x * 0.3f, res.y * 0.4f, res.x * 0.4, res.y * 0.6f);
-		Settings->Video.Resolution = glm::vec2(res.x * 0.4f, res.y * 0.6f);
+		Settings->Video.Resolution = Vec2f(res.x * 0.4f, res.y * 0.6f);
+		//Settings->Video.Resolution = Vec2f(res.x, res.y);
 		Settings->Video.Shading = ShadingModel::SHADING_PBR_COOK_TORRANCE;
 		Init(window);
 	}
@@ -63,6 +86,11 @@ namespace GEE
 	GameManager* GameEngineEngineEditor::GetGameHandle()
 	{
 		return this;
+	}
+
+	Component* GameEngineEngineEditor::GetSelectedComponent()
+	{
+		return SelectedComp;
 	}
 
 	GameScene* GameEngineEngineEditor::GetSelectedScene()
@@ -73,8 +101,13 @@ namespace GEE
 	std::vector<GameScene*> GameEngineEngineEditor::GetScenes()
 	{
 		std::vector<GameScene*> scenes(Scenes.size());
-		std::transform(Scenes.begin(), Scenes.end(), scenes.begin(), [](std::unique_ptr<GameScene>& sceneVec) {return sceneVec.get(); });
+		std::transform(Scenes.begin(), Scenes.end(), scenes.begin(), [](UniquePtr<GameScene>& sceneVec) {return sceneVec.get(); });
 		return scenes;
+	}
+
+	GameSettings* GameEngineEngineEditor::GetEditorSettings()
+	{
+		return &EditorSettings;
 	}
 
 	void GameEngineEngineEditor::Init(GLFWwindow* window)
@@ -93,58 +126,58 @@ namespace GEE
 		glfwSetFramebufferSizeCallback(Window, EditorEventProcessor::Resize);
 
 
-		std::shared_ptr<AtlasMaterial> addIconMat = std::make_shared<AtlasMaterial>(Material("GEE_E_Add_Icon_Mat", 0.0f, RenderEng.FindShader("Forward_NoLight")), glm::ivec2(3, 1));
+		SharedPtr<AtlasMaterial> addIconMat = MakeShared<AtlasMaterial>(Material("GEE_E_Add_Icon_Mat", 0.0f, RenderEng.FindShader("Forward_NoLight")), glm::ivec2(3, 1));
 		GetRenderEngineHandle()->AddMaterial(addIconMat);
-		addIconMat->AddTexture(std::make_shared<NamedTexture>(textureFromFile("EditorAssets/add_icon.png", GL_RGB, GL_LINEAR, GL_NEAREST_MIPMAP_LINEAR), "albedo1"));
+		addIconMat->AddTexture(MakeShared<NamedTexture>(Texture::Loader<>::FromFile2D("EditorAssets/add_icon.png", Texture::Format::RGBA(), false, Texture::MinFilter::NearestInterpolateMipmap()), "albedo1"));
 
-		std::shared_ptr<AtlasMaterial> refreshIconMat = std::make_shared<AtlasMaterial>(Material("GEE_E_Refresh_Icon_Mat", 0.0f, RenderEng.FindShader("Forward_NoLight")), glm::ivec2(3, 1));
+		SharedPtr<AtlasMaterial> refreshIconMat = MakeShared<AtlasMaterial>(Material("GEE_E_Refresh_Icon_Mat", 0.0f, RenderEng.FindShader("Forward_NoLight")), glm::ivec2(3, 1));
 		GetRenderEngineHandle()->AddMaterial(refreshIconMat);
-		refreshIconMat->AddTexture(std::make_shared<NamedTexture>(textureFromFile("EditorAssets/refresh_icon.png", GL_RGB, GL_LINEAR, GL_NEAREST_MIPMAP_LINEAR), "albedo1"));
+		refreshIconMat->AddTexture(MakeShared<NamedTexture>(Texture::Loader<>::FromFile2D("EditorAssets/refresh_icon.png", Texture::Format::RGBA(), false, Texture::MinFilter::NearestInterpolateMipmap()), "albedo1"));
 		
-		std::shared_ptr<AtlasMaterial> moreMat = std::make_shared<AtlasMaterial>(Material("GEE_E_More_Mat", 0.0f, RenderEng.FindShader("Forward_NoLight")), glm::ivec2(3, 1));
+		SharedPtr<AtlasMaterial> moreMat = MakeShared<AtlasMaterial>(Material("GEE_E_More_Mat", 0.0f, RenderEng.FindShader("Forward_NoLight")), glm::ivec2(3, 1));
 		GetRenderEngineHandle()->AddMaterial(moreMat);
-		moreMat->AddTexture(std::make_shared<NamedTexture>(textureFromFile("EditorAssets/more_icon.png", GL_RGB, GL_LINEAR, GL_LINEAR_MIPMAP_LINEAR, true), "albedo1"));
+		moreMat->AddTexture(MakeShared<NamedTexture>(Texture::Loader<>::FromFile2D("EditorAssets/more_icon.png", Texture::Format::RGBA(), true), "albedo1"));
 
 		{
-			std::shared_ptr<Material> material = std::make_shared<Material>(Material("GEE_Default_Text_Material", 0.0f, RenderEng.FindShader("TextShader")));
+			SharedPtr<Material> material = MakeShared<Material>("GEE_Default_Text_Material", 0.0f, RenderEng.FindShader("TextShader"));
 			material->SetColor(Vec4f(1.0f));
 			GetRenderEngineHandle()->AddMaterial(material);
 		}
 		{
-			std::shared_ptr<Material> material = std::make_shared<Material>(Material("GEE_Default_X_Axis", 0.0f, RenderEng.FindShader("Forward_NoLight")));
+			SharedPtr<Material> material = MakeShared<Material>("GEE_Default_X_Axis", 0.0f, RenderEng.FindShader("Forward_NoLight"));
 			material->SetColor(Vec4f(0.39f, 0.18f, 0.18f, 1.0f));
 			GetRenderEngineHandle()->AddMaterial(material);
 		}
 		{
-			std::shared_ptr<Material> material = std::make_shared<Material>(Material("GEE_Default_Y_Axis", 0.0f, RenderEng.FindShader("Forward_NoLight")));
+			SharedPtr<Material> material = MakeShared<Material>(Material("GEE_Default_Y_Axis", 0.0f, RenderEng.FindShader("Forward_NoLight")));
 			material->SetColor(Vec4f(0.18f, 0.39f, 0.25f, 1.0f));
 			GetRenderEngineHandle()->AddMaterial(material);
 		}
 		{
-			std::shared_ptr<Material> material = std::make_shared<Material>(Material("GEE_Default_Z_Axis", 0.0f, RenderEng.FindShader("Forward_NoLight")));
+			SharedPtr<Material> material = MakeShared<Material>(Material("GEE_Default_Z_Axis", 0.0f, RenderEng.FindShader("Forward_NoLight")));
 			material->SetColor(Vec4f(0.18f, 0.25f, 0.39f, 1.0f));
 			GetRenderEngineHandle()->AddMaterial(material);
 		}
 		{
-			std::shared_ptr<Material> material = std::make_shared<Material>(Material("GEE_Default_W_Axis", 0.0f, RenderEng.FindShader("Forward_NoLight")));
+			SharedPtr<Material> material = MakeShared<Material>(Material("GEE_Default_W_Axis", 0.0f, RenderEng.FindShader("Forward_NoLight")));
 			material->SetColor(Vec4f(0.45f, 0.46f, 0.5f, 1.0f));
 			GetRenderEngineHandle()->AddMaterial(material);
 		}
 		{
-			std::shared_ptr<Material> material = std::make_shared<Material>(Material("GEE_E_Canvas_Background_Material", 0.0f, RenderEng.FindShader("Forward_NoLight")));
+			SharedPtr<Material> material = MakeShared<Material>(Material("GEE_E_Canvas_Background_Material", 0.0f, RenderEng.FindShader("Forward_NoLight")));
 			material->SetColor(Vec4f(0.26f, 0.34f, 0.385f, 1.0f));
 			GetRenderEngineHandle()->AddMaterial(material);
 		}
 
 		{
-			std::shared_ptr<Material> material = std::make_shared<Material>(Material("GEE_No_Camera_Icon", 0.0f, RenderEng.FindShader("Forward_NoLight")));
+			SharedPtr<Material> material = MakeShared<Material>(Material("GEE_No_Camera_Icon", 0.0f, RenderEng.FindShader("Forward_NoLight")));
 			GetRenderEngineHandle()->AddMaterial(material);
-			material->AddTexture(std::make_shared<NamedTexture>(textureFromFile("EditorAssets/no_camera_icon.png", GL_RGB, GL_LINEAR, GL_NEAREST_MIPMAP_LINEAR, true), "albedo1"));
+			material->AddTexture(MakeShared<NamedTexture>(Texture::Loader<>::FromFile2D("EditorAssets/no_camera_icon.png", Texture::Format::RGBA(), true, Texture::MinFilter::NearestInterpolateMipmap(), Texture::MagFilter::Bilinear()), "albedo1"));
 		}
 
-		std::shared_ptr<AtlasMaterial> kopecMat = std::make_shared<AtlasMaterial>(Material("Kopec", 0.0f, RenderEng.FindShader("Forward_NoLight")), glm::ivec2(2, 1));
+		SharedPtr<AtlasMaterial> kopecMat = MakeShared<AtlasMaterial>(Material("Kopec", 0.0f, RenderEng.FindShader("Forward_NoLight")), glm::ivec2(2, 1));
 		GetRenderEngineHandle()->AddMaterial(kopecMat);
-		kopecMat->AddTexture(std::make_shared<NamedTexture>(textureFromFile("kopec_tekstura.png", GL_RGB, GL_LINEAR, GL_NEAREST_MIPMAP_LINEAR, true), "albedo1"));
+		kopecMat->AddTexture(MakeShared<NamedTexture>(Texture::Loader<>::FromFile2D("kopec_tekstura.png", Texture::Format::RGBA(), true, Texture::MinFilter::NearestInterpolateMipmap(), Texture::MagFilter::Bilinear()), "albedo1"));
 
 		//LoadSceneFromFile("level.txt", "GEE_Main");
 		//SetMainScene(GetScene("GEE_Main"));
@@ -171,10 +204,11 @@ namespace GEE
 		//SelectScene(ActiveScene, *EditorScene);
 	}
 
-	void GameEngineEngineEditor::UpdateSettings()
+	void GameEngineEngineEditor::UpdateGameSettings()
 	{
 		ViewportRenderCollection->AddTbsRequiredBySettings();
 
+		//Update scene preview texture, since we created a new one
 		Material* previewMaterial = RenderEng.FindMaterial("GEE_3D_SCENE_PREVIEW_MATERIAL").get();
 		if (!previewMaterial)
 		{
@@ -182,7 +216,12 @@ namespace GEE
 			return;
 		}
 		previewMaterial->Textures.clear();
-		previewMaterial->AddTexture(std::make_shared<NamedTexture>(*ViewportRenderCollection->GetTb<FinalRenderTargetToolbox>()->GetFinalFramebuffer().GetColorBuffer(0), "albedo1"));
+		previewMaterial->AddTexture(MakeShared<NamedTexture>(ViewportRenderCollection->GetTb<FinalRenderTargetToolbox>()->GetFinalFramebuffer().GetColorTexture(0), "albedo1"));
+	}
+
+	void GameEngineEngineEditor::UpdateEditorSettings()
+	{
+		HUDRenderCollection->AddTbsRequiredBySettings();
 	}
 
 	void GameEngineEngineEditor::SetupEditorScene()
@@ -191,42 +230,94 @@ namespace GEE
 
 		//settings.ViewportData = glm::uvec4(res.x * 0.3f, res.y * 0.4f, res.x * 0.4, res.y * 0.6f);
 
-		Actor& scenePreviewActor = editorScene.CreateActorAtRoot<Actor>("SceneViewportActor");
-		ModelComponent& scenePreviewQuad = scenePreviewActor.CreateComponent<ModelComponent>("SceneViewportQuad");
-
-		//SetCanvasContext(&editorScene.CreateActorAtRoot<UICanvasActor>("GEE_E_Canvas_Context"));
-
-		/*UICanvasActor& exampleCanvas = editorScene.CreateActorAtRoot<UICanvasActor>("ExampleCanvas");
-		exampleCanvas.SetTransform(Transform(glm::vec3(0.7f, -0.4f, 0.0f), glm::vec3(0.0f), glm::vec3(0.3f)));
-		UIButtonActor& lolBackgroundButton = exampleCanvas.CreateChild<UIButtonActor>("VeryImportantButton");
-		lolBackgroundButton.SetTransform(Transform(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f), glm::vec3(1.0f)));
-
-		TextComponent& sampleText = exampleCanvas.CreateComponent<TextComponent>("SampleTextComp", Transform(glm::vec3(0.9f, 0.0f, 0.0f), glm::vec3(0.0f), glm::vec3(0.1f)), "Sample Text");
-		sampleText.SetAlignment(TextAlignment::CENTER, TextAlignment::CENTER);
-
-		TextComponent& sampleText2 = exampleCanvas.CreateComponent<TextComponent>("SampleTextComp", Transform(glm::vec3(1.9f, 0.0f, 0.0f), glm::vec3(0.0f), glm::vec3(0.1f)), "Very important text");
-
-		TextComponent& sampleText3 = exampleCanvas.CreateComponent<TextComponent>("SampleTextComp", Transform(glm::vec3(1.9f, 1.5f, 0.0f), glm::vec3(0.0f), glm::vec3(0.1f)), "Mega ultra important text");
-
-		for (int y = -3; y <= 3; y++)
 		{
-			for (int x = -3; x <= 3; x++)
-			{
-				TextComponent& gridSampleText = exampleCanvas.CreateComponent<TextComponent>("SampleTextComp", Transform(glm::vec3(x, y, 0.0f), glm::vec3(0.0f), glm::vec3(0.05f)), "Sample Text " + std::to_string(x) + "|||" + std::to_string(y));
-				gridSampleText.SetAlignment(TextAlignment::RIGHT, TextAlignment::TOP);
-			}
-		}*/
+			auto& scenePreviewActor = editorScene.CreateActorAtRoot<UIButtonActor>("SceneViewportActor");
+			scenePreviewActor.DeleteButtonModel();
+
+			ModelComponent& scenePreviewQuad = scenePreviewActor.CreateComponent<ModelComponent>("SceneViewportQuad");
+			scenePreviewActor.SetOnClickFunc([&]() {
+
+				// Get mouse pos in NDC (preview quad space)
+				Vec2f localMousePos = static_cast<Vec2f>(glm::inverse(scenePreviewActor.GetTransform()->GetWorldTransformMatrix()) * Vec4f(static_cast<Vec2f>(GetInputRetriever().GetMousePositionNDC()), 1.0, 1.0));
+				std::cout << "#$# Mouse picking " << localMousePos << '\n';
+
+				GameScene& scene = *GetScene("GEE_Main");
+				if (!scene.GetActiveCamera())
+					return;
+
+				// Get all components
+				std::vector<Component*> allComponents;
+				{
+					std::vector<Actor*> allActors;
+					allActors.push_back(GetScene("GEE_Main")->GetRootActor());
+					GetScene("GEE_Main")->GetRootActor()->GetAllActors(&allActors);
+
+					for (auto it : allActors)
+					{
+						if (bDebugRenderComponents)
+						{
+							allComponents.push_back(it->GetRoot());
+							it->GetRoot()->GetAllComponents<Component>(&allComponents);
+						}
+						else
+						{
+							if (dynamic_cast<RenderableComponent*>(it->GetRoot()))
+								allComponents.push_back(it->GetRoot());
+							it->GetRoot()->GetAllComponents<Component, RenderableComponent>(&allComponents);
+						}
+					}
+				}
+
+				MousePickingRenderer renderer(RenderEng);
+				RenderInfo info = scene.GetActiveCamera()->GetRenderInfo(*ViewportRenderCollection);
+				Component* pickedComponent = renderer.PickComponent(info, scene, GetGameSettings()->Video.Resolution, static_cast<Vec2u>((localMousePos * 0.5f + 0.5f) * static_cast<Vec2f>(GetGameSettings()->Video.Resolution)), allComponents);
+
+				if (pickedComponent && pickedComponent != GetSelectedComponent())
+				{
+					SelectActor(&pickedComponent->GetActor(), editorScene);
+					SelectComponent(pickedComponent, editorScene);
+				}
+				else
+					SelectActor(nullptr, editorScene);
+
+				});
+
+
+
+			scenePreviewActor.CreateChild<UIButtonActor>("SelectPreview_Empty", "Final",
+				[&]() {
+					auto& window = editorScene.CreateActorAtRoot<UIWindowActor>("SelectPreviewWindow");
+
+					auto setViewportTex = [&](const Texture& tex) {
+						Material* mat = new Material("unnamed", 0.0f, RenderEng.FindShader("Forward_NoLight"));
+						mat->AddTexture(std::make_shared<NamedTexture>(tex, "albedo1"));
+						scenePreviewQuad.OverrideInstancesMaterial(mat);
+
+						window.MarkAsKilled();
+					};
+
+					auto& previewsList = window.CreateChild<UIAutomaticListActor>("PreviewsList");
+					previewsList.CreateChild<UIButtonActor>("Albedo", "Albedo", [&, setViewportTex]() { setViewportTex(ViewportRenderCollection->GetTb<DeferredShadingToolbox>()->GetGeometryFramebuffer()->GetColorTexture(0));});
+					previewsList.CreateChild<UIButtonActor>("Position", "Position", [&, setViewportTex]() { setViewportTex(ViewportRenderCollection->GetTb<DeferredShadingToolbox>()->GetGeometryFramebuffer()->GetColorTexture(1));});
+					previewsList.CreateChild<UIButtonActor>("Normal", "Normal", [&, setViewportTex]() { setViewportTex(ViewportRenderCollection->GetTb<DeferredShadingToolbox>()->GetGeometryFramebuffer()->GetColorTexture(2));});
+					previewsList.CreateChild<UIButtonActor>("Final", "Final", [&, setViewportTex]() { setViewportTex(ViewportRenderCollection->GetTb<FinalRenderTargetToolbox>()->GetFinalFramebuffer().GetColorTexture(0));});
+
+					previewsList.Refresh();
+
+					window.AutoClampView();
+
+				}, nullptr, Transform(Vec2f(0.6f, -1.07f), Vec2f(0.4f, 0.05f)));
+		}
 
 		UIWindowActor& window1 = editorScene.CreateActorAtRoot<UIWindowActor>("MyTestWindow");
-		window1.SetTransform(Transform(glm::vec2(0.0, -0.5f), glm::vec2(0.2f)));
+		window1.SetTransform(Transform(Vec2f(0.0, -0.5f), Vec2f(0.2f)));
 
-		UIButtonActor& bigButtonActor = window1.CreateChild<UIButtonActor>("MojTestowyButton");
-		bigButtonActor.SetTransform(Transform(glm::vec2(0.0f, 1.5f), glm::vec2(0.4f)));
-		TextComponent& bigButtonText = bigButtonActor.CreateComponent<TextComponent>("BigButtonText", Transform(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f), glm::vec3(0.1f)), "big button", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
+		UIButtonActor& bigButtonActor = window1.CreateChild<UIButtonActor>("MojTestowyButton", "big button");
+		bigButtonActor.SetTransform(Transform(Vec2f(0.0f, 1.5f), Vec2f(0.4f)));
 
 		editorScene.CreateActorAtRoot<UIButtonActor>("MeshTreesButton", "HierarchyTrees", [this, &editorScene]() {
 			UIWindowActor& window = editorScene.CreateActorAtRoot<UIWindowActor>("MeshTreesWindow");
-			window.GetTransform()->SetScale(glm::vec2(0.5f));
+			window.GetTransform()->SetScale(Vec2f(0.5f));
 
 			UIAutomaticListActor& meshTreesList = window.CreateChild<UIAutomaticListActor>("MeshTreesList");
 			for (auto& scene : Scenes)
@@ -235,80 +326,105 @@ namespace GEE
 
 			meshTreesList.Refresh();
 
-			}).SetTransform(Transform(Vec2f(-0.8f, -0.8f), Vec2f(0.1f)));
+		}).SetTransform(Transform(Vec2f(-0.8f, -0.8f), Vec2f(0.1f)));
 
-			editorScene.CreateActorAtRoot<UIButtonActor>("MaterialsButton", "Materials", [this, &editorScene]() {
-				UIWindowActor& window = editorScene.CreateActorAtRoot<UIWindowActor>("MaterialsPreviewWindow");
-				UIAutomaticListActor& list = window.CreateChild<UIAutomaticListActor>("MaterialsList");
+		editorScene.CreateActorAtRoot<UIButtonActor>("MaterialsButton", "Materials", [this, &editorScene]() {
+			UIWindowActor& window = editorScene.CreateActorAtRoot<UIWindowActor>("MaterialsPreviewWindow");
+			UIAutomaticListActor& list = window.CreateChild<UIAutomaticListActor>("MaterialsList");
 
-				std::cout << "Nr of materials: " << RenderEng.Materials.size() << '\n';
-				for (auto& it : RenderEng.Materials)
-				{
-					std::string name = (it) ? (it->GetLocalization().GetFullStr()) : ("NULLPTR???");
-					UIButtonActor& button = list.CreateChild<UIButtonActor>(name + "Button", name, [this, &window, &it, name]() { UIWindowActor& matWindow = window.CreateChildCanvas<UIWindowActor>(name + "MaterialWindow"); EditorDescriptionBuilder descBuilder(*this, matWindow, matWindow); it->GetEditorDescription(descBuilder); matWindow.AutoClampView(); matWindow.RefreshFieldsList(); });
-					std::cout << name << '\n';
-				}
+			std::cout << "Nr of materials: " << RenderEng.Materials.size() << '\n';
+			for (auto& it : RenderEng.Materials)
+			{
+				std::string name = (it) ? (it->GetLocalization().GetFullStr()) : ("NULLPTR???");
+				UIButtonActor& button = list.CreateChild<UIButtonActor>(name + "Button", name, [this, &window, &it, name]() { UIWindowActor& matWindow = window.CreateChildCanvas<UIWindowActor>(name + "MaterialWindow"); EditorDescriptionBuilder descBuilder(*this, matWindow, matWindow); it->GetEditorDescription(descBuilder); matWindow.AutoClampView(); matWindow.RefreshFieldsList(); });
+				std::cout << name << '\n';
+			}
 
-				UIButtonActor& addMaterialButton = list.CreateChild<UIButtonActor>("CreateMaterialButton", [this, &list]() { GetRenderEngineHandle()->AddMaterial(std::make_shared<AtlasMaterial>("CreatedMaterial")); });
-				AtlasMaterial* mat = dynamic_cast<AtlasMaterial*>(GetRenderEngineHandle()->FindMaterial("GEE_E_Add_Icon_Mat").get());
-				addMaterialButton.SetMatIdle(MaterialInstance(*mat, mat->GetTextureIDInterpolatorTemplate(0.0f)));
-				addMaterialButton.SetMatHover(MaterialInstance(*mat, mat->GetTextureIDInterpolatorTemplate(1.0f)));
-				addMaterialButton.SetMatClick(MaterialInstance(*mat, mat->GetTextureIDInterpolatorTemplate(2.0f)));
+			UIButtonActor& addMaterialButton = list.CreateChild<UIButtonActor>("CreateMaterialButton", [this, &list]() { GetRenderEngineHandle()->AddMaterial(MakeShared<AtlasMaterial>("CreatedMaterial")); });
+			uiButtonActorUtil::ButtonMatsFromAtlas(addMaterialButton, *dynamic_cast<AtlasMaterial*>(GetRenderEngineHandle()->FindMaterial("GEE_E_Add_Icon_Mat").get()), 0.0f, 1.0f, 2.0f);
 
-				list.Refresh();
+			list.Refresh();
 
-				}).SetTransform(Transform(Vec2f(-0.5f, -0.8f), Vec2f(0.1f)));
+		}).SetTransform(Transform(Vec2f(-0.5f, -0.8f), Vec2f(0.1f)));
 
-				editorScene.CreateActorAtRoot<UIButtonActor>("SettingsButton", "Settings", [this, &editorScene]() {
-					UIWindowActor& window = editorScene.CreateActorAtRoot<UIWindowActor>("MainSceneSettingsWindow");
-					window.GetTransform()->SetScale(glm::vec2(0.5f));
-					window.AddField("Bloom").GetTemplates().TickBox([this]() -> bool { bool updated = (GetGameSettings()->Video.bBloom = !GetGameSettings()->Video.bBloom); UpdateSettings(); return updated; });
+		editorScene.CreateActorAtRoot<UIButtonActor>("SettingsButton", "Settings", [this, &editorScene]() {
+			UIWindowActor& window = editorScene.CreateActorAtRoot<UIWindowActor>("MainSceneSettingsWindow");
+			window.GetTransform()->SetScale(Vec2f(0.5f));
+			window.AddField("Bloom").GetTemplates().TickBox([this](bool bloom) { GetGameSettings()->Video.bBloom = bloom; UpdateGameSettings(); }, [this]() -> bool { return GetGameSettings()->Video.bBloom; });
 
-					UIInputBoxActor& gammaInputBox = window.AddField("Gamma").CreateChild<UIInputBoxActor>("GammaInputBox");
-					gammaInputBox.SetOnInputFunc([this](float val) { GetGameSettings()->Video.MonitorGamma = val; UpdateSettings(); }, [this]()->float { return GetGameSettings()->Video.MonitorGamma; });
+			UIInputBoxActor& gammaInputBox = window.AddField("Gamma").CreateChild<UIInputBoxActor>("GammaInputBox");
+			gammaInputBox.SetOnInputFunc([this](float val) { GetGameSettings()->Video.MonitorGamma = val; UpdateGameSettings(); }, [this]()->float { return GetGameSettings()->Video.MonitorGamma; });
 
-					window.AddField("Default font").GetTemplates().PathInput([this](const std::string& path) { Fonts.push_back(std::make_shared<Font>(*DefaultFont)); *DefaultFont = *EngineDataLoader::LoadFont(*this, path); }, [this]() {return GetDefaultFont()->GetPath(); }, { "*.ttf", "*.otf" });
-					window.AddField("Rebuild light probes").CreateChild<UIButtonActor>("RebuildProbesButton", "Rebuild", [this]() { RenderEng.PreLoopPass(); });
-					UIAutomaticListActor& aaSelectionList = window.AddField("Anti-aliasing").CreateChild<UIAutomaticListActor>("AASelectionList", Vec3f(2.0f, 0.0f, 0.0f));
+			window.AddField("Default font").GetTemplates().PathInput([this](const std::string& path) { Fonts.push_back(MakeShared<Font>(*DefaultFont)); *DefaultFont = *EngineDataLoader::LoadFont(*this, path); }, [this]() {return GetDefaultFont()->GetPath(); }, { "*.ttf", "*.otf" });
+			window.AddField("Rebuild light probes").CreateChild<UIButtonActor>("RebuildProbesButton", "Rebuild", [this]() { RenderEng.PreLoopPass(); });
 
-					std::function<void(AntiAliasingType)> setAAFunc = [this](AntiAliasingType type) { const_cast<GameSettings::VideoSettings&>(ViewportRenderCollection->GetSettings()).AAType = type; UpdateSettings(); };
-					aaSelectionList.CreateChild<UIButtonActor>("NoAAButton", "None", [=]() { setAAFunc(AntiAliasingType::AA_NONE); });
-					aaSelectionList.CreateChild<UIButtonActor>("SMAA1XButton", "SMAA1X", [=]() { setAAFunc(AntiAliasingType::AA_SMAA1X); });
-					aaSelectionList.CreateChild<UIButtonActor>("SMAAT2XButton", "SMAAT2X", [=]() { setAAFunc(AntiAliasingType::AA_SMAAT2X); });
+			{
+				auto& aaSelectionList = window.AddField("Anti-aliasing").CreateChild<UIAutomaticListActor>("AASelectionList", Vec3f(2.0f, 0.0f, 0.0f));
+				std::function<void(AntiAliasingType)> setAAFunc = [this](AntiAliasingType type) { const_cast<GameSettings::VideoSettings&>(ViewportRenderCollection->GetSettings()).AAType = type; UpdateGameSettings(); };
+				aaSelectionList.CreateChild<UIButtonActor>("NoAAButton", "None", [=]() { setAAFunc(AntiAliasingType::AA_NONE); });
+				aaSelectionList.CreateChild<UIButtonActor>("SMAA1XButton", "SMAA1X", [=]() { setAAFunc(AntiAliasingType::AA_SMAA1X); });
+				aaSelectionList.CreateChild<UIButtonActor>("SMAAT2XButton", "SMAAT2X", [=]() { setAAFunc(AntiAliasingType::AA_SMAAT2X); });
+				aaSelectionList.Refresh();
+			}
 
-					aaSelectionList.Refresh();
+			{
+				auto& viewTexField = window.AddField("View texture");
+				SharedPtr<unsigned int> texID = MakeShared<unsigned int>(0);
 
-					window.FieldsList->Refresh();
-					window.AutoClampView();
+				viewTexField.CreateChild<UIInputBoxActor>("PreviewTexIDInputBox").SetOnInputFunc([texID](float val) { *texID = val; }, [texID]() { return *texID; });
+				viewTexField.CreateChild<UIButtonActor>("OKButton", "OK", [this, texID, &window]() {
+					if (!glIsTexture(*texID))
+						return;
+					UIWindowActor& texPreviewWindow = window.CreateChildCanvas<UIWindowActor>("PreviewTexWindow");
+					ModelComponent& texPreviewQuad = texPreviewWindow.CreateChild<UIActorDefault>("TexPreviewActor").CreateComponent<ModelComponent>("TexPreviewQuad");
+					Material* mat = new Material("TexturePreviewMat", 0.0f, GetRenderEngineHandle()->FindShader("Forward_NoLight"));
+					mat->AddTexture(MakeShared<NamedTexture>(Texture::FromGeneratedGlId(Vec2u(0), GL_TEXTURE_2D, *texID, Texture::Format::RGBA()), "albedo1"));
+					texPreviewQuad.AddMeshInst(MeshInstance(GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD), mat));
 
-					}).SetTransform(Transform(Vec2f(-0.2f, -0.8f), Vec2f(0.1f)));
+					texPreviewWindow.AutoClampView();
 
-					editorScene.CreateActorAtRoot<UIButtonActor>("ShadersButton", "Shaders", [this, &editorScene]() {
-						UIWindowActor& window = editorScene.CreateActorAtRoot<UIWindowActor>("ShadersPreviewWindow");
-						UIAutomaticListActor& list = window.CreateChild<UIAutomaticListActor>("ShadersList");
-						for (auto& it : RenderEng.Shaders)
-						{
-							list.CreateChild<UIButtonActor>(it->GetName() + "Button", it->GetName(), [this, &window, &it]() { UIWindowActor& shaderWindow = window.CreateChildCanvas<UIWindowActor>("ShdaerPreviewWindow"); EditorDescriptionBuilder descBuilder(*this, shaderWindow, shaderWindow); it->GetEditorDescription(descBuilder); shaderWindow.AutoClampView(); shaderWindow.RefreshFieldsList(); });
-						}
-						list.Refresh();
-						}).SetTransform(Transform(Vec2f(0.1f, -0.8f), Vec2f(0.1f)));
+					}).GetTransform()->Move(Vec2f(2.0f, 0.0f));
+			}
+
+			window.AddField("Render debug icons").GetTemplates().TickBox(bDebugRenderComponents);
+
+			auto& ssaoSamplesIB = window.AddField("SSAO Samples").CreateChild<UIInputBoxActor>("SSAOSamplesInputBox");
+			ssaoSamplesIB.SetOnInputFunc([this](float sampleCount) { GetGameSettings()->Video.AmbientOcclusionSamples = sampleCount; UpdateGameSettings(); }, [this]() { return GetGameSettings()->Video.AmbientOcclusionSamples; });
+
+			window.FieldsList->Refresh();
+			window.AutoClampView();
+
+		}).SetTransform(Transform(Vec2f(-0.2f, -0.8f), Vec2f(0.1f)));
+
+		editorScene.CreateActorAtRoot<UIButtonActor>("ShadersButton", "Shaders", [this, &editorScene]() {
+			UIWindowActor& window = editorScene.CreateActorAtRoot<UIWindowActor>("ShadersPreviewWindow");
+			UIAutomaticListActor& list = window.CreateChild<UIAutomaticListActor>("ShadersList");
+			for (auto& it : RenderEng.Shaders)
+			{
+				list.CreateChild<UIButtonActor>(it->GetName() + "Button", it->GetName(), [this, &window, &it]() { UIWindowActor& shaderWindow = window.CreateChildCanvas<UIWindowActor>("ShdaerPreviewWindow"); EditorDescriptionBuilder descBuilder(*this, shaderWindow, shaderWindow); it->GetEditorDescription(descBuilder); shaderWindow.AutoClampView(); shaderWindow.RefreshFieldsList(); });
+			}
+			list.Refresh();
+		}).SetTransform(Transform(Vec2f(0.1f, -0.8f), Vec2f(0.1f)));
+
+		editorScene.CreateActorAtRoot<UIButtonActor>("SIEMANDZIOBUTTON", nullptr, nullptr, Transform(Vec2f(0.4f, -0.8f), Vec2f(0.1f))).CreateComponent<ScrollingTextComponent>("SIEMANDZIOTEXT", Transform(Vec2f(0.0f, 0.0f)), "pomaranczka", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::RIGHT, TextAlignment::CENTER));
 
 
-						Actor& cameraActor = editorScene.CreateActorAtRoot<Actor>("OrthoCameraActor");
-						CameraComponent& orthoCameraComp = cameraActor.CreateComponent<CameraComponent>("OrthoCameraComp", glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, 1.0f, -2550.0f));
+		Actor& cameraActor = editorScene.CreateActorAtRoot<Actor>("OrthoCameraActor");
+		CameraComponent& orthoCameraComp = cameraActor.CreateComponent<CameraComponent>("OrthoCameraComp", glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, 1.0f, -2550.0f));
 
-						editorScene.BindActiveCamera(&orthoCameraComp);
+		editorScene.BindActiveCamera(&orthoCameraComp);
 
 
-						EditorScene = &editorScene;
+		EditorScene = &editorScene;
 
-						EditorScene->FindActor("SceneViewportActor")->GetRoot()->GetComponent<ModelComponent>("SceneViewportQuad")->AddMeshInst(GetGameHandle()->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD));
-						EditorScene->FindActor("SceneViewportActor")->GetRoot()->GetComponent<ModelComponent>("SceneViewportQuad")->SetTransform(Transform(glm::vec2(0.0f, 0.4f), glm::vec2(0.4f, 0.6f)));
+		EditorScene->FindActor("SceneViewportActor")->GetRoot()->GetComponent<ModelComponent>("SceneViewportQuad")->AddMeshInst(GetGameHandle()->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD));
+		EditorScene->FindActor("SceneViewportActor")->SetTransform(Transform(Vec2f(0.0f, 0.4f), Vec2f(0.4f, 0.6f)));
+		//EditorScene->FindActor("SceneViewportActor")->GetRoot()->GetComponent<ModelComponent>("SceneViewportQuad")->SetTransform(Transform(Vec2f(0.0f, 0.4f), Vec2f(1.0f)));
 
-						std::shared_ptr<Material> scenePreviewMaterial = std::make_shared<Material>("GEE_3D_SCENE_PREVIEW_MATERIAL", 0.0f, GetGameHandle()->GetRenderEngineHandle()->FindShader("Forward_NoLight"));
-						RenderEng.AddMaterial(scenePreviewMaterial);
-						scenePreviewMaterial->AddTexture(std::make_shared<NamedTexture>(*ViewportRenderCollection->GetTb<FinalRenderTargetToolbox>()->GetFinalFramebuffer().GetColorBuffer(0), "albedo1"));
-						EditorScene->FindActor("SceneViewportActor")->GetRoot()->GetComponent<ModelComponent>("SceneViewportQuad")->OverrideInstancesMaterial(scenePreviewMaterial.get());
+		SharedPtr<Material> scenePreviewMaterial = MakeShared<Material>("GEE_3D_SCENE_PREVIEW_MATERIAL", 0.0f, GetGameHandle()->GetRenderEngineHandle()->FindShader("Forward_NoLight"));
+		RenderEng.AddMaterial(scenePreviewMaterial);
+		scenePreviewMaterial->AddTexture(MakeShared<NamedTexture>(ViewportRenderCollection->GetTb<FinalRenderTargetToolbox>()->GetFinalFramebuffer().GetColorTexture(0), "albedo1"));
+		EditorScene->FindActor("SceneViewportActor")->GetRoot()->GetComponent<ModelComponent>("SceneViewportQuad")->OverrideInstancesMaterial(scenePreviewMaterial.get());
 	}
 
 	void GameEngineEngineEditor::SetupMainMenu()
@@ -322,15 +438,15 @@ namespace GEE
 			TextComponent& engineTitleTextComp = engineTitleActor.CreateComponent<TextComponent>("EngineTitleTextComp", Transform(), "Game Engine Engine", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
 			engineTitleTextComp.SetTransform(Transform(Vec2f(0.0f), Vec2f(0.12f)));
 
-			std::shared_ptr<Material> titleMaterial = std::make_shared<Material>("GEE_Engine_Title");
+			SharedPtr<Material> titleMaterial = MakeShared<Material>("GEE_Engine_Title");
 			RenderEng.AddMaterial(titleMaterial);
 			titleMaterial->SetColor(hsvToRgb(Vec3f(300.0f, 1.0f, 1.0f)));
 
 			engineTitleTextComp.SetMaterialInst(MaterialInstance(*titleMaterial));
 
-			TextComponent& engineSubtitleTextComp = engineTitleActor.CreateComponent<TextComponent>("EngineSubtitleTextComp", Transform(), "wersja dla forum.pasja-informatyki", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
+			TextComponent& engineSubtitleTextComp = engineTitleActor.CreateComponent<TextComponent>("EngineSubtitleTextComp", Transform(), "made by swetroniusz", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
 			engineSubtitleTextComp.SetTransform(Transform(Vec2f(0.0f, -0.15f), Vec2f(0.06f)));
-			Material* subtitleMaterial = RenderEng.AddMaterial(std::make_shared<Material>("GEE_Engine_Subtitle"));
+			Material* subtitleMaterial = RenderEng.AddMaterial(MakeShared<Material>("GEE_Engine_Subtitle"));
 			subtitleMaterial->SetColor(hsvToRgb(Vec3f(300.0f, 0.4f, 0.3f)));
 			engineSubtitleTextComp.SetMaterialInst(*subtitleMaterial);
 		}
@@ -353,45 +469,50 @@ namespace GEE
 			window.RefreshFieldsList();
 			window.AutoClampView();
 
-			}).SetTransform(Transform(Vec2f(-0.3f, 0.0f), Vec2f(0.2f)));
+		}).SetTransform(Transform(Vec2f(-0.3f, 0.0f), Vec2f(0.2f)));
 
-			mainMenuScene.CreateActorAtRoot<UIButtonActor>("LoadProjectButton", "Load project", [this, &mainMenuScene]() {
-				UIWindowActor& window = mainMenuScene.CreateActorAtRoot<UIWindowActor>("ProjectLoaderWindow");
-				window.SetTransform(Transform(Vec2f(0.0f), Vec2f(0.5f)));
+		mainMenuScene.CreateActorAtRoot<UIButtonActor>("LoadProjectButton", "Load project", [this, &mainMenuScene]() {
+			UIWindowActor& window = mainMenuScene.CreateActorAtRoot<UIWindowActor>("ProjectLoaderWindow");
+			window.SetTransform(Transform(Vec2f(0.0f), Vec2f(0.5f)));
 
-				window.AddField("Project filepath").GetTemplates().PathInput([this](const std::string& filepath) { ProjectFilepath = filepath;  extractDirectoryAndFilename(filepath, ProjectName, std::string()); }, [this]() { return ProjectFilepath; }, { "*.json", "*.geeproject", "*.geeprojectold" });
 
-				UIButtonActor& okButton = window.AddField("").CreateChild<UIButtonActor>("OKButton", "OK", [this, &window]() { window.MarkAsKilled(); LoadProject(ProjectFilepath); });
+			window.AddField("Project filepath").GetTemplates().PathInput([this](const std::string& filepath) { ProjectFilepath = filepath;  extractDirectoryAndFilename(filepath, ProjectName, std::string()); }, [this]() { return ProjectFilepath; }, { "*.json", "*.geeproject", "*.geeprojectold" });
 
-				window.RefreshFieldsList();
-				window.AutoClampView();
+			UIButtonActor& okButton = window.AddField("").CreateChild<UIButtonActor>("OKButton", "OK", [this, &window]() { window.MarkAsKilled(); LoadProject(ProjectFilepath); });
 
-				}).SetTransform(Transform(Vec2f(0.3f, 0.0f), Vec2f(0.2f)));
+			auto& XDField = window.AddField("$&$");
+			XDField.GetTransform()->SetScale(Vec3f(1.0f));
+			XDField.CreateChild<UIButtonActor>("SCROLLTEST$&$").CreateComponent<ScrollingTextComponent>("ButtonText", Transform(Vec2f(0.0f, 0.0f), Vec2f(1.0f)), "ogoreczek", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::RIGHT, TextAlignment::CENTER));
 
-				{
-					std::ifstream recentProjectsFile("recent.txt");
-					std::vector <std::string> filepaths;
-					std::string line;
-					while (std::getline(recentProjectsFile, line))
-					{
-						if (!line.empty())
-							filepaths.push_back(line);
-					}
-					recentProjectsFile.close();
+			window.RefreshFieldsList();
+			//window.AutoClampView();
 
-					if (!filepaths.empty())
-					{
-						UIActorDefault& recentProjectsActor = mainMenuScene.CreateActorAtRoot<UIActorDefault>("Recent", Transform(Vec2f(0.0f, -0.5f), Vec2f(0.1f)));
-						recentProjectsActor.CreateComponent<TextComponent>("RecentsText", Transform(Vec2f(0.0f, 1.6f), Vec2f(0.5f)), "Recent projects", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
-						UIElementTemplates(recentProjectsActor).ListSelection<std::string>(filepaths.begin(), filepaths.end(), [this](UIAutomaticListActor& listActor, std::string& filepath) { listActor.CreateChild<UIButtonActor>("RecentFilepathButton", getFileName(filepath), [this, filepath]() { LoadProject(filepath); }); });
-					}
-				}
+		}).SetTransform(Transform(Vec2f(0.3f, 0.0f), Vec2f(0.2f)));
 
-				Actor& cameraActor = mainMenuScene.CreateActorAtRoot<Actor>("OrthoCameraActor");
-				CameraComponent& orthoCameraComp = cameraActor.CreateComponent<CameraComponent>("OrthoCameraComp", glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, 1.0f, -2550.0f));
+		{
+			std::ifstream recentProjectsFile("recent.txt");
+			std::vector <std::string> filepaths;
+			std::string line;
+			while (std::getline(recentProjectsFile, line))
+			{
+				if (!line.empty())
+					filepaths.push_back(line);
+			}
+			recentProjectsFile.close();
 
-				mainMenuScene.BindActiveCamera(&orthoCameraComp);
-				SetActiveScene(&mainMenuScene);
+			if (!filepaths.empty())
+			{
+				UIActorDefault& recentProjectsActor = mainMenuScene.CreateActorAtRoot<UIActorDefault>("Recent", Transform(Vec2f(0.0f, -0.5f), Vec2f(0.1f)));
+				recentProjectsActor.CreateComponent<TextComponent>("RecentsText", Transform(Vec2f(0.0f, 1.6f), Vec2f(0.5f)), "Recent projects", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
+				UIElementTemplates(recentProjectsActor).ListSelection<std::string>(filepaths.begin(), filepaths.end(), [this](UIAutomaticListActor& listActor, std::string& filepath) { listActor.CreateChild<UIButtonActor>("RecentFilepathButton", getFileName(filepath), [this, filepath]() { LoadProject(filepath); }, nullptr, Transform(Vec2f(0.0f), Vec2f(9.0f, 1.0f))); });
+			}
+		}
+
+		Actor& cameraActor = mainMenuScene.CreateActorAtRoot<Actor>("OrthoCameraActor");
+		CameraComponent& orthoCameraComp = cameraActor.CreateComponent<CameraComponent>("OrthoCameraComp", glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, 1.0f, -2550.0f));
+
+		mainMenuScene.BindActiveCamera(&orthoCameraComp);
+		SetActiveScene(&mainMenuScene);
 	}
 
 	void GameEngineEngineEditor::HandleEvents()
@@ -402,9 +523,9 @@ namespace GEE
 			return;
 		}
 
-		while (std::shared_ptr<Event> polledEvent = EventHolderObj.PollEvent())
+		while (SharedPtr<Event> polledEvent = EventHolderObj.PollEvent())
 		{
-			if (polledEvent->GetType() == EventType::KEY_PRESSED && dynamic_cast<KeyEvent&>(*polledEvent).GetKeyCode() == Key::TAB)
+			if (polledEvent->GetType() == EventType::KeyPressed && dynamic_cast<KeyEvent&>(*polledEvent).GetKeyCode() == Key::Tab)
 			{
 				std::cout << "Pressed TAB!\n";
 				bool sceneChanged = false;
@@ -434,9 +555,9 @@ namespace GEE
 
 				if (sceneChanged)
 					for (auto& it : Scenes)
-						it->RootActor->HandleEventAll(Event(EventType::FOCUS_SWITCHED));
+						it->RootActor->HandleEventAll(Event(EventType::FocusSwitched));
 			}
-			else if (polledEvent->GetType() == EventType::KEY_PRESSED && dynamic_cast<KeyEvent&>(*polledEvent).GetKeyCode() == Key::S && GetInputRetriever().IsKeyPressed(Key::LEFT_CONTROL))
+			else if (polledEvent->GetType() == EventType::KeyPressed && dynamic_cast<KeyEvent&>(*polledEvent).GetKeyCode() == Key::S && GetInputRetriever().IsKeyPressed(Key::LeftControl))
 			{
 				SaveProject();
 				std::cout << "Project " << ProjectName << " saved.\n";
@@ -465,14 +586,14 @@ namespace GEE
 			return;
 
 		UICanvasActor& canvas = editorScene.CreateActorAtRoot<UICanvasActor>("GEE_E_Components_Info_Canvas");
-		canvas.SetTransform(Transform(glm::vec2(-0.75f, 0.75f), glm::vec2(0.2f)));
+		canvas.SetTransform(Transform(Vec2f(-0.75f, 0.75f), Vec2f(0.2f)));
 		UIActorDefault* scaleActor = canvas.GetScaleActor();
 
 		comp->GetEditorDescription(EditorDescriptionBuilder(*this, *scaleActor));
 
 		canvas.RefreshFieldsList();
 
-		Scenes.back()->RootActor->DebugHierarchy();
+		//Scenes.back()->RootActor->DebugHierarchy();
 
 		if (!previousCanvasView.IsEmpty() && sameComp)
 			canvas.SetCanvasView(previousCanvasView);
@@ -499,16 +620,15 @@ namespace GEE
 		if (!actor)
 			return;
 
-		UICanvasActor& canvas = editorScene.CreateActorAtRoot<UICanvasActor>("GEE_E_Actors_Components_Canvas");
-		canvas.SetTransform(Transform(glm::vec3(-0.68f, 0.0f, 0.0f), glm::vec3(0.0f), glm::vec3(0.32f, 0.5f, 1.0f)));
-		canvas.SetViewScale(glm::vec2(1.0f, glm::sqrt(0.5f / 0.32f)));
+		UICanvasActor& canvas = editorScene.CreateActorAtRoot<UICanvasActor>("GEE_E_Actors_Components_Canvas", Transform(Vec2f(-0.68f, 0.0f), Vec2f(0.32f, 0.5f)));
+		canvas.SetViewScale(Vec2f(1.0f, glm::sqrt(0.5f / 0.32f)));
 		UIActorDefault* scaleActor = canvas.GetScaleActor();
 
 		UICanvasField& componentsListField = canvas.AddField("List of components");
 		UIAutomaticListActor& listActor = componentsListField.CreateChild<UIAutomaticListActor>("ListActor");
-		canvas.FieldsList->SetListElementOffset(canvas.FieldsList->GetListElementCount() - 1, [&listActor, &componentsListField]() { std::cout << "List offset: " << (static_cast<glm::mat3>(componentsListField.GetTransform()->GetMatrix()) * listActor.GetListOffset()).y << '\n';  return static_cast<glm::mat3>(componentsListField.GetTransform()->GetMatrix()) * (listActor.GetListOffset()); });
-		canvas.FieldsList->SetListCenterOffset(canvas.FieldsList->GetListElementCount() - 1, [&componentsListField]() -> glm::vec3 { return glm::vec3(0.0f, -componentsListField.GetTransform()->Scale().y, 0.0f); });
-		listActor.GetTransform()->Move(glm::vec2(0.5f, 0.0f));
+		canvas.FieldsList->SetListElementOffset(canvas.FieldsList->GetListElementCount() - 1, [&listActor, &componentsListField]() { return static_cast<Mat3f>(componentsListField.GetTransform()->GetMatrix()) * (listActor.GetListOffset()); });
+		canvas.FieldsList->SetListCenterOffset(canvas.FieldsList->GetListElementCount() - 1, [&componentsListField]() -> Vec3f { return Vec3f(0.0f, -componentsListField.GetTransform()->GetScale().y, 0.0f); });
+		listActor.GetTransform()->Move(Vec2f(0.5f, 0.0f));
 
 		AddActorToList<Component>(editorScene, *actor->GetRoot(), listActor, canvas);
 
@@ -520,65 +640,48 @@ namespace GEE
 		if (canvas.FieldsList)
 			canvas.FieldsList->Refresh();
 
-		UIButtonActor& refreshButton = scaleActor->CreateChild<UIButtonActor>("GEE_E_Scene_Refresh_Button", [this, actor, &editorScene]() { this->SelectActor(actor, editorScene); });
+		UIButtonActor& refreshButton = scaleActor->CreateChild<UIButtonActor>("GEE_E_Scene_Refresh_Button", [this, actor, &editorScene]() { this->SelectActor(actor, editorScene); }, nullptr, Transform(Vec2f(6.0f, 0.0f), Vec2f(0.5f)));
+		uiButtonActorUtil::ButtonMatsFromAtlas(refreshButton, *dynamic_cast<AtlasMaterial*>(RenderEng.FindMaterial("GEE_E_Refresh_Icon_Mat").get()), 0.0f, 1.0f, 2.0f);
 
-		//	refreshButton.GetTransform()->SetPosition(glm::vec2(1.75f, 0.0f));
-		refreshButton.GetTransform()->SetPosition(glm::vec2(6.0f, 0.0f));
-		refreshButton.GetTransform()->SetScale(glm::vec2(0.5f));
-
-		AtlasMaterial& refreshIconMat = *dynamic_cast<AtlasMaterial*>(RenderEng.FindMaterial("GEE_E_Refresh_Icon_Mat").get());
-		refreshButton.SetMatIdle(MaterialInstance(refreshIconMat));
-		refreshButton.SetMatHover(MaterialInstance(refreshIconMat, refreshIconMat.GetTextureIDInterpolatorTemplate(1.0f)));
-		refreshButton.SetMatClick(MaterialInstance(refreshIconMat, refreshIconMat.GetTextureIDInterpolatorTemplate(2.0f)));
-
-
-
-		//UIButtonActor& addActorButton = scaleActor.NowyCreateChild<UIButtonActor>("GEE_E_Scene_Add_Actor_Button", [this, actor, &refreshButton]() {  actor->NowyCreateComponent<Component>("CREATED_COMP", Transform())); refreshButton.OnClick(); });
 		UIButtonActor& addActorButton = scaleActor->CreateChild<UIButtonActor>("GEE_E_Scene_Add_Actor_Button", [this, &editorScene, &refreshButton, actor, &canvas]() {
-			UIWindowActor& compSelectWindow = editorScene.CreateActorAtRoot<UIWindowActor>(&canvas, "GEE_E_Component_Selection_Window");
-			compSelectWindow.SetTransform(Transform(glm::vec2(0.0f, -0.5f), glm::vec2(0.3f)));
+			UIWindowActor& compSelectWindow = editorScene.CreateActorAtRoot<UIWindowActor>(&canvas, "GEE_E_Component_Selection_Window", Transform(Vec2f(0.0f, -0.5f), Vec2f(0.3f)));
 
-			auto addCompCreateButton = [this, &compSelectWindow, &editorScene, &refreshButton, actor](int i, std::function<Component& ()> createCompFunc) {
-				UIButtonActor& compButton = compSelectWindow.CreateChild<UIButtonActor>("GEE_E_Scene_Add_Comp_Button", [this, &editorScene, &refreshButton, actor, createCompFunc]() { createCompFunc(); SelectActor(actor, editorScene); });
-
-				compButton.GetTransform()->SetPosition(glm::vec2(-0.7f + static_cast<float>(i) * 0.2f, 0.7f));
-				compButton.GetTransform()->SetScale(glm::vec2(0.1f, 0.1f));
+			auto createCompButton = [this, &compSelectWindow, &editorScene, &refreshButton, actor](int i, std::function<Component& ()> createCompFunc) {
+				UIButtonActor& compButton = compSelectWindow.CreateChild<UIButtonActor>("GEE_E_Scene_Add_Comp_Button", [this, &editorScene, &refreshButton, actor, createCompFunc]() {
+					createCompFunc();
+					SelectActor(actor, editorScene);
+				}, nullptr, Transform(Vec2f(-0.7f + static_cast<float>(i) * 0.2f, 0.7f), Vec2f(0.1f)));
 
 				Component& exampleComponent = createCompFunc();
 
-				compButton.SetMatIdle(exampleComponent.GetDebugMatInst(EditorIconState::IDLE));
-				compButton.SetMatHover(exampleComponent.GetDebugMatInst(EditorIconState::HOVER));
-				compButton.SetMatClick(exampleComponent.GetDebugMatInst(EditorIconState::BEING_CLICKED_INSIDE));
+				compButton.SetMatIdle(exampleComponent.LoadDebugMatInst(EditorIconState::IDLE));
+				compButton.SetMatHover(exampleComponent.LoadDebugMatInst(EditorIconState::HOVER));
+				compButton.SetMatClick(exampleComponent.LoadDebugMatInst(EditorIconState::BEING_CLICKED_INSIDE));
 
 				actor->GetRoot()->DetachChild(exampleComponent);
 			};
 
 			std::function<Component& ()> getSelectedComp = [this, actor]() -> Component& { return ((SelectedComp) ? (*SelectedComp) : (*actor->GetRoot())); };
 
-			addCompCreateButton(0, [this, &editorScene, getSelectedComp]() -> Component& { return getSelectedComp().CreateComponent<Component>("A Component", Transform()); });
-			addCompCreateButton(1, [this, &editorScene, getSelectedComp]() -> Component& { LightComponent& comp = getSelectedComp().CreateComponent<LightComponent>("A LightComponent", POINT, GetMainScene()->GetRenderData()->GetAvailableLightIndex(), GetMainScene()->GetRenderData()->GetAvailableLightIndex()); comp.CalculateLightRadius(); return comp;  });
-			addCompCreateButton(2, [this, &editorScene, getSelectedComp]() -> Component& { return getSelectedComp().CreateComponent<Audio::SoundSourceComponent>("A SoundSourceComponent"); });
-			addCompCreateButton(3, [this, &editorScene, getSelectedComp]() -> Component& { return getSelectedComp().CreateComponent<CameraComponent>("A CameraComponent"); });
-			addCompCreateButton(4, [this, &editorScene, getSelectedComp]() -> Component& { return getSelectedComp().CreateComponent<TextComponent>("A TextComponent", Transform(), "", ""); });
-			addCompCreateButton(5, [this, &editorScene, getSelectedComp]() -> Component& { return getSelectedComp().CreateComponent<LightProbeComponent>("A LightProbeComponent"); });
+			createCompButton(0, [this, &editorScene, getSelectedComp]() -> Component& { return getSelectedComp().CreateComponent<Component>("A Component", Transform()); });
+			createCompButton(1, [this, &editorScene, getSelectedComp]() -> Component& { LightComponent& comp = getSelectedComp().CreateComponent<LightComponent>("A LightComponent", POINT, GetMainScene()->GetRenderData()->GetAvailableLightIndex(), GetMainScene()->GetRenderData()->GetAvailableLightIndex()); comp.CalculateLightRadius(); return comp;  });
+			createCompButton(2, [this, &editorScene, getSelectedComp]() -> Component& { return getSelectedComp().CreateComponent<Audio::SoundSourceComponent>("A SoundSourceComponent"); });
+			createCompButton(3, [this, &editorScene, getSelectedComp]() -> Component& { return getSelectedComp().CreateComponent<CameraComponent>("A CameraComponent"); });
+			createCompButton(4, [this, &editorScene, getSelectedComp]() -> Component& { return getSelectedComp().CreateComponent<TextComponent>("A TextComponent", Transform(), "", ""); });
+			createCompButton(5, [this, &editorScene, getSelectedComp]() -> Component& { return getSelectedComp().CreateComponent<LightProbeComponent>("A LightProbeComponent"); });
 
-			});
-
-		addActorButton.GetTransform()->SetPosition(glm::vec2(8.0f, 0.0f));
-		addActorButton.GetTransform()->SetScale(glm::vec2(0.5f));
+		}, nullptr, Transform(Vec2f(8.0f, 0.0f), Vec2f(0.5f)));
 
 		AtlasMaterial& addIconMat = *dynamic_cast<AtlasMaterial*>(GetRenderEngineHandle()->FindMaterial("GEE_E_Add_Icon_Mat").get());
-		addIconMat.AddTexture(std::make_shared<NamedTexture>(textureFromFile("EditorAssets/add_icon.png", GL_RGB, GL_LINEAR, GL_NEAREST_MIPMAP_LINEAR), "albedo1"));
-		addActorButton.SetMatIdle(MaterialInstance(addIconMat));
-		addActorButton.SetMatHover(MaterialInstance(addIconMat, addIconMat.GetTextureIDInterpolatorTemplate(1.0f)));
-		addActorButton.SetMatClick(MaterialInstance(addIconMat, addIconMat.GetTextureIDInterpolatorTemplate(2.0f)));
+		addIconMat.AddTexture(MakeShared<NamedTexture>(Texture::Loader<>::FromFile2D("EditorAssets/add_icon.png", Texture::Format::RGBA(), false, Texture::MinFilter::NearestInterpolateMipmap()), "albedo1"));
+		uiButtonActorUtil::ButtonMatsFromAtlas(addActorButton, addIconMat, 0.0f, 1.0f, 2.0f);
 
 		if (!previousCanvasView.IsEmpty() && sameActor)
 			canvas.SetCanvasView(previousCanvasView);
 		else
 		{
 			canvas.AutoClampView();
-			canvas.SetViewScale(static_cast<Vec2f>(canvas.CanvasView.Scale()) * glm::vec2(1.0f, glm::sqrt(0.5f / 0.32f)));
+			canvas.SetViewScale(static_cast<Vec2f>(canvas.CanvasView.GetScale()) * Vec2f(1.0f, glm::sqrt(0.5f / 0.32f)));
 		}
 	}
 
@@ -598,66 +701,50 @@ namespace GEE
 		if (!selectedScene)
 			return;
 
-		UICanvasActor& canvas = editorScene.CreateActorAtRoot<UICanvasActor>("GEE_E_Scene_Actors_Canvas");
-		canvas.SetTransform(Transform(glm::vec2(0.68f, 0.1f), glm::vec2(0.272f, 0.272f)));
+		UICanvasActor& canvas = editorScene.CreateActorAtRoot<UICanvasActor>("GEE_E_Scene_Actors_Canvas", Transform(Vec2f(0.68f, 0.1f), Vec2f(0.272f, 0.272f)));
 		if (!previousCanvasView.IsEmpty() && sameScene)
 			canvas.CanvasView = previousCanvasView;
-		//std::shared_ptr<Actor> header = std::make_shared<Actor>(EditorScene.get(), "SelectedSceneHeaderActor");
 
-		UIButtonActor& refreshButton = canvas.CreateChild<UIButtonActor>("GEE_E_Scene_Refresh_Button", [this, selectedScene, &editorScene]() { this->SelectScene(selectedScene, editorScene); });
-
-		refreshButton.GetTransform()->SetPosition(glm::vec2(6.0f, 0.0f));
-		refreshButton.GetTransform()->SetScale(glm::vec2(0.5f));
-
-		AtlasMaterial& refreshIconMat = *dynamic_cast<AtlasMaterial*>(RenderEng.FindMaterial("GEE_E_Refresh_Icon_Mat").get());
-		refreshButton.SetMatIdle(MaterialInstance(refreshIconMat));
-		refreshButton.SetMatHover(MaterialInstance(refreshIconMat, refreshIconMat.GetTextureIDInterpolatorTemplate(1.0f)));
-		refreshButton.SetMatClick(MaterialInstance(refreshIconMat, refreshIconMat.GetTextureIDInterpolatorTemplate(2.0f)));
+		UIButtonActor& refreshButton = canvas.CreateChild<UIButtonActor>("GEE_E_Scene_Refresh_Button", [this, selectedScene, &editorScene]() { this->SelectScene(selectedScene, editorScene); }, nullptr, Transform(Vec2f(6.0f, 0.0f), Vec2f(0.5f)));
+		uiButtonActorUtil::ButtonMatsFromAtlas(refreshButton, *dynamic_cast<AtlasMaterial*>(RenderEng.FindMaterial("GEE_E_Refresh_Icon_Mat").get()), 0.0f, 1.0f, 2.0f);
 
 
 
 		UIButtonActor& addActorButton = canvas.CreateChild<UIButtonActor>("GEE_E_Scene_Add_Actor_Button", [this, &editorScene, &refreshButton, selectedScene, &canvas]() {
 			UIWindowActor& actorSelectWindow = canvas.CreateChildCanvas<UIWindowActor>("GEE_E_Actor_Selection_Window");
-			actorSelectWindow.SetTransform(Transform(glm::vec2(0.0f, -0.5f), glm::vec2(0.3f)));
+			actorSelectWindow.SetTransform(Transform(Vec2f(0.0f, -0.5f), Vec2f(0.3f)));
 
-			auto addActorCreateButton = [this, &actorSelectWindow, &editorScene, &refreshButton, selectedScene](int i, std::function<Actor& ()> createActorFunc, const std::string& className) {
-				UIButtonActor& actorButton = actorSelectWindow.CreateChild<UIButtonActor>("GEE_E_Scene_Add_Comp_Button", className, [this, &editorScene, &refreshButton, &actorSelectWindow, selectedScene, createActorFunc]() { Actor& createdActor = createActorFunc(); actorSelectWindow.MarkAsKilled();  std::cout << "CLICKED " << createdActor.GetName() << '\n'; SelectScene(selectedScene, editorScene); SelectActor(&createdActor, editorScene); });
-
-				actorButton.GetTransform()->SetPosition(glm::vec2(-0.7f, 0.7f - static_cast<float>(i) * 0.2f));
-				actorButton.GetTransform()->SetScale(glm::vec2(0.1f, 0.1f));
+			auto createActorButton = [this, &actorSelectWindow, &editorScene, &refreshButton, selectedScene](int i, std::function<Actor& ()> createActorFunc, const std::string& className) {
+				UIButtonActor& actorButton = actorSelectWindow.CreateChild<UIButtonActor>("GEE_E_Scene_Add_Comp_Button", className, [this, &editorScene, &refreshButton, &actorSelectWindow, selectedScene, createActorFunc]() {
+						Actor& createdActor = createActorFunc();
+						actorSelectWindow.MarkAsKilled();
+						SelectScene(selectedScene, editorScene);
+						SelectActor(&createdActor, editorScene);
+					}, nullptr, Transform(Vec2f(-0.7f, 0.7f - static_cast<float>(i) * 0.2f), Vec2f(0.1f)));
 			};
 
 			std::function<Actor& ()> getSelectedActor = [this, selectedScene]() -> Actor& { return ((SelectedActor) ? (*SelectedActor) : (const_cast<Actor&>(*selectedScene->GetRootActor()))); };
 
-			addActorCreateButton(0, [this, &editorScene, &selectedScene, getSelectedActor]() -> Actor& { return getSelectedActor().CreateChild<Actor>(selectedScene->GetUniqueActorName("An Actor")); }, "Actor");
-			addActorCreateButton(1, [this, &editorScene, &selectedScene, getSelectedActor]() -> GunActor& { return getSelectedActor().CreateChild<GunActor>(selectedScene->GetUniqueActorName("A GunActor")); }, "GunActor");
-			addActorCreateButton(2, [this, &editorScene, &selectedScene, getSelectedActor]() -> PawnActor& { return getSelectedActor().CreateChild<PawnActor>(selectedScene->GetUniqueActorName("A PawnActor")); }, "PawnActor");
-			addActorCreateButton(3, [this, &editorScene, &selectedScene, getSelectedActor]() -> Controller& { return getSelectedActor().CreateChild<Controller>(selectedScene->GetUniqueActorName("A Controller")); }, "Controller");
-			addActorCreateButton(4, [this, &editorScene, &selectedScene, getSelectedActor]() -> ShootingController& { return getSelectedActor().CreateChild<ShootingController>(selectedScene->GetUniqueActorName("A ShootingController")); }, "ShootingController");
-			});
-
-		addActorButton.GetTransform()->SetPosition(glm::vec2(8.0f, 0.0f));
-		addActorButton.GetTransform()->SetScale(glm::vec2(0.5f));
+			createActorButton(0, [this, &editorScene, &selectedScene, getSelectedActor]() -> Actor& { return getSelectedActor().CreateChild<Actor>(selectedScene->GetUniqueActorName("An Actor")); }, "Actor");
+			createActorButton(1, [this, &editorScene, &selectedScene, getSelectedActor]() -> GunActor& { return getSelectedActor().CreateChild<GunActor>(selectedScene->GetUniqueActorName("A GunActor")); }, "GunActor");
+			createActorButton(2, [this, &editorScene, &selectedScene, getSelectedActor]() -> PawnActor& { return getSelectedActor().CreateChild<PawnActor>(selectedScene->GetUniqueActorName("A PawnActor")); }, "PawnActor");
+			createActorButton(3, [this, &editorScene, &selectedScene, getSelectedActor]() -> Controller& { return getSelectedActor().CreateChild<Controller>(selectedScene->GetUniqueActorName("A Controller")); }, "Controller");
+			createActorButton(4, [this, &editorScene, &selectedScene, getSelectedActor]() -> ShootingController& { return getSelectedActor().CreateChild<ShootingController>(selectedScene->GetUniqueActorName("A ShootingController")); }, "ShootingController");
+		}, nullptr, Transform(Vec2f(8.0f, 0.0f), Vec2f(0.5f)));
 
 		AtlasMaterial& addActorMat = *new AtlasMaterial(Material("GEE_E_Add_Actor_Material", 0.0f, RenderEng.FindShader("Forward_NoLight")), glm::ivec2(3, 1));
-		addActorMat.AddTexture(std::make_shared<NamedTexture>(textureFromFile("EditorAssets/add_icon.png", GL_RGB, GL_LINEAR, GL_NEAREST_MIPMAP_LINEAR), "albedo1"));
-		addActorButton.SetMatIdle(MaterialInstance(addActorMat));
-		addActorButton.SetMatHover(MaterialInstance(addActorMat, addActorMat.GetTextureIDInterpolatorTemplate(1.0f)));
-		addActorButton.SetMatClick(MaterialInstance(addActorMat, addActorMat.GetTextureIDInterpolatorTemplate(2.0f)));
+		addActorMat.AddTexture(MakeShared<NamedTexture>(Texture::Loader<>::FromFile2D("EditorAssets/add_icon.png", Texture::Format::RGBA(), false, Texture::MinFilter::NearestInterpolateMipmap()), "albedo1"));
+		uiButtonActorUtil::ButtonMatsFromAtlas(addActorButton, addActorMat, 0.0f, 1.0f, 2.0f);
 
 		UIAutomaticListActor& listActor = canvas.CreateChild<UIAutomaticListActor>("ListActor");
-		//listActor.GetTransform()->SetScale(glm::vec3(0.5f));
-
-		//refreshButton.NowyCreateComponent<TextComponent>("GEE_E_Scene_Refresh_Text", Transform(glm::vec2(0.0f), glm::vec3(0.0f), glm::vec2(1.0f / 8.0f, 1.0f)), "Refresh", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
-
-		AddActorToList<Actor>(editorScene, const_cast<Actor&>(*selectedScene->GetRootActor()), listActor, canvas);
+		AddActorToList<Actor>(editorScene, *selectedScene->GetRootActor(), listActor, canvas);
 
 		listActor.Refresh();
 
-		const_cast<Actor*>(EditorScene->GetRootActor())->DebugActorHierarchy();
+		EditorScene->GetRootActor()->DebugActorHierarchy();
 
 		canvas.AutoClampView();
-		canvas.SetViewScale(static_cast<Vec2f>(canvas.CanvasView.Scale()) * glm::vec2(1.0f, glm::sqrt(0.32f / 0.32f)));
+		canvas.SetViewScale(static_cast<Vec2f>(canvas.CanvasView.GetScale()) * Vec2f(1.0f, glm::sqrt(0.32f / 0.32f)));
 	}
 
 	void GameEngineEngineEditor::PreviewHierarchyTree(HierarchyTemplate::HierarchyTreeT& tree)
@@ -672,10 +759,10 @@ namespace GEE
 
 		GameScene& editorScene = *EditorScene;
 		UIWindowActor& previewWindow = editorScene.CreateActorAtRoot<UIWindowActor>("Mesh node preview window");
-		previewWindow.SetTransform(Transform(glm::vec2(0.0f, -0.5f), glm::vec2(0.4f)));
+		previewWindow.SetTransform(Transform(Vec2f(0.0f, -0.5f), Vec2f(0.4f)));
 
 		UICanvasActor& nodesCanvas = previewWindow.CreateChild<UICanvasActor>("Nodes canvas");
-		nodesCanvas.SetTransform(Transform(glm::vec2(-0.2f, 0.2f), glm::vec2(0.8f, 0.8f)));
+		nodesCanvas.SetTransform(Transform(Vec2f(-0.2f, 0.2f), Vec2f(0.8f, 0.8f)));
 
 		UIButtonActor& instantiateButton = previewWindow.CreateChild<UIButtonActor>("InstantiateButton", "Instantiate", [this, &tree, &editorScene]() {
 			std::function<Component* ()> getSelectedComp = [this]() -> Component* { return ((SelectedComp) ? (SelectedComp) : ((SelectedActor) ? (SelectedActor->GetRoot()) : (nullptr))); };
@@ -685,32 +772,32 @@ namespace GEE
 
 			SelectActor(SelectedActor, editorScene);
 			});
-		instantiateButton.SetTransform(Transform(glm::vec2(0.875f, 0.8f), glm::vec2(0.1f)));
+		instantiateButton.SetTransform(Transform(Vec2f(0.875f, 0.8f), Vec2f(0.1f)));
 
-		previewWindow.HideScrollBars(); //for now
+		previewWindow.KillScrollBars(); //for now
 
 		std::function<void(UIAutomaticListActor&, const HierarchyTemplate::HierarchyNodeBase&, int)> nodeCreatorFunc = [&editorScene, &nodesCanvas, &nodeCreatorFunc](UIAutomaticListActor& parent, const HierarchyTemplate::HierarchyNodeBase& correspondingNode, int level) {
 
 
 			UIButtonActor& nodeButton = parent.CreateChild<UIButtonActor>("OGAR");//correspondingNode.GetName()));
 			TextConstantSizeComponent& nodeText = nodeButton.CreateComponent<TextConstantSizeComponent>("TEXTTEXT", Transform(), correspondingNode.GetCompBaseType().GetName(), "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
-			nodeButton.SetTransform(Transform(glm::vec2(0.0f, -3.0f), glm::vec2(1.0f)));
+			nodeButton.SetTransform(Transform(Vec2f(0.0f, -3.0f), Vec2f(1.0f)));
 
 			//std::cout << "NODE: " << correspondingNode.GetName() << ". CHILDREN COUNT: " << correspondingNode.GetChildCount() << '\n';
 
 			for (int i = 0; i < correspondingNode.GetChildCount(); i++)
 			{
-				UIAutomaticListActor& nodeChildrenList = parent.CreateChild<UIAutomaticListActor>(correspondingNode.GetCompBaseType().GetName() + "children list", glm::vec3(3.0f, 0.0f, 0.0f));
+				UIAutomaticListActor& nodeChildrenList = parent.CreateChild<UIAutomaticListActor>(correspondingNode.GetCompBaseType().GetName() + "children list", Vec3f(3.0f, 0.0f, 0.0f));
 				if (i == 0)
-					nodeChildrenList.GetTransform()->Move(((float)correspondingNode.GetChildCount() - 1.0f) * -glm::vec3(3.0f, 0.0f, 0.0f) / 2.0f);
+					nodeChildrenList.GetTransform()->Move(((float)correspondingNode.GetChildCount() - 1.0f) * -Vec3f(3.0f, 0.0f, 0.0f) / 2.0f);
 				nodeCreatorFunc(nodeChildrenList, *correspondingNode.GetChild(i), level + 1);
 			}
 
-			//nodeChildrenList.GetTransform()->Move(((float)correspondingNode.GetChildCount() - 1.0f) * -glm::vec3(10.0f, 0.0f, 0.0f) / 2.0f);
+			//nodeChildrenList.GetTransform()->Move(((float)correspondingNode.GetChildCount() - 1.0f) * -Vec3f(10.0f, 0.0f, 0.0f) / 2.0f);
 		};
 
-		UIAutomaticListActor& rootList = previewWindow.CreateChild<UIAutomaticListActor>("Root children list", glm::vec3(3.0f, 0.0f, 0.0f));
-		rootList.GetTransform()->SetScale(glm::vec2(0.1f));
+		UIAutomaticListActor& rootList = previewWindow.CreateChild<UIAutomaticListActor>("Root children list", Vec3f(3.0f, 0.0f, 0.0f));
+		rootList.GetTransform()->SetScale(Vec2f(0.1f));
 
 		nodeCreatorFunc(rootList, tree.GetRoot(), 0);
 		rootList.Refresh();
@@ -718,12 +805,12 @@ namespace GEE
 		std::function<void(Actor&)> func = [&previewWindow, &func](Actor& actor) {
 			if (TextComponent* text = actor.GetRoot()->GetComponent<TextComponent>("TEXTTEXT"))
 			{
-				std::string str1 = std::to_string(previewWindow.ToCanvasSpace(actor.GetTransform()->GetWorldTransform()).Pos().x);
+				std::string str1 = std::to_string(previewWindow.ToCanvasSpace(actor.GetTransform()->GetWorldTransform()).GetPos().x);
 				str1 = str1.erase(str1.find_last_not_of('0') + 1, std::string::npos);
 				if (str1.back() == '.')
 					str1 = str1.substr(0, str1.length() - 1);
 
-				std::string str2 = std::to_string(previewWindow.ToCanvasSpace(actor.GetTransform()->GetWorldTransform()).Pos().y);
+				std::string str2 = std::to_string(previewWindow.ToCanvasSpace(actor.GetTransform()->GetWorldTransform()).GetPos().y);
 				str2 = str2.erase(str2.find_last_not_of('0') + 1, std::string::npos);
 				if (str2.back() == '.')
 					str2 = str2.substr(0, str2.length() - 1);
@@ -739,7 +826,7 @@ namespace GEE
 		for (int i = 0; i < tree.GetAnimationCount(); i++)
 		{
 			UIButtonActor& animationButton = previewWindow.CreateChild<UIButtonActor>(tree.GetAnimation(i).Localization.Name + " animation button", tree.GetAnimation(i).Localization.Name);
-			animationButton.SetTransform(Transform(glm::vec2(-0.8f + static_cast<float>(i) * 0.3f, -0.8f), glm::vec2(0.1f)));
+			animationButton.SetTransform(Transform(Vec2f(-0.8f + static_cast<float>(i) * 0.3f, -0.8f), Vec2f(0.1f)));
 		}
 
 		previewWindow.DebugActorHierarchy(0);
@@ -764,15 +851,22 @@ namespace GEE
 		{
 			//Render 3D scene
 			RenderEng.PrepareScene(*ViewportRenderCollection, GetMainScene()->GetRenderData());
-			RenderEng.FullSceneRender(GetMainScene()->ActiveCamera->GetRenderInfo(*ViewportRenderCollection), GetMainScene()->GetRenderData(), &ViewportRenderCollection->GetTb<FinalRenderTargetToolbox>()->GetFinalFramebuffer());// , Viewport(glm::vec2(0.0f), Settings->Video.Resolution)/*Viewport((static_cast<glm::vec2>(Settings->WindowSize) - Settings->Video.Resolution) / glm::vec2(2.0f, 1.0f), glm::vec2(Settings->Video.Resolution.x, Settings->Video.Resolution.y))*/);
-			RenderEng.FindShader("Forward_NoLight")->Use();
-			GetMainScene()->GetRootActor()->DebugRenderAll(GetMainScene()->ActiveCamera->GetRenderInfo(*ViewportRenderCollection), RenderEng.FindShader("Forward_NoLight"));
+			RenderEng.FullSceneRender(GetMainScene()->ActiveCamera->GetRenderInfo(*ViewportRenderCollection), GetMainScene()->GetRenderData(), &ViewportRenderCollection->GetTb<FinalRenderTargetToolbox>()->GetFinalFramebuffer(), Viewport(Vec2f(0.0f)), true, false,
+				[&](GEE_FB::Framebuffer& mainFramebuffer) {
+				if (bDebugRenderComponents)
+				{
+					mainFramebuffer.SetDrawSlot(0);
+					RenderEng.FindShader("Forward_NoLight")->Use();
+					GetMainScene()->GetRootActor()->DebugRenderAll(GetMainScene()->ActiveCamera->GetRenderInfo(*ViewportRenderCollection), RenderEng.FindShader("Forward_NoLight"));
+					mainFramebuffer.SetDrawSlots();
+				}
+				});// , Viewport(Vec2f(0.0f), Settings->Video.Resolution)/*Viewport((static_cast<Vec2f>(Settings->WindowSize) - Settings->Video.Resolution) / Vec2f(2.0f, 1.0f), Vec2f(Settings->Video.Resolution.x, Settings->Video.Resolution.y))*/);
 
 			if (SelectedActor && !GetInputRetriever().IsKeyPressed(Key::F2))
 			{
 				std::function<void(Component&)> renderAllColObjs = [this, &renderAllColObjs](Component& comp) {
 					if (comp.GetCollisionObj() && comp.GetName() != "Counter")
-						CollisionObjRendering(GetMainScene()->ActiveCamera->GetRenderInfo(*ViewportRenderCollection), *this, *comp.GetCollisionObj(), comp.GetTransform().GetWorldTransform(), (SelectedComp && SelectedComp == &comp) ? (glm::vec3(0.1f, 0.6f, 0.3f)) : (glm::vec3(0.063f, 0.325f, 0.071f)));
+						CollisionObjRendering(GetMainScene()->ActiveCamera->GetRenderInfo(*ViewportRenderCollection), *this, *comp.GetCollisionObj(), comp.GetTransform().GetWorldTransform(), (SelectedComp && SelectedComp == &comp) ? (Vec3f(0.1f, 0.6f, 0.3f)) : (Vec3f(0.063f, 0.325f, 0.071f)));
 
 					for (auto& child : comp.GetChildren())
 						renderAllColObjs(*child);
@@ -781,7 +875,7 @@ namespace GEE
 				renderAllColObjs(*SelectedActor->GetRoot());
 			}
 
-			RenderEng.RenderText(RenderInfo(*ViewportRenderCollection), *GetDefaultFont(), "(C) twoja babka studios", Transform(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f), glm::vec3(32.0f)), glm::pow(glm::vec3(0.0f, 0.73f, 0.84f), glm::vec3(1.0f / 2.2f)), nullptr, true);
+			RenderEng.RenderText(RenderInfo(*ViewportRenderCollection), *GetDefaultFont(), "(C) twoja babka studios", Transform(Vec3f(0.0f, 0.0f, 0.0f), Vec3f(0.0f), Vec3f(32.0f)), glm::pow(Vec3f(0.0f, 0.73f, 0.84f), Vec3f(1.0f / 2.2f)), nullptr, true);
 		}
 		else
 		{
@@ -797,7 +891,7 @@ namespace GEE
 			///Render editor scene
 			RenderInfo info = EditorScene->ActiveCamera->GetRenderInfo(*HUDRenderCollection);
 			RenderEng.PrepareScene(*HUDRenderCollection, EditorScene->GetRenderData());
-			RenderEng.FullSceneRender(info, EditorScene->GetRenderData(), nullptr, Viewport(glm::vec2(0.0f), glm::vec2(Settings->WindowSize)), true, true);
+			RenderEng.FullSceneRender(info, EditorScene->GetRenderData(), nullptr, Viewport(Vec2f(0.0f), Vec2f(Settings->WindowSize)), true, true);
 		}
 
 		if (GameScene* mainMenuScene = GetScene("GEE_Main_Menu"))
@@ -805,17 +899,22 @@ namespace GEE
 			{
 				RenderInfo info = mainMenuScene->ActiveCamera->GetRenderInfo(*HUDRenderCollection);
 				RenderEng.PrepareScene(*HUDRenderCollection, mainMenuScene->GetRenderData());
-				RenderEng.FullSceneRender(info, mainMenuScene->GetRenderData(), nullptr, Viewport(glm::vec2(0.0f), glm::vec2(Settings->WindowSize)), !renderEditorScene, true);
+				RenderEng.FullSceneRender(info, mainMenuScene->GetRenderData(), nullptr, Viewport(Vec2f(0.0f), Vec2f(Settings->WindowSize)), !renderEditorScene, true);
 			}
 
 		if (GameScene* meshPreviewScene = GetScene("GEE_Mesh_Preview_Scene"))
 			if (meshPreviewScene->GetActiveCamera())
 			{
-				RenderToolboxCollection& renderTbCollection = **std::find_if(RenderEng.RenderTbCollections.begin(), RenderEng.RenderTbCollections.end(), [](const std::unique_ptr<RenderToolboxCollection>& tbCol) { return tbCol->GetName() == "GEE_E_Mesh_Preview_Toolbox_Collection"; });
+				RenderToolboxCollection& renderTbCollection = **std::find_if(RenderEng.RenderTbCollections.begin(), RenderEng.RenderTbCollections.end(), [](const UniquePtr<RenderToolboxCollection>& tbCol) { return tbCol->GetName() == "GEE_E_Mesh_Preview_Toolbox_Collection"; });
 				RenderInfo info = meshPreviewScene->ActiveCamera->GetRenderInfo(renderTbCollection);
 				RenderEng.PrepareScene(renderTbCollection, meshPreviewScene->GetRenderData());
 				RenderEng.FullSceneRender(info, meshPreviewScene->GetRenderData(), &renderTbCollection.GetTb<FinalRenderTargetToolbox>()->GetFinalFramebuffer());
 			}
+
+		if (EditorScene)
+			if (UIButtonActor* cast = dynamic_cast<UIButtonActor*>(EditorScene->GetRootActor()->FindActor("SceneViewportActor")))
+				;// cast->OnClick();
+
 
 		glfwSwapBuffers(Window);
 	}
@@ -836,6 +935,8 @@ namespace GEE
 		RenderEng.PreLoopPass();
 
 		UpdateRecentProjects();
+
+		glfwRequestWindowAttention(Window);
 	}
 
 	void GameEngineEngineEditor::SaveProject()
@@ -850,7 +951,7 @@ namespace GEE
 			{
 				cereal::JSONOutputArchive archive(serializationStream);
 				GetMainScene()->GetRenderData()->SaveSkeletonBatches(archive);
-				const_cast<Actor*>(GetMainScene()->GetRootActor())->Save(archive);
+				GetMainScene()->GetRootActor()->Save(archive);
 				archive.serializeDeferments();
 			}
 			catch (cereal::Exception& ex)

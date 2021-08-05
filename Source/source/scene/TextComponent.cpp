@@ -5,17 +5,17 @@
 #include <UI/Font.h>
 #include <UI/UICanvas.h>
 #include <math/Transform.h>
-#include <rendering/Mesh.h>
-#include <iostream>
 
 #include <scene/Actor.h>
 #include <UI/UICanvasActor.h>
 #include <UI/UICanvasField.h>
 #include <scene/UIInputBoxActor.h>
 
+#include <input/InputDevicesStateRetriever.h>
+
 namespace GEE
 {
-	TextComponent::TextComponent(Actor& actor, Component* parentComp, const std::string& name, const Transform& transform, std::string content, std::shared_ptr<Font> font, std::pair<TextAlignment, TextAlignment> alignment) :
+	TextComponent::TextComponent(Actor& actor, Component* parentComp, const std::string& name, const Transform& transform, std::string content, SharedPtr<Font> font, std::pair<TextAlignment, TextAlignment> alignment) :
 		RenderableComponent(actor, parentComp, name, transform),
 		UIComponent(actor, parentComp),
 		UsedFont(font),
@@ -23,9 +23,9 @@ namespace GEE
 		Alignment(TextAlignment::LEFT, TextAlignment::BOTTOM)
 	{
 		Material& mat = *GameHandle->GetRenderEngineHandle()->FindMaterial("GEE_Default_Text_Material");
-		//mat-SetColor(glm::vec4(0.7f, 0.2f, 0.6f, 1.0f));
+		//mat-SetColor(Vec4f(0.7f, 0.2f, 0.6f, 1.0f));
 
-		TextMatInst = std::make_unique<MaterialInstance>(MaterialInstance(mat));
+		TextMatInst = MakeUnique<MaterialInstance>(MaterialInstance(mat));
 		SetAlignment(alignment);
 		SetContent(content);
 	}
@@ -57,11 +57,11 @@ namespace GEE
 		if (GetCanvasPtr() && world)
 			transform = GetCanvasPtr()->ToCanvasSpace(transform);
 
-		float textLength = GetTextLength(world);
+		float halfTextLength = GetTextLength(world) / 2.0f;
 
-		glm::vec2 alignmentOffset((static_cast<float>(Alignment.first) - static_cast<float>(TextAlignment::CENTER)) * -textLength, (static_cast<float>(Alignment.second) - static_cast<float>(TextAlignment::CENTER)) * -transform.Scale().y);
+		Vec2f alignmentOffset((static_cast<float>(Alignment.first) - static_cast<float>(TextAlignment::CENTER)) * -halfTextLength, (static_cast<float>(Alignment.second) - static_cast<float>(TextAlignment::CENTER)) * -transform.GetScale().y);
 
-		return Boxf<Vec2f>(glm::vec2(transform.Pos()) + alignmentOffset, glm::vec2(textLength, transform.Scale().y));
+		return Boxf<Vec2f>(Vec2f(transform.GetPos()) + alignmentOffset, Vec2f(halfTextLength, transform.GetScale().y));
 	}
 
 	float TextComponent::GetTextLength(bool world) const
@@ -70,13 +70,36 @@ namespace GEE
 		if (CanvasPtr && world)
 			transform = CanvasPtr->ToCanvasSpace(transform);
 
-		glm::vec2 scale = transform.Scale();
+		Vec2f scale = transform.GetScale();
 
 		float advancesSum = 0.0f;
 		for (auto it : Content)
 			advancesSum += UsedFont->GetCharacter(it).Advance;
 
-		return advancesSum * scale.x;
+		return advancesSum * scale.x * 2.0f;
+	}
+
+	std::vector<const Material*> TextComponent::GetMaterials() const
+	{
+		if (TextMatInst)
+			return { &TextMatInst->GetMaterialRef() };
+
+		return std::vector<const Material*>();
+	}
+
+	Font* TextComponent::GetUsedFont()
+	{
+		return UsedFont.get();
+	}
+
+	MaterialInstance* TextComponent::GetTextMatInst()
+	{
+		return TextMatInst.get();
+	}
+
+	std::pair<TextAlignment, TextAlignment> TextComponent::GetAlignment() const
+	{
+		return Alignment;
 	}
 
 	void TextComponent::SetContent(const std::string& content)
@@ -86,7 +109,7 @@ namespace GEE
 
 	void TextComponent::SetMaterialInst(MaterialInstance&& matInst)
 	{
-		TextMatInst = std::make_unique<MaterialInstance>(std::move(matInst));
+		TextMatInst = MakeUnique<MaterialInstance>(std::move(matInst));
 	}
 
 	void TextComponent::Render(const RenderInfo& info, Shader* shader)
@@ -141,10 +164,10 @@ namespace GEE
 		}
 	}
 
-	MaterialInstance TextComponent::GetDebugMatInst(EditorIconState state)
+	MaterialInstance TextComponent::LoadDebugMatInst(EditorIconState state)
 	{
 		LoadDebugRenderMaterial("GEE_Mat_Default_Debug_TextComponent", "EditorAssets/textcomponent_icon.png");
-		return Component::GetDebugMatInst(state);
+		return Component::LoadDebugMatInst(state);
 	}
 
 	unsigned int TextComponent::GetUIDepth() const
@@ -152,18 +175,18 @@ namespace GEE
 		return GetElementDepth();
 	}
 
-	TextConstantSizeComponent::TextConstantSizeComponent(Actor& actor, Component* parentComp, const std::string& name, const Transform& transform, std::string content, std::shared_ptr<Font> font, std::pair<TextAlignment, TextAlignment> alignment) :
+	TextConstantSizeComponent::TextConstantSizeComponent(Actor& actor, Component* parentComp, const std::string& name, const Transform& transform, std::string content, SharedPtr<Font> font, std::pair<TextAlignment, TextAlignment> alignment) :
 		TextComponent(actor, parentComp, name, transform, "", font, alignment),
-		MaxSize(glm::vec2(1.0f)),
-		ScaleRatio(glm::max(glm::vec2(1.0f), glm::vec2(transform.Scale().x / transform.Scale().y, transform.Scale().y / transform.Scale().x)))
+		MaxSize(Vec2f(1.0f)),
+		ScaleRatio(glm::max(Vec2f(1.0f), Vec2f(transform.GetScale().x / transform.GetScale().y, transform.GetScale().y / transform.GetScale().x)))
 	{
 		SetContent(content);
 	}
 
 	TextConstantSizeComponent::TextConstantSizeComponent(Actor& actor, Component* parentComp, const std::string& name, const Transform& transform, std::string content, std::string fontPath, std::pair<TextAlignment, TextAlignment> alignment) :
 		TextComponent(actor, parentComp, name, transform, "", fontPath, alignment),
-		MaxSize(glm::vec2(1.0f)),
-		ScaleRatio(glm::max(glm::vec2(1.0f), glm::vec2(transform.Scale().x / transform.Scale().y, transform.Scale().y / transform.Scale().x)))
+		MaxSize(Vec2f(1.0f)),
+		ScaleRatio(glm::max(Vec2f(1.0f), Vec2f(transform.GetScale().x / transform.GetScale().y, transform.GetScale().y / transform.GetScale().x)))
 	{
 		SetContent(content);
 	}
@@ -175,7 +198,7 @@ namespace GEE
 	{
 	}
 
-	void TextConstantSizeComponent::SetMaxSize(const glm::vec2& maxSize)
+	void TextConstantSizeComponent::SetMaxSize(const Vec2f& maxSize)
 	{
 		if (MaxSize == maxSize)
 			return;
@@ -194,10 +217,98 @@ namespace GEE
 
 	void TextConstantSizeComponent::UpdateSize()
 	{
-		float textLength = glm::max(GetTextLength(false) / GetTransform().Scale().x, 0.001f);
+		float textLength = glm::max((GetTextLength(false) / 2.0f) / GetTransform().GetScale().x, 0.001f);
 		float scale = glm::min(MaxSize.y, MaxSize.x / textLength);
 
-		GetTransform().SetScale(glm::vec2(scale) * ScaleRatio);
+		GetTransform().SetScale(Vec2f(scale) * ScaleRatio);
+	}
+
+	ScrollingTextComponent::ScrollingTextComponent(Actor& actorRef, Component* parentComp, const std::string& name, const Transform& transform, std::string content, SharedPtr<Font> font, std::pair<TextAlignment, TextAlignment> alignment):
+		TextComponent(actorRef, parentComp, name, transform, content, font, alignment),
+		MaxLength(2.0f),
+		TimeSinceScrollReset(0.0f),
+		ScrollResetTime(5.0f),
+		ScrollCooldownTime(1.0f)
+	{
+	}
+
+	ScrollingTextComponent::ScrollingTextComponent(Actor& actorRef, Component* parentComp, const std::string& name, const Transform& transform, std::string content, std::string fontPath, std::pair<TextAlignment, TextAlignment> alignment):
+		TextComponent(actorRef, parentComp, name, transform, content, fontPath, alignment),
+		MaxLength(2.0f),
+		TimeSinceScrollReset(0.0f),
+		ScrollResetTime(5.0f),
+		ScrollCooldownTime(1.0f)
+	{
+	}
+
+	Boxf<Vec2f> ScrollingTextComponent::GetBoundingBox(bool world)
+	{
+		Transform transform = (world) ? (GetTransform().GetWorldTransform()) : (GetTransform());
+		if (GetCanvasPtr() && world)
+			transform = GetCanvasPtr()->ToCanvasSpace(transform);
+
+		return Boxf<Vec2f>(transform.GetPos(), transform.GetScale());
+	}
+
+
+	void ScrollingTextComponent::Update(float deltaTime)
+	{
+		TimeSinceScrollReset += deltaTime;
+		if (TimeSinceScrollReset > ScrollResetTime + ScrollCooldownTime)
+			TimeSinceScrollReset -= (ScrollResetTime + ScrollCooldownTime) + ScrollCooldownTime;	// Two cooldowns: one after the text has been fully scrolled and one before scrolling. That's why we substract two cooldowns
+	}
+
+	void ScrollingTextComponent::Render(const RenderInfo& infoBeforeChange, Shader* shader)
+	{
+		if (!GetUsedFont() || GetHide())
+			return;
+
+		// Copy info
+		Transform renderTransform = GetTransform().GetWorldTransform();
+		if (GetActor().GetName() == "RecentFilepathButton")
+		{
+			std::cout << "### Recent filepath text (" << GetName() << ") scale: " << renderTransform.GetScale() << "\n";
+		}
+		RenderInfo info = infoBeforeChange;
+
+		// Set view matrix
+		float scroll = (glm::max(glm::min(TimeSinceScrollReset, ScrollResetTime), 0.0f) / ScrollResetTime);
+		if (CanvasPtr) scroll *= CanvasPtr->GetCanvasT()->GetScale().x;
+		const float scrollLength = (GetTextLength(true) - Vec4f(((CanvasPtr) ? (CanvasPtr->ToCanvasSpace(renderTransform)) : (renderTransform)).GetMatrix() * Vec4f(2.0f, 0.0f, 0.0f, 0.0f)).x);
+		if (scrollLength <= 0.0f)
+		{
+			TextComponent::Render(info, shader);
+			return;
+		}
+		const float posX = scroll * scrollLength;
+		const Mat4f scrollMat = Transform(Vec2f(posX + renderTransform.GetScale().x, 0.0f), Vec2f(1.0f)).GetViewMatrix();
+
+		info.view *= scrollMat;
+		info.CalculateVP();
+
+
+		// Set viewport
+		glEnable(GL_SCISSOR_TEST);
+		auto parentWorldT = GetTransform()./*GetParentTransform()->*/GetWorldTransform();
+		if (CanvasPtr) parentWorldT = CanvasPtr->FromCanvasSpace(CanvasPtr->GetViewT().GetInverse() * CanvasPtr->ToCanvasSpace(parentWorldT));
+		auto viewport = NDCViewport(parentWorldT.GetPos() - parentWorldT.GetScale(), parentWorldT.GetScale());
+		viewport.ToPxViewport(GameHandle->GetGameSettings()->WindowSize).SetScissor();
+
+		// Render
+		GameHandle->GetRenderEngineHandle()->RenderText((CanvasPtr) ? (CanvasPtr->BindForRender(info, GameHandle->GetGameSettings()->WindowSize)) : (info), *GetUsedFont(), GetContent(), renderTransform, GetTextMatInst()->GetMaterialRef().GetColor(), shader, false, std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, GetAlignment().second));
+
+		// Clean up after everything
+		if (CanvasPtr)
+			CanvasPtr->UnbindForRender(GameHandle->GetGameSettings()->WindowSize);
+		Viewport(Vec2u(0), GameHandle->GetGameSettings()->WindowSize).SetOpenGLState();
+		glDisable(GL_SCISSOR_TEST);
+	}
+
+	Transform ScrollingTextComponent::GetParentWorldTransform() const
+	{
+		if (GetTransform().GetParentTransform())
+			return GetTransform().GetParentTransform()->GetWorldTransform();
+		return Transform();
 	}
 
 }

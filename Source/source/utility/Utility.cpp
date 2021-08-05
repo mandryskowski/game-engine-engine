@@ -1,14 +1,18 @@
 #include <utility/Utility.h>
 #include <functional>
+#include <algorithm>
+#include <sstream>
 
 namespace GEE
 {
-	UniformBuffer::UniformBuffer()
+	UniformBuffer::UniformBuffer():
+		UBO(0),
+		BlockBindingSlot(0),
+		offsetCache(0)
 	{
-		UBO = 0;
-		offsetCache = 0;
 	}
-	void UniformBuffer::Generate(unsigned int blockBindingSlot, size_t size, float* data, GLenum usage)
+
+	void UniformBuffer::Generate(unsigned int blockBindingSlot, size_t size, const float* data, GLenum usage)
 	{
 		Dispose();
 		glGenBuffers(1, &UBO);
@@ -20,59 +24,73 @@ namespace GEE
 		offsetCache = 0;
 		BlockBindingSlot = blockBindingSlot;
 	}
+
+	void UniformBuffer::BindToSlot(unsigned int blockBindingSlot, bool isAlreadyBound)
+	{
+		if (!isAlreadyBound)
+			glBindBuffer(GL_UNIFORM_BUFFER, UBO);
+		glBindBufferBase(GL_UNIFORM_BUFFER, blockBindingSlot, UBO);
+	}
+
 	bool UniformBuffer::HasBeenGenerated() const
 	{
 		return UBO != 0;
 	}
+
 	void UniformBuffer::SubData1i(int data, size_t offset)
 	{
 		glBindBuffer(GL_UNIFORM_BUFFER, UBO);
 		glBufferSubData(GL_UNIFORM_BUFFER, offset, sizeof(int), &data);
 		offsetCache = offset + sizeof(int);
 	}
+
 	void UniformBuffer::SubData1f(float data, size_t offset)
 	{
 		SubData(4, &data, offset);
 	}
-	void UniformBuffer::SubData(size_t size, float* data, size_t offset)
+
+	void UniformBuffer::SubData(size_t size, const float* data, size_t offset)
 	{
 		glBindBuffer(GL_UNIFORM_BUFFER, UBO);
 		glBufferSubData(GL_UNIFORM_BUFFER, offset, size, data);
 		offsetCache = offset + size;
 	}
 
-	void UniformBuffer::SubData4fv(glm::vec3 vec, size_t offset)
+	void UniformBuffer::SubData4fv(const Vec3f& vec, size_t offset)
 	{
-		glm::vec4 bufferVector(vec, 0.0f);
-		SubData(sizeof(glm::vec4), glm::value_ptr(bufferVector), offset);
-	}
-	void UniformBuffer::SubData4fv(std::vector<glm::vec3> vecs, size_t offset)
-	{
-		offsetCache = offset;
-		for (unsigned int i = 0; i < vecs.size(); i++)
-			SubData4fv(vecs[i], offsetCache);
-	}
-	void UniformBuffer::SubData4fv(glm::vec4 vec, size_t offset)
-	{
-		SubData(sizeof(glm::vec4), glm::value_ptr(vec), offset);
-	}
-	void UniformBuffer::SubData4fv(std::vector<glm::vec4> vecs, size_t offset)
-	{
-		offsetCache = offset;
-		for (unsigned int i = 0; i < vecs.size(); i++)
-			SubData4fv(vecs[i], offsetCache);
+		Vec4f bufferVector(vec, 0.0f);
+		SubData(sizeof(Vec4f), Math::GetDataPtr(bufferVector), offset);
 	}
 
-	void UniformBuffer::SubDataMatrix4fv(glm::mat4 mat, size_t offset)
+	void UniformBuffer::SubData4fv(std::vector<Vec3f> vecs, size_t offset)
 	{
-		SubData(64, glm::value_ptr(mat), offset);
+		offsetCache = offset;
+		for (const auto& vec: vecs)
+			SubData4fv(vec, offsetCache);
+	}
+
+	void UniformBuffer::SubData4fv(Vec4f vec, size_t offset)
+	{
+		SubData(sizeof(Vec4f), Math::GetDataPtr(vec), offset);
+	}
+
+	void UniformBuffer::SubData4fv(std::vector<Vec4f> vecs, size_t offset)
+	{
+		offsetCache = offset;
+		for (const auto& vec: vecs)
+			SubData4fv(vec, offsetCache);
+	}
+
+	void UniformBuffer::SubDataMatrix4fv(const Mat4f& mat, size_t offset)
+	{
+		SubData(64, Math::GetDataPtr(mat), offset);
 	}
 
 	void UniformBuffer::PadOffset()
 	{
 		if (offsetCache % 16 == 0)
 			return;
-		offsetCache = offsetCache - offsetCache % 16 + 16;	//pad to the next multiple of 16
+		offsetCache = offsetCache - offsetCache % 16 + 16; //pad to the next multiple of 16
 	}
 
 	void UniformBuffer::Dispose()
@@ -84,7 +102,7 @@ namespace GEE
 	std::string lookupNextWord(std::stringstream& str)
 	{
 		std::string word;
-		size_t pos = (size_t)str.tellg();
+		size_t pos = str.tellg();
 		str >> word;
 		str.seekg(pos);
 
@@ -106,19 +124,19 @@ namespace GEE
 			input += " " + word;
 		}
 
-		return input.substr(1, input.size() - 2);	//return the input string without quotation marks
+		return input.substr(1, input.size() - 2); //return the input string without quotation marks
 	}
 
 	bool isNextWordEqual(std::stringstream& str, std::string equalTo)
 	{
 		std::string word;
-		size_t pos = (size_t)str.tellg();
+		size_t pos = str.tellg();
 		str >> word;
 
 		if (word == equalTo)
 			return true;
 
-		str.seekg(pos);	//if its not equal, go back to the previous position
+		str.seekg(pos); //if its not equal, go back to the previous position
 		return false;
 	}
 
@@ -129,14 +147,14 @@ namespace GEE
 		return true;
 	}
 
-	glm::vec3 toEuler(const glm::quat& quat)
+	Vec3f toEuler(const Quatf& quat)
 	{
 		return glm::degrees(glm::eulerAngles(quat));
 	}
 
-	glm::quat toQuat(const glm::vec3& euler)
+	Quatf toQuat(const Vec3f& euler)
 	{
-		return glm::quat(glm::radians(euler));
+		return Quatf(glm::radians(euler));
 	}
 
 	std::string extractDirectory(std::string path)
@@ -144,7 +162,7 @@ namespace GEE
 		size_t dirPos = path.find_last_of('/');
 		if (dirPos != std::string::npos)
 			return path.substr(0, dirPos + 1);
-		dirPos = path.find_last_of(static_cast<char>(92));	//backslash
+		dirPos = path.find_last_of(static_cast<char>(92)); //backslash
 		if (dirPos != std::string::npos)
 			return path.substr(0, dirPos + 1);
 
@@ -155,7 +173,8 @@ namespace GEE
 	{
 		size_t dirPos = fullPath.find_last_of('/');
 
-		std::function<void(size_t)> splitPath = [fullPath, &directory, &filename](size_t dirPos) {
+		std::function<void(size_t)> splitPath = [fullPath, &directory, &filename](size_t dirPos)
+		{
 			directory = fullPath.substr(0, dirPos + 1);
 			if (dirPos + 1 <= fullPath.size())
 				filename = fullPath.substr(dirPos + 1);
@@ -164,7 +183,7 @@ namespace GEE
 		if (dirPos != std::string::npos)
 			return splitPath(dirPos);
 
-		dirPos = fullPath.find_last_of(static_cast<char>(92));	//backslash
+		dirPos = fullPath.find_last_of(static_cast<char>(92)); //backslash
 
 		if (dirPos != std::string::npos)
 			return splitPath(dirPos);
@@ -175,36 +194,36 @@ namespace GEE
 		}
 	}
 
-	void printVector(const glm::vec2& vec, std::string title)
+	void printVector(const Vec2f& vec, std::string title)
 	{
 		if (!title.empty())
-			title.append(": ");	//if we want to draw a title, add something after it
+			title.append(": "); //if we want to draw a title, add something after it
 
 		std::cout << title << vec.x << ", " << vec.y << '\n';
 	}
 
-	void printVector(const glm::vec3& vec, std::string title)
+	void printVector(const Vec3f& vec, std::string title)
 	{
 		if (!title.empty())
-			title.append(": ");	//if we want to draw a title, add something after it
+			title.append(": "); //if we want to draw a title, add something after it
 
 		std::cout << title << vec.x << ", " << vec.y << ", " << vec.z << '\n';
 	}
 
-	void printVector(const glm::vec4& vec, std::string title)
+	void printVector(const Vec4f& vec, std::string title)
 	{
 		if (!title.empty())
-			title.append(": ");	//if we want to draw a title, add something after it
+			title.append(": "); //if we want to draw a title, add something after it
 
 		std::cout << title << vec.x << ", " << vec.y << ", " << vec.z << ", " << vec.w << '\n';
 	}
 
-	void printVector(const glm::quat& q, std::string title)
+	void printVector(const Quatf& q, std::string title)
 	{
 		printVector(glm::degrees(glm::eulerAngles(q)), title);
 	}
 
-	void printMatrix(const glm::mat4& mat, std::string title)
+	void printMatrix(const Mat4f& mat, std::string title)
 	{
 		if (!title.empty())
 			std::cout << "===Matrix " + title + "===\n";
@@ -218,15 +237,20 @@ namespace GEE
 
 	std::string toValidFilepath(std::string str)
 	{
-		std::vector<char> invalidChars = { ' ', '\n', '/', 92, ':', '?', '"', '<', '>', '|' };	//92 is backslash ( \ )
-		std::transform(str.begin(), str.end(), str.begin(), [&invalidChars](const unsigned char ch) -> unsigned char { return (std::find(invalidChars.begin(), invalidChars.end(), ch) != invalidChars.end()) ? ('-') : (std::tolower(ch)); });
+		std::vector<char> invalidChars = {' ', '\n', '/', 92, ':', '?', '"', '<', '>', '|'}; //92 is backslash ( \ )
+		std::transform(str.begin(), str.end(), str.begin(), [&invalidChars](const unsigned char ch) -> unsigned char
+		{
+			return (std::find(invalidChars.begin(), invalidChars.end(), ch) != invalidChars.end())
+				       ? ('-')
+				       : (std::tolower(ch));
+		});
 
 		return str;
 	}
 
 	std::string getFilepathExtension(const std::string& filepath)
 	{
-		size_t dotPos = filepath.find_last_of(".");
+		size_t dotPos = filepath.find_last_of('.');
 		if (dotPos == std::string::npos)
 			return std::string();
 
@@ -235,12 +259,12 @@ namespace GEE
 
 	std::string getFileName(const std::string& filepath)
 	{
-		size_t lastSlash = filepath.find_last_of("/");
+		size_t lastSlash = filepath.find_last_of('/');
 		if (lastSlash == std::string::npos)
-			lastSlash = filepath.find_last_of(static_cast<char>(92));	//backslash
+			lastSlash = filepath.find_last_of(static_cast<char>(92)); //backslash
 
 		if (lastSlash == std::string::npos)
-			return filepath;	//filepath is the filename
+			return filepath; //filepath is the filename
 
 		return filepath.substr(lastSlash + 1);
 	}

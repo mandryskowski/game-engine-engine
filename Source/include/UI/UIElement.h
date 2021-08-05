@@ -6,7 +6,6 @@ namespace GEE
 	class UICanvas;
 	class Transform;
 
-
 	class UICanvasElement
 	{
 	public:

@@ -11,7 +11,7 @@ namespace GEE
 		ContentTextComp(nullptr),
 		RetrieveContentEachFrame(false)
 	{
-		ContentTextComp = &CreateComponent<TextConstantSizeComponent>(Name + "Text", Transform(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f), glm::vec3(1.0f)), "1.0", "");
+		ContentTextComp = &CreateComponent<TextConstantSizeComponent>(Name + "Text", Transform(Vec3f(0.0f, 0.0f, 0.0f), Vec3f(0.0f), Vec3f(1.0f)), "1.0", "");
 		ContentTextComp->SetAlignment(TextAlignment::CENTER, TextAlignment::CENTER);
 	}
 
@@ -129,15 +129,15 @@ namespace GEE
 
 		const std::string& content = ContentTextComp->GetContent();
 
-		if (ev.GetType() == EventType::CHARACTER_ENTERED)
+		if (ev.GetType() == EventType::CharacterEntered)
 		{
 			const CharEnteredEvent& charEv = dynamic_cast<const CharEnteredEvent&>(ev);
 			ContentTextComp->SetContent(content + charEv.GetUTF8());
 		}
-		else if (ev.GetType() == EventType::KEY_PRESSED || ev.GetType() == EventType::KEY_REPEATED)
+		else if (ev.GetType() == EventType::KeyPressed || ev.GetType() == EventType::KeyRepeated)
 		{
 			const KeyEvent& keyEv = dynamic_cast<const KeyEvent&>(ev);
-			if (keyEv.GetKeyCode() == Key::BACKSPACE && !content.empty())
+			if (keyEv.GetKeyCode() == Key::Backspace && !content.empty())
 				ContentTextComp->SetContent(content.substr(0, content.length() - 1)); //erase the last letter
 		}
 	}
