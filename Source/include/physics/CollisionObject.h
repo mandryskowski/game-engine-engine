@@ -36,6 +36,7 @@ namespace GEE
 
 		struct CollisionShape
 		{
+			physx::PxShape* ShapePtr;
 			CollisionShapeType Type;
 			struct ColShapeLoc : public HTreeObjectLoc
 			{
@@ -103,9 +104,12 @@ namespace GEE
 			CollisionObject(bool isStatic, CollisionShapeType type);
 			CollisionObject(const CollisionObject& obj);
 			CollisionObject(CollisionObject&& obj);
-			CollisionShape& AddShape(CollisionShapeType type);
 
+			CollisionShape& AddShape(CollisionShapeType type);
 			CollisionShape& AddShape(SharedPtr<CollisionShape> shape);
+
+			void DetachShape(CollisionShape&);
+
 			CollisionShape* FindTriangleMeshCollisionShape(const std::string& meshNodeName, const std::string& meshSpecificName);
 			template <typename Archive> void Serialize(Archive& archive)
 			{
@@ -119,6 +123,7 @@ namespace GEE
 			std::string collisionShapeTypeToString(CollisionShapeType type);
 
 			Vec3f toGlm(physx::PxVec3);
+			Vec3f toGlm(physx::PxExtendedVec3);
 			Quatf toGlm(physx::PxQuat);
 
 			physx::PxVec3 toPx(const Vec3f&);

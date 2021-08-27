@@ -5,6 +5,7 @@ struct Material
 	sampler2D normal1;
 	
 	vec4 color;
+	bool disableColor;
 	#ifdef ENABLE_POM
 	sampler2D depth1;
 	float depthScale;
@@ -124,7 +125,7 @@ void main()
 	gPosition = frag.worldPosition;
 	gNormal = normal;
 	gAlbedoSpec.rgb = texture(material.albedo1, texCoord).rgb;
-	if (gAlbedoSpec.rgb == vec3(0.0))
+	if (!material.disableColor && gAlbedoSpec.rgb == vec3(0.0))
 		gAlbedoSpec.rgb = material.color.rgb;
 	//else if (texture(material.albedo1, texCoord).a < 0.5)
 		//discard;

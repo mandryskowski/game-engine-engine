@@ -14,8 +14,8 @@
 
 #include <input/InputDevicesStateRetriever.h>
 
-GEE::Actor* cereal::LoadAndConstruct<GEE::Component>::ActorRef = nullptr;
-GEE::Component* cereal::LoadAndConstruct<GEE::Component>::ParentComp = nullptr;
+GEE::Actor* GEE::CerealComponentSerializationData::ActorRef = nullptr;
+GEE::Component* GEE::CerealComponentSerializationData::ParentComp = nullptr;
 namespace GEE
 {
 	Component::Component(Actor& actor, Component* parentComp, const std::string& name, const Transform& t) :
@@ -301,6 +301,8 @@ namespace GEE
 
 	void CollisionObjRendering(RenderInfo& info, GameManager& gameHandle, Physics::CollisionObject& obj, const Transform& t, const Vec3f& color)
 	{
+		if (!obj.ActorPtr)
+			return;
 		RenderEngineManager& renderEngHandle = *gameHandle.GetRenderEngineHandle();
 		Shader* shader = renderEngHandle.FindShader("Forward_NoLight");
 		shader->Use();
@@ -423,11 +425,29 @@ namespace GEE
 			deleteButton.SetDisableInput(true);
 
 
-		UICanvasField& shapesListField = descBuilder.AddField("Collision object");
+		// Collision object category
+		auto& shapesListCategory = descBuilder.AddCategory("Collision object");
+		UIButtonActor& colObjectPresenceButton = shapesListCategory.CreateChild<UIButtonActor>("CollisionObjectButton", (CollisionObj) ? ("V") : ("X"));
+
+		// Is static button
+		shapesListCategory.AddField("Is static").GetTemplates().TickBox([this](bool makeStatic) {
+			if (!CollisionObj) return;
+			CollisionObj->ScenePhysicsData->EraseCollisionObject(*CollisionObj);
+			CollisionObj->IsStatic = makeStatic;
+			CollisionObj->ScenePhysicsData->AddCollisionObject(*CollisionObj, GetTransform());
+			return;
+		},
+		[this]() -> bool {
+			if (CollisionObj)
+				return CollisionObj->ActorPtr->is<physx::PxRigidDynamic>() == nullptr;
+			return false; });
+
+		// Collision shapes list
+		auto& shapesListField = shapesListCategory.AddField("List of shapes");
 		UIAutomaticListActor& shapesList = shapesListField.CreateChild<UIAutomaticListActor>("ShapesList");
-		dynamic_cast<UICanvasActor*>(shapesListField.GetCanvasPtr())->FieldsList->SetListElementOffset(dynamic_cast<UICanvasActor*>(shapesListField.GetCanvasPtr())->FieldsList->GetListElementCount() - 1, [&shapesListField, &shapesList]()-> Vec3f { return static_cast<Mat3f>(shapesListField.GetTransform()->GetMatrix()) * (shapesList.GetListOffset()); });
-		dynamic_cast<UICanvasActor*>(shapesListField.GetCanvasPtr())->FieldsList->SetListCenterOffset(dynamic_cast<UICanvasActor*>(shapesListField.GetCanvasPtr())->FieldsList->GetListElementCount() - 1, [&shapesListField]()-> Vec3f { return Vec3f(0.0f, -shapesListField.GetTransform()->GetScale().y, 0.0f); });
-		UIButtonActor& colObjectPresenceButton = shapesList.CreateChild<UIButtonActor>("CollisionObjectButton", (CollisionObj) ? ("V") : ("X"));
+
+		shapesListCategory.SetListElementOffset(shapesListCategory.GetListElementCount() - 1,
+			[descBuilder, &shapesListField, &shapesList, &shapesListCategory, defaultOffset = shapesListCategory.GetListElement(shapesListCategory.GetListElementCount() - 1).GetElementOffset()]() mutable -> Vec3f { return static_cast<Mat3f>(descBuilder.GetCanvas().ToCanvasSpace(shapesListField.GetTransform()->GetWorldTransform()).GetMatrix()) * (2.0f * shapesList.GetListOffset()); });
 
 		shapesListField.CreateChild<UIButtonActor>("AddColShape", "+", [this, descBuilder]() mutable {
 			UIWindowActor& shapeCreatorWindow = descBuilder.GetEditorScene().CreateActorAtRoot<UIWindowActor>("ShapeCreatorWindow");
@@ -483,26 +503,31 @@ namespace GEE
 					shapeAddButton.SetOnClickFunc([shapeType, addShapeFunc]() { addShapeFunc(MakeShared<Physics::CollisionShape>(shapeType)); });
 			}
 			buttonsList.Refresh();
-			}).SetTransform(Transform(Vec2f(3.0f, 0.0f), Vec2f(0.25f)));
+		}).SetTransform(Transform(Vec2f(4.0f, 0.0f), Vec2f(0.5f)));
+
+		shapesListField.CreateChild<UIButtonActor>("RemoveColObject", "-", [&]() { SetCollisionObject(nullptr); }, Transform(Vec2f(5.0f, 0.0f), Vec2f(0.5f)));
 
 
-			if (CollisionObj)
-				for (auto& it : CollisionObj->Shapes)
-				{
-					std::string shapeTypeName = Physics::Util::collisionShapeTypeToString(it->Type);
-					UIButtonActor& shapeActor = shapesList.CreateChild<UIButtonActor>("ShapeSelectButton", shapeTypeName, [descBuilder, it]() mutable {
-						UIWindowActor& shapeTransformWindow = descBuilder.GetEditorScene().CreateActorAtRoot<UIWindowActor>("ShapeTransformWindow");
-						shapeTransformWindow.GetTransform()->SetScale(Vec2f(0.25f));
-						it->ShapeTransform.GetEditorDescription(EditorDescriptionBuilder(descBuilder.GetEditorHandle(), *shapeTransformWindow.GetScaleActor()));
+		if (CollisionObj)
+			for (auto& it : CollisionObj->Shapes)
+			{
+				std::string shapeTypeName = Physics::Util::collisionShapeTypeToString(it->Type);
+				UIButtonActor& shapeActor = shapesList.CreateChild<UIButtonActor>("ShapeSelectButton", shapeTypeName, [this, descBuilder, it]() mutable {
+					UIWindowActor& shapeTransformWindow = descBuilder.GetEditorScene().CreateActorAtRoot<UIWindowActor>("ShapeTransformWindow");
+					shapeTransformWindow.GetTransform()->SetScale(Vec2f(0.25f));
 
-						shapeTransformWindow.RefreshFieldsList();
-						shapeTransformWindow.AutoClampView();
-						});
-					shapeActor.GetButtonModel()->SetHide(true);
+					EditorDescriptionBuilder shapeDescBuilder(descBuilder.GetEditorHandle(), *shapeTransformWindow.GetScaleActor());
+					it->ShapeTransform.GetEditorDescription(shapeDescBuilder);
+					shapeDescBuilder.AddField("Delete").CreateChild<UIButtonActor>("DeleteButton", "Delete", [this, it, descBuilder, &shapeTransformWindow]() mutable { CollisionObj->DetachShape(*it); shapeTransformWindow.MarkAsKilled(); descBuilder.RefreshComponent(); });
 
-				}
+					shapeTransformWindow.RefreshFieldsList();
+					shapeTransformWindow.AutoClampView();
+					});
+				shapeActor.GetButtonModel()->SetHide(true);
 
-			shapesList.Refresh();
+			}
+
+		shapesList.Refresh();
 	}
 
 	void Component::MarkAsKilled()

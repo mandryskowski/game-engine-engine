@@ -7,10 +7,8 @@
 #include <cereal/archives/json.hpp>
 #include <cereal/types/polymorphic.hpp>
 
-struct GLFWwindow;
 namespace GEE
 {
-
 	template <typename SavedClass> class ClassSaveInfo
 	{
 		template <typename SavedVar>
@@ -21,6 +19,8 @@ namespace GEE
 	};
 
 	class EditorDescriptionBuilder;
+	class FPSController;
+	class CueController;
 
 	class Actor
 	{
@@ -115,8 +115,8 @@ namespace GEE
 		}
 		template <typename Archive> void Load(Archive& archive)
 		{
-			cereal::LoadAndConstruct<Component>::ActorRef = this;	//For constructing the root component and its children
-			cereal::LoadAndConstruct<Component>::ParentComp = nullptr;	//The root component doesn't have a parent
+			CerealComponentSerializationData::ActorRef = this;	//For constructing the root component and its children
+			CerealComponentSerializationData::ParentComp = nullptr;	//The root component doesn't have a parent
 			RootComponent = nullptr;
 			archive(CEREAL_NVP(Name), CEREAL_NVP(RootComponent));
 			std::cout << "Serializing actor " << Name << '\n';
@@ -124,10 +124,9 @@ namespace GEE
 			if (GameHandle->HasStarted())
 				OnStartAll();
 
-			//LoadAndConstruct<Actor>::ParentActor = this;
 			Children.clear();
 			archive(CEREAL_NVP(Children));
-			//LoadAndConstruct<Actor>::ParentActor = ParentActor;
+
 			for (auto& it : Children)
 			{
 				it->ParentActor = this;
@@ -169,71 +168,45 @@ namespace GEE
 		CompClass& comp = RootComponent->CreateComponent<CompClass>(std::forward<Args>(args)...);
 		return comp;
 	}
-}
 
-namespace cereal
-{
-	template <> struct LoadAndConstruct<GEE::Actor>
+	struct CerealActorSerializationData
 	{
 		static GEE::GameScene* ScenePtr;
-		//	static Actor* ParentActor;
-		template <class Archive>
-		static void load_and_construct(Archive& ar, cereal::construct<GEE::Actor>& construct)
-		{
-			std::cout << "trying to construct actor " << ScenePtr << '\n';
-			if (!ScenePtr)
-				return;
-
-			construct(*ScenePtr, nullptr, "undefined actor");
-			construct->Load(ar);
-		}
 	};
-	template <> struct LoadAndConstruct<GEE::GunActor>
+
+	// Load and construct actor
+	template <typename ActorClass, class Archive>
+	static void LoadAndConstructDefaultActor(Archive& ar, cereal::construct<ActorClass>& construct)
 	{
-		template <class Archive>
-		static void load_and_construct(Archive& ar, cereal::construct<GEE::GunActor>& construct)
-		{
-			if (!LoadAndConstruct<GEE::Actor>::ScenePtr)
-				return;
+		if (!CerealActorSerializationData::ScenePtr)
+			return;
 
-			construct(*LoadAndConstruct<GEE::Actor>::ScenePtr, nullptr, "undefined gunactor");
-			construct->Load(ar);
-		}
-	};
-	template <> struct LoadAndConstruct<GEE::PawnActor>
-	{
-		template <class Archive>
-		static void load_and_construct(Archive& ar, cereal::construct<GEE::PawnActor>& construct)
-		{
-			if (!LoadAndConstruct<GEE::Actor>::ScenePtr)
-				return;
-
-			construct(*LoadAndConstruct<GEE::Actor>::ScenePtr, nullptr, "undefined pawnactor");
-			construct->Load(ar);
-		}
-	};
-	template <> struct LoadAndConstruct<GEE::Controller>
-	{
-		template <class Archive>
-		static void load_and_construct(Archive& ar, cereal::construct<GEE::Controller>& construct)
-		{
-			if (!LoadAndConstruct<GEE::Actor>::ScenePtr)
-				return;
-
-			construct(*LoadAndConstruct<GEE::Actor>::ScenePtr, nullptr, "undefined controller");
-			construct->Load(ar);
-		}
-	};
-	template <> struct LoadAndConstruct<GEE::ShootingController>
-	{
-		template <class Archive>
-		static void load_and_construct(Archive& ar, cereal::construct<GEE::ShootingController>& construct)
-		{
-			if (!LoadAndConstruct<GEE::Actor>::ScenePtr)
-				return;
-
-			construct(*LoadAndConstruct<GEE::Actor>::ScenePtr, nullptr, "undefined controller");
-			construct->Load(ar);
-		}
-	};
+		// We set the name to serialization-error since it will be replaced by its original name anyways.
+		construct(*CerealActorSerializationData::ScenePtr, nullptr, std::string("serialization-error"));
+		construct->Load(ar);
+	}
 }
+
+#define GEE_SERIALIZABLE_ACTOR(Type, ...) CEREAL_REGISTER_TYPE(Type);									  						 \
+namespace cereal																						  						 \
+{																										  						 \
+	template <> struct LoadAndConstruct<Type>															  						 \
+	{																									  						 \
+		template <class Archive>																		  						 \
+		static void load_and_construct(Archive& ar, cereal::construct<Type>& construct)					  						 \
+		{																								  						 \
+			if (!GEE::CerealActorSerializationData::ScenePtr)																	 \
+				return;																											 \
+																																 \
+			/* We set the name to serialization-error since it will be replaced by its original name anyways. */				 \
+			construct(*GEE::CerealActorSerializationData::ScenePtr, nullptr, std::string("serialization-error"), __VA_ARGS__);	 \
+			construct->Load(ar);																					 			 \
+		}																								  			 			 \
+	};																									  						 \
+}
+#define GEE_POLYMORPHIC_SERIALIZABLE_ACTOR(Base, Derived, ...) GEE_SERIALIZABLE_ACTOR(Derived, __VA_ARGS__); CEREAL_REGISTER_POLYMORPHIC_RELATION(Base, Derived);
+
+#define GEE_EDITOR_ACTOR(Type) 
+
+
+GEE_SERIALIZABLE_ACTOR(GEE::Actor)

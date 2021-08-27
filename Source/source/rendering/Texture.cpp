@@ -188,10 +188,15 @@ namespace GEE
 		if (std::is_same<PixelChannelType, unsigned char>::value) data = stbi_load_from_memory(reinterpret_cast<const stbi_uc*>(buffer), rowWidth, &width, &height, &nrChannels, desiredChannels);
 		else if (std::is_same<PixelChannelType, float>::value) data = stbi_loadf_from_memory(reinterpret_cast<const stbi_uc*>(buffer), rowWidth, &width, &height, &nrChannels, desiredChannels);
 		else std::cout << "ERROR: Cannot recognize type passed to FromBuffer2D.\n";
-
+		
 		if (!data)
-			std::cerr << "ERROR: Cannot load pixels from memory in function FromBuffer2D.\n";
+		{
+			std::cout << "ERROR: Cannot load pixels from memory in function FromBuffer2D.\n";
+			if (stbi_failure_reason())
+				std::cout << "Stbi failure: " << stbi_failure_reason() << "\n";
+		}
 
+		std::cout << "Deduced buffer width: " << width << ", and height: " << height << ". Nr of channels: " << nrChannels << "\n";
 		Texture result = FromBuffer2D(Vec2u(width, height), data, internalFormat, nrChannels);
 		stbi_image_free(data);
 

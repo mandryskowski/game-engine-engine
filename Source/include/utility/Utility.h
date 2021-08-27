@@ -3,7 +3,9 @@
 #include <vector>
 #include <memory>
 #include <glad/glad.h>
+#include <utility/Asserts.h>
 
+struct GLFWwindow;
 namespace GEE
 {
 	template <typename T> using UniquePtr = std::unique_ptr<T>;
@@ -19,6 +21,8 @@ namespace GEE
 	{
 		return std::make_shared<T>(std::forward<Args>(args)...);
 	}
+
+	using SystemWindow = GLFWwindow;
 
 	enum InterpolationType
 	{
@@ -130,12 +134,6 @@ namespace GEE
 	* @return a boolean indicating whether the numbers are equal according to our epsilon
 	*/
 	bool floatComparison(float a, float b, float epsilon);
-
-	template <typename T, typename Pred> typename std::vector<T>::iterator insertSorted(std::vector<T>& vec, const T& element, Pred pred)
-	{
-		return vec.insert(std::upper_bound(vec.begin(), vec.end(), element, pred), element);
-	}
-
 	/*
 	template <typename Func> void assertFn(bool expression, Func func)
 	{

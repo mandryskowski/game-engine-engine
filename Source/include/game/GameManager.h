@@ -94,6 +94,17 @@ namespace GEE
 		TOP = RIGHT
 	};
 
+	// These values correspond to GLFW macros. Check official GLFW documentation.
+	enum class DefaultCursorIcon
+	{
+		Regular = 0x00036001,
+		TextInput = 0x00036002,
+		Crosshair = 0x00036003,
+		Hand = 0x00036004,
+		HorizontalResize = 0x00036005,
+		VerticalResize = 0x00036006
+	};
+
 	class PostprocessManager
 	{
 	public:
@@ -238,6 +249,8 @@ namespace GEE
 
 		virtual void SetActiveScene(GameScene* scene) = 0;
 
+		virtual void SetCursorIcon(DefaultCursorIcon) = 0;
+
 		virtual HierarchyTemplate::HierarchyTreeT* FindHierarchyTree(const std::string& name, HierarchyTemplate::HierarchyTreeT* treeToIgnore = nullptr) = 0;
 		virtual SharedPtr<Font> FindFont(const std::string& path) = 0;
 
@@ -248,27 +261,6 @@ namespace GEE
 		static GameManager* GamePtr;
 		friend class GameScene;
 		friend class Game;
-	};
-
-	class EditorManager
-	{
-	public:
-		virtual void SelectComponent(Component* comp, GameScene& editorScene) = 0;
-		virtual void SelectActor(Actor* actor, GameScene& editorScene) = 0;
-		virtual void SelectScene(GameScene* scene, GameScene& editorScene) = 0;
-		template <typename T> void Select(T*, GameScene& editorScene);
-
-		virtual void UpdateGameSettings() = 0;
-		virtual void UpdateEditorSettings() = 0;
-
-		virtual GameManager* GetGameHandle() = 0;
-		virtual Component* GetSelectedComponent() = 0;
-		virtual GameScene* GetSelectedScene() = 0;
-		virtual GameSettings* GetEditorSettings() = 0;
-
-		virtual void PreviewHierarchyTree(HierarchyTemplate::HierarchyTreeT& tree) = 0;
-
-		virtual ~EditorManager() = default;
 	};
 
 	struct PrimitiveDebugger

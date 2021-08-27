@@ -75,5 +75,4 @@ namespace GEE
 	}
 }
 
-CEREAL_REGISTER_TYPE(GEE::Audio::SoundSourceComponent)
-CEREAL_REGISTER_POLYMORPHIC_RELATION(GEE::Component, GEE::Audio::SoundSourceComponent)
+GEE_POLYMORPHIC_SERIALIZABLE_COMPONENT(GEE::Component, GEE::Audio::SoundSourceComponent)

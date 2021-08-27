@@ -69,7 +69,16 @@ namespace GEE
 	}
 
 	Game::Game(const ShadingModel& shading, const GameSettings& settings) :
-		AudioEng(static_cast<GameManager*>(this)), RenderEng(static_cast<GameManager*>(this)), PhysicsEng(&DebugMode), Shading(shading), Settings(nullptr), GameStarted(false), DefaultFont(nullptr), MainScene(nullptr), ActiveScene(nullptr)
+		bGameTerminated(false),
+		AudioEng(static_cast<GameManager*>(this)),
+		RenderEng(static_cast<GameManager*>(this)),
+		PhysicsEng(&DebugMode),
+		Shading(shading),
+		Settings(nullptr),
+		GameStarted(false),
+		DefaultFont(nullptr),
+		MainScene(nullptr),
+		ActiveScene(nullptr)
 	{
 		GameManager::GamePtr = this;
 		glDisable(GL_MULTISAMPLE);
@@ -86,9 +95,10 @@ namespace GEE
 		GEE_FB::Framebuffer DefaultFramebuffer;
 	}
 
-	void Game::Init(GLFWwindow* window)
+	void Game::Init(SystemWindow* window)
 	{
 		Window = window;
+		glfwSetWindowUserPointer(Window, this);
 		glfwSetWindowSize(Window, Settings->WindowSize.x, Settings->WindowSize.y);
 
 		if (Settings->bWindowFullscreen)
@@ -108,6 +118,7 @@ namespace GEE
 		glfwSetCharCallback(Window, GLFWEventProcessor::CharEnteredCallback);
 		glfwSetScrollCallback(Window, GLFWEventProcessor::ScrollCallback);
 		glfwSetDropCallback(Window, GLFWEventProcessor::FileDropCallback);
+		glfwSetWindowCloseCallback(Window, [](GLFWwindow* window) { static_cast<Game*>(glfwGetWindowUserPointer(window))->TerminateGame(); });
 
 		RenderEng.Init(Vec2u(Settings->Video.Resolution.x, Settings->Video.Resolution.y));
 		PhysicsEng.Init();
@@ -167,7 +178,8 @@ namespace GEE
 			glfwSetInputMode(Window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 		else
 		{
-			glfwSetInputMode(Window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+			if (controller->GetHideCursor())
+				glfwSetInputMode(Window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 			glfwSetCursorPos(Window, (double)Settings->WindowSize.x / 2.0, (double)Settings->WindowSize.y / 2.0);
 		}
 	}
@@ -240,6 +252,11 @@ namespace GEE
 		ActiveScene = scene;
 	}
 
+	void Game::SetCursorIcon(DefaultCursorIcon icon)
+	{
+		glfwSetCursor(Window, glfwCreateStandardCursor(static_cast<int>(icon)));
+	}
+
 	HierarchyTemplate::HierarchyTreeT* Game::FindHierarchyTree(const std::string& name, HierarchyTemplate::HierarchyTreeT* treeToIgnore)
 	{
 		for (auto& it : Scenes)
@@ -275,7 +292,7 @@ namespace GEE
 
 		LoopBeginTime = (float)glfwGetTime();
 
-		//AddActorToScene(MakeShared<Controller>(Controller(this, "MojTestowyController")));
+		//AddActorToScene(MakeShared<FPSController>(FPSController(this, "MojTestowyController")));
 		//Scenes[0]->AddActorToRoot(MakeShared<UIButtonActor>(UIButtonActor(Scenes[0].get(), "MojTestowyButton")));
 		for (int i = 0; i < static_cast<int>(Scenes.size()); i++)
 			Scenes[i]->RootActor->OnStartAll();
@@ -285,14 +302,10 @@ namespace GEE
 
 	bool Game::GameLoopIteration(float timeStep, float deltaTime)
 	{
-		if (glfwWindowShouldClose(Window))
+		if (bGameTerminated)
 			return true;
 
 		glfwPollEvents();
-
-
-		if (glfwGetKey(Window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-			glfwSetWindowShouldClose(Window, true);
 
 		if (deltaTime > 0.25f)
 			deltaTime = 0.25f;
@@ -355,6 +368,10 @@ namespace GEE
 
 		AudioEng.Update();
 	}
+	void Game::TerminateGame()
+	{
+		bGameTerminated = true;
+	}
 	void Game::SetMainScene(GameScene* scene)
 	{
 		MainScene = scene;
@@ -369,36 +386,38 @@ namespace GEE
 	float pBegin = 0.0f;
 	bool DUPA = false;
 
-	void GLFWEventProcessor::CursorPosCallback(GLFWwindow* window, double xpos, double ypos)
+	void GLFWEventProcessor::CursorPosCallback(SystemWindow* window, double xpos, double ypos)
 	{
 		TargetHolder->Events.push(MakeShared<CursorMoveEvent>(CursorMoveEvent(EventType::MouseMoved, Vec2f(static_cast<float>(xpos), static_cast<float>(ypos)))));
 
 		if (!mouseController || !TargetHolder)
 			return;
 
-		glm::ivec2 halfWindowSize(0);
-		glfwGetWindowSize(window, &halfWindowSize.x, &halfWindowSize.y);
-		halfWindowSize /= 2;
-		glfwSetCursorPos(window, halfWindowSize.x, halfWindowSize.y);
-		mouseController->RotateWithMouse(Vec2f(xpos - (float)halfWindowSize.x, ypos - (float)halfWindowSize.y)); //Implement it as an Event instead! TODO
+		Vec2i windowSize(0);
+		glfwGetWindowSize(window, &windowSize.x, &windowSize.y);
+
+		if (mouseController->GetLockMouseAtCenter())
+			glfwSetCursorPos(window, windowSize.x / 2, windowSize.y / 2);
+
+		mouseController->OnMouseMovement(static_cast<Vec2f>(windowSize / 2), Vec2f(xpos, windowSize.y - ypos)); //Implement it as an Event instead! TODO
 	}
 
-	void GLFWEventProcessor::MouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
+	void GLFWEventProcessor::MouseButtonCallback(SystemWindow* window, int button, int action, int mods)
 	{
 		TargetHolder->Events.push(MakeShared<MouseButtonEvent>(MouseButtonEvent((action == GLFW_PRESS) ? (EventType::MousePressed) : (EventType::MouseReleased), static_cast<MouseButton>(button), mods)));
 	}
 
-	void GLFWEventProcessor::KeyPressedCallback(GLFWwindow*, int key, int scancode, int action, int mods)
+	void GLFWEventProcessor::KeyPressedCallback(SystemWindow*, int key, int scancode, int action, int mods)
 	{
 		TargetHolder->Events.push(MakeShared<KeyEvent>(KeyEvent((action == GLFW_PRESS) ? (EventType::KeyPressed) : ((action == GLFW_REPEAT) ? (EventType::KeyRepeated) : (EventType::KeyReleased)), static_cast<Key>(key), mods)));
 	}
 
-	void GLFWEventProcessor::CharEnteredCallback(GLFWwindow*, unsigned int codepoint)
+	void GLFWEventProcessor::CharEnteredCallback(SystemWindow*, unsigned int codepoint)
 	{
 		TargetHolder->Events.push(MakeShared<CharEnteredEvent>(CharEnteredEvent(EventType::CharacterEntered, codepoint)));
 	}
 
-	void GLFWEventProcessor::ScrollCallback(GLFWwindow* window, double offsetX, double offsetY)
+	void GLFWEventProcessor::ScrollCallback(SystemWindow* window, double offsetX, double offsetY)
 	{
 		std::cout << "Scrolled " << offsetX << ", " << offsetY << "\n";
 		Vec2d cursorPos(0.0);
@@ -407,9 +426,8 @@ namespace GEE
 		TargetHolder->Events.push(MakeShared<CursorMoveEvent>(CursorMoveEvent(EventType::MouseMoved, Vec2f(cursorPos))));	//When we scroll (e.g. a canvas), it is possible that some buttons or other objects relying on cursor position might be scrolled (moved) as well, so we need to create a CursorMoveEvent.
 	}
 
-	void GLFWEventProcessor::FileDropCallback(GLFWwindow* window, int count, const char** paths)
+	void GLFWEventProcessor::FileDropCallback(SystemWindow* window, int count, const char** paths)
 	{
 
 	}
-
 }

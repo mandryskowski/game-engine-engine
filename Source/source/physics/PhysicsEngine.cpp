@@ -128,40 +128,39 @@ namespace GEE
 		{
 			Vec3f worldObjectScale = object.TransformPtr->GetWorldTransform().GetScale();
 
-			PxShape* pxShape = nullptr;
 			const Transform& shapeT = shape.ShapeTransform;
 			Vec3f shapeScale = shapeT.GetScale() * worldObjectScale;
 
 			switch (shape.Type)
 			{
 			case CollisionShapeType::COLLISION_TRIANGLE_MESH:
-				pxShape = CreateTriangleMeshShape(&shape, shapeScale);
+				shape.ShapePtr = CreateTriangleMeshShape(&shape, shapeScale);
 				break;
 			case CollisionShapeType::COLLISION_BOX:
-				pxShape = Physics->createShape(PxBoxGeometry(toPx(shapeScale)), *DefaultMaterial);
+				shape.ShapePtr = Physics->createShape(PxBoxGeometry(toPx(shapeScale)), *DefaultMaterial);
 				break;
 			case CollisionShapeType::COLLISION_SPHERE:
-				pxShape = Physics->createShape(PxSphereGeometry(shapeScale.x), *DefaultMaterial);
+				shape.ShapePtr = Physics->createShape(PxSphereGeometry(shapeScale.x), *DefaultMaterial);
 				break;
 			case CollisionShapeType::COLLISION_CAPSULE:
-				pxShape = Physics->createShape(PxCapsuleGeometry(shapeScale.x, shapeScale.y), *DefaultMaterial);
+				shape.ShapePtr = Physics->createShape(PxCapsuleGeometry(shapeScale.x, shapeScale.y), *DefaultMaterial);
 			}
 
-			if (!pxShape)
+			if (!shape.ShapePtr)
 				return;
 
-			pxShape->setLocalPose(PxTransform(toPx(static_cast<Mat3f>(object.TransformPtr->GetWorldTransformMatrix()) * shapeT.GetPos()), (object.IgnoreRotation) ? (physx::PxQuat()) : (toPx(shapeT.GetRot()))));
-			pxShape->userData = &shape.ShapeTransform;
+			shape.ShapePtr->setLocalPose(PxTransform(toPx(static_cast<Mat3f>(object.TransformPtr->GetWorldTransformMatrix()) * shapeT.GetPos()), (object.IgnoreRotation) ? (physx::PxQuat()) : (toPx(shapeT.GetRot()))));
+			shape.ShapePtr->userData = &shape.ShapeTransform;
 
 			if (!object.ActorPtr)
 			{
 				object.ActorPtr = (object.IsStatic) ?
-					(static_cast<PxRigidActor*>(PxCreateStatic(*Physics, toPx(*object.TransformPtr), *pxShape))) :
-					(static_cast<PxRigidActor*>(PxCreateDynamic(*Physics, toPx(*object.TransformPtr), *pxShape, 10.0f)));
+					(static_cast<PxRigidActor*>(PxCreateStatic(*Physics, toPx(*object.TransformPtr), *shape.ShapePtr))) :
+					(static_cast<PxRigidActor*>(PxCreateDynamic(*Physics, toPx(*object.TransformPtr), *shape.ShapePtr, 10.0f)));
 				object.TransformDirtyFlag = object.TransformPtr->AddDirtyFlag();
 			}
 			else
-				object.ActorPtr->attachShape(*pxShape);
+				object.ActorPtr->attachShape(*shape.ShapePtr);
 		}
 
 		void PhysicsEngine::AddScenePhysicsDataPtr(GameScenePhysicsData& scenePhysicsData)
@@ -226,7 +225,7 @@ namespace GEE
 
 			scenePhysicsData.PhysXControllerManager = PxCreateControllerManager(*scenePhysicsData.PhysXScene);
 
-			PxRigidStatic* ground = PxCreatePlane(*Physics, PxPlane(0.0f, 1.0f, 0.0f, 0.5f), *DefaultMaterial);
+			PxRigidStatic* ground = PxCreatePlane(*Physics, PxPlane(0.0f, 1.0f, 0.0f, 0.0f), *DefaultMaterial);
 			scenePhysicsData.PhysXScene->addActor(*ground);
 
 			if (*DebugModePtr)

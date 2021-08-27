@@ -38,6 +38,12 @@ namespace GEE
 		return ListElements.front().GetActorRef().GetTransform()->GetPos() - ListElements.front().GetCenterOffset();
 	}
 
+	const UIListElement UIListActor::GetListElement(unsigned int index) const
+	{
+		GEE_CORE_ASSERT(index < ListElements.size());
+		return ListElements[index];
+	}
+
 	int UIListActor::GetListElementCount() const
 	{
 		return static_cast<int>(ListElements.size());

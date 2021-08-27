@@ -130,6 +130,7 @@ namespace GEE
 			silhouetteFramebuffer.Bind(true);
 			glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 			glClear(GL_COLOR_BUFFER_BIT);
+			glEnable(GL_CULL_FACE);
 
 			info.UseMaterials = true;
 			info.CareAboutShader = true;

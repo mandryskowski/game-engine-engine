@@ -68,13 +68,20 @@ namespace GEE
 						continue;
 					}
 
-					Shader* shader;
+					Shader* shader = nullptr;
 					if (compRenderableCast)
 						if (auto materials = compRenderableCast->GetMaterials(); !materials.empty() && materials.front())
 							shader = (materials.front()->GetRenderShaderName() == "Geometry") ? (info.TbCollection.GetTb<DeferredShadingToolbox>()->FindShader("Geometry")) : (Impl.RenderHandle.FindShader(materials.front()->GetRenderShaderName()));
 
+					if (!shader)
+					{
+						currentComponentIndex++;
+						continue;
+					}
+
 					shader->Use();
-					shader->Uniform4fv("material.color", Vec4f(currentComponentIndex++, 0, 0, 1));
+					shader->Uniform<Vec4f>("material.color", Vec4f(currentComponentIndex++, 0, 0, 1));
+					shader->Uniform<bool>("material.disableColor", false);
 
 					compRenderableCast->Render(info, shader);
 				}
@@ -84,6 +91,7 @@ namespace GEE
 
 				debugShader->Use();
 				debugShader->Uniform<bool>("material.useAlbedoAsMask", true);
+				debugShader->Uniform<bool>("material.disableColor", false);
 				//info.UseMaterials = true;
 				
 				// Render the debug icon of nonrenderables on top
@@ -91,6 +99,7 @@ namespace GEE
 				{
 					if (it.first->GetDebugMatInst())
 						it.first->GetDebugMatInst()->UpdateWholeUBOData(debugShader, Impl.RenderHandle.GetEmptyTexture());
+
 					debugShader->Uniform4fv("material.color", Vec4f(it.second, 0, 0, 1));
 					it.first->DebugRender(info, debugShader);
 				}

@@ -4,6 +4,7 @@ struct Material
 	vec4 color;
 	sampler2D albedo1;
 	bool useAlbedoAsMask;
+	bool disableColor;
 };
 
 //in
@@ -29,7 +30,7 @@ void main()
 			discard;
 		fragColor = vec4(material.color.rgb, material.color.a * fragColor.a);
 	}
-	else if (material.color.rgb != vec3(0.0) && fragColor.rgb == vec3(0.0))	// use material.color if no texture is found
+	else if (fragColor.rgb == vec3(0.0) && material.color.rgb != vec3(0.0) && !material.disableColor)	// use material.color if no texture is found
 		fragColor = material.color;
 	else if (fragColor.a < TEXTURE_ALPHA_DISCARD_THRESHOLD)
 		discard;

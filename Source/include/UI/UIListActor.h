@@ -53,6 +53,7 @@ namespace GEE
 		virtual Vec3f GetListOffset();
 		Vec3f GetListBegin();
 
+		const UIListElement GetListElement(unsigned int index) const;
 		int GetListElementCount() const;
 
 		void SetListElementOffset(int index, std::function<Vec3f()> getElementOffset);

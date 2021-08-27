@@ -14,11 +14,12 @@ namespace GEE
 		Actor(scene, parentActor, name),
 		ParticleMeshInst(nullptr),
 		FireModel(nullptr),
-		GunBlast(nullptr)
+		GunBlast(nullptr),
+		FireCooldown(2.0f),
+		CooldownLeft(0.0f),
+		BulletRadius(0.2f),
+		ImpulseFactor(0.25f)
 	{
-		FireCooldown = 2.0f;
-		CooldownLeft = 0.0f;
-		FiredBullets = 0;
 	}
 
 	void GunActor::Setup()
@@ -104,9 +105,9 @@ namespace GEE
 		GetRoot()->GetTransform().AddInterpolator<Quatf>("rotation", 0.0f, 0.25f, Quatf(Vec3f(0.0f)), toQuat(Vec3f(30.0f, 0.0f, 0.0f)), InterpolationType::QUINTIC, true);
 		GetRoot()->GetTransform().AddInterpolator<Quatf>("rotation", 0.25f, 1.25f, Quatf(Vec3f(0.0f)), InterpolationType::QUADRATIC, true);
 
-		Actor& actor = Scene.CreateActorAtRoot<Actor>("Bullet" + std::to_string(FiredBullets));
+		Actor& actor = Scene.CreateActorAtRoot<Actor>("Bullet");
 		//TODO: Change it so the bullet is fired at the barrel, not at the center
-		UniquePtr<ModelComponent> bulletModel = MakeUnique<ModelComponent>(ModelComponent(actor, nullptr, "BulletModel" + std::to_string(FiredBullets++), Transform(GetTransform()->GetWorldTransform().GetPos(), Vec3f(0.0f), Vec3f(0.2f))));
+		UniquePtr<ModelComponent> bulletModel = MakeUnique<ModelComponent>(ModelComponent(actor, nullptr, "BulletModel", Transform(GetTransform()->GetWorldTransform().GetPos(), Vec3f(0.0f), Vec3f(BulletRadius))));
 		bulletModel->OnStart();
 		Material* rustedIronMaterial = GameHandle->GetRenderEngineHandle()->FindMaterial("RustedIron").get();
 		if (!rustedIronMaterial)
@@ -129,7 +130,7 @@ namespace GEE
 
 		UniquePtr<Physics::CollisionObject> dupa = MakeUnique<Physics::CollisionObject>(false, Physics::CollisionShapeType::COLLISION_SPHERE);
 		Physics::CollisionObject& col = *bulletModel->SetCollisionObject(std::move(dupa));	//dupa is no longer valid
-		GameHandle->GetPhysicsHandle()->ApplyForce(col, GetRoot()->GetTransform().GetWorldTransform().GetFrontVec() * 0.25f);
+		GameHandle->GetPhysicsHandle()->ApplyForce(col, GetRoot()->GetTransform().GetWorldTransform().GetFrontVec() * ImpulseFactor);
 		col.ActorPtr->is<physx::PxRigidDynamic>()->setLinearDamping(0.5f);
 		col.ActorPtr->is<physx::PxRigidDynamic>()->setAngularDamping(0.5f);
 
@@ -147,6 +148,9 @@ namespace GEE
 		blastField.GetTemplates().ObjectInput<Component, Audio::SoundSourceComponent>(*GetRoot(), GunBlast);
 
 		descBuilder.AddField("Fire model").GetTemplates().ObjectInput<Component, ModelComponent>(*GetRoot(), [this](ModelComponent* model) { SetFireModel(model); });
+		
+		descBuilder.AddField("Bullet radius").CreateChild<UIInputBoxActor>("BulletRadiusInputBox", [&](float val) {BulletRadius = val; }, [&]() { return BulletRadius; });
+		descBuilder.AddField("Impulse factor").CreateChild<UIInputBoxActor>("ImpulseFactorInputBox", [&](float val) {ImpulseFactor = val; }, [&]() { return ImpulseFactor; });
 
 		UICanvasField& fireField = descBuilder.AddField("Fire");
 		fireField.CreateChild<UIButtonActor>("FireButton", "Fire", [this]() { FireWeapon(); });

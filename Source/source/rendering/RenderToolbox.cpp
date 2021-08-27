@@ -116,6 +116,9 @@ namespace GEE
 		GeometryShader->UniformBlockBinding("PreviousBoneMatrices", 11);
 		GeometryShader->SetTextureUnitNames(gShaderTextureUnits);
 		GeometryShader->SetExpectedMatrices(std::vector<MatrixType>{MatrixType::MODEL, MatrixType::MVP, MatrixType::NORMAL});
+		GeometryShader->SetOnMaterialWholeDataUpdateFunc([](Shader& shader, const Material& mat) {
+			MaterialUtil::DisableColorIfAlbedoTextureDetected(shader, mat);
+		});
 	}
 
 	MainFramebufferToolbox::MainFramebufferToolbox() :

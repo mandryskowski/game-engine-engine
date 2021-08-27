@@ -57,9 +57,9 @@ namespace GEE
 		const Quatf& GetRot() const { return Rotation; }
 		const Vec3f& GetScale() const { return Scale; }
 
-		Vec3f Transform::GetFrontVec() const;
+		Vec3f GetFrontVec() const;
 		Transform GetInverse() const;
-		Mat3f GetRotationMatrix(float = 1.0f) const; //this argument is used as a multiplier for the rotation vector - you can pass -1.0f to get the inverse matrix for a low cost
+		Mat3f GetRotationMatrix(bool inverse = false) const;
 		Mat4f GetMatrix() const; //returns model matrix
 		Mat4f GetViewMatrix() const; //returns view/eye/camera matrix
 		const Transform& GetWorldTransform() const; //calculates the world transform (transform data is stored in local space)
@@ -71,6 +71,7 @@ namespace GEE
 		void SetPositionWorld(const Vec3f&);
 		void Move(const Vec2f&);
 		void Move(const Vec3f&);
+		void SetRotation(float roll);
 		void SetRotation(const Vec3f& euler);
 		void SetRotation(const Quatf& quat);
 		void SetRotationWorld(const Quatf& quat);
@@ -85,7 +86,7 @@ namespace GEE
 		template <TVec vec, VecAxis axis> void SetVecAxis(float val)
 		{
 			unsigned int axisIndex = static_cast<unsigned int>(axis);
-			assert(axisIndex <= 2 || (axis == TVec::ROTATION && axisIndex == 3));
+			GEE_CORE_ASSERT(axisIndex <= 2 || (vec == TVec::ROTATION && axisIndex <= 3));
 
 			switch (vec)
 			{

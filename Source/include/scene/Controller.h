@@ -26,80 +26,121 @@ namespace GEE
 
 	class Controller : public Actor
 	{
-
-		struct MovementAxis
-		{
-			UniquePtr<Interpolator<float>> MovementInterpolator;
-			bool Inversed;
-			Vec3f Direction;
-		};
-
-		physx::PxController* PxController;
-		Actor* PossessedActor;
-		bool Directions[DIRECTION_COUNT];
-		Vec3f Velocity;
-		Vec3f PreviousFramePos;
-		Vec3f RotationEuler;
-
-		std::array<MovementAxis, 4> MovementAxises;
-
 	public:
-		Controller(GameScene& scene, Actor* parentActor, std::string name);
+		Controller(GameScene& scene, Actor* parentActor, const std::string& name);
+		bool GetHideCursor() const;
+		bool GetLockMouseAtCenter() const;
+		void SetHideCursor(bool);
+		void SetLockMouseAtCenter(bool);
 
-		void SetPossessedActor(Actor*);
-
-		virtual void HandleEvent(const Event& ev) override;
-		virtual void ReadMovementKeys();
-		virtual void Update(float deltaTime) override;
-		void RotateWithMouse(Vec2f);	//rotates camera - you should pass the mouse offset from the center
-		static void HandleMovementAxis(bool pressed, MovementAxis& axis);
+		virtual void SetPossessedActor(Actor*);
+		virtual void OnMouseMovement(const Vec2f& previousPosPx, const Vec2f& currentPosPx) {}
 
 		template <typename Archive> void Save(Archive& archive) const
 		{
-			archive(cereal::make_nvp("PossessedActorName", (PossessedActor) ? (PossessedActor->GetName()) : (std::string())), cereal::make_nvp("Actor", cereal::base_class<Actor>(this)));
+			archive(cereal::make_nvp("PossessedActorName", (PossessedActor) ? (PossessedActor->GetName()) : (std::string())), CEREAL_NVP(bHideCursor), CEREAL_NVP(bLockMouseAtCenter), cereal::make_nvp("Actor", cereal::base_class<Actor>(this)));
 		}
 		template <typename Archive> void Load(Archive& archive)
 		{
 			std::string possessedActorName;
-			archive(cereal::make_nvp("PossessedActorName", possessedActorName), cereal::make_nvp("Actor", cereal::base_class<Actor>(this)));
-			Scene.AddPostLoadLambda([this, possessedActorName]() { std::cout << "czy sie udalo?: " << Scene.FindActor(possessedActorName); SetPossessedActor(Scene.FindActor(possessedActorName)); });
+			archive(cereal::make_nvp("PossessedActorName", possessedActorName), CEREAL_NVP(bHideCursor), CEREAL_NVP(bLockMouseAtCenter), cereal::make_nvp("Actor", cereal::base_class<Actor>(this)));
+			Scene.AddPostLoadLambda([this, possessedActorName]() { SetPossessedActor(Scene.FindActor(possessedActorName)); });
 		}
 
-		virtual void GetEditorDescription(EditorDescriptionBuilder);
+		virtual void GetEditorDescription(EditorDescriptionBuilder) override;
+	protected:
+		Actor* PossessedActor;
+		bool bHideCursor, bLockMouseAtCenter;
+	};
+
+	class FreeRoamingController : public Controller
+	{
+	public:
+		FreeRoamingController(GameScene& scene, Actor* parentActor, const std::string& name);
+
+		virtual void SetPossessedActor(Actor*) override;
+
+		virtual Vec3i GetMovementDirFromPressedKeys();
+		virtual void Update(float deltaTime) override;
+		virtual void OnMouseMovement(const Vec2f& previousPosPx, const Vec2f& currentPosPx) override;
+
+		virtual void GetEditorDescription(EditorDescriptionBuilder) override;
+	private:
+		Vec3f RotationEuler;
+	};
+
+	class FPSController : public FreeRoamingController
+	{
+	public:
+		FPSController(GameScene& scene, Actor* parentActor, const std::string& name);
+
+		virtual void SetPossessedActor(Actor*) override;
+
+		virtual Vec3i GetMovementDirFromPressedKeys() override;
+		virtual void Update(float deltaTime) override;
+
+	private:
+		physx::PxController* PxController;
+		Vec3f Velocity;
 	};
 
 	class GunActor;
 
-	class ShootingController : public Controller
+	class ShootingController : public FPSController
 	{
-		GunActor* PossessedGunActor;
 	public:
 		ShootingController(GameScene& scene, Actor* parentActor, const std::string& name);
 		virtual void HandleEvent(const Event& ev) override;
 		template <typename Archive> void Save(Archive& archive) const
 		{
-
 			std::string gunActorName = (PossessedGunActor) ? (PossessedGunActor->GetName()) : ("");
 			archive(cereal::make_nvp("Controller", cereal::base_class<Controller>(this)), cereal::make_nvp("PossesedGunActorName", gunActorName));
 		}
 		template <typename Archive> void Load(Archive& archive)
 		{
-			std::string possessedActorName;
-			archive(cereal::make_nvp("Controller", cereal::base_class<Controller>(this)), cereal::make_nvp("PossesedGunActorName", possessedActorName));
+			std::string gunActorName;
+			archive(cereal::make_nvp("Controller", cereal::base_class<Controller>(this)), cereal::make_nvp("PossesedGunActorName", gunActorName));
 
-			Scene.AddPostLoadLambda([this, possessedActorName]() {
-				if (!possessedActorName.empty())
-					PossessedGunActor = dynamic_cast<GunActor*>(Scene.GetRootActor()->FindActor(possessedActorName));
+			Scene.AddPostLoadLambda([this, gunActorName]() {
+				if (!gunActorName.empty())
+					PossessedGunActor = dynamic_cast<GunActor*>(Scene.GetRootActor()->FindActor(gunActorName));
 				});
 		}
-		virtual void GetEditorDescription(EditorDescriptionBuilder);
+		virtual void GetEditorDescription(EditorDescriptionBuilder) override;
+
+	private:
+		GunActor* PossessedGunActor;
 	};
 
 
+	class CueController : public Controller
+	{
+	public:
+		CueController(GameScene& scene, Actor* parentActor, const std::string& name);
 
+		virtual void HandleEvent(const Event& ev) override;
+
+		virtual void GetEditorDescription(EditorDescriptionBuilder) override;
+		virtual void OnMouseMovement(const Vec2f& previousPosPx, const Vec2f& currentPosPx) override;
+
+		template <typename Archive> void Save(Archive& archive) const
+		{
+			std::string whiteBallActorName = (WhiteBallActor) ? (WhiteBallActor->GetName()) : ("");
+			archive(cereal::make_nvp("Controller", cereal::base_class<Controller>(this)), cereal::make_nvp("WhiteBallActorName", whiteBallActorName), CEREAL_NVP(CueHitPower));
+		}
+		template <typename Archive> void Load(Archive& archive)
+		{
+			std::string whiteBallActorName;
+			archive(cereal::make_nvp("Controller", cereal::base_class<Controller>(this)), cereal::make_nvp("WhiteBallActorName", whiteBallActorName), CEREAL_NVP(CueHitPower));
+			Scene.AddPostLoadLambda([this, whiteBallActorName]() { if (!whiteBallActorName.empty()) WhiteBallActor = Scene.FindActor(whiteBallActorName); });
+		}
+	private:
+		Actor* WhiteBallActor;
+		float CueHitPower;
+	};
 }
-CEREAL_REGISTER_TYPE(GEE::Controller)
-CEREAL_REGISTER_POLYMORPHIC_RELATION(GEE::Actor, GEE::Controller)
-CEREAL_REGISTER_POLYMORPHIC_RELATION(GEE::Controller, GEE::ShootingController)
-CEREAL_REGISTER_TYPE(GEE::ShootingController)
-CEREAL_REGISTER_POLYMORPHIC_RELATION(GEE::Actor, GEE::ShootingController)
+GEE_POLYMORPHIC_SERIALIZABLE_ACTOR(GEE::Actor, GEE::Controller)
+GEE_POLYMORPHIC_SERIALIZABLE_ACTOR(GEE::Controller, GEE::FreeRoamingController)
+GEE_POLYMORPHIC_SERIALIZABLE_ACTOR(GEE::FreeRoamingController, GEE::FPSController)
+GEE_POLYMORPHIC_SERIALIZABLE_ACTOR(GEE::FPSController, GEE::ShootingController)
+GEE_POLYMORPHIC_SERIALIZABLE_ACTOR(GEE::Controller, GEE::CueController)

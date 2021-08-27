@@ -5,6 +5,7 @@
 #include <input/InputDevicesStateRetriever.h>
 #include <PhysX/PxPhysicsAPI.h>
 #include <scene/TextComponent.h>
+#include <scene/CameraComponent.h>
 #include <scene/GunActor.h>
 #include <math/Transform.h>
 
@@ -14,48 +15,141 @@
 
 namespace GEE
 {
-	Controller::Controller(GameScene& scene, Actor* parentActor, std::string name) :
+	Controller::Controller(GameScene& scene, Actor* parentActor, const std::string& name) :
 		Actor(scene, parentActor, name),
-		PxController(nullptr),
 		PossessedActor(nullptr),
-		Directions{ false, false, false, false, false },
-		Velocity(Vec3f(0.0f)),
-		PreviousFramePos(Vec3f(0.0f)),
-		RotationEuler(Vec3f(0.0f))
+		bHideCursor(false),
+		bLockMouseAtCenter(false)
 	{
-		int i = 0;
-		std::generate(MovementAxises.begin(), MovementAxises.end(),
-			[&i]()
-			{
-				MovementAxis dir;
-				dir.MovementInterpolator = nullptr;// MakeUnique<Interpolator<float>>(Interpolator<float>(0.0f, 0.15f, 0.0f, 1.0f, InterpolationType::LINEAR));
-				dir.Inversed = false;
+	}
 
-				switch (static_cast<MovementDirections>(i))
-				{
-				case DIRECTION_FORWARD: dir.Direction = Vec3f(0.0f, 0.0f, -1.0f); break;
-				case DIRECTION_BACKWARD: dir.Direction = Vec3f(0.0f, 0.0f, 1.0f); break;
-				case DIRECTION_LEFT: dir.Direction = Vec3f(-1.0f, 0.0f, 0.0f); break;
-				case DIRECTION_RIGHT: dir.Direction = Vec3f(1.0f, 0.0f, 0.0f); break;
-				}
-				i++;
-				return dir;
-			});
+	bool Controller::GetHideCursor() const
+	{
+		return bHideCursor;
+	}
+
+	bool Controller::GetLockMouseAtCenter() const
+	{
+		return bLockMouseAtCenter;
+	}
+
+	void Controller::SetHideCursor(bool hide)
+	{
+		bHideCursor = hide;
+	}
+
+	void Controller::SetLockMouseAtCenter(bool lock)
+	{
+		bLockMouseAtCenter = lock;
 	}
 
 	void Controller::SetPossessedActor(Actor* actor)
+	{
+		PossessedActor = actor;
+	}
+
+	void Controller::GetEditorDescription(EditorDescriptionBuilder descBuilder)
+	{
+		Actor::GetEditorDescription(descBuilder);
+
+		descBuilder.AddField("Active").GetTemplates().TickBox([this](bool val) { if (val) GameHandle->PassMouseControl(this); }, [this]() { return GameHandle->GetCurrentMouseController() == this; });
+	}
+
+	FreeRoamingController::FreeRoamingController(GameScene& scene, Actor* parentActor, const std::string& name) :
+		Controller(scene, parentActor, name),
+		RotationEuler(Vec3f(0.0f))
+	{
+		SetHideCursor(true);
+		SetLockMouseAtCenter(true);
+	}
+
+	void FreeRoamingController::SetPossessedActor(Actor* actor)
+	{
+		Controller::SetPossessedActor(actor);
+		RotationEuler = Vec3f(0.0f);
+	}
+
+	Vec3i FreeRoamingController::GetMovementDirFromPressedKeys()
+	{
+		Vec3i movementDir(0);
+		if (GameHandle->GetInputRetriever().IsKeyPressed(Key::W))
+			movementDir.z -= 1;
+		if (GameHandle->GetInputRetriever().IsKeyPressed(Key::S))
+			movementDir.z += 1;
+		if (GameHandle->GetInputRetriever().IsKeyPressed(Key::A))
+			movementDir.x -= 1;
+		if (GameHandle->GetInputRetriever().IsKeyPressed(Key::D))
+			movementDir.x += 1;
+		if (GameHandle->GetInputRetriever().IsKeyPressed(Key::Space))
+			movementDir.y += 1;
+		if (GameHandle->GetInputRetriever().IsKeyPressed(Key::LeftControl))
+			movementDir.y -= 1;
+
+		return movementDir;
+	}
+
+	void FreeRoamingController::Update(float deltaTime)
+	{
+		Controller::Update(deltaTime);
+
+		if (!PossessedActor)
+			return;
+
+		const Vec3i& movementDir = GetMovementDirFromPressedKeys();
+		const Vec3f rotatedMovementDir = PossessedActor->GetTransform()->GetWorldTransform().GetRotationMatrix() * Vec3f(static_cast<float>(movementDir.x), 0.0f, static_cast<float>(movementDir.z)) // account for rotation on XZ
+										+ Vec3f(0.0f, movementDir.y, 0.0f);	// ignore rotation on Y
+		if (rotatedMovementDir == Vec3f(0.0f))
+			return;
+
+		PossessedActor->GetTransform()->Move(glm::normalize(rotatedMovementDir) * deltaTime);
+	}
+
+	void FreeRoamingController::OnMouseMovement(const Vec2f& previousPosPx, const Vec2f& currentPosPx)
+	{
+		if (!PossessedActor)
+			return;
+
+		Vec2f mouseOffset = currentPosPx - previousPosPx;
+		mouseOffset.y *= -1.0f;
+
+		float sensitivity = 0.15f;
+		RotationEuler.x -= mouseOffset.y * sensitivity;
+		RotationEuler.y -= mouseOffset.x * sensitivity;
+
+		RotationEuler.x = glm::clamp(RotationEuler.x, -89.9f, 89.9f);
+		RotationEuler.y = fmod(RotationEuler.y, 360.0f);
+
+		PossessedActor->GetTransform()->SetRotation(RotationEuler);
+	}
+
+	void FreeRoamingController::GetEditorDescription(EditorDescriptionBuilder descBuilder)
+	{
+		Controller::GetEditorDescription(descBuilder);
+
+		descBuilder.AddField("Target camera").GetTemplates().ObjectInput<Actor>(
+			[this]() { std::vector<Actor*> actors; Scene.GetRootActor()->GetAllActors(&actors); return actors; },
+			[this](Actor* actor) { SetPossessedActor(actor); });
+	}
+
+	FPSController::FPSController(GameScene& scene, Actor* parentActor, const std::string& name) :
+		FreeRoamingController(scene, parentActor, name),
+		PxController(nullptr),
+		Velocity(Vec3f(0.0f))
+	{
+	}
+
+	void FPSController::SetPossessedActor(Actor* actor)
 	{
 		if (PossessedActor)
 			PossessedActor->GetRoot()->SetCollisionObject(nullptr);	//PxController will probably be released here, so we set it to Nullptr in the next line
 
 		PxController = nullptr;
-		PossessedActor = actor;
+		
+		FreeRoamingController::SetPossessedActor(actor);
 
 		if (!PossessedActor)
 			return;
 		std::cout << "Tworze kontroler.\n";
-
-		RotationEuler = Vec3f(0.0f);
 
 		PxController = GameHandle->GetPhysicsHandle()->CreateController(*Scene.GetPhysicsData(), PossessedActor->GetTransform()->GetWorldTransform());
 
@@ -65,46 +159,19 @@ namespace GEE
 		PossessedActor->GetRoot()->SetCollisionObject(std::move(colObject));
 	}
 
-	void Controller::HandleEvent(const Event& ev)
+	Vec3i FPSController::GetMovementDirFromPressedKeys()
 	{
-		Actor::HandleEvent(ev);
+		const Vec3i& movementDir = FreeRoamingController::GetMovementDirFromPressedKeys();
+
+		// Cancel out the alteration of movementDir due to pressing LeftControl.
+		if (GameHandle->GetInputRetriever().IsKeyPressed(Key::LeftControl))
+			return movementDir + Vec3i(0, 1, 0);
+
+		// If LeftControl is not pressed, there is no need to change anything.
+		return movementDir;
 	}
 
-	void Controller::ReadMovementKeys()
-	{
-		for (int i = 0; i < DIRECTION_COUNT; i++)
-			Directions[i] = false;
-
-		if (!PossessedActor || GameHandle->GetCurrentMouseController() != this)
-			return;
-
-		if (Actor* gameLevelActor = Scene.FindActor("GameLevel"))
-			if (Component* forkliftComp = gameLevelActor->GetRoot()->GetComponent("Forklift.001"))
-			{
-				if (GameHandle->GetInputRetriever().IsKeyPressed(Key::E))
-					forkliftComp->GetTransform().SetParentTransform(PossessedActor->GetTransform(), true);
-				if (GameHandle->GetInputRetriever().IsKeyPressed(Key::F))
-					forkliftComp->GetTransform().SetParentTransform(&gameLevelActor->GetRoot()->GetTransform(), true);
-			}
-
-		if (GameHandle->GetInputRetriever().IsKeyPressed(Key::W))
-			Directions[DIRECTION_FORWARD] = true;
-		if (GameHandle->GetInputRetriever().IsKeyPressed(Key::S))
-			Directions[DIRECTION_BACKWARD] = true;
-		if (GameHandle->GetInputRetriever().IsKeyPressed(Key::A))
-			Directions[DIRECTION_LEFT] = true;
-		if (GameHandle->GetInputRetriever().IsKeyPressed(Key::D))
-			Directions[DIRECTION_RIGHT] = true;
-		if (GameHandle->GetInputRetriever().IsKeyPressed(Key::Space))
-			Directions[DIRECTION_UP] = true;
-
-		HandleMovementAxis(Directions[DIRECTION_FORWARD], MovementAxises[DIRECTION_FORWARD]);
-		HandleMovementAxis(Directions[DIRECTION_BACKWARD], MovementAxises[DIRECTION_BACKWARD]);
-		HandleMovementAxis(Directions[DIRECTION_LEFT], MovementAxises[DIRECTION_LEFT]);
-		HandleMovementAxis(Directions[DIRECTION_RIGHT], MovementAxises[DIRECTION_RIGHT]);
-	}
-
-	void Controller::Update(float deltaTime)
+	void FPSController::Update(float deltaTime)
 	{
 		if (!PossessedActor)
 			return;
@@ -118,9 +185,7 @@ namespace GEE
 		if (PxController->getActor()->getNbShapes() == 0)
 			return;
 
-		ReadMovementKeys();
-
-		//bool isOnGround = PxController->getActor()->getScene()->raycast(physx::toVec3(PxController->getFootPosition()), PxController->getScene()->getGravity().getNormalized(), 0.03f, dupa);
+		const Vec3i& movementDir = GetMovementDirFromPressedKeys();
 
 		physx::PxRaycastBuffer dupa;
 		physx::PxSweepBuffer sweepBuffer;
@@ -129,7 +194,7 @@ namespace GEE
 
 		shapes[0]->acquireReference();
 		PxController->getActor()->detachShape(*shapes[0]);
-		//toTransform(PxController->getActor()->getGlobalPose() * shapes[0]->getLocalPose()).Print("pose");
+
 		bool groundSweep = PxController->getScene()->sweep(shapes[0]->getGeometry().capsule(), PxController->getActor()->getGlobalPose() * shapes[0]->getLocalPose(), PxController->getScene()->getGravity().getNormalized(), 0.5f, sweepBuffer, physx::PxHitFlag::eDEFAULT, physx::PxQueryFilterData(), nullptr);
 		bool isOnGround = (groundSweep) && ((PxController->getFootPosition().y - sweepBuffer.block.position.y) < 0.01f);
 		PxController->getActor()->attachShape(*shapes[0]);
@@ -137,24 +202,15 @@ namespace GEE
 
 		Velocity.y -= 9.81f * deltaTime;
 
-		if (isOnGround && Directions[DIRECTION_UP])
+		if (isOnGround && movementDir.y == 1)
 		{
 			Velocity.y = 0.0f;
 			Velocity += Physics::Util::toGlm(PxController->getUpDirection()) * 2.45f;
 			isOnGround = false;
 		}
 
-		if (isOnGround)
-			;// std::cout << "GROUND!!!\n";
-
-		Vec3f wishVec(0.0f);
-		for (int i = 0; i < 4; i++)
-		{
-			//	MovementAxises[i].MovementInterpolator->Update(deltaTime);
-			Vec3f dir = PossessedActor->GetTransform()->GetWorldTransform().GetRotationMatrix() * MovementAxises[i].Direction;
-			dir = glm::normalize(Vec3f(dir.x, 0.0f, dir.z));
-			wishVec += dir * static_cast<float>(Directions[i]);
-		}
+		Vec3f wishVec = PossessedActor->GetTransform()->GetWorldTransform().GetRotationMatrix() * static_cast<Vec3f>(movementDir);
+		wishVec = Vec3f(wishVec.x, 0.0f, wishVec.z);
 
 		if (wishVec != Vec3f(0.0f))
 			wishVec = glm::normalize(wishVec);
@@ -190,99 +246,21 @@ namespace GEE
 			PxController->move(Physics::Util::toPx(Vec3f(0.0f, -0.2f, 0.0f)), 0.001f, deltaTime, physx::PxControllerFilters());
 		Velocity = Physics::Util::toGlm(PxController->getPosition() - prevPos) / deltaTime;
 
+		PossessedActor->GetTransform()->SetPositionWorld(Physics::Util::toGlm(PxController->getPosition()));
+
 		if (TextComponent* found = dynamic_cast<TextComponent*>(PossessedActor->GetRoot()->GetComponent("CameraText")))
 			found->SetContent("Velocity: " + std::to_string(glm::length(Vec3f(Velocity.x, 0.0f, Velocity.z))) + " " + std::to_string(Velocity.y) + ((isOnGround) ? (" ON-GROUND") : (" MID-AIR")));
-
-		/*physx::PxRaycastBuffer dupa;
-		bool isOnGround = PxController->getActor()->getScene()->raycast(physx::toVec3(PxController->getFootPosition()), PxController->getScene()->getGravity().getNormalized(), 0.1f, dupa);
-		Vec3f movementVec(0.0f);
-
-		Velocity.x *= 0.5f;
-		Velocity.z *= 0.5f;
-
-		for (int i = 0; i < 4; i++)
-		{
-			MovementAxises[i].MovementInterpolator->Update(deltaTime);
-			Vec3f dir = PossessedActor->GetTransform()->GetWorldTransform().GetRotationMatrix() * MovementAxises[i].Direction;
-			dir = glm::normalize(Vec3f(dir.x, 0.0f, dir.z));
-			movementVec += dir * static_cast<float>(Directions[i]);
-		}
-
-		const float maxRunSpeed = 3.0f;
-		float currentSpeedProjected = glm::dot(Velocity, movementVec);
-		float addedSpeed = maxRunSpeed - currentSpeedProjected;
-		addedSpeed = glm::max(addedSpeed / deltaTime, 0.0f);
-		Velocity += movementVec * addedSpeed;
-
-		//PossessedActor->GetTransform()->Move(movementVec * deltaTime * 3.0f);
-		//PxController->move(toPx(movementVec * deltaTime * 3.0f), 0.001f, deltaTime, physx::PxControllerFilters());
-
-		if (isOnGround)
-		{
-			if (Directions[DIRECTION_UP])
-				Velocity = toGlm(PxController->getUpDirection()) * 2.45f;
-			else
-				Velocity.y = 0.0f;
-		}
-		else
-		{
-			if (Velocity.y > 0 && PxController->getActor()->getGlobalPose().p.y == PreviousFramePos.y)
-			{
-				Velocity.y = 0.0f;
-				std::cout << "zajebales sie\n";
-			}
-			else
-				Velocity += toGlm(PxController->getScene()->getGravity()) * deltaTime;
-		}
-
-		PxController->move(toPx(Velocity * deltaTime), 0.001f, deltaTime, physx::PxControllerFilters());
-		std::cout << "SPEED: " << glm::length(Velocity) << "\n";
-
-		PreviousFramePos = toGlm(PxController->getActor()->getGlobalPose().p);*/
-	}
-
-	void Controller::RotateWithMouse(Vec2f mouseOffset)
-	{
-		if (!PossessedActor)
-			return;
-
-		float sensitivity = 0.15f;
-		RotationEuler.x -= mouseOffset.y * sensitivity;
-		RotationEuler.y -= mouseOffset.x * sensitivity;
-
-		RotationEuler.x = glm::clamp(RotationEuler.x, -89.9f, 89.9f);
-		RotationEuler.y = fmod(RotationEuler.y, 360.0f);
-
-		PossessedActor->GetTransform()->SetRotation(RotationEuler);
-	}
-
-	void Controller::HandleMovementAxis(bool pressed, MovementAxis& axis)
-	{
-		if ((pressed && axis.Inversed) || (!pressed && !axis.Inversed))
-		{
-			//axis.MovementInterpolator->Inverse();
-			axis.Inversed = !axis.Inversed;
-		}
-	}
-
-	void Controller::GetEditorDescription(EditorDescriptionBuilder descBuilder)
-	{
-		Actor::GetEditorDescription(descBuilder);
-
-		descBuilder.AddField("Target camera").GetTemplates().ObjectInput<Actor>(
-			[this]() { std::vector<Actor*> actors; Scene.GetRootActor()->GetAllActors(&actors); return actors; },
-			[this](Actor* actor) { SetPossessedActor(actor); });
 	}
 
 	ShootingController::ShootingController(GameScene& scene, Actor* parentActor, const std::string& name) :
-		Controller(scene, parentActor, name),
+		FPSController(scene, parentActor, name),
 		PossessedGunActor(nullptr)
 	{
 	}
 
 	void ShootingController::HandleEvent(const Event& ev)
 	{
-		Controller::HandleEvent(ev);
+		FPSController::HandleEvent(ev);
 		if (ev.GetType() != EventType::MousePressed || GameHandle->GetCurrentMouseController() != this || !PossessedGunActor)
 			return;
 
@@ -299,8 +277,55 @@ namespace GEE
 
 	void ShootingController::GetEditorDescription(EditorDescriptionBuilder descBuilder)
 	{
-		Controller::GetEditorDescription(descBuilder);
+		FPSController::GetEditorDescription(descBuilder);
 
 		descBuilder.AddField("PossessedGunActor").GetTemplates().ObjectInput<Actor, GunActor>(*Scene.GetRootActor(), PossessedGunActor);
+	}
+	CueController::CueController(GameScene& scene, Actor* parentActor, const std::string& name):
+		Controller(scene, parentActor, name),
+		CueHitPower(0.01f)
+	{
+	}
+	void CueController::HandleEvent(const Event& ev)
+	{
+		Controller::HandleEvent(ev);
+
+		if (ev.GetType() != EventType::MouseReleased || !WhiteBallActor || !PossessedActor || !WhiteBallActor->GetRoot()->GetCollisionObj())
+			return;
+
+		if (auto cast = dynamic_cast<const MouseButtonEvent*>(&ev))
+			if (cast->GetButton() == MouseButton::Left)
+			{
+				Vec3f cueDir = PossessedActor->GetTransform()->GetWorldTransform().GetPos() - WhiteBallActor->GetTransform()->GetWorldTransform().GetPos();
+				cueDir.y = 0.0f;
+				cueDir = glm::normalize(cueDir);
+				GameHandle->GetPhysicsHandle()->ApplyForce(*WhiteBallActor->GetRoot()->GetCollisionObj(), CueHitPower * cueDir);
+			}
+	}
+	void CueController::GetEditorDescription(EditorDescriptionBuilder descBuilder)
+	{
+		Controller::GetEditorDescription(descBuilder);
+
+		descBuilder.AddField("White ball").GetTemplates().ObjectInput<Actor, Actor>(*Scene.GetRootActor(), WhiteBallActor);
+		descBuilder.AddField("Cue").GetTemplates().ObjectInput<Actor, Actor>(*Scene.GetRootActor(), [this](Actor* cue) { SetPossessedActor(cue); });
+		descBuilder.AddField("Cue hit power").CreateChild<UIInputBoxActor>("CueHitPowerInputBox", [this](float val) { CueHitPower = val; }, [this]() { return CueHitPower; });
+	}
+	void CueController::OnMouseMovement(const Vec2f&, const Vec2f& currentPosPx)
+	{
+		if (!PossessedActor || !WhiteBallActor || !Scene.GetActiveCamera())
+			return;
+
+		const Vec2f currentPosViewportSpace = static_cast<Vec2f>(glm::inverse(GameHandle->GetScene("GEE_Editor")->FindActor("SceneViewportActor")->GetTransform()->GetWorldTransformMatrix()) * Vec4f(pxConversion::PxToNDC(currentPosPx, GameHandle->GetGameSettings()->WindowSize), 0.0f, 1.0f));
+
+		const Vec4f whiteBallProj = Scene.GetActiveCamera()->GetProjectionMat() * Scene.GetActiveCamera()->GetViewMat() *  Vec4f(WhiteBallActor->GetTransform()->GetWorldTransform().GetPos(), 1.0f);
+		const Vec2f whiteBallViewportSpace = (static_cast<Vec3f>(whiteBallProj) / whiteBallProj.z);
+		
+		if (currentPosViewportSpace == whiteBallViewportSpace)
+			return;
+
+		Vec2f mouseDir = glm::normalize(whiteBallViewportSpace - currentPosViewportSpace);
+		float cueRotation = glm::degrees(std::atan2(mouseDir.y, mouseDir.x));
+
+		WhiteBallActor->GetTransform()->SetRotation(Vec3f(0.0f, cueRotation + 90.0f, 0.0f));
 	}
 }

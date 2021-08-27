@@ -7,39 +7,11 @@
 
 namespace GEE
 {
-	void Shader::DebugShader(unsigned int shader)
-	{
-		int result;
-		char data[512];
-		glGetShaderiv(shader, GL_COMPILE_STATUS, &result);
-		if (!result)
-		{
-			glGetShaderInfoLog(shader, 512, NULL, data);
-			std::cout << "Shader error: " << data;
-		}
-	}
-
-	GLint Shader::FindLocation(std::string name) const
-	{
-		auto loc = std::find_if(Locations.begin(), Locations.end(), [name](const UniformLocation& location) { return location.Name == name; });
-
-		if (loc != Locations.end())
-			return loc->Location;
-
-		Locations.push_back(UniformLocation(name, glGetUniformLocation(Program, name.c_str())));
-		return Locations.back().Location;
-	}
-
-	/*
-	==================================================================
-	==================================================================
-	==================================================================
-	*/
-
 	Shader::Shader(std::string name) :
 		Program(0),
 		Name(name),
-		ExpectedMatrices{}
+		ExpectedMatrices{},
+		OnMaterialWholeDataUpdateFunc(nullptr)
 	{
 		ShadersSource = { "", "", "" };
 	}
@@ -109,6 +81,12 @@ namespace GEE
 	{
 		if (PreRenderFunc)
 			PreRenderFunc();
+	}
+
+	void Shader::CallOnMaterialWholeDataUpdateFunc(const Material& mat)
+	{
+		if (OnMaterialWholeDataUpdateFunc)
+			OnMaterialWholeDataUpdateFunc(*this, mat);
 	}
 
 	void Shader::Uniform1i(std::string name, int val) const
@@ -188,23 +166,24 @@ namespace GEE
 		glUseProgram(Program);
 	}
 
-	void Shader::BindMatrices(const Mat4f& model, const Mat4f* view, const Mat4f* projection, const Mat4f* VP) const
+	void Shader::BindMatrices(const Mat4f& model, const Mat4f* view, const Mat4f* projection, const Mat4f* VP)
 	{
 		if (ExpectedMatrices[MatrixType::MODEL])
-			UniformMatrix4fv("model", model);
+			Uniform("model", model);
 		if (ExpectedMatrices[MatrixType::VIEW])
-			UniformMatrix4fv("view", *view);
+			Uniform("view", *view);
 		if (ExpectedMatrices[MatrixType::PROJECTION])
-			UniformMatrix4fv("projection", *projection);
+			Uniform("projection", *projection);
 		if (ExpectedMatrices[MatrixType::MV])
-			UniformMatrix4fv("MV", (*view) * model);
+			Uniform("MV", (*view) * model);
 		if (ExpectedMatrices[MatrixType::VP])
-			UniformMatrix4fv("VP", *VP);
+			Uniform("VP", *VP);
 		if (ExpectedMatrices[MatrixType::MVP])
-			UniformMatrix4fv("MVP", (*VP) * model);
+			Uniform("MVP", (*VP) * model);
 		if (ExpectedMatrices[MatrixType::NORMAL])
-			UniformMatrix3fv("normalMat", ModelToNormal(model));
+			Uniform<Mat3f>("normalMat", ModelToNormal(model));
 	}
+
 
 	void Shader::Dispose()
 	{
@@ -219,6 +198,30 @@ namespace GEE
 
 		descBuilder.AddField("Texture units").GetTemplates().ListSelection<std::pair<unsigned int, std::string>>(MaterialTextureUnits.begin(), MaterialTextureUnits.end(), [](UIAutomaticListActor& listActor, std::pair<unsigned int, std::string>& object) { listActor.CreateChild<UIButtonActor>(object.second, object.second + " - " + std::to_string(object.first)); });
 	}
+
+	void Shader::DebugShader(unsigned int shader)
+	{
+		int result;
+		char data[512];
+		glGetShaderiv(shader, GL_COMPILE_STATUS, &result);
+		if (!result)
+		{
+			glGetShaderInfoLog(shader, 512, NULL, data);
+			std::cout << "Shader error: " << data;
+		}
+	}
+
+	GLint Shader::FindLocation(std::string name) const
+	{
+		auto loc = std::find_if(Locations.begin(), Locations.end(), [name](const UniformLocation& location) { return location.Name == name; });
+
+		if (loc != Locations.end())
+			return loc->Location;
+
+		Locations.push_back(UniformLocation(name, glGetUniformLocation(Program, name.c_str())));
+		return Locations.back().Location;
+	}
+
 
 	unsigned int ShaderLoader::LoadShader(GLenum type, std::string shaderPath, std::string additionalData, std::string* shaderSourcePtr)
 	{

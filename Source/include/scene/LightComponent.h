@@ -113,5 +113,4 @@ namespace GEE
 	LightType toLightType(std::string);
 }
 
-CEREAL_REGISTER_TYPE(GEE::LightComponent)
-CEREAL_REGISTER_POLYMORPHIC_RELATION(GEE::Component, GEE::LightComponent)
+GEE_POLYMORPHIC_SERIALIZABLE_COMPONENT(GEE::Component, GEE::LightComponent)

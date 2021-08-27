@@ -1,4 +1,4 @@
-#include <animation/AnimationManagerActor.h>
+#include <animation/AnimationManagerComponent.h>
 #include <scene/Component.h>
 #include <functional>
 

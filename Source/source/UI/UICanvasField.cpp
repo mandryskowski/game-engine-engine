@@ -7,7 +7,7 @@
 #include <rendering/Texture.h>
 #include <scene/UIWindowActor.h>
 #include <scene/SoundSourceComponent.h>
-#include <animation/AnimationManagerActor.h>
+#include <animation/AnimationManagerComponent.h>
 #include <scene/GunActor.h>
 #include <input/InputDevicesStateRetriever.h>
 
@@ -245,7 +245,7 @@ void UIMultipleListActor::NestList(UIListActor& list)
 		billboardTickModel.SetHide(!getFunc());
 		billboardTickModel.OverrideInstancesMaterialInstances(MakeShared<MaterialInstance>(MaterialInstance(*tickMaterial, tickMaterial->GetTextureIDInterpolatorTemplate(0.0f))));
 
-		auto clickFunc = [&billboardTickModel, setFunc, getFunc]() { bool updatedVal = !getFunc(); setFunc(updatedVal); billboardTickModel.SetHide(!updatedVal);  };
+		auto clickFunc = [&billboardTickModel, setFunc, getFunc]() { bool updatedVal = !getFunc(); setFunc(updatedVal); billboardTickModel.SetHide(!getFunc());  };
 		billboardTickBoxActor.SetOnClickFunc(clickFunc);
 	}
 

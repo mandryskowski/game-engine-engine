@@ -1,13 +1,14 @@
 #pragma once
 #include <game/Game.h>
+#include <editor/EditorManager.h>
 #include <UI/UIListActor.h>
 
 namespace GEE
 {
 	struct EditorEventProcessor
 	{
-		static void FileDropCallback(GLFWwindow* window, int count, const char** paths);
-		static void Resize(GLFWwindow* window, int width, int height);
+		static void FileDropCallback(SystemWindow* window, int count, const char** paths);
+		static void Resize(SystemWindow* window, int width, int height);
 
 		static EditorManager* EditorHandle;
 	};
@@ -15,19 +16,22 @@ namespace GEE
 	class GameEngineEngineEditor : public Game, public EditorManager
 	{
 	public:
-		GameEngineEngineEditor(GLFWwindow* window, const GameSettings& settings);
+		GameEngineEngineEditor(SystemWindow* window, const GameSettings& settings);
 		virtual GameManager* GetGameHandle() override;
 		virtual Component* GetSelectedComponent() override;
 		virtual GameScene* GetSelectedScene() override;
 		virtual std::vector<GameScene*> GetScenes() override;
 		GameSettings* GetEditorSettings() override;
-		virtual void Init(GLFWwindow* window) override;
+		virtual AtlasMaterial* GetDefaultEditorMaterial(EditorDefaultMaterial) override;
+		virtual void Init(SystemWindow* window) override;
+
 
 		virtual void UpdateGameSettings() override;
 		virtual void UpdateEditorSettings() override;
 
 		void SetupEditorScene();
 		void SetupMainMenu();
+		virtual void Update(float deltaTime) override;
 		virtual void HandleEvents() override;
 
 		virtual void SelectComponent(Component* comp, GameScene& editorScene) override;
@@ -36,6 +40,9 @@ namespace GEE
 		virtual void SelectScene(GameScene* selectedScene, GameScene& editorScene) override;
 		virtual void PreviewHierarchyTree(HierarchyTemplate::HierarchyTreeT& tree) override;
 		template <typename T> void AddActorToList(GameScene& editorScene, T& obj, UIAutomaticListActor& listParent, UICanvas& canvas);
+
+		virtual void PassMouseControl(Controller* controller) override;
+
 		virtual void Render() override;
 		void LoadProject(const std::string& filepath);
 		void SaveProject();
@@ -60,6 +67,9 @@ namespace GEE
 		Component* SelectedComp;
 		Actor* SelectedActor;
 		GameScene* SelectedScene;
+
+		// Which Controller should be set after we switch from editor to game control
+		Controller* GameController;
 	};
 
 	template<typename T>

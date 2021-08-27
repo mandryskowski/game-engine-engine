@@ -3,6 +3,9 @@
 #include <cereal/types/memory.hpp>
 #include <cereal/access.hpp>
 //#include <scene/BoneComponent.h>
+
+
+
 namespace GEE
 {
 	class SkeletonBatch;

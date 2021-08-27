@@ -1,0 +1,326 @@
+{
+    "SkeletonBatches": [
+        {
+            "ptr_wrapper": {
+                "id": 2147483649,
+                "data": {
+                    "Skeletons": [
+                        {
+                            "ptr_wrapper": {
+                                "id": 2147483650,
+                                "data": {
+                                    "BonesActorsNames": [],
+                                    "BoneNames": [],
+                                    "GlobalInverseTransformCompPtrActorName": "An Actor",
+                                    "GlobalInverseTransformCompPtrName": "C:\\Users\\48511\\Desktop\\pooltable\\pooltable_2_attempt.glb",
+                                    "BatchID": 0,
+                                    "BoneIDOffset": 0
+                                }
+                            }
+                        }
+                    ],
+                    "BoneCount": 0
+                }
+            }
+        }
+    ],
+    "Name": "SceneRoot",
+    "RootComponent": {
+        "polymorphic_id": 1073741824,
+        "ptr_wrapper": {
+            "valid": 1,
+            "data": {
+                "Name": "SceneRoot's root",
+                "ComponentTransform": {
+                    "Position": {
+                        "x": 0.0,
+                        "y": 0.0,
+                        "z": 0.0
+                    },
+                    "Rotation": {
+                        "x": 0.0,
+                        "y": 0.0,
+                        "z": 0.0,
+                        "w": 1.0
+                    },
+                    "Scale": {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "z": 1.0
+                    }
+                },
+                "CollisionObj": {
+                    "ptr_wrapper": {
+                        "valid": 0
+                    }
+                },
+                "Children": [
+                    {
+                        "polymorphic_id": 2147483649,
+                        "polymorphic_name": "GEE::LightProbeComponent",
+                        "ptr_wrapper": {
+                            "valid": 1,
+                            "data": {
+                                "Shape": 0,
+                                "OptionalFilepath": "C:\\Users\\48511\\source\\repos\\swetroniusz\\game-engine-engine\\Source\\hdr\\apartment.hdr",
+                                "ProbeIntensity": 1.0,
+                                "Component": {
+                                    "Name": "A LightProbeComponent",
+                                    "ComponentTransform": {
+                                        "Position": {
+                                            "x": 0.0,
+                                            "y": 0.0,
+                                            "z": 0.0
+                                        },
+                                        "Rotation": {
+                                            "x": 0.0,
+                                            "y": 0.0,
+                                            "z": 0.0,
+                                            "w": 1.0
+                                        },
+                                        "Scale": {
+                                            "x": 1.0,
+                                            "y": 1.0,
+                                            "z": 1.0
+                                        }
+                                    },
+                                    "CollisionObj": {
+                                        "ptr_wrapper": {
+                                            "valid": 0
+                                        }
+                                    },
+                                    "Children": []
+                                }
+                            }
+                        }
+                    },
+                    {
+                        "polymorphic_id": 2147483650,
+                        "polymorphic_name": "GEE::CameraComponent",
+                        "ptr_wrapper": {
+                            "valid": 1,
+                            "data": {
+                                "RotationEuler": {
+                                    "x": 0.0,
+                                    "y": 0.0,
+                                    "z": 0.0
+                                },
+                                "Projection": {
+                                    "row0": {
+                                        "x": 1.0,
+                                        "y": 0.0,
+                                        "z": 0.0,
+                                        "w": 0.0
+                                    },
+                                    "row1": {
+                                        "x": 0.0,
+                                        "y": 1.0,
+                                        "z": 0.0,
+                                        "w": 0.0
+                                    },
+                                    "row2": {
+                                        "x": 0.0,
+                                        "y": 0.0,
+                                        "z": -1.0002000331878663,
+                                        "w": -1.0
+                                    },
+                                    "row3": {
+                                        "x": 0.0,
+                                        "y": 0.0,
+                                        "z": -0.020002000033855439,
+                                        "w": 0.0
+                                    }
+                                },
+                                "Active": false,
+                                "Component": {
+                                    "Name": "A CameraComponent",
+                                    "ComponentTransform": {
+                                        "Position": {
+                                            "x": 0.0,
+                                            "y": 10.0,
+                                            "z": 0.0
+                                        },
+                                        "Rotation": {
+                                            "x": 0.7071067094802856,
+                                            "y": 0.0,
+                                            "z": 0.0,
+                                            "w": -0.7071069478988648
+                                        },
+                                        "Scale": {
+                                            "x": 1.0,
+                                            "y": 1.0,
+                                            "z": 1.0
+                                        }
+                                    },
+                                    "CollisionObj": {
+                                        "ptr_wrapper": {
+                                            "valid": 0
+                                        }
+                                    },
+                                    "Children": []
+                                }
+                            }
+                        }
+                    }
+                ]
+            }
+        }
+    },
+    "Children": [
+        {
+            "polymorphic_id": 1073741824,
+            "ptr_wrapper": {
+                "valid": 1,
+                "data": {
+                    "Name": "kamera",
+                    "RootComponent": {
+                        "polymorphic_id": 1073741824,
+                        "ptr_wrapper": {
+                            "valid": 1,
+                            "data": {
+                                "Name": "kamera's root",
+                                "ComponentTransform": {
+                                    "Position": {
+                                        "x": -1.208482265472412,
+                                        "y": 1.342362880706787,
+                                        "z": -0.0224431362003088
+                                    },
+                                    "Rotation": {
+                                        "x": 0.45822614431381228,
+                                        "y": 0.4721922278404236,
+                                        "z": 0.31670162081718447,
+                                        "w": -0.6832008361816406
+                                    },
+                                    "Scale": {
+                                        "x": 1.0,
+                                        "y": 1.0,
+                                        "z": 1.0
+                                    }
+                                },
+                                "CollisionObj": {
+                                    "ptr_wrapper": {
+                                        "valid": 0
+                                    }
+                                },
+                                "Children": [
+                                    {
+                                        "polymorphic_id": 2,
+                                        "ptr_wrapper": {
+                                            "valid": 1,
+                                            "data": {
+                                                "RotationEuler": {
+                                                    "x": 0.0,
+                                                    "y": 0.0,
+                                                    "z": 0.0
+                                                },
+                                                "Projection": {
+                                                    "row0": {
+                                                        "x": 1.0,
+                                                        "y": 0.0,
+                                                        "z": 0.0,
+                                                        "w": 0.0
+                                                    },
+                                                    "row1": {
+                                                        "x": 0.0,
+                                                        "y": 1.0,
+                                                        "z": 0.0,
+                                                        "w": 0.0
+                                                    },
+                                                    "row2": {
+                                                        "x": 0.0,
+                                                        "y": 0.0,
+                                                        "z": -1.0002000331878663,
+                                                        "w": -1.0
+                                                    },
+                                                    "row3": {
+                                                        "x": 0.0,
+                                                        "y": 0.0,
+                                                        "z": -0.020002000033855439,
+                                                        "w": 0.0
+                                                    }
+                                                },
+                                                "Active": true,
+                                                "Component": {
+                                                    "Name": "A CameraComponent",
+                                                    "ComponentTransform": {
+                                                        "Position": {
+                                                            "x": 0.0,
+                                                            "y": 0.0,
+                                                            "z": 0.0
+                                                        },
+                                                        "Rotation": {
+                                                            "x": 0.0,
+                                                            "y": 0.0,
+                                                            "z": 0.0,
+                                                            "w": 1.0
+                                                        },
+                                                        "Scale": {
+                                                            "x": 1.0,
+                                                            "y": 1.0,
+                                                            "z": 1.0
+                                                        }
+                                                    },
+                                                    "CollisionObj": {
+                                                        "ptr_wrapper": {
+                                                            "valid": 0
+                                                        }
+                                                    },
+                                                    "Children": []
+                                                }
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "Children": [
+                        {
+                            "polymorphic_id": 2147483651,
+                            "polymorphic_name": "GEE::GunActor",
+                            "ptr_wrapper": {
+                                "valid": 1,
+                                "data": {
+                                    "FireModelName": "",
+                                    "GunBlastName": "",
+                                    "value0": {
+                                        "Name": "A GunActor",
+                                        "RootComponent": {
+                                            "polymorphic_id": 1073741824,
+                                            "ptr_wrapper": {
+                                                "valid": 1,
+                                                "data": {
+                                                    "Name": "A GunActor's root",
+                                                    "ComponentTransform": {
+                                                        "Position": {
+                                                            "x": 0.0,
+                                                            "y": 0.0,
+                                                            "z": 0.0
+                                                        },
+                                                        "Rotation": {
+                                                            "x": -3.637978807091713e-12,
+                                                            "y": 0.0,
+                                                            "z": 0.0,
+                                                            "w": 1.0
+                                                        },
+                                                        "Scale": {
+                                                            "x": 1.0,
+                                                            "y": 1.0,
+                                                            "z": 1.0
+                                                        }
+                                                    },
+                                                    "CollisionObj": {
+                                                        "ptr_wrapper": {
+                                                            "valid": 0
+                                                        }
+                                                    },
+                                                    "Children": []
+                                                }
+                                            }
+                                        },
+                                        "Children": []
+                                    }
+                                }
+                            }
+                        }
+						]

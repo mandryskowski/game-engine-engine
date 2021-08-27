@@ -264,6 +264,8 @@ namespace GEE
 
 		ResizeBarX = &CreateChild<UIScrollBarActor>("ResizeBarX");
 		ResizeBarX->SetTransform(Transform(Vec2f(0.0f, -1.2625f), Vec2f(1.0f, 0.0375f)));
+		ResizeBarX->SetOnHoverFunc([this]() { GameHandle->SetCursorIcon(DefaultCursorIcon::VerticalResize); });
+		ResizeBarX->SetOnUnhoverFunc([this]() { GameHandle->SetCursorIcon(DefaultCursorIcon::Regular); });
 		ResizeBarX->SetWhileBeingClickedFunc([this]() {
 			float scale = ResizeBarX->GetClickPosNDC().y - GameHandle->GetInputRetriever().GetMousePositionNDC().y;
 			this->GetTransform()->SetScale((Vec2f)this->GetTransform()->GetScale() * (1.0f + scale));
@@ -382,6 +384,11 @@ namespace GEE
 	void EditorDescriptionBuilder::SelectActor(Actor* actor)
 	{
 		EditorHandle.SelectActor(actor, EditorScene);
+	}
+
+	void EditorDescriptionBuilder::RefreshComponent()
+	{
+		SelectComponent(EditorHandle.GetSelectedComponent());
 	}
 
 	void EditorDescriptionBuilder::RefreshScene()

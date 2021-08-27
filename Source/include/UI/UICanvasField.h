@@ -23,10 +23,13 @@ namespace GEE
 		void SetupComponents(Actor& actor, const Vec2f& pos = Vec2f(0.0f), const Vec4f& backgroundColor = Vec4f(hsvToRgb(Vec3f(218.0f, 0.521f, 0.188f)), 1.0f), const Vec4f& separatorColor = Vec4f(0.18f, 0.25f, 0.39f, 1.0f));
 	}
 
+	// Tied to an actor
 	class UIElementTemplates
 	{
 	public:
 		UIElementTemplates(Actor&);
+
+
 		void TickBox(bool& modifiedBool);
 		void TickBox(std::function<bool()> setFunc);
 		void TickBox(std::function<void(bool)> setFunc, std::function<bool()> getFunc);
@@ -42,6 +45,7 @@ namespace GEE
 		template <typename T, typename InputIt> void ListSelection(InputIt first, InputIt last, std::function<void(UIButtonActor&, T&)> buttonFunc);
 		template <typename T, typename InputIt> void ListSelection(InputIt first, InputIt last, std::function<void(UIAutomaticListActor&, T&)> buttonFunc);
 
+
 	private:
 		void HierarchyTreeInput(UIAutomaticListActor& list, GameScene&, std::function<void(HierarchyTemplate::HierarchyTreeT&)> setFunc);
 	public:
@@ -55,6 +59,17 @@ namespace GEE
 		Actor& TemplateParent;
 		GameScene& Scene;
 		GameManager& GameHandle;
+	};
+
+	// Tied to a scene
+	class GenericUITemplates
+	{
+	public:
+		GenericUITemplates(GameScene& scene) : Scene(scene) {}
+		template <typename FunctorConfirm, typename FunctorDeny>
+		void ConfirmationBox(FunctorConfirm&& onConfirmation, FunctorDeny&& onDenial, const std::string& promptText);
+	private:
+		GameScene& Scene;
 	};
 
 	template <typename ObjectType> void GetAllObjects(Component& hierarchyRoot, std::vector<ObjectType*>& comps)
@@ -74,7 +89,7 @@ namespace GEE
 			"GEE_Default_X_Axis", "GEE_Default_Y_Axis", "GEE_Default_Z_Axis", "GEE_Default_W_Axis"
 		};
 
-		static_assert(length <= 4);
+		GEE_CORE_ASSERT(length <= 4);
 
 		for (int axis = 0; axis < length; axis++)
 		{
@@ -163,7 +178,7 @@ namespace GEE
 	template<typename T, typename InputIt>
 	inline void UIElementTemplates::ListSelection(InputIt first, InputIt last, std::function<void(UIButtonActor&, T&)> buttonFunc)
 	{
-		ListSelection<T, InputIt>(first, last, [](UIAutomaticListActor& listActor, T& object) { buttonFunc(listActor.CreateChild<UIButtonActor>("ListElementActor"), object); })
+		ListSelection<T, InputIt>(first, last, [](UIAutomaticListActor& listActor, T& object) { buttonFunc(listActor.CreateChild<UIButtonActor>("ListElementActor"), object); });
 	}
 	template<typename T, typename InputIt>
 	inline void UIElementTemplates::ListSelection(InputIt first, InputIt last, std::function<void(UIAutomaticListActor&, T&)> buttonFunc)
@@ -172,5 +187,19 @@ namespace GEE
 		std::cout << "WYWOLALEM LIST SELECTION " << &(*first) << &(*last) << '\n';
 		std::for_each(first, last, [&listActor, buttonFunc](T& object) { buttonFunc(listActor, object); std::cout << " TWORZE PRZYCISKA"; });
 		listActor.Refresh();
+	}
+
+	// Generic UI templates
+	template<typename FunctorConfirm, typename FunctorDeny>
+	inline void GenericUITemplates::ConfirmationBox(FunctorConfirm&& onConfirmation, FunctorDeny&& onDenial, const std::string& promptText)
+	{
+		auto& confirmationWindow = Scene.CreateActorAtRoot<UIWindowActor>("Confirmation window");
+		confirmationWindow.KillResizeBars();
+
+		auto& textActor = confirmationWindow.CreateChild<UIActorDefault>("TextActor", Transform(Vec2f(0.0f, 1.0f), Vec2f(0.9f)));
+		textActor.CreateComponent<TextConstantSizeComponent>("TextComponent", Transform(), promptText, "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::TOP));
+
+		auto& declineButton = confirmationWindow.CreateChild<UIButtonActor>("DeclineButton", "No", [=, &confirmationWindow]() { onDenial(); confirmationWindow.MarkAsKilled(); }, Transform(Vec2f(-0.5f, -0.8f), Vec2f(0.2f)));
+		auto& confirmButton = confirmationWindow.CreateChild<UIButtonActor>("ConfirmButton", "Yes", [=, &confirmationWindow]() {  onConfirmation(); confirmationWindow.MarkAsKilled(); }, Transform(Vec2f(0.5f, -0.8f), Vec2f(0.2f)));
 	}
 }

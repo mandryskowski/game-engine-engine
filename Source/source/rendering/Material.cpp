@@ -46,6 +46,17 @@ namespace GEE
 		return Color;
 	}
 
+	unsigned int Material::GetTextureCount() const
+	{
+		return Textures.size();
+	}
+
+	NamedTexture Material::GetTexture(unsigned int i) const
+	{
+		GEE_CORE_ASSERT(i < Textures.size());
+		return *Textures[i];
+	}
+
 	void Material::SetDepthScale(float scale)
 	{
 		DepthScale = scale;
@@ -123,36 +134,12 @@ namespace GEE
 			std::pair<aiTextureType, std::string>(aiTextureType_SHININESS, "roughness"),
 			std::pair<aiTextureType, std::string>(aiTextureType_METALNESS, "metallic"),
 			std::pair<aiTextureType, std::string>(aiTextureType_NORMAL_CAMERA, "normal"),
-			std::pair<aiTextureType, std::string>(aiTextureType_UNKNOWN, "aaa"),
-			std::pair<aiTextureType, std::string>(aiTextureType_LIGHTMAP, "aaa"),
+			std::pair<aiTextureType, std::string>(aiTextureType_UNKNOWN, "unknown")
 		};
-
-		aiString fileBaseColor, fileMetallicRoughness;
-
-		//material->GetTexture(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_BASE_COLOR_TEXTURE, &fileBaseColor);
-		material->GetTexture(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE, &fileMetallicRoughness);
-		std::cout << "Test " << fileBaseColor.C_Str() << ", " << fileMetallicRoughness.C_Str() << "\n";
 
 		//Load textures by type
 		for (unsigned int i = 0; i < materialTypes.size(); i++)
 			LoadAiTexturesOfType(scene, material, directory, materialTypes[i].first, materialTypes[i].second, matLoadingData);
-
-		if (fileBaseColor.length > 0 && material->GetTextureCount(aiTextureType_DIFFUSE) == 0 && fileBaseColor.data[0] == '*')
-		{
-			NamedTexture embeddedTex = NamedTexture(Texture::Loader<unsigned char>::Assimp::FromAssimpEmbedded(*scene->mTextures[std::stoi(std::string(fileBaseColor.C_Str()).substr(1))], true), "albedo1");
-			embeddedTex.SetPath(std::string("*") + scene->mTextures[std::stoi(std::string(fileBaseColor.C_Str()).substr(1))]->mFilename.C_Str());
-			embeddedTex.SetWrap(GL_REPEAT, GL_REPEAT, 0, true);
-			AddTexture(MakeShared<NamedTexture>(embeddedTex));
-		}
-		if (fileMetallicRoughness.length > 0 && fileMetallicRoughness.data[0] == '*')
-		{
-			NamedTexture embeddedTex = NamedTexture(Texture::Loader<unsigned char>::Assimp::FromAssimpEmbedded(*scene->mTextures[std::stoi(std::string(fileMetallicRoughness.C_Str()).substr(1))], false), "combined1");
-			embeddedTex.SetPath(std::string("*") + scene->mTextures[std::stoi(std::string(fileMetallicRoughness.C_Str()).substr(1))]->mFilename.C_Str());
-			embeddedTex.SetWrap(GL_REPEAT, GL_REPEAT, 0, true);
-			AddTexture(MakeShared<NamedTexture>(embeddedTex));
-		}
-		//if (fileMetallicRoughness.length > 0 && material->GetTextureCount(aiTextureType_SHININESS) == 0 && fileMetallicRoughness.data[0] == '*')
-			//AddTexture(new NamedTexture(Texture::Loader<>::Assimp::FromAssimpEmbedded(*scene->mTextures[std::stoi(std::string(fileMetallicRoughness.C_Str()).substr(1))], true), "roughness1"));
 	}
 
 	void Material::LoadAiTexturesOfType(const aiScene* scene, aiMaterial* material, const std::string& directory, aiTextureType type, std::string shaderName, MaterialLoadingData* matLoadingData)
@@ -192,11 +179,40 @@ namespace GEE
 
 			if (!pathStr.empty() && *pathStr.begin() == '*')
 			{
-				std::cout << "Znaleziono " + pathStr << " na aiTextureType " << type << "\n";
-				NamedTexture embeddedTex = NamedTexture(Texture::Loader<unsigned char>::Assimp::FromAssimpEmbedded(*scene->mTextures[std::stoi(pathStr.substr(1))], sRGB), shaderName + std::to_string(i + 1));
-				embeddedTex.SetPath(std::string("*") + scene->mTextures[std::stoi(pathStr.substr(1))]->mFilename.C_Str());
-				embeddedTex.SetWrap(GL_REPEAT, GL_REPEAT, 0, true);
-				AddTexture(MakeShared<NamedTexture>(embeddedTex));
+				// If the texture is classified as unknown, check if it is a combination of different textures.
+				if (type == aiTextureType_UNKNOWN)
+				{
+					aiString gltfMetalicRoughness;
+					material->GetTexture(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE, &gltfMetalicRoughness);
+					if (pathStr == gltfMetalicRoughness.C_Str())
+					{
+						std::cout << "Found GLTF metallicroughness texture " << pathStr << "\n";
+						shaderName = "combined";
+					}
+				}
+
+				// 1. Check if the texture has been loaded.
+				bool found = false;
+				const std::string originalFilename = scene->GetEmbeddedTexture(pathStr.c_str())->mFilename.C_Str();
+				if (matLoadingData)
+					if (auto foundTex = matLoadingData->FindTexture(std::string(scene->mName.C_Str()) + ":::" + originalFilename))
+					{
+						AddTexture(foundTex);
+						found = true;
+					}
+
+				// 2. Load the texture if we have to.
+				if (!found)
+				{
+					NamedTexture embeddedTex = NamedTexture(Texture::Loader<unsigned char>::Assimp::FromAssimpEmbedded(*scene->GetEmbeddedTexture(pathStr.c_str()), sRGB), shaderName + std::to_string(i + 1));
+					embeddedTex.SetPath(std::string(scene->mName.C_Str()) + ":::" + originalFilename);
+					embeddedTex.SetWrap(GL_REPEAT, GL_REPEAT, 0, true);
+					AddTexture(MakeShared<NamedTexture>(embeddedTex));
+
+					if (matLoadingData)
+						matLoadingData->AddTexture(MakeShared<NamedTexture>(embeddedTex));
+				}
+
 				continue;
 			}
 
@@ -220,10 +236,11 @@ namespace GEE
 
 	void Material::UpdateWholeUBOData(Shader* shader, Texture& emptyTexture) const
 	{
-		shader->Uniform1f("material.shininess", Shininess);
-		shader->Uniform1f("material.depthScale", DepthScale);
-		shader->Uniform4fv("material.color", Color);
-		shader->Uniform3fv("material.roughnessMetallicAoColor", Vec3f(RoughnessColor, MetallicColor, AoColor));
+		shader->Uniform<float>("material.shininess", Shininess);
+		shader->Uniform<float>("material.depthScale", DepthScale);
+		shader->Uniform<Vec4f>("material.color", Color);
+		shader->Uniform<Vec3f>("material.roughnessMetallicAoColor", Vec3f(RoughnessColor, MetallicColor, AoColor));
+
 
 		std::vector<std::pair<unsigned int, std::string>>* textureUnits = shader->GetMaterialTextureUnits();
 
@@ -245,11 +262,14 @@ namespace GEE
 			if (!found)
 				emptyTexture.Bind();
 		}
+
+		shader->CallOnMaterialWholeDataUpdateFunc(*this);
 	}
 
 	void Material::GetEditorDescription(EditorDescriptionBuilder descBuilder)
 	{
-		descBuilder.AddField("Shader name").CreateChild<UIInputBoxActor>("ShaderNameButton", [=](const std::string& shaderName) { SetRenderShaderName(shaderName); }, [=]() { return GetRenderShaderName(); });// .SetDisableInput(true);
+		descBuilder.AddField("Material name").CreateChild<UIInputBoxActor>("MaterialNameInputBox", [=](const std::string& materialName) { Localization.Name = materialName; }, [=]() { return GetName(); });
+		descBuilder.AddField("Shader name").CreateChild<UIInputBoxActor>("ShaderNameInputBox", [=](const std::string& shaderName) { SetRenderShaderName(shaderName); }, [=]() { return GetRenderShaderName(); });// .SetDisableInput(true);
 		descBuilder.AddField("Color").GetTemplates().VecInput<4, float>(Color);
 		UICanvasFieldCategory& texturesCat = descBuilder.AddCategory("Textures");
 		UIAutomaticListActor& list = texturesCat.CreateChild<UIAutomaticListActor>("TexturesList");
@@ -485,4 +505,18 @@ namespace GEE
 	{
 		LoadedTextures.push_back(tex);
 	}
+}
+
+void GEE::MaterialUtil::DisableColorIfAlbedoTextureDetected(Shader& shader, const Material& mat)
+{
+	bool foundAlbedo = false;
+	for (int i = 0; i < static_cast<int>(mat.GetTextureCount()); i++)
+		if (mat.GetTexture(i).GetShaderName() == "albedo1")
+		{
+			shader.Uniform<bool>("material.disableColor", true);
+			foundAlbedo = true;
+		}
+
+	if (!foundAlbedo)
+		shader.Uniform<bool>("material.disableColor", false);
 }

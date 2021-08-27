@@ -5,6 +5,8 @@ VisualStudioVersion = 16.0.29123.88
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "game-engine-engine", "game-engine-engine.vcxproj", "{9668F435-E15D-4455-A81B-25723122AB8F}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "example_8_ball_pool", "Projects\example_8_ball_pool\example_8_ball_pool\example_8_ball_pool.vcxproj", "{6DE9C00E-5D26-4FBB-9F72-D382252E5E8D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -21,6 +23,14 @@ Global
 		{9668F435-E15D-4455-A81B-25723122AB8F}.Release|x64.Build.0 = Release|x64
 		{9668F435-E15D-4455-A81B-25723122AB8F}.Release|x86.ActiveCfg = Release|Win32
 		{9668F435-E15D-4455-A81B-25723122AB8F}.Release|x86.Build.0 = Release|Win32
+		{6DE9C00E-5D26-4FBB-9F72-D382252E5E8D}.Debug|x64.ActiveCfg = Debug|x64
+		{6DE9C00E-5D26-4FBB-9F72-D382252E5E8D}.Debug|x64.Build.0 = Debug|x64
+		{6DE9C00E-5D26-4FBB-9F72-D382252E5E8D}.Debug|x86.ActiveCfg = Debug|Win32
+		{6DE9C00E-5D26-4FBB-9F72-D382252E5E8D}.Debug|x86.Build.0 = Debug|Win32
+		{6DE9C00E-5D26-4FBB-9F72-D382252E5E8D}.Release|x64.ActiveCfg = Release|x64
+		{6DE9C00E-5D26-4FBB-9F72-D382252E5E8D}.Release|x64.Build.0 = Release|x64
+		{6DE9C00E-5D26-4FBB-9F72-D382252E5E8D}.Release|x86.ActiveCfg = Release|Win32
+		{6DE9C00E-5D26-4FBB-9F72-D382252E5E8D}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

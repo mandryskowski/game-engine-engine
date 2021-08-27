@@ -45,5 +45,4 @@ namespace GEE
 
 }
 
-CEREAL_REGISTER_TYPE(GEE::LightProbeComponent)
-CEREAL_REGISTER_POLYMORPHIC_RELATION(GEE::Component, GEE::LightProbeComponent)
+GEE_POLYMORPHIC_SERIALIZABLE_COMPONENT(GEE::Component, GEE::LightProbeComponent)

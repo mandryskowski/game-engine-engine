@@ -2,8 +2,6 @@
 #include <UI/UIActor.h>
 #include <scene/UIButtonActor.h>
 #include <scene/Component.h>
-#include <cassert>
-#define assertm(exp, msg) assert(((void)msg, exp))
 
 namespace GEE
 {
@@ -24,7 +22,7 @@ namespace GEE
 
 	Mat4f UICanvas::GetViewMatrix() const
 	{
-		assertm(CanvasView.GetScale().x != 0.0f && CanvasView.GetScale().y != 0.0f && CanvasView.GetScale().z != 0.0f, "Scale component equal to 0.");
+		GEE_CORE_ASSERT(CanvasView.GetScale().x != 0.0f && CanvasView.GetScale().y != 0.0f && CanvasView.GetScale().z != 0.0f, "Scale component equal to 0.");
 
 		return glm::inverse(CanvasView.GetMatrix());
 	}

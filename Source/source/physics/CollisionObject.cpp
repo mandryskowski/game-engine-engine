@@ -16,13 +16,15 @@ namespace GEE
 
 		CollisionShape::CollisionShape(CollisionShapeType type) :
 			OptionalLocalization(nullptr),
-			Type(type)
+			Type(type),
+			ShapePtr(nullptr)
 		{
 		}
 
 		CollisionShape::CollisionShape(HTreeObjectLoc treeObjLoc, const std::string& meshName, CollisionShapeType type) :
 			OptionalLocalization(MakeUnique<ColShapeLoc>(Mesh::MeshLoc(treeObjLoc, meshName, meshName))),
-			Type(type)
+			Type(type),
+			ShapePtr(nullptr)
 		{
 		}
 
@@ -83,6 +85,14 @@ namespace GEE
 			return *Shapes.back();
 		}
 
+		void CollisionObject::DetachShape(CollisionShape& shape)
+		{
+			Shapes.erase(std::remove_if(Shapes.begin(), Shapes.end(), [&](SharedPtr<CollisionShape> shapeVec) {
+				if (shapeVec.get() != &shape) return false;
+				if (shapeVec->ShapePtr) ActorPtr->detachShape(*shapeVec->ShapePtr);
+			}), Shapes.end());
+		}
+
 		CollisionShape* CollisionObject::FindTriangleMeshCollisionShape(const std::string& meshNodeName, const std::string& meshSpecificName)
 		{
 			if (meshNodeName.empty() && meshSpecificName.empty())
@@ -119,6 +129,11 @@ namespace GEE
 			}
 
 			Vec3f toGlm(PxVec3 pxVec)
+			{
+				return Vec3f(pxVec.x, pxVec.y, pxVec.z);
+			}
+
+			Vec3f toGlm(physx::PxExtendedVec3 pxVec)
 			{
 				return Vec3f(pxVec.x, pxVec.y, pxVec.z);
 			}

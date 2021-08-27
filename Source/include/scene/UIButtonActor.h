@@ -8,8 +8,8 @@ namespace GEE
 	class UIButtonActor : public UIActorDefault
 	{
 	public:
-		UIButtonActor(GameScene&, Actor* parentActor, const std::string& name, std::function<void()> onClickFunc = nullptr, std::function<void()> whileBeingClickedFunc = nullptr, const Transform & = Transform());
-		UIButtonActor(GameScene&, Actor* parentActor, const std::string& name, const std::string& buttonTextContent, std::function<void()> onClickFunc = nullptr, std::function<void()> whileBeingClickedFunc = nullptr, const Transform & = Transform());
+		UIButtonActor(GameScene&, Actor* parentActor, const std::string& name, std::function<void()> onClickFunc = nullptr, const Transform & = Transform());
+		UIButtonActor(GameScene&, Actor* parentActor, const std::string& name, const std::string& buttonTextContent, std::function<void()> onClickFunc = nullptr, const Transform & = Transform());
 
 		ModelComponent* GetButtonModel();
 		virtual Boxf<Vec2f> GetBoundingBox(bool world = true) override;
@@ -22,6 +22,8 @@ namespace GEE
 		void SetDisableInput(bool disable);
 
 		void SetOnClickFunc(std::function<void()> onClickFunc);
+		void SetOnHoverFunc(std::function<void()> onHoverFunc);
+		void SetOnUnhoverFunc(std::function<void()> onUnhoverFunc);
 		void SetWhileBeingClickedFunc(std::function<void()> whileBeingClickedFunc);
 
 		void DeleteButtonModel();
@@ -42,7 +44,7 @@ namespace GEE
 	protected:
 		virtual void DeduceMaterial();
 
-		std::function<void()> OnClickFunc, WhileBeingClickedFunc;
+		std::function<void()> OnClickFunc, OnHoverFunc, OnUnhoverFunc, WhileBeingClickedFunc;
 
 		ModelComponent* ButtonModel;
 		SharedPtr<MaterialInstance> MatIdle, MatHover, MatClick, MatDisabled;

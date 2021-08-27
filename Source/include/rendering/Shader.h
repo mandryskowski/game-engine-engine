@@ -24,6 +24,7 @@ namespace GEE
 	};*/
 
 	class EditorDescriptionBuilder;
+	class Material;
 
 	class Shader
 	{
@@ -40,23 +41,7 @@ namespace GEE
 		};
 
 		friend struct ShaderLoader;
-
-
-	public: ////// AA AMOUSE PICKING WYJEB TO
-		unsigned int Program;
-		std::string Name;
-
-		std::vector <std::pair<unsigned int, std::string>> MaterialTextureUnits;
-		bool ExpectedMatrices[MATRICES_NB];
-
-		std::function<void()> PreRenderFunc;
-
-		static void DebugShader(unsigned int);
-		GLint FindLocation(std::string) const;
-		friend class RenderEngine;
 	public:
-		mutable std::vector <UniformLocation> Locations;
-		std::array<std::string, 3> ShadersSource;
 		Shader(std::string name = "undefinedShader");
 		std::string GetName();
 		std::vector<std::pair<unsigned int, std::string>>* GetMaterialTextureUnits();
@@ -68,13 +53,26 @@ namespace GEE
 		void SetExpectedMatrices(std::vector<MatrixType>);
 		void AddExpectedMatrix(std::string);
 
+		/**
+		 * @param func: A procedure (void function) with no parameters.
+		*/
 		template <typename Functor>
 		void SetPreRenderFunc(Functor&& func)
 		{
 			PreRenderFunc = func;
 		}
 
+		/**
+		 * @tparam func: A procedure (void function) taking a Shader& and a const Material&.
+		*/
+		template <typename Functor>
+		void SetOnMaterialWholeDataUpdateFunc(Functor&& onMaterialWholeDataUpdateFunc)
+		{
+			OnMaterialWholeDataUpdateFunc = onMaterialWholeDataUpdateFunc;
+		}
+
 		void CallPreRenderFunc();
+		void CallOnMaterialWholeDataUpdateFunc(const Material&);
 
 		void Uniform1i(std::string, int) const;
 		void Uniform1f(std::string, float) const;
@@ -92,11 +90,30 @@ namespace GEE
 
 		unsigned int GetUniformBlockIndex(std::string) const;
 		void Use() const;
-		void BindMatrices(const Mat4f& model, const Mat4f* view, const Mat4f* projection, const Mat4f* VP) const;
+		void BindMatrices(const Mat4f& model, const Mat4f* view, const Mat4f* projection, const Mat4f* VP);
 
 		void Dispose();
 
 		void GetEditorDescription(EditorDescriptionBuilder);
+
+	private:
+		static void DebugShader(unsigned int);
+		GLint FindLocation(std::string) const;
+
+		unsigned int Program;
+		std::string Name;
+
+		std::vector <std::pair<unsigned int, std::string>> MaterialTextureUnits;
+		bool ExpectedMatrices[MATRICES_NB];
+
+		std::function<void()> PreRenderFunc;
+
+		mutable std::vector <UniformLocation> Locations;
+		std::array<std::string, 3> ShadersSource;
+
+		std::function<void(Shader&, const Material&)> OnMaterialWholeDataUpdateFunc;
+
+		friend class RenderEngine;
 	};
 
 	struct ShaderLoader
@@ -110,5 +127,7 @@ namespace GEE
 		static SharedPtr<Shader> LoadShadersWithInclData(std::string shaderName, std::string data, std::string vShaderPath, std::string fShaderPath, std::string gShaderPath = std::string());
 		static SharedPtr<Shader> LoadShadersWithExclData(std::string shaderName, std::string vShaderData, std::string vShaderPath, std::string fShaderData, std::string fShaderPath, std::string gShaderData = std::string(), std::string gShaderPath = std::string());
 	};
+
+
 	Mat3f ModelToNormal(Mat4f);	//what the fuck is it doing here 
 }

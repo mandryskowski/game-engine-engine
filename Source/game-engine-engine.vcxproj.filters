@@ -162,7 +162,7 @@
     <ClCompile Include="source\tinyfiledialogs\tinyfiledialogs.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="source\animation\AnimationManagerActor.cpp">
+    <ClCompile Include="source\animation\AnimationManagerComponent.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="source\UI\UIListActor.cpp">
@@ -196,6 +196,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="source\math\Vec.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="include\editor\EditorManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -347,7 +350,7 @@
     <ClInclude Include="include\UI\UICanvasField.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\animation\AnimationManagerActor.h">
+    <ClInclude Include="include\animation\AnimationManagerComponent.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\UI\UIListActor.h">
@@ -384,6 +387,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\editor\UIViewportWindow.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\utility\Asserts.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\utility\OperatingSystem.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

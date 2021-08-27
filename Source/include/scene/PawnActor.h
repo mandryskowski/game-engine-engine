@@ -1,6 +1,6 @@
 #pragma once
 #include <scene/GunActor.h>
-#include <animation/AnimationManagerActor.h>
+#include <animation/AnimationManagerComponent.h>
 #include <functional>
 
 namespace GEE
@@ -53,5 +53,4 @@ namespace GEE
 	};
 }
 
-CEREAL_REGISTER_TYPE(GEE::PawnActor)
-CEREAL_REGISTER_POLYMORPHIC_RELATION(GEE::Actor, GEE::PawnActor)
+GEE_POLYMORPHIC_SERIALIZABLE_ACTOR(GEE::Actor, GEE::PawnActor)

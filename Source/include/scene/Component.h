@@ -172,22 +172,13 @@ namespace GEE
 				This might lead to bugs, so we avoid that.
 			*/
 
-			cereal::LoadAndConstruct<Component>::ParentComp = this;	//Set the static parent pointer to this
+			CerealComponentSerializationData::ParentComp = this;	//Set the static parent pointer to this
 			archive(CEREAL_NVP(Children));	//We want all children to be constructed using the pointer. IMPORTANT: The first child will be serialized (the Load method will be called) before the next child is constructed! So the ParentComp pointer will be changed to the address of the new child when we construct its children. We counteract that in the next line.
-			cereal::LoadAndConstruct<Component>::ParentComp = ParentComponent;	//There are no more children of this to serialize, so we "move up" the hierarchy and change the parent pointer to the parent of this, to allow brothers (other children of parent of this) to be constructed.
+			CerealComponentSerializationData::ParentComp = ParentComponent;	//There are no more children of this to serialize, so we "move up" the hierarchy and change the parent pointer to the parent of this, to allow brothers (other children of parent of this) to be constructed.
 
 			for (auto& it : Children)
 				it->GetTransform().SetParentTransform(&ComponentTransform);
 		}
-		/*template <class Archive>
-		static void load_and_construct(Archive& ar, cereal::construct<Component>& construct)
-		{
-			if (!LoadAndConstruct<Component>::ActorRef)
-				return;
-			construct(*LoadAndConstruct<Component>::ActorRef, LoadAndConstruct<Component>::ParentComp, "");
-			construct->Load(ar);
-		}
-		*/
 		virtual ~Component();
 
 	public:
@@ -240,121 +231,35 @@ namespace GEE
 		return (ChildClass&)childRef;
 	}
 	void CollisionObjRendering(RenderInfo& info, GameManager& gameHandle, Physics::CollisionObject& obj, const Transform& t, const Vec3f& color = Vec3f(0.1f, 0.6f, 0.3f));
-}
 
-namespace cereal
-{
-
-	template <> struct LoadAndConstruct<GEE::Component>
+	struct CerealComponentSerializationData
 	{
 		static GEE::Actor* ActorRef;			//= dummy actor
-		static GEE::Component* ParentComp;	//= always nullptr
-		template <class Archive>
-		static void load_and_construct(Archive& ar, cereal::construct<GEE::Component>& construct)
-		{
-			std::cout << "trying to construct comp " << ActorRef << '\n';
-			if (!ActorRef)
-				return;
-
-			construct(*ActorRef, ParentComp);
-			//ar(base_class<Component>(construct.ptr()));
-			construct->Load(ar);
-			//ar(*construct.ptr());
-		}
-	};
-
-	template <> struct LoadAndConstruct<GEE::CameraComponent>
-	{
-		template <class Archive>
-		static void load_and_construct(Archive& ar, cereal::construct<GEE::CameraComponent>& construct)
-		{
-			if (!LoadAndConstruct<GEE::Component>::ActorRef)
-				return;
-			construct(*LoadAndConstruct<GEE::Component>::ActorRef, LoadAndConstruct<GEE::Component>::ParentComp, "");
-			construct->Load(ar);
-		}
-	};
-
-	template <> struct LoadAndConstruct<GEE::ModelComponent>
-	{
-		template <class Archive>
-		static void load_and_construct(Archive& ar, cereal::construct<GEE::ModelComponent>& construct)
-		{
-			if (!LoadAndConstruct<GEE::Component>::ActorRef)
-				return;
-			construct(*LoadAndConstruct<GEE::Component>::ActorRef, LoadAndConstruct<GEE::Component>::ParentComp, "");
-			construct->Load(ar);
-		}
-	};
-
-	template <> struct LoadAndConstruct<GEE::TextComponent>
-	{
-		template <class Archive>
-		static void load_and_construct(Archive& ar, cereal::construct<GEE::TextComponent>& construct)
-		{
-			if (!LoadAndConstruct<GEE::Component>::ActorRef)
-				return;
-
-			construct(*LoadAndConstruct<GEE::Component>::ActorRef, LoadAndConstruct<GEE::Component>::ParentComp, "", GEE::Transform(), "", "");
-			construct->Load(ar);
-		}
-	};
-
-	template <> struct LoadAndConstruct<GEE::BoneComponent>
-	{
-		template <class Archive>
-		static void load_and_construct(Archive& ar, cereal::construct<GEE::BoneComponent>& construct)
-		{
-			if (!LoadAndConstruct<GEE::Component>::ActorRef)
-				return;
-			construct(*LoadAndConstruct<GEE::Component>::ActorRef, LoadAndConstruct<GEE::Component>::ParentComp, "");
-			construct->Load(ar);
-		}
-	};
-
-	template <> struct LoadAndConstruct<GEE::LightComponent>
-	{
-		template <class Archive>
-		static void load_and_construct(Archive& ar, cereal::construct<GEE::LightComponent>& construct)
-		{
-			if (!LoadAndConstruct<GEE::Component>::ActorRef)
-				return;
-			construct(*LoadAndConstruct<GEE::Component>::ActorRef, LoadAndConstruct<GEE::Component>::ParentComp, "");
-			construct->GEE::LightComponent::Load(ar);
-		}
-	};
-
-	template <> struct LoadAndConstruct<GEE::Audio::SoundSourceComponent>
-	{
-		template <class Archive>
-		static void load_and_construct(Archive& ar, cereal::construct<GEE::Audio::SoundSourceComponent>& construct)
-		{
-			if (!LoadAndConstruct<GEE::Component>::ActorRef)
-				return;
-			construct(*LoadAndConstruct<GEE::Component>::ActorRef, LoadAndConstruct<GEE::Component>::ParentComp, "");
-			construct->GEE::Audio::SoundSourceComponent::Load(ar);
-		}
-	};
-	template <> struct LoadAndConstruct<GEE::AnimationManagerComponent>
-	{
-		template <class Archive>
-		static void load_and_construct(Archive& ar, cereal::construct<GEE::AnimationManagerComponent>& construct)
-		{
-			if (!LoadAndConstruct<GEE::Component>::ActorRef)
-				return;
-			construct(*LoadAndConstruct<GEE::Component>::ActorRef, LoadAndConstruct<GEE::Component>::ParentComp, "");
-			construct->Load(ar);
-		}
-	};
-	template <> struct LoadAndConstruct<GEE::LightProbeComponent>
-	{
-		template <class Archive>
-		static void load_and_construct(Archive& ar, cereal::construct<GEE::LightProbeComponent>& construct)
-		{
-			if (!LoadAndConstruct<GEE::Component>::ActorRef)
-				return;
-			construct(*LoadAndConstruct<GEE::Component>::ActorRef, LoadAndConstruct<GEE::Component>::ParentComp, "");
-			construct->Load(ar);
-		}
+		static GEE::Component* ParentComp;		//= always nullptr
 	};
 }
+
+ 
+#define GEE_SERIALIZABLE_COMPONENT(Type, ...) CEREAL_REGISTER_TYPE(Type);	   													 									\
+namespace cereal																				 																	\
+{																								 																	\
+	template <> struct LoadAndConstruct<Type>													 																	\
+	{																							 																	\
+		template <class Archive>																 																	\
+		static void load_and_construct(Archive& ar, cereal::construct<Type>& construct)			 																	\
+		{																						 																	\
+			if (!GEE::CerealComponentSerializationData::ActorRef)																									\
+				return;																																				\
+																																									\
+			/* We set the name to serialization-error since it will be replaced by its original name anyways. */													\
+			construct(*GEE::CerealComponentSerializationData::ActorRef, GEE::CerealComponentSerializationData::ParentComp, "serialization-error", __VA_ARGS__);		\
+			construct->Load(ar); 																																	\
+		}																						  																	\
+	};																							 													 				\
+}
+#define GEE_POLYMORPHIC_SERIALIZABLE_COMPONENT(Base, Derived, ...) GEE_SERIALIZABLE_COMPONENT(Derived, __VA_ARGS__); CEREAL_REGISTER_POLYMORPHIC_RELATION(Base, Derived);
+
+#define GEE_EDITOR_COMPONENT(Type) 
+
+
+GEE_SERIALIZABLE_COMPONENT(GEE::Component)

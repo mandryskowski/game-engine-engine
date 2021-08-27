@@ -101,5 +101,4 @@ namespace GEE
 		float TimeSinceScrollReset, ScrollResetTime, ScrollCooldownTime;
 	};
 }
-CEREAL_REGISTER_TYPE(GEE::TextComponent)
-CEREAL_REGISTER_POLYMORPHIC_RELATION(GEE::Component, GEE::TextComponent)
+GEE_POLYMORPHIC_SERIALIZABLE_COMPONENT(GEE::Component, GEE::TextComponent, GEE::Transform(), "", "")

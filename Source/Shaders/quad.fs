@@ -23,7 +23,7 @@ void main()
 	
 	vec2 unitOffset = 1.0 / textureSize(tex, 0);
 	
-	if (texture(tex, texCoord).r > 0.0)	// if at silhouette, discard - do not draw anything
+	if (texture(tex, texCoord).rgb != vec3(0.0))	// if at silhouette, discard - do not draw anything
 		discard;
 	
 	for (float y = -OUTLINE_THICKNESS; y <= OUTLINE_THICKNESS; y++)
@@ -32,7 +32,7 @@ void main()
 		{
 			if (x == 0 && y == 0)
 				continue;
-			if (texture(tex, texCoord + vec2(x, y) * unitOffset).r > 0.0)	// if next to silhouette border
+			if (texture(tex, texCoord + vec2(x, y) * unitOffset).rgb != vec3(0.0))	// if next to silhouette border
 			{
 				fragColor = material.color;
 				return;

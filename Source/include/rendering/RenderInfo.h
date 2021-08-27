@@ -61,7 +61,7 @@ namespace GEE
 
 		bool AllowBlending;
 
-		RenderInfo(RenderToolboxCollection& tbCollection, const Mat4f& v = Mat4f(1.0f), const Mat4f& p = Mat4f(1.0f), const Mat4f& vp = Mat4f(1.0f), const Vec3f& camPos = Vec3f(0.0f), bool materials = true, bool onlyshadow = false, bool careAboutShader = false, bool mainPass = false, bool allowBlending = true);
+		RenderInfo(RenderToolboxCollection& tbCollection, const Mat4f& v = Mat4f(1.0f), const Mat4f& p = glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f), const Mat4f& vp = glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f), const Vec3f& camPos = Vec3f(0.0f), bool materials = true, bool onlyshadow = false, bool careAboutShader = false, bool mainPass = false, bool allowBlending = true);
 		Mat4f CalculateVP();
 	};
 }

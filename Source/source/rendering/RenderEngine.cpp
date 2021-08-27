@@ -140,6 +140,9 @@ namespace GEE
 		AddShader(ShaderLoader::LoadShaders("Forward_NoLight", "Shaders/forward_nolight.vs", "Shaders/forward_nolight.fs"), true);
 		Shaders.back()->SetExpectedMatrices(std::vector<MatrixType>{MatrixType::MVP});
 		Shaders.back()->AddTextureUnit(0, "albedo1");
+		Shaders.back()->SetOnMaterialWholeDataUpdateFunc([](Shader& shader, const Material& mat) {
+			MaterialUtil::DisableColorIfAlbedoTextureDetected(shader, mat);
+			});
 
 		AddShader(ShaderLoader::LoadShaders("TextShader", "Shaders/text.vs", "Shaders/text.fs"), true);
 		Shaders.back()->SetExpectedMatrices(std::vector<MatrixType>{MatrixType::MVP});

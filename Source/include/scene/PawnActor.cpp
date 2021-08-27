@@ -2,7 +2,7 @@
 #include <UI/UICanvasActor.h>
 #include <UI/UICanvasField.h>
 #include <scene/BoneComponent.h>
-#include <animation/AnimationManagerActor.h>
+#include <animation/AnimationManagerComponent.h>
 #include <UI/UIListActor.h>
 #include <scene/UIButtonActor.h>
 
@@ -134,11 +134,10 @@ namespace GEE
 	{
 		switch (PathIndex)
 		{
-		case 0: MoveToPosition(Vec3f(-5.0f, -0.51f, 0.0f)); break;
-		case 1: MoveToPosition(Vec3f(-15.0f, -0.51f, 0.0f)); break;
-		case 2: MoveToPosition(Vec3f(-15.0f, -0.51f, -20.0f)); break;
-		case 3: MoveToPosition(Vec3f(-5.0f, -0.51f, -20.0f)); break;
+		case 0: MoveToPosition(Vec3f(-5.0f, 0.0f, 0.0f)); break;
+		case 1: MoveToPosition(Vec3f(-15.0f, 0.0f, 0.0f)); break;
+		case 2: MoveToPosition(Vec3f(-15.0f, 0.0f, -20.0f)); break;
+		case 3: MoveToPosition(Vec3f(-5.0f, 0.0f, -20.0f)); break;
 		}
 	}
-
 }

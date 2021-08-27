@@ -6,13 +6,19 @@ namespace GEE
 	class InputDevicesStateRetriever
 	{
 	public:
-		InputDevicesStateRetriever(GLFWwindow&);
-		Vec2d GetMousePosition() const;
+		InputDevicesStateRetriever(SystemWindow&);
+		Vec2d GetMousePositionPx() const;
 		Vec2d GetMousePositionNDC() const;
 		bool IsKeyPressed(const Key&) const;
 
 		friend class Game;
 	private:
-		GLFWwindow& WindowRef;
+		Vec2i GetWindowSize() const;
+		SystemWindow& WindowRef;
 	};
+
+	namespace pxConversion
+	{
+		Vec2d PxToNDC(Vec2d pos, Vec2i windowSize);
+	}
 }

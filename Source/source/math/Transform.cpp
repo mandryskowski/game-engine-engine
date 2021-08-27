@@ -77,14 +77,12 @@ namespace GEE
 		return Transform((Mat3f)glm::inverse(GetMatrix()) * -GetPos(), glm::inverse(GetRot()), 1.0f / glm::max(GetScale(), Vec3f(0.001f)));
 	}
 
-	Mat3f Transform::GetRotationMatrix(float scalar) const
+	Mat3f Transform::GetRotationMatrix(bool inverse) const
 	{
-		Quatf rot = Rotation;
-		if (scalar == -1.0f)
-			rot = glm::inverse(rot);
+		if (inverse)
+			return glm::mat4_cast(glm::inverse(Rotation));
 
-		return glm::mat4_cast(rot);
-
+		return glm::mat4_cast(Rotation);
 	}
 
 	Mat4f Transform::GetMatrix() const
@@ -178,6 +176,12 @@ namespace GEE
 		SetPosition(Position + offset);
 	}
 
+	void Transform::SetRotation(float roll)
+	{
+		SetVecAxis<TVec::ROTATION_EULER, VecAxis::Z>(roll);
+		FlagMyDirtiness();
+	}
+
 	void Transform::SetRotation(const Vec3f& euler)
 	{
 		Rotation = toQuat(euler);
@@ -269,7 +273,7 @@ namespace GEE
 			Transform parentWorld = parent->GetWorldTransform();
 			Transform worldTransform = GetWorldTransform();
 			Position = worldTransform.Position - parentWorld.GetPos();
-			Position = Vec3f(parentWorld.GetRotationMatrix(-1.0f) * GetPos());
+			Position = Vec3f(parentWorld.GetRotationMatrix(true) * GetPos());
 			Rotation = worldTransform.Rotation = parentWorld.GetRot();
 
 

@@ -458,7 +458,10 @@ namespace GEE
 			if (found != CollisionObjects.end())
 			{
 				if ((*found)->ActorPtr)
+				{
 					(*found)->ActorPtr->release();
+					(*found)->ActorPtr = nullptr;
+				}
 				CollisionObjects.erase(found);
 			}
 		}

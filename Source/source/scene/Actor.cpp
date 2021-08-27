@@ -7,7 +7,7 @@
 #include <scene/UIInputBoxActor.h>
 #include <UI/UICanvasField.h>
 
-GEE::GameScene* cereal::LoadAndConstruct<GEE::Actor>::ScenePtr = nullptr;
+GEE::GameScene* GEE::CerealActorSerializationData::ScenePtr = nullptr;
 namespace GEE
 {
 
@@ -198,8 +198,6 @@ namespace GEE
 	void Actor::Update(float deltaTime)
 	{
 		RootComponent->UpdateAll(deltaTime);
-		if (Name == "CubeActor")
-			;//RootComponent->GetTransform().SetScale(Vec3f(1.0f + glfwGetTime() * 0.05f));
 	}
 
 	void Actor::UpdateAll(float deltaTime)

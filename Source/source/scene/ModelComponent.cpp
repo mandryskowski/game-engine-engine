@@ -186,7 +186,6 @@ namespace GEE
 		RenderableComponent::GetEditorDescription(descBuilder);
 
 		descBuilder.AddField("Render as billboard").GetTemplates().TickBox(RenderAsBillboard);
-		descBuilder.AddField("Hide").GetTemplates().TickBox(Hide);
 
 		UICanvasFieldCategory& cat = descBuilder.GetCanvas().AddCategory("Mesh instances");
 		cat.GetExpandButton()->CreateComponent<TextConstantSizeComponent>("NrMeshInstancesText", Transform(), std::to_string(MeshInstances.size()), "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
@@ -210,7 +209,7 @@ namespace GEE
 					camActor.GetTransform()->Move(Vec3f(0.0f, 0.0f, 10.0f));
 					meshPreviewScene.BindActiveCamera(&cam);
 
-					Controller& camController = camActor.CreateChild<Controller>("MeshPreviewCameraController");
+					FPSController& camController = camActor.CreateChild<FPSController>("MeshPreviewCameraController");
 					camController.SetPossessedActor(&camActor);
 
 					UIButtonActor& viewportButton = window.CreateChild<UIButtonActor>("MeshPreviewViewportActor", [this, &meshPreviewScene, &camController]() { std::cout << "VIEWPORT WCISIETY\n"; GameHandle->SetActiveScene(&meshPreviewScene); GameHandle->PassMouseControl(&camController); });

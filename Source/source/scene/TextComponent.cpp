@@ -265,10 +265,6 @@ namespace GEE
 
 		// Copy info
 		Transform renderTransform = GetTransform().GetWorldTransform();
-		if (GetActor().GetName() == "RecentFilepathButton")
-		{
-			std::cout << "### Recent filepath text (" << GetName() << ") scale: " << renderTransform.GetScale() << "\n";
-		}
 		RenderInfo info = infoBeforeChange;
 
 		// Set view matrix

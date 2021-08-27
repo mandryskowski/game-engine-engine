@@ -52,7 +52,7 @@ int main(int argc, char** argv)
 	Quatf rot(glm::angleAxis(angle, rotationVec));
 	printVector(rot, "quick maths");
 
-	GLFWwindow* programWindow = glfwCreateWindow(800, 600, "c00lki", nullptr, nullptr);
+	SystemWindow* programWindow = glfwCreateWindow(800, 600, "Game Engine Engine", nullptr, nullptr);
 
 	if (!programWindow)
 	{
@@ -106,8 +106,6 @@ int main(int argc, char** argv)
 
 		endGame = editor.GameLoopIteration(1.0f / 60.0f, deltaTime);
 	} while (!endGame);
-
-	editor.SaveProject();
 
 	return 0;
 }

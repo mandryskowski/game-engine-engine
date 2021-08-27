@@ -26,7 +26,7 @@
 #include <functional>
 #include <fstream>
 
-#include <animation/AnimationManagerActor.h>
+#include <animation/AnimationManagerComponent.h>
 
 namespace GEE
 {
@@ -464,13 +464,7 @@ namespace GEE
 				aiBone& bone = *mesh->mBones[i];
 				unsigned int boneID = boneMapping->GetBoneID(bone.mName.C_Str());
 
-				assert(boneID < mesh->mNumVertices);
-
-				if (bone.mNumWeights > 0 && !bone.mWeights)
-				{
-					std::cerr << directory << "ERROR! Number of weights of bone is greater than 0, but weights count is nullptr.\n";
-					return;
-				}
+				//GEE_CORE_ASSERT(boneID < mesh->mNumVertices);
 
 				for (int j = 0; j < static_cast<int>(bone.mNumWeights); j++)
 					vertices[bone.mWeights[j].mVertexId].BoneData.AddWeight(boneID, bone.mWeights[j].mWeight);
@@ -837,7 +831,7 @@ namespace GEE
 				try
 				{
 					cereal::JSONInputArchive archive(filestr);
-					cereal::LoadAndConstruct<Actor>::ScenePtr = &scene;
+					GEE::CerealActorSerializationData::ScenePtr = &scene;
 					scene.GetRenderData()->LoadSkeletonBatches(archive);
 					LightProbeLoader::LoadLightProbeTextureArrays(scene.GetRenderData());
 					scene.GetRootActor()->Load(archive);

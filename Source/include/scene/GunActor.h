@@ -42,9 +42,10 @@ namespace GEE
 
 		float FireCooldown;	//in seconds
 		float CooldownLeft;	//also in seconds
+
+		float BulletRadius, ImpulseFactor;
 	};
 
 
 }
-CEREAL_REGISTER_TYPE(GEE::GunActor)
-CEREAL_REGISTER_POLYMORPHIC_RELATION(GEE::Actor, GEE::GunActor)
+GEE_POLYMORPHIC_SERIALIZABLE_ACTOR(GEE::Actor, GEE::GunActor)

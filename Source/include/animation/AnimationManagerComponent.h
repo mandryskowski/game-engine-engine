@@ -116,5 +116,4 @@ namespace GEE
 
 }
 
-CEREAL_REGISTER_TYPE(GEE::AnimationManagerComponent)
-CEREAL_REGISTER_POLYMORPHIC_RELATION(GEE::Component, GEE::AnimationManagerComponent)
+GEE_POLYMORPHIC_SERIALIZABLE_COMPONENT(GEE::Component, GEE::AnimationManagerComponent)

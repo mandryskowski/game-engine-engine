@@ -9,10 +9,12 @@
 
 namespace GEE
 {
-	UIButtonActor::UIButtonActor(GameScene& scene, Actor* parentActor, const std::string& name, std::function<void()> onClickFunc, std::function<void()> whileBeingClickedFunc, const Transform& t) :
+	UIButtonActor::UIButtonActor(GameScene& scene, Actor* parentActor, const std::string& name, std::function<void()> onClickFunc, const Transform& t) :
 		UIActorDefault(scene, parentActor, name, t),
 		OnClickFunc(onClickFunc),
-		WhileBeingClickedFunc(whileBeingClickedFunc),
+		OnHoverFunc(nullptr),
+		OnUnhoverFunc(nullptr),
+		WhileBeingClickedFunc(nullptr),
 		MatIdle(nullptr),
 		MatClick(nullptr),
 		MatHover(nullptr),
@@ -63,15 +65,17 @@ namespace GEE
 		PrevDeducedMaterial = MatIdle.get();
 	}
 
-	UIButtonActor::UIButtonActor(GameScene& scene, Actor* parentActor, const std::string& name, const std::string& buttonTextContent, std::function<void()> onClickFunc, std::function<void()> whileBeingClickedFunc, const Transform& t) :
-		UIButtonActor(scene, parentActor, name, onClickFunc, whileBeingClickedFunc, t)
+	UIButtonActor::UIButtonActor(GameScene& scene, Actor* parentActor, const std::string& name, const std::string& buttonTextContent, std::function<void()> onClickFunc, const Transform& t) :
+		UIButtonActor(scene, parentActor, name, onClickFunc, t)
 	{
 		//CreateComponent<TextConstantSizeComponent>("ButtonText", Transform(Vec2f(0.0f), Vec2f(1.0f)), buttonTextContent, "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER)).SetMaxSize(Vec2f(0.8f));
 		//CreateComponent<ScrollingTextComponent>("ButtonText", Transform(Vec2f(0.0f), Vec2f(1.0f)), buttonTextContent, "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
 		if (Name == "RecentFilepathButton")
 			CreateComponent<TextConstantSizeComponent>("ButtonText", Transform(Vec2f(0.0f), Vec2f(1.0f / 9.0f, 1.0f)), buttonTextContent, "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER)).SetMaxSize(Vec2f(0.8f));
-		else 
-			CreateComponent<ScrollingTextComponent>("ButtonText", Transform(Vec2f(0.0f), Vec2f(1.0f)), buttonTextContent, "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
+		else
+			CreateComponent<TextConstantSizeComponent>("ButtonText", Transform(Vec2f(0.0f), Vec2f(1.0f)), buttonTextContent, "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER)).SetMaxSize(Vec2f(0.8f));
+		//else 
+		//	CreateComponent<ScrollingTextComponent>("ButtonText", Transform(Vec2f(0.0f), Vec2f(1.0f)), buttonTextContent, "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
 	}
 
 	ModelComponent* UIButtonActor::GetButtonModel()
@@ -129,6 +133,16 @@ namespace GEE
 	void UIButtonActor::SetOnClickFunc(std::function<void()> onClickFunc)
 	{
 		OnClickFunc = onClickFunc;
+	}
+
+	void UIButtonActor::SetOnHoverFunc(std::function<void()> onHoverFunc)
+	{
+		OnHoverFunc = onHoverFunc;
+	}
+
+	void UIButtonActor::SetOnUnhoverFunc(std::function<void()> onUnhoverFunc)
+	{
+		OnUnhoverFunc = onUnhoverFunc;
 	}
 
 	void UIButtonActor::SetWhileBeingClickedFunc(std::function<void()> whileBeingClickedFunc)
@@ -190,11 +204,15 @@ namespace GEE
 	void UIButtonActor::OnHover()
 	{
 		State = (State == EditorIconState::BEING_CLICKED_OUTSIDE) ? (EditorIconState::BEING_CLICKED_INSIDE) : (EditorIconState::HOVER);
+		if (OnHoverFunc)
+			OnHoverFunc();
 	}
 
 	void UIButtonActor::OnUnhover()
 	{
 		State = (State == EditorIconState::BEING_CLICKED_INSIDE) ? (EditorIconState::BEING_CLICKED_OUTSIDE) : (EditorIconState::IDLE);
+		if (OnUnhoverFunc)
+			OnUnhoverFunc();
 	}
 
 	void UIButtonActor::OnClick()
@@ -345,9 +363,10 @@ namespace GEE
 	}
 
 	UIScrollBarActor::UIScrollBarActor(GameScene& scene, Actor* parentActor, const std::string& name, std::function<void()> onClickFunc, std::function<void()> beingClickedFunc) :
-		UIButtonActor(scene, parentActor, name, onClickFunc, beingClickedFunc),
+		UIButtonActor(scene, parentActor, name, onClickFunc),
 		ClickPosNDC(Vec2f(0.0f))
 	{
+		SetWhileBeingClickedFunc(beingClickedFunc);
 	}
 
 	void UIScrollBarActor::OnBeingClicked()

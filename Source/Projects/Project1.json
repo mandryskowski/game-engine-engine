@@ -215,7 +215,7 @@
                     "Children": [
                         {
                             "polymorphic_id": 2147483651,
-                            "polymorphic_name": "GEE::Controller",
+                            "polymorphic_name": "GEE::FPSController",
                             "ptr_wrapper": {
                                 "valid": 1,
                                 "data": {

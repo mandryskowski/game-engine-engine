@@ -45,6 +45,8 @@ namespace GEE
 		std::string GetName() const;
 		const std::string& GetRenderShaderName() const;
 		Vec4f GetColor() const;
+		unsigned int GetTextureCount() const;
+		NamedTexture GetTexture(unsigned int i) const;
 		void SetDepthScale(float);
 		void SetShininess(float);
 		void SetRenderShaderName(const std::string&);
@@ -104,16 +106,22 @@ namespace GEE
 
 	public:
 		MaterialLoc Localization;
-		std::vector<SharedPtr<NamedTexture>> Textures;
 		//Often used; NamedTextures (NamedTexture is a child class of Texture) are bound to the samplers which names correspond to ShaderName of a NamedTexture.
+		std::vector<SharedPtr<NamedTexture>> Textures;
+		//Used for some materials that only need a colour, e.g. for button materials - we can represent them as just a single color
 		Vec4f Color;
-		//Probably not often used; Used for some materials that only need a colour, e.g. for button materials - they can be monocolour
 		float Shininess;
-		float DepthScale; //used in parallax mapping
+		//used in parallax mapping
+		float DepthScale;
 		std::string RenderShaderName;
 
 		float RoughnessColor, MetallicColor, AoColor;
 	};
+
+	namespace MaterialUtil
+	{
+		void DisableColorIfAlbedoTextureDetected(Shader&, const Material&);
+	}
 
 	struct MaterialLoadingData
 	{
