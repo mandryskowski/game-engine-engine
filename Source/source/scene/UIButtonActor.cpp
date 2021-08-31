@@ -29,7 +29,7 @@ namespace GEE
 		if ((matIdle = GameHandle->GetRenderEngineHandle()->FindMaterial("GEE_Button_Idle")) == nullptr)
 		{
 			matIdle = MakeShared<Material>("GEE_Button_Idle");
-			matIdle->SetColor(Vec4f(0.520841f, 0.680359f, 0.773018f, 1.0f));
+			matIdle->SetColor(Vec4f(0.4118f, 0.0909f, 0.4973f, 1.0f));
 			matIdle->SetRenderShaderName("Forward_NoLight");
 			GameHandle->GetRenderEngineHandle()->AddMaterial(matIdle);
 		}
@@ -83,7 +83,7 @@ namespace GEE
 		return ButtonModel;
 	}
 
-	Boxf<Vec2f> UIButtonActor::GetBoundingBox(bool world)
+	Boxf<Vec2f> UIButtonActor::GetBoundingBox(bool world) const
 	{
 		if (!GetTransform())
 			return Boxf<Vec2f>(Vec2f(0.0f), Vec2f(0.0f));

@@ -6,31 +6,30 @@ namespace GEE
 {
 	class UIListElement
 	{
-		template <typename T>
-		class NonNullPtr
+	public:
+		/**
+		 * @brief Contains references to a class that is both an Actor and a UICanvasElement. DO NOT pass nullptr to the constructor.
+		*/
+		class ReferenceToUIActor
 		{
 		public:
-			NonNullPtr(T& obj) : Ptr(&obj) {}
-			NonNullPtr(const NonNullPtr<T>& ptr) : Ptr(ptr.Ptr) {}
-			NonNullPtr(NonNullPtr<T>&& ptr) : Ptr(ptr.Ptr) {}
-			T& Get() { return *Ptr; };
-			const T& Get() const { return *Ptr; };
-			NonNullPtr& operator=(const NonNullPtr<T>& ptr) { Ptr = ptr.Ptr; return *this; }
-			NonNullPtr& operator=(NonNullPtr<T>&& ptr) { return *this = static_cast<const NonNullPtr<T>&>(ptr); }
-			NonNullPtr& operator=(const T& obj) { Ptr = &obj; return *this; };
+			ReferenceToUIActor(Actor& actor, UICanvasElement& uiElement) : ActorRef(actor), UIElementRef(uiElement) {}
+			template <typename ActorWhichIsAlsoAnUICanvasElement>
+			ReferenceToUIActor(ActorWhichIsAlsoAnUICanvasElement* actor) :
+				ActorRef(static_cast<Actor&>(*actor)), UIElementRef(static_cast<UICanvasElement&>(*actor)) { GEE_CORE_ASSERT(actor != nullptr); }
 		private:
-			T* Ptr;
+			std::reference_wrapper<Actor> ActorRef;
+			std::reference_wrapper<UICanvasElement> UIElementRef;
+
+			friend class UIListElement;
 		};
-	public:
-		UIListElement(Actor& actorRef, std::function<Vec3f()> getElementOffset, std::function<Vec3f()> getCenterOffset = nullptr);
-		UIListElement(Actor& actorRef, const Vec3f& constElementOffset);
-		UIListElement(const UIListElement&);
-		UIListElement(UIListElement&&);
-		UIListElement& operator=(const UIListElement&);
-		UIListElement& operator=(UIListElement&&);
+		UIListElement(ReferenceToUIActor& actorRef, std::function<Vec3f()> getElementOffset, std::function<Vec3f()> getCenterOffset = nullptr);
+		UIListElement(ReferenceToUIActor& actorRef, const Vec3f& constElementOffset);
 		bool IsBeingKilled() const;
 		Actor& GetActorRef();
-		const Actor& GetActorRef() const;
+		const Actor& GetActorRef()const;
+		UICanvasElement& GetUIElementRef();
+		const UICanvasElement& GetUIElementRef() const;
 		Vec3f GetElementOffset() const;
 		Vec3f GetCenterOffset() const;
 
@@ -38,7 +37,7 @@ namespace GEE
 		void SetGetCenterOffsetFunc(std::function<Vec3f()>);
 
 	private:
-		NonNullPtr<Actor> ActorPtr;
+		ReferenceToUIActor UIActorRef;
 		std::function<Vec3f()> GetElementOffsetFunc, GetCenterOffsetFunc;
 	};
 
@@ -55,6 +54,7 @@ namespace GEE
 
 		const UIListElement GetListElement(unsigned int index) const;
 		int GetListElementCount() const;
+		virtual Boxf<Vec2f> GetBoundingBoxIncludingChildren(bool world = true) const override;
 
 		void SetListElementOffset(int index, std::function<Vec3f()> getElementOffset);
 		void SetListCenterOffset(int index, std::function<Vec3f()> getCenterOffset);

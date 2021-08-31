@@ -20,6 +20,7 @@
 #include <fstream>
 
 #include <editor/MousePicking.h>
+#include <editor/GraphRenderingComponent.h>
 
 namespace GEE
 {
@@ -195,7 +196,7 @@ namespace GEE
 		//SetMainScene(GetScene("GEE_Main"));
 
 		GameSettings::VideoSettings& renderSettings = EditorSettings.Video;
-		renderSettings.AAType = AA_NONE;
+		renderSettings.AAType = AA_SMAA1X;
 		renderSettings.AmbientOcclusionSamples = 0;
 		renderSettings.bBloom = false;
 		renderSettings.DrawToWindowFBO = true;
@@ -299,29 +300,37 @@ namespace GEE
 
 
 
-			scenePreviewActor.CreateChild<UIButtonActor>("SelectPreview_Empty", "Final",
-				[&]() {
+			UIButtonActor& selectPreviewButton = scenePreviewActor.CreateChild<UIButtonActor>("SelectPreview_Empty", "Final", nullptr, Transform(Vec2f(0.6f, -1.07f), Vec2f(0.4f, 0.05f)));
+			auto selectPreviewButtonText = selectPreviewButton.GetRoot()->GetComponent<TextConstantSizeComponent>("ButtonText");
+			selectPreviewButtonText->Unstretch();
+			selectPreviewButtonText->SetMaxSize(Vec2f(8.0f, 1.0f));
+			selectPreviewButton.SetOnClickFunc([&, selectPreviewButtonText]() {
 					auto& window = editorScene.CreateActorAtRoot<UIWindowActor>("SelectPreviewWindow");
+					auto& previewsList = window.CreateChild<UIAutomaticListActor>("PreviewsList");
 
-					auto setViewportTex = [&](const Texture& tex) {
-						Material* mat = new Material("unnamed", 0.0f, RenderEng.FindShader("Forward_NoLight"));
-						mat->AddTexture(std::make_shared<NamedTexture>(tex, "albedo1"));
-						scenePreviewQuad.OverrideInstancesMaterial(mat);
+					auto addPreview = [&, selectPreviewButtonText](const std::string& name, std::function<Texture()> getTextureToPreview ) {
+						previewsList.CreateChild<UIButtonActor>(name + "Button", name, [&, getTextureToPreview, selectPreviewButtonText, name]() {
+							Material* mat = new Material("unnamed", 0.0f, RenderEng.FindShader("Forward_NoLight"));
+							mat->AddTexture(std::make_shared<NamedTexture>(getTextureToPreview(), "albedo1"));
+							scenePreviewQuad.OverrideInstancesMaterial(mat);
 
-						window.MarkAsKilled();
+							window.MarkAsKilled();
+
+							selectPreviewButtonText->SetContent(name);
+						});
 					};
 
-					auto& previewsList = window.CreateChild<UIAutomaticListActor>("PreviewsList");
-					previewsList.CreateChild<UIButtonActor>("Albedo", "Albedo", [&, setViewportTex]() { setViewportTex(ViewportRenderCollection->GetTb<DeferredShadingToolbox>()->GetGeometryFramebuffer()->GetColorTexture(0));});
-					previewsList.CreateChild<UIButtonActor>("Position", "Position", [&, setViewportTex]() { setViewportTex(ViewportRenderCollection->GetTb<DeferredShadingToolbox>()->GetGeometryFramebuffer()->GetColorTexture(1));});
-					previewsList.CreateChild<UIButtonActor>("Normal", "Normal", [&, setViewportTex]() { setViewportTex(ViewportRenderCollection->GetTb<DeferredShadingToolbox>()->GetGeometryFramebuffer()->GetColorTexture(2));});
-					previewsList.CreateChild<UIButtonActor>("Final", "Final", [&, setViewportTex]() { setViewportTex(ViewportRenderCollection->GetTb<FinalRenderTargetToolbox>()->GetFinalFramebuffer().GetColorTexture(0));});
+					addPreview("Albedo", [this]() { return ViewportRenderCollection->GetTb<DeferredShadingToolbox>()->GetGeometryFramebuffer()->GetColorTexture(0); });
+					addPreview("Position", [this]() {return ViewportRenderCollection->GetTb<DeferredShadingToolbox>()->GetGeometryFramebuffer()->GetColorTexture(1); });
+					addPreview("Normal", [this]() { return ViewportRenderCollection->GetTb<DeferredShadingToolbox>()->GetGeometryFramebuffer()->GetColorTexture(2); });
+					addPreview("Final", [this]() { return ViewportRenderCollection->GetTb<FinalRenderTargetToolbox>()->GetFinalFramebuffer().GetColorTexture(0); });
 
 					previewsList.Refresh();
 
 					window.AutoClampView();
 
-				}, Transform(Vec2f(0.6f, -1.07f), Vec2f(0.4f, 0.05f)));
+				});
+			//selectPreviewButtonText->GetTransform().SetScale(Vec2f(0.05f / 0.4f, 1.0f));
 		}
 
 		UIWindowActor& window1 = editorScene.CreateActorAtRoot<UIWindowActor>("MyTestWindow");
@@ -330,106 +339,193 @@ namespace GEE
 		UIButtonActor& bigButtonActor = window1.CreateChild<UIButtonActor>("MojTestowyButton", "big button");
 		bigButtonActor.SetTransform(Transform(Vec2f(0.0f, 1.5f), Vec2f(0.4f)));
 
-		editorScene.CreateActorAtRoot<UIButtonActor>("MeshTreesButton", "HierarchyTrees", [this, &editorScene]() {
-			UIWindowActor& window = editorScene.CreateActorAtRoot<UIWindowActor>("MeshTreesWindow");
-			window.GetTransform()->SetScale(Vec2f(0.5f));
+		// Main buttons
+		{
+			auto mainIconsMat = MakeShared<AtlasMaterial>(Material("GEE_E_MainIconsMaterial", 0.0f, RenderEng.FindShader("Forward_NoLight")), Vec2i(3, 2));
+			mainIconsMat->AddTexture(MakeShared<NamedTexture>(Texture::Loader<>::FromFile2D("EditorAssets/main_icons.png", Texture::Format::RGBA(), true), "albedo1"));
+			RenderEng.AddMaterial(mainIconsMat);
 
-			UIAutomaticListActor& meshTreesList = window.CreateChild<UIAutomaticListActor>("MeshTreesList");
-			for (auto& scene : Scenes)
-				for (auto& meshTree : scene->HierarchyTrees)
-					meshTreesList.CreateChild<UIButtonActor>("MeshTreeButton", meshTree->GetName(), [this, &meshTree]() { PreviewHierarchyTree(*meshTree); });
+			auto mainButtonTheme = [&](UIButtonActor& button, float iconID) {
+				button.GetRoot()->GetComponent("ButtonText")->GetTransform().SetPosition(Vec2f(0.0f, -0.6f));
+				button.CreateComponent<ModelComponent>("SettingsIcon", Transform(Vec2f(0.0f, 0.3f), Vec2f(0.75f))).AddMeshInst(MeshInstance(RenderEng.GetBasicShapeMesh(EngineBasicShape::QUAD), MakeShared<MaterialInstance>(*mainIconsMat, mainIconsMat->GetTextureIDInterpolatorTemplate(iconID))));
+				button.GetRoot()->GetComponent<ModelComponent>("SettingsIcon")->OverrideInstancesMaterialInstances(MakeShared<MaterialInstance>(*mainIconsMat, mainIconsMat->GetTextureIDInterpolatorTemplate(iconID)));
+			};
+			
+			
+			auto& hierarchyTreesButton = editorScene.CreateActorAtRoot<UIButtonActor>("HierarchyTreesButton", "HierarchyTrees", [this, &editorScene]() {
+				UIWindowActor& window = editorScene.CreateActorAtRoot<UIWindowActor>("MeshTreesWindow");
+				window.GetTransform()->SetScale(Vec2f(0.5f));
 
-			meshTreesList.Refresh();
+				UIAutomaticListActor& meshTreesList = window.CreateChild<UIAutomaticListActor>("MeshTreesList");
+				for (auto& scene : Scenes)
+					for (auto& meshTree : scene->HierarchyTrees)
+						meshTreesList.CreateChild<UIButtonActor>("MeshTreeButton", meshTree->GetName(), [this, &meshTree]() { PreviewHierarchyTree(*meshTree); });
 
-		}).SetTransform(Transform(Vec2f(-0.8f, -0.8f), Vec2f(0.1f)));
+				meshTreesList.Refresh();
 
-		auto& materialsButton = editorScene.CreateActorAtRoot<UIButtonActor>("MaterialsButton", "Materials");
-		materialsButton.SetOnClickFunc([this, &editorScene, &materialsButton]() {
-			UIWindowActor& window = editorScene.CreateActorAtRoot<UIWindowActor>("MaterialsPreviewWindow");
-			UIAutomaticListActor& list = window.CreateChild<UIAutomaticListActor>("MaterialsList");
+			}, Transform(Vec2f(-0.8f, -0.8f), Vec2f(0.1f)));
+			mainButtonTheme(hierarchyTreesButton, 1.0f);
 
-			UIButtonActor& addMaterialButton = list.CreateChild<UIButtonActor>("CreateMaterialButton", [&]() {
-				const auto& view = window.GetViewT();
-				GetRenderEngineHandle()->AddMaterial(MakeShared<AtlasMaterial>("CreatedMaterial"));
-				window.MarkAsKilled();
-				materialsButton.OnClick();
-				if (auto newWindow = dynamic_cast<UIWindowActor*>(editorScene.FindActor("MaterialsPreviewWindow")))
-					newWindow->SetCanvasView(view);
+			auto& materialsButton = editorScene.CreateActorAtRoot<UIButtonActor>("MaterialsButton", "Materials", nullptr, Transform(Vec2f(-0.5f, -0.8f), Vec2f(0.1f)));
+			materialsButton.SetOnClickFunc([this, &editorScene, &materialsButton]() {
+				UIWindowActor& window = editorScene.CreateActorAtRoot<UIWindowActor>("MaterialsPreviewWindow");
+				UIAutomaticListActor& list = window.CreateChild<UIAutomaticListActor>("MaterialsList");
+
+				UIButtonActor& addMaterialButton = list.CreateChild<UIButtonActor>("CreateMaterialButton", [&]() {
+					const auto& view = window.GetViewT();
+					GetRenderEngineHandle()->AddMaterial(MakeShared<AtlasMaterial>("CreatedMaterial"));
+					window.MarkAsKilled();
+					materialsButton.OnClick();
+					if (auto newWindow = dynamic_cast<UIWindowActor*>(editorScene.FindActor("MaterialsPreviewWindow")))
+						newWindow->SetCanvasView(view);
+				});
+				uiButtonActorUtil::ButtonMatsFromAtlas(addMaterialButton, *dynamic_cast<AtlasMaterial*>(GetRenderEngineHandle()->FindMaterial("GEE_E_Add_Icon_Mat").get()), 0.0f, 1.0f, 2.0f);
+
+				for (auto& it : RenderEng.Materials)
+				{
+					std::string name = (it) ? (it->GetLocalization().GetFullStr()) : ("NULLPTR???");
+					UIButtonActor& button = list.CreateChild<UIButtonActor>(name + "Button", name, [this, &window, &it, name]() { UIWindowActor& matWindow = window.CreateChildCanvas<UIWindowActor>(name + "MaterialWindow"); EditorDescriptionBuilder descBuilder(*this, matWindow, matWindow); it->GetEditorDescription(descBuilder); matWindow.AutoClampView(); matWindow.RefreshFieldsList(); });
+					std::cout << name << '\n';
+				}
+
+				list.Refresh();
 			});
-			uiButtonActorUtil::ButtonMatsFromAtlas(addMaterialButton, *dynamic_cast<AtlasMaterial*>(GetRenderEngineHandle()->FindMaterial("GEE_E_Add_Icon_Mat").get()), 0.0f, 1.0f, 2.0f);
+			mainButtonTheme(materialsButton, 0.0f);
 
-			for (auto& it : RenderEng.Materials)
-			{
-				std::string name = (it) ? (it->GetLocalization().GetFullStr()) : ("NULLPTR???");
-				UIButtonActor& button = list.CreateChild<UIButtonActor>(name + "Button", name, [this, &window, &it, name]() { UIWindowActor& matWindow = window.CreateChildCanvas<UIWindowActor>(name + "MaterialWindow"); EditorDescriptionBuilder descBuilder(*this, matWindow, matWindow); it->GetEditorDescription(descBuilder); matWindow.AutoClampView(); matWindow.RefreshFieldsList(); });
-				std::cout << name << '\n';
-			}
+			auto& settingsButton = editorScene.CreateActorAtRoot<UIButtonActor>("SettingsButton", "Settings", [this, &editorScene]() {
+				UIWindowActor& window = editorScene.CreateActorAtRoot<UIWindowActor>("MainSceneSettingsWindow");
+				window.GetTransform()->SetScale(Vec2f(0.5f));
+				window.AddField("Bloom").GetTemplates().TickBox([this](bool bloom) { GetGameSettings()->Video.bBloom = bloom; UpdateGameSettings(); }, [this]() -> bool { return GetGameSettings()->Video.bBloom; });
 
-			list.Refresh();
+				UIInputBoxActor& gammaInputBox = window.AddField("Gamma").CreateChild<UIInputBoxActor>("GammaInputBox");
+				gammaInputBox.SetOnInputFunc([this](float val) { GetGameSettings()->Video.MonitorGamma = val; UpdateGameSettings(); }, [this]()->float { return GetGameSettings()->Video.MonitorGamma; });
 
-		});
-		materialsButton.SetTransform(Transform(Vec2f(-0.5f, -0.8f), Vec2f(0.1f)));
+				window.AddField("Default font").GetTemplates().PathInput([this](const std::string& path) { Fonts.push_back(MakeShared<Font>(*DefaultFont)); *DefaultFont = *EngineDataLoader::LoadFont(*this, path); }, [this]() {return GetDefaultFont()->GetPath(); }, { "*.ttf", "*.otf" });
+				window.AddField("Rebuild light probes").CreateChild<UIButtonActor>("RebuildProbesButton", "Rebuild", [this]() { RenderEng.PreLoopPass(); });
 
-		editorScene.CreateActorAtRoot<UIButtonActor>("SettingsButton", "Settings", [this, &editorScene]() {
-			UIWindowActor& window = editorScene.CreateActorAtRoot<UIWindowActor>("MainSceneSettingsWindow");
-			window.GetTransform()->SetScale(Vec2f(0.5f));
-			window.AddField("Bloom").GetTemplates().TickBox([this](bool bloom) { GetGameSettings()->Video.bBloom = bloom; UpdateGameSettings(); }, [this]() -> bool { return GetGameSettings()->Video.bBloom; });
+				{
+					auto& aaSelectionList = window.AddField("Anti-aliasing").CreateChild<UIAutomaticListActor>("AASelectionList", Vec3f(2.0f, 0.0f, 0.0f));
+					std::function<void(AntiAliasingType)> setAAFunc = [this](AntiAliasingType type) { const_cast<GameSettings::VideoSettings&>(ViewportRenderCollection->GetSettings()).AAType = type; UpdateGameSettings(); };
+					aaSelectionList.CreateChild<UIButtonActor>("NoAAButton", "None", [=]() { setAAFunc(AntiAliasingType::AA_NONE); });
+					aaSelectionList.CreateChild<UIButtonActor>("SMAA1XButton", "SMAA1X", [=]() { setAAFunc(AntiAliasingType::AA_SMAA1X); });
+					aaSelectionList.CreateChild<UIButtonActor>("SMAAT2XButton", "SMAAT2X", [=]() { setAAFunc(AntiAliasingType::AA_SMAAT2X); });
+					aaSelectionList.Refresh();
+				}
 
-			UIInputBoxActor& gammaInputBox = window.AddField("Gamma").CreateChild<UIInputBoxActor>("GammaInputBox");
-			gammaInputBox.SetOnInputFunc([this](float val) { GetGameSettings()->Video.MonitorGamma = val; UpdateGameSettings(); }, [this]()->float { return GetGameSettings()->Video.MonitorGamma; });
+				{
+					auto& viewTexField = window.AddField("View texture");
+					SharedPtr<unsigned int> texID = MakeShared<unsigned int>(0);
 
-			window.AddField("Default font").GetTemplates().PathInput([this](const std::string& path) { Fonts.push_back(MakeShared<Font>(*DefaultFont)); *DefaultFont = *EngineDataLoader::LoadFont(*this, path); }, [this]() {return GetDefaultFont()->GetPath(); }, { "*.ttf", "*.otf" });
-			window.AddField("Rebuild light probes").CreateChild<UIButtonActor>("RebuildProbesButton", "Rebuild", [this]() { RenderEng.PreLoopPass(); });
+					viewTexField.CreateChild<UIInputBoxActor>("PreviewTexIDInputBox").SetOnInputFunc([texID](float val) { *texID = val; }, [texID]() { return *texID; });
+					viewTexField.CreateChild<UIButtonActor>("OKButton", "OK", [this, texID, &window]() {
+						if (!glIsTexture(*texID))
+							return;
+						UIWindowActor& texPreviewWindow = window.CreateChildCanvas<UIWindowActor>("PreviewTexWindow");
+						ModelComponent& texPreviewQuad = texPreviewWindow.CreateChild<UIActorDefault>("TexPreviewActor").CreateComponent<ModelComponent>("TexPreviewQuad");
+						Material* mat = new Material("TexturePreviewMat", 0.0f, GetRenderEngineHandle()->FindShader("Forward_NoLight"));
+						mat->AddTexture(MakeShared<NamedTexture>(Texture::FromGeneratedGlId(Vec2u(0), GL_TEXTURE_2D, *texID, Texture::Format::RGBA()), "albedo1"));
+						texPreviewQuad.AddMeshInst(MeshInstance(GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD), mat));
 
-			{
-				auto& aaSelectionList = window.AddField("Anti-aliasing").CreateChild<UIAutomaticListActor>("AASelectionList", Vec3f(2.0f, 0.0f, 0.0f));
-				std::function<void(AntiAliasingType)> setAAFunc = [this](AntiAliasingType type) { const_cast<GameSettings::VideoSettings&>(ViewportRenderCollection->GetSettings()).AAType = type; UpdateGameSettings(); };
-				aaSelectionList.CreateChild<UIButtonActor>("NoAAButton", "None", [=]() { setAAFunc(AntiAliasingType::AA_NONE); });
-				aaSelectionList.CreateChild<UIButtonActor>("SMAA1XButton", "SMAA1X", [=]() { setAAFunc(AntiAliasingType::AA_SMAA1X); });
-				aaSelectionList.CreateChild<UIButtonActor>("SMAAT2XButton", "SMAAT2X", [=]() { setAAFunc(AntiAliasingType::AA_SMAAT2X); });
-				aaSelectionList.Refresh();
-			}
+						texPreviewWindow.AutoClampView();
 
-			{
-				auto& viewTexField = window.AddField("View texture");
-				SharedPtr<unsigned int> texID = MakeShared<unsigned int>(0);
+						}).GetTransform()->Move(Vec2f(2.0f, 0.0f));
+				}
 
-				viewTexField.CreateChild<UIInputBoxActor>("PreviewTexIDInputBox").SetOnInputFunc([texID](float val) { *texID = val; }, [texID]() { return *texID; });
-				viewTexField.CreateChild<UIButtonActor>("OKButton", "OK", [this, texID, &window]() {
-					if (!glIsTexture(*texID))
-						return;
-					UIWindowActor& texPreviewWindow = window.CreateChildCanvas<UIWindowActor>("PreviewTexWindow");
-					ModelComponent& texPreviewQuad = texPreviewWindow.CreateChild<UIActorDefault>("TexPreviewActor").CreateComponent<ModelComponent>("TexPreviewQuad");
-					Material* mat = new Material("TexturePreviewMat", 0.0f, GetRenderEngineHandle()->FindShader("Forward_NoLight"));
-					mat->AddTexture(MakeShared<NamedTexture>(Texture::FromGeneratedGlId(Vec2u(0), GL_TEXTURE_2D, *texID, Texture::Format::RGBA()), "albedo1"));
-					texPreviewQuad.AddMeshInst(MeshInstance(GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD), mat));
+				window.AddField("Render debug icons").GetTemplates().TickBox(bDebugRenderComponents);
 
-					texPreviewWindow.AutoClampView();
+				auto& ssaoSamplesIB = window.AddField("SSAO Samples").CreateChild<UIInputBoxActor>("SSAOSamplesInputBox");
+				ssaoSamplesIB.SetOnInputFunc([this](float sampleCount) { GetGameSettings()->Video.AmbientOcclusionSamples = sampleCount; UpdateGameSettings(); }, [this]() { return GetGameSettings()->Video.AmbientOcclusionSamples; });
 
-					}).GetTransform()->Move(Vec2f(2.0f, 0.0f));
-			}
+				window.FieldsList->Refresh();
+				window.AutoClampView();
 
-			window.AddField("Render debug icons").GetTemplates().TickBox(bDebugRenderComponents);
+			}, Transform(Vec2f(-0.2f, -0.8f), Vec2f(0.1f)));
+			mainButtonTheme(settingsButton, 3.0f);
 
-			auto& ssaoSamplesIB = window.AddField("SSAO Samples").CreateChild<UIInputBoxActor>("SSAOSamplesInputBox");
-			ssaoSamplesIB.SetOnInputFunc([this](float sampleCount) { GetGameSettings()->Video.AmbientOcclusionSamples = sampleCount; UpdateGameSettings(); }, [this]() { return GetGameSettings()->Video.AmbientOcclusionSamples; });
+			
+			auto& shadersButton = editorScene.CreateActorAtRoot<UIButtonActor>("ShadersButton", "Shaders", [this, &editorScene]() {
+				UIWindowActor& window = editorScene.CreateActorAtRoot<UIWindowActor>("ShadersPreviewWindow");
+				UIAutomaticListActor& list = window.CreateChild<UIAutomaticListActor>("ShadersList");
+				for (auto& it : RenderEng.Shaders)
+				{
+					list.CreateChild<UIButtonActor>(it->GetName() + "Button", it->GetName(), [this, &window, &it]() { UIWindowActor& shaderWindow = window.CreateChildCanvas<UIWindowActor>("ShdaerPreviewWindow"); EditorDescriptionBuilder descBuilder(*this, shaderWindow, shaderWindow); it->GetEditorDescription(descBuilder); shaderWindow.AutoClampView(); shaderWindow.RefreshFieldsList(); });
+				}
+				list.Refresh();
+			}, Transform(Vec2f(0.1f, -0.8f), Vec2f(0.1f)));
+			mainButtonTheme(shadersButton, 2.0f);
 
-			window.FieldsList->Refresh();
-			window.AutoClampView();
+			// Profiling
+			Shader& graphShader = *RenderEng.AddShader(ShaderLoader::LoadShaders("GraphShader", "Shaders/graph/graph.vs", "Shaders/graph/graph.fs"), true);
+			graphShader.SetExpectedMatrices({ MatrixType::MVP });
+			/*graphShader.Use();
+			graphShader.Uniform("dataPointsCount", 7);
+			graphShader.Uniform("dataPoints[0]", Vec2f(0.0f, 0.3f));
+			graphShader.Uniform("dataPoints[1]", Vec2f(0.2f, 0.7f));
+			graphShader.Uniform("dataPoints[2]", Vec2f(0.4f, 0.1f));
+			graphShader.Uniform("dataPoints[3]", Vec2f(0.6f, 0.5f));
+			graphShader.Uniform("dataPoints[4]", Vec2f(0.6f, 0.0f));
+			graphShader.Uniform("dataPoints[5]", Vec2f(0.8f, 0.9f));
+			graphShader.Uniform("dataPoints[6]", Vec2f(1.0f, 0.9f));
 
-		}).SetTransform(Transform(Vec2f(-0.2f, -0.8f), Vec2f(0.1f)));
+			SharedPtr<float> prev = MakeShared<float>(glfwGetTime());
+			graphShader.SetOnMaterialWholeDataUpdateFunc([&, prev](Shader& shader, const Material&) { shader.Uniform("dataPoints[6]", Vec2f(1.0f, 1.0f / (glfwGetTime() - *prev) / 500.0f)); *prev = glfwGetTime(); });*/
 
-		editorScene.CreateActorAtRoot<UIButtonActor>("ShadersButton", "Shaders", [this, &editorScene]() {
-			UIWindowActor& window = editorScene.CreateActorAtRoot<UIWindowActor>("ShadersPreviewWindow");
-			UIAutomaticListActor& list = window.CreateChild<UIAutomaticListActor>("ShadersList");
-			for (auto& it : RenderEng.Shaders)
-			{
-				list.CreateChild<UIButtonActor>(it->GetName() + "Button", it->GetName(), [this, &window, &it]() { UIWindowActor& shaderWindow = window.CreateChildCanvas<UIWindowActor>("ShdaerPreviewWindow"); EditorDescriptionBuilder descBuilder(*this, shaderWindow, shaderWindow); it->GetEditorDescription(descBuilder); shaderWindow.AutoClampView(); shaderWindow.RefreshFieldsList(); });
-			}
-			list.Refresh();
-		}).SetTransform(Transform(Vec2f(0.1f, -0.8f), Vec2f(0.1f)));
+			auto& profilerButton = editorScene.CreateActorAtRoot<UIButtonActor>("SIEMANDZIOBUTTON", "Profile", nullptr, Transform(Vec2f(0.4f, -0.8f), Vec2f(0.1f)));
+			profilerButton.SetOnClickFunc([&]() {
+				auto& profilerWindow = editorScene.CreateActorAtRoot<UIWindowActor>("Profiler window");
 
-		editorScene.CreateActorAtRoot<UIButtonActor>("SIEMANDZIOBUTTON", nullptr, Transform(Vec2f(0.4f, -0.8f), Vec2f(0.1f))).CreateComponent<ScrollingTextComponent>("SIEMANDZIOTEXT", Transform(Vec2f(0.0f, 0.0f)), "pomaranczka", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::RIGHT, TextAlignment::CENTER));
+				auto graphMaterial = MakeShared<Material>("GraphMaterial", 0.0f, &graphShader);
+				RenderEng.AddMaterial(graphMaterial);
+				auto& graphButton = profilerWindow.CreateChild<UIButtonActor>("GraphActor");
+				graphButton.DeleteButtonModel();
+				auto& fpsGraph = graphButton.CreateComponent<GraphRenderingComponent>("FPSGraph");
+				/*fpsGraph.PushRawMarker(Vec2f(0.0f, 0.3f));
+				fpsGraph.PushRawMarker(Vec2f(0.2f, 0.7f));
+				fpsGraph.PushRawMarker(Vec2f(0.4f, 0.1f));
+				fpsGraph.PushRawMarker(Vec2f(0.6f, 0.5f));
+				fpsGraph.PushRawMarker(Vec2f(0.6f, 0.0f));
+				fpsGraph.PushRawMarker(Vec2f(0.8f, 0.9f));
+				fpsGraph.PushRawMarker(Vec2f(1.0f, 0.9f));*/
+				fpsGraph.SetGraphView(Transform(Vec2f(0.0f), Vec2f(30.0f, 2000.0F)));
+
+				graphButton.CreateComponent<TextComponent>("XUnitMain", Transform(Vec2f(1.0f, -1.0f), Vec2f(0.1f)), "[seconds ago]", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::TOP));
+				graphButton.CreateComponent<TextComponent>("YUnitMain", Transform(Vec2f(-1.0f, 1.0f), Vec2f(0.1f)), "[FPS]", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::RIGHT, TextAlignment::BOTTOM));
+
+				graphButton.CreateComponent<TextComponent>("XUnitText1", Transform(Vec2f(-1.0f, -1.0f), Vec2f(0.1f)), "30", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::TOP));
+				graphButton.CreateComponent<TextComponent>("XUnitText2", Transform(Vec2f(0.0f, -1.0f), Vec2f(0.1f)), "15", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::TOP));
+				graphButton.CreateComponent<TextComponent>("XUnitText3", Transform(Vec2f(1.0f, -1.0f), Vec2f(0.1f)), "0", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::RIGHT, TextAlignment::TOP));
+
+				graphButton.CreateComponent<TextComponent>("YUnitText1", Transform(Vec2f(-1.0f, -1.0f), Vec2f(0.1f)), "0", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::RIGHT, TextAlignment::BOTTOM));
+				graphButton.CreateComponent<TextComponent>("YUnitText2", Transform(Vec2f(-1.0f, 0.0f), Vec2f(0.1f)), "1000", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::RIGHT, TextAlignment::CENTER));
+				graphButton.CreateComponent<TextComponent>("YUnitText3", Transform(Vec2f(-1.0f, 1.0f), Vec2f(0.1f)), "2000", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::RIGHT, TextAlignment::TOP));
+
+				auto& infoText = graphButton.CreateComponent<TextComponent>("InfoText", Transform(Vec2f(-0.0f, 1.0f), Vec2f(0.05f)), "FPS - the lower the better\n<Hold SHIFT while dragging mouse to inspect a range>", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::BOTTOM));
+				auto greyMaterial = MakeShared<Material>("Grey", 0.0f, RenderEng.FindShader("TextShader"));
+				greyMaterial->SetColor(Vec4f(Vec3f(0.5f), 1.0f));
+				infoText.SetMaterialInst(*RenderEng.AddMaterial(greyMaterial));
+
+
+				auto& additionalInfoActor = profilerWindow.CreateChild<UIActorDefault>("AdditionalFPSData", Transform(Vec2f(1.5f, 0.0f), Vec2f(1.0f)));
+
+				auto& avgFPSText = additionalInfoActor.CreateComponent<TextComponent>("AvgFPSText", Transform(Vec2f(0.0f), Vec2f(0.1f)), "Avg FPS: 1000", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
+				auto coralMaterial = MakeShared<Material>("Coral", 0.0f, RenderEng.FindShader("TextShader"));
+				coralMaterial->SetColor(Vec4f(1.0f, 0.5f, 0.31f, 1.0f));
+				avgFPSText.SetMaterialInst(*RenderEng.AddMaterial(coralMaterial));
+
+				auto& maxFPSText = additionalInfoActor.CreateComponent<TextComponent>("MaxFPSText", Transform(Vec2f(0.0f, 0.5f), Vec2f(0.1f)), "Max FPS: 2000", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
+				auto greenMaterial = MakeShared<Material>("Green", 0.0f, RenderEng.FindShader("TextShader"));
+				greenMaterial->SetColor(Vec4f(0.155f, 1.0f, 0.25f, 1.0f));
+				maxFPSText.SetMaterialInst(*RenderEng.AddMaterial(greenMaterial));
+
+				auto& minFPSText = additionalInfoActor.CreateComponent<TextComponent>("MinFPSText", Transform(Vec2f(0.0f, -0.5f), Vec2f(0.1f)), "Min FPS: 500", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
+				auto redMaterial = MakeShared<Material>("Red", 0.0f, RenderEng.FindShader("TextShader"));
+				redMaterial->SetColor(Vec4f(1.0f, 0.155f, 0.25f, 1.0f));
+				minFPSText.SetMaterialInst(*RenderEng.AddMaterial(redMaterial));
+
+				profilerWindow.AutoClampView();
+			});
+			mainButtonTheme(profilerButton, 4.0f);
+		}
 		 
 
 		Actor& cameraActor = editorScene.CreateActorAtRoot<Actor>("OrthoCameraActor");

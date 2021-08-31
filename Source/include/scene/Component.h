@@ -82,6 +82,23 @@ namespace GEE
 		Physics::CollisionObject* GetCollisionObj() const;
 		MaterialInstance* GetDebugMatInst();
 
+		/**
+		 * @brief Get a pointer to a Component further in the hierarchy (kids, kids' kids, ...). Limit the use of this function at runtime, as dynamic_cast has a significant overhead.
+		 * @tparam CompClass: The sought Component must be dynamic_castable to CompClass. 
+		 * @param name: The name of the sought Component.
+		 * @return: A pointer to the sought Component.
+		*/
+		template <class CompClass = Component> CompClass* GetComponent(const std::string& name);
+		/**
+		 * @brief This function returns every element further in the hierarchy that is of CompClass type
+		*/
+		template<class CompClass> void GetAllComponents(std::vector <CompClass*>* comps);
+		/**
+		 * @brief This function works like the previous method, but every element must also be of CheckClass type (for ex. CastToClass = RenderableComponent, CheckClass = ModelComponent)
+		 * It's useful when you want to get a vector of CastToClass type pointers to objects, that are also of CheckClass type.
+		*/
+		template<class CastToClass, class CheckClass> void GetAllComponents(std::vector <CastToClass*>* comps);
+
 		bool IsBeingKilled() const;
 
 		void SetName(std::string name);
@@ -108,43 +125,6 @@ namespace GEE
 		virtual SharedPtr<AtlasMaterial> LoadDebugRenderMaterial(const std::string& materialName, const std::string& path);
 
 		Component* SearchForComponent(std::string name);
-		template <class CompClass = Component> CompClass* GetComponent(const std::string& name)
-		{
-			if (Name == name)
-				return dynamic_cast<CompClass*>(this);
-
-			for (const auto& it : Children)
-				if (auto found = it->GetComponent<CompClass>(name))
-					return found;
-
-			return nullptr;
-		}
-		template<class CompClass> void GetAllComponents(std::vector <CompClass*>* comps)	//this function returns every element further in the hierarchy tree (kids, kids' kids, ...) that is of CompClass type
-		{
-			if (!comps)
-				return;
-			for (unsigned int i = 0; i < Children.size(); i++)
-			{
-				CompClass* c = dynamic_cast<CompClass*>(Children[i].get());
-				if (c)					//if dynamic cast was succesful - this children is of CompCLass type
-					comps->push_back(c);
-			}
-			for (unsigned int i = 0; i < Children.size(); i++)
-				Children[i]->GetAllComponents<CompClass>(comps);	//do it reccurently in every child
-		}
-		template<class CastToClass, class CheckClass> void GetAllComponents(std::vector <CastToClass*>* comps) //this function works like the previous method, but every element must also be of CheckClass type (for ex. CastToClass = CollisionComponent, CheckClass = BSphere)
-		{																												  //it's useful when you want to get a vector of CastToClass type pointers to objects, that are also of CheckClass type
-			if (!comps)
-				return;
-			for (unsigned int i = 0; i < Children.size(); i++)
-			{
-				CastToClass* c = dynamic_cast<CastToClass*>(dynamic_cast<CheckClass*>(Children[i].get()));	//we're casting to CheckClass to check if our child is of the required type; we then cast to CastToClass to get a pointer of this type
-				if (c)
-					comps->push_back(c);
-			}
-			for (unsigned int i = 0; i < Children.size(); i++)
-				Children[i]->GetAllComponents<CastToClass, CheckClass>(comps);	//robimy to samo we wszystkich "dzieciach"
-		}
 
 		virtual void GetEditorDescription(EditorDescriptionBuilder);
 
@@ -229,6 +209,46 @@ namespace GEE
 			childRef.OnStartAll();
 
 		return (ChildClass&)childRef;
+	}
+	template<class CompClass>
+	inline CompClass* Component::GetComponent(const std::string& name)
+	{
+		if (Name == name)
+			return dynamic_cast<CompClass*>(this);
+
+		for (const auto& it : Children)
+			if (auto found = it->GetComponent<CompClass>(name))
+				return found;
+
+		return nullptr;
+	}
+	template<class CompClass>
+	inline void Component::GetAllComponents(std::vector<CompClass*>* comps)
+	{
+		if (!comps)
+			return;
+		for (unsigned int i = 0; i < Children.size(); i++)
+		{
+			CompClass* c = dynamic_cast<CompClass*>(Children[i].get());
+			if (c)					//if dynamic cast was succesful - this children is of CompCLass type
+				comps->push_back(c);
+		}
+		for (unsigned int i = 0; i < Children.size(); i++)
+			Children[i]->GetAllComponents<CompClass>(comps);	//do it reccurently in every child
+	}
+	template<class CastToClass, class CheckClass>
+	inline void Component::GetAllComponents(std::vector<CastToClass*>* comps) 
+	{																		
+		if (!comps)
+			return;
+		for (unsigned int i = 0; i < Children.size(); i++)
+		{
+			CastToClass* c = dynamic_cast<CastToClass*>(dynamic_cast<CheckClass*>(Children[i].get()));	//we're casting to CheckClass to check if our child is of the required type; we then cast to CastToClass to get a pointer of this type
+			if (c)
+				comps->push_back(c);
+		}
+		for (unsigned int i = 0; i < Children.size(); i++)
+			Children[i]->GetAllComponents<CastToClass, CheckClass>(comps);	//robimy to samo we wszystkich "dzieciach"
 	}
 	void CollisionObjRendering(RenderInfo& info, GameManager& gameHandle, Physics::CollisionObject& obj, const Transform& t, const Vec3f& color = Vec3f(0.1f, 0.6f, 0.3f));
 

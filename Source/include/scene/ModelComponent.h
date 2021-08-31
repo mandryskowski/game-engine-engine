@@ -46,6 +46,7 @@ namespace GEE
 
 		MeshInstance* FindMeshInstance(const std::string& nodeName, const std::string& specificMeshName = std::string());
 		void AddMeshInst(const MeshInstance&);
+		void AddMeshInst(MeshInstance&&);
 
 		virtual void Update(float deltaTime) override;
 

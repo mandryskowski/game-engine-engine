@@ -153,6 +153,11 @@ namespace GEE
 		MeshInstances.push_back(MakeUnique<MeshInstance>(meshInst));
 	}
 
+	void ModelComponent::AddMeshInst(MeshInstance&& meshInst)
+	{
+		MeshInstances.push_back(MakeUnique<MeshInstance>(meshInst));
+	}
+
 	void ModelComponent::Update(float deltaTime)
 	{
 		for (auto& it : MeshInstances)

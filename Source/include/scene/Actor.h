@@ -50,10 +50,18 @@ namespace GEE
 		Component* GetRoot() const;
 		std::string GetName() const;
 		Transform* GetTransform() const;
-		Actor* GetChild(unsigned int) const;
 		std::vector<Actor*> GetChildren();
 		GameScene& GetScene();
 		GameManager* GetGameHandle();
+
+		/**
+		 * @brief Get a pointer to an Actor further in the hierarchy (kids, kids' kids, ...). Limit the use of this function at runtime, as dynamic_cast has a significant overhead.
+		 * @tparam ActorClass: The sought Actor must be dynamic_castable to ActorClass.
+		 * @param name: The name of the sought Actor.
+		 * @return: A pointer to the sought Actor of ActorClass type.
+		*/
+		template <class ActorClass = Actor> ActorClass* GetActor(const std::string& name);
+
 		bool IsBeingKilled() const;
 
 		void SetName(const std::string&);
@@ -95,7 +103,7 @@ namespace GEE
 		*/
 		virtual void GetEditorDescription(EditorDescriptionBuilder descBuilder);
 
-		template<class ActorClass> void GetAllActors(std::vector <ActorClass*>* comps)	//this function returns every element further in the hierarchy tree (kids, kids' kids, ...) that is of ActorClass type
+		template<class ActorClass> void GetAllActors(std::vector <ActorClass*>* comps)	//this function returns every element further in the hierarchy (kids, kids' kids, ...) that is of ActorClass type
 		{
 			if (!comps)
 				return;
@@ -167,6 +175,19 @@ namespace GEE
 	{
 		CompClass& comp = RootComponent->CreateComponent<CompClass>(std::forward<Args>(args)...);
 		return comp;
+	}
+
+	template<class ActorClass>
+	inline ActorClass* Actor::GetActor(const std::string& name)
+	{
+		if (Name == name)
+			return dynamic_cast<ActorClass*>(this);
+
+		for (const auto& it : Children)
+			if (auto found = it->GetActor<ActorClass>(name))
+				return found;
+
+		return nullptr;
 	}
 
 	struct CerealActorSerializationData

@@ -12,7 +12,7 @@ namespace GEE
 		UIButtonActor(GameScene&, Actor* parentActor, const std::string& name, const std::string& buttonTextContent, std::function<void()> onClickFunc = nullptr, const Transform & = Transform());
 
 		ModelComponent* GetButtonModel();
-		virtual Boxf<Vec2f> GetBoundingBox(bool world = true) override;
+		virtual Boxf<Vec2f> GetBoundingBox(bool world = true) const override;
 
 		void SetMatIdle(MaterialInstance&&);
 		void SetMatHover(MaterialInstance&&);

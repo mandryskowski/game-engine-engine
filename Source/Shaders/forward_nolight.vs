@@ -14,7 +14,7 @@ uniform mat4 MVP;
 void main()
 {
 	gl_Position = MVP * vec4(vPosition, 1.0);
-	texCoord1 = (vPosition.xy + vec2(1.0)) / 2.0;
+	texCoord1 = (vPosition.xy + 1.0) / 2.0;
 	texCoord2 = texCoord1;
 	blend = 1.0;
 	
@@ -23,10 +23,10 @@ void main()
 		blend = atlasData.x - floor(atlasData.x);
 		float texID = floor(atlasData.x);
 		
-		vec2 positionInAtlas = vec2(mod(texID, atlasData.y), floor(texID / atlasData.y));
-		vec2 nextPositionInAtlas = vec2(mod((texID + 1.0), atlasData.y), floor((texID + 1.0) / atlasData.y));
+		vec2 positionInAtlas = vec2(mod(texID, atlasData.y), -floor(texID / atlasData.y));
+		vec2 nextPositionInAtlas = vec2(mod((texID + 1.0), atlasData.y), -floor((texID + 1.0) / atlasData.y));
 		
-		texCoord1 = (positionInAtlas * atlasTexOffset) + (texCoord1 * atlasTexOffset);
-		texCoord2 = (nextPositionInAtlas * atlasTexOffset) + (texCoord2 * atlasTexOffset);
+		texCoord1 = (vec2(0.0, 1.0 - atlasTexOffset.y) + positionInAtlas * atlasTexOffset) + (texCoord1 * atlasTexOffset);
+		texCoord2 = (vec2(0.0, 1.0 - atlasTexOffset.y) + nextPositionInAtlas * atlasTexOffset) + (texCoord2 * atlasTexOffset);
 	}
 }

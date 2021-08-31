@@ -82,6 +82,8 @@ namespace GEE
 
 		template <typename T>
 		void Uniform(const std::string& nameInShader, const T&);
+		template <typename T>
+		void UniformArray(const std::string& nameInShader, const T*, unsigned int size);
 
 		void UniformMatrix3fv(std::string, Mat3f) const;
 		void UniformMatrix4fv(std::string, const Mat4f&) const;
@@ -120,7 +122,13 @@ namespace GEE
 	{
 	private:
 		static unsigned int LoadShader(GLenum type, std::string path, std::string additionalData = std::string(), std::string* shaderSourcePtr = nullptr);
-		static void DebugShader(unsigned int shaderID, std::string path = std::string());
+		/**
+		 * @brief Debug a shader by logging any compilation errors, if such exist.
+		 * @param shaderID: The OpenGL id of the shader.
+		 * @param path: The filepath to the file that contains the shader source.
+		 * @return: A boolean indicating whether compilation was successful.
+		*/
+		static bool DebugShader(unsigned int shaderID, std::string path = std::string());
 
 	public:
 		static SharedPtr<Shader> LoadShaders(std::string shaderName, std::string vShaderPath, std::string fShaderPath, std::string gShaderPath = std::string());
@@ -129,5 +137,6 @@ namespace GEE
 	};
 
 
-	Mat3f ModelToNormal(Mat4f);	//what the fuck is it doing here 
+	Mat3f ModelToNormal(Mat4f);
+	//what the fuck is it doing here 
 }

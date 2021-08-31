@@ -201,6 +201,9 @@
     <ClCompile Include="include\editor\EditorManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="source\editor\GraphRenderingComponent.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\UI\UICanvasActor.h">
@@ -393,6 +396,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="include\utility\OperatingSystem.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\editor\GraphRenderingComponent.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

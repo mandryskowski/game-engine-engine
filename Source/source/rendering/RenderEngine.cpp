@@ -9,6 +9,7 @@
 #include <scene/hierarchy/HierarchyTree.h>
 #include <UI/Font.h>
 #include <random> //DO WYJEBANIA
+#include <scene/TextComponent.h>
 
 #include <input/InputDevicesStateRetriever.h>
 
@@ -754,6 +755,7 @@ namespace GEE
 		////////////////////3.5 Forward rendering pass
 		glEnable(GL_DEPTH_TEST);
 		glDisable(GL_CULL_FACE);
+		glEnable(GL_BLEND);
 		info.MainPass = true;
 		info.CareAboutShader = true;
 
@@ -772,6 +774,7 @@ namespace GEE
 		info.CareAboutShader = false;
 
 		glDisable(GL_DEPTH_TEST);
+		glDisable(GL_BLEND);
 
 		if (renderIconsFunc)
 			renderIconsFunc(MainFramebuffer);
@@ -990,17 +993,21 @@ namespace GEE
 		//	halfExtent.y *= 1.0f - font.GetBaselineHeight() / 4.0f;	//Account for baseline height (we move the character quads by the height in the next line, so we have to shrink them a bit so that the text fits within halfExtent)
 		t.Move(Vec3f(0.0f, -t.GetScale().y * 2.0f + font.GetBaselineHeight() * t.GetScale().y * 2.0f, 0.0f));	//align to bottom (-t.ScaleRef.y), move down to the bottom of it (-t.ScaleRef.y), and then move up to baseline height (-t.ScaleRef.y * 2.0f + font.GetBaselineHeight() * halfExtent.y * 2.0f)
 
+		// Align horizontally
 		if (alignment.first != TextAlignment::LEFT)
 		{
-			float advancesSum = 0.0f;
-			for (int i = 0; i < static_cast<int>(content.length()); i++)
-				advancesSum += (font.GetCharacter(content[i]).Advance);
+			float textLength = textUtil::GetTextLength(content, t.GetScale(), font);
 
-			t.Move(t.GetRot() * Vec3f(-advancesSum * halfExtent.x * (static_cast<float>(alignment.first) - static_cast<float>(TextAlignment::LEFT)), 0.0f, 0.0f));
+			t.Move(t.GetRot() * Vec3f(-textLength / 2.0f * (static_cast<float>(alignment.first) - static_cast<float>(TextAlignment::LEFT)), 0.0f, 0.0f));
 		}
 
+		// Align vertically
 		if (alignment.second != TextAlignment::BOTTOM)
-			t.Move(t.GetRot() * Vec3f(0.0f, -t.GetScale().y * (static_cast<float>(alignment.second) - static_cast<float>(TextAlignment::BOTTOM)), 0.0f));
+			t.Move(t.GetRot() * Vec3f(0.0f, -textUtil::GetTextHeight(content, t.GetScale(), font) * (static_cast<float>(alignment.second) - static_cast<float>(TextAlignment::BOTTOM)), 0.0f));
+
+		// Account for multiple lines if the text is not aligned to TOP. Each line (excluding the first one, that's why we cancel out the first line) moves the text up by its scale if it is aligned to BOTTOM and by 1/2 of its scale if it is aligned to CENTER.
+		if (auto firstLineBreak = content.find_first_of('\n'); alignment.second != TextAlignment::TOP && firstLineBreak != std::string::npos)
+			t.Move(t.GetRot() * Vec3f(0.0f, (textUtil::GetTextHeight(content, t.GetScale(), font) - textUtil::GetTextHeight(content.substr(0, firstLineBreak), t.GetScale(), font)) / 2.0f * (static_cast<float>(TextAlignment::TOP) - static_cast<float>(alignment.second)), 0.0f));
 
 		//t.Move(Vec3f(0.0f, -64.0f, 0.0f));
 		//t.Move(Vec3f(0.0f, 11.0f, 0.0f) / scale);

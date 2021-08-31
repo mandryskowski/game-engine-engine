@@ -335,14 +335,14 @@ namespace GEE
 	========================================================================================================================
 	*/
 
-	AtlasMaterial::AtlasMaterial(Material&& material, glm::ivec2 atlasSize) :
+	AtlasMaterial::AtlasMaterial(Material&& material, Vec2i atlasSize) :
 		Material(material),
 		AtlasSize(static_cast<Vec2f>(atlasSize)),
 		TextureID(0.0f)
 	{
 	}
 
-	AtlasMaterial::AtlasMaterial(Material::MaterialLoc loc, glm::ivec2 atlasSize) :
+	AtlasMaterial::AtlasMaterial(Material::MaterialLoc loc, Vec2i atlasSize) :
 		AtlasMaterial(Material(loc), atlasSize)
 	{
 	}

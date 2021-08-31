@@ -179,10 +179,9 @@ namespace GEE
 
 
 	MeshInstance::MeshInstance(MeshInstance&& mesh) noexcept :
-		MeshRef(mesh.MeshRef)
+		MeshRef(mesh.MeshRef),
+		MaterialInst(mesh.MaterialInst)
 	{
-		if (mesh.MaterialInst)
-			MaterialInst = std::move(mesh.MaterialInst);	//move the material instance
 	}
 
 	Mesh& MeshInstance::GetMesh()

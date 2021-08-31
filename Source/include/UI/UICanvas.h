@@ -41,8 +41,8 @@ namespace GEE
 		virtual UICanvasFieldCategory& AddCategory(const std::string& name) = 0;
 		virtual UICanvasField& AddField(const std::string& name, std::function<Vec3f()> getElementOffset = nullptr) = 0;
 
-		void AddUIElement(UICanvasElement&);
-		void EraseUIElement(UICanvasElement&);
+		void AddTopLevelUIElement(UICanvasElement&);
+		void EraseTopLevelUIElement(UICanvasElement&);
 
 		void ScrollView(Vec2f offset);
 		void SetViewScale(Vec2f scale);
@@ -67,7 +67,7 @@ namespace GEE
 		virtual void GetExternalButtons(std::vector<UIButtonActor*>&) const = 0;
 	public:
 
-		std::vector<std::reference_wrapper<UICanvasElement>> UIElements;
+		std::vector<UICanvasElement*> TopLevelUIElements;
 		Transform CanvasView;
 		mutable bool bContainsMouse;	//Cache variable
 		mutable bool bContainsMouseOutsideTrueCanvas;

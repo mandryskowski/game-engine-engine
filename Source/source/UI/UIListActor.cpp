@@ -49,6 +49,28 @@ namespace GEE
 		return static_cast<int>(ListElements.size());
 	}
 
+	Boxf<Vec2f> UIListActor::GetBoundingBoxIncludingChildren(bool world) const
+	{
+		if (bExpanded)
+			return UIActorDefault::GetBoundingBoxIncludingChildren(world);
+
+		const Boxf<Vec2f> thisBoundingBox = GetBoundingBox(world);
+		Vec2f canvasLeftDownMin(thisBoundingBox.Position - thisBoundingBox.Size);
+		Vec2f canvasRightUpMax(thisBoundingBox.Position + thisBoundingBox.Size);
+
+		for (auto it : ChildUIElements)
+		{
+			Boxf<Vec2f> bBox = it->GetBoundingBoxIncludingChildren();
+			if (std::find_if(ListElements.begin(), ListElements.end(), [&](const UIListElement& listElement) {return (&listElement.GetUIElementRef()) == it; }) != ListElements.end())
+				continue;
+
+			canvasLeftDownMin = glm::min(canvasLeftDownMin, bBox.Position - bBox.Size);
+			canvasRightUpMax = glm::max(canvasRightUpMax, bBox.Position + bBox.Size);
+		}
+
+		return Boxf<Vec2f>::FromMinMaxCorners(canvasLeftDownMin, canvasRightUpMax);
+	}
+
 	void UIListActor::SetListElementOffset(int index, std::function<Vec3f()> getElementOffset)
 	{
 		if (index < 0 || index > ListElements.size() || !getElementOffset)
@@ -116,15 +138,18 @@ namespace GEE
 
 	Actor& UIAutomaticListActor::AddChild(UniquePtr<Actor> actor)
 	{
-		AddElement(UIListElement(*actor, ElementOffset));
-		if (UIListActor* listCast = dynamic_cast<UIListActor*>(actor.get()))
-			ListElements.back().SetGetElementOffsetFunc([listCast]() -> Vec3f { listCast->Refresh(); return listCast->GetListOffset(); });
+		if (auto uiElementCast = dynamic_cast<UICanvasElement*>(actor.get()))
+		{
+			AddElement(UIListElement(UIListElement::ReferenceToUIActor(*actor, *uiElementCast), ElementOffset));
+			if (UIListActor* listCast = dynamic_cast<UIListActor*>(actor.get()))
+				ListElements.back().SetGetElementOffsetFunc([listCast]() -> Vec3f { listCast->Refresh(); return listCast->GetListOffset(); });
+		}
 
 		return UIListActor::AddChild(std::move(actor));
 	}
 
-	UIListElement::UIListElement(Actor& actorRef, std::function<Vec3f()> getElementOffset, std::function<Vec3f()> getCenterOffset) :
-		ActorPtr(actorRef),
+	UIListElement::UIListElement(ReferenceToUIActor& actorRef, std::function<Vec3f()> getElementOffset, std::function<Vec3f()> getCenterOffset) :
+		UIActorRef(actorRef),
 		GetElementOffsetFunc(getElementOffset),
 		GetCenterOffsetFunc(getCenterOffset)
 	{
@@ -132,47 +157,34 @@ namespace GEE
 			GetCenterOffsetFunc = [this]() -> Vec3f { return (GetElementOffsetFunc) ? (GetElementOffsetFunc() / 2.0f) : (Vec3f(0.0f)); };
 	}
 
-	UIListElement::UIListElement(Actor& actorRef, const Vec3f& constElementOffset) :
+	UIListElement::UIListElement(ReferenceToUIActor& actorRef, const Vec3f& constElementOffset) :
 		UIListElement(actorRef, [constElementOffset]() { return constElementOffset; }, [constElementOffset]() { return constElementOffset / 2.0f; })
 	{
 	}
 
-	UIListElement::UIListElement(const UIListElement& element) :
-		ActorPtr(element.ActorPtr), GetElementOffsetFunc(element.GetElementOffsetFunc), GetCenterOffsetFunc(element.GetCenterOffsetFunc)
-	{
-	}
-
-	UIListElement::UIListElement(UIListElement&& element) :
-		UIListElement(static_cast<const UIListElement&>(element))
-	{
-	}
-
-	UIListElement& UIListElement::operator=(const UIListElement& element)
-	{
-		ActorPtr = element.ActorPtr;
-		GetElementOffsetFunc = element.GetElementOffsetFunc;
-		GetCenterOffsetFunc = element.GetCenterOffsetFunc;
-		return *this;
-	}
-
-	UIListElement& UIListElement::operator=(UIListElement&& element)
-	{
-		return (*this = element);
-	}
-
 	bool UIListElement::IsBeingKilled() const
 	{
-		return ActorPtr.Get().IsBeingKilled();
+		return GetActorRef().IsBeingKilled();
 	}
 
 	Actor& UIListElement::GetActorRef()
 	{
-		return ActorPtr.Get();
+		return UIActorRef.ActorRef.get();
 	}
 
 	const Actor& UIListElement::GetActorRef() const
 	{
-		return ActorPtr.Get();
+		return UIActorRef.ActorRef.get();
+	}
+
+	UICanvasElement& UIListElement::GetUIElementRef()
+	{
+		return UIActorRef.UIElementRef.get();
+	}
+
+	const UICanvasElement& UIListElement::GetUIElementRef() const
+	{
+		return UIActorRef.UIElementRef;
 	}
 
 	Vec3f UIListElement::GetElementOffset() const

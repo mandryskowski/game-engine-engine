@@ -6,7 +6,7 @@
 namespace GEE
 {
 	UICanvas::UICanvas(const UICanvas& canvas) :
-		UIElements(canvas.UIElements),
+		TopLevelUIElements(canvas.TopLevelUIElements),
 		CanvasView(canvas.CanvasView),
 		bContainsMouse(false),
 		bContainsMouseOutsideTrueCanvas(false),
@@ -17,12 +17,18 @@ namespace GEE
 	UICanvas::UICanvas(UICanvas&& canvas) :
 		UICanvas(static_cast<const UICanvas&>(canvas))
 	{
-		std::for_each(UIElements.begin(), UIElements.end(), [this](std::reference_wrapper<UICanvasElement>& element) { element.get().AttachToCanvas(*this); });
+		std::for_each(TopLevelUIElements.begin(), TopLevelUIElements.end(), [this](UICanvasElement* element) { element->AttachToCanvas(*this); });
 	}
 
 	Mat4f UICanvas::GetViewMatrix() const
 	{
-		GEE_CORE_ASSERT(CanvasView.GetScale().x != 0.0f && CanvasView.GetScale().y != 0.0f && CanvasView.GetScale().z != 0.0f, "Scale component equal to 0.");
+		if (const Vec3f& scale = CanvasView.GetScale(); scale.x == 0.0f || scale.y == 0.0f || scale.z == 0.0f)
+		{
+			Transform canvasViewCopy = CanvasView;
+			canvasViewCopy.SetScale(glm::max(scale, 0.001f));
+			return glm::inverse(canvasViewCopy.GetMatrix());
+		}
+
 
 		return glm::inverse(CanvasView.GetMatrix());
 	}
@@ -39,26 +45,20 @@ namespace GEE
 
 	Boxf<Vec2f> UICanvas::GetBoundingBox() const
 	{
-		Vec2f canvasLeftDownMin(0.0f);
-		Vec2f canvasRightUpMax(0.0f);
+		if (TopLevelUIElements.empty())
+			return Boxf<Vec2f>(Vec2f(0.0f), Vec2f(0.0f));
 
-		for (int i = 0; i < UIElements.size(); i++)
+		const Boxf<Vec2f> firstElementsBoundingBox = TopLevelUIElements.front()->GetBoundingBoxIncludingChildren();
+		Vec2f canvasLeftDownMin(firstElementsBoundingBox.Position - firstElementsBoundingBox.Size);
+		Vec2f canvasRightUpMax(firstElementsBoundingBox.Position + firstElementsBoundingBox.Size);
+
+		for (auto it = TopLevelUIElements.begin() + 1; it != TopLevelUIElements.end(); it++)
 		{
-			Boxf<Vec2f> bBox = UIElements[i].get().GetBoundingBox();
-			if (bBox.Size == Vec2f(0.0f))
-				continue;
+			Boxf<Vec2f> bBox = (*it)->GetBoundingBoxIncludingChildren();
 
-			Vec2f elementRightUpMax(bBox.Position + bBox.Size);		//pos.x + size.x; pos.y + size.y;
-			Vec2f elementLeftDownMin(bBox.Position - bBox.Size);	//pos.y - size.x; pos.y - size.y;
-
-	//		std::cout << elementLeftDownMin.y << "??\n";
-
-			canvasLeftDownMin = glm::min(canvasLeftDownMin, elementLeftDownMin);
-			canvasRightUpMax = glm::max(canvasRightUpMax, elementRightUpMax);
+			canvasLeftDownMin = glm::min(canvasLeftDownMin, bBox.Position - bBox.Size);
+			canvasRightUpMax = glm::max(canvasRightUpMax, bBox.Position + bBox.Size);
 		}
-
-		//	std::cout << UIElements.size() << "\n";
-		//	std::cout << canvasLeftDownMin.x << ", " << canvasLeftDownMin.y << " --> " << canvasRightUpMax.x << ", " << canvasRightUpMax.y << "\n";
 
 		return Boxf<Vec2f>::FromMinMaxCorners(canvasLeftDownMin, canvasRightUpMax);
 	}
@@ -92,24 +92,22 @@ namespace GEE
 	void UICanvas::AutoClampView(bool trueHorizontalFalseVertical)
 	{
 		float size = (trueHorizontalFalseVertical) ? (GetBoundingBox().Size.x) : (GetBoundingBox().Size.y);
-		SetViewScale(Vec2f(size));
+		SetViewScale(Vec2f(glm::max(0.001f, size)));
 	}
 
-	void UICanvas::AddUIElement(UICanvasElement& element)
+	void UICanvas::AddTopLevelUIElement(UICanvasElement& element)
 	{
-		UIElements.push_back(element);
+		TopLevelUIElements.push_back(&element);
 		element.AttachToCanvas(*this);
 	}
 
-	void UICanvas::EraseUIElement(UICanvasElement& element)
+	void UICanvas::EraseTopLevelUIElement(UICanvasElement& element)
 	{
-		auto found = std::find_if(UIElements.begin(), UIElements.end(), [&](std::reference_wrapper<UICanvasElement>& elementVec) { return &elementVec.get() == &element; });
-		if (found == UIElements.end())
+		auto found = std::find_if(TopLevelUIElements.begin(), TopLevelUIElements.end(), [&](UICanvasElement* elementVec) { return elementVec == &element; });
+		if (found == TopLevelUIElements.end())
 			return;
 
-		element.DetachFromCanvas();
-
-		UIElements.erase(found);
+		TopLevelUIElements.erase(found);
 	}
 
 
@@ -117,11 +115,6 @@ namespace GEE
 	{
 		CanvasView.Move(offset);
 		ClampViewToElements();
-
-		for (auto& it : UIElements)
-		{
-			//it.get().OnScroll();
-		}
 	}
 
 	void UICanvas::SetViewScale(Vec2f scale)

@@ -14,8 +14,9 @@ namespace GEE
 		TextComponent(TextComponent&&);
 
 		const std::string& GetContent() const;
-		virtual Boxf<Vec2f> GetBoundingBox(bool world = true) override;	//Canvas space
+		virtual Boxf<Vec2f> GetBoundingBox(bool world = true) const override;	//Canvas space
 		float GetTextLength(bool world = true) const;
+		float GetTextHeight(bool world = true) const;
 		virtual std::vector<const Material*> GetMaterials() const override;
 		Font* GetUsedFont();
 		MaterialInstance* GetTextMatInst();
@@ -78,6 +79,17 @@ namespace GEE
 		void SetMaxSize(const Vec2f&);
 		virtual void SetContent(const std::string&) override;
 		void UpdateSize();
+		/**
+		 * @brief Recalculates the ScaleRatio based on the scale of this Component's Transform.
+		 * @param world: If true, the world transform (or canvas world transform) is used to compute ScaleRatio. Otherwise, we use the local transform.
+		*/
+		void RecalculateScaleRatio(bool world = false);
+		/**
+		 * @brief Unstretch the text (make the scale uniform) based on this Component's Transform. The scale X and Y will be set to the smallest component of the two.
+		 * @param world: If true, the world transform (or canvas world transform) is used to compute ScaleRatio (which will unstretch the text). Otherwise, we use the local transform.
+		*/
+		void Unstretch(bool world = true);
+
 	private:
 		Vec2f MaxSize;
 		Vec2f ScaleRatio;
@@ -89,7 +101,7 @@ namespace GEE
 		ScrollingTextComponent(Actor&, Component* parentComp, const std::string& name = std::string(), const Transform& transform = Transform(), std::string content = std::string(), SharedPtr<Font> font = nullptr, std::pair<TextAlignment, TextAlignment> = std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::BOTTOM));
 		ScrollingTextComponent(Actor&, Component* parentComp, const std::string& name = std::string(), const Transform& transform = Transform(), std::string content = std::string(), std::string fontPath = std::string(), std::pair<TextAlignment, TextAlignment> = std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::BOTTOM));
 
-		virtual Boxf<Vec2f> GetBoundingBox(bool world = true) override;	//Canvas space
+		virtual Boxf<Vec2f> GetBoundingBox(bool world = true) const override;	//Canvas space
 		void SetMaxLength(float);
 
 		virtual void Update(float deltaTime);
@@ -100,5 +112,11 @@ namespace GEE
 
 		float TimeSinceScrollReset, ScrollResetTime, ScrollCooldownTime;
 	};
+
+	namespace textUtil
+	{
+		float GetTextLength(const std::string& str, const Vec2f& textScale, const Font& font);
+		float GetTextHeight(const std::string& str, const Vec2f& textScale, const Font& font);
+	}
 }
 GEE_POLYMORPHIC_SERIALIZABLE_COMPONENT(GEE::Component, GEE::TextComponent, GEE::Transform(), "", "")

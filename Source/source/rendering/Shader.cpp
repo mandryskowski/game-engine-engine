@@ -125,9 +125,9 @@ namespace GEE
 	}
 
 
-	template <> void Shader::Uniform<int>(const std::string& name, const int& val)		{ glUniform1i(FindLocation(name), val); }
-	template <> void Shader::Uniform<bool>(const std::string& name, const bool& val)	{ glUniform1i(FindLocation(name), val); }
-	template <> void Shader::Uniform<float>(const std::string& name, const float& val)	{ glUniform1f(FindLocation(name), val);	}
+	template <> void Shader::Uniform<int>(const std::string& name, const int& val) { glUniform1i(FindLocation(name), val); }
+	template <> void Shader::Uniform<bool>(const std::string& name, const bool& val) { glUniform1i(FindLocation(name), val); }
+	template <> void Shader::Uniform<float>(const std::string& name, const float& val) { glUniform1f(FindLocation(name), val); }
 
 	template <> void Shader::Uniform<Vec2f>(const std::string& name, const Vec2f& val) { glUniform2fv(FindLocation(name), 1, Math::GetDataPtr(val)); }
 	template <> void Shader::Uniform<Vec3f>(const std::string& name, const Vec3f& val) { glUniform3fv(FindLocation(name), 1, Math::GetDataPtr(val)); }
@@ -135,15 +135,37 @@ namespace GEE
 
 	template <> void Shader::Uniform<Vec2u>(const std::string& name, const Vec2u& val) { glUniform2uiv(FindLocation(name), 1, Math::GetDataPtr(val)); }
 	template <> void Shader::Uniform<Vec3u>(const std::string& name, const Vec3u& val) { glUniform3uiv(FindLocation(name), 1, Math::GetDataPtr(val)); }
-	template <> void Shader::Uniform<Vec4u>(const std::string& name, const Vec4u& val) { std::cout << "AAA VEC4U " << name << " loc:" << FindLocation(name) << '\n'; glUniform4uiv(FindLocation(name), 1, Math::GetDataPtr(val)); }
+	template <> void Shader::Uniform<Vec4u>(const std::string& name, const Vec4u& val) { glUniform4uiv(FindLocation(name), 1, Math::GetDataPtr(val)); }
 
 	template <> void Shader::Uniform<Vec2i>(const std::string& name, const Vec2i& val) { glUniform2iv(FindLocation(name), 1, Math::GetDataPtr(val)); }
 	template <> void Shader::Uniform<Vec3i>(const std::string& name, const Vec3i& val) { glUniform3iv(FindLocation(name), 1, Math::GetDataPtr(val)); }
 	template <> void Shader::Uniform<Vec4i>(const std::string& name, const Vec4i& val) { glUniform4iv(FindLocation(name), 1, Math::GetDataPtr(val)); }
 
-	template <> void Shader::Uniform<Mat3f>(const std::string& name, const Mat3f& val)	{ glUniformMatrix3fv(FindLocation(name), 1, GL_FALSE, Math::GetDataPtr(val));	}
+	template <> void Shader::Uniform<Mat3f>(const std::string& name, const Mat3f& val) { glUniformMatrix3fv(FindLocation(name), 1, GL_FALSE, Math::GetDataPtr(val)); }
 
-	template <> void Shader::Uniform<Mat4f>(const std::string& name, const Mat4f& val)	{ glUniformMatrix4fv(FindLocation(name), 1, GL_FALSE, Math::GetDataPtr(val));	}
+	template <> void Shader::Uniform<Mat4f>(const std::string& name, const Mat4f& val) { glUniformMatrix4fv(FindLocation(name), 1, GL_FALSE, Math::GetDataPtr(val)); }
+
+
+
+	template <> void Shader::UniformArray<int>(const std::string& name, const int* val, unsigned int size) { glUniform1iv(FindLocation(name), size, val); }
+	template <> void Shader::UniformArray<bool>(const std::string& name, const bool* val, unsigned int size) { glUniform1iv(FindLocation(name), size, reinterpret_cast<const GLint*>(val)); }
+	template <> void Shader::UniformArray<float>(const std::string& name, const float* val, unsigned int size) { glUniform1fv(FindLocation(name), size, val); }
+									
+	template <> void Shader::UniformArray<Vec2f>(const std::string& name, const Vec2f* val, unsigned int size) { glUniform2fv(FindLocation(name), size, &(*val)[0]); }
+	template <> void Shader::UniformArray<Vec3f>(const std::string& name, const Vec3f* val, unsigned int size) { glUniform3fv(FindLocation(name), size, &(*val)[0]); }
+	template <> void Shader::UniformArray<Vec4f>(const std::string& name, const Vec4f* val, unsigned int size) { glUniform4fv(FindLocation(name), size, &(*val)[0]); }
+																					 
+	template <> void Shader::UniformArray<Vec2u>(const std::string& name, const Vec2u* val, unsigned int size) { glUniform2uiv(FindLocation(name), size, &(*val)[0]); }
+	template <> void Shader::UniformArray<Vec3u>(const std::string& name, const Vec3u* val, unsigned int size) { glUniform3uiv(FindLocation(name), size, &(*val)[0]); }
+	template <> void Shader::UniformArray<Vec4u>(const std::string& name, const Vec4u* val, unsigned int size) { glUniform4uiv(FindLocation(name), size, &(*val)[0]); }
+																					 
+	template <> void Shader::UniformArray<Vec2i>(const std::string& name, const Vec2i* val, unsigned int size) { glUniform2iv(FindLocation(name), size, &(*val)[0]); }
+	template <> void Shader::UniformArray<Vec3i>(const std::string& name, const Vec3i* val, unsigned int size) { glUniform3iv(FindLocation(name), size, &(*val)[0]); }
+	template <> void Shader::UniformArray<Vec4i>(const std::string& name, const Vec4i* val, unsigned int size) { glUniform4iv(FindLocation(name), size, &(*val)[0]); }
+																					 
+	template <> void Shader::UniformArray<Mat3f>(const std::string& name, const Mat3f* val, unsigned int size) { glUniformMatrix3fv(FindLocation(name), size, GL_FALSE, &(*val)[0][0]); }
+																					 
+	template <> void Shader::UniformArray<Mat4f>(const std::string& name, const Mat4f* val, unsigned int size) { glUniformMatrix4fv(FindLocation(name), size, GL_FALSE, &(*val)[0][0]); }
 
 
 	void Shader::UniformBlockBinding(std::string name, unsigned int binding) const
@@ -230,7 +252,7 @@ namespace GEE
 
 		if (!shaderFile.good())
 		{
-			std::cout << "ERROR! Cannot open: " << shaderPath << " :(\n";
+			std::cout << "ERROR: Cannot open: " << shaderPath << "(\n";
 			return -1;
 		}
 
@@ -250,12 +272,13 @@ namespace GEE
 		glShaderSource(shader, 1, &shaderSource, 0);
 		glCompileShader(shader);
 
-		DebugShader(shader, shaderPath);
+		if (!DebugShader(shader, shaderPath))
+			std::cout << "Faulty shader source:\n" << shaderSourceStr << "\n";
 
 		return shader;
 	}
 
-	void ShaderLoader::DebugShader(unsigned int shaderID, std::string path)
+	bool ShaderLoader::DebugShader(unsigned int shaderID, std::string path)
 	{
 		int result;
 		char data[512];
@@ -263,8 +286,10 @@ namespace GEE
 		if (!result)
 		{
 			glGetShaderInfoLog(shaderID, 512, NULL, data);
-			std::cout << "Shader error (" + path + "): " << data;
+			std::cout << "Shader error (" + path + ")\n" << data << '\n';
+			return false;
 		}
+		return true;
 	}
 
 	SharedPtr<Shader> ShaderLoader::LoadShaders(std::string shaderName, std::string vShaderPath, std::string fShaderPath, std::string gShaderPath)

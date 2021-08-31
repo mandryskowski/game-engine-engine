@@ -15,7 +15,7 @@ namespace GEE
 				return;
 
 			if (UICanvas* canvasCast = dynamic_cast<UICanvas*>(parentActor))
-				canvasCast->AddUIElement(*this);
+				canvasCast->AddTopLevelUIElement(*this);
 			else if (UICanvasElement* elementCast = dynamic_cast<UICanvasElement*>(parentActor))
 				SetParentElement(*elementCast);
 		}

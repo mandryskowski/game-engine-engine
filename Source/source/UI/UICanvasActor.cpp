@@ -139,7 +139,7 @@ namespace GEE
 
 		UICanvasFieldCategory& category = FieldsList->CreateChild<UICanvasFieldCategory>(name);
 		category.SetTransform(Transform(Vec2f(0.0f, -1.0f), Vec2f(FieldSize)));	//position doesn't matter if this is not the first field
-		FieldsList->AddElement(UIListElement(category, [&category]() { category.Refresh(); return category.GetListOffset(); }, [&category]() { return Vec3f(0.0f, -1.5f, 0.0f); }));
+		FieldsList->AddElement(UIListElement(UIListElement::ReferenceToUIActor(&category), [&category]() { category.Refresh(); return category.GetListOffset(); }, [&category]() { return Vec3f(0.0f, -1.5f, 0.0f); }));
 		category.SetOnExpansionFunc([this]() { RefreshFieldsList(); });
 
 		return category;
@@ -151,7 +151,7 @@ namespace GEE
 			FieldsList = &ScaleActor->CreateChild<UIListActor>(Name + "_Fields_List");
 
 		UICanvasField& field = FieldsList->CreateChild<UICanvasField>(name);
-		(getElementOffset) ? (FieldsList->AddElement(UIListElement(field, getElementOffset))) : (FieldsList->AddElement(UIListElement(field, Vec3f(0.0f, -FieldSize.y * 2.0f, 0.0f))));
+		(getElementOffset) ? (FieldsList->AddElement(UIListElement(UIListElement::ReferenceToUIActor(&field), getElementOffset))) : (FieldsList->AddElement(UIListElement(UIListElement::ReferenceToUIActor(&field), Vec3f(0.0f, -FieldSize.y * 2.0f, 0.0f))));
 
 		field.SetTransform(Transform(Vec2f(0.0f), Vec2f(FieldSize)));	//position doesn't matter if this is not the first field
 
@@ -272,11 +272,11 @@ namespace GEE
 			ResizeBarX->SetClickPosNDC(GameHandle->GetInputRetriever().GetMousePositionNDC());
 			});
 
-		EraseUIElement(*ScrollBarX);
-		EraseUIElement(*ScrollBarY);
-		EraseUIElement(*BothScrollBarsButton);
-		EraseUIElement(*ResizeBarX);
-		//EraseUIElement(*ResizeBarY);
+		ScrollBarX->DetachFromCanvas();
+		ScrollBarY->DetachFromCanvas();
+		BothScrollBarsButton->DetachFromCanvas();
+		ResizeBarX->DetachFromCanvas();
+		//ResizeBarY->DetachFromCanvas();
 	}
 
 	template<VecAxis barAxis>

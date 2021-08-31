@@ -69,11 +69,6 @@ namespace GEE
 		return (RootComponent) ? (&RootComponent->GetTransform()) : (nullptr);
 	}
 
-	Actor* Actor::GetChild(unsigned int index) const
-	{
-		return Children[index].get();
-	}
-
 	std::vector<Actor*> Actor::GetChildren()
 	{
 		std::vector<Actor*> children;

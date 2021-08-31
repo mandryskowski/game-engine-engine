@@ -20,15 +20,37 @@ namespace GEE
 		if (element.ParentElement)
 			SetParentElement(*element.ParentElement);
 		else if (element.CanvasPtr)
-			element.CanvasPtr->AddUIElement(*this);
+			element.CanvasPtr->AddTopLevelUIElement(*this);
 	}
 
-	Boxf<Vec2f> UICanvasElement::GetBoundingBox(bool world)
+	Boxf<Vec2f> UICanvasElement::GetBoundingBox(bool world) const
 	{
 		return Boxf<Vec2f>(Vec2f(0.0f), Vec2f(0.0f));
 	}
 
+	Boxf<Vec2f> UICanvasElement::GetBoundingBoxIncludingChildren(bool world) const
+	{
+		const Boxf<Vec2f> thisBoundingBox = GetBoundingBox(world);
+		Vec2f canvasLeftDownMin(thisBoundingBox.Position - thisBoundingBox.Size);
+		Vec2f canvasRightUpMax(thisBoundingBox.Position + thisBoundingBox.Size);
+
+		for (auto it : ChildUIElements)
+		{
+			Boxf<Vec2f> bBox = it->GetBoundingBoxIncludingChildren();
+
+			canvasLeftDownMin = glm::min(canvasLeftDownMin, bBox.Position - bBox.Size);
+			canvasRightUpMax = glm::max(canvasRightUpMax, bBox.Position + bBox.Size);
+		}
+
+		return Boxf<Vec2f>::FromMinMaxCorners(canvasLeftDownMin, canvasRightUpMax);
+	}
+
 	UICanvas* UICanvasElement::GetCanvasPtr()
+	{
+		return CanvasPtr;
+	}
+
+	const UICanvas* UICanvasElement::GetCanvasPtr() const
 	{
 		return CanvasPtr;
 	}
@@ -45,46 +67,45 @@ namespace GEE
 
 	void UICanvasElement::AddChildElement(UICanvasElement& element)
 	{
+		element.ParentElement = this;
+		ChildUIElements.push_back(&element);
 		if (GetCanvasPtr())
-		{
-			GetCanvasPtr()->AddUIElement(element);
-			element.ParentElement = this;
-			ChildElements.push_back(&element);
-		}
+			element.AttachToCanvas(*GetCanvasPtr());
 	}
 
 	void UICanvasElement::EraseChildElement(UICanvasElement& element)
 	{
-		GetCanvasPtr()->EraseUIElement(element);
+		element.DetachFromCanvas();
 	}
 
 	void UICanvasElement::AttachToCanvas(UICanvas& canvas)
 	{
 		CanvasPtr = &canvas;
 		ElementDepth = CanvasPtr->GetCanvasDepth();
-
 	}
 
 	void UICanvasElement::DetachFromCanvas()
 	{
 		if (ParentElement)
 		{
-			ParentElement->ChildElements.erase(std::remove_if(ChildElements.begin(), ChildElements.end(), [this](UICanvasElement* elementVec) {return elementVec == this; }), ChildElements.end());
+			ParentElement->ChildUIElements.erase(std::remove_if(ChildUIElements.begin(), ChildUIElements.end(), [this](UICanvasElement* elementVec) {return elementVec == this; }), ChildUIElements.end());
 			ParentElement = nullptr;
 		}
+		else if (CanvasPtr)
+			CanvasPtr->EraseTopLevelUIElement(*this);
 
-		for (auto& it : ChildElements)
+
+		for (auto& it : ChildUIElements)
 			EraseChildElement(*it);
 
 
-		ChildElements.clear();
+		ChildUIElements.clear();
 		CanvasPtr = nullptr;
 	}
 
 	UICanvasElement::~UICanvasElement()
 	{
-		if (CanvasPtr)
-			CanvasPtr->EraseUIElement(*this);
+		DetachFromCanvas();
 	}
 
 	/*Transform UICanvasComponent::GetCanvasSpaceTransform()

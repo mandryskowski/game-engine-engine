@@ -147,6 +147,7 @@
     <ClCompile Include="source\animation\AnimationManagerComponent.cpp" />
     <ClCompile Include="source\animation\SkeletonInfo.cpp" />
     <ClCompile Include="source\editor\GameEngineEngineEditor.cpp" />
+    <ClCompile Include="source\editor\GraphRenderingComponent.cpp" />
     <ClCompile Include="source\game\GameManager.cpp" />
     <ClCompile Include="source\math\Vec.cpp" />
     <ClCompile Include="source\scene\Actor.cpp" />
@@ -208,6 +209,7 @@
     <ClInclude Include="include\animation\SkeletonInfo.h" />
     <ClInclude Include="include\editor\EditorManager.h" />
     <ClInclude Include="include\editor\GameEngineEngineEditor.h" />
+    <ClInclude Include="include\editor\GraphRenderingComponent.h" />
     <ClInclude Include="include\editor\MousePicking.h" />
     <ClInclude Include="include\editor\UIViewportWindow.h" />
     <ClInclude Include="include\math\Vec.h" />

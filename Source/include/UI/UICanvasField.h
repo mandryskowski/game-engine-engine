@@ -115,6 +115,7 @@ namespace GEE
 		GameScene* scenePtr = &Scene;
 		auto& compNameButton = TemplateParent.CreateChild<UIButtonActor>("CompNameBox", currentObjName);
 		compNameButton.SetTransform(Transform(Vec2f(2.0f, 0.0f), Vec2f(3.0f, 1.0f)));
+		compNameButton.GetRoot()->GetComponent<TextConstantSizeComponent>("ButtonText")->Unstretch();
 
 		compNameButton.SetOnClickFunc([scenePtr, getObjectsFunc, setFunc, &compNameButton]() {
 			UIWindowActor& window = scenePtr->CreateActorAtRoot<UIWindowActor>("CompInputWindow");
@@ -144,7 +145,7 @@ namespace GEE
 			deleteMe123.CreateComponent<ScrollingTextComponent>("ButtonText", Transform(Vec2f(0.0f), Vec2f(0.25f, 1.0f)), "Nullptr", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::CENTER));
 			for (auto& it : availableObjects)
 			{
-				auto& a = list.CreateChild<UIButtonActor>(it->GetName() + ", Matching object button", [&window, setFunc, it, &compNameButton]() { setFunc(it); window.MarkAsKilled(); if (auto buttonText = compNameButton.GetRoot()->GetComponent<TextConstantSizeComponent>("ButtonText")) { buttonText->SetContent(it->GetName()); } });
+				auto& a = list.CreateChild<UIButtonActor>(it->GetName() + ", Matching object button", [&window, setFunc, it, &compNameButton]() { setFunc(it); window.MarkAsKilled(); if (auto buttonText = compNameButton.GetRoot()->GetComponent<TextConstantSizeComponent>("ButtonText")) { buttonText->SetContent(it->GetName()); buttonText->Unstretch(); } });
 				a.CreateComponent<TextConstantSizeComponent>("ButtonText", Transform(Vec2f(0.0f), Vec2f(0.25f, 1.0f)), it->GetName(), "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER)).SetMaxSize(Vec2f(0.8f));
 			}
 			list.Refresh();

@@ -149,8 +149,8 @@ namespace GEE
 		//if it isn't an integer, the shader will blend between two nearest textures in the atlas (f.e. 1.5 mixes texture 1 and 2 equally)
 
 	public:
-		AtlasMaterial(Material&& mat, glm::ivec2 atlasSize = glm::ivec2(0));
-		AtlasMaterial(MaterialLoc loc, glm::ivec2 atlasSize = glm::ivec2(0));
+		AtlasMaterial(Material&& mat, Vec2i atlasSize = Vec2i(0));
+		AtlasMaterial(MaterialLoc loc, Vec2i atlasSize = Vec2i(0));
 		float GetMaxTextureID() const;
 		virtual void UpdateInstanceUBOData(Shader* shader, bool setValuesToDefault = false) const override;
 		virtual void UpdateWholeUBOData(Shader* shader, Texture& emptyTexture) const override;

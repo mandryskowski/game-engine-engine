@@ -51,7 +51,7 @@ namespace GEE
 		return Content;
 	}
 
-	Boxf<Vec2f> TextComponent::GetBoundingBox(bool world)
+	Boxf<Vec2f> TextComponent::GetBoundingBox(bool world) const
 	{
 		Transform transform = (world) ? (GetTransform().GetWorldTransform()) : (GetTransform());
 		if (GetCanvasPtr() && world)
@@ -70,13 +70,16 @@ namespace GEE
 		if (CanvasPtr && world)
 			transform = CanvasPtr->ToCanvasSpace(transform);
 
-		Vec2f scale = transform.GetScale();
+		return textUtil::GetTextLength(Content, transform.GetScale(), *UsedFont);
+	}
 
-		float advancesSum = 0.0f;
-		for (auto it : Content)
-			advancesSum += UsedFont->GetCharacter(it).Advance;
+	float TextComponent::GetTextHeight(bool world) const
+	{
+		Transform transform = (world) ? (GetTransform().GetWorldTransform()) : (GetTransform());
+		if (CanvasPtr && world)
+			transform = CanvasPtr->ToCanvasSpace(transform);
 
-		return advancesSum * scale.x * 2.0f;
+		return textUtil::GetTextHeight(Content, transform.GetScale(), *UsedFont);
 	}
 
 	std::vector<const Material*> TextComponent::GetMaterials() const
@@ -218,9 +221,32 @@ namespace GEE
 	void TextConstantSizeComponent::UpdateSize()
 	{
 		float textLength = glm::max((GetTextLength(false) / 2.0f) / GetTransform().GetScale().x, 0.001f);
-		float scale = glm::min(MaxSize.y, MaxSize.x / textLength);
+		//float textHeight = glm::max((GetTextHeight(false) / 2.0f) / GetTransform().GetScale().y, 0.001f);
+		float scale = glm::min(MaxSize.y/* / textHeight*/, MaxSize.x / textLength);
 
 		GetTransform().SetScale(Vec2f(scale) * ScaleRatio);
+	}
+
+	void TextConstantSizeComponent::RecalculateScaleRatio(bool world)
+	{
+		Vec2f scale = ((world)
+					? ((GetCanvasPtr()) ? (GetCanvasPtr()->ToCanvasSpace(GetTransform().GetWorldTransform())) : (GetTransform().GetWorldTransform()))
+					: (GetTransform())).GetScale();
+		ScaleRatio = Vec2f(glm::max(Vec2f(1.0f), Vec2f(scale.x / scale.y, scale.y / scale.x)));
+	}
+
+	void TextConstantSizeComponent::Unstretch(bool world)
+	{
+		Vec2f scale = ((world)
+			? ((GetCanvasPtr()) ? (GetCanvasPtr()->ToCanvasSpace(GetTransform().GetWorldTransform())) : (GetTransform().GetWorldTransform()))
+			: (GetTransform())).GetScale();
+
+		Vec2f componentRatio(glm::min(Vec2f(scale.y / scale.x, scale.x / scale.y), Vec2f(1.0f)));
+
+		ScaleRatio = componentRatio;
+		UpdateSize();
+		SetMaxSize(MaxSize / componentRatio);
+		//GetTransform().SetScale(Vec3f(Vec2f(GetTransform().GetScale()) * componentRatio, GetTransform().GetScale().z));
 	}
 
 	ScrollingTextComponent::ScrollingTextComponent(Actor& actorRef, Component* parentComp, const std::string& name, const Transform& transform, std::string content, SharedPtr<Font> font, std::pair<TextAlignment, TextAlignment> alignment):
@@ -241,7 +267,7 @@ namespace GEE
 	{
 	}
 
-	Boxf<Vec2f> ScrollingTextComponent::GetBoundingBox(bool world)
+	Boxf<Vec2f> ScrollingTextComponent::GetBoundingBox(bool world) const
 	{
 		Transform transform = (world) ? (GetTransform().GetWorldTransform()) : (GetTransform());
 		if (GetCanvasPtr() && world)
@@ -305,6 +331,43 @@ namespace GEE
 		if (GetTransform().GetParentTransform())
 			return GetTransform().GetParentTransform()->GetWorldTransform();
 		return Transform();
+	}
+
+	float textUtil::GetTextLength(const std::string& str, const Vec2f& textScale, const Font& font)
+	{
+		std::vector<float> advancesSums = { 0.0f };
+		for (auto it : str)
+		{
+			if (it == '\n')
+			{
+				advancesSums.push_back(0.0f);
+				continue;
+			}
+			advancesSums.back() += font.GetCharacter(it).Advance;
+		}
+
+		return *std::max_element(advancesSums.begin(), advancesSums.end()) * textScale.x * 2.0f;
+	}
+
+	float textUtil::GetTextHeight(const std::string& str, const Vec2f& textScale, const Font& font)
+	{
+		float textHeight = 0.0f;
+		float thisLineMaxHeight = 0.0f;
+		for (auto it : str)
+		{
+			thisLineMaxHeight = 1.0f;
+			if (it == '\n')
+			{
+				textHeight += thisLineMaxHeight;
+				thisLineMaxHeight = 0.0f;
+				continue;
+			}
+
+			if (float size = font.GetCharacter(it).Size.y; size > thisLineMaxHeight)
+				thisLineMaxHeight = size;
+		}
+
+		return (textHeight + thisLineMaxHeight) * textScale.y;
 	}
 
 }

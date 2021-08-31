@@ -40,8 +40,8 @@ namespace GEE
 		backgroundModel.AddMeshInst(GameHandle->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD));
 		backgroundModel.OverrideInstancesMaterial(GameHandle->GetRenderEngineHandle()->FindMaterial("GEE_E_Canvas_Background_Material").get());
 
-		AddUIElement(backgroundModel);	//Add the background model as a UIElement to give it UIDepth
-		EraseUIElement(backgroundModel);	//Erase it immediately because we do not want it to be an element of the canvas, but its background
+		AddTopLevelUIElement(backgroundModel);	//Add the background model as a UIElement to give it UIDepth
+		backgroundModel.DetachFromCanvas();	//Erase it immediately because we do not want it to be an element of the canvas, but its background
 
 		CloseButton = &CreateChild<UIButtonActor>("GEE_E_Close_Button");
 		SetOnCloseFunc(nullptr);
@@ -60,8 +60,8 @@ namespace GEE
 		titleMaterial.SetColor(Vec3f(0.8f));
 		titleComp.SetMaterialInst(titleMaterial);
 
-		EraseUIElement(*DragButton);
-		EraseUIElement(*CloseButton);
+		DragButton->DetachFromCanvas();
+		CloseButton->DetachFromCanvas();
 
 	}
 
