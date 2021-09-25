@@ -221,8 +221,8 @@ namespace GEE
 	void TextConstantSizeComponent::UpdateSize()
 	{
 		float textLength = glm::max((GetTextLength(false) / 2.0f) / GetTransform().GetScale().x, 0.001f);
-		//float textHeight = glm::max((GetTextHeight(false) / 2.0f) / GetTransform().GetScale().y, 0.001f);
-		float scale = glm::min(MaxSize.y/* / textHeight*/, MaxSize.x / textLength);
+		float textHeight = glm::max((GetTextHeight(false) / 2.0f) / GetTransform().GetScale().y, 0.001f);
+		float scale = glm::min(MaxSize.y / textHeight, MaxSize.x / textLength);
 
 		GetTransform().SetScale(Vec2f(scale) * ScaleRatio);
 	}
@@ -355,7 +355,6 @@ namespace GEE
 		float thisLineMaxHeight = 0.0f;
 		for (auto it : str)
 		{
-			thisLineMaxHeight = 1.0f;
 			if (it == '\n')
 			{
 				textHeight += thisLineMaxHeight;

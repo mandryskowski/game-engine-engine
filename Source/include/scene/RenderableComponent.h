@@ -14,7 +14,7 @@ namespace GEE
 		bool CastsShadow() const { return bCastsShadow; }
 		void SetCastsShadow(bool castsShadow) { bCastsShadow = castsShadow; }
 		virtual std::vector<const Material*> GetMaterials() const { return { nullptr }; }
-		~Renderable() { SceneRenderData.EraseRenderable(*this); }
+		virtual ~Renderable() { SceneRenderData.EraseRenderable(*this); }
 	protected:
 		virtual unsigned int GetUIDepth() const { return 0; }
 		bool Hide;
@@ -29,7 +29,7 @@ namespace GEE
 	class RenderableComponent : public Component, public Renderable
 	{
 	public:
-		RenderableComponent(Actor& actor, Component* parentComp, const std::string name, const Transform& transform) :
+		RenderableComponent(Actor& actor, Component* parentComp, const std::string& name, const Transform& transform) :
 			Component(actor, parentComp, name, transform),
 			Renderable(Scene) {}
 		RenderableComponent(RenderableComponent&& comp) :
@@ -50,6 +50,7 @@ namespace GEE
 			SetHide(hide);
 			SetCastsShadow(castsShadow);
 		}
+		virtual ~RenderableComponent() = default;
 	protected:
 	};
 }

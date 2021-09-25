@@ -24,7 +24,12 @@ namespace GEE
 		virtual Mat4f GetViewMatrix() const = 0;
 		virtual const Transform& GetViewT() const;
 		virtual const Transform* GetCanvasT() const = 0;
+
+		virtual Vec2f FromCanvasSpace(const Vec2f& canvasSpaceTransform) const = 0;
+		virtual Mat4f FromCanvasSpace(const Mat4f& canvasSpaceTransform) const = 0;
 		virtual Transform FromCanvasSpace(const Transform& canvasSpaceTransform) const = 0;
+		virtual Vec2f ToCanvasSpace(const Vec2f& worldTransform) const = 0;
+		virtual Mat4f ToCanvasSpace(const Mat4f& worldTransform) const = 0;
 		virtual Transform ToCanvasSpace(const Transform& worldTransform) const = 0;
 
 		virtual Mat4f GetProjection() const;

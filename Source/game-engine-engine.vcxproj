@@ -208,6 +208,7 @@
     <ClInclude Include="include\animation\AnimationManagerComponent.h" />
     <ClInclude Include="include\animation\SkeletonInfo.h" />
     <ClInclude Include="include\editor\EditorManager.h" />
+    <ClInclude Include="include\editor\FPSCounter.h" />
     <ClInclude Include="include\editor\GameEngineEngineEditor.h" />
     <ClInclude Include="include\editor\GraphRenderingComponent.h" />
     <ClInclude Include="include\editor\MousePicking.h" />

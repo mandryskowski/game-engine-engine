@@ -22,6 +22,15 @@ namespace GEE
 		return std::make_shared<T>(std::forward<Args>(args)...);
 	}
 
+	template <typename T>
+	std::string ToStringPrecision(const T& val, const unsigned int precision = 6)
+	{
+		std::ostringstream str;
+		str.precision(precision);
+		str << std::fixed << val;
+		return str.str();
+	}
+
 	using SystemWindow = GLFWwindow;
 
 	enum InterpolationType

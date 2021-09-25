@@ -8,7 +8,10 @@ namespace GEE
 	{
 	public:
 		UIComponent(Actor& actorRef, Component* parentComp);
+		UIComponent(const UIComponent&) = default;
+		UIComponent(UIComponent&&) = default;
 		virtual void AttachToCanvas(UICanvas& canvas) override;
+		virtual ~UIComponent() = default;
 	private:
 		GameScene& SceneRef;
 	};
@@ -19,5 +22,8 @@ namespace GEE
 		UIComponentDefault(Actor& actorRef, Component* parentComp, const std::string& name) :
 			Component(actorRef, parentComp, name),
 			UIComponent(actorRef, parentComp) {}
+		UIComponentDefault(const UIComponentDefault&) = default;
+		UIComponentDefault(UIComponentDefault&&) = default;
+		virtual ~UIComponentDefault() = default;
 	};
 }

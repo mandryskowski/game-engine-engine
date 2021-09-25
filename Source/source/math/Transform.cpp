@@ -455,6 +455,41 @@ namespace GEE
 		return copy *= t;
 	}
 
+	Mat4f Math::SafeInverseMatrix(const Mat4f& mat)
+	{
+		bool hasZero = false;
+		for (int i = 0; i < 3; i++)
+		{
+			if (mat[i][i] == 0.0f)
+			{
+				hasZero = true;
+				break;
+			}
+		}
+
+		if (hasZero)
+		{
+			Mat4f matCopy = mat;
+			for (int i = 0; i < 3; i++)
+				matCopy[i][i] = glm::max(mat[i][i], 0.001f);
+			return glm::inverse(matCopy);
+		}
+		
+		return glm::inverse(mat);
+	}
+
+	Mat4f Math::SafeInverseMatrix(const Transform& t)
+	{
+		if (const Vec3f& scale = t.GetScale(); scale.x == 0.0f || scale.y == 0.0f || scale.z == 0.0f)
+		{
+			Transform tCopy = t;
+			tCopy.SetScale(glm::max(scale, 0.001f));
+			return glm::inverse(tCopy.GetMatrix());
+		}
+
+		return glm::inverse(t.GetMatrix());
+	}
+
 	template void Transform::AddInterpolator<Vec3f>(std::string, float, float, Vec3f, Vec3f, InterpolationType, bool, AnimBehaviour, AnimBehaviour);
 	template void Transform::AddInterpolator<Vec3f>(std::string, float, float, Vec3f, InterpolationType, bool, AnimBehaviour, AnimBehaviour);
 

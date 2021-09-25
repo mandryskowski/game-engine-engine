@@ -38,6 +38,7 @@ namespace GEE
 		virtual SharedPtr<Font> GetDefaultFont() override;
 		virtual bool HasStarted() const override;
 		InputDevicesStateRetriever GetInputRetriever() override;
+		virtual double GetCurrentTime() const override;
 
 		virtual Physics::PhysicsEngineManager* GetPhysicsHandle() override;
 		virtual RenderEngineManager* GetRenderEngineHandle() override;

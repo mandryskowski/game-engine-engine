@@ -457,28 +457,35 @@ namespace GEE
 			// Profiling
 			Shader& graphShader = *RenderEng.AddShader(ShaderLoader::LoadShaders("GraphShader", "Shaders/graph/graph.vs", "Shaders/graph/graph.fs"), true);
 			graphShader.SetExpectedMatrices({ MatrixType::MVP });
-			/*graphShader.Use();
-			graphShader.Uniform("dataPointsCount", 7);
-			graphShader.Uniform("dataPoints[0]", Vec2f(0.0f, 0.3f));
-			graphShader.Uniform("dataPoints[1]", Vec2f(0.2f, 0.7f));
-			graphShader.Uniform("dataPoints[2]", Vec2f(0.4f, 0.1f));
-			graphShader.Uniform("dataPoints[3]", Vec2f(0.6f, 0.5f));
-			graphShader.Uniform("dataPoints[4]", Vec2f(0.6f, 0.0f));
-			graphShader.Uniform("dataPoints[5]", Vec2f(0.8f, 0.9f));
-			graphShader.Uniform("dataPoints[6]", Vec2f(1.0f, 0.9f));
-
-			SharedPtr<float> prev = MakeShared<float>(glfwGetTime());
-			graphShader.SetOnMaterialWholeDataUpdateFunc([&, prev](Shader& shader, const Material&) { shader.Uniform("dataPoints[6]", Vec2f(1.0f, 1.0f / (glfwGetTime() - *prev) / 500.0f)); *prev = glfwGetTime(); });*/
 
 			auto& profilerButton = editorScene.CreateActorAtRoot<UIButtonActor>("SIEMANDZIOBUTTON", "Profile", nullptr, Transform(Vec2f(0.4f, -0.8f), Vec2f(0.1f)));
 			profilerButton.SetOnClickFunc([&]() {
 				auto& profilerWindow = editorScene.CreateActorAtRoot<UIWindowActor>("Profiler window");
 
+				// Additional info
+				auto& additionalInfoActor = profilerWindow.CreateChild<UIActorDefault>("AdditionalFPSData", Transform(Vec2f(1.5f, 0.0f), Vec2f(1.0f)));
+
+				// Actual graph
 				auto graphMaterial = MakeShared<Material>("GraphMaterial", 0.0f, &graphShader);
 				RenderEng.AddMaterial(graphMaterial);
-				auto& graphButton = profilerWindow.CreateChild<UIButtonActor>("GraphActor");
+				auto& graphButton = profilerWindow.CreateChild<UIScrollBarActor>("GraphActor");
 				graphButton.DeleteButtonModel();
-				auto& fpsGraph = graphButton.CreateComponent<GraphRenderingComponent>("FPSGraph");
+				auto& fpsGraph = graphButton.CreateComponent<FPSGraphRenderingComponent>("FPSGraph");
+				//fpsGraph.SetGraphView(Transform(Vec2f(0.0f), Vec2f(30.0f, 2000.0F)));
+				fpsGraph.SetGraphView(Transform(Vec2f(0.0f), Vec2f(30.0f, 80.0f)));
+
+				graphButton.SetOnBeingClickedFunc([&] {
+					float rangeEndpoint = (glm::inverse(profilerWindow.UICanvas::GetViewMatrix()) * Vec4f(profilerWindow.ToCanvasSpace(graphButton.GetClickPosNDC()), 0.0f, 1.0f)).x * 0.5f + 0.5f;
+					fpsGraph.GetSelectedRange().SetEndpoint1(rangeEndpoint);
+					fpsGraph.GetSelectedRange().SetEndpoint2(rangeEndpoint);
+				});
+				graphButton.SetWhileBeingClickedFunc([&] {
+					float rangeEndpoint = (glm::inverse(profilerWindow.UICanvas::GetViewMatrix()) * Vec4f(profilerWindow.ToCanvasSpace(GetInputRetriever().GetMousePositionNDC()), 0.0f, 1.0f)).x * 0.5f + 0.5f;
+					fpsGraph.GetSelectedRange().SetEndpoint2(rangeEndpoint);
+					fpsGraph.UpdateFPSTextInfo();
+				});
+				graphButton.SetOnDoubleClickFunc([&]() { fpsGraph.GetSelectedRange().SetEndpoints(Vec2f(0.0f, 1.0f)); fpsGraph.UpdateFPSTextInfo(); });
+
 				/*fpsGraph.PushRawMarker(Vec2f(0.0f, 0.3f));
 				fpsGraph.PushRawMarker(Vec2f(0.2f, 0.7f));
 				fpsGraph.PushRawMarker(Vec2f(0.4f, 0.1f));
@@ -486,14 +493,14 @@ namespace GEE
 				fpsGraph.PushRawMarker(Vec2f(0.6f, 0.0f));
 				fpsGraph.PushRawMarker(Vec2f(0.8f, 0.9f));
 				fpsGraph.PushRawMarker(Vec2f(1.0f, 0.9f));*/
-				fpsGraph.SetGraphView(Transform(Vec2f(0.0f), Vec2f(30.0f, 2000.0F)));
 
+				// Axis unit texts
 				graphButton.CreateComponent<TextComponent>("XUnitMain", Transform(Vec2f(1.0f, -1.0f), Vec2f(0.1f)), "[seconds ago]", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::TOP));
 				graphButton.CreateComponent<TextComponent>("YUnitMain", Transform(Vec2f(-1.0f, 1.0f), Vec2f(0.1f)), "[FPS]", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::RIGHT, TextAlignment::BOTTOM));
 
 				graphButton.CreateComponent<TextComponent>("XUnitText1", Transform(Vec2f(-1.0f, -1.0f), Vec2f(0.1f)), "30", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::TOP));
 				graphButton.CreateComponent<TextComponent>("XUnitText2", Transform(Vec2f(0.0f, -1.0f), Vec2f(0.1f)), "15", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::TOP));
-				graphButton.CreateComponent<TextComponent>("XUnitText3", Transform(Vec2f(1.0f, -1.0f), Vec2f(0.1f)), "0", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::RIGHT, TextAlignment::TOP));
+				graphButton.CreateComponent<TextComponent>("XUnitText3", Transform(Vec2f(1.0f, -1.0f), Vec2f(0.1f)), "Now", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::RIGHT, TextAlignment::TOP));
 
 				graphButton.CreateComponent<TextComponent>("YUnitText1", Transform(Vec2f(-1.0f, -1.0f), Vec2f(0.1f)), "0", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::RIGHT, TextAlignment::BOTTOM));
 				graphButton.CreateComponent<TextComponent>("YUnitText2", Transform(Vec2f(-1.0f, 0.0f), Vec2f(0.1f)), "1000", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::RIGHT, TextAlignment::CENTER));
@@ -503,24 +510,6 @@ namespace GEE
 				auto greyMaterial = MakeShared<Material>("Grey", 0.0f, RenderEng.FindShader("TextShader"));
 				greyMaterial->SetColor(Vec4f(Vec3f(0.5f), 1.0f));
 				infoText.SetMaterialInst(*RenderEng.AddMaterial(greyMaterial));
-
-
-				auto& additionalInfoActor = profilerWindow.CreateChild<UIActorDefault>("AdditionalFPSData", Transform(Vec2f(1.5f, 0.0f), Vec2f(1.0f)));
-
-				auto& avgFPSText = additionalInfoActor.CreateComponent<TextComponent>("AvgFPSText", Transform(Vec2f(0.0f), Vec2f(0.1f)), "Avg FPS: 1000", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
-				auto coralMaterial = MakeShared<Material>("Coral", 0.0f, RenderEng.FindShader("TextShader"));
-				coralMaterial->SetColor(Vec4f(1.0f, 0.5f, 0.31f, 1.0f));
-				avgFPSText.SetMaterialInst(*RenderEng.AddMaterial(coralMaterial));
-
-				auto& maxFPSText = additionalInfoActor.CreateComponent<TextComponent>("MaxFPSText", Transform(Vec2f(0.0f, 0.5f), Vec2f(0.1f)), "Max FPS: 2000", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
-				auto greenMaterial = MakeShared<Material>("Green", 0.0f, RenderEng.FindShader("TextShader"));
-				greenMaterial->SetColor(Vec4f(0.155f, 1.0f, 0.25f, 1.0f));
-				maxFPSText.SetMaterialInst(*RenderEng.AddMaterial(greenMaterial));
-
-				auto& minFPSText = additionalInfoActor.CreateComponent<TextComponent>("MinFPSText", Transform(Vec2f(0.0f, -0.5f), Vec2f(0.1f)), "Min FPS: 500", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
-				auto redMaterial = MakeShared<Material>("Red", 0.0f, RenderEng.FindShader("TextShader"));
-				redMaterial->SetColor(Vec4f(1.0f, 0.155f, 0.25f, 1.0f));
-				minFPSText.SetMaterialInst(*RenderEng.AddMaterial(redMaterial));
 
 				profilerWindow.AutoClampView();
 			});

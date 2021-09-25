@@ -22,8 +22,10 @@ namespace GEE
 		void SetDisableInput(bool disable);
 
 		void SetOnClickFunc(std::function<void()> onClickFunc);
+		void SetOnDoubleClickFunc(std::function<void()> onDoubleClickFunc);
 		void SetOnHoverFunc(std::function<void()> onHoverFunc);
 		void SetOnUnhoverFunc(std::function<void()> onUnhoverFunc);
+		void SetOnBeingClickedFunc(std::function<void()> onBeingClickedFunc);
 		void SetWhileBeingClickedFunc(std::function<void()> whileBeingClickedFunc);
 
 		void DeleteButtonModel();
@@ -34,6 +36,7 @@ namespace GEE
 		virtual void OnUnhover();
 
 		virtual void OnClick();
+		virtual void OnDoubleClick();
 		virtual void OnBeingClicked();
 		virtual void WhileBeingClicked();
 
@@ -44,7 +47,10 @@ namespace GEE
 	protected:
 		virtual void DeduceMaterial();
 
-		std::function<void()> OnClickFunc, OnHoverFunc, OnUnhoverFunc, WhileBeingClickedFunc;
+		std::function<void()> OnClickFunc, OnDoubleClickFunc, OnHoverFunc, OnUnhoverFunc, OnBeingClickedFunc, WhileBeingClickedFunc;
+
+		const float MaxDoubleClickTime;
+		float PrevClickTime;
 
 		ModelComponent* ButtonModel;
 		SharedPtr<MaterialInstance> MatIdle, MatHover, MatClick, MatDisabled;

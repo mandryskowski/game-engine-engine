@@ -79,9 +79,29 @@ namespace GEE
 		if (ScrollBarY) UpdateScrollBarT<VecAxis::Y>();
 	}
 
+	Vec2f UICanvasActor::FromCanvasSpace(const Vec2f& canvasSpacePos) const
+	{
+		return GetCanvasT()->GetWorldTransformMatrix() * Vec4f(canvasSpacePos, 0.0f, 1.0f);
+	}
+
+	Mat4f UICanvasActor::FromCanvasSpace(const Mat4f& canvasSpaceMat) const
+	{
+		return GetCanvasT()->GetWorldTransformMatrix() * canvasSpaceMat;
+	}
+
 	Transform UICanvasActor::FromCanvasSpace(const Transform& canvasSpaceTransform) const
 	{
 		return GetCanvasT()->GetWorldTransform() * canvasSpaceTransform;
+	}
+
+	Vec2f UICanvasActor::ToCanvasSpace(const Vec2f& worldPos) const
+	{
+		return Math::SafeInverseMatrix(GetCanvasT()->GetWorldTransformMatrix()) * Vec4f(worldPos, 0.0f, 1.0f);
+	}
+
+	Mat4f UICanvasActor::ToCanvasSpace(const Mat4f& worldMat) const
+	{
+		return Math::SafeInverseMatrix(GetCanvasT()->GetWorldTransformMatrix()) * worldMat;
 	}
 
 	Transform UICanvasActor::ToCanvasSpace(const Transform& worldTransform) const

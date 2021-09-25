@@ -36,7 +36,11 @@ namespace GEE
 
 		virtual void SetCanvasView(const Transform&) override;
 
+		virtual Vec2f FromCanvasSpace(const Vec2f& canvasSpacePos) const override;
+		virtual Mat4f FromCanvasSpace(const Mat4f& canvasSpaceMat) const override;
 		virtual Transform FromCanvasSpace(const Transform& canvasSpaceTransform) const override;
+		virtual Vec2f ToCanvasSpace(const Vec2f& worldPos) const override;
+		virtual Mat4f ToCanvasSpace(const Mat4f& worldMat) const override;
 		virtual Transform ToCanvasSpace(const Transform& worldTransform) const override;
 
 		void RefreshFieldsList();

@@ -1,13 +1,13 @@
 #include <editor/GraphRenderingComponent.h>
 #include <UI/UICanvas.h>
+#include <scene/TextComponent.h>
+#include <numeric>
 
 namespace GEE
 {
-	GraphRenderingComponent::GraphRenderingComponent(Actor& actor, Component* parentComp, const std::string name, const Transform& transform):
+	GraphRenderingComponent::GraphRenderingComponent(Actor& actor, Component* parentComp, const std::string& name, const Transform& transform):
 		RenderableComponent(actor, parentComp, name, transform),
-		UIComponent(actor, parentComp),
-		LASTUPDATE(0.0f),
-		FRAMESELAPSED(0)
+		UIComponent(actor, parentComp)
 	{
 		if (SharedPtr<Material> foundMaterial = GameHandle->GetRenderEngineHandle()->FindMaterial("GEE_Default_Graph_Material"))
 			GraphMaterialInst = MakeShared<MaterialInstance>(*foundMaterial);
@@ -19,12 +19,31 @@ namespace GEE
 	}
 	void GraphRenderingComponent::PushRawMarker(const Vec2f& rawMarker)
 	{
-		GraphMarkersUnitInterval.push_back(static_cast<Vec2f>(GetGraphViewMatrix() * Vec4f(rawMarker, 0.0f, 1.0f)));
+		GraphMarkersUnitInterval.push_back(MarkerToUnitInterval(rawMarker));
 	}
 	void GraphRenderingComponent::PopFrontMarker()
 	{
 		if (!GraphMarkersUnitInterval.empty())
 			GraphMarkersUnitInterval.erase(GraphMarkersUnitInterval.begin());
+	}
+	float GraphRenderingComponent::GetMinValueInRange(const GraphRange& range)
+	{
+		// Find the first graph marker that is in range
+		auto it = std::lower_bound(GraphMarkersUnitInterval.begin(), GraphMarkersUnitInterval.end(), range.GetRangeBeginEnd().x, [](const Vec2f& marker, float beginX) { return marker.x <= beginX; });
+		// Find the last graph marker that is in range
+		auto rangeEnd = std::lower_bound(GraphMarkersUnitInterval.begin(), GraphMarkersUnitInterval.end(), range.GetRangeBeginEnd().y, [](const Vec2f& marker, float endX) { return marker.x <= endX; });
+		float minValue = std::numeric_limits<float>().max();
+
+		if (it > rangeEnd)	// If array is unsorted
+			return minValue;
+
+		for (; it != rangeEnd; it++)	// Find the smallest marker between it and rangeEnd
+			if (it->y < minValue)
+				minValue = it->y;
+
+		if (minValue == std::numeric_limits<float>().max())	// Do not convert max float (just return it instead)
+			return minValue;
+		return MarkerToRaw(Vec2f(0.0f, minValue)).y;
 	}
 	Mat4f GraphRenderingComponent::GetGraphViewMatrix() const
 	{
@@ -44,11 +63,27 @@ namespace GEE
 			return { &GraphMaterialInst->GetMaterialRef() };
 		return { nullptr };
 	}
+	GraphRenderingComponent::GraphRange& GraphRenderingComponent::GetSelectedRange()
+	{
+		return SelectedRange;
+	}
+	const GraphRenderingComponent::GraphRange& GraphRenderingComponent::GetSelectedRange() const
+	{
+		return SelectedRange;
+	}
+	Vec2f GraphRenderingComponent::MarkerToRaw(const Vec2f& unitIntervalMarker) const
+	{
+		return static_cast<Vec2f>(glm::inverse(GetGraphViewMatrix()) * Vec4f(unitIntervalMarker, 0.0f, 1.0f));
+	}
+	Vec2f GraphRenderingComponent::MarkerToUnitInterval(const Vec2f& rawMarker) const
+	{
+		return static_cast<Vec2f>(GetGraphViewMatrix() * Vec4f(rawMarker, 0.0f, 1.0f));
+	}
 	void GraphRenderingComponent::SetGraphView(const Transform& graphView)
 	{
 		// Transform all markers from previous graph view space to current graph view space.
 		for (auto& it : GraphMarkersUnitInterval)
-			it = glm::inverse(graphView.GetMatrix())* GraphView.GetMatrix()* static_cast<Vec4f>(it, 0.0f, 1.0f);
+			it = glm::inverse(graphView.GetMatrix()) * GraphView.GetMatrix() * static_cast<Vec4f>(it, 0.0f, 1.0f);
 
 		GraphView = graphView;
 	}
@@ -57,23 +92,27 @@ namespace GEE
 		if (GetHide())
 			return;
 
-		if (glfwGetTime() > LASTUPDATE + 1.0f)
-		{
-			for (auto& it : GetMarkersUnitInterval())	// move each marker by -1 second on the X axis
-				it.x -= 1.0f / 30.0f;
-			PushRawMarker(Vec2f(30.0f, (float)FRAMESELAPSED));
-			if (GetMarkersUnitInterval().size() > 31)
-				PopFrontMarker();
-			LASTUPDATE = glfwGetTime();
-			FRAMESELAPSED = 0;
-		}
-		FRAMESELAPSED++;
-
 		UpdateMarkerUniformData(*shader);
 		GameHandle->GetRenderEngineHandle()->RenderStaticMesh((CanvasPtr) ? (CanvasPtr->BindForRender(info, GameHandle->GetGameSettings()->WindowSize)) : (info), MeshInstance(GameHandle->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD), GraphMaterialInst), GetTransform().GetWorldTransform(), shader);
 
 		if (CanvasPtr)
 			CanvasPtr->UnbindForRender(GameHandle->GetGameSettings()->WindowSize);
+	}
+	Vec2f GraphRenderingComponent::GraphRange::GetRangeBeginEnd() const
+	{
+		return Vec2f(glm::min(EndpointsX.x, EndpointsX.y), glm::max(EndpointsX.x, EndpointsX.y));
+	}
+	void GraphRenderingComponent::GraphRange::SetEndpoint1(float unitIntervalEndpoint)
+	{
+		EndpointsX.x = unitIntervalEndpoint;
+	}
+	void GraphRenderingComponent::GraphRange::SetEndpoint2(float unitIntervalEndpoint)
+	{
+		EndpointsX.y = unitIntervalEndpoint;
+	}
+	void GraphRenderingComponent::GraphRange::SetEndpoints(const Vec2f& unitIntervalEndpoints)
+	{
+		EndpointsX = unitIntervalEndpoints;
 	}
 	unsigned int GraphRenderingComponent::GetUIDepth() const
 	{
@@ -83,5 +122,75 @@ namespace GEE
 	{
 		shader.Uniform("dataPointsCount", static_cast<int>(GraphMarkersUnitInterval.size()));
 		shader.UniformArray("dataPoints", &GraphMarkersUnitInterval[0], GraphMarkersUnitInterval.size());
+		shader.Uniform("selectedRangeEndpoints", GetSelectedRange().GetRangeBeginEnd());
 	}
+
+	
+	FPSGraphRenderingComponent::FPSGraphRenderingComponent(Actor& actor, Component* parentComp, const std::string& name, const Transform& transform):
+		GraphRenderingComponent(actor, parentComp, name, transform),
+		PrevFPSUpdateTime(0.0f),
+		FrameCount(0),
+		MinFPSText(nullptr),
+		MaxFPSText(nullptr),
+		AvgFPSText(nullptr)
+	{
+		Shader* textShader = GameHandle->GetRenderEngineHandle()->FindShader("TextShader");
+
+		MinFPSText = &CreateComponent<TextComponent>("MinFPSText", Transform(Vec2f(1.5f, -0.5f), Vec2f(0.1f)), "No data", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
+		auto redMaterial = MakeShared<Material>("Red", 0.0f, textShader);
+		redMaterial->SetColor(Vec4f(1.0f, 0.155f, 0.25f, 1.0f));
+		MinFPSText->SetMaterialInst(*GameHandle->GetRenderEngineHandle()->AddMaterial(redMaterial));
+
+		MaxFPSText = &CreateComponent<TextComponent>("MaxFPSText", Transform(Vec2f(1.5f, 0.5f), Vec2f(0.1f)), "No data", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
+		auto greenMaterial = MakeShared<Material>("Green", 0.0f, textShader);
+		greenMaterial->SetColor(Vec4f(0.155f, 1.0f, 0.25f, 1.0f));
+		MaxFPSText->SetMaterialInst(*GameHandle->GetRenderEngineHandle()->AddMaterial(greenMaterial));
+
+		AvgFPSText = &CreateComponent<TextComponent>("AvgFPSText", Transform(Vec2f(1.5f, 0.0f), Vec2f(0.1f)), "No data", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
+		auto coralMaterial = MakeShared<Material>("Coral", 0.0f, textShader);
+		coralMaterial->SetColor(Vec4f(1.0f, 0.5f, 0.31f, 1.0f));
+		AvgFPSText->SetMaterialInst(*GameHandle->GetRenderEngineHandle()->AddMaterial(coralMaterial));
+	}
+
+	void FPSGraphRenderingComponent::Update(float deltaTime)
+	{
+		GraphRenderingComponent::Update(deltaTime);
+
+		float time = GameHandle->GetCurrentTime();
+		if (time > PrevFPSUpdateTime + 1.0f)
+		{
+			for (auto& it : GetMarkersUnitInterval())	// move each marker by -1 second on the X axis
+				it.x -= 1.0f / 30.0f;
+			PushRawMarker(Vec2f(30.0f, (float)FrameCount));
+			if (GetMarkersUnitInterval().size() > 31)
+				PopFrontMarker();
+			PrevFPSUpdateTime = time;
+			FrameCount = 0;
+
+			UpdateFPSTextInfo();
+		}
+		FrameCount++;
+	}
+
+	void FPSGraphRenderingComponent::UpdateFPSTextInfo()
+	{
+		float minVal = GetRangeStatistic([](std::vector<Vec2f>::iterator& begin, std::vector<Vec2f>::iterator& end) -> float {
+			auto min = std::min_element(begin, end, [](const Vec2f& lhs, const Vec2f& rhs) -> bool { return lhs.y < rhs.y; });
+			return (min != end) ? (min->y) : (std::numeric_limits<float>().max());
+		});
+		MinFPSText->SetContent((minVal != std::numeric_limits<float>().max()) ? ("Min:" + ToStringPrecision(minVal, 2)) : ("No data"));
+
+		float maxVal = GetRangeStatistic([](std::vector<Vec2f>::iterator& begin, std::vector<Vec2f>::iterator& end) -> float {
+			auto max = std::max_element(begin, end, [](const Vec2f& lhs, const Vec2f& rhs) -> bool { return lhs.y < rhs.y; });
+			return (max != end) ? (max->y) : (std::numeric_limits<float>().max());
+		});
+		MaxFPSText->SetContent((maxVal != std::numeric_limits<float>().max()) ? ("Max:" + ToStringPrecision(maxVal, 2)) : ("No data"));
+
+		float avgVal = GetRangeStatistic([](std::vector<Vec2f>::iterator& begin, std::vector<Vec2f>::iterator& end) -> float {
+			float avg = std::accumulate(begin, end, Vec2f(0.0f)).y;
+			return (static_cast<int>(end - begin) > 0) ? (avg / static_cast<float>(end - begin)) : (std::numeric_limits<float>().max());
+			});
+		AvgFPSText->SetContent((avgVal != std::numeric_limits<float>().max()) ? ("Avg:" + ToStringPrecision(avgVal, 2)) : ("No data"));
+	}
+
 }

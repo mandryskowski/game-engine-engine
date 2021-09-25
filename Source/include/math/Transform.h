@@ -134,6 +134,12 @@ namespace GEE
 		Transform& operator*=(Transform&&);
 	};
 
+	namespace Math
+	{
+		Mat4f SafeInverseMatrix(const Mat4f& t);
+		Mat4f SafeInverseMatrix(const Transform& t);
+	}
+
 	Quatf quatFromDirectionVec(const Vec3f& dirVec, Vec3f up = Vec3f(0.0f, 1.0f, 0.0f));
 	/*const Transform& operator*(const Mat4f& mat, const Transform& t)
 	{

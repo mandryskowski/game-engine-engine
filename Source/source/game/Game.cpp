@@ -204,6 +204,11 @@ namespace GEE
 		return InputDevicesStateRetriever(*Window);
 	}
 
+	double Game::GetCurrentTime() const
+	{
+		return glfwGetTime();
+	}
+
 	Physics::PhysicsEngineManager* Game::GetPhysicsHandle()
 	{
 		return &PhysicsEng;
@@ -311,7 +316,7 @@ namespace GEE
 			deltaTime = 0.25f;
 
 		float fraction = fmod((float)glfwGetTime(), 1.0f);
-		if (fraction < 0.1f && !wasSecondFPS && 0)
+		if (fraction < 0.1f && !wasSecondFPS)
 		{
 			std::cout << "******Frames per second: " << (float)ticks / (glfwGetTime() - LoopBeginTime) << "			Milliseconds per frame: " << (glfwGetTime() - LoopBeginTime) * 1000.0f / (float)ticks << '\n';
 			std::cout << "Update%: " << timeSum / (glfwGetTime() - LoopBeginTime) * 100.0f << "%\n";

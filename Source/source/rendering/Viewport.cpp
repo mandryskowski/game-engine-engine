@@ -35,7 +35,7 @@ namespace GEE
 	{
 		if (Position != Vec2f(-1.0f) && !NDCViewport(Vec2f(-1.0f), Vec2f(2.0f)).Contains(Position))
 		{
-			std::cout << "ERROR! NDCViewport at (" << Position.x << ", " << Position.y << ") is out of window bounds (1.0)\n";
+			//std::cout << "ERROR! NDCViewport at (" << Position.x << ", " << Position.y << ") is out of window bounds (1.0)\n";
 			Position = Vec2f(0.0f);
 			Size = Vec2f(0.0f);
 		}

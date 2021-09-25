@@ -12,9 +12,13 @@ namespace GEE
 	UIButtonActor::UIButtonActor(GameScene& scene, Actor* parentActor, const std::string& name, std::function<void()> onClickFunc, const Transform& t) :
 		UIActorDefault(scene, parentActor, name, t),
 		OnClickFunc(onClickFunc),
+		OnDoubleClickFunc(nullptr),
 		OnHoverFunc(nullptr),
 		OnUnhoverFunc(nullptr),
+		OnBeingClickedFunc(nullptr),
 		WhileBeingClickedFunc(nullptr),
+		PrevClickTime(0.0f),
+		MaxDoubleClickTime(0.3f),
 		MatIdle(nullptr),
 		MatClick(nullptr),
 		MatHover(nullptr),
@@ -135,6 +139,11 @@ namespace GEE
 		OnClickFunc = onClickFunc;
 	}
 
+	void UIButtonActor::SetOnDoubleClickFunc(std::function<void()> onDoubleClickFunc)
+	{
+		OnDoubleClickFunc = onDoubleClickFunc;
+	}
+
 	void UIButtonActor::SetOnHoverFunc(std::function<void()> onHoverFunc)
 	{
 		OnHoverFunc = onHoverFunc;
@@ -143,6 +152,11 @@ namespace GEE
 	void UIButtonActor::SetOnUnhoverFunc(std::function<void()> onUnhoverFunc)
 	{
 		OnUnhoverFunc = onUnhoverFunc;
+	}
+
+	void UIButtonActor::SetOnBeingClickedFunc(std::function<void()> onBeingClickedFunc)
+	{
+		OnBeingClickedFunc = onBeingClickedFunc;
 	}
 
 	void UIButtonActor::SetWhileBeingClickedFunc(std::function<void()> whileBeingClickedFunc)
@@ -188,7 +202,12 @@ namespace GEE
 		else if (ev.GetType() == EventType::MouseReleased && dynamic_cast<const MouseButtonEvent&>(ev).GetButton() == MouseButton::Left)
 		{
 			if (State == EditorIconState::BEING_CLICKED_INSIDE)
-				OnClick();
+			{
+				if (GameHandle->GetCurrentTime() - PrevClickTime <= MaxDoubleClickTime)
+					OnDoubleClick();
+				else
+					OnClick();
+			}
 			else if (State == EditorIconState::BEING_CLICKED_OUTSIDE)
 				State = EditorIconState::IDLE;
 		}
@@ -219,13 +238,24 @@ namespace GEE
 	{
 		std::cout << "Clicked " + Name + "!\n";
 		State = EditorIconState::HOVER;
+		PrevClickTime = GameHandle->GetCurrentTime();
 		if (OnClickFunc)
 			OnClickFunc();
+	}
+
+	void UIButtonActor::OnDoubleClick()
+	{
+		State = EditorIconState::HOVER;
+		PrevClickTime = GameHandle->GetCurrentTime();
+		if (OnDoubleClickFunc)
+			OnDoubleClickFunc();
 	}
 
 	void UIButtonActor::OnBeingClicked()
 	{
 		State = EditorIconState::BEING_CLICKED_INSIDE;
+		if (OnBeingClickedFunc)
+			OnBeingClickedFunc();
 	}
 
 	void UIButtonActor::WhileBeingClicked()

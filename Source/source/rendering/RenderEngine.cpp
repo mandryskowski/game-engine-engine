@@ -990,6 +990,7 @@ namespace GEE
 		}
 
 		Vec2f halfExtent = t.GetScale();
+		float textHeight = t.GetScale().y;// textUtil::GetTextHeight(content, t.GetScale(), font);
 		//	halfExtent.y *= 1.0f - font.GetBaselineHeight() / 4.0f;	//Account for baseline height (we move the character quads by the height in the next line, so we have to shrink them a bit so that the text fits within halfExtent)
 		t.Move(Vec3f(0.0f, -t.GetScale().y * 2.0f + font.GetBaselineHeight() * t.GetScale().y * 2.0f, 0.0f));	//align to bottom (-t.ScaleRef.y), move down to the bottom of it (-t.ScaleRef.y), and then move up to baseline height (-t.ScaleRef.y * 2.0f + font.GetBaselineHeight() * halfExtent.y * 2.0f)
 
@@ -1003,11 +1004,11 @@ namespace GEE
 
 		// Align vertically
 		if (alignment.second != TextAlignment::BOTTOM)
-			t.Move(t.GetRot() * Vec3f(0.0f, -textUtil::GetTextHeight(content, t.GetScale(), font) * (static_cast<float>(alignment.second) - static_cast<float>(TextAlignment::BOTTOM)), 0.0f));
+			t.Move(t.GetRot() * Vec3f(0.0f, -textHeight * (static_cast<float>(alignment.second) - static_cast<float>(TextAlignment::BOTTOM)), 0.0f));
 
 		// Account for multiple lines if the text is not aligned to TOP. Each line (excluding the first one, that's why we cancel out the first line) moves the text up by its scale if it is aligned to BOTTOM and by 1/2 of its scale if it is aligned to CENTER.
 		if (auto firstLineBreak = content.find_first_of('\n'); alignment.second != TextAlignment::TOP && firstLineBreak != std::string::npos)
-			t.Move(t.GetRot() * Vec3f(0.0f, (textUtil::GetTextHeight(content, t.GetScale(), font) - textUtil::GetTextHeight(content.substr(0, firstLineBreak), t.GetScale(), font)) / 2.0f * (static_cast<float>(TextAlignment::TOP) - static_cast<float>(alignment.second)), 0.0f));
+			;// t.Move(t.GetRot() * Vec3f(0.0f, (textHeight - textUtil::GetTextHeight(content.substr(0, firstLineBreak), t.GetScale(), font)) / 2.0f * (static_cast<float>(TextAlignment::TOP) - static_cast<float>(alignment.second)), 0.0f));
 
 		//t.Move(Vec3f(0.0f, -64.0f, 0.0f));
 		//t.Move(Vec3f(0.0f, 11.0f, 0.0f) / scale);

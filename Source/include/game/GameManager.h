@@ -231,6 +231,7 @@ namespace GEE
 		virtual void UnbindAudioListenerTransformPtr(Transform* transform) = 0;
 		virtual void PassMouseControl(Controller* controller) = 0;
 		virtual const Controller* GetCurrentMouseController() const = 0;
+		virtual double GetCurrentTime() const = 0;
 		virtual InputDevicesStateRetriever GetInputRetriever() = 0;
 		virtual SharedPtr<Font> GetDefaultFont() = 0;
 
