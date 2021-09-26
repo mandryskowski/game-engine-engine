@@ -91,8 +91,11 @@ namespace GEE
 		void Unstretch(bool world = true);
 
 	private:
-		Vec2f MaxSize;
-		Vec2f ScaleRatio;
+		Vec2f MaxSize, ScaleRatio;
+		/**
+		 * @brief The UpdateSize method multiplies the text's scale by ScaleRatio. This multiplication must be undone before UpdateSize modifies scale again.
+		*/
+		Vec2f PreviouslyAppliedScaleRatio;
 	};
 
 	class ScrollingTextComponent : public TextComponent

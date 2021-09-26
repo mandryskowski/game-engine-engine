@@ -156,7 +156,7 @@ namespace GEE
 	{
 		GraphRenderingComponent::Update(deltaTime);
 
-		float time = GameHandle->GetCurrentTime();
+		float time = GameHandle->GetProgramRuntime();
 		if (time > PrevFPSUpdateTime + 1.0f)
 		{
 			for (auto& it : GetMarkersUnitInterval())	// move each marker by -1 second on the X axis

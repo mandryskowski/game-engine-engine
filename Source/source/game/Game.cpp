@@ -204,7 +204,7 @@ namespace GEE
 		return InputDevicesStateRetriever(*Window);
 	}
 
-	double Game::GetCurrentTime() const
+	double Game::GetProgramRuntime() const
 	{
 		return glfwGetTime();
 	}

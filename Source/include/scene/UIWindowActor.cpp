@@ -59,6 +59,7 @@ namespace GEE
 		Material& titleMaterial = *new Material(Material("GEE_E_Title_Material", 0.0f, GameHandle->GetRenderEngineHandle()->FindShader("Forward_NoLight")));
 		titleMaterial.SetColor(Vec3f(0.8f));
 		titleComp.SetMaterialInst(titleMaterial);
+		titleComp.Unstretch();
 
 		DragButton->DetachFromCanvas();
 		CloseButton->DetachFromCanvas();

@@ -46,6 +46,7 @@ namespace GEE
 		bool ContainsMouse(Vec2f cursorNDC);
 	protected:
 		virtual void DeduceMaterial();
+		TextConstantSizeComponent& CreateButtonText(const std::string& content);
 
 		std::function<void()> OnClickFunc, OnDoubleClickFunc, OnHoverFunc, OnUnhoverFunc, OnBeingClickedFunc, WhileBeingClickedFunc;
 
@@ -79,6 +80,7 @@ namespace GEE
 	{
 	public:
 		UIActivableButtonActor(GameScene& scene, Actor* parentActor, const std::string& name, std::function<void()> onClickFunc = nullptr, std::function<void()> onDeactivationFunc = nullptr);
+		UIActivableButtonActor(GameScene& scene, Actor* parentActor, const std::string& name, const std::string& buttonTextContent, std::function<void()> onClickFunc = nullptr, std::function<void()> onDeactivationFunc = nullptr);
 
 		void SetMatActive(MaterialInstance&&);
 		void SetOnDeactivationFunc(std::function<void()> onDeactivationFunc);

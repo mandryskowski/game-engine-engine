@@ -11,8 +11,7 @@ namespace GEE
 		ContentTextComp(nullptr),
 		RetrieveContentEachFrame(false)
 	{
-		ContentTextComp = &CreateComponent<TextConstantSizeComponent>(Name + "Text", Transform(Vec3f(0.0f, 0.0f, 0.0f), Vec3f(0.0f), Vec3f(1.0f)), "1.0", "");
-		ContentTextComp->SetAlignment(TextAlignment::CENTER, TextAlignment::CENTER);
+		ContentTextComp = &CreateButtonText("0");
 	}
 
 	UIInputBoxActor::UIInputBoxActor(GameScene& scene, Actor* parentActor, const std::string& name, std::function<void(const std::string&)> inputFunc, std::function<std::string()> valueGetter) :

@@ -179,25 +179,30 @@ namespace GEE
 	}
 
 	TextConstantSizeComponent::TextConstantSizeComponent(Actor& actor, Component* parentComp, const std::string& name, const Transform& transform, std::string content, SharedPtr<Font> font, std::pair<TextAlignment, TextAlignment> alignment) :
-		TextComponent(actor, parentComp, name, transform, "", font, alignment),
+		TextComponent(actor, parentComp, name, transform, content, font, alignment),
 		MaxSize(Vec2f(1.0f)),
-		ScaleRatio(glm::max(Vec2f(1.0f), Vec2f(transform.GetScale().x / transform.GetScale().y, transform.GetScale().y / transform.GetScale().x)))
+		ScaleRatio(Vec2f(1.0f)),
+		PreviouslyAppliedScaleRatio(Vec2f(1.0f))
 	{
-		SetContent(content);
+		RecalculateScaleRatio();
+		UpdateSize();
 	}
 
 	TextConstantSizeComponent::TextConstantSizeComponent(Actor& actor, Component* parentComp, const std::string& name, const Transform& transform, std::string content, std::string fontPath, std::pair<TextAlignment, TextAlignment> alignment) :
-		TextComponent(actor, parentComp, name, transform, "", fontPath, alignment),
+		TextComponent(actor, parentComp, name, transform, content, fontPath, alignment),
 		MaxSize(Vec2f(1.0f)),
-		ScaleRatio(glm::max(Vec2f(1.0f), Vec2f(transform.GetScale().x / transform.GetScale().y, transform.GetScale().y / transform.GetScale().x)))
+		ScaleRatio(Vec2f(1.0f)),
+		PreviouslyAppliedScaleRatio(Vec2f(1.0f))
 	{
-		SetContent(content);
+		RecalculateScaleRatio();
+		UpdateSize();
 	}
 
 	TextConstantSizeComponent::TextConstantSizeComponent(TextConstantSizeComponent&& textComp) :
 		TextComponent(std::move(textComp)),
 		MaxSize(textComp.MaxSize),
-		ScaleRatio(textComp.ScaleRatio)
+		ScaleRatio(textComp.ScaleRatio),
+		PreviouslyAppliedScaleRatio(textComp.PreviouslyAppliedScaleRatio)
 	{
 	}
 
@@ -220,33 +225,27 @@ namespace GEE
 
 	void TextConstantSizeComponent::UpdateSize()
 	{
-		float textLength = glm::max((GetTextLength(false) / 2.0f) / GetTransform().GetScale().x, 0.001f);
-		float textHeight = glm::max((GetTextHeight(false) / 2.0f) / GetTransform().GetScale().y, 0.001f);
-		float scale = glm::min(MaxSize.y / textHeight, MaxSize.x / textLength);
-
+		float textLength = glm::max((GetTextLength(false) / 2.0f) / (GetTransform().GetScale().x / PreviouslyAppliedScaleRatio.x), 0.001f);
+		float textHeight = glm::max((GetTextHeight(false)) / (GetTransform().GetScale().y / PreviouslyAppliedScaleRatio.y), 0.001f);
+		float scale = glm::min(MaxSize.x / textLength, MaxSize.y / textHeight);
+		
 		GetTransform().SetScale(Vec2f(scale) * ScaleRatio);
+		PreviouslyAppliedScaleRatio = ScaleRatio;
 	}
 
 	void TextConstantSizeComponent::RecalculateScaleRatio(bool world)
 	{
-		Vec2f scale = ((world)
+		Vec2f scale = static_cast<Vec2f>(((world)
 					? ((GetCanvasPtr()) ? (GetCanvasPtr()->ToCanvasSpace(GetTransform().GetWorldTransform())) : (GetTransform().GetWorldTransform()))
-					: (GetTransform())).GetScale();
-		ScaleRatio = Vec2f(glm::max(Vec2f(1.0f), Vec2f(scale.x / scale.y, scale.y / scale.x)));
+					: (GetTransform())).GetScale()) / PreviouslyAppliedScaleRatio;
+		ScaleRatio = glm::min(Vec2f(scale.y / scale.x, scale.x / scale.y), Vec2f(1.0f));
 	}
 
 	void TextConstantSizeComponent::Unstretch(bool world)
 	{
-		Vec2f scale = ((world)
-			? ((GetCanvasPtr()) ? (GetCanvasPtr()->ToCanvasSpace(GetTransform().GetWorldTransform())) : (GetTransform().GetWorldTransform()))
-			: (GetTransform())).GetScale();
-
-		Vec2f componentRatio(glm::min(Vec2f(scale.y / scale.x, scale.x / scale.y), Vec2f(1.0f)));
-
-		ScaleRatio = componentRatio;
+		RecalculateScaleRatio(world);
 		UpdateSize();
-		SetMaxSize(MaxSize / componentRatio);
-		//GetTransform().SetScale(Vec3f(Vec2f(GetTransform().GetScale()) * componentRatio, GetTransform().GetScale().z));
+		UpdateSize();
 	}
 
 	ScrollingTextComponent::ScrollingTextComponent(Actor& actorRef, Component* parentComp, const std::string& name, const Transform& transform, std::string content, SharedPtr<Font> font, std::pair<TextAlignment, TextAlignment> alignment):

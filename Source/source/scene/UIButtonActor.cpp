@@ -72,14 +72,7 @@ namespace GEE
 	UIButtonActor::UIButtonActor(GameScene& scene, Actor* parentActor, const std::string& name, const std::string& buttonTextContent, std::function<void()> onClickFunc, const Transform& t) :
 		UIButtonActor(scene, parentActor, name, onClickFunc, t)
 	{
-		//CreateComponent<TextConstantSizeComponent>("ButtonText", Transform(Vec2f(0.0f), Vec2f(1.0f)), buttonTextContent, "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER)).SetMaxSize(Vec2f(0.8f));
-		//CreateComponent<ScrollingTextComponent>("ButtonText", Transform(Vec2f(0.0f), Vec2f(1.0f)), buttonTextContent, "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
-		if (Name == "RecentFilepathButton")
-			CreateComponent<TextConstantSizeComponent>("ButtonText", Transform(Vec2f(0.0f), Vec2f(1.0f / 9.0f, 1.0f)), buttonTextContent, "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER)).SetMaxSize(Vec2f(0.8f));
-		else
-			CreateComponent<TextConstantSizeComponent>("ButtonText", Transform(Vec2f(0.0f), Vec2f(1.0f)), buttonTextContent, "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER)).SetMaxSize(Vec2f(0.8f));
-		//else 
-		//	CreateComponent<ScrollingTextComponent>("ButtonText", Transform(Vec2f(0.0f), Vec2f(1.0f)), buttonTextContent, "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
+		CreateButtonText(buttonTextContent).Unstretch();
 	}
 
 	ModelComponent* UIButtonActor::GetButtonModel()
@@ -203,7 +196,7 @@ namespace GEE
 		{
 			if (State == EditorIconState::BEING_CLICKED_INSIDE)
 			{
-				if (GameHandle->GetCurrentTime() - PrevClickTime <= MaxDoubleClickTime)
+				if (GameHandle->GetProgramRuntime() - PrevClickTime <= MaxDoubleClickTime)
 					OnDoubleClick();
 				else
 					OnClick();
@@ -238,7 +231,7 @@ namespace GEE
 	{
 		std::cout << "Clicked " + Name + "!\n";
 		State = EditorIconState::HOVER;
-		PrevClickTime = GameHandle->GetCurrentTime();
+		PrevClickTime = GameHandle->GetProgramRuntime();
 		if (OnClickFunc)
 			OnClickFunc();
 	}
@@ -246,7 +239,7 @@ namespace GEE
 	void UIButtonActor::OnDoubleClick()
 	{
 		State = EditorIconState::HOVER;
-		PrevClickTime = GameHandle->GetCurrentTime();
+		PrevClickTime = GameHandle->GetProgramRuntime();
 		if (OnDoubleClickFunc)
 			OnDoubleClickFunc();
 	}
@@ -317,13 +310,20 @@ namespace GEE
 		}
 	}
 
+	TextConstantSizeComponent& UIButtonActor::CreateButtonText(const std::string& content)
+	{
+		auto& text = CreateComponent<TextConstantSizeComponent>("ButtonText", Transform(Vec2f(0.0f), Vec2f(1.0f)), content, "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
+		text.SetMaxSize(Vec2f(0.8f));
+		return text;
+	}
+
 	bool CollisionTests::AlignedRectContainsPoint(const Transform& rect, const Vec2f& point)
 	{
 		Vec2f rectLeftBottom = rect.GetPos() - rect.GetScale();
 		return point == glm::min(glm::max(rectLeftBottom, point), rectLeftBottom + Vec2f(rect.GetScale()) * 2.0f);
 	}
 
-	UIActivableButtonActor::UIActivableButtonActor(GameScene& scene, Actor* parentActor, const std::string& name, std::function<void()> onClickFunc, std::function<void()> onDeactivationFunc) :
+	UIActivableButtonActor::UIActivableButtonActor(GameScene& scene, Actor* parentActor, const std::string& name,  std::function<void()> onClickFunc, std::function<void()> onDeactivationFunc) :
 		UIButtonActor(scene, parentActor, name, onClickFunc),
 		OnDeactivationFunc(onDeactivationFunc)
 	{
@@ -339,6 +339,12 @@ namespace GEE
 
 		MatActive = MakeShared<MaterialInstance>(MaterialInstance(*matActive));
 	}
+	UIActivableButtonActor::UIActivableButtonActor(GameScene& scene, Actor* parentActor, const std::string& name, const std::string& buttonTextContent, std::function<void()> onClickFunc, std::function<void()> onDeactivationFunc) :
+		UIActivableButtonActor(scene, parentActor, name, onClickFunc, onDeactivationFunc)
+	{
+		CreateButtonText(buttonTextContent);
+	}
+
 
 	void UIActivableButtonActor::SetMatActive(MaterialInstance&& mat)
 	{

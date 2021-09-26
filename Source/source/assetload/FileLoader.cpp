@@ -1047,7 +1047,7 @@ namespace GEE
 			return nullptr;
 		}
 
-		FT_Set_Pixel_Sizes(face, 0, 48);
+		FT_Set_Pixel_Sizes(face, 0, 64);
 
 		SharedPtr<Font> font = MakeShared<Font>(Font(path));
 		glPixelStorei(GL_UNPACK_ALIGNMENT, 1);

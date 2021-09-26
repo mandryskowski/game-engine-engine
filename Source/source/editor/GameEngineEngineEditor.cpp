@@ -303,7 +303,7 @@ namespace GEE
 			UIButtonActor& selectPreviewButton = scenePreviewActor.CreateChild<UIButtonActor>("SelectPreview_Empty", "Final", nullptr, Transform(Vec2f(0.6f, -1.07f), Vec2f(0.4f, 0.05f)));
 			auto selectPreviewButtonText = selectPreviewButton.GetRoot()->GetComponent<TextConstantSizeComponent>("ButtonText");
 			selectPreviewButtonText->Unstretch();
-			selectPreviewButtonText->SetMaxSize(Vec2f(8.0f, 1.0f));
+			//selectPreviewButtonText->SetMaxSize(Vec2f(1.0f, 1.0f / 8.0f));
 			selectPreviewButton.SetOnClickFunc([&, selectPreviewButtonText]() {
 					auto& window = editorScene.CreateActorAtRoot<UIWindowActor>("SelectPreviewWindow");
 					auto& previewsList = window.CreateChild<UIAutomaticListActor>("PreviewsList");
@@ -332,6 +332,9 @@ namespace GEE
 				});
 			//selectPreviewButtonText->GetTransform().SetScale(Vec2f(0.05f / 0.4f, 1.0f));
 		}
+
+		UIActorDefault& scaleActor = editorScene.CreateActorAtRoot<UIActorDefault>("TextTestButton", Transform(Vec2f(0.0f, 0.0f), Vec2f(0.1f, 0.1f)));
+		UIButtonActor& textTestButton = scaleActor.CreateChild<UIButtonActor>("TextTestButton", "A", nullptr, Transform(Vec2f(0.0f, 0.0f), Vec2f(0.1f, 1.0f)));
 
 		UIWindowActor& window1 = editorScene.CreateActorAtRoot<UIWindowActor>("MyTestWindow");
 		window1.SetTransform(Transform(Vec2f(0.0, -0.5f), Vec2f(0.2f)));
@@ -611,12 +614,17 @@ namespace GEE
 			{
 				UIActorDefault& recentProjectsActor = mainMenuScene.CreateActorAtRoot<UIActorDefault>("Recent", Transform(Vec2f(0.0f, -0.5f), Vec2f(0.1f)));
 				recentProjectsActor.CreateComponent<TextComponent>("RecentsText", Transform(Vec2f(0.0f, 1.6f), Vec2f(0.5f)), "Recent projects", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
-				UIElementTemplates(recentProjectsActor).ListSelection<std::string>(filepaths.begin(), filepaths.end(), [this](UIAutomaticListActor& listActor, std::string& filepath) { listActor.CreateChild<UIButtonActor>("RecentFilepathButton", getFileName(filepath), [this, filepath]() { LoadProject(filepath); }, Transform(Vec2f(0.0f), Vec2f(9.0f, 1.0f))); });
+				UIElementTemplates(recentProjectsActor).ListSelection<std::string>(filepaths.begin(), filepaths.end(), [this](UIAutomaticListActor& listActor, std::string& filepath) { listActor.CreateChild<UIButtonActor>("RecentFilepathButton", getFileName(filepath), [this, filepath]() { LoadProject(filepath); }, Transform(Vec2f(0.0f), Vec2f(9.0f, 1.0f))).GetRoot()->GetComponent<TextConstantSizeComponent>("ButtonText")->Unstretch(true); });
 			}
 		}
 
 		Actor& cameraActor = mainMenuScene.CreateActorAtRoot<Actor>("OrthoCameraActor");
 		CameraComponent& orthoCameraComp = cameraActor.CreateComponent<CameraComponent>("OrthoCameraComp", glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, 1.0f, -2550.0f));
+
+
+		//Text size test
+		std::string errorCharacterStr(1, char(6));
+		mainMenuScene.CreateActorAtRoot<UIActorDefault>("TextTestActor").CreateComponent<TextComponent>("TextTest", Transform(), errorCharacterStr, "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
 
 		mainMenuScene.BindActiveCamera(&orthoCameraComp);
 		SetActiveScene(&mainMenuScene);
