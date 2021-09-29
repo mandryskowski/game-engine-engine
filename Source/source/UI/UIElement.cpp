@@ -2,7 +2,10 @@
 #include <UI/UICanvas.h>
 #include <scene/Component.h>
 #include <scene/Actor.h>
+#include <UI/UICanvasActor.h>
 
+
+#include <scene/TextComponent.h>
 namespace GEE
 {
 	UICanvasElement::UICanvasElement() :
@@ -36,7 +39,7 @@ namespace GEE
 
 		for (auto it : ChildUIElements)
 		{
-			Boxf<Vec2f> bBox = it->GetBoundingBoxIncludingChildren();
+			Boxf<Vec2f> bBox = it->GetBoundingBoxIncludingChildren(world);
 
 			canvasLeftDownMin = glm::min(canvasLeftDownMin, bBox.Position - bBox.Size);
 			canvasRightUpMax = glm::max(canvasRightUpMax, bBox.Position + bBox.Size);

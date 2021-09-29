@@ -30,6 +30,19 @@
                                     "BoneIDOffset": 0
                                 }
                             }
+                        },
+                        {
+                            "ptr_wrapper": {
+                                "id": 2147483652,
+                                "data": {
+                                    "BonesActorsNames": [],
+                                    "BoneNames": [],
+                                    "GlobalInverseTransformCompPtrActorName": "pool table",
+                                    "GlobalInverseTransformCompPtrName": "C:\\Users\\48511\\Desktop\\pooltable\\pooltable_2_attempt.glb",
+                                    "BatchID": 0,
+                                    "BoneIDOffset": 0
+                                }
+                            }
                         }
                     ],
                     "BoneCount": 0
@@ -67,47 +80,7 @@
                         "valid": 0
                     }
                 },
-                "Children": [
-                    {
-                        "polymorphic_id": 2147483649,
-                        "polymorphic_name": "GEE::LightProbeComponent",
-                        "ptr_wrapper": {
-                            "valid": 1,
-                            "data": {
-                                "Shape": 0,
-                                "OptionalFilepath": "C:\\Users\\48511\\source\\repos\\swetroniusz\\game-engine-engine\\Source\\apartment.hdr",
-                                "ProbeIntensity": 1.0,
-                                "Component": {
-                                    "Name": "A LightProbeComponent",
-                                    "ComponentTransform": {
-                                        "Position": {
-                                            "x": 0.0,
-                                            "y": 0.0,
-                                            "z": 0.0
-                                        },
-                                        "Rotation": {
-                                            "x": 0.0,
-                                            "y": 0.0,
-                                            "z": 0.0,
-                                            "w": 1.0
-                                        },
-                                        "Scale": {
-                                            "x": 1.0,
-                                            "y": 1.0,
-                                            "z": 1.0
-                                        }
-                                    },
-                                    "CollisionObj": {
-                                        "ptr_wrapper": {
-                                            "valid": 0
-                                        }
-                                    },
-                                    "Children": []
-                                }
-                            }
-                        }
-                    }
-                ]
+                "Children": []
             }
         }
     },
@@ -126,15 +99,15 @@
                                 "Name": "An Actor's root",
                                 "ComponentTransform": {
                                     "Position": {
-                                        "x": -0.7105015516281128,
-                                        "y": 3.7548906803131105,
-                                        "z": -0.07791145890951157
+                                        "x": 0.2937829792499542,
+                                        "y": 2.715067148208618,
+                                        "z": -0.4358792006969452
                                     },
                                     "Rotation": {
-                                        "x": -0.5530961751937866,
-                                        "y": -0.44032666087150576,
-                                        "z": -0.43955883383750918,
-                                        "w": 0.5540623068809509
+                                        "x": -0.02498648129403591,
+                                        "y": -0.7518733143806458,
+                                        "z": -0.6582154631614685,
+                                        "w": 0.028541818261146547
                                     },
                                     "Scale": {
                                         "x": 1.0,
@@ -149,7 +122,7 @@
                                 },
                                 "Children": [
                                     {
-                                        "polymorphic_id": 2147483650,
+                                        "polymorphic_id": 2147483649,
                                         "polymorphic_name": "GEE::CameraComponent",
                                         "ptr_wrapper": {
                                             "valid": 1,
@@ -222,7 +195,7 @@
                     },
                     "Children": [
                         {
-                            "polymorphic_id": 2147483651,
+                            "polymorphic_id": 2147483650,
                             "polymorphic_name": "GEE::FreeRoamingController",
                             "ptr_wrapper": {
                                 "valid": 1,
@@ -288,15 +261,15 @@
                                 "Name": "ENG_SPHERE",
                                 "ComponentTransform": {
                                     "Position": {
-                                        "x": 0.004788343328982592,
-                                        "y": 0.9999998807907105,
-                                        "z": 1.3912711871455486e-8
+                                        "x": 245.49652099609376,
+                                        "y": 0.9999706745147705,
+                                        "z": -16.173110961914064
                                     },
                                     "Rotation": {
-                                        "x": 0.00023551045160274953,
-                                        "y": 0.8485081195831299,
-                                        "z": 0.000146870210301131,
-                                        "w": -0.5291823744773865
+                                        "x": -0.7567073702812195,
+                                        "y": -0.4359951913356781,
+                                        "z": -0.40229085087776186,
+                                        "w": 0.27470752596855166
                                     },
                                     "Scale": {
                                         "x": 1.0,
@@ -313,7 +286,7 @@
                                             "Shapes": [
                                                 {
                                                     "ptr_wrapper": {
-                                                        "id": 2147483652,
+                                                        "id": 2147483653,
                                                         "data": {
                                                             "Type": 1,
                                                             "ShapeTransform": {
@@ -346,7 +319,7 @@
                                 },
                                 "Children": [
                                     {
-                                        "polymorphic_id": 2147483652,
+                                        "polymorphic_id": 2147483651,
                                         "polymorphic_name": "GEE::ModelComponent",
                                         "ptr_wrapper": {
                                             "valid": 1,
@@ -447,7 +420,7 @@
                                                 },
                                                 "Children": [
                                                     {
-                                                        "polymorphic_id": 4,
+                                                        "polymorphic_id": 3,
                                                         "ptr_wrapper": {
                                                             "valid": 1,
                                                             "data": {
@@ -514,7 +487,7 @@
                             }
                         },
                         {
-                            "polymorphic_id": 2147483653,
+                            "polymorphic_id": 2147483652,
                             "polymorphic_name": "GEE::CueController",
                             "ptr_wrapper": {
                                 "valid": 1,
@@ -567,6 +540,1404 @@
                             }
                         }
                     ]
+                }
+            }
+        },
+        {
+            "polymorphic_id": 1073741824,
+            "ptr_wrapper": {
+                "valid": 1,
+                "data": {
+                    "Name": "pool table",
+                    "RootComponent": {
+                        "polymorphic_id": 1073741824,
+                        "ptr_wrapper": {
+                            "valid": 1,
+                            "data": {
+                                "Name": "C:\\Users\\48511\\Desktop\\pooltable\\pooltable_2_attempt.glb",
+                                "ComponentTransform": {
+                                    "Position": {
+                                        "x": 0.0,
+                                        "y": 0.0,
+                                        "z": 0.0
+                                    },
+                                    "Rotation": {
+                                        "x": 0.0,
+                                        "y": 0.0,
+                                        "z": 0.0,
+                                        "w": 1.0
+                                    },
+                                    "Scale": {
+                                        "x": 1.0,
+                                        "y": 1.0,
+                                        "z": 1.0
+                                    }
+                                },
+                                "CollisionObj": {
+                                    "ptr_wrapper": {
+                                        "valid": 1,
+                                        "data": {
+                                            "IsStatic": true,
+                                            "IgnoreRotation": false,
+                                            "Shapes": [
+                                                {
+                                                    "ptr_wrapper": {
+                                                        "id": 2147483654,
+                                                        "data": {
+                                                            "Type": 3,
+                                                            "ShapeTransform": {
+                                                                "Position": {
+                                                                    "x": 0.0,
+                                                                    "y": 0.0,
+                                                                    "z": 0.0
+                                                                },
+                                                                "Rotation": {
+                                                                    "x": 0.0,
+                                                                    "y": 0.0,
+                                                                    "z": 0.0,
+                                                                    "w": 1.0
+                                                                },
+                                                                "Scale": {
+                                                                    "x": 1.0,
+                                                                    "y": 1.0,
+                                                                    "z": 1.0
+                                                                }
+                                                            },
+                                                            "OptionalTreeName": "C:\\Users\\48511\\Desktop\\pooltable\\pooltable_2_attempt.glb",
+                                                            "OptionalMeshNodeName": "GEEC_TableBase",
+                                                            "OptionalMeshSpecificName": "GEEC_TableBase"
+                                                        }
+                                                    }
+                                                },
+                                                {
+                                                    "ptr_wrapper": {
+                                                        "id": 2147483655,
+                                                        "data": {
+                                                            "Type": 3,
+                                                            "ShapeTransform": {
+                                                                "Position": {
+                                                                    "x": 0.0,
+                                                                    "y": 0.0,
+                                                                    "z": 0.0
+                                                                },
+                                                                "Rotation": {
+                                                                    "x": 0.0,
+                                                                    "y": 0.0,
+                                                                    "z": 0.0,
+                                                                    "w": 1.0
+                                                                },
+                                                                "Scale": {
+                                                                    "x": 1.0,
+                                                                    "y": 1.0,
+                                                                    "z": 1.0
+                                                                }
+                                                            },
+                                                            "OptionalTreeName": "C:\\Users\\48511\\Desktop\\pooltable\\pooltable_2_attempt.glb",
+                                                            "OptionalMeshNodeName": "GEEC_TableWood",
+                                                            "OptionalMeshSpecificName": "GEEC_TableWood"
+                                                        }
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    }
+                                },
+                                "Children": [
+                                    {
+                                        "polymorphic_id": 3,
+                                        "ptr_wrapper": {
+                                            "valid": 1,
+                                            "data": {
+                                                "RenderAsBillboard": false,
+                                                "MeshInstances": [
+                                                    {
+                                                        "ptr_wrapper": {
+                                                            "valid": 1,
+                                                            "data": {
+                                                                "MeshTreePath": "C:\\Users\\48511\\Desktop\\pooltable\\pooltable_2_attempt.glb",
+                                                                "MeshNodeName": "PoolBall_White",
+                                                                "MeshSpecificName": "Sphere.000",
+                                                                "MaterialInst": {
+                                                                    "ptr_wrapper": {
+                                                                        "id": 0
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                ],
+                                                "SkelInfoBatchID": 0,
+                                                "SkelInfoID": 2,
+                                                "RenderableComponent": {
+                                                    "Hide": false,
+                                                    "CastsShadow": true,
+                                                    "Component": {
+                                                        "Name": "PoolBall_White",
+                                                        "ComponentTransform": {
+                                                            "Position": {
+                                                                "x": 0.0,
+                                                                "y": 0.0,
+                                                                "z": 0.0
+                                                            },
+                                                            "Rotation": {
+                                                                "x": 0.0,
+                                                                "y": 0.0,
+                                                                "z": 0.0,
+                                                                "w": 1.0
+                                                            },
+                                                            "Scale": {
+                                                                "x": 1.0,
+                                                                "y": 1.0,
+                                                                "z": 1.0
+                                                            }
+                                                        },
+                                                        "CollisionObj": {
+                                                            "ptr_wrapper": {
+                                                                "valid": 0
+                                                            }
+                                                        },
+                                                        "Children": []
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "polymorphic_id": 3,
+                                        "ptr_wrapper": {
+                                            "valid": 1,
+                                            "data": {
+                                                "RenderAsBillboard": false,
+                                                "MeshInstances": [
+                                                    {
+                                                        "ptr_wrapper": {
+                                                            "valid": 1,
+                                                            "data": {
+                                                                "MeshTreePath": "C:\\Users\\48511\\Desktop\\pooltable\\pooltable_2_attempt.glb",
+                                                                "MeshNodeName": "PoolBall_9",
+                                                                "MeshSpecificName": "Sphere.012",
+                                                                "MaterialInst": {
+                                                                    "ptr_wrapper": {
+                                                                        "id": 0
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                ],
+                                                "SkelInfoBatchID": 0,
+                                                "SkelInfoID": 2,
+                                                "RenderableComponent": {
+                                                    "Hide": false,
+                                                    "CastsShadow": true,
+                                                    "Component": {
+                                                        "Name": "PoolBall_9",
+                                                        "ComponentTransform": {
+                                                            "Position": {
+                                                                "x": 0.0,
+                                                                "y": 0.0,
+                                                                "z": 0.0
+                                                            },
+                                                            "Rotation": {
+                                                                "x": 0.0,
+                                                                "y": 0.0,
+                                                                "z": 0.0,
+                                                                "w": 1.0
+                                                            },
+                                                            "Scale": {
+                                                                "x": 1.0,
+                                                                "y": 1.0,
+                                                                "z": 1.0
+                                                            }
+                                                        },
+                                                        "CollisionObj": {
+                                                            "ptr_wrapper": {
+                                                                "valid": 0
+                                                            }
+                                                        },
+                                                        "Children": []
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "polymorphic_id": 3,
+                                        "ptr_wrapper": {
+                                            "valid": 1,
+                                            "data": {
+                                                "RenderAsBillboard": false,
+                                                "MeshInstances": [
+                                                    {
+                                                        "ptr_wrapper": {
+                                                            "valid": 1,
+                                                            "data": {
+                                                                "MeshTreePath": "C:\\Users\\48511\\Desktop\\pooltable\\pooltable_2_attempt.glb",
+                                                                "MeshNodeName": "PoolBall_8",
+                                                                "MeshSpecificName": "Sphere.004",
+                                                                "MaterialInst": {
+                                                                    "ptr_wrapper": {
+                                                                        "id": 0
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                ],
+                                                "SkelInfoBatchID": 0,
+                                                "SkelInfoID": 2,
+                                                "RenderableComponent": {
+                                                    "Hide": false,
+                                                    "CastsShadow": true,
+                                                    "Component": {
+                                                        "Name": "PoolBall_8",
+                                                        "ComponentTransform": {
+                                                            "Position": {
+                                                                "x": 0.0,
+                                                                "y": 0.0,
+                                                                "z": 0.0
+                                                            },
+                                                            "Rotation": {
+                                                                "x": 0.0,
+                                                                "y": 0.0,
+                                                                "z": 0.0,
+                                                                "w": 1.0
+                                                            },
+                                                            "Scale": {
+                                                                "x": 1.0,
+                                                                "y": 1.0,
+                                                                "z": 1.0
+                                                            }
+                                                        },
+                                                        "CollisionObj": {
+                                                            "ptr_wrapper": {
+                                                                "valid": 0
+                                                            }
+                                                        },
+                                                        "Children": []
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "polymorphic_id": 3,
+                                        "ptr_wrapper": {
+                                            "valid": 1,
+                                            "data": {
+                                                "RenderAsBillboard": false,
+                                                "MeshInstances": [
+                                                    {
+                                                        "ptr_wrapper": {
+                                                            "valid": 1,
+                                                            "data": {
+                                                                "MeshTreePath": "C:\\Users\\48511\\Desktop\\pooltable\\pooltable_2_attempt.glb",
+                                                                "MeshNodeName": "PoolBall_7",
+                                                                "MeshSpecificName": "Sphere.002",
+                                                                "MaterialInst": {
+                                                                    "ptr_wrapper": {
+                                                                        "id": 0
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                ],
+                                                "SkelInfoBatchID": 0,
+                                                "SkelInfoID": 2,
+                                                "RenderableComponent": {
+                                                    "Hide": false,
+                                                    "CastsShadow": true,
+                                                    "Component": {
+                                                        "Name": "PoolBall_7",
+                                                        "ComponentTransform": {
+                                                            "Position": {
+                                                                "x": 0.0,
+                                                                "y": 0.0,
+                                                                "z": 0.0
+                                                            },
+                                                            "Rotation": {
+                                                                "x": 0.0,
+                                                                "y": 0.0,
+                                                                "z": 0.0,
+                                                                "w": 1.0
+                                                            },
+                                                            "Scale": {
+                                                                "x": 1.0,
+                                                                "y": 1.0,
+                                                                "z": 1.0
+                                                            }
+                                                        },
+                                                        "CollisionObj": {
+                                                            "ptr_wrapper": {
+                                                                "valid": 0
+                                                            }
+                                                        },
+                                                        "Children": []
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "polymorphic_id": 3,
+                                        "ptr_wrapper": {
+                                            "valid": 1,
+                                            "data": {
+                                                "RenderAsBillboard": false,
+                                                "MeshInstances": [
+                                                    {
+                                                        "ptr_wrapper": {
+                                                            "valid": 1,
+                                                            "data": {
+                                                                "MeshTreePath": "C:\\Users\\48511\\Desktop\\pooltable\\pooltable_2_attempt.glb",
+                                                                "MeshNodeName": "PoolBall_6",
+                                                                "MeshSpecificName": "Sphere.010",
+                                                                "MaterialInst": {
+                                                                    "ptr_wrapper": {
+                                                                        "id": 0
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                ],
+                                                "SkelInfoBatchID": 0,
+                                                "SkelInfoID": 2,
+                                                "RenderableComponent": {
+                                                    "Hide": false,
+                                                    "CastsShadow": true,
+                                                    "Component": {
+                                                        "Name": "PoolBall_6",
+                                                        "ComponentTransform": {
+                                                            "Position": {
+                                                                "x": 0.0,
+                                                                "y": 0.0,
+                                                                "z": 0.0
+                                                            },
+                                                            "Rotation": {
+                                                                "x": 0.0,
+                                                                "y": 0.0,
+                                                                "z": 0.0,
+                                                                "w": 1.0
+                                                            },
+                                                            "Scale": {
+                                                                "x": 1.0,
+                                                                "y": 1.0,
+                                                                "z": 1.0
+                                                            }
+                                                        },
+                                                        "CollisionObj": {
+                                                            "ptr_wrapper": {
+                                                                "valid": 0
+                                                            }
+                                                        },
+                                                        "Children": []
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "polymorphic_id": 3,
+                                        "ptr_wrapper": {
+                                            "valid": 1,
+                                            "data": {
+                                                "RenderAsBillboard": false,
+                                                "MeshInstances": [
+                                                    {
+                                                        "ptr_wrapper": {
+                                                            "valid": 1,
+                                                            "data": {
+                                                                "MeshTreePath": "C:\\Users\\48511\\Desktop\\pooltable\\pooltable_2_attempt.glb",
+                                                                "MeshNodeName": "PoolBall_5",
+                                                                "MeshSpecificName": "Sphere.014",
+                                                                "MaterialInst": {
+                                                                    "ptr_wrapper": {
+                                                                        "id": 0
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                ],
+                                                "SkelInfoBatchID": 0,
+                                                "SkelInfoID": 2,
+                                                "RenderableComponent": {
+                                                    "Hide": false,
+                                                    "CastsShadow": true,
+                                                    "Component": {
+                                                        "Name": "PoolBall_5",
+                                                        "ComponentTransform": {
+                                                            "Position": {
+                                                                "x": 0.0,
+                                                                "y": 0.0,
+                                                                "z": 0.0
+                                                            },
+                                                            "Rotation": {
+                                                                "x": 0.0,
+                                                                "y": 0.0,
+                                                                "z": 0.0,
+                                                                "w": 1.0
+                                                            },
+                                                            "Scale": {
+                                                                "x": 1.0,
+                                                                "y": 1.0,
+                                                                "z": 1.0
+                                                            }
+                                                        },
+                                                        "CollisionObj": {
+                                                            "ptr_wrapper": {
+                                                                "valid": 0
+                                                            }
+                                                        },
+                                                        "Children": []
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "polymorphic_id": 3,
+                                        "ptr_wrapper": {
+                                            "valid": 1,
+                                            "data": {
+                                                "RenderAsBillboard": false,
+                                                "MeshInstances": [
+                                                    {
+                                                        "ptr_wrapper": {
+                                                            "valid": 1,
+                                                            "data": {
+                                                                "MeshTreePath": "C:\\Users\\48511\\Desktop\\pooltable\\pooltable_2_attempt.glb",
+                                                                "MeshNodeName": "PoolBall_4",
+                                                                "MeshSpecificName": "Sphere.013",
+                                                                "MaterialInst": {
+                                                                    "ptr_wrapper": {
+                                                                        "id": 0
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                ],
+                                                "SkelInfoBatchID": 0,
+                                                "SkelInfoID": 2,
+                                                "RenderableComponent": {
+                                                    "Hide": false,
+                                                    "CastsShadow": true,
+                                                    "Component": {
+                                                        "Name": "PoolBall_4",
+                                                        "ComponentTransform": {
+                                                            "Position": {
+                                                                "x": 0.0,
+                                                                "y": 0.0,
+                                                                "z": 0.0
+                                                            },
+                                                            "Rotation": {
+                                                                "x": 0.0,
+                                                                "y": 0.0,
+                                                                "z": 0.0,
+                                                                "w": 1.0
+                                                            },
+                                                            "Scale": {
+                                                                "x": 1.0,
+                                                                "y": 1.0,
+                                                                "z": 1.0
+                                                            }
+                                                        },
+                                                        "CollisionObj": {
+                                                            "ptr_wrapper": {
+                                                                "valid": 0
+                                                            }
+                                                        },
+                                                        "Children": []
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "polymorphic_id": 3,
+                                        "ptr_wrapper": {
+                                            "valid": 1,
+                                            "data": {
+                                                "RenderAsBillboard": false,
+                                                "MeshInstances": [
+                                                    {
+                                                        "ptr_wrapper": {
+                                                            "valid": 1,
+                                                            "data": {
+                                                                "MeshTreePath": "C:\\Users\\48511\\Desktop\\pooltable\\pooltable_2_attempt.glb",
+                                                                "MeshNodeName": "PoolBall_3",
+                                                                "MeshSpecificName": "Sphere.008",
+                                                                "MaterialInst": {
+                                                                    "ptr_wrapper": {
+                                                                        "id": 0
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                ],
+                                                "SkelInfoBatchID": 0,
+                                                "SkelInfoID": 2,
+                                                "RenderableComponent": {
+                                                    "Hide": false,
+                                                    "CastsShadow": true,
+                                                    "Component": {
+                                                        "Name": "PoolBall_3",
+                                                        "ComponentTransform": {
+                                                            "Position": {
+                                                                "x": 0.0,
+                                                                "y": 0.0,
+                                                                "z": 0.0
+                                                            },
+                                                            "Rotation": {
+                                                                "x": 0.0,
+                                                                "y": 0.0,
+                                                                "z": 0.0,
+                                                                "w": 1.0
+                                                            },
+                                                            "Scale": {
+                                                                "x": 1.0,
+                                                                "y": 1.0,
+                                                                "z": 1.0
+                                                            }
+                                                        },
+                                                        "CollisionObj": {
+                                                            "ptr_wrapper": {
+                                                                "valid": 0
+                                                            }
+                                                        },
+                                                        "Children": []
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "polymorphic_id": 3,
+                                        "ptr_wrapper": {
+                                            "valid": 1,
+                                            "data": {
+                                                "RenderAsBillboard": false,
+                                                "MeshInstances": [
+                                                    {
+                                                        "ptr_wrapper": {
+                                                            "valid": 1,
+                                                            "data": {
+                                                                "MeshTreePath": "C:\\Users\\48511\\Desktop\\pooltable\\pooltable_2_attempt.glb",
+                                                                "MeshNodeName": "PoolBall_2",
+                                                                "MeshSpecificName": "Sphere.003",
+                                                                "MaterialInst": {
+                                                                    "ptr_wrapper": {
+                                                                        "id": 0
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                ],
+                                                "SkelInfoBatchID": 0,
+                                                "SkelInfoID": 2,
+                                                "RenderableComponent": {
+                                                    "Hide": false,
+                                                    "CastsShadow": true,
+                                                    "Component": {
+                                                        "Name": "PoolBall_2",
+                                                        "ComponentTransform": {
+                                                            "Position": {
+                                                                "x": 0.0,
+                                                                "y": 0.0,
+                                                                "z": 0.0
+                                                            },
+                                                            "Rotation": {
+                                                                "x": 0.0,
+                                                                "y": 0.0,
+                                                                "z": 0.0,
+                                                                "w": 1.0
+                                                            },
+                                                            "Scale": {
+                                                                "x": 1.0,
+                                                                "y": 1.0,
+                                                                "z": 1.0
+                                                            }
+                                                        },
+                                                        "CollisionObj": {
+                                                            "ptr_wrapper": {
+                                                                "valid": 0
+                                                            }
+                                                        },
+                                                        "Children": []
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "polymorphic_id": 3,
+                                        "ptr_wrapper": {
+                                            "valid": 1,
+                                            "data": {
+                                                "RenderAsBillboard": false,
+                                                "MeshInstances": [
+                                                    {
+                                                        "ptr_wrapper": {
+                                                            "valid": 1,
+                                                            "data": {
+                                                                "MeshTreePath": "C:\\Users\\48511\\Desktop\\pooltable\\pooltable_2_attempt.glb",
+                                                                "MeshNodeName": "PoolBall_15",
+                                                                "MeshSpecificName": "Sphere.005",
+                                                                "MaterialInst": {
+                                                                    "ptr_wrapper": {
+                                                                        "id": 0
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                ],
+                                                "SkelInfoBatchID": 0,
+                                                "SkelInfoID": 2,
+                                                "RenderableComponent": {
+                                                    "Hide": false,
+                                                    "CastsShadow": true,
+                                                    "Component": {
+                                                        "Name": "PoolBall_15",
+                                                        "ComponentTransform": {
+                                                            "Position": {
+                                                                "x": 0.0,
+                                                                "y": 0.0,
+                                                                "z": 0.0
+                                                            },
+                                                            "Rotation": {
+                                                                "x": 0.0,
+                                                                "y": 0.0,
+                                                                "z": 0.0,
+                                                                "w": 1.0
+                                                            },
+                                                            "Scale": {
+                                                                "x": 1.0,
+                                                                "y": 1.0,
+                                                                "z": 1.0
+                                                            }
+                                                        },
+                                                        "CollisionObj": {
+                                                            "ptr_wrapper": {
+                                                                "valid": 0
+                                                            }
+                                                        },
+                                                        "Children": []
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "polymorphic_id": 3,
+                                        "ptr_wrapper": {
+                                            "valid": 1,
+                                            "data": {
+                                                "RenderAsBillboard": false,
+                                                "MeshInstances": [
+                                                    {
+                                                        "ptr_wrapper": {
+                                                            "valid": 1,
+                                                            "data": {
+                                                                "MeshTreePath": "C:\\Users\\48511\\Desktop\\pooltable\\pooltable_2_attempt.glb",
+                                                                "MeshNodeName": "PoolBall_14",
+                                                                "MeshSpecificName": "Sphere.009",
+                                                                "MaterialInst": {
+                                                                    "ptr_wrapper": {
+                                                                        "id": 0
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                ],
+                                                "SkelInfoBatchID": 0,
+                                                "SkelInfoID": 2,
+                                                "RenderableComponent": {
+                                                    "Hide": false,
+                                                    "CastsShadow": true,
+                                                    "Component": {
+                                                        "Name": "PoolBall_14",
+                                                        "ComponentTransform": {
+                                                            "Position": {
+                                                                "x": 0.0,
+                                                                "y": 0.0,
+                                                                "z": 0.0
+                                                            },
+                                                            "Rotation": {
+                                                                "x": 0.0,
+                                                                "y": 0.0,
+                                                                "z": 0.0,
+                                                                "w": 1.0
+                                                            },
+                                                            "Scale": {
+                                                                "x": 1.0,
+                                                                "y": 1.0,
+                                                                "z": 1.0
+                                                            }
+                                                        },
+                                                        "CollisionObj": {
+                                                            "ptr_wrapper": {
+                                                                "valid": 0
+                                                            }
+                                                        },
+                                                        "Children": []
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "polymorphic_id": 3,
+                                        "ptr_wrapper": {
+                                            "valid": 1,
+                                            "data": {
+                                                "RenderAsBillboard": false,
+                                                "MeshInstances": [
+                                                    {
+                                                        "ptr_wrapper": {
+                                                            "valid": 1,
+                                                            "data": {
+                                                                "MeshTreePath": "C:\\Users\\48511\\Desktop\\pooltable\\pooltable_2_attempt.glb",
+                                                                "MeshNodeName": "PoolBall_13",
+                                                                "MeshSpecificName": "Sphere.011",
+                                                                "MaterialInst": {
+                                                                    "ptr_wrapper": {
+                                                                        "id": 0
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                ],
+                                                "SkelInfoBatchID": 0,
+                                                "SkelInfoID": 2,
+                                                "RenderableComponent": {
+                                                    "Hide": false,
+                                                    "CastsShadow": true,
+                                                    "Component": {
+                                                        "Name": "PoolBall_13",
+                                                        "ComponentTransform": {
+                                                            "Position": {
+                                                                "x": 0.0,
+                                                                "y": 0.0,
+                                                                "z": 0.0
+                                                            },
+                                                            "Rotation": {
+                                                                "x": 0.0,
+                                                                "y": 0.0,
+                                                                "z": 0.0,
+                                                                "w": 1.0
+                                                            },
+                                                            "Scale": {
+                                                                "x": 1.0,
+                                                                "y": 1.0,
+                                                                "z": 1.0
+                                                            }
+                                                        },
+                                                        "CollisionObj": {
+                                                            "ptr_wrapper": {
+                                                                "valid": 0
+                                                            }
+                                                        },
+                                                        "Children": []
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "polymorphic_id": 3,
+                                        "ptr_wrapper": {
+                                            "valid": 1,
+                                            "data": {
+                                                "RenderAsBillboard": false,
+                                                "MeshInstances": [
+                                                    {
+                                                        "ptr_wrapper": {
+                                                            "valid": 1,
+                                                            "data": {
+                                                                "MeshTreePath": "C:\\Users\\48511\\Desktop\\pooltable\\pooltable_2_attempt.glb",
+                                                                "MeshNodeName": "PoolBall_12",
+                                                                "MeshSpecificName": "Sphere.006",
+                                                                "MaterialInst": {
+                                                                    "ptr_wrapper": {
+                                                                        "id": 0
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                ],
+                                                "SkelInfoBatchID": 0,
+                                                "SkelInfoID": 2,
+                                                "RenderableComponent": {
+                                                    "Hide": false,
+                                                    "CastsShadow": true,
+                                                    "Component": {
+                                                        "Name": "PoolBall_12",
+                                                        "ComponentTransform": {
+                                                            "Position": {
+                                                                "x": 0.0,
+                                                                "y": 0.0,
+                                                                "z": 0.0
+                                                            },
+                                                            "Rotation": {
+                                                                "x": 0.0,
+                                                                "y": 0.0,
+                                                                "z": 0.0,
+                                                                "w": 1.0
+                                                            },
+                                                            "Scale": {
+                                                                "x": 1.0,
+                                                                "y": 1.0,
+                                                                "z": 1.0
+                                                            }
+                                                        },
+                                                        "CollisionObj": {
+                                                            "ptr_wrapper": {
+                                                                "valid": 0
+                                                            }
+                                                        },
+                                                        "Children": []
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "polymorphic_id": 3,
+                                        "ptr_wrapper": {
+                                            "valid": 1,
+                                            "data": {
+                                                "RenderAsBillboard": false,
+                                                "MeshInstances": [
+                                                    {
+                                                        "ptr_wrapper": {
+                                                            "valid": 1,
+                                                            "data": {
+                                                                "MeshTreePath": "C:\\Users\\48511\\Desktop\\pooltable\\pooltable_2_attempt.glb",
+                                                                "MeshNodeName": "PoolBall_11",
+                                                                "MeshSpecificName": "Sphere.015",
+                                                                "MaterialInst": {
+                                                                    "ptr_wrapper": {
+                                                                        "id": 0
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                ],
+                                                "SkelInfoBatchID": 0,
+                                                "SkelInfoID": 2,
+                                                "RenderableComponent": {
+                                                    "Hide": false,
+                                                    "CastsShadow": true,
+                                                    "Component": {
+                                                        "Name": "PoolBall_11",
+                                                        "ComponentTransform": {
+                                                            "Position": {
+                                                                "x": 0.0,
+                                                                "y": 0.0,
+                                                                "z": 0.0
+                                                            },
+                                                            "Rotation": {
+                                                                "x": 0.0,
+                                                                "y": 0.0,
+                                                                "z": 0.0,
+                                                                "w": 1.0
+                                                            },
+                                                            "Scale": {
+                                                                "x": 1.0,
+                                                                "y": 1.0,
+                                                                "z": 1.0
+                                                            }
+                                                        },
+                                                        "CollisionObj": {
+                                                            "ptr_wrapper": {
+                                                                "valid": 0
+                                                            }
+                                                        },
+                                                        "Children": []
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "polymorphic_id": 3,
+                                        "ptr_wrapper": {
+                                            "valid": 1,
+                                            "data": {
+                                                "RenderAsBillboard": false,
+                                                "MeshInstances": [
+                                                    {
+                                                        "ptr_wrapper": {
+                                                            "valid": 1,
+                                                            "data": {
+                                                                "MeshTreePath": "C:\\Users\\48511\\Desktop\\pooltable\\pooltable_2_attempt.glb",
+                                                                "MeshNodeName": "PoolBall_10",
+                                                                "MeshSpecificName": "Sphere.007",
+                                                                "MaterialInst": {
+                                                                    "ptr_wrapper": {
+                                                                        "id": 0
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                ],
+                                                "SkelInfoBatchID": 0,
+                                                "SkelInfoID": 2,
+                                                "RenderableComponent": {
+                                                    "Hide": false,
+                                                    "CastsShadow": true,
+                                                    "Component": {
+                                                        "Name": "PoolBall_10",
+                                                        "ComponentTransform": {
+                                                            "Position": {
+                                                                "x": 0.0,
+                                                                "y": 0.0,
+                                                                "z": 0.0
+                                                            },
+                                                            "Rotation": {
+                                                                "x": 0.0,
+                                                                "y": 0.0,
+                                                                "z": 0.0,
+                                                                "w": 1.0
+                                                            },
+                                                            "Scale": {
+                                                                "x": 1.0,
+                                                                "y": 1.0,
+                                                                "z": 1.0
+                                                            }
+                                                        },
+                                                        "CollisionObj": {
+                                                            "ptr_wrapper": {
+                                                                "valid": 0
+                                                            }
+                                                        },
+                                                        "Children": []
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "polymorphic_id": 3,
+                                        "ptr_wrapper": {
+                                            "valid": 1,
+                                            "data": {
+                                                "RenderAsBillboard": false,
+                                                "MeshInstances": [
+                                                    {
+                                                        "ptr_wrapper": {
+                                                            "valid": 1,
+                                                            "data": {
+                                                                "MeshTreePath": "C:\\Users\\48511\\Desktop\\pooltable\\pooltable_2_attempt.glb",
+                                                                "MeshNodeName": "PoolBall_1",
+                                                                "MeshSpecificName": "Sphere.016",
+                                                                "MaterialInst": {
+                                                                    "ptr_wrapper": {
+                                                                        "id": 0
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                ],
+                                                "SkelInfoBatchID": 0,
+                                                "SkelInfoID": 2,
+                                                "RenderableComponent": {
+                                                    "Hide": false,
+                                                    "CastsShadow": true,
+                                                    "Component": {
+                                                        "Name": "PoolBall_1",
+                                                        "ComponentTransform": {
+                                                            "Position": {
+                                                                "x": 0.0,
+                                                                "y": 0.0,
+                                                                "z": 0.0
+                                                            },
+                                                            "Rotation": {
+                                                                "x": 0.0,
+                                                                "y": 0.0,
+                                                                "z": 0.0,
+                                                                "w": 1.0
+                                                            },
+                                                            "Scale": {
+                                                                "x": 1.0,
+                                                                "y": 1.0,
+                                                                "z": 1.0
+                                                            }
+                                                        },
+                                                        "CollisionObj": {
+                                                            "ptr_wrapper": {
+                                                                "valid": 0
+                                                            }
+                                                        },
+                                                        "Children": []
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "polymorphic_id": 3,
+                                        "ptr_wrapper": {
+                                            "valid": 1,
+                                            "data": {
+                                                "RenderAsBillboard": false,
+                                                "MeshInstances": [
+                                                    {
+                                                        "ptr_wrapper": {
+                                                            "valid": 1,
+                                                            "data": {
+                                                                "MeshTreePath": "C:\\Users\\48511\\Desktop\\pooltable\\pooltable_2_attempt.glb",
+                                                                "MeshNodeName": "Pool_Cue",
+                                                                "MeshSpecificName": "Cylinder.002",
+                                                                "MaterialInst": {
+                                                                    "ptr_wrapper": {
+                                                                        "id": 0
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                ],
+                                                "SkelInfoBatchID": 0,
+                                                "SkelInfoID": 2,
+                                                "RenderableComponent": {
+                                                    "Hide": false,
+                                                    "CastsShadow": true,
+                                                    "Component": {
+                                                        "Name": "Pool_Cue",
+                                                        "ComponentTransform": {
+                                                            "Position": {
+                                                                "x": -0.2777147889137268,
+                                                                "y": 0.9881448745727539,
+                                                                "z": 0.6734117269515991
+                                                            },
+                                                            "Rotation": {
+                                                                "x": 0.0,
+                                                                "y": 0.0,
+                                                                "z": 0.0,
+                                                                "w": 1.0
+                                                            },
+                                                            "Scale": {
+                                                                "x": 2.3299999237060549,
+                                                                "y": 2.3299999237060549,
+                                                                "z": 2.3299999237060549
+                                                            }
+                                                        },
+                                                        "CollisionObj": {
+                                                            "ptr_wrapper": {
+                                                                "valid": 0
+                                                            }
+                                                        },
+                                                        "Children": []
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "polymorphic_id": 3,
+                                        "ptr_wrapper": {
+                                            "valid": 1,
+                                            "data": {
+                                                "RenderAsBillboard": false,
+                                                "MeshInstances": [
+                                                    {
+                                                        "ptr_wrapper": {
+                                                            "valid": 1,
+                                                            "data": {
+                                                                "MeshTreePath": "C:\\Users\\48511\\Desktop\\pooltable\\pooltable_2_attempt.glb",
+                                                                "MeshNodeName": "Cube",
+                                                                "MeshSpecificName": "Cube.001-0",
+                                                                "MaterialInst": {
+                                                                    "ptr_wrapper": {
+                                                                        "id": 0
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    },
+                                                    {
+                                                        "ptr_wrapper": {
+                                                            "valid": 1,
+                                                            "data": {
+                                                                "MeshTreePath": "C:\\Users\\48511\\Desktop\\pooltable\\pooltable_2_attempt.glb",
+                                                                "MeshNodeName": "Cube",
+                                                                "MeshSpecificName": "Cube.001-1",
+                                                                "MaterialInst": {
+                                                                    "ptr_wrapper": {
+                                                                        "id": 0
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    },
+                                                    {
+                                                        "ptr_wrapper": {
+                                                            "valid": 1,
+                                                            "data": {
+                                                                "MeshTreePath": "C:\\Users\\48511\\Desktop\\pooltable\\pooltable_2_attempt.glb",
+                                                                "MeshNodeName": "Cube",
+                                                                "MeshSpecificName": "Cube.001-2",
+                                                                "MaterialInst": {
+                                                                    "ptr_wrapper": {
+                                                                        "id": 0
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                ],
+                                                "SkelInfoBatchID": 0,
+                                                "SkelInfoID": 2,
+                                                "RenderableComponent": {
+                                                    "Hide": false,
+                                                    "CastsShadow": true,
+                                                    "Component": {
+                                                        "Name": "Cube",
+                                                        "ComponentTransform": {
+                                                            "Position": {
+                                                                "x": 0.0,
+                                                                "y": 0.0,
+                                                                "z": 0.0
+                                                            },
+                                                            "Rotation": {
+                                                                "x": 0.0,
+                                                                "y": 0.0,
+                                                                "z": 0.0,
+                                                                "w": 1.0
+                                                            },
+                                                            "Scale": {
+                                                                "x": 1.0,
+                                                                "y": 1.0,
+                                                                "z": 1.0
+                                                            }
+                                                        },
+                                                        "CollisionObj": {
+                                                            "ptr_wrapper": {
+                                                                "valid": 0
+                                                            }
+                                                        },
+                                                        "Children": []
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "polymorphic_id": 1073741824,
+                                        "ptr_wrapper": {
+                                            "valid": 1,
+                                            "data": {
+                                                "Name": "Empty",
+                                                "ComponentTransform": {
+                                                    "Position": {
+                                                        "x": 0.0,
+                                                        "y": 0.0,
+                                                        "z": 0.0
+                                                    },
+                                                    "Rotation": {
+                                                        "x": 0.0,
+                                                        "y": 0.0,
+                                                        "z": 0.0,
+                                                        "w": 1.0
+                                                    },
+                                                    "Scale": {
+                                                        "x": 1.0,
+                                                        "y": 1.0,
+                                                        "z": 1.0
+                                                    }
+                                                },
+                                                "CollisionObj": {
+                                                    "ptr_wrapper": {
+                                                        "valid": 0
+                                                    }
+                                                },
+                                                "Children": []
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "polymorphic_id": 3,
+                                        "ptr_wrapper": {
+                                            "valid": 1,
+                                            "data": {
+                                                "RenderAsBillboard": false,
+                                                "MeshInstances": [
+                                                    {
+                                                        "ptr_wrapper": {
+                                                            "valid": 1,
+                                                            "data": {
+                                                                "MeshTreePath": "C:\\Users\\48511\\Desktop\\pooltable\\pooltable_2_attempt.glb",
+                                                                "MeshNodeName": "Triangle",
+                                                                "MeshSpecificName": "Cube.004",
+                                                                "MaterialInst": {
+                                                                    "ptr_wrapper": {
+                                                                        "id": 0
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                ],
+                                                "SkelInfoBatchID": 0,
+                                                "SkelInfoID": 2,
+                                                "RenderableComponent": {
+                                                    "Hide": false,
+                                                    "CastsShadow": true,
+                                                    "Component": {
+                                                        "Name": "Triangle",
+                                                        "ComponentTransform": {
+                                                            "Position": {
+                                                                "x": 0.0,
+                                                                "y": 0.0,
+                                                                "z": 0.0
+                                                            },
+                                                            "Rotation": {
+                                                                "x": 0.0,
+                                                                "y": 0.0,
+                                                                "z": 0.0,
+                                                                "w": 1.0
+                                                            },
+                                                            "Scale": {
+                                                                "x": 1.0,
+                                                                "y": 1.0,
+                                                                "z": 1.0
+                                                            }
+                                                        },
+                                                        "CollisionObj": {
+                                                            "ptr_wrapper": {
+                                                                "valid": 0
+                                                            }
+                                                        },
+                                                        "Children": []
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "polymorphic_id": 2147483653,
+                                        "polymorphic_name": "GEE::AnimationManagerComponent",
+                                        "ptr_wrapper": {
+                                            "valid": 1,
+                                            "data": {
+                                                "CurrentAnimName": "",
+                                                "value0": {
+                                                    "Name": "An AnimationManagerComponent",
+                                                    "ComponentTransform": {
+                                                        "Position": {
+                                                            "x": 0.0,
+                                                            "y": 0.0,
+                                                            "z": 0.0
+                                                        },
+                                                        "Rotation": {
+                                                            "x": 0.0,
+                                                            "y": 0.0,
+                                                            "z": 0.0,
+                                                            "w": 1.0
+                                                        },
+                                                        "Scale": {
+                                                            "x": 1.0,
+                                                            "y": 1.0,
+                                                            "z": 1.0
+                                                        }
+                                                    },
+                                                    "CollisionObj": {
+                                                        "ptr_wrapper": {
+                                                            "valid": 0
+                                                        }
+                                                    },
+                                                    "Children": []
+                                                }
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "polymorphic_id": 2147483654,
+                                        "polymorphic_name": "GEE::LightComponent",
+                                        "ptr_wrapper": {
+                                            "valid": 1,
+                                            "data": {
+                                                "Lighttype": 1,
+                                                "Ambient": {
+                                                    "x": 0.0,
+                                                    "y": 0.0,
+                                                    "z": 0.0
+                                                },
+                                                "Diffuse": {
+                                                    "x": 1.0,
+                                                    "y": 1.0,
+                                                    "z": 1.0
+                                                },
+                                                "Specular": {
+                                                    "x": 0.5,
+                                                    "y": 0.5,
+                                                    "z": 0.5
+                                                },
+                                                "Attenuation": 0.10000000149011612,
+                                                "CutOff": 1.0,
+                                                "OuterCutOff": 1.0,
+                                                "Far": 22.405357360839845,
+                                                "Component": {
+                                                    "Name": "A LightComponent",
+                                                    "ComponentTransform": {
+                                                        "Position": {
+                                                            "x": 0.0,
+                                                            "y": 2.0,
+                                                            "z": 0.0
+                                                        },
+                                                        "Rotation": {
+                                                            "x": 0.0,
+                                                            "y": 0.0,
+                                                            "z": 0.0,
+                                                            "w": 1.0
+                                                        },
+                                                        "Scale": {
+                                                            "x": 22.405357360839845,
+                                                            "y": 22.405357360839845,
+                                                            "z": 22.405357360839845
+                                                        }
+                                                    },
+                                                    "CollisionObj": {
+                                                        "ptr_wrapper": {
+                                                            "valid": 0
+                                                        }
+                                                    },
+                                                    "Children": []
+                                                }
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "Children": []
+                }
+            }
+        }
+    ],
+    "value0": [
+        {
+            "ptr_wrapper": {
+                "valid": 1,
+                "data": {
+                    "AnimHierarchyTreePath": "C:\\Users\\48511\\Desktop\\pooltable\\pooltable_2_attempt.glb",
+                    "AnimName": "TriangleAction",
+                    "RootCompName": "C:\\Users\\48511\\Desktop\\pooltable\\pooltable_2_attempt.glb",
+                    "RootCompActorName": "pool table"
                 }
             }
         }

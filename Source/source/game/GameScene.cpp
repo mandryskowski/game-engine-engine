@@ -343,6 +343,15 @@ namespace GEE
 		LightProbes.erase(std::remove_if(LightProbes.begin(), LightProbes.end(), [&lightProbe](LightProbeComponent* lightProbeVec) {return lightProbeVec == &lightProbe; }), LightProbes.end());
 	}
 
+	std::vector<UniquePtr<RenderableVolume>> GameSceneRenderData::GetSceneLightsVolumes() const
+	{
+		std::vector<UniquePtr<RenderableVolume>> lightsVolumes;
+		lightsVolumes.resize(Lights.size());
+		std::transform(Lights.begin(), Lights.end(), lightsVolumes.begin(), [](const std::reference_wrapper<LightComponent>& light) { return MakeUnique<LightVolume>(light.get()); });
+
+		return lightsVolumes;
+	}
+
 	std::vector<UniquePtr<RenderableVolume>> GameSceneRenderData::GetLightProbeVolumes(bool putGlobalProbeAtEnd)
 	{
 		//1. Ensure that probes are sorted so the global probe is the last element of the vector (optional)
@@ -356,7 +365,7 @@ namespace GEE
 		//2. Get volumes vector
 		std::vector<UniquePtr<RenderableVolume>> probeVolumes;
 		probeVolumes.resize(LightProbes.size());
-		std::transform(LightProbes.begin(), LightProbes.end(), probeVolumes.begin(), [](LightProbeComponent* probe) {return MakeUnique<LightProbeVolume>(LightProbeVolume(*probe)); });
+		std::transform(LightProbes.begin(), LightProbes.end(), probeVolumes.begin(), [](LightProbeComponent* probe) {return MakeUnique<LightProbeVolume>(*probe); });
 
 		return probeVolumes;
 	}

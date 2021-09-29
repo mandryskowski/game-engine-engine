@@ -128,8 +128,8 @@ namespace GEE
 	
 	FPSGraphRenderingComponent::FPSGraphRenderingComponent(Actor& actor, Component* parentComp, const std::string& name, const Transform& transform):
 		GraphRenderingComponent(actor, parentComp, name, transform),
-		PrevFPSUpdateTime(0.0f),
-		FrameCount(0),
+		PrevFPSUpdateTime(GameHandle->GetProgramRuntime()),
+		PrevFPSUpdateFrame(GameHandle->GetTotalFrameCount()),
 		MinFPSText(nullptr),
 		MaxFPSText(nullptr),
 		AvgFPSText(nullptr)
@@ -156,20 +156,24 @@ namespace GEE
 	{
 		GraphRenderingComponent::Update(deltaTime);
 
+		unsigned int currentFrame = GameHandle->GetTotalFrameCount();
 		float time = GameHandle->GetProgramRuntime();
-		if (time > PrevFPSUpdateTime + 1.0f)
+
+		// Every second update graph
+		if (time >= PrevFPSUpdateTime + 1.0f)
 		{
 			for (auto& it : GetMarkersUnitInterval())	// move each marker by -1 second on the X axis
 				it.x -= 1.0f / 30.0f;
-			PushRawMarker(Vec2f(30.0f, (float)FrameCount));
+
+			PushRawMarker(Vec2f(30.0f, static_cast<float>(currentFrame - PrevFPSUpdateFrame) / (time - PrevFPSUpdateTime)));
 			if (GetMarkersUnitInterval().size() > 31)
 				PopFrontMarker();
+
 			PrevFPSUpdateTime = time;
-			FrameCount = 0;
+			PrevFPSUpdateFrame = currentFrame;
 
 			UpdateFPSTextInfo();
 		}
-		FrameCount++;
 	}
 
 	void FPSGraphRenderingComponent::UpdateFPSTextInfo()

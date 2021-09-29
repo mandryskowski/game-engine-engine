@@ -318,7 +318,7 @@ void UIMultipleListActor::NestList(UIListActor& list)
 		backgroundMaterial->SetColor(backgroundColor);
 		backgroundQuad.OverrideInstancesMaterial(backgroundMaterial);
 
-		actor.CreateComponent<TextComponent>("ElementText", Transform(Vec2f(-2.0f, pos.y), Vec2f(1.0f)), actor.GetName(), "", std::pair<TextAlignment, TextAlignment>(TextAlignment::RIGHT, TextAlignment::CENTER));
+		actor.CreateComponent<TextComponent>("ElementText", Transform(Vec2f(-2.0f, pos.y), Vec2f(0.75f)), actor.GetName(), "", std::pair<TextAlignment, TextAlignment>(TextAlignment::RIGHT, TextAlignment::CENTER));
 		
 		auto& separatorLine = actor.CreateComponent<ModelComponent>("SeparatorLine", Transform(Vec2f(-1.5f, pos.y), Vec2f(0.08f, 0.8f)));
 		separatorLine.AddMeshInst(actor.GetGameHandle()->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD));

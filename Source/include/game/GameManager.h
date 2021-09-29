@@ -242,6 +242,9 @@ namespace GEE
 		virtual GameScene* GetScene(const std::string& name) = 0;
 		virtual GameScene* GetMainScene() = 0;
 		virtual std::vector<GameScene*> GetScenes() = 0;
+		
+		virtual unsigned long long GetTotalTickCount() const = 0;
+		virtual unsigned long long GetTotalFrameCount() const = 0;
 
 		virtual Physics::PhysicsEngineManager* GetPhysicsHandle() = 0;
 		virtual RenderEngineManager* GetRenderEngineHandle() = 0;

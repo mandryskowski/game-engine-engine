@@ -9,9 +9,28 @@ namespace GEE
 		UIActivableButtonActor(scene, parentActor, name),
 		ValueGetter(nullptr),
 		ContentTextComp(nullptr),
-		RetrieveContentEachFrame(false)
+		RetrieveContentEachFrame(false),
+		CaretComponent(nullptr)
 	{
-		ContentTextComp = &CreateButtonText("0");
+		if (name == "VecBox0")
+			ContentTextComp = &CreateComponent<ScrollingTextComponent>("ButtonText", Transform(Vec2f(0.0f), Vec2f(1.0f)), "0", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
+		else
+			ContentTextComp = &CreateButtonText("0");
+
+		return;
+		CaretComponent = &CreateComponent<ModelComponent>("CaretQuad", Transform(Vec2f(0.0f), Vec2f(0.05f, 1.0f)));
+
+		auto caretMaterial = GameHandle->GetRenderEngineHandle()->FindMaterial("GEE_E_Caret_Material");
+		if (!caretMaterial) 
+		{
+			caretMaterial = MakeShared<Material>("GEE_E_Caret_Material");
+			caretMaterial->SetRenderShaderName("Forward_NoLight");
+			caretMaterial->SetColor(Vec4f(1.0f));
+			GameHandle->GetRenderEngineHandle()->AddMaterial(caretMaterial);
+		}
+		CaretComponent->AddMeshInst(GameHandle->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD));
+		CaretComponent->OverrideInstancesMaterial(caretMaterial.get());
+
 	}
 
 	UIInputBoxActor::UIInputBoxActor(GameScene& scene, Actor* parentActor, const std::string& name, std::function<void(const std::string&)> inputFunc, std::function<std::string()> valueGetter) :
@@ -30,7 +49,9 @@ namespace GEE
 		UIActivableButtonActor(std::move(inputBox)),
 		ValueGetter(inputBox.ValueGetter),
 		ContentTextComp(nullptr),
-		RetrieveContentEachFrame(inputBox.RetrieveContentEachFrame)
+		RetrieveContentEachFrame(inputBox.RetrieveContentEachFrame),
+		CaretComponent(nullptr),
+		CaretPosition(inputBox.CaretPosition)
 	{
 	}
 
@@ -73,8 +94,11 @@ namespace GEE
 
 		if (valueGetter)
 		{
+			auto textConstantSizeCast = dynamic_cast<TextConstantSizeComponent*>(ContentTextComp);
 			ValueGetter = [=]() {
 				ContentTextComp->SetContent(valueGetter());
+				if (textConstantSizeCast)
+					textConstantSizeCast->Unstretch();
 			};
 
 			ValueGetter();
@@ -114,6 +138,8 @@ namespace GEE
 	void UIInputBoxActor::Update(float deltaTime)
 	{
 		UIActivableButtonActor::Update(deltaTime);
+
+
 
 		if (RetrieveContentEachFrame && ValueGetter && GetState() != EditorIconState::ACTIVATED)
 			ValueGetter();

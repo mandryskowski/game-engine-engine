@@ -61,7 +61,7 @@ namespace GEE
 
 		Vec2f alignmentOffset((static_cast<float>(Alignment.first) - static_cast<float>(TextAlignment::CENTER)) * -halfTextLength, (static_cast<float>(Alignment.second) - static_cast<float>(TextAlignment::CENTER)) * -transform.GetScale().y);
 
-		return Boxf<Vec2f>(Vec2f(transform.GetPos()) + alignmentOffset, Vec2f(halfTextLength, transform.GetScale().y));
+		return Boxf<Vec2f>(Vec2f(transform.GetPos()) + alignmentOffset, Vec2f(halfTextLength, GetTextHeight(world)));
 	}
 
 	float TextComponent::GetTextLength(bool world) const
@@ -250,7 +250,7 @@ namespace GEE
 
 	ScrollingTextComponent::ScrollingTextComponent(Actor& actorRef, Component* parentComp, const std::string& name, const Transform& transform, std::string content, SharedPtr<Font> font, std::pair<TextAlignment, TextAlignment> alignment):
 		TextComponent(actorRef, parentComp, name, transform, content, font, alignment),
-		MaxLength(2.0f),
+		ScrollingInterp(0.0f, 5.0f),
 		TimeSinceScrollReset(0.0f),
 		ScrollResetTime(5.0f),
 		ScrollCooldownTime(1.0f)
@@ -259,7 +259,7 @@ namespace GEE
 
 	ScrollingTextComponent::ScrollingTextComponent(Actor& actorRef, Component* parentComp, const std::string& name, const Transform& transform, std::string content, std::string fontPath, std::pair<TextAlignment, TextAlignment> alignment):
 		TextComponent(actorRef, parentComp, name, transform, content, fontPath, alignment),
-		MaxLength(2.0f),
+		ScrollingInterp(0.0f, 5.0f),
 		TimeSinceScrollReset(0.0f),
 		ScrollResetTime(5.0f),
 		ScrollCooldownTime(1.0f)
@@ -278,9 +278,12 @@ namespace GEE
 
 	void ScrollingTextComponent::Update(float deltaTime)
 	{
-		TimeSinceScrollReset += deltaTime;
-		if (TimeSinceScrollReset > ScrollResetTime + ScrollCooldownTime)
-			TimeSinceScrollReset -= (ScrollResetTime + ScrollCooldownTime) + ScrollCooldownTime;	// Two cooldowns: one after the text has been fully scrolled and one before scrolling. That's why we substract two cooldowns
+		ScrollingInterp.UpdateT(deltaTime);
+		if (ScrollingInterp.GetT() >= 1.0f)
+			ScrollingInterp.Reset();
+		//TimeSinceScrollReset += deltaTime;
+		//if (TimeSinceScrollReset > ScrollResetTime + ScrollCooldownTime)
+		//	TimeSinceScrollReset -= (ScrollResetTime + ScrollCooldownTime) + ScrollCooldownTime;	// Two cooldowns: one after the text has been fully scrolled and one before scrolling. That's why we substract two cooldowns
 	}
 
 	void ScrollingTextComponent::Render(const RenderInfo& infoBeforeChange, Shader* shader)
@@ -293,7 +296,8 @@ namespace GEE
 		RenderInfo info = infoBeforeChange;
 
 		// Set view matrix
-		float scroll = (glm::max(glm::min(TimeSinceScrollReset, ScrollResetTime), 0.0f) / ScrollResetTime);
+		float scroll = ScrollingInterp.GetT();
+		//float scroll = (glm::max(glm::min(TimeSinceScrollReset, ScrollResetTime), 0.0f) / ScrollResetTime);
 		if (CanvasPtr) scroll *= CanvasPtr->GetCanvasT()->GetScale().x;
 		const float scrollLength = (GetTextLength(true) - Vec4f(((CanvasPtr) ? (CanvasPtr->ToCanvasSpace(renderTransform)) : (renderTransform)).GetMatrix() * Vec4f(2.0f, 0.0f, 0.0f, 0.0f)).x);
 		if (scrollLength <= 0.0f)

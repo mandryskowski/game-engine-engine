@@ -498,12 +498,12 @@ namespace GEE
 				fpsGraph.PushRawMarker(Vec2f(1.0f, 0.9f));*/
 
 				// Axis unit texts
-				graphButton.CreateComponent<TextComponent>("XUnitMain", Transform(Vec2f(1.0f, -1.0f), Vec2f(0.1f)), "[seconds ago]", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::TOP));
+				graphButton.CreateComponent<TextComponent>("XUnitMain", Transform(Vec2f(1.0f, -1.0f), Vec2f(0.1f)), "[seconds]", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::TOP));
 				graphButton.CreateComponent<TextComponent>("YUnitMain", Transform(Vec2f(-1.0f, 1.0f), Vec2f(0.1f)), "[FPS]", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::RIGHT, TextAlignment::BOTTOM));
 
-				graphButton.CreateComponent<TextComponent>("XUnitText1", Transform(Vec2f(-1.0f, -1.0f), Vec2f(0.1f)), "30", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::TOP));
-				graphButton.CreateComponent<TextComponent>("XUnitText2", Transform(Vec2f(0.0f, -1.0f), Vec2f(0.1f)), "15", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::TOP));
-				graphButton.CreateComponent<TextComponent>("XUnitText3", Transform(Vec2f(1.0f, -1.0f), Vec2f(0.1f)), "Now", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::RIGHT, TextAlignment::TOP));
+				graphButton.CreateComponent<TextComponent>("XUnitText1", Transform(Vec2f(-1.0f, -1.0f), Vec2f(0.1f)), "-30", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::TOP));
+				graphButton.CreateComponent<TextComponent>("XUnitText2", Transform(Vec2f(0.0f, -1.0f), Vec2f(0.1f)), "-15", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::TOP));
+				graphButton.CreateComponent<TextComponent>("XUnitText3", Transform(Vec2f(1.0f, -1.0f), Vec2f(0.1f)), "0", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::RIGHT, TextAlignment::TOP));
 
 				graphButton.CreateComponent<TextComponent>("YUnitText1", Transform(Vec2f(-1.0f, -1.0f), Vec2f(0.1f)), "0", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::RIGHT, TextAlignment::BOTTOM));
 				graphButton.CreateComponent<TextComponent>("YUnitText2", Transform(Vec2f(-1.0f, 0.0f), Vec2f(0.1f)), "1000", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::RIGHT, TextAlignment::CENTER));
@@ -546,7 +546,7 @@ namespace GEE
 		{
 			Actor& engineTitleActor = mainMenuScene.CreateActorAtRoot<Actor>("EngineTitleActor", Transform(Vec2f(0.0f, 0.6f)));
 			TextComponent& engineTitleTextComp = engineTitleActor.CreateComponent<TextComponent>("EngineTitleTextComp", Transform(), "Game Engine Engine", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
-			engineTitleTextComp.SetTransform(Transform(Vec2f(0.0f), Vec2f(0.12f)));
+			engineTitleTextComp.SetTransform(Transform(Vec2f(0.0f), Vec2f(0.09f)));
 
 			SharedPtr<Material> titleMaterial = MakeShared<Material>("GEE_Engine_Title");
 			RenderEng.AddMaterial(titleMaterial);
@@ -555,7 +555,7 @@ namespace GEE
 			engineTitleTextComp.SetMaterialInst(MaterialInstance(*titleMaterial));
 
 			TextComponent& engineSubtitleTextComp = engineTitleActor.CreateComponent<TextComponent>("EngineSubtitleTextComp", Transform(), "made by swetroniusz", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
-			engineSubtitleTextComp.SetTransform(Transform(Vec2f(0.0f, -0.15f), Vec2f(0.06f)));
+			engineSubtitleTextComp.SetTransform(Transform(Vec2f(0.0f, -0.15f), Vec2f(0.045f)));
 			Material* subtitleMaterial = RenderEng.AddMaterial(MakeShared<Material>("GEE_Engine_Subtitle"));
 			subtitleMaterial->SetColor(hsvToRgb(Vec3f(300.0f, 0.4f, 0.3f)));
 			engineSubtitleTextComp.SetMaterialInst(*subtitleMaterial);
@@ -620,11 +620,6 @@ namespace GEE
 
 		Actor& cameraActor = mainMenuScene.CreateActorAtRoot<Actor>("OrthoCameraActor");
 		CameraComponent& orthoCameraComp = cameraActor.CreateComponent<CameraComponent>("OrthoCameraComp", glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, 1.0f, -2550.0f));
-
-
-		//Text size test
-		std::string errorCharacterStr(1, char(6));
-		mainMenuScene.CreateActorAtRoot<UIActorDefault>("TextTestActor").CreateComponent<TextComponent>("TextTest", Transform(), errorCharacterStr, "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
 
 		mainMenuScene.BindActiveCamera(&orthoCameraComp);
 		SetActiveScene(&mainMenuScene);

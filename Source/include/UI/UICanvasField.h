@@ -113,8 +113,7 @@ namespace GEE
 	inline void UIElementTemplates::ObjectInput(std::function<std::vector<ObjectType*>()> getObjectsFunc, std::function<void(ObjectType*)> setFunc, const std::string& currentObjName)
 	{
 		GameScene* scenePtr = &Scene;
-		auto& compNameButton = TemplateParent.CreateChild<UIButtonActor>("CompNameBox", currentObjName);
-		compNameButton.SetTransform(Transform(Vec2f(2.0f, 0.0f), Vec2f(3.0f, 1.0f)));
+		auto& compNameButton = TemplateParent.CreateChild<UIButtonActor>("CompNameBox", currentObjName, nullptr, Transform(Vec2f(2.0f, 0.0f), Vec2f(3.0f, 1.0f)));
 		compNameButton.GetRoot()->GetComponent<TextConstantSizeComponent>("ButtonText")->Unstretch();
 
 		compNameButton.SetOnClickFunc([scenePtr, getObjectsFunc, setFunc, &compNameButton]() {

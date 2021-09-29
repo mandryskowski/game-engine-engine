@@ -33,9 +33,13 @@ namespace GEE
 		void EraseLightProbe(LightProbeComponent&);
 
 		/**
-		 * @brief Get the volumes of all light probes in the scene.
+		 * @return the volumes of all lights (not light probes!) in the scene.
+		*/
+		std::vector<UniquePtr<RenderableVolume>> GetSceneLightsVolumes() const;
+
+		/**
 		 * @param putGlobalProbeAtEnd: ensure that the global probe is the final element of the vector. This is used in rendering the global probe only in areas without any local probe.
-		 * @return the volumes of all light probes in the scene.
+		 * @return the volumes of all light probes (not lights!) in the scene.
 		*/
 		std::vector<UniquePtr<RenderableVolume>> GetLightProbeVolumes(bool putGlobalProbeAtEnd = true);
 

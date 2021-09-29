@@ -78,7 +78,9 @@ namespace GEE
 		GameStarted(false),
 		DefaultFont(nullptr),
 		MainScene(nullptr),
-		ActiveScene(nullptr)
+		ActiveScene(nullptr),
+		TotalTickCount(0),
+		TotalFrameCount(0)
 	{
 		GameManager::GamePtr = this;
 		glDisable(GL_MULTISAMPLE);
@@ -252,6 +254,16 @@ namespace GEE
 		return scene->RootActor.get();
 	}
 
+	unsigned long long Game::GetTotalTickCount() const
+	{
+		return TotalTickCount;
+	}
+
+	unsigned long long Game::GetTotalFrameCount() const
+	{
+		return TotalFrameCount;
+	}
+
 	void Game::SetActiveScene(GameScene* scene)
 	{
 		ActiveScene = scene;
@@ -346,10 +358,12 @@ namespace GEE
 			Update(timeStep);
 
 			TimeAccumulator -= timeStep;
+			TotalTickCount++;
 		}
 
 		Render();
 		ticks++;
+		TotalFrameCount++;
 
 		return false;
 	}

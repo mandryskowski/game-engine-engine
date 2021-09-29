@@ -314,6 +314,7 @@ namespace GEE
 	{
 		auto& text = CreateComponent<TextConstantSizeComponent>("ButtonText", Transform(Vec2f(0.0f), Vec2f(1.0f)), content, "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
 		text.SetMaxSize(Vec2f(0.8f));
+		text.Unstretch();
 		return text;
 	}
 

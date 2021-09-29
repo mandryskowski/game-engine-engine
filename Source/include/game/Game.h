@@ -52,6 +52,9 @@ namespace GEE
 		virtual GameScene* GetMainScene() override;
 		virtual Actor* GetRootActor(GameScene* scene = nullptr) override;
 
+		virtual unsigned long long GetTotalTickCount() const override;
+		virtual unsigned long long GetTotalFrameCount() const override;
+
 		virtual void SetActiveScene(GameScene* scene) override;
 
 		virtual void SetCursorIcon(DefaultCursorIcon) override;
@@ -97,6 +100,8 @@ namespace GEE
 		bool DebugMode;
 		float LoopBeginTime;
 		float TimeAccumulator;
+
+		unsigned long long TotalTickCount, TotalFrameCount;
 	};
 
 	struct GLFWEventProcessor

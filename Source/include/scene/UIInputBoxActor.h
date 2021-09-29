@@ -30,9 +30,11 @@ namespace GEE
 		virtual void OnDeactivation() override;
 	private:
 		std::function<void()> ValueGetter;
-		TextConstantSizeComponent* ContentTextComp;
+		TextComponent* ContentTextComp;
 		bool RetrieveContentEachFrame;
 
+		ModelComponent* CaretComponent;	//SetHide() every x seconds
+		unsigned int CaretPosition;
 
 	};
 }

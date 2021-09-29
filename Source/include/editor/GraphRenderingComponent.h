@@ -90,7 +90,7 @@ namespace GEE
 
 	private:
 		float PrevFPSUpdateTime;
-		unsigned int FrameCount;
+		unsigned long long PrevFPSUpdateFrame;
 
 		TextComponent *MinFPSText, *MaxFPSText, *AvgFPSText;
 	};

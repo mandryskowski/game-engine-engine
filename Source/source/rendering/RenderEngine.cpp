@@ -648,16 +648,17 @@ namespace GEE
 
 		glDepthFunc(GL_LEQUAL);
 
-		////////////////////2. Geometry pass
+		////////////////////2. Deferred Shading
 		if (useLightingAlgorithms)
 		{
-			if (sceneRenderData->LightsBuffer.HasBeenGenerated())
-				sceneRenderData->LightsBuffer.SubData4fv(info.camPos, 16); //TODO: BUGCHECK A TERAZ JEST TU.
-			DeferredShadingToolbox* deferredTb = info.TbCollection.GetTb<DeferredShadingToolbox>();
+			if (sceneRenderData->LightsBuffer.HasBeenGenerated())	// Update camera position
+				sceneRenderData->LightsBuffer.SubData4fv(info.camPos, 16);
+			DeferredShadingToolbox* deferredTb = info.TbCollection.GetTb<DeferredShadingToolbox>();	//Get the required textures and shaders for Deferred Shading.
 			GEE_FB::Framebuffer& GFramebuffer = *deferredTb->GFb;
 
-			GFramebuffer.Bind(Viewport(viewport.GetSize()));	// make sure the viewport for the g framebuffer stays at (0, 0)
+			GFramebuffer.Bind(Viewport(viewport.GetSize()));	// Make sure the viewport for the g framebuffer stays at (0, 0) and covers the entire buffer
 
+			// Clear buffers to erase what has been left over from the previous frame.
 			glEnable(GL_DEPTH_TEST);
 			glEnable(GL_CULL_FACE);
 			glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -666,6 +667,7 @@ namespace GEE
 			info.CareAboutShader = true;
 
 
+			////////////////////2.1 Geometry pass of Deferred Shading
 			if (debugPhysics)
 				glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
@@ -681,7 +683,7 @@ namespace GEE
 			if (debugPhysics)
 				glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-			////////////////////2.5 SSAO pass
+			////////////////////2.2 SSAO pass
 			Texture SSAOtex;
 
 			if (settings.AmbientOcclusionSamples > 0)
@@ -691,23 +693,21 @@ namespace GEE
 			for (int i = 0; i < static_cast<int>(deferredTb->LightShaders.size()); i++)
 				deferredTb->LightShaders[i]->UniformBlockBinding("Lights", sceneRenderData->LightsBuffer.BlockBindingSlot);
 			sceneRenderData->UpdateLightUniforms();
-			MainFramebuffer.Bind();
-			glClearBufferfv(GL_COLOR, 0, Math::GetDataPtr(Vec3f(0.0f, 0.0f, 0.0f)));
-			if (info.TbCollection.GetSettings().bBloom)
+
+			MainFramebuffer.Bind(); // Bind the "Main" framebuffer, where we output light information. 
+			glClearBufferfv(GL_COLOR, 0, Math::GetDataPtr(Vec3f(0.0f, 0.0f, 0.0f))); // Clear ONLY the color buffers. The depth information stays for the light pass (we need to know which light volumes actually contain any objects that are affected by the light)
+			if (info.TbCollection.GetSettings().bBloom) 
 				glClearBufferfv(GL_COLOR, 1, Math::GetDataPtr(Vec3f(0.0f)));
 
-			for (int i = 0; i < 4; i++)
-			{
+			for (int i = 0; i < 4; i++)	// Bind all GBuffer textures (Albedo+Specular, Position, Normal, PBR Cook-Torrance Alpha+Metalness+AmbientOcclusion)
 				GFramebuffer.GetColorTexture(i).Bind(i);
-			}
 
 			if (SSAOtex.HasBeenGenerated())
 				SSAOtex.Bind(4);
-			std::vector<UniquePtr<RenderableVolume>> volumes;
-			volumes.resize(sceneRenderData->Lights.size());
-			std::transform(sceneRenderData->Lights.begin(), sceneRenderData->Lights.end(), volumes.begin(), [](const std::reference_wrapper<LightComponent>& light) {return MakeUnique<LightVolume>(LightVolume(light.get())); });
-			RenderVolumes(info, MainFramebuffer, volumes, false);// Shading == ShadingModel::SHADING_PBR_COOK_TORRANCE);
+			
+			RenderVolumes(info, MainFramebuffer, sceneRenderData->GetSceneLightsVolumes(), false);
 
+			////////////////////3.1 IBL pass
 			info.TbCollection.FindShader("CookTorranceIBL")->Use();
 			for (int i = 0; i < static_cast<int>(sceneRenderData->LightProbes.size()); i++)
 			{
@@ -725,8 +725,6 @@ namespace GEE
 
 			if (!probeVolumes.empty())
 			{
-				//if (framebuffer)
-				// probeVolumes.pop_back();
 				sceneRenderData->ProbeTexArrays->IrradianceMapArr.Bind(12);
 				sceneRenderData->ProbeTexArrays->PrefilterMapArr.Bind(13);
 				sceneRenderData->ProbeTexArrays->BRDFLut.Bind(14);
@@ -762,8 +760,8 @@ namespace GEE
 		if (modifyForwardsDepthForUI)
 			RenderRawSceneUI(info, sceneRenderData);
 		else
-			for (unsigned int i = 0; i < ForwardShaders.size(); i++)
-				RenderRawScene(info, sceneRenderData, ForwardShaders[i].get());
+			for (auto shader: this->ForwardShaders)
+				RenderRawScene(info, sceneRenderData, shader.get());
 
 		FindShader("Forward_NoLight")->Use();
 		FindShader("Forward_NoLight")->Uniform2fv("atlasData", Vec2f(0.0f));
