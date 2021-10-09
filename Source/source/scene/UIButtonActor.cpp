@@ -171,6 +171,9 @@ namespace GEE
 		if (bInputDisabled)
 			return;
 
+		if (GetName() == "SettingsButton" && ev.GetType() == EventType::MousePressed && dynamic_cast<const MouseButtonEvent&>(ev).GetButton() == MouseButton::Right)
+			dynamic_cast<EditorManager*>(GameHandle)->CreatePopupMenu(GameHandle->GetInputRetriever().GetMousePositionNDC());
+
 		if (ev.GetType() == EventType::MouseMoved)
 		{
 			Vec2f cursorPos = dynamic_cast<const CursorMoveEvent*>(&ev)->GetNewPosition();

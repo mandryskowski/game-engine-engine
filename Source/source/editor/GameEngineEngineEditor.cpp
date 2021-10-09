@@ -18,6 +18,7 @@
 #include <whereami.h>
 #include <sstream>
 #include <fstream>
+#include <thread>
 
 #include <editor/MousePicking.h>
 #include <editor/GraphRenderingComponent.h>
@@ -64,7 +65,8 @@ namespace GEE
 		SelectedActor(nullptr),
 		SelectedScene(nullptr),
 		bDebugRenderComponents(true),
-		GameController(nullptr)
+		GameController(nullptr),
+		EEForceForwardShading(false)
 		//CanvasContext(nullptr)
 	{
 		{
@@ -217,6 +219,29 @@ namespace GEE
 		//SelectScene(ActiveScene, *EditorScene);
 	}
 
+	void GameEngineEngineEditor::CreatePopupMenu(const Vec2f& posWindowSpace)
+	{
+		// 1. Convert pos to screen space
+		Vec2f posScreenSpace(0.0f);
+		{
+			Vec2i mainWindowPos, mainWindowSize;
+			glfwGetWindowPos(Window, &mainWindowPos.x, &mainWindowPos.y);
+			glfwGetWindowSize(Window, &mainWindowSize.x, &mainWindowSize.y);
+			
+			posScreenSpace = static_cast<Vec2f>(mainWindowSize) * (posWindowSpace * Vec2f(0.5f, -0.5f) + 0.5f) + static_cast<Vec2f>(mainWindowPos);
+		}
+		
+		//glfwWindowHint(GLFW_RESIZABLE, false);
+		//glfwWindowHint(GLFW_DECORATED, false);
+		SystemWindow* window = glfwCreateWindow(200, 400, "popup", nullptr, nullptr);
+		glfwSetWindowPos(window, posScreenSpace.x, posScreenSpace.y);
+
+		glfwWindowHint(GLFW_RESIZABLE, true);
+		glfwWindowHint(GLFW_DECORATED, true);
+		
+		OpenedWindows.push_back(window);
+	}
+
 	void GameEngineEngineEditor::UpdateGameSettings()
 	{
 		ViewportRenderCollection->AddTbsRequiredBySettings();
@@ -310,10 +335,9 @@ namespace GEE
 
 					auto addPreview = [&, selectPreviewButtonText](const std::string& name, std::function<Texture()> getTextureToPreview ) {
 						previewsList.CreateChild<UIButtonActor>(name + "Button", name, [&, getTextureToPreview, selectPreviewButtonText, name]() {
-							Material* mat = new Material("unnamed", 0.0f, RenderEng.FindShader("Forward_NoLight"));
-							mat->AddTexture(std::make_shared<NamedTexture>(getTextureToPreview(), "albedo1"));
-							scenePreviewQuad.OverrideInstancesMaterial(mat);
-
+							Material* previewMaterial = RenderEng.FindMaterial("GEE_3D_SCENE_PREVIEW_MATERIAL").get();
+							previewMaterial->Textures.clear();
+							previewMaterial->AddTexture(MakeShared<NamedTexture>(getTextureToPreview(), "albedo1"));
 							window.MarkAsKilled();
 
 							selectPreviewButtonText->SetContent(name);
@@ -329,12 +353,25 @@ namespace GEE
 
 					window.AutoClampView();
 
-				});
-			//selectPreviewButtonText->GetTransform().SetScale(Vec2f(0.05f / 0.4f, 1.0f));
+			});
+
+			UIActorDefault& forwardShadingSwitch = scenePreviewActor.CreateChild<UIActorDefault>("Extended_Essay_ForwardShadingSwitch", Transform(Vec2f(0.1f, -1.07f), Vec2f(0.05f)));
+			forwardShadingSwitch.CreateComponent<TextConstantSizeComponent>("SwitchForwardText", Transform(Vec2f(0.0f, -1.4f), Vec2f(1.0f, 0.4f)), "Forward", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER)).Unstretch();
+			UIElementTemplates(forwardShadingSwitch).TickBox([this, &selectPreviewButton, selectPreviewButtonText, &scenePreviewQuad](bool val) {
+				selectPreviewButton.SetDisableInput(val); 
+				selectPreviewButton.GetButtonModel()->SetHide(val);
+				selectPreviewButtonText->SetHide(val);
+				/*if (val)
+				{
+					Material* mat = new Material("GEE_3D_SCENE_PREVIEW_MATERIAL", 0.0f, RenderEng.FindShader("Forward_NoLight"));
+					mat->AddTexture(std::make_shared<NamedTexture>(ViewportRenderCollection->GetTb<FinalRenderTargetToolbox>()->GetFinalFramebuffer().GetColorTexture(0), "albedo1"));
+					scenePreviewQuad.OverrideInstancesMaterial(mat);
+					selectPreviewButtonText->SetContent("Final");
+				}*/
+				 EEForceForwardShading = val; }, [this]() { return EEForceForwardShading; });
 		}
 
 		UIActorDefault& scaleActor = editorScene.CreateActorAtRoot<UIActorDefault>("TextTestButton", Transform(Vec2f(0.0f, 0.0f), Vec2f(0.1f, 0.1f)));
-		UIButtonActor& textTestButton = scaleActor.CreateChild<UIButtonActor>("TextTestButton", "A", nullptr, Transform(Vec2f(0.0f, 0.0f), Vec2f(0.1f, 1.0f)));
 
 		UIWindowActor& window1 = editorScene.CreateActorAtRoot<UIWindowActor>("MyTestWindow");
 		window1.SetTransform(Transform(Vec2f(0.0, -0.5f), Vec2f(0.2f)));
@@ -439,6 +476,8 @@ namespace GEE
 				auto& ssaoSamplesIB = window.AddField("SSAO Samples").CreateChild<UIInputBoxActor>("SSAOSamplesInputBox");
 				ssaoSamplesIB.SetOnInputFunc([this](float sampleCount) { GetGameSettings()->Video.AmbientOcclusionSamples = sampleCount; UpdateGameSettings(); }, [this]() { return GetGameSettings()->Video.AmbientOcclusionSamples; });
 
+				window.AddField("Parallax Occlusion Mapping").GetTemplates().TickBox([this](bool val) { GetGameSettings()->Video.POMLevel = (val) ? (SettingLevel::SETTING_LOW) : (SettingLevel::SETTING_NONE); UpdateGameSettings(); }, [this]() { return GetGameSettings()->Video.POMLevel != SettingLevel::SETTING_NONE; });
+
 				window.FieldsList->Refresh();
 				window.AutoClampView();
 
@@ -475,7 +514,7 @@ namespace GEE
 				graphButton.DeleteButtonModel();
 				auto& fpsGraph = graphButton.CreateComponent<FPSGraphRenderingComponent>("FPSGraph");
 				//fpsGraph.SetGraphView(Transform(Vec2f(0.0f), Vec2f(30.0f, 2000.0F)));
-				fpsGraph.SetGraphView(Transform(Vec2f(0.0f), Vec2f(30.0f, 80.0f)));
+				fpsGraph.SetGraphView(Transform(Vec2f(0.0f), Vec2f(30.0f, 240.0f)));
 
 				graphButton.SetOnBeingClickedFunc([&] {
 					float rangeEndpoint = (glm::inverse(profilerWindow.UICanvas::GetViewMatrix()) * Vec4f(profilerWindow.ToCanvasSpace(graphButton.GetClickPosNDC()), 0.0f, 1.0f)).x * 0.5f + 0.5f;
@@ -506,8 +545,8 @@ namespace GEE
 				graphButton.CreateComponent<TextComponent>("XUnitText3", Transform(Vec2f(1.0f, -1.0f), Vec2f(0.1f)), "0", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::RIGHT, TextAlignment::TOP));
 
 				graphButton.CreateComponent<TextComponent>("YUnitText1", Transform(Vec2f(-1.0f, -1.0f), Vec2f(0.1f)), "0", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::RIGHT, TextAlignment::BOTTOM));
-				graphButton.CreateComponent<TextComponent>("YUnitText2", Transform(Vec2f(-1.0f, 0.0f), Vec2f(0.1f)), "1000", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::RIGHT, TextAlignment::CENTER));
-				graphButton.CreateComponent<TextComponent>("YUnitText3", Transform(Vec2f(-1.0f, 1.0f), Vec2f(0.1f)), "2000", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::RIGHT, TextAlignment::TOP));
+				graphButton.CreateComponent<TextComponent>("YUnitText2", Transform(Vec2f(-1.0f, 0.0f), Vec2f(0.1f)), "150", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::RIGHT, TextAlignment::CENTER));
+				graphButton.CreateComponent<TextComponent>("YUnitText3", Transform(Vec2f(-1.0f, 1.0f), Vec2f(0.1f)), "300", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::RIGHT, TextAlignment::TOP));
 
 				auto& infoText = graphButton.CreateComponent<TextComponent>("InfoText", Transform(Vec2f(-0.0f, 1.0f), Vec2f(0.05f)), "FPS - the lower the better\n<Hold SHIFT while dragging mouse to inspect a range>", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::BOTTOM));
 				auto greyMaterial = MakeShared<Material>("Grey", 0.0f, RenderEng.FindShader("TextShader"));
@@ -554,7 +593,7 @@ namespace GEE
 
 			engineTitleTextComp.SetMaterialInst(MaterialInstance(*titleMaterial));
 
-			TextComponent& engineSubtitleTextComp = engineTitleActor.CreateComponent<TextComponent>("EngineSubtitleTextComp", Transform(), "made by swetroniusz", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
+			TextComponent& engineSubtitleTextComp = engineTitleActor.CreateComponent<TextComponent>("EngineSubtitleTextComp", Transform(), "made by Michal Andryskowski", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
 			engineSubtitleTextComp.SetTransform(Transform(Vec2f(0.0f, -0.15f), Vec2f(0.045f)));
 			Material* subtitleMaterial = RenderEng.AddMaterial(MakeShared<Material>("GEE_Engine_Subtitle"));
 			subtitleMaterial->SetColor(hsvToRgb(Vec3f(300.0f, 0.4f, 0.3f)));
@@ -590,12 +629,8 @@ namespace GEE
 
 			UIButtonActor& okButton = window.AddField("").CreateChild<UIButtonActor>("OKButton", "OK", [this, &window]() { window.MarkAsKilled(); LoadProject(ProjectFilepath); });
 
-			auto& XDField = window.AddField("$&$");
-			XDField.GetTransform()->SetScale(Vec3f(1.0f));
-			XDField.CreateChild<UIButtonActor>("SCROLLTEST$&$").CreateComponent<ScrollingTextComponent>("ButtonText", Transform(Vec2f(0.0f, 0.0f), Vec2f(1.0f)), "ogoreczek", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::RIGHT, TextAlignment::CENTER));
-
 			window.RefreshFieldsList();
-			//window.AutoClampView();
+			window.AutoClampView();
 
 		}).SetTransform(Transform(Vec2f(0.3f, 0.0f), Vec2f(0.2f)));
 
@@ -968,6 +1003,36 @@ namespace GEE
 
 	void GameEngineEngineEditor::Render()
 	{
+		//////////////////////POPUPS
+		OpenedWindows.erase(std::remove_if(OpenedWindows.begin(), OpenedWindows.end(), [](SystemWindow* window) { if (glfwWindowShouldClose(window)) { glfwDestroyWindow(window); return true; } return false; }), OpenedWindows.end());
+
+
+		auto renderPopupFunc = [this](SystemWindow* window)
+		{
+			glfwMakeContextCurrent(window);
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+			glViewport(0, 0, 400, 400);
+			glDrawBuffer(GL_BACK);
+			glClearColor(0.7f, 0.3f, 0.8f, 1.0f);
+			glClear(GL_COLOR_BUFFER_BIT);
+
+			Material mat("", 0.0f, RenderEng.FindShader("Forward_NoLight"));
+			mat.SetColor(Vec4f(1.0f, 0.0f, 0.2f, 1.0f));
+
+			RenderEng.FindShader("Forward_NoLight")->Use();
+			mat.UpdateWholeUBOData(RenderEng.FindShader("Forward_NoLight"), RenderEng.GetEmptyTexture());
+
+			RenderEng.GetBasicShapeMesh(EngineBasicShape::QUAD).Bind();
+
+			//RenderEng.GetBasicShapeMesh(EngineBasicShape::QUAD).Render();
+
+			glfwSwapBuffers(window);
+		};
+
+		std::vector<std::thread> popupRenderThreads;
+		for (auto it : OpenedWindows)
+			popupRenderThreads.push_back(std::thread(renderPopupFunc, it));
+		////////////////////////MAIN WINDOW
 		if ((GetMainScene() && !GetMainScene()->ActiveCamera) || (EditorScene && !EditorScene->ActiveCamera))
 		{
 			if (auto camActor = GetMainScene()->FindActor("CameraActor"))
@@ -1055,6 +1120,9 @@ namespace GEE
 
 
 		glfwSwapBuffers(Window);
+
+		for (auto& it : popupRenderThreads)
+			it.join();
 	}
 
 	void GameEngineEngineEditor::LoadProject(const std::string& filepath)

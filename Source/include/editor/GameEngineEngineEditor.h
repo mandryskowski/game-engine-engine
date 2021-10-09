@@ -23,8 +23,13 @@ namespace GEE
 		virtual std::vector<GameScene*> GetScenes() override;
 		GameSettings* GetEditorSettings() override;
 		virtual AtlasMaterial* GetDefaultEditorMaterial(EditorDefaultMaterial) override;
+		virtual bool CheckEEForceForwardShading() override
+		{
+			return EEForceForwardShading;
+		}
 		virtual void Init(SystemWindow* window) override;
 
+		virtual void CreatePopupMenu(const Vec2f& posWindowSpace) override;
 
 		virtual void UpdateGameSettings() override;
 		virtual void UpdateEditorSettings() override;
@@ -53,6 +58,7 @@ namespace GEE
 		RenderToolboxCollection* ViewportRenderCollection, * HUDRenderCollection;
 		GameScene* EditorScene;
 
+		std::vector<SystemWindow*> OpenedWindows;
 
 		GameSettings EditorSettings;
 		bool bDebugRenderComponents;
@@ -67,6 +73,8 @@ namespace GEE
 		Component* SelectedComp;
 		Actor* SelectedActor;
 		GameScene* SelectedScene;
+
+		bool EEForceForwardShading;
 
 		// Which Controller should be set after we switch from editor to game control
 		Controller* GameController;

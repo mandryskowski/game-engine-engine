@@ -1,4 +1,5 @@
 #pragma once
+#include <math/Vec.h>
 
 namespace GEE
 {
@@ -8,6 +9,7 @@ namespace GEE
 	class GameManager;
 	class GameSettings;
 	class AtlasMaterial;
+	
 	namespace HierarchyTemplate
 	{
 		class HierarchyTreeT;
@@ -57,6 +59,7 @@ namespace GEE
 		virtual AtlasMaterial* GetDefaultEditorMaterial(EditorDefaultMaterial) = 0;
 
 		virtual void PreviewHierarchyTree(HierarchyTemplate::HierarchyTreeT& tree) = 0;
+		virtual void CreatePopupMenu(const Vec2f& posWindowSpace) = 0;
 
 		virtual ~EditorManager() = default;
 	};

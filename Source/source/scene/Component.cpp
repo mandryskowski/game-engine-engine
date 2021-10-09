@@ -398,7 +398,7 @@ namespace GEE
 	void Component::GetEditorDescription(EditorDescriptionBuilder descBuilder)
 	{
 		UIInputBoxActor& textActor = descBuilder.CreateActor<UIInputBoxActor>("ComponentsNameActor");
-		textActor.SetTransform(Transform(Vec2f(0.0f, 1.5f), Vec2f(1.0f)));
+		textActor.SetTransform(Transform(Vec2f(0.0f, 1.5f), Vec2f(5.0f, 1.0f)));
 		textActor.GetButtonModel()->SetHide(true);
 
 		ModelComponent& prettyQuad = textActor.CreateComponent<ModelComponent>("PrettyQuad");
@@ -429,27 +429,7 @@ namespace GEE
 		auto& shapesListCategory = descBuilder.AddCategory("Collision object");
 		UIButtonActor& colObjectPresenceButton = shapesListCategory.CreateChild<UIButtonActor>("CollisionObjectButton", (CollisionObj) ? ("V") : ("X"));
 
-		// Is static button
-		shapesListCategory.AddField("Is static").GetTemplates().TickBox([this](bool makeStatic) {
-			if (!CollisionObj) return;
-			CollisionObj->ScenePhysicsData->EraseCollisionObject(*CollisionObj);
-			CollisionObj->IsStatic = makeStatic;
-			CollisionObj->ScenePhysicsData->AddCollisionObject(*CollisionObj, GetTransform());
-			return;
-		},
-		[this]() -> bool {
-			if (CollisionObj)
-				return CollisionObj->ActorPtr->is<physx::PxRigidDynamic>() == nullptr;
-			return false; });
-
-		// Collision shapes list
-		auto& shapesListField = shapesListCategory.AddField("List of shapes");
-		UIAutomaticListActor& shapesList = shapesListField.CreateChild<UIAutomaticListActor>("ShapesList");
-
-		shapesListCategory.SetListElementOffset(shapesListCategory.GetListElementCount() - 1,
-			[descBuilder, &shapesListField, &shapesList, &shapesListCategory, defaultOffset = shapesListCategory.GetListElement(shapesListCategory.GetListElementCount() - 1).GetElementOffset()]() mutable -> Vec3f { return static_cast<Mat3f>(descBuilder.GetCanvas().ToCanvasSpace(shapesListField.GetTransform()->GetWorldTransform()).GetMatrix()) * (2.0f * shapesList.GetListOffset()); });
-
-		shapesListField.CreateChild<UIButtonActor>("AddColShape", "+", [this, descBuilder]() mutable {
+		colObjectPresenceButton.CreateChild<UIButtonActor>("AddColShape", "+", [this, descBuilder]() mutable {
 			UIWindowActor& shapeCreatorWindow = descBuilder.GetEditorScene().CreateActorAtRoot<UIWindowActor>("ShapeCreatorWindow");
 			shapeCreatorWindow.GetTransform()->SetScale(Vec2f(0.25f));
 			UIAutomaticListActor& buttonsList = shapeCreatorWindow.CreateChild<UIAutomaticListActor>("ButtonsList");
@@ -503,9 +483,30 @@ namespace GEE
 					shapeAddButton.SetOnClickFunc([shapeType, addShapeFunc]() { addShapeFunc(MakeShared<Physics::CollisionShape>(shapeType)); });
 			}
 			buttonsList.Refresh();
-		}).SetTransform(Transform(Vec2f(4.0f, 0.0f), Vec2f(0.5f)));
+			}).SetTransform(Transform(Vec2f(4.0f, 0.0f), Vec2f(0.5f)));
 
-		shapesListField.CreateChild<UIButtonActor>("RemoveColObject", "-", [&]() { SetCollisionObject(nullptr); }, Transform(Vec2f(5.0f, 0.0f), Vec2f(0.5f)));
+		colObjectPresenceButton.CreateChild<UIButtonActor>("RemoveColObject", "-", [&]() { SetCollisionObject(nullptr); }, Transform(Vec2f(5.0f, 0.0f), Vec2f(0.5f)));
+
+		// Is static button
+		shapesListCategory.AddField("Is static").GetTemplates().TickBox([this](bool makeStatic) {
+			if (!CollisionObj) return;
+			CollisionObj->ScenePhysicsData->EraseCollisionObject(*CollisionObj);
+			CollisionObj->IsStatic = makeStatic;
+			CollisionObj->ScenePhysicsData->AddCollisionObject(*CollisionObj, GetTransform());
+			return;
+		},
+		[this]() -> bool {
+			if (CollisionObj)
+				return CollisionObj->ActorPtr->is<physx::PxRigidDynamic>() == nullptr;
+			return false; });
+
+		// Collision shapes list
+		auto& shapesListField = shapesListCategory.AddField("List of shapes");
+		UIAutomaticListActor& shapesList = shapesListField.CreateChild<UIAutomaticListActor>("ShapesList");
+
+		shapesListCategory.SetListElementOffset(shapesListCategory.GetListElementCount() - 1,
+			[descBuilder, &shapesListField, &shapesList, &shapesListCategory, defaultOffset = shapesListCategory.GetListElement(shapesListCategory.GetListElementCount() - 1).GetElementOffset()]() mutable -> Vec3f { return static_cast<Mat3f>(descBuilder.GetCanvas().ToCanvasSpace(shapesListField.GetTransform()->GetWorldTransform()).GetMatrix()) * (2.0f * shapesList.GetListOffset()); });
+
 
 
 		if (CollisionObj)

@@ -238,6 +238,9 @@ namespace GEE
 		Vec2f scale = static_cast<Vec2f>(((world)
 					? ((GetCanvasPtr()) ? (GetCanvasPtr()->ToCanvasSpace(GetTransform().GetWorldTransform())) : (GetTransform().GetWorldTransform()))
 					: (GetTransform())).GetScale()) / PreviouslyAppliedScaleRatio;
+
+		if (world && GetCanvasPtr())
+			scale = (Mat2f)GetCanvasPtr()->GetViewMatrix() * scale;
 		ScaleRatio = glm::min(Vec2f(scale.y / scale.x, scale.x / scale.y), Vec2f(1.0f));
 	}
 

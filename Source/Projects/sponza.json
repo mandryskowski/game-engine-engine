@@ -54,47 +54,7 @@
                         "valid": 0
                     }
                 },
-                "Children": [
-                    {
-                        "polymorphic_id": 2147483649,
-                        "polymorphic_name": "GEE::LightProbeComponent",
-                        "ptr_wrapper": {
-                            "valid": 1,
-                            "data": {
-                                "Shape": 0,
-                                "OptionalFilepath": "C:\\Users\\48511\\source\\repos\\swetroniusz\\game-engine-engine\\Source\\winter_lake_01_4k.hdr",
-                                "ProbeIntensity": 1.0,
-                                "Component": {
-                                    "Name": "A LightProbeComponent",
-                                    "ComponentTransform": {
-                                        "Position": {
-                                            "x": 0.0,
-                                            "y": 0.0,
-                                            "z": 0.0
-                                        },
-                                        "Rotation": {
-                                            "x": 0.0,
-                                            "y": 0.0,
-                                            "z": 0.0,
-                                            "w": 1.0
-                                        },
-                                        "Scale": {
-                                            "x": 1.0,
-                                            "y": 1.0,
-                                            "z": 1.0
-                                        }
-                                    },
-                                    "CollisionObj": {
-                                        "ptr_wrapper": {
-                                            "valid": 0
-                                        }
-                                    },
-                                    "Children": []
-                                }
-                            }
-                        }
-                    }
-                ]
+                "Children": []
             }
         }
     },
@@ -113,15 +73,15 @@
                                 "Name": "An Actor's root",
                                 "ComponentTransform": {
                                     "Position": {
-                                        "x": -1.4296069145202637,
-                                        "y": 4.956533432006836,
-                                        "z": -0.04508095234632492
+                                        "x": 2.7637698650360109,
+                                        "y": 3.0068230628967287,
+                                        "z": -0.7777022123336792
                                     },
                                     "Rotation": {
-                                        "x": -0.006058743689209223,
-                                        "y": -0.6363948583602905,
-                                        "z": 0.004998880438506603,
-                                        "w": -0.7713233828544617
+                                        "x": 0.15834861993789674,
+                                        "y": -0.6908511519432068,
+                                        "z": -0.15917834639549256,
+                                        "w": -0.6872500777244568
                                     },
                                     "Scale": {
                                         "x": 1.0,
@@ -136,7 +96,7 @@
                                 },
                                 "Children": [
                                     {
-                                        "polymorphic_id": 2147483650,
+                                        "polymorphic_id": 2147483649,
                                         "polymorphic_name": "GEE::CameraComponent",
                                         "ptr_wrapper": {
                                             "valid": 1,
@@ -209,7 +169,7 @@
                     },
                     "Children": [
                         {
-                            "polymorphic_id": 2147483651,
+                            "polymorphic_id": 2147483650,
                             "polymorphic_name": "GEE::FreeRoamingController",
                             "ptr_wrapper": {
                                 "valid": 1,
@@ -298,7 +258,7 @@
                                 },
                                 "Children": [
                                     {
-                                        "polymorphic_id": 2147483652,
+                                        "polymorphic_id": 2147483651,
                                         "polymorphic_name": "GEE::ModelComponent",
                                         "ptr_wrapper": {
                                             "valid": 1,
@@ -718,7 +678,7 @@
                                         }
                                     },
                                     {
-                                        "polymorphic_id": 2147483653,
+                                        "polymorphic_id": 2147483652,
                                         "polymorphic_name": "GEE::LightComponent",
                                         "ptr_wrapper": {
                                             "valid": 1,
@@ -774,11 +734,66 @@
                                         }
                                     },
                                     {
-                                        "polymorphic_id": 5,
+                                        "polymorphic_id": 4,
                                         "ptr_wrapper": {
                                             "valid": 1,
                                             "data": {
-                                                "Lighttype": 0,
+                                                "Lighttype": 1,
+                                                "Ambient": {
+                                                    "x": 0.0,
+                                                    "y": 0.0,
+                                                    "z": 0.0
+                                                },
+                                                "Diffuse": {
+                                                    "x": 1.0,
+                                                    "y": 1.0,
+                                                    "z": 1.0
+                                                },
+                                                "Specular": {
+                                                    "x": 0.5,
+                                                    "y": 0.5,
+                                                    "z": 0.5
+                                                },
+                                                "Attenuation": 0.4000000059604645,
+                                                "CutOff": 1.0,
+                                                "OuterCutOff": 1.0,
+                                                "Far": 11.202678680419922,
+                                                "Component": {
+                                                    "Name": "A LightComponent",
+                                                    "ComponentTransform": {
+                                                        "Position": {
+                                                            "x": 5.0,
+                                                            "y": 1.0,
+                                                            "z": 0.0
+                                                        },
+                                                        "Rotation": {
+                                                            "x": 0.0,
+                                                            "y": 0.0,
+                                                            "z": 0.0,
+                                                            "w": 1.0
+                                                        },
+                                                        "Scale": {
+                                                            "x": 11.202678680419922,
+                                                            "y": 11.202678680419922,
+                                                            "z": 11.202678680419922
+                                                        }
+                                                    },
+                                                    "CollisionObj": {
+                                                        "ptr_wrapper": {
+                                                            "valid": 0
+                                                        }
+                                                    },
+                                                    "Children": []
+                                                }
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "polymorphic_id": 4,
+                                        "ptr_wrapper": {
+                                            "valid": 1,
+                                            "data": {
+                                                "Lighttype": 1,
                                                 "Ambient": {
                                                     "x": 0.0,
                                                     "y": 0.0,
@@ -816,44 +831,6 @@
                                                             "x": 7.085196018218994,
                                                             "y": 7.085196018218994,
                                                             "z": 7.085196018218994
-                                                        }
-                                                    },
-                                                    "CollisionObj": {
-                                                        "ptr_wrapper": {
-                                                            "valid": 0
-                                                        }
-                                                    },
-                                                    "Children": []
-                                                }
-                                            }
-                                        }
-                                    },
-                                    {
-                                        "polymorphic_id": 1,
-                                        "ptr_wrapper": {
-                                            "valid": 1,
-                                            "data": {
-                                                "Shape": 1,
-                                                "OptionalFilepath": "",
-                                                "ProbeIntensity": 1.0,
-                                                "Component": {
-                                                    "Name": "A LightProbeComponent",
-                                                    "ComponentTransform": {
-                                                        "Position": {
-                                                            "x": 0.0,
-                                                            "y": 4.0,
-                                                            "z": 0.0
-                                                        },
-                                                        "Rotation": {
-                                                            "x": 0.0,
-                                                            "y": 0.0,
-                                                            "z": 0.0,
-                                                            "w": 1.0
-                                                        },
-                                                        "Scale": {
-                                                            "x": 10.0,
-                                                            "y": 5.0,
-                                                            "z": 3.0
                                                         }
                                                     },
                                                     "CollisionObj": {

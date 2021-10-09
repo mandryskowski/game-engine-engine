@@ -121,7 +121,7 @@ namespace GEE
 			auto lol = compNameButton.GetCanvasPtr();
 			Transform windowT = *compNameButton.GetTransform();
 			windowT.Move(Vec2f(0.0f, -3.0f));
-			windowT.ApplyScale(Vec2f(1.0f, 2.0f));
+			windowT.ApplyScale(Vec2f(1.0f, 1.0f));
 			windowT = compNameButton.GetTransform()->GetParentTransform()->GetWorldTransform() * windowT;
 			windowT.SetPosition(Vec3f(dynamic_cast<UICanvasActor*>(lol)->GetTransform()->GetWorldTransformMatrix() *
 				Vec4f(Vec3f(lol->GetProjection() * lol->GetViewMatrix() * Vec4f(windowT.GetPos(), 1.0f)), 1.0f)));
@@ -129,7 +129,6 @@ namespace GEE
 				Vec4f(Vec3f(lol->GetProjection() * lol->GetViewMatrix() * Vec4f(windowT.GetScale(), 0.0f)), 0.0f)));
 			
 			window.SetTransform(windowT);
-			window.SetViewScale(Vec2f(1.0f, 2.0f));
 			window.SetCloseIfClickedOutside(true);
 			window.KillScrollBars();
 			window.KillResizeBars();
@@ -137,6 +136,7 @@ namespace GEE
 			window.KillCloseButton();
 
 			UIAutomaticListActor& list = window.CreateChild<UIAutomaticListActor>("Available comp list");
+			list.GetTransform()->SetScale(Vec2f(0.5f));
 
 			std::vector<ObjectType*> availableObjects = getObjectsFunc();
 
@@ -144,8 +144,9 @@ namespace GEE
 			deleteMe123.CreateComponent<ScrollingTextComponent>("ButtonText", Transform(Vec2f(0.0f), Vec2f(0.25f, 1.0f)), "Nullptr", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::CENTER));
 			for (auto& it : availableObjects)
 			{
-				auto& a = list.CreateChild<UIButtonActor>(it->GetName() + ", Matching object button", [&window, setFunc, it, &compNameButton]() { setFunc(it); window.MarkAsKilled(); if (auto buttonText = compNameButton.GetRoot()->GetComponent<TextConstantSizeComponent>("ButtonText")) { buttonText->SetContent(it->GetName()); buttonText->Unstretch(); } });
-				a.CreateComponent<TextConstantSizeComponent>("ButtonText", Transform(Vec2f(0.0f), Vec2f(0.25f, 1.0f)), it->GetName(), "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER)).SetMaxSize(Vec2f(0.8f));
+				auto& a = list.CreateChild<UIButtonActor>(it->GetName() + ", Matching object button", it->GetName(), [&window, setFunc, it, &compNameButton]() { setFunc(it); window.MarkAsKilled(); if (auto buttonText = compNameButton.GetRoot()->GetComponent<TextConstantSizeComponent>("ButtonText")) { buttonText->SetContent(it->GetName()); buttonText->Unstretch(); } });
+				a.GetRoot()->GetComponent<TextConstantSizeComponent>("ButtonText")->Unstretch();
+				//a.CreateComponent<TextConstantSizeComponent>("ButtonText", Transform(Vec2f(0.0f), Vec2f(0.25f, 1.0f)), it->GetName(), "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER)).SetMaxSize(Vec2f(0.8f));
 			}
 			list.Refresh();
 

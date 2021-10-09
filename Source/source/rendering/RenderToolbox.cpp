@@ -11,6 +11,81 @@ namespace GEE
 {
 	using namespace GEE_FB;
 
+	ForwardShadingToolbox::ForwardShadingToolbox()
+	{
+	}
+
+	ForwardShadingToolbox::ForwardShadingToolbox(const GameSettings::VideoSettings& settings):
+		ForwardShadingToolbox()
+	{
+		Setup(settings);
+	}
+
+	void ForwardShadingToolbox::Setup(const GameSettings::VideoSettings& settings)
+	{
+		//////////////////////////////SHADER LOADING//////////////////////////////
+		std::vector<std::string> lightShadersNames;
+		std::vector<std::string> lightShadersDefines;
+		std::pair<std::string, std::string> lightShadersPath;
+		std::string settingsDefines = settings.GetShaderDefines(settings.Resolution);
+
+		switch (settings.Shading)
+		{
+		case ShadingModel::SHADING_PHONG:
+			settingsDefines += "#define PHONG_SHADING 1\n";
+			lightShadersNames = { "PhongDirectional", "PhongPoint", "PhongSpot" };
+			lightShadersDefines = { "#define DIRECTIONAL_LIGHT 1\n", "#define POINT_LIGHT 1\n", "#define SPOT_LIGHT 1\n" };
+			lightShadersPath = std::pair<std::string, std::string>("Shaders/phong.vs", "Shaders/phong.fs");
+			break;
+		case ShadingModel::SHADING_PBR_COOK_TORRANCE:
+			settingsDefines += "#define PBR_SHADING 1\n";
+			//lightShadersNames = { "CookTorranceDirectional", "CookTorrancePoint", "CookTorranceSpot" };
+			lightShadersNames = { "Geometry", "Geometry", "Geometry" };
+			lightShadersDefines = { "#define DIRECTIONAL_LIGHT 1\n", "#define POINT_LIGHT 1\n", "#define SPOT_LIGHT 1\n"};
+			lightShadersPath = std::pair<std::string, std::string>("Shaders/forward_pbrCookTorrance.vs", "Shaders/forward_pbrCookTorrance.fs");
+			break;
+		}
+
+		//1. Geometry shader
+		std::vector<std::pair<unsigned int, std::string>> gShaderTextureUnits = {
+			std::pair<unsigned int, std::string>(0, "albedo1"),
+			std::pair<unsigned int, std::string>(1, "specular1"),
+			std::pair<unsigned int, std::string>(2, "normal1"),
+			std::pair<unsigned int, std::string>(3, "depth1"),
+		};
+		if (settings.Shading == ShadingModel::SHADING_PBR_COOK_TORRANCE)
+		{
+			std::vector<std::pair<unsigned int, std::string>> pbrTextures = {
+				std::pair<unsigned int, std::string>(4, "roughness1"),
+				std::pair<unsigned int, std::string>(5, "metallic1"),
+				std::pair<unsigned int, std::string>(6, "ao1"),
+				std::pair<unsigned int, std::string>(7, "combined1") };
+			gShaderTextureUnits.insert(gShaderTextureUnits.begin(), pbrTextures.begin(), pbrTextures.end());
+		}
+
+		//2. Light shaders (directional, point, spot)
+		for (int i = 0; i < static_cast<int>(lightShadersNames.size()); i++)
+		{
+			Shaders.push_back(ShaderLoader::LoadShadersWithInclData(lightShadersNames[i], settingsDefines + lightShadersDefines[i], lightShadersPath.first, lightShadersPath.second));
+			Shaders.back()->Use();
+
+			Shaders.back()->Uniform1i("shadowMaps", 10);
+			Shaders.back()->Uniform1i("shadowCubemaps", 11);
+
+			Shaders.back()->UniformBlockBinding("BoneMatrices", 10);
+
+			Shaders.back()->SetTextureUnitNames(gShaderTextureUnits);
+			Shaders.back()->SetExpectedMatrices(std::vector<MatrixType>{MatrixType::MODEL, MatrixType::MVP, MatrixType::NORMAL});
+			Shaders.back()->SetOnMaterialWholeDataUpdateFunc([](Shader& shader, const Material& mat) {
+				MaterialUtil::DisableColorIfAlbedoTextureDetected(shader, mat);
+				});
+
+			LightShaders.push_back(Shaders.back().get());
+		}
+	}
+
+
+
 	DeferredShadingToolbox::DeferredShadingToolbox() :
 		GFb(nullptr),
 		GeometryShader(nullptr)

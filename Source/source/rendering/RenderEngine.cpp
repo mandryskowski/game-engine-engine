@@ -648,97 +648,122 @@ namespace GEE
 
 		glDepthFunc(GL_LEQUAL);
 
-		////////////////////2. Deferred Shading
-		if (useLightingAlgorithms)
+		if (!GameHandle->CheckEEForceForwardShading())
 		{
-			if (sceneRenderData->LightsBuffer.HasBeenGenerated())	// Update camera position
-				sceneRenderData->LightsBuffer.SubData4fv(info.camPos, 16);
-			DeferredShadingToolbox* deferredTb = info.TbCollection.GetTb<DeferredShadingToolbox>();	//Get the required textures and shaders for Deferred Shading.
-			GEE_FB::Framebuffer& GFramebuffer = *deferredTb->GFb;
-
-			GFramebuffer.Bind(Viewport(viewport.GetSize()));	// Make sure the viewport for the g framebuffer stays at (0, 0) and covers the entire buffer
-
-			// Clear buffers to erase what has been left over from the previous frame.
-			glEnable(GL_DEPTH_TEST);
-			glEnable(GL_CULL_FACE);
-			glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-			info.MainPass = true;
-			info.CareAboutShader = true;
-
-
-			////////////////////2.1 Geometry pass of Deferred Shading
-			if (debugPhysics)
-				glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-
-			Shader* gShader = deferredTb->GeometryShader;
-			gShader->Use();
-			gShader->Uniform3fv("camPos", info.camPos);
-
-			RenderRawScene(info, sceneRenderData, gShader);
-			info.MainPass = false;
-			info.CareAboutShader = false;
-
-
-			if (debugPhysics)
-				glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-
-			////////////////////2.2 SSAO pass
-			Texture SSAOtex;
-
-			if (settings.AmbientOcclusionSamples > 0)
-				SSAOtex = Postprocessing.SSAOPass(info, GFramebuffer.GetColorTexture(1), GFramebuffer.GetColorTexture(2));	//pass gPosition and gNormal
-
-			////////////////////3. Lighting pass
-			for (int i = 0; i < static_cast<int>(deferredTb->LightShaders.size()); i++)
-				deferredTb->LightShaders[i]->UniformBlockBinding("Lights", sceneRenderData->LightsBuffer.BlockBindingSlot);
-			sceneRenderData->UpdateLightUniforms();
-
-			MainFramebuffer.Bind(); // Bind the "Main" framebuffer, where we output light information. 
-			glClearBufferfv(GL_COLOR, 0, Math::GetDataPtr(Vec3f(0.0f, 0.0f, 0.0f))); // Clear ONLY the color buffers. The depth information stays for the light pass (we need to know which light volumes actually contain any objects that are affected by the light)
-			if (info.TbCollection.GetSettings().bBloom) 
-				glClearBufferfv(GL_COLOR, 1, Math::GetDataPtr(Vec3f(0.0f)));
-
-			for (int i = 0; i < 4; i++)	// Bind all GBuffer textures (Albedo+Specular, Position, Normal, PBR Cook-Torrance Alpha+Metalness+AmbientOcclusion)
-				GFramebuffer.GetColorTexture(i).Bind(i);
-
-			if (SSAOtex.HasBeenGenerated())
-				SSAOtex.Bind(4);
-			
-			RenderVolumes(info, MainFramebuffer, sceneRenderData->GetSceneLightsVolumes(), false);
-
-			////////////////////3.1 IBL pass
-			info.TbCollection.FindShader("CookTorranceIBL")->Use();
-			for (int i = 0; i < static_cast<int>(sceneRenderData->LightProbes.size()); i++)
+			////////////////////2. Deferred Shading
+			if (useLightingAlgorithms)
 			{
-				LightProbeComponent* probe = sceneRenderData->LightProbes[i];
-				Shader* shader = probe->GetRenderShader(info.TbCollection);
-				shader->Uniform1f("lightProbes[" + std::to_string(i) + "].intensity", probe->GetProbeIntensity());
+				if (sceneRenderData->LightsBuffer.HasBeenGenerated())	// Update camera position
+					sceneRenderData->LightsBuffer.SubData4fv(info.camPos, 16);
+				DeferredShadingToolbox* deferredTb = info.TbCollection.GetTb<DeferredShadingToolbox>();	//Get the required textures and shaders for Deferred Shading.
+				GEE_FB::Framebuffer& GFramebuffer = *deferredTb->GFb;
 
-				if (probe->GetShape() == EngineBasicShape::QUAD)
-					continue;
+				GFramebuffer.Bind(Viewport(viewport.GetSize()));	// Make sure the viewport for the g framebuffer stays at (0, 0) and covers the entire buffer
 
-				shader->Uniform3fv("lightProbes[" + std::to_string(i) + "].position", probe->GetTransform().GetWorldTransform().GetPos());
+				// Clear buffers to erase what has been left over from the previous frame.
+				glEnable(GL_DEPTH_TEST);
+				glEnable(GL_CULL_FACE);
+				glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+				info.MainPass = true;
+				info.CareAboutShader = true;
+
+
+				////////////////////2.1 Geometry pass of Deferred Shading
+				if (debugPhysics)
+					glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
+				Shader* gShader = deferredTb->GeometryShader;
+				gShader->Use();
+				gShader->Uniform3fv("camPos", info.camPos);
+
+				RenderRawScene(info, sceneRenderData, gShader);
+				info.MainPass = false;
+				info.CareAboutShader = false;
+
+
+				if (debugPhysics)
+					glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+				////////////////////2.2 SSAO pass
+				Texture SSAOtex;
+
+				if (settings.AmbientOcclusionSamples > 0)
+					SSAOtex = Postprocessing.SSAOPass(info, GFramebuffer.GetColorTexture(1), GFramebuffer.GetColorTexture(2));	//pass gPosition and gNormal
+
+				////////////////////3. Lighting pass
+				for (int i = 0; i < static_cast<int>(deferredTb->LightShaders.size()); i++)
+					deferredTb->LightShaders[i]->UniformBlockBinding("Lights", sceneRenderData->LightsBuffer.BlockBindingSlot);
+				sceneRenderData->UpdateLightUniforms();
+
+				MainFramebuffer.Bind(); // Bind the "Main" framebuffer, where we output light information. 
+				glClearBufferfv(GL_COLOR, 0, Math::GetDataPtr(Vec3f(0.0f, 0.0f, 0.0f))); // Clear ONLY the color buffers. The depth information stays for the light pass (we need to know which light volumes actually contain any objects that are affected by the light)
+				if (info.TbCollection.GetSettings().bBloom)
+					glClearBufferfv(GL_COLOR, 1, Math::GetDataPtr(Vec3f(0.0f)));
+
+				for (int i = 0; i < 4; i++)	// Bind all GBuffer textures (Albedo+Specular, Position, Normal, PBR Cook-Torrance Alpha+Metalness+AmbientOcclusion)
+					GFramebuffer.GetColorTexture(i).Bind(i);
+
+				if (SSAOtex.HasBeenGenerated())
+					SSAOtex.Bind(4);
+
+				RenderVolumes(info, MainFramebuffer, sceneRenderData->GetSceneLightsVolumes(), false);
+
+				////////////////////3.1 IBL pass
+				info.TbCollection.FindShader("CookTorranceIBL")->Use();
+				for (int i = 0; i < static_cast<int>(sceneRenderData->LightProbes.size()); i++)
+				{
+					LightProbeComponent* probe = sceneRenderData->LightProbes[i];
+					Shader* shader = probe->GetRenderShader(info.TbCollection);
+					shader->Uniform1f("lightProbes[" + std::to_string(i) + "].intensity", probe->GetProbeIntensity());
+
+					if (probe->GetShape() == EngineBasicShape::QUAD)
+						continue;
+
+					shader->Uniform3fv("lightProbes[" + std::to_string(i) + "].position", probe->GetTransform().GetWorldTransform().GetPos());
+				}
+
+				auto probeVolumes = sceneRenderData->GetLightProbeVolumes();
+
+				if (!probeVolumes.empty())
+				{
+					sceneRenderData->ProbeTexArrays->IrradianceMapArr.Bind(12);
+					sceneRenderData->ProbeTexArrays->PrefilterMapArr.Bind(13);
+					sceneRenderData->ProbeTexArrays->BRDFLut.Bind(14);
+					RenderVolumes(info, MainFramebuffer, probeVolumes, sceneRenderData->ProbesLoaded == true);
+				}
 			}
-
-			auto probeVolumes = sceneRenderData->GetLightProbeVolumes();
-
-			if (!probeVolumes.empty())
+			else
 			{
-				sceneRenderData->ProbeTexArrays->IrradianceMapArr.Bind(12);
-				sceneRenderData->ProbeTexArrays->PrefilterMapArr.Bind(13);
-				sceneRenderData->ProbeTexArrays->BRDFLut.Bind(14);
-				RenderVolumes(info, MainFramebuffer, probeVolumes, sceneRenderData->ProbesLoaded == true);
+				MainFramebuffer.Bind(viewport.GetSize());	// make sure the viewport for the main framebuffer stays at (0, 0)
+
+				if (clearMainFB)
+				{
+					glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+					glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+				}
 			}
 		}
 		else
 		{
-			MainFramebuffer.Bind(viewport.GetSize());	// make sure the viewport for the main framebuffer stays at (0, 0)
+			MainFramebuffer.Bind(viewport.GetSize());
 
 			if (clearMainFB)
 			{
 				glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+			}
+			info.MainPass = true;
+			info.CareAboutShader = true;
+			auto forwardTb = info.TbCollection.GetTb<ForwardShadingToolbox>();
+			if (!forwardTb->LightShaders.empty())
+			{
+				Shader* lightShader = forwardTb->LightShaders[0];
+				lightShader->Use();
+				lightShader->UniformBlockBinding("Lights", sceneRenderData->LightsBuffer.BlockBindingSlot);
+				sceneRenderData->UpdateLightUniforms();
+
+				RenderRawScene(info, sceneRenderData, lightShader);
 			}
 		}
 
@@ -1078,7 +1103,7 @@ namespace GEE
 				shader->CallPreRenderFunc();
 
 				bool bCalcVelocity = GameHandle->GetGameSettings()->Video.IsVelocityBufferNeeded() && info.MainPass;
-				if (bCalcVelocity && lastFrameMVP)
+				if (bCalcVelocity && lastFrameMVP)	// Velocity buffer calculation. Used for temporal anti-aliasing.
 				{
 					bool jitter = info.MainPass && GameHandle->GetGameSettings()->Video.IsTemporalReprojectionEnabled();
 					if (jitter)
@@ -1105,12 +1130,12 @@ namespace GEE
 
 			if (info.UseMaterials && material)
 			{
-				if (BoundMaterial != material) //jesli zbindowany jest inny material niz potrzebny obecnie, musimy zmienic go w shaderze
+				if (BoundMaterial != material) // If the currently bound material is different than the one used by this mesh, change it in the shader.
 				{
 					materialInst->UpdateWholeUBOData(shader, EmptyTexture);
 					BoundMaterial = material;
 				}
-				else if (BoundMaterial) //jesli ostatni zbindowany material jest taki sam, to nie musimy zmieniac wszystkich danych w shaderze; oszczedzmy sobie roboty
+				else if (BoundMaterial) // If the currently bound material is the same, there is no need to send it all to the shader. Just send the information specific to this material instance.
 					materialInst->UpdateInstanceUBOData(shader);
 			}
 

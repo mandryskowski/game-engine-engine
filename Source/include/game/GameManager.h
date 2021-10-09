@@ -235,6 +235,8 @@ namespace GEE
 		virtual double GetProgramRuntime() const = 0;
 		virtual InputDevicesStateRetriever GetInputRetriever() = 0;
 		virtual SharedPtr<Font> GetDefaultFont() = 0;
+		
+		virtual bool CheckEEForceForwardShading() = 0;
 
 		virtual bool HasStarted() const = 0;
 

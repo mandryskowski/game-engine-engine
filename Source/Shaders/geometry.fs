@@ -50,7 +50,6 @@ layout (location = 3) out vec2 velocity;
 #endif
 
 //uniform
-uniform float velocityScale;
 uniform vec3 camPos;
 uniform Material material;
 

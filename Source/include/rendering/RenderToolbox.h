@@ -30,6 +30,19 @@ namespace GEE
 		std::vector<SharedPtr<Texture>> Textures;
 	};
 
+	class ForwardShadingToolbox : public RenderToolbox
+	{
+	public:
+		ForwardShadingToolbox();
+		ForwardShadingToolbox(const GameSettings::VideoSettings& settings);
+		void Setup(const GameSettings::VideoSettings& settings);
+
+		friend class MainFramebufferToolbox;
+		friend class RenderEngine;
+	private:
+		std::vector<Shader*> LightShaders;
+	};
+
 	class DeferredShadingToolbox : public RenderToolbox
 	{
 	public:
@@ -222,6 +235,7 @@ namespace GEE
 			if (!Settings.DrawToWindowFBO)
 				AddTb<FinalRenderTargetToolbox>(FinalRenderTargetToolbox(Settings));
 
+			AddTb<ForwardShadingToolbox>(ForwardShadingToolbox(Settings));
 			AddTb<MainFramebufferToolbox>(MainFramebufferToolbox(Settings, GetTb<DeferredShadingToolbox>()));
 			std::cout << "Tobox 8.\n";
 			AddTb<ComposedImageStorageToolbox>(ComposedImageStorageToolbox(Settings));
