@@ -58,7 +58,7 @@ namespace GEE
 		virtual void HandleEvent(const Event& ev) override;
 		virtual void HandleEventAll(const Event& ev) override;
 
-		virtual RenderInfo BindForRender(const RenderInfo&, const Vec2u& res) override;
+		virtual SceneMatrixInfo BindForRender(const SceneMatrixInfo&, const Vec2u& res) override;
 		virtual void UnbindForRender(const Vec2u& res) override;
 
 		~UICanvasActor();

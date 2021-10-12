@@ -72,6 +72,7 @@ namespace GEE
 			archive(CEREAL_NVP(SkeletonBatches));
 		}
 
+		friend class SceneRenderer;
 		friend class RenderEngine;
 
 	private:

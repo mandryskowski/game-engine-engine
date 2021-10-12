@@ -116,4 +116,8 @@ namespace GEE
 		static EventHolder* TargetHolder;
 	};
 
+	namespace DebugCallbacks
+	{
+		void APIENTRY OpenGLDebug(GLenum source, GLenum type, unsigned int id, GLenum severity, GLsizei length, const char* message, const void* userParam);
+	}
 }

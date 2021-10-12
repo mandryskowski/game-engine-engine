@@ -14,7 +14,7 @@ namespace GEE
 		CameraComponent(CameraComponent&&);
 		Mat4f GetViewMat();
 		Mat4f GetProjectionMat();		//returns the camera Projection matrix - i've decided that each camera should have their own Projection mat, because just as in the real world each cam has its own FoV and aspect ratio
-		RenderInfo GetRenderInfo(RenderToolboxCollection& renderCollection);
+		SceneMatrixInfo GetRenderInfo(RenderToolboxCollection& renderCollection);
 
 		virtual void Update(float);		//controls the component
 

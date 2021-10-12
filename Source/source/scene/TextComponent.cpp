@@ -115,12 +115,11 @@ namespace GEE
 		TextMatInst = MakeUnique<MaterialInstance>(std::move(matInst));
 	}
 
-	void TextComponent::Render(const RenderInfo& info, Shader* shader)
+	void TextComponent::Render(const SceneMatrixInfo& info, Shader* shader)
 	{
 		if (!UsedFont || GetHide())
 			return;
 		GameHandle->GetRenderEngineHandle()->RenderText((CanvasPtr) ? (CanvasPtr->BindForRender(info, GameHandle->GetGameSettings()->WindowSize)) : (info), *UsedFont, Content, GetTransform().GetWorldTransform(), TextMatInst->GetMaterialRef().GetColor(), shader, false, Alignment);
-		//	GameHandle->GetRenderEngineHandle()->RenderStaticMesh(RenderInfo(*GameHandle->GetRenderEngineHandle()->GetCurrentTbCollection()), MeshInstance(GameHandle->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD)), Transform(), GameHandle->GetRenderEngineHandle()->FindShader("Debug")));
 		if (CanvasPtr)
 			CanvasPtr->UnbindForRender(GameHandle->GetGameSettings()->WindowSize);
 	}
@@ -289,14 +288,14 @@ namespace GEE
 		//	TimeSinceScrollReset -= (ScrollResetTime + ScrollCooldownTime) + ScrollCooldownTime;	// Two cooldowns: one after the text has been fully scrolled and one before scrolling. That's why we substract two cooldowns
 	}
 
-	void ScrollingTextComponent::Render(const RenderInfo& infoBeforeChange, Shader* shader)
+	void ScrollingTextComponent::Render(const SceneMatrixInfo& infoBeforeChange, Shader* shader)
 	{
 		if (!GetUsedFont() || GetHide())
 			return;
 
 		// Copy info
 		Transform renderTransform = GetTransform().GetWorldTransform();
-		RenderInfo info = infoBeforeChange;
+		SceneMatrixInfo info = infoBeforeChange;
 
 		// Set view matrix
 		float scroll = ScrollingInterp.GetT();
@@ -311,7 +310,7 @@ namespace GEE
 		const float posX = scroll * scrollLength;
 		const Mat4f scrollMat = Transform(Vec2f(posX + renderTransform.GetScale().x, 0.0f), Vec2f(1.0f)).GetViewMatrix();
 
-		info.view *= scrollMat;
+		info.SetView(info.GetView() * scrollMat);
 		info.CalculateVP();
 
 
@@ -323,7 +322,7 @@ namespace GEE
 		viewport.ToPxViewport(GameHandle->GetGameSettings()->WindowSize).SetScissor();
 
 		// Render
-		GameHandle->GetRenderEngineHandle()->RenderText((CanvasPtr) ? (CanvasPtr->BindForRender(info, GameHandle->GetGameSettings()->WindowSize)) : (info), *GetUsedFont(), GetContent(), renderTransform, GetTextMatInst()->GetMaterialRef().GetColor(), shader, false, std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, GetAlignment().second));
+		;// GameHandle->GetRenderEngineHandle()->RenderText((CanvasPtr) ? (CanvasPtr->BindForRender(info, GameHandle->GetGameSettings()->WindowSize)) : (info), *GetUsedFont(), GetContent(), renderTransform, GetTextMatInst()->GetMaterialRef().GetColor(), shader, false, std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, GetAlignment().second));
 
 		// Clean up after everything
 		if (CanvasPtr)

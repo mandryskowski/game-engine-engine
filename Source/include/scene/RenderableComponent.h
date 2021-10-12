@@ -8,7 +8,7 @@ namespace GEE
 	public:
 		Renderable(GameScene& scene) : SceneRenderData(*scene.GetRenderData()), Hide(false), bCastsShadow(true) { SceneRenderData.AddRenderable(*this); }
 		Renderable(Renderable&& renderable) : SceneRenderData(renderable.SceneRenderData), Hide(renderable.Hide), bCastsShadow(renderable.bCastsShadow) { SceneRenderData.AddRenderable(*this); }
-		virtual void Render(const RenderInfo& info, Shader* shader) = 0;
+		virtual void Render(const SceneMatrixInfo& info, Shader* shader) = 0;
 		bool GetHide() const { return Hide; }
 		void SetHide(bool hide) { Hide = hide; }
 		bool CastsShadow() const { return bCastsShadow; }
@@ -35,7 +35,7 @@ namespace GEE
 		RenderableComponent(RenderableComponent&& comp) :
 			Component(std::move(comp)),
 			Renderable(std::move(comp)) {}
-		virtual void DebugRender(RenderInfo info, Shader* shader, const Vec3f& debugIconScale) const override {}
+		virtual void DebugRender(SceneMatrixInfo info, Shader& shader, const Vec3f& debugIconScale) const override {}
 		virtual void GetEditorDescription(EditorDescriptionBuilder) override;
 		template <typename Archive>
 		void Save(Archive& archive) const

@@ -23,6 +23,8 @@
 #include <editor/MousePicking.h>
 #include <editor/GraphRenderingComponent.h>
 
+#include <rendering/Renderer.h>
+
 namespace GEE
 {
 	void EditorEventProcessor::FileDropCallback(SystemWindow* window, int count, const char** paths)
@@ -66,7 +68,8 @@ namespace GEE
 		SelectedScene(nullptr),
 		bDebugRenderComponents(true),
 		GameController(nullptr),
-		EEForceForwardShading(false)
+		EEForceForwardShading(false),
+		ThreadPool(std::thread::hardware_concurrency())
 		//CanvasContext(nullptr)
 	{
 		{
@@ -233,13 +236,36 @@ namespace GEE
 		
 		//glfwWindowHint(GLFW_RESIZABLE, false);
 		//glfwWindowHint(GLFW_DECORATED, false);
-		SystemWindow* window = glfwCreateWindow(200, 400, "popup", nullptr, nullptr);
+		SystemWindow* window = glfwCreateWindow(1366, 1024, "popup", nullptr, Window);
 		glfwSetWindowPos(window, posScreenSpace.x, posScreenSpace.y);
 
 		glfwWindowHint(GLFW_RESIZABLE, true);
 		glfwWindowHint(GLFW_DECORATED, true);
 		
 		OpenedWindows.push_back(window);
+
+		auto renderPopupFunc = [this](SystemWindow* window)
+		{
+			glfwMakeContextCurrent(window);
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+			glViewport(0, 0, 400, 400);			
+			glClearColor(0.7f, 0.3f, 0.8f, 1.0f);
+			glClear(GL_COLOR_BUFFER_BIT);
+
+			Material mat("", 0.0f, RenderEng.FindShader("Forward_NoLight"));
+			mat.SetColor(Vec4f(1.0f, 0.0f, 0.2f, 1.0f));
+
+			RenderEng.FindShader("Forward_NoLight")->Use();
+			mat.UpdateWholeUBOData(RenderEng.FindShader("Forward_NoLight"), RenderEng.GetEmptyTexture());
+
+			RenderEng.GetBasicShapeMesh(EngineBasicShape::QUAD).Bind(0);
+
+			//RenderEng.GetBasicShapeMesh(EngineBasicShape::QUAD).Render();
+
+			glfwSwapBuffers(window);
+		};
+
+		//PopupWindowsRendering.back().wait();
 	}
 
 	void GameEngineEngineEditor::UpdateGameSettings()
@@ -307,7 +333,7 @@ namespace GEE
 				}
 
 				MousePickingRenderer renderer(RenderEng);
-				RenderInfo info = scene.GetActiveCamera()->GetRenderInfo(*ViewportRenderCollection);
+				SceneMatrixInfo info = scene.GetActiveCamera()->GetRenderInfo(*ViewportRenderCollection);
 				Component* pickedComponent = renderer.PickComponent(info, scene, GetGameSettings()->Video.Resolution, static_cast<Vec2u>((localMousePos * 0.5f + 0.5f) * static_cast<Vec2f>(GetGameSettings()->Video.Resolution)), allComponents);
 
 				if (pickedComponent && GetInputRetriever().IsKeyPressed(Key::LeftAlt)) // Pick the root component if left alt is pressed
@@ -1006,32 +1032,43 @@ namespace GEE
 		//////////////////////POPUPS
 		OpenedWindows.erase(std::remove_if(OpenedWindows.begin(), OpenedWindows.end(), [](SystemWindow* window) { if (glfwWindowShouldClose(window)) { glfwDestroyWindow(window); return true; } return false; }), OpenedWindows.end());
 
+		std::vector<std::future<void>> popupThreads;
+		popupThreads.reserve(OpenedWindows.size());
 
-		auto renderPopupFunc = [this](SystemWindow* window)
+		for (auto window : OpenedWindows)
 		{
-			glfwMakeContextCurrent(window);
-			glBindFramebuffer(GL_FRAMEBUFFER, 0);
-			glViewport(0, 0, 400, 400);
-			glDrawBuffer(GL_BACK);
-			glClearColor(0.7f, 0.3f, 0.8f, 1.0f);
-			glClear(GL_COLOR_BUFFER_BIT);
+			break;
+			popupThreads.push_back(ThreadPool.push([this, window](int)
+			{
+				glfwMakeContextCurrent(window);
+				glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS_ARB);
+				glDebugMessageCallbackARB(DebugCallbacks::OpenGLDebug, nullptr);
+				glDebugMessageControlARB(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
 
-			Material mat("", 0.0f, RenderEng.FindShader("Forward_NoLight"));
-			mat.SetColor(Vec4f(1.0f, 0.0f, 0.2f, 1.0f));
+				glDisable(GL_DEPTH_TEST);
+				glDisable(GL_CULL_FACE);
+				glBindFramebuffer(GL_FRAMEBUFFER, 0);
+				glViewport(0, 0, 400, 400);
+				glDrawBuffer(GL_FRONT);
+				glClearColor(glm::abs(glm::cos((this->GetProgramRuntime()))), 0.3f, 0.8f, 1.0f);
+				glClear(GL_COLOR_BUFFER_BIT);
 
-			RenderEng.FindShader("Forward_NoLight")->Use();
-			mat.UpdateWholeUBOData(RenderEng.FindShader("Forward_NoLight"), RenderEng.GetEmptyTexture());
+				Material mat("", 0.0f, RenderEng.FindShader("Forward_NoLight"));
+				mat.SetColor(Vec4f(1.0f, 0.0f, 0.2f, 1.0f));
 
-			RenderEng.GetBasicShapeMesh(EngineBasicShape::QUAD).Bind();
+				//RenderEng.FindShader("Forward_NoLight")->Use();
+				//mat.UpdateWholeUBOData(RenderEng.FindShader("Forward_NoLight"), RenderEng.GetEmptyTexture());
 
-			//RenderEng.GetBasicShapeMesh(EngineBasicShape::QUAD).Render();
+				RenderEng.GetBasicShapeMesh(EngineBasicShape::QUAD).Bind(0);
 
-			glfwSwapBuffers(window);
-		};
+				//RenderEng.GetBasicShapeMesh(EngineBasicShape::QUAD).Render();
 
-		std::vector<std::thread> popupRenderThreads;
-		for (auto it : OpenedWindows)
-			popupRenderThreads.push_back(std::thread(renderPopupFunc, it));
+				glFlush();
+				//glfwSwapBuffers(window);
+			}));
+			//popupThreads.back().get();
+		}
+
 		////////////////////////MAIN WINDOW
 		if ((GetMainScene() && !GetMainScene()->ActiveCamera) || (EditorScene && !EditorScene->ActiveCamera))
 		{
@@ -1050,7 +1087,7 @@ namespace GEE
 		{
 			//Render 3D scene
 			RenderEng.PrepareScene(*ViewportRenderCollection, GetMainScene()->GetRenderData());
-			RenderEng.FullSceneRender(GetMainScene()->ActiveCamera->GetRenderInfo(*ViewportRenderCollection), GetMainScene()->GetRenderData(), &ViewportRenderCollection->GetTb<FinalRenderTargetToolbox>()->GetFinalFramebuffer(), Viewport(Vec2f(0.0f)), true, false,
+			SceneRenderer(RenderEng, 0, &ViewportRenderCollection->GetTb<FinalRenderTargetToolbox>()->GetFinalFramebuffer()).FullRender(GetMainScene()->ActiveCamera->GetRenderInfo(*ViewportRenderCollection), Viewport(Vec2f(0.0f)), true, false,
 				[&](GEE_FB::Framebuffer& mainFramebuffer) {
 				if (bDebugRenderComponents)
 				{
@@ -1074,17 +1111,17 @@ namespace GEE
 				renderAllColObjs(*SelectedActor->GetRoot());
 			}
 
-			RenderEng.RenderText(RenderInfo(*ViewportRenderCollection), *GetDefaultFont(), "(C) twoja babka studios", Transform(Vec3f(0.0f, 0.0f, 0.0f), Vec3f(0.0f), Vec3f(32.0f)), glm::pow(Vec3f(0.0f, 0.73f, 0.84f), Vec3f(1.0f / 2.2f)), nullptr, true);
+			RenderEng.RenderText(SceneMatrixInfo(*ViewportRenderCollection, *GetMainScene()->GetRenderData()), *GetDefaultFont(), "(C) twoja babka studios", Transform(Vec3f(0.0f, 0.0f, 0.0f), Vec3f(0.0f), Vec3f(32.0f)), glm::pow(Vec3f(0.0f, 0.73f, 0.84f), Vec3f(1.0f / 2.2f)), nullptr, true);
 		}
-		else
+		else if (GetMainScene())
 		{
 			ViewportRenderCollection->GetTb<FinalRenderTargetToolbox>()->GetFinalFramebuffer().Bind(true);
 			glClear(GL_COLOR_BUFFER_BIT);
 
 			RenderEng.FindShader("Forward_NoLight")->Use();
-			RenderEng.RenderStaticMesh(RenderInfo(*ViewportRenderCollection), MeshInstance(RenderEng.GetBasicShapeMesh(EngineBasicShape::QUAD), RenderEng.FindMaterial("GEE_No_Camera_Icon").get()), Transform(), RenderEng.FindShader("Forward_NoLight"));
+			Renderer(RenderEng).StaticMeshInstances(SceneMatrixInfo(*ViewportRenderCollection, *GetMainScene()->GetRenderData()), { MeshInstance(RenderEng.GetBasicShapeMesh(EngineBasicShape::QUAD), RenderEng.FindMaterial("GEE_No_Camera_Icon").get()) }, Transform(), *RenderEng.FindShader("Forward_NoLight"));
 
-			RenderEng.RenderText(RenderInfo(*ViewportRenderCollection), *DefaultFont, "No camera", Transform(Vec2f(0.0f, -0.8f), Vec2f(0.1f)), Vec3f(1.0f, 0.0f, 0.0f), nullptr, false, std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
+			RenderEng.RenderText(SceneMatrixInfo(*ViewportRenderCollection, *GetMainScene()->GetRenderData()), *DefaultFont, "No camera", Transform(Vec2f(0.0f, -0.8f), Vec2f(0.1f)), Vec3f(1.0f, 0.0f, 0.0f), nullptr, false, std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
 
 		}
 
@@ -1092,26 +1129,26 @@ namespace GEE
 		if (renderEditorScene)
 		{
 			///Render editor scene
-			RenderInfo info = EditorScene->ActiveCamera->GetRenderInfo(*HUDRenderCollection);
+			SceneMatrixInfo info = EditorScene->ActiveCamera->GetRenderInfo(*HUDRenderCollection);
 			RenderEng.PrepareScene(*HUDRenderCollection, EditorScene->GetRenderData());
-			RenderEng.FullSceneRender(info, EditorScene->GetRenderData(), nullptr, Viewport(Vec2f(0.0f), Vec2f(Settings->WindowSize)), true, true);
+			SceneRenderer(RenderEng).FullRender(info, Viewport(Vec2f(0.0f), Vec2f(Settings->WindowSize)), true, true);
 		}
 
 		if (GameScene* mainMenuScene = GetScene("GEE_Main_Menu"))
 			if (mainMenuScene->GetActiveCamera())
 			{
-				RenderInfo info = mainMenuScene->ActiveCamera->GetRenderInfo(*HUDRenderCollection);
+				SceneMatrixInfo info = mainMenuScene->ActiveCamera->GetRenderInfo(*HUDRenderCollection);
 				RenderEng.PrepareScene(*HUDRenderCollection, mainMenuScene->GetRenderData());
-				RenderEng.FullSceneRender(info, mainMenuScene->GetRenderData(), nullptr, Viewport(Vec2f(0.0f), Vec2f(Settings->WindowSize)), !renderEditorScene, true);
+				SceneRenderer(RenderEng).FullRender(info, Viewport(Vec2f(0.0f), Vec2f(Settings->WindowSize)), !renderEditorScene, true);
 			}
-
+			
 		if (GameScene* meshPreviewScene = GetScene("GEE_Mesh_Preview_Scene"))
 			if (meshPreviewScene->GetActiveCamera())
 			{
 				RenderToolboxCollection& renderTbCollection = **std::find_if(RenderEng.RenderTbCollections.begin(), RenderEng.RenderTbCollections.end(), [](const UniquePtr<RenderToolboxCollection>& tbCol) { return tbCol->GetName() == "GEE_E_Mesh_Preview_Toolbox_Collection"; });
-				RenderInfo info = meshPreviewScene->ActiveCamera->GetRenderInfo(renderTbCollection);
+				SceneMatrixInfo info = meshPreviewScene->ActiveCamera->GetRenderInfo(renderTbCollection);
 				RenderEng.PrepareScene(renderTbCollection, meshPreviewScene->GetRenderData());
-				RenderEng.FullSceneRender(info, meshPreviewScene->GetRenderData(), &renderTbCollection.GetTb<FinalRenderTargetToolbox>()->GetFinalFramebuffer());
+				SceneRenderer(RenderEng, 0, &renderTbCollection.GetTb<FinalRenderTargetToolbox>()->GetFinalFramebuffer()).FullRender(info);
 			}
 
 		if (EditorScene)
@@ -1121,8 +1158,33 @@ namespace GEE
 
 		glfwSwapBuffers(Window);
 
-		for (auto& it : popupRenderThreads)
-			it.join();
+		for (auto& window : OpenedWindows)
+		{
+			glfwMakeContextCurrent(window);
+			glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS_ARB);
+			glDebugMessageCallbackARB(DebugCallbacks::OpenGLDebug, nullptr);
+			glDebugMessageControlARB(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
+
+			glDisable(GL_DEPTH_TEST);
+			glDisable(GL_CULL_FACE);
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+			glViewport(0, 0, 400, 400);
+			glDrawBuffer(GL_BACK);
+			glClearColor(glm::abs(glm::cos((this->GetProgramRuntime()))), 0.3f, 0.8f, 1.0f);
+			glClear(GL_COLOR_BUFFER_BIT);
+
+			Material mat("", 0.0f, RenderEng.FindShader("Forward_NoLight"));
+			mat.SetColor(Vec4f(1.0f, 0.0f, 0.2f, 1.0f));
+
+			//RenderEng.FindShader("Forward_NoLight")->Use();
+			//mat.UpdateWholeUBOData(RenderEng.FindShader("Forward_NoLight"), RenderEng.GetEmptyTexture());
+
+			RenderEng.GetBasicShapeMesh(EngineBasicShape::QUAD).Bind(0);
+
+			//RenderEng.GetBasicShapeMesh(EngineBasicShape::QUAD).Render();
+
+			glfwSwapBuffers(window);
+		}
 	}
 
 	void GameEngineEngineEditor::LoadProject(const std::string& filepath)

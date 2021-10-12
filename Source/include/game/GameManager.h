@@ -61,6 +61,11 @@ namespace GEE
 	struct GameSettings;
 	struct VideoSettings;
 	class InputDevicesStateRetriever;
+
+	class MatrixInfo;
+	class MatrixInfoExt;
+	class SceneMatrixInfo;
+
 	class RenderInfo;
 	class RenderToolboxCollection;
 
@@ -166,6 +171,7 @@ namespace GEE
 		virtual Texture GetEmptyTexture() = 0;
 
 		//TODO: THIS SHOULD NOT BE HERE
+		virtual std::vector<Shader*> GetForwardShaders() = 0;
 		virtual std::vector<Material*> GetMaterials() = 0;
 
 		virtual void SetBoundMaterial(Material*) = 0;
@@ -187,30 +193,12 @@ namespace GEE
 
 		virtual Shader* FindShader(std::string) = 0;
 		virtual SharedPtr<Material> FindMaterial(std::string) = 0;
-
-		virtual void RenderCubemapFromTexture(Texture targetTex, Texture tex, Vec2u size, Shader&, int* layer = nullptr,
-		                                      int mipLevel = 0) = 0;
-		virtual void RenderCubemapFromScene(RenderInfo info, GameSceneRenderData* sceneRenderData,
-		                                    GEE_FB::Framebuffer target, GEE_FB::FramebufferAttachment targetTex,
-		                                    Shader* shader = nullptr, int* layer = nullptr,
-		                                    bool fullRender = false) = 0;
+	
 		//Pass a shader if you do not want the default shader to be used.
-		virtual void RenderText(const RenderInfo& info, const Font& font, std::string content, Transform t,
+		virtual void RenderText(const SceneMatrixInfo& info, const Font& font, std::string content, Transform t,
 		                        Vec3f color = Vec3f(1.0f), Shader* shader = nullptr, bool convertFromPx = false,
 		                        const std::pair<TextAlignment, TextAlignment>& = std::pair<
 			                        TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::BOTTOM)) = 0;
-		//Note: this function does not call the Use method of passed Shader. Do it manually.
-		virtual void RenderStaticMesh(const RenderInfo& info, const MeshInstance& mesh, const Transform& transform,
-		                              Shader* shader, Mat4f* lastFrameMVP = nullptr,
-		                              Material* overrideMaterial = nullptr, bool billboard = false) = 0;
-		//Note: this function does not call the Use method of passed Shader. Do it manually.
-		virtual void RenderStaticMeshes(const RenderInfo&, const std::vector<std::reference_wrapper<const MeshInstance>>& meshes,
-		                                const Transform& transform, Shader* shader, Mat4f* lastFrameMVP = nullptr,
-		                                Material* overrideMaterial = nullptr, bool billboard = false) = 0;
-		//Note: this function does not call the Use method of passed Shader. Do it manually
-		virtual void RenderSkeletalMeshes(const RenderInfo& info, const std::vector<std::reference_wrapper<const MeshInstance>>& meshes,
-		                                  const Transform& transform, Shader* shader, SkeletonInfo& skelInfo,
-		                                  Mat4f* lastFrameMVP, Material* overrideMaterial = nullptr) = 0;
 
 		virtual ~RenderEngineManager() = default;
 	protected:

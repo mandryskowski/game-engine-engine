@@ -39,6 +39,7 @@ namespace GEE
 
 		friend class MainFramebufferToolbox;
 		friend class RenderEngine;
+		friend class SceneRenderer;
 	private:
 		std::vector<Shader*> LightShaders;
 	};
@@ -53,6 +54,7 @@ namespace GEE
 		const GEE_FB::Framebuffer* GetGeometryFramebuffer() const { return GFb; }
 
 		friend class MainFramebufferToolbox;
+		friend struct SceneRenderer;
 		friend class RenderEngine;
 	private:
 		GEE_FB::Framebuffer* GFb;
@@ -68,7 +70,7 @@ namespace GEE
 		MainFramebufferToolbox(const GameSettings::VideoSettings& settings, DeferredShadingToolbox* deferredTb = nullptr);
 		void Setup(const GameSettings::VideoSettings& settings, DeferredShadingToolbox* deferredTb = nullptr);	//Pass a DeferredShadingToolbox to reuse some textures and save memory.
 
-		friend class RenderEngine;
+		friend struct SceneRenderer;
 	private:
 		GEE_FB::Framebuffer* MainFb;
 	};
@@ -81,6 +83,7 @@ namespace GEE
 		void Setup(const GameSettings::VideoSettings& settings);
 
 		friend class Postprocess;
+		friend struct PostprocessRenderer;
 
 	private:
 		GEE_FB::Framebuffer* SSAOFb;
@@ -98,6 +101,7 @@ namespace GEE
 		void Setup(const GameSettings::VideoSettings& settings);
 
 		friend class Postprocess;
+		friend struct PostprocessRenderer;
 	private:
 		GEE_FB::Framebuffer* StorageFb; //two color buffers; before rendering to FBO 0 we render to one of its color buffers (we switch them each frame) so as to gain access to the final color buffer in the next frame (for temporal AA)
 	};
@@ -110,6 +114,7 @@ namespace GEE
 		void Setup(const GameSettings::VideoSettings& settings);
 
 		friend class Postprocess;
+		friend struct PostprocessRenderer;
 	private:
 		GEE_FB::Framebuffer* SMAAFb; //three color buffers; we use the first two color buffers as edgeTex&blendTex in SMAA pass and optionally the last one to store the neighborhood blend result for reprojection
 
@@ -126,6 +131,7 @@ namespace GEE
 		void Setup(const GameSettings::VideoSettings& settings);
 
 		friend class Postprocess;
+		friend struct PostprocessRenderer;
 	private:
 		GEE_FB::Framebuffer* ComposedImageFb;
 
@@ -140,6 +146,7 @@ namespace GEE
 		void Setup(const GameSettings::VideoSettings& settings);
 
 		friend class Postprocess;
+		friend struct PostprocessRenderer;
 	private:
 		GEE_FB::Framebuffer* BlurFramebuffers[2]; //only color buffer; we use them as ping pong framebuffers in gaussian blur pass.
 											//Side note: I wonder which method is quicker - switching a framebuffer or switching an attachment or switching a buffer to draw to via glDrawBuffer.
@@ -155,6 +162,7 @@ namespace GEE
 		ShadowMappingToolbox(const GameSettings::VideoSettings& settings);
 		void Setup(const GameSettings::VideoSettings& settings);
 		friend class RenderEngine;
+		friend class ShadowMapRenderer;
 	private:
 		GEE_FB::Framebuffer* ShadowFramebuffer;
 		Texture* ShadowMapArray, * ShadowCubemapArray;

@@ -13,6 +13,8 @@
 #include <scene/CameraComponent.h>
 #include <scene/Controller.h>
 
+#include <rendering/Renderer.h>
+
 namespace GEE
 {
 	using namespace MeshSystem;
@@ -168,19 +170,19 @@ namespace GEE
 			ComponentTransform.SetRotation(glm::rotate(Mat4f(1.0f), (float)glfwGetTime(), Vec3f(0.0f, 1.0f, 0.0f)));
 	}
 
-	void ModelComponent::Render(const RenderInfo& info, Shader* shader)
+	void ModelComponent::Render(const SceneMatrixInfo& info, Shader* shader)
 	{
 		if (GetHide())
 			return;
 
-		std::vector<std::reference_wrapper<const MeshInstance>> meshInstances;
-		std::transform(MeshInstances.begin(), MeshInstances.end(), std::back_inserter(meshInstances), [](UniquePtr<MeshInstance>& instVec) { return std::reference_wrapper<const MeshInstance>(*instVec); });
+		std::vector<MeshInstance> meshInstances;
+		std::transform(MeshInstances.begin(), MeshInstances.end(), std::back_inserter(meshInstances), [](UniquePtr<MeshInstance>& instVec) { return *instVec; });
 
 		if (SkelInfo && SkelInfo->GetBoneCount() > 0)
-			GameHandle->GetRenderEngineHandle()->RenderSkeletalMeshes(info, meshInstances, GetTransform().GetWorldTransform(), shader, *SkelInfo, &LastFrameMVP);
+			;// GameHandle->GetRenderEngineHandle()->RenderSkeletalMeshes(info, meshInstances, GetTransform().GetWorldTransform(), shader, *SkelInfo, &LastFrameMVP);
 		else
 		{
-			GameHandle->GetRenderEngineHandle()->RenderStaticMeshes((CanvasPtr) ? (CanvasPtr->BindForRender(info, GameHandle->GetGameSettings()->WindowSize)) : (info), meshInstances, GetTransform().GetWorldTransform(), shader, &LastFrameMVP, nullptr, RenderAsBillboard);
+			Renderer(*GameHandle->GetRenderEngineHandle(), 0).StaticMeshInstances((CanvasPtr) ? (CanvasPtr->BindForRender(info, GameHandle->GetGameSettings()->WindowSize)) : (info), meshInstances, GetTransform().GetWorldTransform(), *shader, RenderAsBillboard);
 			if (CanvasPtr)
 				CanvasPtr->UnbindForRender(GameHandle->GetGameSettings()->WindowSize);
 		}

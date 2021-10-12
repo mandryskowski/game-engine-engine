@@ -41,7 +41,7 @@ namespace GEE
 		void SetGraphView(const Transform& graphView);
 
 
-		virtual void Render(const RenderInfo&, Shader*) override;
+		virtual void Render(const SceneMatrixInfo&, Shader*) override;
 
 
 		struct GraphRange

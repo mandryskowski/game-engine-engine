@@ -50,7 +50,7 @@ namespace GEE
 		return glm::translate(Mat4f(1.0f), Vec3f(jitter, 0.0f));
 	}
 
-	Texture Postprocess::GaussianBlur(PPToolbox<GaussianBlurToolbox> ppTb, const GEE_FB::Framebuffer& writeFramebuffer,
+	/*Texture Postprocess::GaussianBlur(PPToolbox<GaussianBlurToolbox> ppTb, const GEE_FB::Framebuffer& writeFramebuffer,
 	                                  const Viewport* viewport, const Texture& tex, int passes,
 	                                  unsigned int writeColorBuffer)
 	//Implemented using ping-pong framebuffers (one gaussian blur pass is separable into two lower-cost passes) and linear filtering for performance
@@ -264,7 +264,7 @@ namespace GEE
 		else
 			TonemapGammaPass(GetPPToolbox<ComposedImageStorageToolbox>(tbCollection), finalFramebuffer, viewport, colorTex, blurTex);
 	}
-
+	*/
 	void Postprocess::Dispose()
 	{
 		/*if (SSAOFramebuffer)

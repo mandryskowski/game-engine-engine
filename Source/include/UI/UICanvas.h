@@ -51,7 +51,7 @@ namespace GEE
 
 		void ScrollView(Vec2f offset);
 		void SetViewScale(Vec2f scale);
-		virtual RenderInfo BindForRender(const RenderInfo&, const Vec2u& res) = 0;
+		virtual SceneMatrixInfo BindForRender(const SceneMatrixInfo&, const Vec2u& res) = 0;
 		virtual void UnbindForRender(const Vec2u& res) = 0;
 
 		bool ContainsMouse() const; //Returns cached value. Guaranteed to be valid if called in HandleEvent() or HandleEventAll() of a child of UICanvasActor.

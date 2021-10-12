@@ -2,6 +2,7 @@
 #include <game/Game.h>
 #include <editor/EditorManager.h>
 #include <UI/UIListActor.h>
+#include <ctpl/ctpl_stl.h>
 
 namespace GEE
 {
@@ -59,6 +60,8 @@ namespace GEE
 		GameScene* EditorScene;
 
 		std::vector<SystemWindow*> OpenedWindows;
+
+		ctpl::thread_pool ThreadPool;
 
 		GameSettings EditorSettings;
 		bool bDebugRenderComponents;

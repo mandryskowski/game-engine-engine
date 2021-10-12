@@ -229,12 +229,12 @@ namespace GEE
 			ParentActor->Children.erase(std::remove_if(ParentActor->Children.begin(), ParentActor->Children.end(), [this](UniquePtr<Actor>& child) { return child.get() == this; }), ParentActor->Children.end());
 	}
 
-	void Actor::DebugRender(RenderInfo info, Shader* shader) const
+	void Actor::DebugRender(SceneMatrixInfo info, Shader* shader) const
 	{
-		RootComponent->DebugRenderAll(info, shader);
+		RootComponent->DebugRenderAll(info, *shader);
 	}
 
-	void Actor::DebugRenderAll(RenderInfo info, Shader* shader) const
+	void Actor::DebugRenderAll(SceneMatrixInfo info, Shader* shader) const
 	{
 		DebugRender(info, shader);
 		for (int i = 0; i < static_cast<int>(Children.size()); i++)

@@ -218,10 +218,10 @@ namespace GEE
 		}*/
 	}
 
-	RenderInfo UICanvasActor::BindForRender(const RenderInfo& info, const Vec2u& res)	//Note: RenderInfo is a relatively big object for real-time standards. HOPEFULLY the compiler will optimize here using NRVO and convertedInfo won't be copied D:
+	SceneMatrixInfo UICanvasActor::BindForRender(const SceneMatrixInfo& info, const Vec2u& res)	//Note: RenderInfo is a relatively big object for real-time standards. HOPEFULLY the compiler will optimize here using NRVO and convertedInfo won't be copied D:
 	{
-		RenderInfo convertedInfo = info;
-		convertedInfo.view = GetViewMatrix() * info.view;
+		SceneMatrixInfo convertedInfo = info;
+		convertedInfo.SetView(GetViewMatrix() * info.GetView());
 		convertedInfo.CalculateVP();
 		GetViewport().SetOpenGLState(res);
 

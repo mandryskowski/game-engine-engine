@@ -50,7 +50,7 @@ namespace GEE
 
 		virtual void Update(float deltaTime) override;
 
-		virtual void Render(const RenderInfo&, Shader* shader) override;
+		virtual void Render(const SceneMatrixInfo&, Shader* shader) override;
 
 		virtual void GetEditorDescription(EditorDescriptionBuilder);
 

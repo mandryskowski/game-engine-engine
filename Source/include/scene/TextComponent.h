@@ -25,7 +25,7 @@ namespace GEE
 		virtual void SetContent(const std::string&);
 		void SetMaterialInst(MaterialInstance&&);
 
-		virtual void Render(const RenderInfo& info, Shader* shader) override;
+		virtual void Render(const SceneMatrixInfo& info, Shader* shader) override;
 
 		void SetHorizontalAlignment(const TextAlignment);
 		void SetVerticalAlignment(const TextAlignment);
@@ -107,7 +107,7 @@ namespace GEE
 		virtual Boxf<Vec2f> GetBoundingBox(bool world = true) const override;	//Canvas space
 
 		virtual void Update(float deltaTime);
-		virtual void Render(const RenderInfo& info, Shader* shader) override;
+		virtual void Render(const SceneMatrixInfo& info, Shader* shader) override;
 	public:
 		Transform GetParentWorldTransform() const;
 

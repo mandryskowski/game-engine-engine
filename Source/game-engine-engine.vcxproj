@@ -150,6 +150,7 @@
     <ClCompile Include="source\editor\GraphRenderingComponent.cpp" />
     <ClCompile Include="source\game\GameManager.cpp" />
     <ClCompile Include="source\math\Vec.cpp" />
+    <ClCompile Include="source\rendering\Renderer.cpp" />
     <ClCompile Include="source\scene\Actor.cpp" />
     <ClCompile Include="source\animation\Animation.cpp" />
     <ClCompile Include="source\audio\AudioEngine.cpp" />
@@ -215,6 +216,7 @@
     <ClInclude Include="include\editor\UIViewportWindow.h" />
     <ClInclude Include="include\math\Vec.h" />
     <ClInclude Include="include\rendering\OutlineRenderer.h" />
+    <ClInclude Include="include\rendering\Renderer.h" />
     <ClInclude Include="include\scene\Actor.h" />
     <ClInclude Include="include\animation\Animation.h" />
     <ClInclude Include="include\audio\AudioEngine.h" />

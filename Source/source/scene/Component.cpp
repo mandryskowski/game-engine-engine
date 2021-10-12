@@ -12,6 +12,8 @@
 #include <scene/UIWindowActor.h>
 #include <UI/UIListActor.h>
 
+#include <rendering/Renderer.h>
+
 #include <input/InputDevicesStateRetriever.h>
 
 GEE::Actor* GEE::CerealComponentSerializationData::ActorRef = nullptr;
@@ -299,7 +301,7 @@ namespace GEE
 	{
 	}
 
-	void CollisionObjRendering(RenderInfo& info, GameManager& gameHandle, Physics::CollisionObject& obj, const Transform& t, const Vec3f& color)
+	void CollisionObjRendering(SceneMatrixInfo& info, GameManager& gameHandle, Physics::CollisionObject& obj, const Transform& t, const Vec3f& color)
 	{
 		if (!obj.ActorPtr)
 			return;
@@ -333,12 +335,13 @@ namespace GEE
 			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 			//std::cout << "Debug-rendering col shape mesh " << mesh->GetLocalization().NodeName << " " << mesh->GetLocalization().SpecificName << '\n';
 			//printVector(color, "Color");
-			renderEngHandle.RenderStaticMesh(info, MeshInstance(*mesh, &material), t * shapeTransform, shader);
+			 
+			Renderer(*gameHandle.GetRenderEngineHandle()).StaticMeshInstances(info, { MeshInstance(*mesh, &material) }, t * shapeTransform, *shader);
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		}
 	}
 
-	void Component::DebugRender(RenderInfo info, Shader* shader, const Vec3f& debugIconScale) const
+	void Component::DebugRender(SceneMatrixInfo info, Shader& shader, const Vec3f& debugIconScale) const
 	{
 		if (GameHandle->GetInputRetriever().IsKeyPressed(Key::F2))
 			return;
@@ -350,10 +353,11 @@ namespace GEE
 
 		Transform transform = GetTransform().GetWorldTransform();
 		transform.SetScale(debugIconScale);
-		GameHandle->GetRenderEngineHandle()->RenderStaticMesh(info, MeshInstance(GameHandle->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD), DebugRenderMatInst), transform, shader, &DebugRenderLastFrameMVP, nullptr, true);
+		
+		Renderer(*GameHandle->GetRenderEngineHandle(), 0).StaticMeshInstances(info, { MeshInstance(GameHandle->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD), DebugRenderMatInst) }, transform, shader, true);
 	}
 
-	void Component::DebugRenderAll(RenderInfo info, Shader* shader) const
+	void Component::DebugRenderAll(SceneMatrixInfo info, Shader& shader) const
 	{
 		DebugRender(info, shader);
 
