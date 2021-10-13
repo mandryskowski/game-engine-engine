@@ -86,7 +86,7 @@ namespace GEE
 		//Settings->ViewportData = glm::uvec4(res.x * 0.3f, res.y * 0.4f, res.x * 0.4, res.y * 0.6f);
 		Settings->Video.Resolution = Vec2f(res.x * 0.4f, res.y * 0.6f);
 		//Settings->Video.Resolution = Vec2f(res.x, res.y);
-		Settings->Video.Shading = ShadingModel::SHADING_PBR_COOK_TORRANCE;
+		Settings->Video.Shading = ShadingAlgorithm::SHADING_PBR_COOK_TORRANCE;
 		Init(window);
 	}
 
@@ -207,7 +207,7 @@ namespace GEE
 		renderSettings.DrawToWindowFBO = true;
 		renderSettings.POMLevel = SettingLevel::SETTING_NONE;
 		renderSettings.Resolution = Settings->WindowSize;
-		renderSettings.Shading = ShadingModel::SHADING_FULL_LIT;
+		renderSettings.Shading = ShadingAlgorithm::SHADING_FULL_LIT;
 		renderSettings.ShadowLevel = SettingLevel::SETTING_NONE;
 		renderSettings.TMType = ToneMappingType::TM_NONE;
 		renderSettings.MonitorGamma = 1.0f;

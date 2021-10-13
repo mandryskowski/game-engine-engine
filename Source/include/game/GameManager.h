@@ -164,7 +164,7 @@ namespace GEE
 	class RenderEngineManager
 	{
 	public:
-		virtual const ShadingModel& GetShadingModel() = 0;
+		virtual const ShadingAlgorithm& GetShadingModel() = 0;
 		virtual Mesh& GetBasicShapeMesh(EngineBasicShape) = 0;
 		virtual Shader* GetLightShader(const RenderToolboxCollection& renderCol, LightType) = 0;
 		virtual RenderToolboxCollection* GetCurrentTbCollection() = 0;

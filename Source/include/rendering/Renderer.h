@@ -57,6 +57,8 @@ namespace GEE
 		GaussianBlur
 	};
 
+	
+
 	struct Renderer
 	{
 		Renderer(RenderEngineManager&, int openGLContextID = 0, const GEE_FB::Framebuffer* optionalFramebuffer = nullptr);

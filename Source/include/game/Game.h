@@ -19,7 +19,7 @@ namespace GEE
 	class Game : public GameManager
 	{
 	public:
-		Game(const ShadingModel&, const GameSettings&);
+		Game(const ShadingAlgorithm&, const GameSettings&);
 		virtual void Init(SystemWindow* window);
 
 		void LoadSceneFromFile(const std::string& path, const std::string& name = std::string());
@@ -95,7 +95,7 @@ namespace GEE
 		Physics::PhysicsEngine PhysicsEng;
 		Audio::AudioEngine AudioEng;
 
-		const ShadingModel Shading;
+		const ShadingAlgorithm Shading;
 		bool GameStarted;
 		bool DebugMode;
 		float LoopBeginTime;

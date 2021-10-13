@@ -230,7 +230,7 @@ namespace GEE
 		bUIRenderableDepthsSortedDirtyFlag(false),
 		bLightProbesSortedDirtyFlag(false)
 	{
-		if (LightProbes.empty() && RenderHandle->GetShadingModel() == ShadingModel::SHADING_PBR_COOK_TORRANCE)
+		if (LightProbes.empty() && RenderHandle->GetShadingModel() == ShadingAlgorithm::SHADING_PBR_COOK_TORRANCE)
 		{
 			//LightProbeLoader::LoadLightProbeTextureArrays(this);
 			ProbeTexArrays->IrradianceMapArr.Bind(12);

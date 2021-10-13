@@ -19,7 +19,7 @@ namespace GEE
 											//this is a shitty comment that doesnt fit since a few months ago but i dont want to erase it
 	EventHolder* GLFWEventProcessor::TargetHolder = nullptr;
 
-	Game::Game(const ShadingModel& shading, const GameSettings& settings) :
+	Game::Game(const ShadingAlgorithm& shading, const GameSettings& settings) :
 		bGameTerminated(false),
 		AudioEng(static_cast<GameManager*>(this)),
 		RenderEng(static_cast<GameManager*>(this)),

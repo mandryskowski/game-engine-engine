@@ -20,7 +20,7 @@ namespace GEE
 		RenderEngine(GameManager*);
 		void Init(Vec2u resolution);
 
-		virtual const ShadingModel& GetShadingModel() override;
+		virtual const ShadingAlgorithm& GetShadingModel() override;
 		virtual Mesh& GetBasicShapeMesh(EngineBasicShape) override;
 		virtual Shader* GetLightShader(const RenderToolboxCollection& renderCol, LightType type) override;
 		virtual RenderToolboxCollection* GetCurrentTbCollection() override;

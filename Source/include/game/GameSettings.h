@@ -3,11 +3,19 @@
 
 namespace GEE
 {
-	enum ShadingModel
+	enum ShadingAlgorithm
 	{
 		SHADING_FULL_LIT,
 		SHADING_PHONG,
 		SHADING_PBR_COOK_TORRANCE
+	};
+
+	enum class ShadingImplementation
+	{
+		Forward,
+		ForwardPlus,
+		DeferredVolumes,
+		DeferredTile
 	};
 
 	enum AntiAliasingType
@@ -42,7 +50,7 @@ namespace GEE
 		struct VideoSettings
 		{
 			Vec2f Resolution;
-			ShadingModel Shading;
+			ShadingAlgorithm Shading;
 
 			unsigned int AmbientOcclusionSamples;
 			bool bVSync;

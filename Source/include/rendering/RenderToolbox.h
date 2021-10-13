@@ -10,7 +10,7 @@ namespace GEE
 		std::string Name;
 		Vec2f Resolution;
 		GameSettings Settings;
-		ShadingModel Shading;
+		ShadingAlgorithm Shading;
 	};
 
 	class RenderToolbox
@@ -234,7 +234,7 @@ namespace GEE
 			if (Settings.IsVelocityBufferNeeded())
 				AddTb<PrevFrameStorageToolbox>(PrevFrameStorageToolbox(Settings));
 			std::cout << "Tobox 5.\n";
-			if (Settings.Shading != ShadingModel::SHADING_FULL_LIT)
+			if (Settings.Shading != ShadingAlgorithm::SHADING_FULL_LIT)
 				AddTb<DeferredShadingToolbox>(DeferredShadingToolbox(Settings));
 			std::cout << "Tobox 6.\n";
 			if (Settings.ShadowLevel > SettingLevel::SETTING_NONE)

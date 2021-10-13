@@ -188,11 +188,11 @@ namespace GEE
 	}
 
 	MeshInstance::MeshInstance(const MeshInstance& mesh) :
-		MaterialInst(nullptr),
-		MeshRef(mesh.MeshRef)
+		MeshRef(mesh.MeshRef),
+		MaterialInst(mesh.MaterialInst)
 	{
-		if (mesh.MaterialInst)
-			MaterialInst = MakeShared<MaterialInstance>(mesh.MaterialInst->GetMaterialRef());	//create another instance of the same material
+		//if (mesh.MaterialInst)
+			//MaterialInst = MakeShared<MaterialInstance>(mesh.MaterialInst->GetMaterialRef());	//create another instance of the same material
 	}
 
 

@@ -64,7 +64,7 @@ namespace GEE
 
 		for (auto sceneRenderData : ScenesRenderData)
 		{
-			if (!(sceneRenderData->LightProbes.empty() && !sceneRenderData->bIsAnUIScene && GameHandle->GetGameSettings()->Video.Shading == ShadingModel::SHADING_PBR_COOK_TORRANCE))
+			if (!(sceneRenderData->LightProbes.empty() && !sceneRenderData->bIsAnUIScene && GameHandle->GetGameSettings()->Video.Shading == ShadingAlgorithm::SHADING_PBR_COOK_TORRANCE))
 				continue;
 
 			LightProbeLoader::LoadLightProbeTextureArrays(sceneRenderData);
@@ -79,7 +79,7 @@ namespace GEE
 	{
 		ScenesRenderData.push_back(&sceneRenderData);
 		sceneRenderData.LightBlockBindingSlot = ScenesRenderData.size();
-		if (GameHandle->HasStarted() && sceneRenderData.LightProbes.empty() && !sceneRenderData.bIsAnUIScene && GameHandle->GetGameSettings()->Video.Shading == ShadingModel::SHADING_PBR_COOK_TORRANCE)
+		if (GameHandle->HasStarted() && sceneRenderData.LightProbes.empty() && !sceneRenderData.bIsAnUIScene && GameHandle->GetGameSettings()->Video.Shading == ShadingAlgorithm::SHADING_PBR_COOK_TORRANCE)
 		{
 			LightProbeLoader::LoadLightProbeTextureArrays(&sceneRenderData);
 			sceneRenderData.ProbeTexArrays->IrradianceMapArr.Bind(12);
@@ -159,7 +159,7 @@ namespace GEE
 		const GameSettings* settings = GameHandle->GetGameSettings();
 	}
 
-	const ShadingModel& RenderEngine::GetShadingModel()
+	const ShadingAlgorithm& RenderEngine::GetShadingModel()
 	{
 		return GameHandle->GetGameSettings()->Video.Shading;
 	}
@@ -315,7 +315,7 @@ namespace GEE
 		settings.POMLevel = SettingLevel::SETTING_ULTRA;
 		settings.ShadowLevel = SettingLevel::SETTING_ULTRA;
 		settings.Resolution = Vec2u(1024);
-		settings.Shading = ShadingModel::SHADING_PBR_COOK_TORRANCE;
+		settings.Shading = ShadingAlgorithm::SHADING_PBR_COOK_TORRANCE;
 		settings.MonitorGamma = 1.0f;	//Keep radiance data in linear space
 		settings.TMType = ToneMappingType::TM_NONE;	//Do not tonemap when rendering probes; we want to keep HDR data
 
@@ -543,7 +543,7 @@ namespace GEE
 
 			t.Move(textRot * Vec3f(c.Advance * halfExtent.x, 0.0f, 0.0f) * 2.0f);
 		}
-
+		
 		glDisable(GL_BLEND);
 	}
 

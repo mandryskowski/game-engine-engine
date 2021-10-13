@@ -26,14 +26,15 @@ namespace GEE
 			return;
 
 		bool handledShader = false;
-		for (int i = 0; i < static_cast<int>(meshes.size()); i++)
+		for (const MeshInstance& meshInst : meshes)
 		{
-			const MeshInstance& meshInst = meshes[i];
 			const Mesh& mesh = meshInst.GetMesh();
 			MaterialInstance* materialInst = meshInst.GetMaterialInst();
 			const Material* material = meshInst.GetMaterialPtr();
 
-			if ((info.GetCareAboutShader() && material && shader.GetName() != material->GetRenderShaderName()) || (info.GetOnlyShadowCasters() && !mesh.CanCastShadow()) || (materialInst && !materialInst->ShouldBeDrawn()))
+			if ((info.GetCareAboutShader() && material && shader.GetName() != material->GetRenderShaderName()) ||
+				(info.GetOnlyShadowCasters() && !mesh.CanCastShadow()) || 
+				(materialInst && !materialInst->ShouldBeDrawn()))
 				continue;
 
 			if (!handledShader)
@@ -46,14 +47,16 @@ namespace GEE
 
 
 				shader.BindMatrices(modelMat, &info.GetView(), &info.GetProjection(), &info.GetVP());
-
+				shader.CallPreRenderFunc();	// Call user-defined pre render function
 			}
 
 			////////////////////////////////////////Impl.BindMesh(&mesh);
 			////////////////////////////////////////Impl::MeshBind->Set(&mesh);
 
 			if (info.GetUseMaterials() && materialInst)
+			{
 				materialInst->UpdateWholeUBOData(&shader, Texture());//////////////////////////////////////// Impl::BindMaterialInstance(materialInst);
+			}
 
 			mesh.Bind(0);
 			mesh.Render();
@@ -370,7 +373,7 @@ namespace GEE
 
 		glDepthFunc(GL_LEQUAL);
 
-		if (false)//!GameHandle->CheckEEForceForwardShading())
+		if (true)//!GameHandle->CheckEEForceForwardShading())
 		{
 			////////////////////2. Deferred Shading
 			if (useLightingAlgorithms)
