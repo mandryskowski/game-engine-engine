@@ -16,9 +16,9 @@
 namespace GEE
 {
 	GameScene::GameScene(GameManager& gameHandle, const std::string& name, bool isAnUIScene) :
-		RenderData(MakeUnique<GameSceneRenderData>(gameHandle.GetRenderEngineHandle(), isAnUIScene)),
-		PhysicsData(MakeUnique<Physics::GameScenePhysicsData>(gameHandle.GetPhysicsHandle())),
-		AudioData(MakeUnique<Audio::GameSceneAudioData>(gameHandle.GetAudioEngineHandle())),
+		RenderData(MakeUnique<GameSceneRenderData>(*this, isAnUIScene)),
+		PhysicsData(MakeUnique<Physics::GameScenePhysicsData>(*this)),
+		AudioData(MakeUnique<Audio::GameSceneAudioData>(*this)),
 		ActiveCamera(nullptr),
 		Name(name),
 		GameHandle(&gameHandle),
@@ -221,8 +221,29 @@ namespace GEE
 		GameHandle->DeleteScene(*this);
 	}
 
-	GameSceneRenderData::GameSceneRenderData(RenderEngineManager* renderHandle, bool isAnUIScene) :
-		RenderHandle(renderHandle),
+	GameSceneData::GameSceneData(GameScene& scene) :
+		Scene(scene)
+	{
+	}
+
+	std::string GameSceneData::GetSceneName() const
+	{
+		return Scene.GetName();
+	}
+
+	GameScene& GameSceneData::GetScene()
+	{
+		return Scene;
+	}
+
+	const GameScene& GameSceneData::GetScene() const
+	{
+		return Scene;
+	}
+
+	GameSceneRenderData::GameSceneRenderData(GameScene& scene, bool isAnUIScene) :
+		GameSceneData(scene),
+		RenderHandle(scene.GetGameHandle()->GetRenderEngineHandle()),
 		ProbeTexArrays(MakeShared<LightProbeTextureArrays>(LightProbeTextureArrays())),
 		LightBlockBindingSlot(-1),
 		ProbesLoaded(false),
@@ -445,8 +466,9 @@ namespace GEE
 
 	namespace Physics
 	{
-		GameScenePhysicsData::GameScenePhysicsData(PhysicsEngineManager* physicsHandle) :
-			PhysicsHandle(physicsHandle),
+		GameScenePhysicsData::GameScenePhysicsData(GameScene& scene) :
+			GameSceneData(scene),
+			PhysicsHandle(scene.GetGameHandle()->GetPhysicsHandle()),
 			WasSetup(false)
 		{
 		}
@@ -483,8 +505,9 @@ namespace GEE
 
 	namespace Audio
 	{
-		GameSceneAudioData::GameSceneAudioData(Audio::AudioEngineManager* audioHandle) :
-			AudioHandle(audioHandle)
+		GameSceneAudioData::GameSceneAudioData(GameScene& scene) :
+			GameSceneData(scene),
+			AudioHandle(scene.GetGameHandle()->GetAudioEngineHandle())
 		{
 		}
 

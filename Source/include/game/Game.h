@@ -74,6 +74,7 @@ namespace GEE
 		void TerminateGame();
 		void SetMainScene(GameScene*);
 		virtual void DeleteScene(GameScene&) override;
+		std::vector<GameSceneRenderData*> GetSceneRenderDatas();
 
 		// If bGameTerminated is true, no more GameLoopIterations will occur.
 		bool bGameTerminated;

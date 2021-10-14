@@ -61,7 +61,14 @@ namespace GEE
 
 	struct Renderer
 	{
+		struct ImplUtil;
 		Renderer(RenderEngineManager&, int openGLContextID = 0, const GEE_FB::Framebuffer* optionalFramebuffer = nullptr);
+		Renderer(const ImplUtil&);
+		Renderer(const Renderer&);
+		Renderer(Renderer&&);
+
+		Renderer& operator=(const Renderer&) = delete;
+		Renderer& operator=(Renderer&&) = delete;
 
 		// Utility rendering function
 		void StaticMeshInstances(const MatrixInfoExt& info, const std::vector<MeshInstance>& meshes, const Transform& transform, Shader& shader, bool billboard = false); //Note: this function does not call the Use method of passed Shader. Do it manually.
@@ -125,16 +132,28 @@ namespace GEE
 	{
 		using Renderer::Renderer;
 
-		void ShadowMaps(RenderToolboxCollection& tbCollection, GameSceneRenderData* sceneRenderData, std::vector<std::reference_wrapper<LightComponent>>);
+		void ShadowMaps(RenderToolboxCollection& tbCollection, GameSceneRenderData& sceneRenderData, std::vector<std::reference_wrapper<LightComponent>>);
 	};
 
 	struct SceneRenderer : public Renderer
 	{
 		using Renderer::Renderer;
+		/**
+		 * @brief Called once before the render loop runs. Might be really expensive; this runs only once anyways.
+		*/
+		void PreRenderLoopPassStatic(std::vector<GameSceneRenderData*>& renderDatas);
+		/**
+		 * @brief Called per frame. Does the run-time operations required to render a single frame of a scene (e.g. render missing shadow maps).
+		 * @param tbCollection: Toolbox collection of the scene.
+		 * @param sceneRenderData: Render data of the scene.
+		*/
+		void PreFramePass(RenderToolboxCollection& tbCollection, GameSceneRenderData& sceneRenderData);
+
 		void FullRender(SceneMatrixInfo& info, Viewport = Viewport(Vec2f(0.0f), Vec2f(0.0f)), bool clearMainFB = true, bool modifyForwardsDepthForUI = false, std::function<void(GEE_FB::Framebuffer&)>&& renderIconsFunc = nullptr);	//This method renders a scene with lighting and some postprocessing that improve the visual quality (e.g. SSAO, if enabled).
 		void RawRender(const SceneMatrixInfo& info, Shader& shader);
 		void RawUIScene(const SceneMatrixInfo& info);
 	};
+
 
 	struct PostprocessRenderer : public Renderer
 	{
@@ -186,5 +205,13 @@ namespace GEE
 
 	private:
 		PostprocessRenderer ToFramebuffer(const GEE_FB::Framebuffer& framebuffer) const { return PostprocessRenderer(Impl.RenderHandle, Impl.OpenGLContextID, framebuffer); }
+	};
+
+	class LightProbeRenderer : public Renderer
+	{
+	public:
+		using Renderer::Renderer;
+
+		void AllSceneProbes(GameSceneRenderData&);
 	};
 }

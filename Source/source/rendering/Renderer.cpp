@@ -16,7 +16,22 @@ namespace GEE
 	const Material* BindingsGL::BoundMaterial = nullptr;
 
 	Renderer::Renderer(RenderEngineManager& engineHandle, int openGLContextID, const GEE_FB::Framebuffer* optionalFramebuffer) :
-		Impl(engineHandle, openGLContextID, optionalFramebuffer)
+		Renderer(ImplUtil(engineHandle, openGLContextID, optionalFramebuffer))
+	{
+	}
+	
+	Renderer::Renderer(const ImplUtil& impl) :
+		Impl(impl)
+	{
+	}
+
+	Renderer::Renderer(Renderer&& renderer):
+		Impl(renderer.Impl)
+	{
+	}
+
+	Renderer::Renderer(const Renderer& renderer):
+		Impl(renderer.Impl)
 	{
 	}
 
@@ -71,6 +86,9 @@ namespace GEE
 								glm::lookAt(Vec3f(0.0f), Vec3f(0.0f, -1.0f, 0.0f), Vec3f(0.0f, 0.0f, -1.0f)),
 								glm::lookAt(Vec3f(0.0f), Vec3f(0.0f, 0.0f, 1.0f), Vec3f(0.0f, -1.0f, 0.0f)),
 								glm::lookAt(Vec3f(0.0f), Vec3f(0.0f, 0.0f, -1.0f), Vec3f(0.0f, -1.0f, 0.0f)), };
+
+		Mat4f cubemapProj = glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, 0.0f, 2.0f);
+
 		return defaultVPs[static_cast<unsigned int>(cubemapSide)];
 	}
 
@@ -89,7 +107,10 @@ namespace GEE
 			return *RenderHandle.FindShader("Depth");
 		case RendererShaderHint::DepthOnlyLinearized:
 			return *RenderHandle.FindShader("DepthLinearize");
+		case RendererShaderHint::IBL:
+			return Shader();// *RenderHandle.FindShader("CookTorranceIBL");
 		}
+		return Shader();
 	}
 
 	void CubemapRenderer::FromTexture(Texture targetTex, Texture tex, Vec2u size, Shader& shader, int* layer, int mipLevel)
@@ -139,8 +160,10 @@ namespace GEE
 			info.SetCareAboutShader(false);
 
 			StaticMeshInstances(info, { Impl.GetBasicShapeMesh(EngineBasicShape::CUBE) }, Transform(), shader);
-			framebuffer.Dispose(false);
+			framebuffer.Detach(GEE_FB::AttachmentSlot::Color(0));
 		}
+
+		framebuffer.Dispose(false);
 
 		glEnable(GL_CULL_FACE);
 		glEnable(GL_DEPTH_TEST);
@@ -148,6 +171,8 @@ namespace GEE
 
 	void CubemapRenderer::FromScene(SceneMatrixInfo info, GEE_FB::Framebuffer target, GEE_FB::FramebufferAttachment targetTex, Shader* shader, int* layer, bool fullRender)
 	{
+		if (fullRender) std::cout << "!*! Przed bind\n";
+
 		{
 			target.Bind(targetTex.GetSize2D());
 		}
@@ -157,6 +182,7 @@ namespace GEE
 
 		for (int i = 0; i < 6; i++)
 		{
+			if (fullRender) std::cout << "!*! Przed framebuffer bind\n";
 			targetTex.Bind();
 			switch (targetTex.GetType())
 			{
@@ -164,6 +190,7 @@ namespace GEE
 			case GL_TEXTURE_CUBE_MAP_ARRAY: target.Attach(GEE_FB::FramebufferAttachment(targetTex, *layer, targetTex.GetAttachmentSlot()), false); *layer = *layer + 1; break;
 			default:						std::cerr << "ERROR: Can't render a scene to cubemap texture, when the texture's type is " << targetTex.GetType() << ".\n"; return;
 			}
+			if (fullRender) std::cout << "!*! Po framebuffer bind\n";
 			glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -171,8 +198,9 @@ namespace GEE
 			info.CalculateVP();
 
 			SceneRenderer sceneRenderer(Impl.RenderHandle, Impl.OpenGLContextID, &target);
+			if (fullRender) std::cout << "!*! Przed actual render\n";
 			(fullRender) ? (sceneRenderer.FullRender(info, Viewport(targetTex.GetSize2D()))) : (sceneRenderer.RawRender(info, *shader));
-
+			if (fullRender) std::cout << "!*! Po actual render\n";
 			target.Detach(targetTex.GetAttachmentSlot());
 		}
 	}
@@ -250,7 +278,7 @@ namespace GEE
 		glDisable(GL_STENCIL_TEST);
 	}
 
-	void ShadowMapRenderer::ShadowMaps(RenderToolboxCollection& tbCollection, GameSceneRenderData* sceneRenderData, std::vector<std::reference_wrapper<LightComponent>> lights)
+	void ShadowMapRenderer::ShadowMaps(RenderToolboxCollection& tbCollection, GameSceneRenderData& sceneRenderData, std::vector<std::reference_wrapper<LightComponent>> lights)
 	{
 		ShadowMappingToolbox* shadowsTb = tbCollection.GetTb<ShadowMappingToolbox>();
 		shadowsTb->ShadowFramebuffer->Bind();
@@ -272,7 +300,7 @@ namespace GEE
 		shadowsTb->ShadowMapArray->Bind(10);
 		shadowsTb->ShadowCubemapArray->Bind(11);
 
-		//BindSkeletonBatch(sceneRenderData, static_cast<unsigned int>(0));
+		Impl.RenderHandle.BindSkeletonBatch(&sceneRenderData, static_cast<unsigned int>(0));
 
 		for (int i = 0; i < static_cast<int>(lights.size()); i++)
 		{
@@ -306,7 +334,7 @@ namespace GEE
 				timeSum += (float)glfwGetTime() - time1;
 
 
-				SceneMatrixInfo info(tbCollection, *sceneRenderData, viewTranslation, projection, lightPos);
+				SceneMatrixInfo info(tbCollection, sceneRenderData, viewTranslation, projection, lightPos);
 				info.SetUseMaterials(false);
 				info.SetOnlyShadowCasters(true);
 				info.SetCareAboutShader(false);
@@ -331,11 +359,11 @@ namespace GEE
 				shadowsTb->ShadowFramebuffer->Attach(GEE_FB::FramebufferAttachment(*shadowsTb->ShadowMapArray, light.GetShadowMapNr(), GEE_FB::AttachmentSlot::Depth()), false, false);
 				glClear(GL_DEPTH_BUFFER_BIT);
 
-				SceneMatrixInfo info(tbCollection, *sceneRenderData, view, projection);
+				SceneMatrixInfo info(tbCollection, sceneRenderData, view, projection);
 				info.CalculateVP();
 				info.SetUseMaterials(false);
 				info.SetOnlyShadowCasters(true);
-				SceneRenderer(Impl.RenderHandle).RawRender(info, Impl.GetShader(RendererShaderHint::DepthOnly));
+				SceneRenderer(Impl.RenderHandle, 0, shadowsTb->ShadowFramebuffer).RawRender(info, Impl.GetShader(RendererShaderHint::DepthOnly));
 
 				shadowsTb->ShadowFramebuffer->Detach(GEE_FB::AttachmentSlot::Depth());
 			}
@@ -350,6 +378,26 @@ namespace GEE
 		//std::cout << "Wyczyscilem sobie " << timeSum * 1000.0f << "ms.\n";
 	}
 
+	void SceneRenderer::PreRenderLoopPassStatic(std::vector<GameSceneRenderData*>& renderDatas)
+	{
+		std::cout << "(((((( scene render datas: " << renderDatas.size() << "\n";
+		for (int sceneIndex = 0; sceneIndex < static_cast<int>(renderDatas.size()); sceneIndex++)
+		{
+			GameSceneRenderData& sceneRenderData = *renderDatas[sceneIndex];
+			sceneRenderData.SetupLights(sceneIndex);
+			for (int i = 0; i < 2; i++)	// Render light probes twice
+				LightProbeRenderer(Impl).AllSceneProbes(sceneRenderData);
+
+			sceneRenderData.ProbesLoaded = true;
+		}
+	}
+
+	void SceneRenderer::PreFramePass(RenderToolboxCollection& tbCollection, GameSceneRenderData& sceneRenderData)
+	{
+		if (sceneRenderData.ContainsLights() && (tbCollection.GetSettings().ShadowLevel > SettingLevel::SETTING_MEDIUM || sceneRenderData.HasLightWithoutShadowMap()))
+			ShadowMapRenderer(Impl).ShadowMaps(tbCollection, sceneRenderData, sceneRenderData.Lights);
+	}
+
 	void SceneRenderer::FullRender(SceneMatrixInfo& info, Viewport viewport, bool clearMainFB, bool modifyForwardsDepthForUI, std::function<void(GEE_FB::Framebuffer&)>&& renderIconsFunc)
 	{
 		auto& tbCollection = info.GetTbCollection();
@@ -361,11 +409,11 @@ namespace GEE
 		Mat4f currentFrameView = info.GetView();
 		//info.previousFrameView = PreviousFrameView;			AAAAAAAAAAAAAAAAAAAAAAAA SMAA NAPRAW
 
-		const GEE_FB::Framebuffer* framebuffer = Impl.OptionalFramebuffer;
-		const GEE_FB::Framebuffer& target = ((framebuffer) ? (*framebuffer) : (GEE_FB::getDefaultFramebuffer(settings.Resolution)));
+		const GEE_FB::Framebuffer& target = ((Impl.OptionalFramebuffer) ? (*Impl.OptionalFramebuffer) : (GEE_FB::getDefaultFramebuffer(settings.Resolution)));
 		if (viewport.GetSize() == Vec2u(0))
 			viewport = Viewport(target.GetSize());
 
+		std::cout << "&&&1\n";
 		//sceneRenderData.LightsBuffer.SubData4fv(info.camPos, 16); TO BYLO TU...
 
 		MainFramebufferToolbox* mainTb = tbCollection.GetTb<MainFramebufferToolbox>();
@@ -401,7 +449,7 @@ namespace GEE
 				Shader* gShader = deferredTb->GeometryShader;
 				gShader->Use();
 				gShader->Uniform3fv("camPos", info.GetCamPosition());
-
+				std::cout << "&&&2\n";
 				RawRender(info, *gShader);
 				info.SetMainPass(false);
 				info.SetCareAboutShader(false);
@@ -412,7 +460,7 @@ namespace GEE
 
 				////////////////////2.2 SSAO pass
 				Texture SSAOtex;
-
+				std::cout << "&&&3\n";
 				if (settings.AmbientOcclusionSamples > 0)
 					SSAOtex = PostprocessRenderer(Impl.RenderHandle, Impl.OpenGLContextID, GFramebuffer).SSAO(info, GFramebuffer.GetColorTexture(1), GFramebuffer.GetColorTexture(2));	//pass gPosition and gNormal
 
@@ -425,7 +473,7 @@ namespace GEE
 				glClearBufferfv(GL_COLOR, 0, Math::GetDataPtr(Vec3f(0.0f, 0.0f, 0.0f))); // Clear ONLY the color buffers. The depth information stays for the light pass (we need to know which light volumes actually contain any objects that are affected by the light)
 				if (tbCollection.GetSettings().bBloom)
 					glClearBufferfv(GL_COLOR, 1, Math::GetDataPtr(Vec3f(0.0f)));
-
+				std::cout << "&&&4\n";
 				for (int i = 0; i < 4; i++)	// Bind all GBuffer textures (Albedo+Specular, Position, Normal, PBR Cook-Torrance Alpha+Metalness+AmbientOcclusion)
 					GFramebuffer.GetColorTexture(i).Bind(i);
 
@@ -433,9 +481,11 @@ namespace GEE
 					SSAOtex.Bind(4);
 
 				VolumeRenderer(Impl.RenderHandle, Impl.OpenGLContextID, &MainFramebuffer).Volumes(info, sceneRenderData.GetSceneLightsVolumes(), false);
-
+				std::cout << "&&&5\n";
 				////////////////////3.1 IBL pass
-				Impl.GetShader(RendererShaderHint::IBL).Use();
+				
+				deferredTb->FindShader("CookTorranceIBL")->Use();
+				//Impl.GetShader(RendererShaderHint::IBL).Use();
 				for (int i = 0; i < static_cast<int>(sceneRenderData.LightProbes.size()); i++)
 				{
 					LightProbeComponent* probe = sceneRenderData.LightProbes[i];
@@ -447,7 +497,7 @@ namespace GEE
 
 					shader->Uniform3fv("lightProbes[" + std::to_string(i) + "].position", probe->GetTransform().GetWorldTransform().GetPos());
 				}
-
+				std::cout << "&&&6\n";
 				auto probeVolumes = sceneRenderData.GetLightProbeVolumes();
 
 				if (!probeVolumes.empty())
@@ -457,6 +507,7 @@ namespace GEE
 					sceneRenderData.ProbeTexArrays->BRDFLut.Bind(14);
 					VolumeRenderer(Impl.RenderHandle, Impl.OpenGLContextID, &MainFramebuffer).Volumes(info, probeVolumes, sceneRenderData.ProbesLoaded == true);
 				}
+				std::cout << "&&&7\n";
 			}
 			else
 			{
@@ -478,6 +529,7 @@ namespace GEE
 				glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 			}
+			std::cout << "&&&8\n";
 			info.SetMainPass(true);
 			info.SetCareAboutShader(true);
 			auto forwardTb = tbCollection.GetTb<ForwardShadingToolbox>();
@@ -491,13 +543,22 @@ namespace GEE
 				RawRender(info, *lightShader);
 			}
 		}
-
+		std::cout << "&&&9\n";
 		////////////////////3.25 Render global cubemap
 		info.SetMainPass(false);
 		info.SetCareAboutShader(false);
 
 		if (sceneRenderData.ContainsLightProbes())
-			;// TestRenderCubemap(info, sceneRenderData);
+		{
+			sceneRenderData.LightProbes.back()->GetEnvironmentMap().Bind(0);
+			//sceneRenderData->ProbeTexArrays->PrefilterMapArr.Bind(0);
+			//LightProbes[1]->EnvironmentMap.Bind(0);
+			Impl.RenderHandle.FindShader("Cubemap")->Use();
+			Impl.RenderHandle.FindShader("Cubemap")->Uniform1f("mipLevel", (float)std::fmod(glfwGetTime(), 4.0));
+
+
+			Renderer(Impl.RenderHandle, Impl.OpenGLContextID, &MainFramebuffer).StaticMeshInstances(info, { Impl.GetBasicShapeMesh(EngineBasicShape::CUBE) }, Transform(), *Impl.RenderHandle.FindShader("Cubemap"));
+		}
 
 
 		////////////////////3.5 Forward rendering pass
@@ -506,7 +567,7 @@ namespace GEE
 		glEnable(GL_BLEND);
 		info.SetMainPass(true);
 		info.SetCareAboutShader(true);
-
+		std::cout << "&&&10\n";
 		if (modifyForwardsDepthForUI)
 			RawUIScene(info);
 		else
@@ -816,5 +877,80 @@ namespace GEE
 		if (!shader) shader = Impl.RenderHandle.FindShader("Quad");
 		if (useShader)	shader->Use();
 		StaticMeshInstances(info, { MeshInstance(Impl.GetBasicShapeMesh(EngineBasicShape::QUAD), nullptr) }, Transform(), *shader);
+	}
+	void LightProbeRenderer::AllSceneProbes(GameSceneRenderData& sceneRenderData)
+	{
+		if (sceneRenderData.LightProbes.empty())
+		{
+			std::cout << "INFO: No light probes in scene " << sceneRenderData.GetSceneName() << ". Nothing will be rendered.\n";
+			return;
+		}
+
+		GameSettings::VideoSettings settings;
+		settings.AAType = AA_NONE;	//Disable SMAA; it doesn't work on HDR colorbuffers
+		settings.AALevel = SettingLevel::SETTING_ULTRA;
+		settings.bBloom = false;
+		settings.AmbientOcclusionSamples = 64;
+		settings.POMLevel = SettingLevel::SETTING_ULTRA;
+		settings.ShadowLevel = SettingLevel::SETTING_ULTRA;
+		settings.Resolution = Vec2u(1024);
+		settings.Shading = ShadingAlgorithm::SHADING_PBR_COOK_TORRANCE;
+		settings.MonitorGamma = 1.0f;	//Keep radiance data in linear space
+		settings.TMType = ToneMappingType::TM_NONE;	//Do not tonemap when rendering probes; we want to keep HDR data
+
+		std::cout << "Probe rendering for " << sceneRenderData.LightProbes.size() << " probes.\n";
+		//Dispose();
+		//Init(Vec2u(1024));
+
+		RenderToolboxCollection probeRenderingCollection("LightProbeRendering", settings);
+		probeRenderingCollection.AddTbsRequiredBySettings();
+
+
+		//RenderInfo info;
+
+		//info.Projection = &p;
+
+		GEE_FB::Framebuffer framebuffer;
+		framebuffer.Generate();
+		framebuffer.Bind();
+		Viewport(Vec2u(1024)).SetOpenGLState();
+
+		Shader* gShader = probeRenderingCollection.GetTb<DeferredShadingToolbox>()->GeometryShader;
+
+		std::cout << "*!* Przed cieniami\n";
+		SceneRenderer(Impl.RenderHandle, Impl.OpenGLContextID, &framebuffer).PreFramePass(probeRenderingCollection, sceneRenderData);
+		std::cout << "*!* Po cieniach\n";
+		for (LightProbeComponent* probe : sceneRenderData.LightProbes)
+		{
+			if (probe->GetShape() == EngineBasicShape::QUAD)
+				continue;
+			Vec3f camPos = probe->GetTransform().GetWorldTransform().GetPos();
+			Mat4f viewTranslation = glm::translate(Mat4f(1.0f), -camPos);
+			Mat4f p = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 100.0f);
+
+			SceneMatrixInfo info(probeRenderingCollection, sceneRenderData);
+			info.SetView(viewTranslation);
+			info.SetProjection(p);
+			info.SetCamPosition(camPos);
+			gShader->Use();
+			std::cout << "*!* Przed env map\n";
+			CubemapRenderer(Impl.RenderHandle, Impl.OpenGLContextID, &framebuffer).FromScene(info, framebuffer, GEE_FB::FramebufferAttachment(probe->GetEnvironmentMap(), GEE_FB::AttachmentSlot::Color(0)), gShader, 0, true);
+			std::cout << "*!* Po env map\n";
+			probe->GetEnvironmentMap().Bind();
+			glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
+			std::cout << "*!* Przed convolute\n";
+			LightProbeLoader::ConvoluteLightProbe(*probe, probe->GetEnvironmentMap());
+			std::cout << "*!* Po convolute\n";
+			if (PrimitiveDebugger::bDebugProbeLoading)
+				printVector(camPos, "Rendering probe");
+		}
+
+		//Dispose();
+
+		//Init(Vec2u(GameHandle->GetGameSettings()->ViewportData.z, GameHandle->GetGameSettings()->ViewportData.w));
+		probeRenderingCollection.Dispose();
+		framebuffer.Dispose();
+
+		std::cout << "Initting done.\n";
 	}
 }

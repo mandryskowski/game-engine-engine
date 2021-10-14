@@ -80,7 +80,47 @@
                         "valid": 0
                     }
                 },
-                "Children": []
+                "Children": [
+                    {
+                        "polymorphic_id": 2147483649,
+                        "polymorphic_name": "GEE::LightProbeComponent",
+                        "ptr_wrapper": {
+                            "valid": 1,
+                            "data": {
+                                "Shape": 1,
+                                "OptionalFilepath": "",
+                                "ProbeIntensity": 1.0,
+                                "Component": {
+                                    "Name": "A LightProbeComponent",
+                                    "ComponentTransform": {
+                                        "Position": {
+                                            "x": 0.0,
+                                            "y": 1.5,
+                                            "z": 0.0
+                                        },
+                                        "Rotation": {
+                                            "x": 0.0,
+                                            "y": 0.0,
+                                            "z": 0.0,
+                                            "w": 1.0
+                                        },
+                                        "Scale": {
+                                            "x": 10.0,
+                                            "y": 10.0,
+                                            "z": 10.0
+                                        }
+                                    },
+                                    "CollisionObj": {
+                                        "ptr_wrapper": {
+                                            "valid": 0
+                                        }
+                                    },
+                                    "Children": []
+                                }
+                            }
+                        }
+                    }
+                ]
             }
         }
     },
@@ -99,15 +139,15 @@
                                 "Name": "An Actor's root",
                                 "ComponentTransform": {
                                     "Position": {
-                                        "x": 1.5066733360290528,
-                                        "y": 2.2461767196655275,
-                                        "z": -1.0316907167434693
+                                        "x": -0.4261458218097687,
+                                        "y": 1.9354443550109864,
+                                        "z": -1.4030845165252686
                                     },
                                     "Rotation": {
-                                        "x": 0.12144673615694046,
-                                        "y": -0.8395745754241943,
-                                        "z": -0.2097185105085373,
-                                        "w": -0.48619261384010317
+                                        "x": 0.018432144075632097,
+                                        "y": 0.9312667846679688,
+                                        "z": 0.36074697971343996,
+                                        "w": -0.04758250340819359
                                     },
                                     "Scale": {
                                         "x": 1.0,
@@ -122,7 +162,7 @@
                                 },
                                 "Children": [
                                     {
-                                        "polymorphic_id": 2147483649,
+                                        "polymorphic_id": 2147483650,
                                         "polymorphic_name": "GEE::CameraComponent",
                                         "ptr_wrapper": {
                                             "valid": 1,
@@ -195,7 +235,7 @@
                     },
                     "Children": [
                         {
-                            "polymorphic_id": 2147483650,
+                            "polymorphic_id": 2147483651,
                             "polymorphic_name": "GEE::FreeRoamingController",
                             "ptr_wrapper": {
                                 "valid": 1,
@@ -261,15 +301,15 @@
                                 "Name": "ENG_SPHERE",
                                 "ComponentTransform": {
                                     "Position": {
-                                        "x": 246.07406616210938,
-                                        "y": 0.999970555305481,
-                                        "z": -16.23047637939453
+                                        "x": 246.16464233398438,
+                                        "y": 0.9999704360961914,
+                                        "z": -16.238039016723634
                                     },
                                     "Rotation": {
-                                        "x": -0.45197591185569765,
-                                        "y": -0.7174743413925171,
-                                        "z": -0.24933598935604096,
-                                        "w": 0.4677393436431885
+                                        "x": -0.3757840692996979,
+                                        "y": -0.7551603317260742,
+                                        "z": -0.2103586494922638,
+                                        "w": 0.494235098361969
                                     },
                                     "Scale": {
                                         "x": 1.0,
@@ -319,7 +359,7 @@
                                 },
                                 "Children": [
                                     {
-                                        "polymorphic_id": 2147483651,
+                                        "polymorphic_id": 2147483652,
                                         "polymorphic_name": "GEE::ModelComponent",
                                         "ptr_wrapper": {
                                             "valid": 1,
@@ -384,7 +424,7 @@
                     },
                     "Children": [
                         {
-                            "polymorphic_id": 2147483652,
+                            "polymorphic_id": 2147483653,
                             "polymorphic_name": "GEE::CueController",
                             "ptr_wrapper": {
                                 "valid": 1,
@@ -541,7 +581,7 @@
                                 },
                                 "Children": [
                                     {
-                                        "polymorphic_id": 3,
+                                        "polymorphic_id": 4,
                                         "ptr_wrapper": {
                                             "valid": 1,
                                             "data": {
@@ -572,14 +612,14 @@
                                                         "Name": "PoolBall_White",
                                                         "ComponentTransform": {
                                                             "Position": {
-                                                                "x": 0.0013959407806396485,
-                                                                "y": -0.021233201026916505,
-                                                                "z": -0.00010889314580708742
+                                                                "x": 0.0005993843078613281,
+                                                                "y": -0.021232962608337404,
+                                                                "z": -0.00005087244790047407
                                                             },
                                                             "Rotation": {
-                                                                "x": -0.0004083103558514267,
-                                                                "y": -7.375347195193172e-7,
-                                                                "z": 1.6034723770985694e-8,
+                                                                "x": -0.00040818002889864147,
+                                                                "y": -8.49386765366944e-7,
+                                                                "z": 1.2747477740049363e-8,
                                                                 "w": 1.0
                                                             },
                                                             "Scale": {
@@ -635,7 +675,7 @@
                                         }
                                     },
                                     {
-                                        "polymorphic_id": 3,
+                                        "polymorphic_id": 4,
                                         "ptr_wrapper": {
                                             "valid": 1,
                                             "data": {
@@ -694,7 +734,7 @@
                                         }
                                     },
                                     {
-                                        "polymorphic_id": 3,
+                                        "polymorphic_id": 4,
                                         "ptr_wrapper": {
                                             "valid": 1,
                                             "data": {
@@ -753,7 +793,7 @@
                                         }
                                     },
                                     {
-                                        "polymorphic_id": 3,
+                                        "polymorphic_id": 4,
                                         "ptr_wrapper": {
                                             "valid": 1,
                                             "data": {
@@ -812,7 +852,7 @@
                                         }
                                     },
                                     {
-                                        "polymorphic_id": 3,
+                                        "polymorphic_id": 4,
                                         "ptr_wrapper": {
                                             "valid": 1,
                                             "data": {
@@ -871,7 +911,7 @@
                                         }
                                     },
                                     {
-                                        "polymorphic_id": 3,
+                                        "polymorphic_id": 4,
                                         "ptr_wrapper": {
                                             "valid": 1,
                                             "data": {
@@ -930,7 +970,7 @@
                                         }
                                     },
                                     {
-                                        "polymorphic_id": 3,
+                                        "polymorphic_id": 4,
                                         "ptr_wrapper": {
                                             "valid": 1,
                                             "data": {
@@ -989,7 +1029,7 @@
                                         }
                                     },
                                     {
-                                        "polymorphic_id": 3,
+                                        "polymorphic_id": 4,
                                         "ptr_wrapper": {
                                             "valid": 1,
                                             "data": {
@@ -1048,7 +1088,7 @@
                                         }
                                     },
                                     {
-                                        "polymorphic_id": 3,
+                                        "polymorphic_id": 4,
                                         "ptr_wrapper": {
                                             "valid": 1,
                                             "data": {
@@ -1107,7 +1147,7 @@
                                         }
                                     },
                                     {
-                                        "polymorphic_id": 3,
+                                        "polymorphic_id": 4,
                                         "ptr_wrapper": {
                                             "valid": 1,
                                             "data": {
@@ -1166,7 +1206,7 @@
                                         }
                                     },
                                     {
-                                        "polymorphic_id": 3,
+                                        "polymorphic_id": 4,
                                         "ptr_wrapper": {
                                             "valid": 1,
                                             "data": {
@@ -1225,7 +1265,7 @@
                                         }
                                     },
                                     {
-                                        "polymorphic_id": 3,
+                                        "polymorphic_id": 4,
                                         "ptr_wrapper": {
                                             "valid": 1,
                                             "data": {
@@ -1284,7 +1324,7 @@
                                         }
                                     },
                                     {
-                                        "polymorphic_id": 3,
+                                        "polymorphic_id": 4,
                                         "ptr_wrapper": {
                                             "valid": 1,
                                             "data": {
@@ -1343,7 +1383,7 @@
                                         }
                                     },
                                     {
-                                        "polymorphic_id": 3,
+                                        "polymorphic_id": 4,
                                         "ptr_wrapper": {
                                             "valid": 1,
                                             "data": {
@@ -1402,7 +1442,7 @@
                                         }
                                     },
                                     {
-                                        "polymorphic_id": 3,
+                                        "polymorphic_id": 4,
                                         "ptr_wrapper": {
                                             "valid": 1,
                                             "data": {
@@ -1461,7 +1501,7 @@
                                         }
                                     },
                                     {
-                                        "polymorphic_id": 3,
+                                        "polymorphic_id": 4,
                                         "ptr_wrapper": {
                                             "valid": 1,
                                             "data": {
@@ -1520,7 +1560,7 @@
                                         }
                                     },
                                     {
-                                        "polymorphic_id": 3,
+                                        "polymorphic_id": 4,
                                         "ptr_wrapper": {
                                             "valid": 1,
                                             "data": {
@@ -1579,7 +1619,7 @@
                                         }
                                     },
                                     {
-                                        "polymorphic_id": 3,
+                                        "polymorphic_id": 4,
                                         "ptr_wrapper": {
                                             "valid": 1,
                                             "data": {
@@ -1701,7 +1741,7 @@
                                         }
                                     },
                                     {
-                                        "polymorphic_id": 3,
+                                        "polymorphic_id": 4,
                                         "ptr_wrapper": {
                                             "valid": 1,
                                             "data": {
@@ -1760,7 +1800,7 @@
                                         }
                                     },
                                     {
-                                        "polymorphic_id": 2147483653,
+                                        "polymorphic_id": 2147483654,
                                         "polymorphic_name": "GEE::AnimationManagerComponent",
                                         "ptr_wrapper": {
                                             "valid": 1,
@@ -1797,7 +1837,7 @@
                                         }
                                     },
                                     {
-                                        "polymorphic_id": 2147483654,
+                                        "polymorphic_id": 2147483655,
                                         "polymorphic_name": "GEE::LightComponent",
                                         "ptr_wrapper": {
                                             "valid": 1,
@@ -1897,7 +1937,7 @@
                                 },
                                 "Children": [
                                     {
-                                        "polymorphic_id": 3,
+                                        "polymorphic_id": 4,
                                         "ptr_wrapper": {
                                             "valid": 1,
                                             "data": {

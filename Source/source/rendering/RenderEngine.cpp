@@ -355,9 +355,9 @@ namespace GEE
 			info.SetProjection(p);
 			info.SetCamPosition(camPos);
 			gShader->Use();
-			CubemapRenderer(*this).FromScene(info, framebuffer, GEE_FB::FramebufferAttachment(sceneRenderData->LightProbes[i]->GetEnvironmentMap(), GEE_FB::AttachmentSlot::Color(0)), gShader, 0, true);
+			CubemapRenderer(*this).FromScene(info, framebuffer, GEE_FB::FramebufferAttachment(probe->GetEnvironmentMap(), GEE_FB::AttachmentSlot::Color(0)), gShader, 0, true);
 
-			sceneRenderData->LightProbes[i]->GetEnvironmentMap().Bind();
+			probe->GetEnvironmentMap().Bind();
 			glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
 			
 			LightProbeLoader::ConvoluteLightProbe(*sceneRenderData->LightProbes[i], sceneRenderData->LightProbes[i]->GetEnvironmentMap());
@@ -402,7 +402,7 @@ namespace GEE
 	void RenderEngine::PrepareScene(RenderToolboxCollection& tbCollection, GameSceneRenderData* sceneRenderData)
 	{
 		if (sceneRenderData->ContainsLights() && (GameHandle->GetGameSettings()->Video.ShadowLevel > SettingLevel::SETTING_MEDIUM || sceneRenderData->HasLightWithoutShadowMap()))
-			ShadowMapRenderer(*this).ShadowMaps(tbCollection, sceneRenderData, sceneRenderData->Lights);
+			ShadowMapRenderer(*this).ShadowMaps(tbCollection, *sceneRenderData, sceneRenderData->Lights);
 	}
 
 

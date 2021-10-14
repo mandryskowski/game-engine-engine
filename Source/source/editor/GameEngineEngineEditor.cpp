@@ -19,6 +19,7 @@
 #include <sstream>
 #include <fstream>
 #include <thread>
+#include <algorithm>
 
 #include <editor/MousePicking.h>
 #include <editor/GraphRenderingComponent.h>
@@ -467,7 +468,7 @@ namespace GEE
 				gammaInputBox.SetOnInputFunc([this](float val) { GetGameSettings()->Video.MonitorGamma = val; UpdateGameSettings(); }, [this]()->float { return GetGameSettings()->Video.MonitorGamma; });
 
 				window.AddField("Default font").GetTemplates().PathInput([this](const std::string& path) { Fonts.push_back(MakeShared<Font>(*DefaultFont)); *DefaultFont = *EngineDataLoader::LoadFont(*this, path); }, [this]() {return GetDefaultFont()->GetPath(); }, { "*.ttf", "*.otf" });
-				window.AddField("Rebuild light probes").CreateChild<UIButtonActor>("RebuildProbesButton", "Rebuild", [this]() { RenderEng.PreLoopPass(); });
+				window.AddField("Rebuild light probes").CreateChild<UIButtonActor>("RebuildProbesButton", "Rebuild", [this]() { SceneRenderer(RenderEng, 0).PreRenderLoopPassStatic(GetSceneRenderDatas()); });
 
 				{
 					auto& aaSelectionList = window.AddField("Anti-aliasing").CreateChild<UIAutomaticListActor>("AASelectionList", Vec3f(2.0f, 0.0f, 0.0f));
@@ -1200,7 +1201,8 @@ namespace GEE
 		SetMainScene(GetScene("GEE_Main"));
 		SetActiveScene(EditorScene);
 		SelectScene(GetMainScene(), *EditorScene);
-		RenderEng.PreLoopPass();
+		
+		SceneRenderer(RenderEng, 0).PreRenderLoopPassStatic(GetSceneRenderDatas());
 
 		UpdateRecentProjects();
 

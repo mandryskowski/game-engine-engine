@@ -353,6 +353,14 @@ namespace GEE
 		Scenes.erase(std::remove_if(Scenes.begin(), Scenes.end(), [&scene](UniquePtr<GameScene>& sceneVec) { return sceneVec.get() == &scene; }), Scenes.end());
 	}
 
+	std::vector<GameSceneRenderData*> Game::GetSceneRenderDatas()
+	{
+		std::vector<GameSceneRenderData*> renderDatas;
+		renderDatas.reserve(Scenes.size());
+		std::transform(Scenes.begin(), Scenes.end(), std::back_inserter(renderDatas), [](UniquePtr<GameScene>& scene) { return scene->GetRenderData(); });
+		return renderDatas;
+	}
+
 	float pBegin = 0.0f;
 	bool DUPA = false;
 

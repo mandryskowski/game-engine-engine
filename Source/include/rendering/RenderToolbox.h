@@ -56,6 +56,7 @@ namespace GEE
 		friend class MainFramebufferToolbox;
 		friend struct SceneRenderer;
 		friend class RenderEngine;
+		friend class LightProbeRenderer;
 	private:
 		GEE_FB::Framebuffer* GFb;
 

@@ -176,6 +176,8 @@ namespace GEE
 
 		virtual void SetBoundMaterial(Material*) = 0;
 
+		virtual void BindSkeletonBatch(GameSceneRenderData* sceneRenderData, unsigned int index) = 0;
+
 		/**
 		 * @brief Add a new RenderToolboxCollection to the render engine to enable updating shadow maps automatically. By default, we load every toolbox that will be needed according to RenderToolboxCollection::Settings
 		 * @param tbCollection: a constructed RenderToolboxCollection object containing the name and settings of it

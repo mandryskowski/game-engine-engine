@@ -42,7 +42,7 @@ namespace GEE
 		virtual SharedPtr<Shader> AddShader(SharedPtr<Shader> shader, bool bForwardShader = false) override;
 
 		void BindSkeletonBatch(SkeletonBatch* batch);
-		void BindSkeletonBatch(GameSceneRenderData* sceneRenderData, unsigned int index);
+		virtual void BindSkeletonBatch(GameSceneRenderData* sceneRenderData, unsigned int index) override;
 
 		virtual void EraseRenderTbCollection(RenderToolboxCollection& tbCollection) override;
 		virtual void EraseMaterial(Material&) override;

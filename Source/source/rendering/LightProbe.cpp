@@ -18,6 +18,7 @@ namespace GEE
 
 		CubemapRenderer(*renderHandle).FromTexture(probe.GetEnvironmentMap(), erTexture, Vec2u(1024), *renderHandle->FindShader("ErToCubemap"));
 		probe.GetEnvironmentMap().Bind();
+		std::cout << "!!! Environment map ID: " << probe.GetEnvironmentMap().GetID() << "\n";
 		probe.OptionalFilepath = filepath;
 		glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
 

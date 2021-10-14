@@ -9,135 +9,15 @@ namespace GEE
 	class Event;
 	class RenderableVolume;
 
-	class GameSceneRenderData
-	{
-	public:
-		GameSceneRenderData(RenderEngineManager* renderHandle, bool isAnUIScene);
-
-		RenderEngineManager* GetRenderHandle();
-		LightProbeTextureArrays* GetProbeTexArrays();
-		int GetAvailableLightIndex();
-
-		bool ContainsLights() const;
-		bool ContainsLightProbes() const;
-		bool HasLightWithoutShadowMap() const;
-
-		void AddRenderable(Renderable&);
-		void AddLight(LightComponent& light);
-		// this function lets the engine know that the passed light component's data needs to be forwarded to shaders (therefore lighting our meshes)
-		void AddLightProbe(LightProbeComponent& probe);
-		SharedPtr<SkeletonInfo> AddSkeletonInfo();
-
-		void EraseRenderable(Renderable&);
-		void EraseLight(LightComponent&);
-		void EraseLightProbe(LightProbeComponent&);
-
-		/**
-		 * @return the volumes of all lights (not light probes!) in the scene.
-		*/
-		std::vector<UniquePtr<RenderableVolume>> GetSceneLightsVolumes() const;
-
-		/**
-		 * @param putGlobalProbeAtEnd: ensure that the global probe is the final element of the vector. This is used in rendering the global probe only in areas without any local probe.
-		 * @return the volumes of all light probes (not lights!) in the scene.
-		*/
-		std::vector<UniquePtr<RenderableVolume>> GetLightProbeVolumes(bool putGlobalProbeAtEnd = true);
-
-		/**
-		 * @brief Applies if bIsAnUIScene is true. Should be called after the UIDepth of a Renderable has changed.
-		 * If bIsAnUIScene is true, we must keep the Renderables vector sorted by depth (ascending order).
-		*/
-		void MarkUIRenderableDepthsDirty();
-
-		void SetupLights(unsigned int blockBindingSlot);
-		void UpdateLightUniforms();
-
-		int GetBatchID(SkeletonBatch&) const;
-		SkeletonBatch* GetBatch(int ID);
-
-		~GameSceneRenderData();
-
-		//RenderableComponent* FindRenderable(std::string name);
-
-		template <typename Archive>
-		void SaveSkeletonBatches(Archive& archive) const
-		{
-			archive(CEREAL_NVP(SkeletonBatches));
-		}
-
-		template <typename Archive>
-		void LoadSkeletonBatches(Archive& archive)
-		{
-			SkeletonBatches.clear();
-			archive(CEREAL_NVP(SkeletonBatches));
-		}
-
-		friend class SceneRenderer;
-		friend class RenderEngine;
-
-	private:
-		void AssertThatUIRenderablesAreSorted();
-	public:
-		RenderEngineManager* RenderHandle;
-
-		std::vector<Renderable*> Renderables;
-		/**
-		 * @brief If bIsAnUIScene is true, Renderables are sorted by UI depth upon insertion.
-		 * This allows to render UIElements with different depths correctly
-		*/
-		bool bIsAnUIScene;
-		bool bUIRenderableDepthsSortedDirtyFlag, bLightProbesSortedDirtyFlag;
-
-		std::vector<SharedPtr<SkeletonBatch>> SkeletonBatches;
-		std::vector<LightProbeComponent*> LightProbes;
-
-		std::vector<std::reference_wrapper<LightComponent>> Lights;
-		UniformBuffer LightsBuffer;
-
-		int LightBlockBindingSlot;
-		bool ProbesLoaded;
-
-		SharedPtr<LightProbeTextureArrays> ProbeTexArrays;
-	};
-
+	class GameSceneRenderData;
 	namespace Physics
 	{
-		class GameScenePhysicsData
-		{
-		public:
-			GameScenePhysicsData(PhysicsEngineManager*);
-			void AddCollisionObject(CollisionObject&, Transform& t);
-			void EraseCollisionObject(CollisionObject&);
-			Physics::PhysicsEngineManager* GetPhysicsHandle();
-
-			friend class PhysicsEngine;
-
-		private:
-			Physics::PhysicsEngineManager* PhysicsHandle;
-			std::vector<CollisionObject*> CollisionObjects;
-			physx::PxScene* PhysXScene;
-			physx::PxControllerManager* PhysXControllerManager;
-			bool WasSetup;
-		};
+		class GameScenePhysicsData;
 	}
-
 	namespace Audio
 	{
-		class GameSceneAudioData
-		{
-		public:
-			GameSceneAudioData(AudioEngineManager* audioHandle);
-
-			void AddSource(SoundSourceComponent&);
-
-			SoundSourceComponent* FindSource(std::string name);
-
-		private:
-			std::vector<std::reference_wrapper<SoundSourceComponent>> Sources;
-			AudioEngineManager* AudioHandle;
-		};
+		class GameSceneAudioData;
 	}
-
 
 	class GameScene
 	{
@@ -202,7 +82,7 @@ namespace GEE
 
 		HierarchyTemplate::HierarchyTreeT& CreateHierarchyTree(const std::string& name);
 		HierarchyTemplate::HierarchyTreeT* FindHierarchyTree(const std::string& name,
-		                                                     HierarchyTemplate::HierarchyTreeT* treeToIgnore = nullptr);
+			HierarchyTemplate::HierarchyTreeT* treeToIgnore = nullptr);
 
 		void HandleEventAll(const Event&);
 		void Update(float deltaTime);
@@ -265,6 +145,148 @@ namespace GEE
 		friend class Game;
 		friend class GameEngineEngineEditor;
 	};
+
+	class GameSceneData
+	{
+	public:
+		GameSceneData(GameScene& scene);
+		std::string GetSceneName() const;
+	protected:
+
+		GameScene& GetScene();
+		const GameScene& GetScene() const;
+		GameScene& Scene;
+	};
+
+	class GameSceneRenderData : public GameSceneData
+	{
+	public:
+		GameSceneRenderData(GameScene&, bool isAnUIScene);
+
+		RenderEngineManager* GetRenderHandle();
+		LightProbeTextureArrays* GetProbeTexArrays();
+		int GetAvailableLightIndex();
+
+		bool ContainsLights() const;
+		bool ContainsLightProbes() const;
+		bool HasLightWithoutShadowMap() const;
+
+		void AddRenderable(Renderable&);
+		void AddLight(LightComponent& light);
+		// this function lets the engine know that the passed light component's data needs to be forwarded to shaders (therefore lighting our meshes)
+		void AddLightProbe(LightProbeComponent& probe);
+		SharedPtr<SkeletonInfo> AddSkeletonInfo();
+
+		void EraseRenderable(Renderable&);
+		void EraseLight(LightComponent&);
+		void EraseLightProbe(LightProbeComponent&);
+
+		/**
+		 * @return the volumes of all lights (not light probes!) in the scene.
+		*/
+		std::vector<UniquePtr<RenderableVolume>> GetSceneLightsVolumes() const;
+
+		/**
+		 * @param putGlobalProbeAtEnd: ensure that the global probe is the final element of the vector. This is used in rendering the global probe only in areas without any local probe.
+		 * @return the volumes of all light probes (not lights!) in the scene.
+		*/
+		std::vector<UniquePtr<RenderableVolume>> GetLightProbeVolumes(bool putGlobalProbeAtEnd = true);
+
+		/**
+		 * @brief Applies if bIsAnUIScene is true. Should be called after the UIDepth of a Renderable has changed.
+		 * If bIsAnUIScene is true, we must keep the Renderables vector sorted by depth (ascending order).
+		*/
+		void MarkUIRenderableDepthsDirty();
+
+		void SetupLights(unsigned int blockBindingSlot);
+		void UpdateLightUniforms();
+
+		int GetBatchID(SkeletonBatch&) const;
+		SkeletonBatch* GetBatch(int ID);
+
+		~GameSceneRenderData();
+
+		//RenderableComponent* FindRenderable(std::string name);
+
+		template <typename Archive>
+		void SaveSkeletonBatches(Archive& archive) const
+		{
+			archive(CEREAL_NVP(SkeletonBatches));
+		}
+
+		template <typename Archive>
+		void LoadSkeletonBatches(Archive& archive)
+		{
+			SkeletonBatches.clear();
+			archive(CEREAL_NVP(SkeletonBatches));
+			std::cout << "Loaded " << SkeletonBatches.size() << " skeleton batches.\n";
+		}
+
+		friend class SceneRenderer;
+		friend class RenderEngine;
+
+	private:
+		void AssertThatUIRenderablesAreSorted();
+	public:
+		RenderEngineManager* RenderHandle;
+
+		std::vector<Renderable*> Renderables;
+		/**
+		 * @brief If bIsAnUIScene is true, Renderables are sorted by UI depth upon insertion.
+		 * This allows to render UIElements with different depths correctly
+		*/
+		bool bIsAnUIScene;
+		bool bUIRenderableDepthsSortedDirtyFlag, bLightProbesSortedDirtyFlag;
+
+		std::vector<SharedPtr<SkeletonBatch>> SkeletonBatches;
+		std::vector<LightProbeComponent*> LightProbes;
+
+		std::vector<std::reference_wrapper<LightComponent>> Lights;
+		UniformBuffer LightsBuffer;
+
+		int LightBlockBindingSlot;
+		bool ProbesLoaded;
+
+		SharedPtr<LightProbeTextureArrays> ProbeTexArrays;
+	};
+
+	namespace Physics
+	{
+		class GameScenePhysicsData : public GameSceneData
+		{
+		public:
+			GameScenePhysicsData(GameScene&);
+			void AddCollisionObject(CollisionObject&, Transform& t);
+			void EraseCollisionObject(CollisionObject&);
+			Physics::PhysicsEngineManager* GetPhysicsHandle();
+
+			friend class PhysicsEngine;
+
+		private:
+			Physics::PhysicsEngineManager* PhysicsHandle;
+			std::vector<CollisionObject*> CollisionObjects;
+			physx::PxScene* PhysXScene;
+			physx::PxControllerManager* PhysXControllerManager;
+			bool WasSetup;
+		};
+	}
+
+	namespace Audio
+	{
+		class GameSceneAudioData : public GameSceneData
+		{
+		public:
+			GameSceneAudioData(GameScene&);
+
+			void AddSource(SoundSourceComponent&);
+
+			SoundSourceComponent* FindSource(std::string name);
+
+		private:
+			std::vector<std::reference_wrapper<SoundSourceComponent>> Sources;
+			AudioEngineManager* AudioHandle;
+		};
+	}
 
 	template <typename ActorClass, typename... Args>
 	inline ActorClass& GameScene::CreateActorAtRoot(Args&&... args)

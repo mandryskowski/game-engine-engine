@@ -20,7 +20,7 @@ uniform mat4 prevVP;
 
 void main()
 {
-	vec4 projCoords = flickerMat * vec4(vec3(VP * vec4(vPosition, 0.0)), 1.0);
+	vec4 projCoords = vec4(vec3(VP * vec4(vPosition, 0.0)), 1.0);
 	gl_Position = projCoords.xyzz;
 	vs_out.localPosition = vPosition;
 	#ifdef CALC_VELOCITY_BUFFER
