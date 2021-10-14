@@ -65,6 +65,7 @@ namespace GEE
 		SelectedActor(nullptr),
 		SelectedScene(nullptr),
 		bDebugRenderComponents(true),
+		bViewportMaximzized(false),
 		GameController(nullptr),
 		EEForceForwardShading(false)
 		//CanvasContext(nullptr)
@@ -545,9 +546,13 @@ namespace GEE
 				graphButton.CreateComponent<TextComponent>("XUnitText3", Transform(Vec2f(1.0f, -1.0f), Vec2f(0.1f)), "0", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::RIGHT, TextAlignment::TOP));
 
 				graphButton.CreateComponent<TextComponent>("YUnitText1", Transform(Vec2f(-1.0f, -1.0f), Vec2f(0.1f)), "0", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::RIGHT, TextAlignment::BOTTOM));
-				graphButton.CreateComponent<TextComponent>("YUnitText2", Transform(Vec2f(-1.0f, 0.0f), Vec2f(0.1f)), "150", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::RIGHT, TextAlignment::CENTER));
-				graphButton.CreateComponent<TextComponent>("YUnitText3", Transform(Vec2f(-1.0f, 1.0f), Vec2f(0.1f)), "300", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::RIGHT, TextAlignment::TOP));
+				TextComponent* secondImportant = &graphButton.CreateComponent<TextComponent>("YUnitText2", Transform(Vec2f(-1.0f, 0.0f), Vec2f(0.1f)), "150", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::RIGHT, TextAlignment::CENTER));
+				TextComponent* important = &graphButton.CreateComponent<TextComponent>("YUnitText3", Transform(Vec2f(-1.0f, 1.0f), Vec2f(0.1f)), "240", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::RIGHT, TextAlignment::TOP));
 
+
+				float* maxFPS = new float(240.0f);
+				auto& unitInputBox = graphButton.CreateChild<UIInputBoxActor>("FPSUnitButton", [=, &fpsGraph](float val) mutable { *maxFPS = val; fpsGraph.SetGraphView(Transform(Vec2f(0.0f), Vec2f(30.0f, *maxFPS))); important->SetContent(ToStringPrecision (*maxFPS, 0)); secondImportant->SetContent(ToStringPrecision(*maxFPS / 2.0f, 0)); }, [=, &fpsGraph]() { return *maxFPS; });
+				unitInputBox.SetTransform(Transform(Vec2f(-0.5f, -1.2f), Vec2f(0.2f)));
 				auto& infoText = graphButton.CreateComponent<TextComponent>("InfoText", Transform(Vec2f(-0.0f, 1.0f), Vec2f(0.05f)), "FPS - the lower the better\n<Hold SHIFT while dragging mouse to inspect a range>", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::BOTTOM));
 				auto greyMaterial = MakeShared<Material>("Grey", 0.0f, RenderEng.FindShader("TextShader"));
 				greyMaterial->SetColor(Vec4f(Vec3f(0.5f), 1.0f));
@@ -716,6 +721,10 @@ namespace GEE
 					if (sceneChanged)
 						for (auto& it : Scenes)
 							it->RootActor->HandleEventAll(Event(EventType::FocusSwitched));
+				}
+				else if (keyEventCast.GetKeyCode() == Key::F10)
+				{
+					MaximizeViewport();
 				}
 				else if (ActiveScene == EditorScene && keyEventCast.GetKeyCode() == Key::S && GetInputRetriever().IsKeyPressed(Key::LeftControl))
 					SaveProject();
@@ -1074,7 +1083,7 @@ namespace GEE
 				renderAllColObjs(*SelectedActor->GetRoot());
 			}
 
-			RenderEng.RenderText(RenderInfo(*ViewportRenderCollection), *GetDefaultFont(), "(C) twoja babka studios", Transform(Vec3f(0.0f, 0.0f, 0.0f), Vec3f(0.0f), Vec3f(32.0f)), glm::pow(Vec3f(0.0f, 0.73f, 0.84f), Vec3f(1.0f / 2.2f)), nullptr, true);
+			//RenderEng.RenderText(RenderInfo(*ViewportRenderCollection), *GetDefaultFont(), "(C) twoja babka studios", Transform(Vec3f(0.0f, 0.0f, 0.0f), Vec3f(0.0f), Vec3f(32.0f)), glm::pow(Vec3f(0.0f, 0.73f, 0.84f), Vec3f(1.0f / 2.2f)), nullptr, true);
 		}
 		else
 		{
@@ -1092,9 +1101,23 @@ namespace GEE
 		if (renderEditorScene)
 		{
 			///Render editor scene
-			RenderInfo info = EditorScene->ActiveCamera->GetRenderInfo(*HUDRenderCollection);
-			RenderEng.PrepareScene(*HUDRenderCollection, EditorScene->GetRenderData());
-			RenderEng.FullSceneRender(info, EditorScene->GetRenderData(), nullptr, Viewport(Vec2f(0.0f), Vec2f(Settings->WindowSize)), true, true);
+
+			if (bViewportMaximzized)
+			{
+				glBindFramebuffer(GL_FRAMEBUFFER, 0);
+				Vec2i windowSize;
+				glfwGetWindowSize(Window, &windowSize.x, &windowSize.y);
+				glViewport(0, 0, windowSize.x, windowSize.y);
+				RenderEng.FindShader("Forward_NoLight")->Use();
+				RenderEng.FindShader("Forward_NoLight")->Uniform2fv("atlasData", Vec2f(0.0f));
+				Renderer(RenderEng).StaticMeshInstances(MatrixInfoExt(), { MeshInstance(RenderEng.GetBasicShapeMesh(EngineBasicShape::QUAD), RenderEng.FindMaterial("GEE_3D_SCENE_PREVIEW_MATERIAL").get())}, EditorScene->FindActor("SceneViewportActor")->GetTransform()->GetWorldTransform(), *RenderEng.FindShader("Forward_NoLight"));
+			}
+			else
+			{
+				RenderInfo info = EditorScene->ActiveCamera->GetRenderInfo(*HUDRenderCollection);
+				RenderEng.PrepareScene(*HUDRenderCollection, EditorScene->GetRenderData());
+				RenderEng.FullSceneRender(info, EditorScene->GetRenderData(), nullptr, Viewport(Vec2f(0.0f), Vec2f(Settings->WindowSize)), true, true);
+			}
 		}
 
 		if (GameScene* mainMenuScene = GetScene("GEE_Main_Menu"))
@@ -1195,6 +1218,25 @@ namespace GEE
 
 			recentProjectsOutput.close();
 		}
+	}
+
+	void GameEngineEngineEditor::MaximizeViewport()
+	{
+		glm::ivec2 windowSize;
+		glfwGetWindowSize(Window, &windowSize.x, &windowSize.y);
+		if (!bViewportMaximzized)
+		{
+			GetGameSettings()->Video.Resolution = windowSize;
+			GetScene("GEE_Editor")->FindActor("SceneViewportActor")->SetTransform(Transform(Vec2f(0.0f), Vec2f(1.0f)));
+		}
+		else
+		{
+			GetGameHandle()->GetGameSettings()->Video.Resolution = static_cast<Vec2f>(windowSize) * Vec2f(0.4f, 0.6f);
+			GetScene("GEE_Editor")->FindActor("SceneViewportActor")->SetTransform(Transform(Vec2f(0.0f, 0.4f), Vec2f(0.4f, 0.6f)));
+		}
+
+		UpdateGameSettings();
+		bViewportMaximzized = !bViewportMaximzized;
 	}
 
 

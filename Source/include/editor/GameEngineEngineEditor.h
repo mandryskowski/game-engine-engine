@@ -54,6 +54,7 @@ namespace GEE
 
 	private:
 		void UpdateRecentProjects();
+		void MaximizeViewport();
 
 		RenderToolboxCollection* ViewportRenderCollection, * HUDRenderCollection;
 		GameScene* EditorScene;
@@ -62,6 +63,8 @@ namespace GEE
 
 		GameSettings EditorSettings;
 		bool bDebugRenderComponents;
+
+		bool bViewportMaximzized;
 
 
 		std::string ProjectName, ProjectFilepath;
