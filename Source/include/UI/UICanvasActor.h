@@ -35,6 +35,10 @@ namespace GEE
 		}
 
 		virtual void SetCanvasView(const Transform&) override;
+		/**
+		 * @return The ModelComponent that is the canvas background. Can be nullptr.
+		*/
+		ModelComponent* GetCanvasBackground();
 
 		virtual Vec2f FromCanvasSpace(const Vec2f& canvasSpacePos) const override;
 		virtual Mat4f FromCanvasSpace(const Mat4f& canvasSpaceMat) const override;
@@ -49,6 +53,11 @@ namespace GEE
 		void KillResizeBars();
 		virtual void ClampViewToElements() override;
 
+		/**
+		 * @brief Create a quad model to distinguish between the canvas and other UI elements.
+		 * @param color: the colour of the background. Leave it at Vec3f(-1.0f) to use the default colour.
+		*/
+		void CreateCanvasBackgroundModel(const Vec3f& color = Vec3f(-1.0f));
 		template <typename ChildClass, typename... Args> ChildClass& CreateChildCanvas(Args&&...);
 
 		virtual Actor& AddChild(UniquePtr<Actor>) override;
@@ -75,6 +84,7 @@ namespace GEE
 		Vec3f FieldSize;
 		UIScrollBarActor* ScrollBarX, *ScrollBarY, *BothScrollBarsButton;
 		UIScrollBarActor* ResizeBarX, *ResizeBarY;
+		ModelComponent* CanvasBackground;
 
 		UICanvasActor* CanvasParent;
 	};

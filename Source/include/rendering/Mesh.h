@@ -111,6 +111,7 @@ namespace GEE
 
 		Mesh& GetMesh();
 		const Mesh& GetMesh() const;
+		Material* GetMaterialPtr();
 		const Material* GetMaterialPtr() const;
 		MaterialInstance* GetMaterialInst() const;
 

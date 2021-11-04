@@ -111,6 +111,11 @@ namespace GEE
 		std::cout << "Data loading finished.\n";
 	}
 
+	void Game::AddInterpolation(const Interpolation& interp)
+	{
+		Interpolations.push_back(MakeUnique<Interpolation>(interp));
+	}
+
 	void Game::BindAudioListenerTransformPtr(Transform* transform)
 	{
 		AudioEng.SetListenerTransformPtr(transform);
@@ -337,6 +342,8 @@ namespace GEE
 			Scenes[i]->Update(deltaTime);
 
 		AudioEng.Update();
+
+		Interpolations.erase(std::remove_if(Interpolations.begin(), Interpolations.end(), [deltaTime](UniquePtr<Interpolation>& interp) { return interp->UpdateT(deltaTime); }), Interpolations.end());
 	}
 	void Game::TerminateGame()
 	{

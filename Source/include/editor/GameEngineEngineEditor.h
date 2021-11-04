@@ -3,6 +3,9 @@
 #include <editor/EditorManager.h>
 #include <UI/UIListActor.h>
 #include <ctpl/ctpl_stl.h>
+#include <editor/EditorMessageLogger.h>
+#include <unordered_map>
+#include <condition_variable>
 
 namespace GEE
 {
@@ -59,7 +62,13 @@ namespace GEE
 		RenderToolboxCollection* ViewportRenderCollection, * HUDRenderCollection;
 		GameScene* EditorScene;
 
+		std::unordered_map<GameScene*, EditorMessageLogger> Logs;
+
 		std::vector<SystemWindow*> OpenedWindows;
+		std::deque<std::thread> PopupRenderThreads;
+		std::mutex ShouldRenderMutex;
+		std::condition_variable ShouldRenderVariable;
+		bool bRenderingPopups;
 
 		ctpl::thread_pool ThreadPool;
 

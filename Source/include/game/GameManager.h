@@ -39,6 +39,7 @@ namespace GEE
 
 	class AnimationManagerComponent;
 	class Transform;
+	class Interpolation;
 	struct Animation;
 
 
@@ -55,6 +56,8 @@ namespace GEE
 
 	class Shader;
 	class LightProbe;
+
+	class SkeletonBatch;
 	class SkeletonInfo;
 
 
@@ -169,6 +172,7 @@ namespace GEE
 		virtual Shader* GetLightShader(const RenderToolboxCollection& renderCol, LightType) = 0;
 		virtual RenderToolboxCollection* GetCurrentTbCollection() = 0;
 		virtual Texture GetEmptyTexture() = 0;
+		virtual SkeletonBatch* GetBoundSkeletonBatch() = 0;
 
 		//TODO: THIS SHOULD NOT BE HERE
 		virtual std::vector<Shader*> GetForwardShaders() = 0;
@@ -176,6 +180,7 @@ namespace GEE
 
 		virtual void SetBoundMaterial(Material*) = 0;
 
+		virtual void BindSkeletonBatch(SkeletonBatch* batch) = 0;
 		virtual void BindSkeletonBatch(GameSceneRenderData* sceneRenderData, unsigned int index) = 0;
 
 		/**
@@ -186,8 +191,8 @@ namespace GEE
 		*/
 		virtual RenderToolboxCollection& AddRenderTbCollection(const RenderToolboxCollection& tbCollection,
 		                                                       bool setupToolboxesAccordingToSettings = true) = 0;
-
 		virtual Material* AddMaterial(SharedPtr<Material>) = 0;
+	public:
 		virtual SharedPtr<Shader> AddShader(SharedPtr<Shader>, bool bForwardShader = false) = 0;
 
 		virtual void EraseRenderTbCollection(RenderToolboxCollection& tbCollection) = 0;
@@ -216,6 +221,7 @@ namespace GEE
 		static GameScene* DefaultScene;
 		static GameManager& Get();
 	public:
+		virtual void AddInterpolation(const Interpolation&) = 0;
 		virtual GameScene& CreateScene(const std::string& name, bool isAnUIScene = false) = 0;
 
 		virtual void BindAudioListenerTransformPtr(Transform*) = 0;

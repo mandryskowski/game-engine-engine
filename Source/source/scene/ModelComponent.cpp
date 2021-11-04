@@ -12,6 +12,7 @@
 #include <rendering/RenderToolbox.h>
 #include <scene/CameraComponent.h>
 #include <scene/Controller.h>
+#include <game/IDSystem.h>
 
 #include <rendering/Renderer.h>
 
@@ -26,6 +27,7 @@ namespace GEE
 		SkelInfo(info),
 		RenderAsBillboard(false)
 	{
+		std::cout << "%%% Model component " << GetName() << ".  ID: " << IDSystem<ModelComponent>::GenerateID() << "\n";
 	}
 
 	ModelComponent::ModelComponent(ModelComponent&& model) :
@@ -179,7 +181,7 @@ namespace GEE
 		std::transform(MeshInstances.begin(), MeshInstances.end(), std::back_inserter(meshInstances), [](UniquePtr<MeshInstance>& instVec) { return *instVec; });
 
 		if (SkelInfo && SkelInfo->GetBoneCount() > 0)
-			;// GameHandle->GetRenderEngineHandle()->RenderSkeletalMeshes(info, meshInstances, GetTransform().GetWorldTransform(), shader, *SkelInfo, &LastFrameMVP);
+			SkeletalMeshRenderer(*GameHandle->GetRenderEngineHandle(), 0).SkeletalMeshInstances(info, meshInstances, *SkelInfo, GetTransform().GetWorldTransform(), *shader);
 		else
 		{
 			Renderer(*GameHandle->GetRenderEngineHandle(), 0).StaticMeshInstances((CanvasPtr) ? (CanvasPtr->BindForRender(info, GameHandle->GetGameSettings()->WindowSize)) : (info), meshInstances, GetTransform().GetWorldTransform(), *shader, RenderAsBillboard);
@@ -242,7 +244,20 @@ namespace GEE
 					}
 
 					window.SetOnCloseFunc([&meshPreviewScene, &renderHandle, viewportMaterial, &renderTbCollection]() { meshPreviewScene.MarkAsKilled();  renderHandle.EraseMaterial(*viewportMaterial); renderHandle.EraseRenderTbCollection(renderTbCollection); });
-					});
+				});
+
+				auto& materialButton = listActor.CreateChild<UIButtonActor>("EditMaterialButton", (meshInst->GetMaterialPtr()) ? (meshInst->GetMaterialPtr()->GetName()) : ("No material"), nullptr, Transform(Vec2f(2.5f, 0.0f), Vec2f(3.0f, 1.0f)));
+
+				materialButton.SetOnClickFunc([&, descBuilder]() mutable { 
+					UIWindowActor& matWindow = descBuilder.GetEditorScene().CreateActorAtRoot<UIWindowActor>(name + "MaterialWindow");
+					EditorDescriptionBuilder descBuilder(descBuilder.GetEditorHandle(), matWindow, matWindow);
+					meshInst->GetMaterialPtr()->GetEditorDescription(descBuilder);
+					matWindow.AutoClampView();
+					matWindow.RefreshFieldsList();
+				});
+
+				if (!meshInst->GetMaterialPtr())
+					materialButton.SetDisableInput(true);
 			});
 
 		descBuilder.AddField("Override materials").GetTemplates().ObjectInput<Material>(

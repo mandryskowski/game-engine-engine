@@ -39,7 +39,7 @@ namespace GEE
 		renderHandle->FindShader("CubemapToIrradiance")->Use();
 		int layer = probe.GetProbeIndex() * 6;
 
-		CubemapRenderer(*renderHandle).FromTexture(probeTexArrays->IrradianceMapArr, envMap, Vec2u(16), *renderHandle->FindShader("CubemapToIrradiance"), &layer);
+		CubemapRenderer(*renderHandle, 0).FromTexture(probeTexArrays->IrradianceMapArr, envMap, Vec2u(16), *renderHandle->FindShader("CubemapToIrradiance"), &layer);
 
 		if (PrimitiveDebugger::bDebugProbeLoading)
 			std::cout << "Prefiltering\n";

@@ -25,6 +25,7 @@ namespace GEE
 		virtual Shader* GetLightShader(const RenderToolboxCollection& renderCol, LightType type) override;
 		virtual RenderToolboxCollection* GetCurrentTbCollection() override;
 		virtual Texture GetEmptyTexture() override;
+		virtual SkeletonBatch* GetBoundSkeletonBatch() override;
 
 		virtual std::vector<Shader*> GetForwardShaders() override;
 		virtual std::vector<Material*> GetMaterials() override;
@@ -41,7 +42,7 @@ namespace GEE
 		virtual Material* AddMaterial(SharedPtr<Material> material) override;
 		virtual SharedPtr<Shader> AddShader(SharedPtr<Shader> shader, bool bForwardShader = false) override;
 
-		void BindSkeletonBatch(SkeletonBatch* batch);
+		virtual void BindSkeletonBatch(SkeletonBatch* batch) override;
 		virtual void BindSkeletonBatch(GameSceneRenderData* sceneRenderData, unsigned int index) override;
 
 		virtual void EraseRenderTbCollection(RenderToolboxCollection& tbCollection) override;

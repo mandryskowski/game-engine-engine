@@ -15,6 +15,12 @@ namespace GEE
 {
 	struct MaterialLoadingData;
 	
+	enum class MaterialShaderHint
+	{
+		Simple,
+		Lighting
+	};
+
 	class Material
 	{
 	public:
@@ -40,7 +46,10 @@ namespace GEE
 		};
 
 	public:
+		Material(MaterialLoc, MaterialShaderHint);
 		Material(MaterialLoc, float depthScale = 0.0f, Shader* shader = nullptr);
+		Material(MaterialLoc, const Vec3f& color, MaterialShaderHint = MaterialShaderHint::Simple);
+		Material(MaterialLoc, const Vec4f& color, MaterialShaderHint = MaterialShaderHint::Simple);
 		const MaterialLoc& GetLocalization() const;
 		std::string GetName() const;
 		const std::string& GetRenderShaderName() const;
@@ -50,6 +59,7 @@ namespace GEE
 		void SetDepthScale(float);
 		void SetShininess(float);
 		void SetRenderShaderName(const std::string&);
+		void SetShader(MaterialShaderHint);
 
 		//Think twice before you use colours; you need a corresponding shader to make it work (one that has uniform vec4 color in it)
 		void SetColor(const Vec3f& color);
@@ -58,6 +68,7 @@ namespace GEE
 		void SetMetallicColor(float metallic);
 		void SetAoColor(float ao);
 		
+		void AddTexture(const NamedTexture& tex);
 		void AddTexture(SharedPtr<NamedTexture> tex);
 		void RemoveTexture(NamedTexture&);
 
@@ -183,10 +194,6 @@ namespace GEE
 
 	struct MaterialInstance
 	{
-		Material& MaterialRef;
-		InterpolatorBase* AnimationInterp; //optional; use if you animate the material
-		bool DrawBeforeAnim, DrawAfterAnim;
-
 	public:
 		MaterialInstance(Material&);
 		MaterialInstance(Material&, InterpolatorBase&, bool drawBefore = true, bool drawAfter = true);
@@ -261,6 +268,10 @@ namespace GEE
 
 			//GameManager::DefaultScene->AddPostLoadLambda([mat]() { std::cout << "uwaga robie " << mat << '\n'; GameManager::Get().GetRenderEngineHandle()->AddMaterial(mat); });
 		}
+	private:
+		Material& MaterialRef;
+		InterpolatorBase* AnimationInterp; //optional; use if you animate the material
+		bool DrawBeforeAnim, DrawAfterAnim;
 	};
 
 	constexpr Vec3f hsvToRgb(Vec3f hsvColor)

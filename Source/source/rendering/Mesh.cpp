@@ -212,6 +212,14 @@ namespace GEE
 		return MeshRef;
 	}
 
+	Material* MeshInstance::GetMaterialPtr()
+	{
+		if (MaterialInst)
+			return &MaterialInst->GetMaterialRef();
+
+		return nullptr;
+	}
+
 	const Material* MeshInstance::GetMaterialPtr() const
 	{
 		if (MaterialInst)

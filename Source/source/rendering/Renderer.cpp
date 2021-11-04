@@ -73,7 +73,7 @@ namespace GEE
 				materialInst->UpdateWholeUBOData(&shader, Texture());//////////////////////////////////////// Impl::BindMaterialInstance(materialInst);
 			}
 
-			mesh.Bind(0);
+			mesh.Bind(Impl.OpenGLContextID);
 			mesh.Render();
 		}
 	}
@@ -156,10 +156,11 @@ namespace GEE
 
 			MatrixInfoExt info;
 			info.SetView(Impl.GetCubemapView(static_cast<GEE_FB::Axis>(i)));
+			info.SetProjection(glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, 0.0f, 2.0f));
 			info.CalculateVP();
 			info.SetCareAboutShader(false);
 
-			StaticMeshInstances(info, { Impl.GetBasicShapeMesh(EngineBasicShape::CUBE) }, Transform(), shader);
+			StaticMeshInstances(info, { cubeMesh }, Transform(), shader);
 			framebuffer.Detach(GEE_FB::AttachmentSlot::Color(0));
 		}
 
@@ -413,7 +414,6 @@ namespace GEE
 		if (viewport.GetSize() == Vec2u(0))
 			viewport = Viewport(target.GetSize());
 
-		std::cout << "&&&1\n";
 		//sceneRenderData.LightsBuffer.SubData4fv(info.camPos, 16); TO BYLO TU...
 
 		MainFramebufferToolbox* mainTb = tbCollection.GetTb<MainFramebufferToolbox>();
@@ -449,7 +449,7 @@ namespace GEE
 				Shader* gShader = deferredTb->GeometryShader;
 				gShader->Use();
 				gShader->Uniform3fv("camPos", info.GetCamPosition());
-				std::cout << "&&&2\n";
+
 				RawRender(info, *gShader);
 				info.SetMainPass(false);
 				info.SetCareAboutShader(false);
@@ -460,7 +460,7 @@ namespace GEE
 
 				////////////////////2.2 SSAO pass
 				Texture SSAOtex;
-				std::cout << "&&&3\n";
+				
 				if (settings.AmbientOcclusionSamples > 0)
 					SSAOtex = PostprocessRenderer(Impl.RenderHandle, Impl.OpenGLContextID, GFramebuffer).SSAO(info, GFramebuffer.GetColorTexture(1), GFramebuffer.GetColorTexture(2));	//pass gPosition and gNormal
 
@@ -473,7 +473,7 @@ namespace GEE
 				glClearBufferfv(GL_COLOR, 0, Math::GetDataPtr(Vec3f(0.0f, 0.0f, 0.0f))); // Clear ONLY the color buffers. The depth information stays for the light pass (we need to know which light volumes actually contain any objects that are affected by the light)
 				if (tbCollection.GetSettings().bBloom)
 					glClearBufferfv(GL_COLOR, 1, Math::GetDataPtr(Vec3f(0.0f)));
-				std::cout << "&&&4\n";
+				
 				for (int i = 0; i < 4; i++)	// Bind all GBuffer textures (Albedo+Specular, Position, Normal, PBR Cook-Torrance Alpha+Metalness+AmbientOcclusion)
 					GFramebuffer.GetColorTexture(i).Bind(i);
 
@@ -481,7 +481,7 @@ namespace GEE
 					SSAOtex.Bind(4);
 
 				VolumeRenderer(Impl.RenderHandle, Impl.OpenGLContextID, &MainFramebuffer).Volumes(info, sceneRenderData.GetSceneLightsVolumes(), false);
-				std::cout << "&&&5\n";
+				
 				////////////////////3.1 IBL pass
 				
 				deferredTb->FindShader("CookTorranceIBL")->Use();
@@ -497,7 +497,7 @@ namespace GEE
 
 					shader->Uniform3fv("lightProbes[" + std::to_string(i) + "].position", probe->GetTransform().GetWorldTransform().GetPos());
 				}
-				std::cout << "&&&6\n";
+				
 				auto probeVolumes = sceneRenderData.GetLightProbeVolumes();
 
 				if (!probeVolumes.empty())
@@ -507,7 +507,7 @@ namespace GEE
 					sceneRenderData.ProbeTexArrays->BRDFLut.Bind(14);
 					VolumeRenderer(Impl.RenderHandle, Impl.OpenGLContextID, &MainFramebuffer).Volumes(info, probeVolumes, sceneRenderData.ProbesLoaded == true);
 				}
-				std::cout << "&&&7\n";
+				
 			}
 			else
 			{
@@ -529,7 +529,7 @@ namespace GEE
 				glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 			}
-			std::cout << "&&&8\n";
+			
 			info.SetMainPass(true);
 			info.SetCareAboutShader(true);
 			auto forwardTb = tbCollection.GetTb<ForwardShadingToolbox>();
@@ -543,7 +543,7 @@ namespace GEE
 				RawRender(info, *lightShader);
 			}
 		}
-		std::cout << "&&&9\n";
+		
 		////////////////////3.25 Render global cubemap
 		info.SetMainPass(false);
 		info.SetCareAboutShader(false);
@@ -567,7 +567,7 @@ namespace GEE
 		glEnable(GL_BLEND);
 		info.SetMainPass(true);
 		info.SetCareAboutShader(true);
-		std::cout << "&&&10\n";
+		
 		if (modifyForwardsDepthForUI)
 			RawUIScene(info);
 		else
@@ -952,5 +952,58 @@ namespace GEE
 		framebuffer.Dispose();
 
 		std::cout << "Initting done.\n";
+	}
+	void SkeletalMeshRenderer::SkeletalMeshInstances(const MatrixInfoExt& info, const std::vector<MeshInstance>& meshes, SkeletonInfo& skelInfo, const Transform& transform, Shader& shader)
+	{
+		if (meshes.empty())
+			return;
+
+		bool handledShader = false;
+		for (const MeshInstance& meshInst : meshes)
+		{
+			const Mesh& mesh = meshInst.GetMesh();
+			MaterialInstance* materialInst = meshInst.GetMaterialInst();
+			const Material* material = meshInst.GetMaterialPtr();
+
+			if ((info.GetCareAboutShader() && material && shader.GetName() != material->GetRenderShaderName()) ||
+				(info.GetOnlyShadowCasters() && !mesh.CanCastShadow()) ||
+				!materialInst->ShouldBeDrawn())
+				continue;
+
+			if (!handledShader)
+			{
+				handledShader = true;
+
+				shader.Uniform1i("boneIDOffset", skelInfo.GetBoneIDOffset());
+
+				Mat4f modelMat = transform.GetWorldTransformMatrix();	//the ComponentTransform's world transform is cached
+
+				shader.BindMatrices(modelMat, &info.GetView(), &info.GetProjection(), &info.GetVP());
+				shader.CallPreRenderFunc();
+			}
+			if (skelInfo.GetBatchPtr() !=  Impl.RenderHandle.GetBoundSkeletonBatch())
+				Impl.RenderHandle.BindSkeletonBatch(skelInfo.GetBatchPtr());
+
+			shader.Uniform1i("boneIDOffset", skelInfo.GetBoneIDOffset());
+
+			//if (BindingsGL::BoundMesh != &mesh || i == 0)
+			{
+				mesh.Bind(Impl.OpenGLContextID);
+				BindingsGL::BoundMesh = &mesh;
+			}
+
+			if (info.GetUseMaterials() && material)
+			{
+			//	if (BindingsGL::BoundMaterial != material) //jesli zbindowany jest inny material niz potrzebny obecnie, musimy zmienic go w shaderze
+				{
+					materialInst->UpdateWholeUBOData(&shader, Texture());
+					BindingsGL::BoundMaterial = material;
+				}
+			//	else if (BoundMaterial) //jesli ostatni zbindowany material jest taki sam, to nie musimy zmieniac wszystkich danych w shaderze; oszczedzmy sobie roboty
+			//		materialInst->UpdateInstanceUBOData(shader);
+			}
+
+			mesh.Render();
+		}
 	}
 }

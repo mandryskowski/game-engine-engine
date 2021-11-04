@@ -20,6 +20,9 @@
 #include <fstream>
 #include <thread>
 #include <algorithm>
+#include <game/IDSystem.h>
+#include <condition_variable>
+
 
 #include <editor/MousePicking.h>
 #include <editor/GraphRenderingComponent.h>
@@ -70,7 +73,8 @@ namespace GEE
 		bDebugRenderComponents(true),
 		GameController(nullptr),
 		EEForceForwardShading(false),
-		ThreadPool(std::thread::hardware_concurrency())
+		ThreadPool(1),
+		bRenderingPopups(false)
 		//CanvasContext(nullptr)
 	{
 		{
@@ -237,36 +241,57 @@ namespace GEE
 		
 		//glfwWindowHint(GLFW_RESIZABLE, false);
 		//glfwWindowHint(GLFW_DECORATED, false);
-		SystemWindow* window = glfwCreateWindow(1366, 1024, "popup", nullptr, Window);
+		SystemWindow* window = glfwCreateWindow(400, 400, "popup", nullptr, Window);
 		glfwSetWindowPos(window, posScreenSpace.x, posScreenSpace.y);
 
 		glfwWindowHint(GLFW_RESIZABLE, true);
 		glfwWindowHint(GLFW_DECORATED, true);
 		
 		OpenedWindows.push_back(window);
+		//PopupWindowsRendering.back().wait();
 
-		auto renderPopupFunc = [this](SystemWindow* window)
+		auto renderPopupFunc = [this](SystemWindow* window, int threadID)
 		{
+			std::cout << "thread " << threadID << "\n";
 			glfwMakeContextCurrent(window);
-			glBindFramebuffer(GL_FRAMEBUFFER, 0);
-			glViewport(0, 0, 400, 400);			
-			glClearColor(0.7f, 0.3f, 0.8f, 1.0f);
-			glClear(GL_COLOR_BUFFER_BIT);
+			glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS_ARB);
+			glDebugMessageCallbackARB(DebugCallbacks::OpenGLDebug, nullptr);
+			glDebugMessageControlARB(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
 
-			Material mat("", 0.0f, RenderEng.FindShader("Forward_NoLight"));
-			mat.SetColor(Vec4f(1.0f, 0.0f, 0.2f, 1.0f));
+			while (true)
+			{
 
-			RenderEng.FindShader("Forward_NoLight")->Use();
-			mat.UpdateWholeUBOData(RenderEng.FindShader("Forward_NoLight"), RenderEng.GetEmptyTexture());
+				//std::cout << "waiting...\n";
+				std::unique_lock renderLock{ ShouldRenderMutex };
+				ShouldRenderVariable.wait(renderLock, [this]() { return bRenderingPopups; });
+				//std::cout << "waited...\n";
 
-			RenderEng.GetBasicShapeMesh(EngineBasicShape::QUAD).Bind(0);
+				glDisable(GL_DEPTH_TEST);
+				glDisable(GL_CULL_FACE);
+				glBindFramebuffer(GL_FRAMEBUFFER, 0);
+				glViewport(0, 0, 400, 400);
+				glDrawBuffer(GL_BACK);
+				glClearColor(glm::abs(glm::cos((this->GetProgramRuntime()))), 0.3f, 0.8f, 1.0f);
+				glClear(GL_COLOR_BUFFER_BIT);
 
-			//RenderEng.GetBasicShapeMesh(EngineBasicShape::QUAD).Render();
+				Material mat("", 0.0f, RenderEng.FindShader("Forward_NoLight"));
+				mat.SetColor(Vec4f(1.0f, 0.0f, 0.2f, 1.0f));
 
-			glfwSwapBuffers(window);
+				RenderEng.FindShader("Forward_NoLight")->Use();
+				mat.UpdateWholeUBOData(RenderEng.FindShader("Forward_NoLight"), Texture());
+
+				RenderEng.GetBasicShapeMesh(EngineBasicShape::QUAD).Bind(threadID);
+				Renderer(RenderEng, threadID).StaticMeshInstances(MatrixInfoExt(), { RenderEng.GetBasicShapeMesh(EngineBasicShape::QUAD) }, Transform(), *RenderEng.FindShader("Forward_NoLight"));
+
+				//glFlush();
+				glfwSwapBuffers(window);
+
+				bRenderingPopups = false;
+				ShouldRenderVariable.notify_one();
+			}
 		};
 
-		//PopupWindowsRendering.back().wait();
+		//PopupRenderThreads.push_back(std::thread(renderPopupFunc, window, OpenedWindows.size()));
 	}
 
 	void GameEngineEngineEditor::UpdateGameSettings()
@@ -440,7 +465,7 @@ namespace GEE
 
 				UIButtonActor& addMaterialButton = list.CreateChild<UIButtonActor>("CreateMaterialButton", [&]() {
 					const auto& view = window.GetViewT();
-					GetRenderEngineHandle()->AddMaterial(MakeShared<AtlasMaterial>("CreatedMaterial"));
+					GetRenderEngineHandle()->AddMaterial(MakeShared<AtlasMaterial>("CreatedMaterial" + std::to_string(IDSystem<Material>::GenerateID())));
 					window.MarkAsKilled();
 					materialsButton.OnClick();
 					if (auto newWindow = dynamic_cast<UIWindowActor*>(editorScene.FindActor("MaterialsPreviewWindow")))
@@ -1033,43 +1058,6 @@ namespace GEE
 		//////////////////////POPUPS
 		OpenedWindows.erase(std::remove_if(OpenedWindows.begin(), OpenedWindows.end(), [](SystemWindow* window) { if (glfwWindowShouldClose(window)) { glfwDestroyWindow(window); return true; } return false; }), OpenedWindows.end());
 
-		std::vector<std::future<void>> popupThreads;
-		popupThreads.reserve(OpenedWindows.size());
-
-		for (auto window : OpenedWindows)
-		{
-			break;
-			popupThreads.push_back(ThreadPool.push([this, window](int)
-			{
-				glfwMakeContextCurrent(window);
-				glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS_ARB);
-				glDebugMessageCallbackARB(DebugCallbacks::OpenGLDebug, nullptr);
-				glDebugMessageControlARB(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
-
-				glDisable(GL_DEPTH_TEST);
-				glDisable(GL_CULL_FACE);
-				glBindFramebuffer(GL_FRAMEBUFFER, 0);
-				glViewport(0, 0, 400, 400);
-				glDrawBuffer(GL_FRONT);
-				glClearColor(glm::abs(glm::cos((this->GetProgramRuntime()))), 0.3f, 0.8f, 1.0f);
-				glClear(GL_COLOR_BUFFER_BIT);
-
-				Material mat("", 0.0f, RenderEng.FindShader("Forward_NoLight"));
-				mat.SetColor(Vec4f(1.0f, 0.0f, 0.2f, 1.0f));
-
-				//RenderEng.FindShader("Forward_NoLight")->Use();
-				//mat.UpdateWholeUBOData(RenderEng.FindShader("Forward_NoLight"), RenderEng.GetEmptyTexture());
-
-				RenderEng.GetBasicShapeMesh(EngineBasicShape::QUAD).Bind(0);
-
-				//RenderEng.GetBasicShapeMesh(EngineBasicShape::QUAD).Render();
-
-				glFlush();
-				//glfwSwapBuffers(window);
-			}));
-			//popupThreads.back().get();
-		}
-
 		////////////////////////MAIN WINDOW
 		if ((GetMainScene() && !GetMainScene()->ActiveCamera) || (EditorScene && !EditorScene->ActiveCamera))
 		{
@@ -1159,6 +1147,53 @@ namespace GEE
 
 		glfwSwapBuffers(Window);
 
+		/*if (!OpenedWindows.empty())
+		{
+			bRenderingPopups = true;
+			ShouldRenderVariable.notify_one();
+
+			std::unique_lock renderLock(ShouldRenderMutex);
+			ShouldRenderVariable.wait(renderLock, [this]() { return !bRenderingPopups; });
+		}*/
+		 
+		
+		//std::vector<std::future<void>> popupThreads;
+		//popupThreads.reserve(OpenedWindows.size());
+
+
+		/*if (!OpenedWindows.empty())
+		{
+			std::thread popup(renderPopupFunc, OpenedWindows.front(), 1);
+			popup.join();
+		}*/
+		
+		/*for (auto& window : OpenedWindows)
+		{
+			glfwMakeContextCurrent(window);
+			glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS_ARB);
+			glDebugMessageCallbackARB(DebugCallbacks::OpenGLDebug, nullptr);
+			glDebugMessageControlARB(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
+
+			glDisable(GL_DEPTH_TEST);
+			glDisable(GL_CULL_FACE);
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+			glViewport(0, 0, 400, 400);
+			glDrawBuffer(GL_BACK);
+			glClearColor(glm::abs(glm::cos((this->GetProgramRuntime()))), 0.3f, 0.8f, 1.0f);
+			glClear(GL_COLOR_BUFFER_BIT);
+
+			Material mat("", 0.0f, RenderEng.FindShader("Forward_NoLight"));
+			mat.SetColor(Vec4f(1.0f, 0.0f, 0.2f, 1.0f));
+
+			RenderEng.FindShader("Forward_NoLight")->Use();
+			//mat.UpdateWholeUBOData(RenderEng.FindShader("Forward_NoLight"), RenderEng.GetEmptyTexture());
+
+			RenderEng.GetBasicShapeMesh(EngineBasicShape::QUAD).Bind(1);
+			Renderer(RenderEng, 1).StaticMeshInstances(MatrixInfoExt(), { RenderEng.GetBasicShapeMesh(EngineBasicShape::QUAD) }, Transform(), *RenderEng.FindShader("Forward_NoLight"));
+
+			glfwSwapBuffers(window);
+		}*/
+
 		for (auto& window : OpenedWindows)
 		{
 			glfwMakeContextCurrent(window);
@@ -1177,15 +1212,19 @@ namespace GEE
 			Material mat("", 0.0f, RenderEng.FindShader("Forward_NoLight"));
 			mat.SetColor(Vec4f(1.0f, 0.0f, 0.2f, 1.0f));
 
-			//RenderEng.FindShader("Forward_NoLight")->Use();
-			//mat.UpdateWholeUBOData(RenderEng.FindShader("Forward_NoLight"), RenderEng.GetEmptyTexture());
+			RenderEng.FindShader("Forward_NoLight")->Use();
+			mat.UpdateWholeUBOData(RenderEng.FindShader("Forward_NoLight"), RenderEng.GetEmptyTexture());
 
-			RenderEng.GetBasicShapeMesh(EngineBasicShape::QUAD).Bind(0);
+			RenderEng.GetBasicShapeMesh(EngineBasicShape::QUAD).Bind(1);
+			Renderer(RenderEng, 1).StaticMeshInstances(MatrixInfoExt(), { MeshInstance(RenderEng.GetBasicShapeMesh(EngineBasicShape::QUAD), &mat) }, Transform(), *RenderEng.FindShader("Forward_NoLight"));
 
-			//RenderEng.GetBasicShapeMesh(EngineBasicShape::QUAD).Render();
+
+
 
 			glfwSwapBuffers(window);
 		}
+
+		glfwMakeContextCurrent(Window);
 	}
 
 	void GameEngineEngineEditor::LoadProject(const std::string& filepath)
@@ -1215,7 +1254,14 @@ namespace GEE
 			ProjectFilepath = ProjectFilepath.substr(0, ProjectFilepath.find(".geeprojectold")) + ".json";
 		std::cout << "Saving project to path " << ProjectFilepath << "\n";
 
+		//CheckSerializationErrors();
+
 		std::ofstream serializationStream(ProjectFilepath);
+
+		if (Logs.find(EditorScene) == Logs.end())
+			Logs.emplace(std::make_pair(EditorScene, EditorMessageLogger(*this, *EditorScene)));
+		Logs.find(EditorScene)->second.Log("Saving project" + ToStringPrecision(IDSystem<int>::GenerateID(), 0), EditorMessageLogger::MessageType::Information);
+
 		{
 			try
 			{
@@ -1227,6 +1273,8 @@ namespace GEE
 			catch (cereal::Exception& ex)
 			{
 				std::cout << "ERROR While saving scene: " << ex.what() << '\n';
+				Logs.emplace(std::make_pair(EditorScene, EditorMessageLogger(*this, *EditorScene)));
+				Logs.find(EditorScene)->second.Log(ex.what(), EditorMessageLogger::MessageType::Error);
 			}
 		}
 		serializationStream.close();
@@ -1234,6 +1282,7 @@ namespace GEE
 		UpdateRecentProjects();
 
 		std::cout << "Project " + ProjectName + " (" + ProjectFilepath + ") saved successfully.\n";
+	//	Logs.find(EditorScene)->second.Log("Project saved", EditorMessageLogger::MessageType::Success);
 	}
 
 	void GameEngineEngineEditor::UpdateRecentProjects()

@@ -16,8 +16,8 @@ namespace GEE
 	{
 	}
 
-	UIWindowActor::UIWindowActor(GameScene& scene, Actor* parentActor, const std::string& name) :
-		UIWindowActor(scene, parentActor, nullptr, name)
+	UIWindowActor::UIWindowActor(GameScene& scene, Actor* parentActor, const std::string& name, const Transform& t) :
+		UIWindowActor(scene, parentActor, nullptr, name, t)
 	{
 	}
 
@@ -36,12 +36,7 @@ namespace GEE
 	{
 		UICanvasActor::OnStart();
 
-		ModelComponent& backgroundModel = CreateComponent<ModelComponent>("WindowBackground");
-		backgroundModel.AddMeshInst(GameHandle->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD));
-		backgroundModel.OverrideInstancesMaterial(GameHandle->GetRenderEngineHandle()->FindMaterial("GEE_E_Canvas_Background_Material").get());
-
-		AddTopLevelUIElement(backgroundModel);	//Add the background model as a UIElement to give it UIDepth
-		backgroundModel.DetachFromCanvas();	//Erase it immediately because we do not want it to be an element of the canvas, but its background
+		CreateCanvasBackgroundModel();
 
 		CloseButton = &CreateChild<UIButtonActor>("GEE_E_Close_Button");
 		SetOnCloseFunc(nullptr);

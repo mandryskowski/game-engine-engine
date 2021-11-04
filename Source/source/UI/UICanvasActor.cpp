@@ -19,6 +19,7 @@ namespace GEE
 		ResizeBarX(nullptr),
 		ResizeBarY(nullptr),
 		ScaleActor(nullptr),
+		CanvasBackground(nullptr),
 		CanvasParent(canvasParent)
 	{
 		Scene.AddBlockingCanvas(*this);
@@ -77,6 +78,11 @@ namespace GEE
 		ClampViewToElements();
 		if (ScrollBarX) UpdateScrollBarT<VecAxis::X>();
 		if (ScrollBarY) UpdateScrollBarT<VecAxis::Y>();
+	}
+
+	ModelComponent* UICanvasActor::GetCanvasBackground()
+	{
+		return CanvasBackground;
 	}
 
 	Vec2f UICanvasActor::FromCanvasSpace(const Vec2f& canvasSpacePos) const
@@ -141,6 +147,24 @@ namespace GEE
 
 		if (ScrollBarX)	UpdateScrollBarT<VecAxis::X>();
 		if (ScrollBarY) UpdateScrollBarT<VecAxis::Y>();
+	}
+
+	void UICanvasActor::CreateCanvasBackgroundModel(const Vec3f& color)
+	{
+		if (CanvasBackground)
+			CanvasBackground->MarkAsKilled();
+		CanvasBackground = &CreateComponent<ModelComponent>("WindowBackground");
+		CanvasBackground->AddMeshInst(GameHandle->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD));
+
+		if (color == Vec3f(-1.0f))
+			CanvasBackground->OverrideInstancesMaterial(GameHandle->GetRenderEngineHandle()->FindMaterial("GEE_E_Canvas_Background_Material").get());
+		else
+		{
+			CanvasBackground->OverrideInstancesMaterial(GameHandle->GetRenderEngineHandle()->AddMaterial(MakeShared<Material>("CanvasBackgroundMaterial", color, MaterialShaderHint::Simple)));
+		}
+
+		AddTopLevelUIElement(*CanvasBackground);	//Add the background model as a UIElement to give it UIDepth
+		CanvasBackground->DetachFromCanvas();	//Erase it immediately because we do not want it to be an element of the canvas, but its background
 	}
 
 	Actor& UICanvasActor::AddChild(UniquePtr<Actor> actor)

@@ -8,7 +8,7 @@ namespace GEE
 	{
 	public:
 		UIWindowActor(GameScene&, Actor* parentActor, UICanvasActor* parentCanvas, const std::string& name, const Transform & = Transform(Vec2f(0.0f), Vec2f(0.5f)));
-		UIWindowActor(GameScene&, Actor* parentActor, const std::string& name);
+		UIWindowActor(GameScene&, Actor* parentActor, const std::string& name, const Transform & = Transform(Vec2f(0.0f), Vec2f(0.5f)));
 		UIWindowActor(UIWindowActor&&);
 		virtual void OnStart() override;
 		/**

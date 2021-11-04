@@ -25,6 +25,12 @@ namespace GEE
 		void LoadSceneFromFile(const std::string& path, const std::string& name = std::string());
 		virtual GameScene& CreateScene(const std::string& name, bool isAnUIScene = false) override;
 		void AddScene(UniquePtr <GameScene> scene);
+		
+		/**
+		 * @brief Add an Interpolation to be Updated each frame. This Interpolation will be removed if its UpdateT function returns true.
+		 * @param: the Interpolation object.
+		*/
+		virtual void AddInterpolation(const Interpolation&) override;
 		virtual void BindAudioListenerTransformPtr(Transform*) override;
 
 		/**
@@ -82,6 +88,7 @@ namespace GEE
 		SystemWindow* Window;
 
 		std::vector <UniquePtr <GameScene>> Scenes;	//The first scene (Scenes[0]) is referred to as the Main Scene. If you only use 1 scene in your application, don't bother with passing arround GameScene pointers - the Main Scene will be chosen automatically.
+		std::deque <UniquePtr<Interpolation>> Interpolations;
 		GameScene* MainScene;
 		GameScene* ActiveScene;	//which scene currently handles events
 		EventHolder EventHolderObj;

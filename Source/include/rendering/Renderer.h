@@ -214,4 +214,12 @@ namespace GEE
 
 		void AllSceneProbes(GameSceneRenderData&);
 	};
+
+	class SkeletalMeshRenderer : public Renderer
+	{
+	public:
+		using Renderer::Renderer;
+
+		void SkeletalMeshInstances(const MatrixInfoExt& info, const std::vector<MeshInstance>& meshes, SkeletonInfo& skelInfo, const Transform& transform, Shader& shader);
+	};
 }

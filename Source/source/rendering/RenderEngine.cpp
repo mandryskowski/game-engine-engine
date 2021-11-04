@@ -196,6 +196,11 @@ namespace GEE
 		return EmptyTexture;
 	}
 
+	SkeletonBatch* RenderEngine::GetBoundSkeletonBatch()
+	{
+		return BoundSkeletonBatch;
+	}
+
 	std::vector<Shader*> RenderEngine::GetForwardShaders()
 	{
 		std::vector<Shader*> shaders;
