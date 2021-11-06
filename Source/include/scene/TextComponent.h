@@ -108,8 +108,8 @@ namespace GEE
 
 		virtual void Update(float deltaTime);
 		virtual void Render(const SceneMatrixInfo& info, Shader* shader) override;
-	public:
-		Transform GetParentWorldTransform() const;
+
+	protected:
 
 		float TimeSinceScrollReset, ScrollResetTime, ScrollCooldownTime;
 		Interpolation ScrollingInterp;

@@ -15,8 +15,8 @@ namespace GEE
 	Shader* BindingsGL::UsedShader = nullptr;
 	const Material* BindingsGL::BoundMaterial = nullptr;
 
-	Renderer::Renderer(RenderEngineManager& engineHandle, int openGLContextID, const GEE_FB::Framebuffer* optionalFramebuffer) :
-		Renderer(ImplUtil(engineHandle, openGLContextID, optionalFramebuffer))
+	Renderer::Renderer(RenderEngineManager& engineHandle, const GEE_FB::Framebuffer* optionalFramebuffer) :
+		Renderer(ImplUtil(engineHandle, optionalFramebuffer))
 	{
 	}
 	
@@ -73,7 +73,7 @@ namespace GEE
 				materialInst->UpdateWholeUBOData(&shader, Texture());//////////////////////////////////////// Impl::BindMaterialInstance(materialInst);
 			}
 
-			mesh.Bind(Impl.OpenGLContextID);
+			mesh.Bind(info.GetContextID());
 			mesh.Render();
 		}
 	}
@@ -113,7 +113,7 @@ namespace GEE
 		return Shader();
 	}
 
-	void CubemapRenderer::FromTexture(Texture targetTex, Texture tex, Vec2u size, Shader& shader, int* layer, int mipLevel)
+	void CubemapRenderer::FromTexture(RenderingContextID contextID, Texture targetTex, Texture tex, Vec2u size, Shader& shader, int* layer, int mipLevel)
 	{
 		GEE_FB::Framebuffer framebuffer;
 		framebuffer.Generate();
@@ -126,7 +126,7 @@ namespace GEE
 
 		shader.Use();
 		Mesh& cubeMesh = Impl.GetBasicShapeMesh(EngineBasicShape::CUBE);
-		cubeMesh.Bind(Impl.OpenGLContextID);
+		cubeMesh.Bind(contextID);
 		BindingsGL::BoundMesh = &cubeMesh;
 
 		if (PrimitiveDebugger::bDebugCubemapFromTex)
@@ -198,7 +198,7 @@ namespace GEE
 			info.SetView(Impl.GetCubemapView(static_cast<GEE_FB::Axis>(i)) * viewtranslation);
 			info.CalculateVP();
 
-			SceneRenderer sceneRenderer(Impl.RenderHandle, Impl.OpenGLContextID, &target);
+			SceneRenderer sceneRenderer(Impl.RenderHandle, &target);
 			if (fullRender) std::cout << "!*! Przed actual render\n";
 			(fullRender) ? (sceneRenderer.FullRender(info, Viewport(targetTex.GetSize2D()))) : (sceneRenderer.RawRender(info, *shader));
 			if (fullRender) std::cout << "!*! Po actual render\n";
@@ -279,7 +279,7 @@ namespace GEE
 		glDisable(GL_STENCIL_TEST);
 	}
 
-	void ShadowMapRenderer::ShadowMaps(RenderToolboxCollection& tbCollection, GameSceneRenderData& sceneRenderData, std::vector<std::reference_wrapper<LightComponent>> lights)
+	void ShadowMapRenderer::ShadowMaps(RenderingContextID contextID, RenderToolboxCollection& tbCollection, GameSceneRenderData& sceneRenderData, std::vector<std::reference_wrapper<LightComponent>> lights)
 	{
 		ShadowMappingToolbox* shadowsTb = tbCollection.GetTb<ShadowMappingToolbox>();
 		shadowsTb->ShadowFramebuffer->Bind();
@@ -335,13 +335,13 @@ namespace GEE
 				timeSum += (float)glfwGetTime() - time1;
 
 
-				SceneMatrixInfo info(tbCollection, sceneRenderData, viewTranslation, projection, lightPos);
+				SceneMatrixInfo info(contextID, tbCollection, sceneRenderData, viewTranslation, projection, lightPos);
 				info.SetUseMaterials(false);
 				info.SetOnlyShadowCasters(true);
 				info.SetCareAboutShader(false);
 				shadowsTb->ShadowFramebuffer->Attachments.push_back(GEE_FB::FramebufferAttachment(*shadowsTb->ShadowCubemapArray, GEE_FB::AttachmentSlot::Depth()));
 
-				CubemapRenderer(Impl.RenderHandle, 0, shadowsTb->ShadowFramebuffer).FromScene(info, *shadowsTb->ShadowFramebuffer, shadowsTb->ShadowFramebuffer->GetAnyDepthAttachment(), &Impl.GetShader(RendererShaderHint::DepthOnlyLinearized), &cubemapFirst);
+				CubemapRenderer(Impl.RenderHandle, shadowsTb->ShadowFramebuffer).FromScene(info, *shadowsTb->ShadowFramebuffer, shadowsTb->ShadowFramebuffer->GetAnyDepthAttachment(), &Impl.GetShader(RendererShaderHint::DepthOnlyLinearized), &cubemapFirst);
 			}
 			else
 			{
@@ -360,11 +360,11 @@ namespace GEE
 				shadowsTb->ShadowFramebuffer->Attach(GEE_FB::FramebufferAttachment(*shadowsTb->ShadowMapArray, light.GetShadowMapNr(), GEE_FB::AttachmentSlot::Depth()), false, false);
 				glClear(GL_DEPTH_BUFFER_BIT);
 
-				SceneMatrixInfo info(tbCollection, sceneRenderData, view, projection);
+				SceneMatrixInfo info(contextID, tbCollection, sceneRenderData, view, projection, Vec3f(0.0f));
 				info.CalculateVP();
 				info.SetUseMaterials(false);
 				info.SetOnlyShadowCasters(true);
-				SceneRenderer(Impl.RenderHandle, 0, shadowsTb->ShadowFramebuffer).RawRender(info, Impl.GetShader(RendererShaderHint::DepthOnly));
+				SceneRenderer(Impl.RenderHandle, shadowsTb->ShadowFramebuffer).RawRender(info, Impl.GetShader(RendererShaderHint::DepthOnly));
 
 				shadowsTb->ShadowFramebuffer->Detach(GEE_FB::AttachmentSlot::Depth());
 			}
@@ -379,7 +379,7 @@ namespace GEE
 		//std::cout << "Wyczyscilem sobie " << timeSum * 1000.0f << "ms.\n";
 	}
 
-	void SceneRenderer::PreRenderLoopPassStatic(std::vector<GameSceneRenderData*>& renderDatas)
+	void SceneRenderer::PreRenderLoopPassStatic(RenderingContextID contextID, std::vector<GameSceneRenderData*>& renderDatas)
 	{
 		std::cout << "(((((( scene render datas: " << renderDatas.size() << "\n";
 		for (int sceneIndex = 0; sceneIndex < static_cast<int>(renderDatas.size()); sceneIndex++)
@@ -387,16 +387,16 @@ namespace GEE
 			GameSceneRenderData& sceneRenderData = *renderDatas[sceneIndex];
 			sceneRenderData.SetupLights(sceneIndex);
 			for (int i = 0; i < 2; i++)	// Render light probes twice
-				LightProbeRenderer(Impl).AllSceneProbes(sceneRenderData);
+				LightProbeRenderer(Impl).AllSceneProbes(contextID, sceneRenderData);
 
 			sceneRenderData.ProbesLoaded = true;
 		}
 	}
 
-	void SceneRenderer::PreFramePass(RenderToolboxCollection& tbCollection, GameSceneRenderData& sceneRenderData)
+	void SceneRenderer::PreFramePass(RenderingContextID contextID, RenderToolboxCollection& tbCollection, GameSceneRenderData& sceneRenderData)
 	{
 		if (sceneRenderData.ContainsLights() && (tbCollection.GetSettings().ShadowLevel > SettingLevel::SETTING_MEDIUM || sceneRenderData.HasLightWithoutShadowMap()))
-			ShadowMapRenderer(Impl).ShadowMaps(tbCollection, sceneRenderData, sceneRenderData.Lights);
+			ShadowMapRenderer(Impl).ShadowMaps(contextID, tbCollection, sceneRenderData, sceneRenderData.Lights);
 	}
 
 	void SceneRenderer::FullRender(SceneMatrixInfo& info, Viewport viewport, bool clearMainFB, bool modifyForwardsDepthForUI, std::function<void(GEE_FB::Framebuffer&)>&& renderIconsFunc)
@@ -462,7 +462,7 @@ namespace GEE
 				Texture SSAOtex;
 				
 				if (settings.AmbientOcclusionSamples > 0)
-					SSAOtex = PostprocessRenderer(Impl.RenderHandle, Impl.OpenGLContextID, GFramebuffer).SSAO(info, GFramebuffer.GetColorTexture(1), GFramebuffer.GetColorTexture(2));	//pass gPosition and gNormal
+					SSAOtex = PostprocessRenderer(Impl.RenderHandle, GFramebuffer).SSAO(info, GFramebuffer.GetColorTexture(1), GFramebuffer.GetColorTexture(2));	//pass gPosition and gNormal
 
 				////////////////////3. Lighting pass
 				for (int i = 0; i < static_cast<int>(deferredTb->LightShaders.size()); i++)
@@ -480,7 +480,7 @@ namespace GEE
 				if (SSAOtex.HasBeenGenerated())
 					SSAOtex.Bind(4);
 
-				VolumeRenderer(Impl.RenderHandle, Impl.OpenGLContextID, &MainFramebuffer).Volumes(info, sceneRenderData.GetSceneLightsVolumes(), false);
+				VolumeRenderer(Impl.RenderHandle, &MainFramebuffer).Volumes(info, sceneRenderData.GetSceneLightsVolumes(), false);
 				
 				////////////////////3.1 IBL pass
 				
@@ -505,7 +505,7 @@ namespace GEE
 					sceneRenderData.ProbeTexArrays->IrradianceMapArr.Bind(12);
 					sceneRenderData.ProbeTexArrays->PrefilterMapArr.Bind(13);
 					sceneRenderData.ProbeTexArrays->BRDFLut.Bind(14);
-					VolumeRenderer(Impl.RenderHandle, Impl.OpenGLContextID, &MainFramebuffer).Volumes(info, probeVolumes, sceneRenderData.ProbesLoaded == true);
+					VolumeRenderer(Impl.RenderHandle, &MainFramebuffer).Volumes(info, probeVolumes, sceneRenderData.ProbesLoaded == true);
 				}
 				
 			}
@@ -557,7 +557,7 @@ namespace GEE
 			Impl.RenderHandle.FindShader("Cubemap")->Uniform1f("mipLevel", (float)std::fmod(glfwGetTime(), 4.0));
 
 
-			Renderer(Impl.RenderHandle, Impl.OpenGLContextID, &MainFramebuffer).StaticMeshInstances(info, { Impl.GetBasicShapeMesh(EngineBasicShape::CUBE) }, Transform(), *Impl.RenderHandle.FindShader("Cubemap"));
+			Renderer(Impl.RenderHandle, &MainFramebuffer).StaticMeshInstances(info, { Impl.GetBasicShapeMesh(EngineBasicShape::CUBE) }, Transform(), *Impl.RenderHandle.FindShader("Cubemap"));
 		}
 
 
@@ -595,7 +595,7 @@ namespace GEE
 			GameHandle->GetPhysicsHandle()->DebugRender(*GameHandle->GetMainScene()->GetPhysicsData(), *this, info);*/
 
 		////////////////////4. Postprocessing pass (Blur + Tonemapping & Gamma Correction)
-		PostprocessRenderer(Impl.RenderHandle, Impl.OpenGLContextID, target).Render(tbCollection, &viewport, MainFramebuffer.GetColorTexture(0), (settings.bBloom) ? (MainFramebuffer.GetColorTexture(1)) : (Texture()), MainFramebuffer.GetAnyDepthAttachment(), (settings.IsVelocityBufferNeeded()) ? (MainFramebuffer.GetAttachment("velocityTex")) : (Texture()));
+		PostprocessRenderer(Impl.RenderHandle, target).Render(info.GetContextID(), tbCollection, &viewport, MainFramebuffer.GetColorTexture(0), (settings.bBloom) ? (MainFramebuffer.GetColorTexture(1)) : (Texture()), MainFramebuffer.GetAnyDepthAttachment(), (settings.IsVelocityBufferNeeded()) ? (MainFramebuffer.GetAttachment("velocityTex")) : (Texture()));
 
 	//	PreviousFrameView = currentFrameView;										AAAAAAAAAAA SMAA NAPRAW
 	}
@@ -715,7 +715,7 @@ namespace GEE
 		glEnable(GL_CULL_FACE);
 		glEnable(GL_DEPTH_TEST);
 
-		ToFramebuffer(*tb->SSAOFb).GaussianBlur(GetPPToolbox<GaussianBlurToolbox>(info.GetTbCollection()), nullptr, tb->SSAOFb->GetColorTexture(0), 4);
+		ToFramebuffer(*tb->SSAOFb).GaussianBlur(GetPPToolbox<GaussianBlurToolbox>(info.GetContextID(), info.GetTbCollection()), nullptr, tb->SSAOFb->GetColorTexture(0), 4);
 		return tb->SSAOFb->GetColorTexture(0);
 	}
 
@@ -826,7 +826,7 @@ namespace GEE
 		return framebuffer.GetColorTexture(0);
 	}
 
-	void PostprocessRenderer::Render(RenderToolboxCollection& tbCollection, const Viewport* viewport, const Texture& colorTex, Texture blurTex, const Texture& depthTex, const Texture& velocityTex)
+	void PostprocessRenderer::Render(RenderingContextID contextID, RenderToolboxCollection& tbCollection, const Viewport* viewport, const Texture& colorTex, Texture blurTex, const Texture& depthTex, const Texture& velocityTex)
 	{
 		GEE_CORE_ASSERT(Impl.OptionalFramebuffer != nullptr);
 		const GEE_FB::Framebuffer& finalFramebuffer = *Impl.OptionalFramebuffer;
@@ -834,22 +834,22 @@ namespace GEE
 
 
 		if (settings.bBloom && blurTex.HasBeenGenerated())
-			blurTex = ToFramebuffer(*tbCollection.GetTb<GaussianBlurToolbox>()->BlurFramebuffers[0]).GaussianBlur(GetPPToolbox<GaussianBlurToolbox>(tbCollection), nullptr, blurTex, 10);
+			blurTex = ToFramebuffer(*tbCollection.GetTb<GaussianBlurToolbox>()->BlurFramebuffers[0]).GaussianBlur(GetPPToolbox<GaussianBlurToolbox>(contextID, tbCollection), nullptr, blurTex, 10);
 
 
 		PostprocessRenderer composedImageRenderer = ToFramebuffer(*tbCollection.GetTb<ComposedImageStorageToolbox>()->ComposedImageFb);
 
 		if (settings.AAType == AntiAliasingType::AA_SMAA1X)
 		{
-			const Texture& compositedTex = composedImageRenderer.TonemapGamma(GetPPToolbox<ComposedImageStorageToolbox>(tbCollection), nullptr, colorTex, blurTex);
-			SMAA(GetPPToolbox<SMAAToolbox>(tbCollection), viewport, compositedTex, depthTex);
+			const Texture& compositedTex = composedImageRenderer.TonemapGamma(GetPPToolbox<ComposedImageStorageToolbox>(contextID, tbCollection), nullptr, colorTex, blurTex);
+			SMAA(GetPPToolbox<SMAAToolbox>(contextID, tbCollection), viewport, compositedTex, depthTex);
 		}
 		else if (settings.AAType == AntiAliasingType::AA_SMAAT2X && velocityTex.HasBeenGenerated())
 		{
 			const auto storageTb = tbCollection.GetTb<PrevFrameStorageToolbox>();
-			const Texture& compositedTex = composedImageRenderer.TonemapGamma(GetPPToolbox<ComposedImageStorageToolbox>(tbCollection), nullptr, colorTex, blurTex);
+			const Texture& compositedTex = composedImageRenderer.TonemapGamma(GetPPToolbox<ComposedImageStorageToolbox>(contextID, tbCollection), nullptr, colorTex, blurTex);
 			const unsigned int previousFrameIndex = 0;// (static_cast<int>(FrameIndex) - 1) % storageTb->StorageFb->GetColorTextureCount();
-			const Texture& SMAAresult = ToFramebuffer(*storageTb->StorageFb).SMAA(GetPPToolbox<SMAAToolbox>(tbCollection), nullptr, compositedTex, depthTex, storageTb->StorageFb->GetColorTexture(previousFrameIndex), velocityTex, /*FrameIndex*/0, true);
+			const Texture& SMAAresult = ToFramebuffer(*storageTb->StorageFb).SMAA(GetPPToolbox<SMAAToolbox>(contextID, tbCollection), nullptr, compositedTex, depthTex, storageTb->StorageFb->GetColorTexture(previousFrameIndex), velocityTex, /*FrameIndex*/0, true);
 
 			if (viewport) finalFramebuffer.Bind(*viewport);
 			else finalFramebuffer.Bind(true);
@@ -860,17 +860,17 @@ namespace GEE
 
 			SMAAresult.Bind(0);
 
-			RenderFullscreenQuad(tbCollection);
+			RenderFullscreenQuad(contextID, tbCollection);
 			glDisable(GL_FRAMEBUFFER_SRGB);
 
 			//FrameIndex = (FrameIndex + 1) % storageTb->StorageFb->GetColorTextureCount();
 		}
 		else
-			TonemapGamma(GetPPToolbox<ComposedImageStorageToolbox>(tbCollection), viewport, colorTex, blurTex);
+			TonemapGamma(GetPPToolbox<ComposedImageStorageToolbox>(contextID, tbCollection), viewport, colorTex, blurTex);
 	}
-	void PostprocessRenderer::RenderFullscreenQuad(RenderToolboxCollection& tbCollection, Shader* shader, bool useShader)
+	void PostprocessRenderer::RenderFullscreenQuad(RenderingContextID contextID, RenderToolboxCollection& tbCollection, Shader* shader, bool useShader)
 	{
-		RenderFullscreenQuad(TbInfo<MatrixInfoExt>(tbCollection), shader, useShader);
+		RenderFullscreenQuad(TbInfo<MatrixInfoExt>(tbCollection, MatrixInfoExt(contextID)), shader, useShader);
 	}
 	void PostprocessRenderer::RenderFullscreenQuad(TbInfo<MatrixInfoExt>& info, Shader* shader, bool useShader)
 	{
@@ -878,7 +878,7 @@ namespace GEE
 		if (useShader)	shader->Use();
 		StaticMeshInstances(info, { MeshInstance(Impl.GetBasicShapeMesh(EngineBasicShape::QUAD), nullptr) }, Transform(), *shader);
 	}
-	void LightProbeRenderer::AllSceneProbes(GameSceneRenderData& sceneRenderData)
+	void LightProbeRenderer::AllSceneProbes(RenderingContextID contextID, GameSceneRenderData& sceneRenderData)
 	{
 		if (sceneRenderData.LightProbes.empty())
 		{
@@ -918,7 +918,7 @@ namespace GEE
 		Shader* gShader = probeRenderingCollection.GetTb<DeferredShadingToolbox>()->GeometryShader;
 
 		std::cout << "*!* Przed cieniami\n";
-		SceneRenderer(Impl.RenderHandle, Impl.OpenGLContextID, &framebuffer).PreFramePass(probeRenderingCollection, sceneRenderData);
+		SceneRenderer(Impl.RenderHandle, &framebuffer).PreFramePass(probeRenderingCollection, sceneRenderData);
 		std::cout << "*!* Po cieniach\n";
 		for (LightProbeComponent* probe : sceneRenderData.LightProbes)
 		{
@@ -928,13 +928,12 @@ namespace GEE
 			Mat4f viewTranslation = glm::translate(Mat4f(1.0f), -camPos);
 			Mat4f p = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 100.0f);
 
-			SceneMatrixInfo info(probeRenderingCollection, sceneRenderData);
+			SceneMatrixInfo info(contextID, probeRenderingCollection, sceneRenderData, Mat4f(1.0f), Mat4f(1.0f), camPos);
 			info.SetView(viewTranslation);
 			info.SetProjection(p);
-			info.SetCamPosition(camPos);
 			gShader->Use();
 			std::cout << "*!* Przed env map\n";
-			CubemapRenderer(Impl.RenderHandle, Impl.OpenGLContextID, &framebuffer).FromScene(info, framebuffer, GEE_FB::FramebufferAttachment(probe->GetEnvironmentMap(), GEE_FB::AttachmentSlot::Color(0)), gShader, 0, true);
+			CubemapRenderer(Impl.RenderHandle, &framebuffer).FromScene(info, framebuffer, GEE_FB::FramebufferAttachment(probe->GetEnvironmentMap(), GEE_FB::AttachmentSlot::Color(0)), gShader, 0, true);
 			std::cout << "*!* Po env map\n";
 			probe->GetEnvironmentMap().Bind();
 			glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
@@ -988,7 +987,7 @@ namespace GEE
 
 			//if (BindingsGL::BoundMesh != &mesh || i == 0)
 			{
-				mesh.Bind(Impl.OpenGLContextID);
+				mesh.Bind(info.GetContextID());
 				BindingsGL::BoundMesh = &mesh;
 			}
 

@@ -5,18 +5,23 @@ namespace GEE
 	class RenderToolboxCollection;
 	class GameSceneRenderData;
 
+	typedef unsigned int RenderingContextID;
+
 	/**
 	 * @brief Basic MatrixInfo which serves as a rendering context. Accepted by rendering functions which can make use of camera information.
+	 * Context info optional - applications with multiple windows will probably have to use it.
 	*/
 	class MatrixInfo
 	{
 	public:
-		MatrixInfo(const Mat4f& view = Mat4f(1.0f), const Mat4f& projection = Mat4f(1.0f), const Vec3f& camPos = Vec3f(0.0f)) : CamPosition(camPos), View(view), Projection(projection), VP(projection * view) {}
+		MatrixInfo(const Mat4f& view = Mat4f(1.0f), const Mat4f& projection = Mat4f(1.0f), const Vec3f& camPos = Vec3f(0.0f), unsigned int contextID = 0) : CamPosition(camPos), View(view), Projection(projection), VP(projection * view), ContextID(contextID) {}
+		MatrixInfo(unsigned int contextID, const Mat4f& view = Mat4f(1.0f), const Mat4f& projection = Mat4f(1.0f), const Vec3f& camPos = Vec3f(0.0f)) : CamPosition(camPos), View(view), Projection(projection), VP(projection * view), ContextID(contextID) {}
 
 		const Vec3f& GetCamPosition() const { return CamPosition; }
 		const Mat4f& GetView() const { return View; }
 		const Mat4f& GetProjection() const { return Projection; }
 		const Mat4f& GetVP() const { return VP; }
+		RenderingContextID GetContextID() const { return ContextID; }
 
 		void SetCamPosition(const Vec3f& pos) { CamPosition = pos; }
 		void SetView(const Mat4f& view) { View = view; }
@@ -32,6 +37,7 @@ namespace GEE
 		Mat4f View;
 		Mat4f Projection;
 		Mat4f VP;
+		RenderingContextID ContextID;
 	};
 
 	/**
@@ -50,8 +56,14 @@ namespace GEE
 	public:
 		MatrixInfoExt(const MatrixInfo& info)
 			: MatrixInfo(info) { DefaultBools(); }
+		MatrixInfoExt(RenderingContextID contextID, const MatrixInfo& info) :
+			MatrixInfoExt(info) {  }
+			
+		MatrixInfoExt(RenderingContextID contextID, const Mat4f& view = Mat4f(1.0f), const Mat4f& projection = Mat4f(1.0f), const Vec3f& camPos = Vec3f(0.0f))
+			: MatrixInfo(view, projection, camPos, contextID) { DefaultBools(); }
 		MatrixInfoExt(const Mat4f& view = Mat4f(1.0f), const Mat4f& projection = Mat4f(1.0f), const Vec3f& camPos = Vec3f(0.0f))
-			: MatrixInfo(view, projection, camPos) { DefaultBools(); }
+			: MatrixInfoExt(0, view, projection, camPos) { }
+
 		void SetUseMaterials(bool useMaterials) { bUseMaterials = useMaterials; }
 		void SetOnlyShadowCasters(bool onlyShadowCasters) { bOnlyShadowCasters = onlyShadowCasters; }
 		void SetCareAboutShader(bool careAboutShader) { bCareAboutShader = careAboutShader; }
@@ -74,9 +86,13 @@ namespace GEE
 	class SceneMatrixInfo : public MatrixInfoExt
 	{
 	public:
+		SceneMatrixInfo(RenderingContextID contextID, RenderToolboxCollection& tbCollection, GameSceneRenderData& sceneRenderData,
+			const Mat4f& view = Mat4f(1.0f), const Mat4f& projection = Mat4f(1.0f), const Vec3f& camPos = Vec3f(0.0f))
+			: MatrixInfoExt(contextID, view, projection, camPos), TbCollection(tbCollection), SceneRenderData(sceneRenderData) {}
+
 		SceneMatrixInfo(RenderToolboxCollection& tbCollection, GameSceneRenderData& sceneRenderData,
-						const Mat4f& view = Mat4f(1.0f), const Mat4f& projection = Mat4f(1.0f), const Vec3f& camPos = Vec3f(0.0f))
-			: MatrixInfoExt(view, projection, camPos), TbCollection(tbCollection), SceneRenderData(sceneRenderData) {}
+			const Mat4f& view = Mat4f(1.0f), const Mat4f& projection = Mat4f(1.0f), const Vec3f& camPos = Vec3f(0.0f))
+			: SceneMatrixInfo(0, tbCollection, sceneRenderData, view, projection, camPos) {}
 
 		RenderToolboxCollection& GetTbCollection() { return TbCollection; }
 		const RenderToolboxCollection& GetTbCollection() const { return TbCollection; }

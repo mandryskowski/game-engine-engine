@@ -165,7 +165,7 @@ namespace GEE
 			silhouetteTexture.Bind(0);
 			
 			//renderFunc();
-			Impl.RenderHandle.GetBasicShapeMesh(EngineBasicShape::QUAD).Bind(Impl.OpenGLContextID);
+			Impl.RenderHandle.GetBasicShapeMesh(EngineBasicShape::QUAD).Bind(info.GetContextID());
 			SceneMatrixInfo infoNoMaterials(info.GetTbCollection(), info.GetSceneRenderData());
 			infoNoMaterials.SetUseMaterials(false);
 			StaticMeshInstances(infoNoMaterials, { Impl.GetBasicShapeMesh(EngineBasicShape::QUAD) }, Transform(), *shader);

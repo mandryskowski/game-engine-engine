@@ -306,80 +306,6 @@ namespace GEE
 		return nullptr;
 	}
 
-	void RenderEngine::RenderLightProbes(GameSceneRenderData* sceneRenderData)
-	{
-		return;
-		if (sceneRenderData->LightProbes.empty())
-			return;
-
-		GameSettings::VideoSettings settings;
-		settings.AAType = AA_NONE;	//Disable SMAA; it doesn't work on HDR colorbuffers
-		settings.AALevel = SettingLevel::SETTING_ULTRA;
-		settings.bBloom = false;
-		settings.AmbientOcclusionSamples = 64;
-		settings.POMLevel = SettingLevel::SETTING_ULTRA;
-		settings.ShadowLevel = SettingLevel::SETTING_ULTRA;
-		settings.Resolution = Vec2u(1024);
-		settings.Shading = ShadingAlgorithm::SHADING_PBR_COOK_TORRANCE;
-		settings.MonitorGamma = 1.0f;	//Keep radiance data in linear space
-		settings.TMType = ToneMappingType::TM_NONE;	//Do not tonemap when rendering probes; we want to keep HDR data
-
-		std::cout << "Initting for " << sceneRenderData->LightProbes.size() << " probes.\n";
-		//Dispose();
-		//Init(Vec2u(1024));
-
-		RenderToolboxCollection probeRenderingCollection("LightProbeRendering", settings);
-		CurrentTbCollection = &probeRenderingCollection;
-		CurrentTbCollection->AddTbsRequiredBySettings();
-
-
-		//RenderInfo info;
-
-		//info.Projection = &p;
-
-		GEE_FB::Framebuffer framebuffer;
-		framebuffer.Generate();
-		framebuffer.Bind();
-		Viewport(Vec2u(1024)).SetOpenGLState();
-
-		Shader* gShader = probeRenderingCollection.GetTb<DeferredShadingToolbox>()->GeometryShader;
-
-		PrepareScene(probeRenderingCollection, sceneRenderData);
-
-		for (int i = 0; i < static_cast<int>(sceneRenderData->LightProbes.size()); i++)
-		{
-			LightProbeComponent* probe = sceneRenderData->LightProbes[i];
-			if (probe->GetShape() == EngineBasicShape::QUAD)
-				continue;
-			Vec3f camPos = probe->GetTransform().GetWorldTransform().GetPos();
-			Mat4f viewTranslation = glm::translate(Mat4f(1.0f), -camPos);
-			Mat4f p = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 100.0f);
-
-			SceneMatrixInfo info(probeRenderingCollection, *sceneRenderData);
-			info.SetView(viewTranslation);
-			info.SetProjection(p);
-			info.SetCamPosition(camPos);
-			gShader->Use();
-			CubemapRenderer(*this).FromScene(info, framebuffer, GEE_FB::FramebufferAttachment(probe->GetEnvironmentMap(), GEE_FB::AttachmentSlot::Color(0)), gShader, 0, true);
-
-			probe->GetEnvironmentMap().Bind();
-			glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
-			
-			LightProbeLoader::ConvoluteLightProbe(*sceneRenderData->LightProbes[i], sceneRenderData->LightProbes[i]->GetEnvironmentMap());
-			if (PrimitiveDebugger::bDebugProbeLoading)
-				printVector(camPos, "Rendering probe");
-		}
-
-		//Dispose();
-
-		//Init(Vec2u(GameHandle->GetGameSettings()->ViewportData.z, GameHandle->GetGameSettings()->ViewportData.w));
-		CurrentTbCollection = RenderTbCollections[0].get();
-		probeRenderingCollection.Dispose();
-		framebuffer.Dispose();
-
-		std::cout << "Initting done.\n";
-	}
-
 	void RenderEngine::RenderBoundInDebug(RenderInfo& info, GLenum mode, GLint first, GLint count, Vec3f color)
 	{
 		Shader* debugShader = FindShader("Debug");
@@ -389,25 +315,10 @@ namespace GEE
 		glDrawArrays(mode, first, count);
 	}
 
-	void RenderEngine::PreLoopPass()
-	{
-		for (int sceneIndex = 0; sceneIndex < static_cast<int>(ScenesRenderData.size()); sceneIndex++)
-		{
-			ScenesRenderData[sceneIndex]->SetupLights(sceneIndex);
-			for (int i = 0; i < 2; i++)
-			{
-				GLenum error = glGetError();
-				std::cout << "pre initting probes potential error " << "(" << sceneIndex << ") " << int(error) << "\n";
-				RenderLightProbes(ScenesRenderData[sceneIndex]);
-			}
-			ScenesRenderData[sceneIndex]->ProbesLoaded = true;
-		}
-	}
-
-	void RenderEngine::PrepareScene(RenderToolboxCollection& tbCollection, GameSceneRenderData* sceneRenderData)
+	void RenderEngine::PrepareScene(RenderingContextID contextID, RenderToolboxCollection& tbCollection, GameSceneRenderData* sceneRenderData)
 	{
 		if (sceneRenderData->ContainsLights() && (GameHandle->GetGameSettings()->Video.ShadowLevel > SettingLevel::SETTING_MEDIUM || sceneRenderData->HasLightWithoutShadowMap()))
-			ShadowMapRenderer(*this).ShadowMaps(tbCollection, *sceneRenderData, sceneRenderData->Lights);
+			ShadowMapRenderer(*this).ShadowMaps(contextID, tbCollection, *sceneRenderData, sceneRenderData->Lights);
 	}
 
 

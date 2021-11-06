@@ -158,6 +158,13 @@ namespace GEE
 		GameScene& Scene;
 	};
 
+	class GameSceneRenderDataRef
+	{
+	public:
+		GameSceneRenderDataRef(GameScene&);
+		GameSceneRenderDataRef(GameSceneRenderData&);
+	};
+
 	class GameSceneRenderData : public GameSceneData
 	{
 	public:

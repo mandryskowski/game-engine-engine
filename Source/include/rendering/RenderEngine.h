@@ -51,12 +51,9 @@ namespace GEE
 		virtual SharedPtr<Material> FindMaterial(std::string) override;
 		virtual Shader* FindShader(std::string) override;
 
-		void RenderLightProbes(GameSceneRenderData* sceneRenderData);
-
 		void RenderBoundInDebug(RenderInfo&, GLenum mode, GLint first, GLint count, Vec3f color = Vec3f(1.0f));
-		void PreLoopPass();
 
-		void PrepareScene(RenderToolboxCollection& tbCollection, GameSceneRenderData* sceneRenderData);	//Call this method once per frame for each scene that will be rendered in order to prepare stuff like shadow maps
+		void PrepareScene(RenderingContextID contextID, RenderToolboxCollection& tbCollection, GameSceneRenderData* sceneRenderData);	//Call this method once per frame for each scene that will be rendered in order to prepare stuff like shadow maps
 
 		void PrepareFrame();
 

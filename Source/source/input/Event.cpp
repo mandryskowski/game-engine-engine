@@ -74,13 +74,13 @@ namespace GEE
 		return std::string(1, static_cast<unsigned char>(Unicode));
 	}
 
-	SharedPtr<Event> EventHolder::PollEvent()
+	SharedPtr<Event> EventHolder::PollEvent(SystemWindow& window)
 	{
-		if (Events.empty())
+		if (Events[&window].empty())
 			return nullptr;
 
-		auto polledEvent = Events.front();
-		Events.pop();
+		auto polledEvent = Events[&window].front();
+		Events[&window].pop();
 
 		return polledEvent;
 	}

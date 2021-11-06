@@ -181,10 +181,10 @@ namespace GEE
 		std::transform(MeshInstances.begin(), MeshInstances.end(), std::back_inserter(meshInstances), [](UniquePtr<MeshInstance>& instVec) { return *instVec; });
 
 		if (SkelInfo && SkelInfo->GetBoneCount() > 0)
-			SkeletalMeshRenderer(*GameHandle->GetRenderEngineHandle(), 0).SkeletalMeshInstances(info, meshInstances, *SkelInfo, GetTransform().GetWorldTransform(), *shader);
+			SkeletalMeshRenderer(*GameHandle->GetRenderEngineHandle()).SkeletalMeshInstances(info, meshInstances, *SkelInfo, GetTransform().GetWorldTransform(), *shader);
 		else
 		{
-			Renderer(*GameHandle->GetRenderEngineHandle(), 0).StaticMeshInstances((CanvasPtr) ? (CanvasPtr->BindForRender(info, GameHandle->GetGameSettings()->WindowSize)) : (info), meshInstances, GetTransform().GetWorldTransform(), *shader, RenderAsBillboard);
+			Renderer(*GameHandle->GetRenderEngineHandle()).StaticMeshInstances((CanvasPtr) ? (CanvasPtr->BindForRender(info, GameHandle->GetGameSettings()->WindowSize)) : (info), meshInstances, GetTransform().GetWorldTransform(), *shader, RenderAsBillboard);
 			if (CanvasPtr)
 				CanvasPtr->UnbindForRender(GameHandle->GetGameSettings()->WindowSize);
 		}

@@ -246,52 +246,15 @@ namespace GEE
 
 		glfwWindowHint(GLFW_RESIZABLE, true);
 		glfwWindowHint(GLFW_DECORATED, true);
+
+		glfwSetCursorPosCallback(window, GLFWEventProcessor::CursorPosCallback);
+		glfwSetMouseButtonCallback(window, GLFWEventProcessor::MouseButtonCallback);
 		
 		OpenedWindows.push_back(window);
-		//PopupWindowsRendering.back().wait();
 
-		auto renderPopupFunc = [this](SystemWindow* window, int threadID)
-		{
-			std::cout << "thread " << threadID << "\n";
-			glfwMakeContextCurrent(window);
-			glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS_ARB);
-			glDebugMessageCallbackARB(DebugCallbacks::OpenGLDebug, nullptr);
-			glDebugMessageControlARB(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
+		GameScene& popupScene = CreateScene("GEE_E_Popup_Window", true);
 
-			while (true)
-			{
-
-				//std::cout << "waiting...\n";
-				std::unique_lock renderLock{ ShouldRenderMutex };
-				ShouldRenderVariable.wait(renderLock, [this]() { return bRenderingPopups; });
-				//std::cout << "waited...\n";
-
-				glDisable(GL_DEPTH_TEST);
-				glDisable(GL_CULL_FACE);
-				glBindFramebuffer(GL_FRAMEBUFFER, 0);
-				glViewport(0, 0, 400, 400);
-				glDrawBuffer(GL_BACK);
-				glClearColor(glm::abs(glm::cos((this->GetProgramRuntime()))), 0.3f, 0.8f, 1.0f);
-				glClear(GL_COLOR_BUFFER_BIT);
-
-				Material mat("", 0.0f, RenderEng.FindShader("Forward_NoLight"));
-				mat.SetColor(Vec4f(1.0f, 0.0f, 0.2f, 1.0f));
-
-				RenderEng.FindShader("Forward_NoLight")->Use();
-				mat.UpdateWholeUBOData(RenderEng.FindShader("Forward_NoLight"), Texture());
-
-				RenderEng.GetBasicShapeMesh(EngineBasicShape::QUAD).Bind(threadID);
-				Renderer(RenderEng, threadID).StaticMeshInstances(MatrixInfoExt(), { RenderEng.GetBasicShapeMesh(EngineBasicShape::QUAD) }, Transform(), *RenderEng.FindShader("Forward_NoLight"));
-
-				//glFlush();
-				glfwSwapBuffers(window);
-
-				bRenderingPopups = false;
-				ShouldRenderVariable.notify_one();
-			}
-		};
-
-		//PopupRenderThreads.push_back(std::thread(renderPopupFunc, window, OpenedWindows.size()));
+		popupScene.CreateActorAtRoot<UIButtonActor>("CreateComponentButton", "Create component", nullptr, Transform(Vec2f(0.0f), Vec2f(0.8f)));
 	}
 
 	void GameEngineEngineEditor::UpdateGameSettings()
@@ -359,7 +322,7 @@ namespace GEE
 				}
 
 				MousePickingRenderer renderer(RenderEng);
-				SceneMatrixInfo info = scene.GetActiveCamera()->GetRenderInfo(*ViewportRenderCollection);
+				SceneMatrixInfo info = scene.GetActiveCamera()->GetRenderInfo(0, *ViewportRenderCollection);
 				Component* pickedComponent = renderer.PickComponent(info, scene, GetGameSettings()->Video.Resolution, static_cast<Vec2u>((localMousePos * 0.5f + 0.5f) * static_cast<Vec2f>(GetGameSettings()->Video.Resolution)), allComponents);
 
 				if (pickedComponent && GetInputRetriever().IsKeyPressed(Key::LeftAlt)) // Pick the root component if left alt is pressed
@@ -493,7 +456,7 @@ namespace GEE
 				gammaInputBox.SetOnInputFunc([this](float val) { GetGameSettings()->Video.MonitorGamma = val; UpdateGameSettings(); }, [this]()->float { return GetGameSettings()->Video.MonitorGamma; });
 
 				window.AddField("Default font").GetTemplates().PathInput([this](const std::string& path) { Fonts.push_back(MakeShared<Font>(*DefaultFont)); *DefaultFont = *EngineDataLoader::LoadFont(*this, path); }, [this]() {return GetDefaultFont()->GetPath(); }, { "*.ttf", "*.otf" });
-				window.AddField("Rebuild light probes").CreateChild<UIButtonActor>("RebuildProbesButton", "Rebuild", [this]() { SceneRenderer(RenderEng, 0).PreRenderLoopPassStatic(GetSceneRenderDatas()); });
+				window.AddField("Rebuild light probes").CreateChild<UIButtonActor>("RebuildProbesButton", "Rebuild", [this]() { SceneRenderer(RenderEng, 0).PreRenderLoopPassStatic(0, GetSceneRenderDatas()); });
 
 				{
 					auto& aaSelectionList = window.AddField("Anti-aliasing").CreateChild<UIAutomaticListActor>("AASelectionList", Vec3f(2.0f, 0.0f, 0.0f));
@@ -727,7 +690,7 @@ namespace GEE
 			return;
 		}
 
-		while (SharedPtr<Event> polledEvent = EventHolderObj.PollEvent())
+		while (SharedPtr<Event> polledEvent = EventHolderObj.PollEvent(*Window))
 		{
 			if (polledEvent->GetType() == EventType::KeyPressed)
 			{
@@ -775,6 +738,14 @@ namespace GEE
 
 			if (ActiveScene)
 				ActiveScene->HandleEventAll(*polledEvent);
+		}
+
+		for (auto& window : OpenedWindows)
+		{
+			while (SharedPtr<Event> polledEvent = EventHolderObj.PollEvent(*window))
+			{
+				GetScene("GEE_E_Popup_Window")->HandleEventAll(*polledEvent);
+			}
 		}
 	}
 
@@ -1075,14 +1046,14 @@ namespace GEE
 		if (GetMainScene() && GetMainScene()->ActiveCamera)
 		{
 			//Render 3D scene
-			RenderEng.PrepareScene(*ViewportRenderCollection, GetMainScene()->GetRenderData());
-			SceneRenderer(RenderEng, 0, &ViewportRenderCollection->GetTb<FinalRenderTargetToolbox>()->GetFinalFramebuffer()).FullRender(GetMainScene()->ActiveCamera->GetRenderInfo(*ViewportRenderCollection), Viewport(Vec2f(0.0f)), true, false,
+			RenderEng.PrepareScene(0, *ViewportRenderCollection, GetMainScene()->GetRenderData());
+			SceneRenderer(RenderEng, &ViewportRenderCollection->GetTb<FinalRenderTargetToolbox>()->GetFinalFramebuffer()).FullRender(GetMainScene()->ActiveCamera->GetRenderInfo(0, *ViewportRenderCollection), Viewport(Vec2f(0.0f)), true, false,
 				[&](GEE_FB::Framebuffer& mainFramebuffer) {
 				if (bDebugRenderComponents)
 				{
 					mainFramebuffer.SetDrawSlot(0);
 					RenderEng.FindShader("Forward_NoLight")->Use();
-					GetMainScene()->GetRootActor()->DebugRenderAll(GetMainScene()->ActiveCamera->GetRenderInfo(*ViewportRenderCollection), RenderEng.FindShader("Forward_NoLight"));
+					GetMainScene()->GetRootActor()->DebugRenderAll(GetMainScene()->ActiveCamera->GetRenderInfo(0, *ViewportRenderCollection), RenderEng.FindShader("Forward_NoLight"));
 					mainFramebuffer.SetDrawSlots();
 				}
 				});// , Viewport(Vec2f(0.0f), Settings->Video.Resolution)/*Viewport((static_cast<Vec2f>(Settings->WindowSize) - Settings->Video.Resolution) / Vec2f(2.0f, 1.0f), Vec2f(Settings->Video.Resolution.x, Settings->Video.Resolution.y))*/);
@@ -1091,7 +1062,7 @@ namespace GEE
 			{
 				std::function<void(Component&)> renderAllColObjs = [this, &renderAllColObjs](Component& comp) {
 					if (comp.GetCollisionObj() && comp.GetName() != "Counter")
-						CollisionObjRendering(GetMainScene()->ActiveCamera->GetRenderInfo(*ViewportRenderCollection), *this, *comp.GetCollisionObj(), comp.GetTransform().GetWorldTransform(), (SelectedComp && SelectedComp == &comp) ? (Vec3f(0.1f, 0.6f, 0.3f)) : (Vec3f(0.063f, 0.325f, 0.071f)));
+						CollisionObjRendering(GetMainScene()->ActiveCamera->GetRenderInfo(0, *ViewportRenderCollection), *this, *comp.GetCollisionObj(), comp.GetTransform().GetWorldTransform(), (SelectedComp && SelectedComp == &comp) ? (Vec3f(0.1f, 0.6f, 0.3f)) : (Vec3f(0.063f, 0.325f, 0.071f)));
 
 					for (auto& child : comp.GetChildren())
 						renderAllColObjs(*child);
@@ -1118,16 +1089,16 @@ namespace GEE
 		if (renderEditorScene)
 		{
 			///Render editor scene
-			SceneMatrixInfo info = EditorScene->ActiveCamera->GetRenderInfo(*HUDRenderCollection);
-			RenderEng.PrepareScene(*HUDRenderCollection, EditorScene->GetRenderData());
+			SceneMatrixInfo info = EditorScene->ActiveCamera->GetRenderInfo(0, *HUDRenderCollection);
+			RenderEng.PrepareScene(0, *HUDRenderCollection, EditorScene->GetRenderData());
 			SceneRenderer(RenderEng).FullRender(info, Viewport(Vec2f(0.0f), Vec2f(Settings->WindowSize)), true, true);
 		}
 
 		if (GameScene* mainMenuScene = GetScene("GEE_Main_Menu"))
 			if (mainMenuScene->GetActiveCamera())
 			{
-				SceneMatrixInfo info = mainMenuScene->ActiveCamera->GetRenderInfo(*HUDRenderCollection);
-				RenderEng.PrepareScene(*HUDRenderCollection, mainMenuScene->GetRenderData());
+				SceneMatrixInfo info = mainMenuScene->ActiveCamera->GetRenderInfo(0, *HUDRenderCollection);
+				RenderEng.PrepareScene(0, *HUDRenderCollection, mainMenuScene->GetRenderData());
 				SceneRenderer(RenderEng).FullRender(info, Viewport(Vec2f(0.0f), Vec2f(Settings->WindowSize)), !renderEditorScene, true);
 			}
 			
@@ -1135,9 +1106,9 @@ namespace GEE
 			if (meshPreviewScene->GetActiveCamera())
 			{
 				RenderToolboxCollection& renderTbCollection = **std::find_if(RenderEng.RenderTbCollections.begin(), RenderEng.RenderTbCollections.end(), [](const UniquePtr<RenderToolboxCollection>& tbCol) { return tbCol->GetName() == "GEE_E_Mesh_Preview_Toolbox_Collection"; });
-				SceneMatrixInfo info = meshPreviewScene->ActiveCamera->GetRenderInfo(renderTbCollection);
-				RenderEng.PrepareScene(renderTbCollection, meshPreviewScene->GetRenderData());
-				SceneRenderer(RenderEng, 0, &renderTbCollection.GetTb<FinalRenderTargetToolbox>()->GetFinalFramebuffer()).FullRender(info);
+				SceneMatrixInfo info = meshPreviewScene->ActiveCamera->GetRenderInfo(0, renderTbCollection);
+				RenderEng.PrepareScene(0, renderTbCollection, meshPreviewScene->GetRenderData());
+				SceneRenderer(RenderEng, &renderTbCollection.GetTb<FinalRenderTargetToolbox>()->GetFinalFramebuffer()).FullRender(info);
 			}
 
 		if (EditorScene)
@@ -1147,53 +1118,6 @@ namespace GEE
 
 		glfwSwapBuffers(Window);
 
-		/*if (!OpenedWindows.empty())
-		{
-			bRenderingPopups = true;
-			ShouldRenderVariable.notify_one();
-
-			std::unique_lock renderLock(ShouldRenderMutex);
-			ShouldRenderVariable.wait(renderLock, [this]() { return !bRenderingPopups; });
-		}*/
-		 
-		
-		//std::vector<std::future<void>> popupThreads;
-		//popupThreads.reserve(OpenedWindows.size());
-
-
-		/*if (!OpenedWindows.empty())
-		{
-			std::thread popup(renderPopupFunc, OpenedWindows.front(), 1);
-			popup.join();
-		}*/
-		
-		/*for (auto& window : OpenedWindows)
-		{
-			glfwMakeContextCurrent(window);
-			glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS_ARB);
-			glDebugMessageCallbackARB(DebugCallbacks::OpenGLDebug, nullptr);
-			glDebugMessageControlARB(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
-
-			glDisable(GL_DEPTH_TEST);
-			glDisable(GL_CULL_FACE);
-			glBindFramebuffer(GL_FRAMEBUFFER, 0);
-			glViewport(0, 0, 400, 400);
-			glDrawBuffer(GL_BACK);
-			glClearColor(glm::abs(glm::cos((this->GetProgramRuntime()))), 0.3f, 0.8f, 1.0f);
-			glClear(GL_COLOR_BUFFER_BIT);
-
-			Material mat("", 0.0f, RenderEng.FindShader("Forward_NoLight"));
-			mat.SetColor(Vec4f(1.0f, 0.0f, 0.2f, 1.0f));
-
-			RenderEng.FindShader("Forward_NoLight")->Use();
-			//mat.UpdateWholeUBOData(RenderEng.FindShader("Forward_NoLight"), RenderEng.GetEmptyTexture());
-
-			RenderEng.GetBasicShapeMesh(EngineBasicShape::QUAD).Bind(1);
-			Renderer(RenderEng, 1).StaticMeshInstances(MatrixInfoExt(), { RenderEng.GetBasicShapeMesh(EngineBasicShape::QUAD) }, Transform(), *RenderEng.FindShader("Forward_NoLight"));
-
-			glfwSwapBuffers(window);
-		}*/
-
 		for (auto& window : OpenedWindows)
 		{
 			glfwMakeContextCurrent(window);
@@ -1201,14 +1125,16 @@ namespace GEE
 			glDebugMessageCallbackARB(DebugCallbacks::OpenGLDebug, nullptr);
 			glDebugMessageControlARB(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
 
-			glDisable(GL_DEPTH_TEST);
+			glEnable(GL_DEPTH_TEST);
 			glDisable(GL_CULL_FACE);
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 			glViewport(0, 0, 400, 400);
 			glDrawBuffer(GL_BACK);
 			glClearColor(glm::abs(glm::cos((this->GetProgramRuntime()))), 0.3f, 0.8f, 1.0f);
-			glClear(GL_COLOR_BUFFER_BIT);
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+			SceneMatrixInfo info(1, *ViewportRenderCollection, *GetScene("GEE_E_Popup_Window")->GetRenderData(), Mat4f(1.0f), glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, 1.0f, -2550.0f), Vec3f(0.0f));
+			info.SetCareAboutShader(true);
 			Material mat("", 0.0f, RenderEng.FindShader("Forward_NoLight"));
 			mat.SetColor(Vec4f(1.0f, 0.0f, 0.2f, 1.0f));
 
@@ -1216,10 +1142,11 @@ namespace GEE
 			mat.UpdateWholeUBOData(RenderEng.FindShader("Forward_NoLight"), RenderEng.GetEmptyTexture());
 
 			RenderEng.GetBasicShapeMesh(EngineBasicShape::QUAD).Bind(1);
-			Renderer(RenderEng, 1).StaticMeshInstances(MatrixInfoExt(), { MeshInstance(RenderEng.GetBasicShapeMesh(EngineBasicShape::QUAD), &mat) }, Transform(), *RenderEng.FindShader("Forward_NoLight"));
+			//Renderer(RenderEng).StaticMeshInstances(MatrixInfoExt(1, Mat4f(1.0f), Mat4f(1.0f), Vec3f(0.0f)), { MeshInstance(RenderEng.GetBasicShapeMesh(EngineBasicShape::QUAD), &mat) }, Transform(), *RenderEng.FindShader("Forward_NoLight"));
 
-
-
+			//GetScene("GEE_E_Popup_Window")->FindActor("CreateComponentButton")->GetRoot()->GetComponent<RenderableComponent>("CreateComponentButton's_Button_Model")->Render(info, RenderEng.FindShader("Forward_NoLight"));
+			//SceneRenderer(RenderEng).FullRender());
+			SceneRenderer(RenderEng).RawUIScene(info);
 
 			glfwSwapBuffers(window);
 		}
@@ -1241,7 +1168,7 @@ namespace GEE
 		SetActiveScene(EditorScene);
 		SelectScene(GetMainScene(), *EditorScene);
 		
-		SceneRenderer(RenderEng, 0).PreRenderLoopPassStatic(GetSceneRenderDatas());
+		SceneRenderer(RenderEng, 0).PreRenderLoopPassStatic(0, GetSceneRenderDatas());
 
 		UpdateRecentProjects();
 

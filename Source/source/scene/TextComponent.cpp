@@ -331,13 +331,6 @@ namespace GEE
 		glDisable(GL_SCISSOR_TEST);
 	}
 
-	Transform ScrollingTextComponent::GetParentWorldTransform() const
-	{
-		if (GetTransform().GetParentTransform())
-			return GetTransform().GetParentTransform()->GetWorldTransform();
-		return Transform();
-	}
-
 	float textUtil::GetTextLength(const std::string& str, const Vec2f& textScale, const Font& font)
 	{
 		std::vector<float> advancesSums = { 0.0f };

@@ -254,10 +254,6 @@ namespace GEE
 
 	void Game::PreGameLoop()
 	{
-		std::cout << "Render pass started.\n";
-		RenderEng.PreLoopPass();
-		std::cout << "Render pass done.\n";
-
 		float lastUpdateTime = (float)glfwGetTime();
 		const float timeStep = 1.0f / 60.0f;
 		float deltaTime = 0.0f;
@@ -326,7 +322,7 @@ namespace GEE
 
 	void Game::HandleEvents()
 	{
-		while (SharedPtr<Event> polledEvent = EventHolderObj.PollEvent())
+		while (SharedPtr<Event> polledEvent = EventHolderObj.PollEvent(*Window))
 		{
 			for (int i = 0; i < static_cast<int>(Scenes.size()); i++)
 				Scenes[i]->RootActor->HandleEventAll(*polledEvent);
@@ -373,7 +369,7 @@ namespace GEE
 
 	void GLFWEventProcessor::CursorPosCallback(SystemWindow* window, double xpos, double ypos)
 	{
-		TargetHolder->Events.push(MakeShared<CursorMoveEvent>(CursorMoveEvent(EventType::MouseMoved, Vec2f(static_cast<float>(xpos), static_cast<float>(ypos)))));
+		TargetHolder->PushEvent(*window, CursorMoveEvent(EventType::MouseMoved, Vec2f(static_cast<float>(xpos), static_cast<float>(ypos))));
 
 		if (!mouseController || !TargetHolder)
 			return;
@@ -389,17 +385,17 @@ namespace GEE
 
 	void GLFWEventProcessor::MouseButtonCallback(SystemWindow* window, int button, int action, int mods)
 	{
-		TargetHolder->Events.push(MakeShared<MouseButtonEvent>(MouseButtonEvent((action == GLFW_PRESS) ? (EventType::MousePressed) : (EventType::MouseReleased), static_cast<MouseButton>(button), mods)));
+		TargetHolder->PushEvent(*window, MouseButtonEvent((action == GLFW_PRESS) ? (EventType::MousePressed) : (EventType::MouseReleased), static_cast<MouseButton>(button), mods));
 	}
 
-	void GLFWEventProcessor::KeyPressedCallback(SystemWindow*, int key, int scancode, int action, int mods)
+	void GLFWEventProcessor::KeyPressedCallback(SystemWindow* window, int key, int scancode, int action, int mods)
 	{
-		TargetHolder->Events.push(MakeShared<KeyEvent>(KeyEvent((action == GLFW_PRESS) ? (EventType::KeyPressed) : ((action == GLFW_REPEAT) ? (EventType::KeyRepeated) : (EventType::KeyReleased)), static_cast<Key>(key), mods)));
+		TargetHolder->PushEvent(*window, KeyEvent((action == GLFW_PRESS) ? (EventType::KeyPressed) : ((action == GLFW_REPEAT) ? (EventType::KeyRepeated) : (EventType::KeyReleased)), static_cast<Key>(key), mods));
 	}
 
-	void GLFWEventProcessor::CharEnteredCallback(SystemWindow*, unsigned int codepoint)
+	void GLFWEventProcessor::CharEnteredCallback(SystemWindow* window, unsigned int codepoint)
 	{
-		TargetHolder->Events.push(MakeShared<CharEnteredEvent>(CharEnteredEvent(EventType::CharacterEntered, codepoint)));
+		TargetHolder->PushEvent(*window, CharEnteredEvent(EventType::CharacterEntered, codepoint));
 	}
 
 	void GLFWEventProcessor::ScrollCallback(SystemWindow* window, double offsetX, double offsetY)
@@ -407,8 +403,8 @@ namespace GEE
 		std::cout << "Scrolled " << offsetX << ", " << offsetY << "\n";
 		Vec2d cursorPos(0.0);
 		glfwGetCursorPos(window, &cursorPos.x, &cursorPos.y);
-		TargetHolder->Events.push(MakeShared<MouseScrollEvent>(MouseScrollEvent(EventType::MouseScrolled, Vec2f(static_cast<float>(-offsetX), static_cast<float>(offsetY)))));
-		TargetHolder->Events.push(MakeShared<CursorMoveEvent>(CursorMoveEvent(EventType::MouseMoved, Vec2f(cursorPos))));	//When we scroll (e.g. a canvas), it is possible that some buttons or other objects relying on cursor position might be scrolled (moved) as well, so we need to create a CursorMoveEvent.
+		TargetHolder->PushEvent(*window, MouseScrollEvent(EventType::MouseScrolled, Vec2f(static_cast<float>(-offsetX), static_cast<float>(offsetY))));
+		TargetHolder->PushEvent(*window, CursorMoveEvent(EventType::MouseMoved, Vec2f(cursorPos)));	//When we scroll (e.g. a canvas), it is possible that some buttons or other objects relying on cursor position might be scrolled (moved) as well, so we need to create a CursorMoveEvent.
 	}
 
 	void GLFWEventProcessor::FileDropCallback(SystemWindow* window, int count, const char** paths)
