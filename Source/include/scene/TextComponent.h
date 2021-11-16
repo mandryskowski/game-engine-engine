@@ -67,7 +67,13 @@ namespace GEE
 																*/
 	};
 
-
+	enum class UISpace
+	{
+		Local,
+		World,
+		Canvas,
+		Window
+	};
 
 	class TextConstantSizeComponent : public TextComponent
 	{
@@ -81,14 +87,14 @@ namespace GEE
 		void UpdateSize();
 		/**
 		 * @brief Recalculates the ScaleRatio based on the scale of this Component's Transform.
-		 * @param world: If true, the world transform (or canvas world transform) is used to compute ScaleRatio. Otherwise, we use the local transform.
+		 * @param space: The space to be used in order to compute ScaleRatio. You can use local/world transform, canvas and window space.
 		*/
-		void RecalculateScaleRatio(bool world = false);
+		void RecalculateScaleRatio(UISpace space);
 		/**
 		 * @brief Unstretch the text (make the scale uniform) based on this Component's Transform. The scale X and Y will be set to the smallest component of the two.
-		 * @param world: If true, the world transform (or canvas world transform) is used to compute ScaleRatio (which will unstretch the text). Otherwise, we use the local transform.
+		 * @param space: The space to be used in order to compute ScaleRatio. You can use local/world transform, canvas and window space.
 		*/
-		void Unstretch(bool world = true);
+		void Unstretch(UISpace space = UISpace::Window);
 
 	private:
 		Vec2f MaxSize, ScaleRatio;

@@ -222,7 +222,8 @@ namespace GEE
 		static GameManager& Get();
 	public:
 		virtual void AddInterpolation(const Interpolation&) = 0;
-		virtual GameScene& CreateScene(const std::string& name, bool isAnUIScene = false) = 0;
+		virtual GameScene& CreateScene(std::string name, bool disallowChangingNameIfTaken = true) = 0;
+		virtual GameScene& CreateUIScene(std::string name, SystemWindow& associateWindow, bool disallowChangingNameIfTaken = true) = 0;
 
 		virtual void BindAudioListenerTransformPtr(Transform*) = 0;
 		virtual void UnbindAudioListenerTransformPtr(Transform* transform) = 0;

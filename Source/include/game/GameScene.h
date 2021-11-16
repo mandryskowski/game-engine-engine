@@ -10,6 +10,7 @@ namespace GEE
 	class RenderableVolume;
 
 	class GameSceneRenderData;
+	class GameSceneUIData;
 	namespace Physics
 	{
 		class GameScenePhysicsData;
@@ -19,10 +20,16 @@ namespace GEE
 		class GameSceneAudioData;
 	}
 
+	namespace Editor
+	{
+		class GameEngineEngineEditor;
+	}
+
 	class GameScene
 	{
 	public:
-		GameScene(GameManager&, const std::string& name, bool isAnUIScene = false);
+		GameScene(GameManager&, const std::string& name);
+		GameScene(GameManager&, const std::string& name, bool isAnUIScene, SystemWindow& associatedWindow);
 		GameScene(const GameScene&) = delete;
 		GameScene(GameScene&&);
 
@@ -33,6 +40,7 @@ namespace GEE
 		GameSceneRenderData* GetRenderData();
 		Physics::GameScenePhysicsData* GetPhysicsData();
 		Audio::GameSceneAudioData* GetAudioData();
+		GameSceneUIData* GetUIData();
 		GameManager* GetGameHandle();
 		/**
 		 * @brief Use the function to check if this is a valid scene. If it returns true, you should remove all references to the scene and avoid processing it at all. The root actor, its children and their components become invalid along with the scene.
@@ -48,25 +56,6 @@ namespace GEE
 		* @param postLoadLambda: the lambda that will be called after the scene will be loaded
 		*/
 		void AddPostLoadLambda(std::function<void()> postLoadLambda);
-
-		/**
-		 * @brief Add a UICanvas to check every frame if it contains the cursor. This information can be used to disable some input outside the canvas that contains the cursor. Should be called automatically by the constructor of UICanvasActor.
-		 * @see UICanvasActor::UICanvasActor()
-		 * @param canvas: the canvas to be added
-		*/
-		void AddBlockingCanvas(UICanvas& canvas);
-		/**
-		 * @brief Erase a UICanvas to stop checking every frame if it contains a cursor. Must be called when the UICanvas is about to be killed (gets destroyed). Should be called automatically by the destructor of UICanvasActor.
-		 * @see UICanvasActor::~UICanvasActor()
-		 * @param canvas: the canvas to be erased
-		*/
-		void EraseBlockingCanvas(UICanvas& canvas);
-
-		/**
-		 * @brief Get the canvas that contains the cursor in this frame. Events handled by UIElements outside the canvas should be treated differently.
-		 * @return a UICanvas pointer to the blocking canvas (or nullptr if there isn't any)
-		*/
-		UICanvas* GetCurrentBlockingCanvas() const;
 
 		/**
 		 * @brief Returns an actor name that is guaranteed to be unique (no other actor in the scene has it). Always use this function if there is a possibility of duplicating actor names - this can cause crashes.
@@ -98,7 +87,7 @@ namespace GEE
 		}
 
 		~GameScene();
-		//private:
+		//private:	
 		void MarkAsKilled(); //Note: this should probably be encapsulated
 
 
@@ -118,9 +107,73 @@ namespace GEE
 		UniquePtr<GameSceneRenderData> RenderData;
 		UniquePtr<Physics::GameScenePhysicsData> PhysicsData;
 		UniquePtr<Audio::GameSceneAudioData> AudioData;
+		UniquePtr<GameSceneUIData> UIData;
 
 		std::vector<UniquePtr<HierarchyTemplate::HierarchyTreeT>> HierarchyTrees;
 
+
+		std::vector<std::function<void()>> PostLoadLambdas;
+
+		CameraComponent* ActiveCamera;
+
+		bool bKillingProcessStarted;
+
+		friend class Game;
+		friend class Editor::GameEngineEngineEditor;
+	};
+
+	class GameSceneData
+	{
+	public:
+		GameSceneData(GameScene& scene);
+
+		std::string GetSceneName() const;
+	protected:
+		GameScene& GetScene();
+		const GameScene& GetScene() const;
+
+		GameScene& Scene;
+	};
+
+	class GameSceneRenderDataRef
+	{
+	public:
+		GameSceneRenderDataRef(GameScene&);
+		GameSceneRenderDataRef(GameSceneRenderData&);
+	};
+
+	/**
+	 * @brief Only for UI scenes.
+	*/
+	class GameSceneUIData : public GameSceneData
+	{
+	public:
+		GameSceneUIData(GameScene&, SystemWindow&);
+		GameSceneUIData(const GameSceneUIData&) = delete;
+
+		WindowData GetWindowData();
+		SystemWindow* GetWindow();
+		/**
+		 * @brief Add a UICanvas to check every frame if it contains the cursor. This information can be used to disable some input outside the canvas that contains the cursor. Should be called automatically by the constructor of UICanvasActor.
+		 * @see UICanvasActor::UICanvasActor()
+		 * @param canvas: the canvas to be added
+		*/
+		void AddBlockingCanvas(UICanvas& canvas);
+		/**
+		 * @brief Erase a UICanvas to stop checking every frame if it contains a cursor. Must be called when the UICanvas is about to be killed (gets destroyed). Should be called automatically by the destructor of UICanvasActor.
+		 * @see UICanvasActor::~UICanvasActor()
+		 * @param canvas: the canvas to be erased
+		*/
+		void EraseBlockingCanvas(UICanvas& canvas);
+
+		/**
+		 * @brief Get the canvas that contains the cursor in this frame. Events handled by UIElements outside the canvas should be treated differently.
+		 * @return a UICanvas pointer to the blocking canvas (or nullptr if there isn't any)
+		*/
+		UICanvas* GetCurrentBlockingCanvas() const;
+
+		void HandleEventAll(const Event&);
+	private:
 		/**
 		* @brief If the cursor is contained within one of these canvases, you most likely should disable some interaction with UI elements outside the canvas.
 		* The canvas with the highest depth has the priority if a mouse is contained within many canvases (if many canvases with the same depth contain the cursor, one will be chosen).
@@ -135,34 +188,13 @@ namespace GEE
 		*/
 		UICanvas* CurrentBlockingCanvas;
 
-
-		std::vector<std::function<void()>> PostLoadLambdas;
-
-		CameraComponent* ActiveCamera;
-
-		bool bKillingProcessStarted;
-
-		friend class Game;
-		friend class GameEngineEngineEditor;
-	};
-
-	class GameSceneData
-	{
-	public:
-		GameSceneData(GameScene& scene);
-		std::string GetSceneName() const;
-	protected:
-
-		GameScene& GetScene();
-		const GameScene& GetScene() const;
-		GameScene& Scene;
-	};
-
-	class GameSceneRenderDataRef
-	{
-	public:
-		GameSceneRenderDataRef(GameScene&);
-		GameSceneRenderDataRef(GameSceneRenderData&);
+		/**
+		 * @brief Optional window that can be associated with this GameScene.
+		 * Generally, you don't have to do it for 3D scenes.
+		 * For UI scenes you almost always have to do it.
+		 * The AssociatedWindow is used mostly for converting NDC to px - e.g. to render elements inside an UICanvas.
+		*/
+		SystemWindow* AssociatedWindow;
 	};
 
 	class GameSceneRenderData : public GameSceneData

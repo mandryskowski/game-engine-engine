@@ -28,4 +28,20 @@ namespace GEE
 			Actor(scene, parentActor, name, t),
 			UIActor(parentActor) {}
 	};
+
+
+	/*void ShowHideElements(Actor& actor, bool hide)
+	{
+		for (auto it : actor.GetChildren())
+		{
+			ShowHideElements(*it, hide);
+		}
+
+		std::vector<RenderableComponent*> renderables;
+		actor.GetRoot()->GetAllComponents<RenderableComponent>(&renderables);
+		bExpanded = !bExpanded;
+		for (auto& it : renderables)
+			it->SetHide(!bExpanded);
+
+	}*/
 }

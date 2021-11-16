@@ -13,6 +13,8 @@ namespace GEE
 	class UIActorDefault;
 	class UIElementTemplates;
 
+	class PopupDescription;
+
 	class UICanvasActor : public Actor, public UICanvas
 	{
 	public:
@@ -34,6 +36,7 @@ namespace GEE
 				CanvasParent = nullptr;
 		}
 
+		void SetPopupCreationFunc(std::function<void(PopupDescription)>);
 		virtual void SetCanvasView(const Transform&) override;
 		/**
 		 * @return The ModelComponent that is the canvas background. Can be nullptr.
@@ -67,8 +70,8 @@ namespace GEE
 		virtual void HandleEvent(const Event& ev) override;
 		virtual void HandleEventAll(const Event& ev) override;
 
-		virtual SceneMatrixInfo BindForRender(const SceneMatrixInfo&, const Vec2u& res) override;
-		virtual void UnbindForRender(const Vec2u& res) override;
+		virtual SceneMatrixInfo BindForRender(const SceneMatrixInfo&) override;
+		virtual void UnbindForRender() override;
 
 		~UICanvasActor();
 	protected:
@@ -87,6 +90,7 @@ namespace GEE
 		ModelComponent* CanvasBackground;
 
 		UICanvasActor* CanvasParent;
+		std::function<void(PopupDescription)> PopupCreationFunc;
 	};
 
 	class UICanvasFieldCategory : public UIAutomaticListActor
@@ -113,13 +117,13 @@ namespace GEE
 	class EditorDescriptionBuilder
 	{
 	public:
-		EditorDescriptionBuilder(EditorManager& editorHandle, UICanvasFieldCategory&);
-		EditorDescriptionBuilder(EditorManager&, UIActorDefault&);
-		EditorDescriptionBuilder(EditorManager&, Actor&, UICanvas&);
+		EditorDescriptionBuilder(Editor::EditorManager& editorHandle, UICanvasFieldCategory&);
+		EditorDescriptionBuilder(Editor::EditorManager&, UIActorDefault&);
+		EditorDescriptionBuilder(Editor::EditorManager&, Actor&, UICanvas&);
 		GameScene& GetEditorScene();
 		UICanvas& GetCanvas();
 		Actor& GetDescriptionParent();
-		EditorManager& GetEditorHandle();
+		Editor::EditorManager& GetEditorHandle();
 
 		UICanvasField& AddField(const std::string& name, std::function<Vec3f()> getFieldOffsetFunc = nullptr);	//equivalent to GetCanvasActor().AddField(...). I put it here for easier access.
 		UICanvasFieldCategory& AddCategory(const std::string& name);
@@ -133,7 +137,7 @@ namespace GEE
 
 		void DeleteDescription();
 	private:
-		EditorManager& EditorHandle;
+		Editor::EditorManager& EditorHandle;
 		GameScene& EditorScene;
 		Actor& DescriptionParent;
 		UICanvas& CanvasRef;

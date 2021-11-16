@@ -194,11 +194,12 @@ namespace GEE
 	class CursorMoveEvent : public Event
 	{
 	public:
-		CursorMoveEvent(EventType, Vec2u newPosition);
-		Vec2u GetNewPosition() const;
+		CursorMoveEvent(EventType, Vec2f newPositionPx, Vec2u windowSizePx);
+		CursorMoveEvent(EventType, Vec2f newPositionNDC);
+		Vec2f GetNewPositionNDC() const;
 
 	private:
-		Vec2u NewPosition;
+		Vec2f NewPositionNDC;
 	};
 
 	class MouseButtonEvent : public Event

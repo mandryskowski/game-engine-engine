@@ -31,7 +31,40 @@ namespace GEE
 		return str.str();
 	}
 
+	template <typename InputIt, typename UnaryFunction>
+	std::string GetUniqueName(InputIt first, InputIt last, UnaryFunction&& getNameOfObjectFunc, const std::string& name)
+	{
+		// If name is not repeated, return the name because it's unique.
+		if (std::find_if(first, last, [&](auto& obj) { return getNameOfObjectFunc(obj) == name; }) == last)
+			return name;
+
+		int addedIndex = 1;
+		std::string currentNameCandidate = name + std::to_string(addedIndex);
+
+		while (std::find_if(first, last, [&](auto& obj) { return getNameOfObjectFunc(obj) == currentNameCandidate; }) != last)
+			currentNameCandidate = name + std::to_string(++addedIndex);
+
+		return currentNameCandidate;
+	}
+
 	using SystemWindow = GLFWwindow;
+	class WindowData
+	{
+	public:
+		WindowData(SystemWindow&);
+		Vec2d GetMousePositionPx() const;
+		Vec2d GetMousePositionNDC() const;
+
+		Vec2i GetWindowSize() const;
+	private:
+		SystemWindow& WindowRef;
+	};
+
+	namespace pxConversion
+	{
+		Vec2d PxToNDC(Vec2d pos, Vec2i windowSize);
+		Vec2d NDCToPx(Vec2d pos, Vec2i windowSize);
+	}
 
 	enum InterpolationType
 	{

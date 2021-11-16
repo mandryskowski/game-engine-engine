@@ -47,7 +47,7 @@ namespace GEE
 		uiButtonActorUtil::ButtonMatsFromAtlas(*CloseButton, closeIconMat, 0.0f, 1.0f, 2.0f);
 
 		DragButton = &CreateChild<UIScrollBarActor>("GEE_E_Drag_Button");
-		DragButton->SetWhileBeingClickedFunc([this]() { this->GetTransform()->Move(static_cast<Vec2f>(GameHandle->GetInputRetriever().GetMousePositionNDC()) - DragButton->GetClickPosNDC()); DragButton->SetClickPosNDC(GameHandle->GetInputRetriever().GetMousePositionNDC()); });
+		DragButton->SetWhileBeingClickedFunc([this]() { this->GetTransform()->Move(static_cast<Vec2f>(Scene.GetUIData()->GetWindowData().GetMousePositionNDC()) - DragButton->GetClickPosNDC()); DragButton->SetClickPosNDC(Scene.GetUIData()->GetWindowData().GetMousePositionNDC()); });
 		DragButton->SetTransform(Transform(Vec2f(0.0f, 1.15f), Vec2f(1.0f, 0.15f)));
 
 		TextConstantSizeComponent& titleComp = DragButton->CreateComponent<TextConstantSizeComponent>("WindowTitle", Transform(Vec2f(-1.0f, 0.0f), Vec2f(0.15f / 1.0f, 1.0f)), GetFullCanvasName(), "", std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::CENTER));// .SetMaxSize(Vec2f(0.5f, 0.7f));

@@ -4,29 +4,32 @@
 
 namespace GEE
 {
-	class EditorMessageLogger
+	namespace Editor
 	{
-	public:
-		enum class MessageType
+		class EditorMessageLogger
 		{
-			Error,
-			Warning, 
-			Information,
-			Success,
+		public:
+			enum class MessageType
+			{
+				Error,
+				Warning,
+				Information,
+				Success,
+			};
+			EditorMessageLogger(EditorManager&, GameScene& editorScene);
+
+			void Log(const std::string& message, MessageType type = MessageType::Information);
+		private:
+			void AddMessageToSlot(UIWindowActor&);
+			void KillMessage(UIWindowActor&);
+			void UpdateQueuedMessagesText();
+			EditorManager& EditorHandle;
+			GameScene& EditorScene;
+			AtlasMaterial* IconsMaterial;
+
+			std::vector<UIWindowActor*> MessageSlots;
+			std::queue<std::pair<std::string, MessageType>> QueuedMessages;
+			TextComponent* QueuedMessagesText;
 		};
-		EditorMessageLogger(EditorManager&, GameScene& editorScene);
-
-		void Log(const std::string& message, MessageType type = MessageType::Information);
-	private:
-		void AddMessageToSlot(UIWindowActor&);
-		void KillMessage(UIWindowActor&);
-		void UpdateQueuedMessagesText();
-		EditorManager& EditorHandle;
-		GameScene& EditorScene;
-		AtlasMaterial* IconsMaterial;
-
-		std::vector<UIWindowActor*> MessageSlots;
-		std::queue<std::pair<std::string, MessageType>> QueuedMessages;
-		TextComponent* QueuedMessagesText;
-	};
+	}
 }

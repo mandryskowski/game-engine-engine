@@ -119,9 +119,9 @@ namespace GEE
 	{
 		if (!UsedFont || GetHide())
 			return;
-		GameHandle->GetRenderEngineHandle()->RenderText((CanvasPtr) ? (CanvasPtr->BindForRender(info, GameHandle->GetGameSettings()->WindowSize)) : (info), *UsedFont, Content, GetTransform().GetWorldTransform(), TextMatInst->GetMaterialRef().GetColor(), shader, false, Alignment);
+		GameHandle->GetRenderEngineHandle()->RenderText((CanvasPtr) ? (CanvasPtr->BindForRender(info)) : (info), *UsedFont, Content, GetTransform().GetWorldTransform(), TextMatInst->GetMaterialRef().GetColor(), shader, false, Alignment);
 		if (CanvasPtr)
-			CanvasPtr->UnbindForRender(GameHandle->GetGameSettings()->WindowSize);
+			CanvasPtr->UnbindForRender();
 	}
 
 	void TextComponent::SetHorizontalAlignment(const TextAlignment horizontal)
@@ -183,7 +183,7 @@ namespace GEE
 		ScaleRatio(Vec2f(1.0f)),
 		PreviouslyAppliedScaleRatio(Vec2f(1.0f))
 	{
-		RecalculateScaleRatio();
+		RecalculateScaleRatio(UISpace::Window);
 		UpdateSize();
 	}
 
@@ -193,7 +193,7 @@ namespace GEE
 		ScaleRatio(Vec2f(1.0f)),
 		PreviouslyAppliedScaleRatio(Vec2f(1.0f))
 	{
-		RecalculateScaleRatio();
+		RecalculateScaleRatio(UISpace::Window);
 		UpdateSize();
 	}
 
@@ -232,20 +232,41 @@ namespace GEE
 		PreviouslyAppliedScaleRatio = ScaleRatio;
 	}
 
-	void TextConstantSizeComponent::RecalculateScaleRatio(bool world)
+	void TextConstantSizeComponent::RecalculateScaleRatio(UISpace space)
 	{
-		Vec2f scale = static_cast<Vec2f>(((world)
-					? ((GetCanvasPtr()) ? (GetCanvasPtr()->ToCanvasSpace(GetTransform().GetWorldTransform())) : (GetTransform().GetWorldTransform()))
-					: (GetTransform())).GetScale()) / PreviouslyAppliedScaleRatio;
+		Vec2f scale(1.0f);
+		if (space == UISpace::Window)
+			scale = Vec2f(1.0f) / Math::GetRatioOfComponents(static_cast<Vec2f>(Scene.GetUIData()->GetWindowData().GetWindowSize()));
 
-		if (world && GetCanvasPtr())
+		switch (space)
+		{
+			case UISpace::Local:	scale *= GetTransform().GetScale2D(); break;
+			case UISpace::World:	scale *= GetTransform().GetWorldTransform().GetScale2D(); break;
+
+			case UISpace::Canvas:
+			case UISpace::Window:
+			{
+				if (GetCanvasPtr())
+					scale *= GetCanvasPtr()->ToCanvasSpace(GetTransform().GetWorldTransform().GetScale2D());
+				else
+					scale *= GetTransform().GetWorldTransform().GetScale2D();
+				break;
+			}
+			default: break;
+		}
+
+		scale /= PreviouslyAppliedScaleRatio;
+
+
+		if (GetCanvasPtr() && (space == UISpace::Canvas || space == UISpace::Window))
 			scale = (Mat2f)GetCanvasPtr()->GetViewMatrix() * scale;
-		ScaleRatio = glm::min(Vec2f(scale.y / scale.x, scale.x / scale.y), Vec2f(1.0f));
+
+		ScaleRatio = Math::GetRatioOfComponents(scale);
 	}
 
-	void TextConstantSizeComponent::Unstretch(bool world)
+	void TextConstantSizeComponent::Unstretch(UISpace space)
 	{
-		RecalculateScaleRatio(world);
+		RecalculateScaleRatio(space);
 		UpdateSize();
 		UpdateSize();
 	}
@@ -326,7 +347,7 @@ namespace GEE
 
 		// Clean up after everything
 		if (CanvasPtr)
-			CanvasPtr->UnbindForRender(GameHandle->GetGameSettings()->WindowSize);
+			CanvasPtr->UnbindForRender();
 		Viewport(Vec2u(0), GameHandle->GetGameSettings()->WindowSize).SetOpenGLState();
 		glDisable(GL_SCISSOR_TEST);
 	}

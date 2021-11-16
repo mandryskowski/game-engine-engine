@@ -5,6 +5,7 @@
 #include <scene/ModelComponent.h>
 #include <UI/UICanvasField.h>
 #include <UI/UIListActor.h>
+#include <editor/EditorActions.h>
 
 namespace GEE
 {
@@ -20,9 +21,10 @@ namespace GEE
 		ResizeBarY(nullptr),
 		ScaleActor(nullptr),
 		CanvasBackground(nullptr),
-		CanvasParent(canvasParent)
+		CanvasParent(canvasParent),
+		PopupCreationFunc(nullptr)
 	{
-		Scene.AddBlockingCanvas(*this);
+		Scene.GetUIData()->AddBlockingCanvas(*this);
 	}
 
 	UICanvasActor::UICanvasActor(GameScene& scene, Actor* parentActor, const std::string& name, const Transform& t) :
@@ -39,10 +41,11 @@ namespace GEE
 		ResizeBarX(nullptr),
 		ResizeBarY(nullptr),
 		ScaleActor(nullptr),
-		CanvasParent(canvasActor.CanvasParent)
+		CanvasParent(canvasActor.CanvasParent),
+		PopupCreationFunc(canvasActor.PopupCreationFunc)
 	{
 		FieldsList = dynamic_cast<UIListActor*>(canvasActor.FindActor(Name + "_Fields_List"));
-		Scene.AddBlockingCanvas(*this);
+		Scene.GetUIData()->AddBlockingCanvas(*this);
 	}
 
 	void UICanvasActor::OnStart()
@@ -70,6 +73,11 @@ namespace GEE
 	const Transform* UICanvasActor::GetCanvasT() const
 	{
 		return GetTransform();
+	}
+
+	void UICanvasActor::SetPopupCreationFunc(std::function<void(PopupDescription)> popupCreation)
+	{
+		PopupCreationFunc = popupCreation;
 	}
 
 	void UICanvasActor::SetCanvasView(const Transform& canvasView)
@@ -205,19 +213,39 @@ namespace GEE
 
 	void UICanvasActor::HandleEvent(const Event& ev)
 	{
-		if (ev.GetType() != EventType::MouseScrolled || Scene.GetCurrentBlockingCanvas() != this)
+		if (Scene.GetUIData()->GetCurrentBlockingCanvas() != this)
 			return;
 
-		const MouseScrollEvent& scrolledEv = dynamic_cast<const MouseScrollEvent&>(ev);
-
-		if (GameHandle->GetInputRetriever().IsKeyPressed(Key::LeftControl))
+		switch (ev.GetType())
 		{
-			Vec2f newScale = static_cast<Vec2f>(CanvasView.GetScale()) * glm::pow(Vec2f(0.5f), Vec2f(scrolledEv.GetOffset().y));
-			printVector(newScale, "new scale");
-			SetViewScale(newScale);
+			case EventType::MouseScrolled:
+			{
+				const MouseScrollEvent& scrolledEv = dynamic_cast<const MouseScrollEvent&>(ev);
+
+				if (GameHandle->GetInputRetriever().IsKeyPressed(Key::LeftControl))
+				{
+					Vec2f newScale = static_cast<Vec2f>(CanvasView.GetScale()) * glm::pow(Vec2f(0.5f), Vec2f(scrolledEv.GetOffset().y));
+					printVector(newScale, "new scale");
+					SetViewScale(newScale);
+				}
+				else
+					ScrollView(scrolledEv.GetOffset());
+				break;
+			}
+			case EventType::MousePressed:
+			{
+				const MouseButtonEvent& buttonEv = dynamic_cast<const MouseButtonEvent&>(ev);
+				std::cout << (bool)PopupCreationFunc << '\n';
+				if (buttonEv.GetButton() == MouseButton::Right && PopupCreationFunc)
+				{
+					std::cout << "1248!@$)*\n";
+					PopupDescription popupDesc = dynamic_cast<Editor::EditorManager*>(GameHandle)->CreatePopupMenu(Scene.GetUIData()->GetWindowData().GetMousePositionNDC(), *Scene.GetUIData()->GetWindow());
+					PopupCreationFunc(popupDesc);
+					popupDesc.RefreshPopup();
+
+				}
+			}
 		}
-		else
-			ScrollView(scrolledEv.GetOffset());
 	}
 
 	void UICanvasActor::HandleEventAll(const Event& ev)
@@ -242,24 +270,26 @@ namespace GEE
 		}*/
 	}
 
-	SceneMatrixInfo UICanvasActor::BindForRender(const SceneMatrixInfo& info, const Vec2u& res)	//Note: RenderInfo is a relatively big object for real-time standards. HOPEFULLY the compiler will optimize here using NRVO and convertedInfo won't be copied D:
+	SceneMatrixInfo UICanvasActor::BindForRender(const SceneMatrixInfo& info)	//Note: RenderInfo is a relatively big object for real-time standards. HOPEFULLY the compiler will optimize here using NRVO and convertedInfo won't be copied D:
 	{
 		SceneMatrixInfo convertedInfo = info;
 		convertedInfo.SetView(GetViewMatrix() * info.GetView());
 		convertedInfo.CalculateVP();
-		GetViewport().SetOpenGLState(res);
+		GEE_CORE_ASSERT(Scene.GetUIData()->GetWindow());
+		GetViewport().SetOpenGLState(Scene.GetUIData()->GetWindowData().GetWindowSize());
 
 		return convertedInfo;
 	}
 
-	void UICanvasActor::UnbindForRender(const Vec2u& res)
+	void UICanvasActor::UnbindForRender()
 	{
-		Viewport(Vec2u(0), res).SetOpenGLState();
+		GEE_CORE_ASSERT(Scene.GetUIData()->GetWindow());
+		Viewport(Vec2u(0), Scene.GetUIData()->GetWindowData().GetWindowSize()).SetOpenGLState();
 	}
 
 	UICanvasActor::~UICanvasActor()
 	{
-		Scene.EraseBlockingCanvas(*this);
+		Scene.GetUIData()->EraseBlockingCanvas(*this);
 	}
 
 	void UICanvasActor::GetExternalButtons(std::vector<UIButtonActor*>& buttons) const
@@ -279,17 +309,17 @@ namespace GEE
 		ScrollBarX = &CreateChild<UIScrollBarActor>("ScrollBarX");
 		ScrollBarX->SetTransform(Transform(Vec2f(0.0f, -1.10f), Vec2f(0.05f, 0.1f)));
 		ScrollBarX->SetWhileBeingClickedFunc([this]() {
-			ScrollView(Vec2f((glm::inverse(GetCanvasT()->GetWorldTransformMatrix()) * Vec4f(static_cast<float>(GameHandle->GetInputRetriever().GetMousePositionNDC().x) - ScrollBarX->GetClickPosNDC().x, 0.0f, 0.0f, 0.0f)).x * GetBoundingBox().Size.x, 0.0f));
+			ScrollView(Vec2f((glm::inverse(GetCanvasT()->GetWorldTransformMatrix()) * Vec4f(static_cast<float>(Scene.GetUIData()->GetWindowData().GetMousePositionNDC().x) - ScrollBarX->GetClickPosNDC().x, 0.0f, 0.0f, 0.0f)).x * GetBoundingBox().Size.x, 0.0f));
 			UpdateScrollBarT<VecAxis::X>();
-			ScrollBarX->SetClickPosNDC(GameHandle->GetInputRetriever().GetMousePositionNDC());
+			ScrollBarX->SetClickPosNDC(Scene.GetUIData()->GetWindowData().GetMousePositionNDC());
 			});
 
 		ScrollBarY = &CreateChild<UIScrollBarActor>("ScrollBarY");
 		ScrollBarY->SetTransform(Transform(Vec2f(1.10f, 0.0f), Vec2f(0.1f, 0.05f)));
 		ScrollBarY->SetWhileBeingClickedFunc([this]() {
-			ScrollView(Vec2f(0.0f, (glm::inverse(GetCanvasT()->GetWorldTransformMatrix()) * Vec4f(0.0f, static_cast<float>(GameHandle->GetInputRetriever().GetMousePositionNDC().y) - ScrollBarY->GetClickPosNDC().y, 0.0f, 0.0f)).y * GetBoundingBox().Size.y));
+			ScrollView(Vec2f(0.0f, (glm::inverse(GetCanvasT()->GetWorldTransformMatrix()) * Vec4f(0.0f, static_cast<float>(Scene.GetUIData()->GetWindowData().GetMousePositionNDC().y) - ScrollBarY->GetClickPosNDC().y, 0.0f, 0.0f)).y * GetBoundingBox().Size.y));
 			UpdateScrollBarT<VecAxis::Y>();
-			ScrollBarY->SetClickPosNDC(GameHandle->GetInputRetriever().GetMousePositionNDC());
+			ScrollBarY->SetClickPosNDC(Scene.GetUIData()->GetWindowData().GetMousePositionNDC());
 			});
 
 		BothScrollBarsButton = &CreateChild<UIScrollBarActor>("BothScrollBarsButton", nullptr, [this]() {
@@ -311,9 +341,9 @@ namespace GEE
 		ResizeBarX->SetOnHoverFunc([this]() { GameHandle->SetCursorIcon(DefaultCursorIcon::VerticalResize); });
 		ResizeBarX->SetOnUnhoverFunc([this]() { GameHandle->SetCursorIcon(DefaultCursorIcon::Regular); });
 		ResizeBarX->SetWhileBeingClickedFunc([this]() {
-			float scale = ResizeBarX->GetClickPosNDC().y - GameHandle->GetInputRetriever().GetMousePositionNDC().y;
+			float scale = ResizeBarX->GetClickPosNDC().y - Scene.GetUIData()->GetWindowData().GetMousePositionNDC().y;
 			this->GetTransform()->SetScale((Vec2f)this->GetTransform()->GetScale() * (1.0f + scale));
-			ResizeBarX->SetClickPosNDC(GameHandle->GetInputRetriever().GetMousePositionNDC());
+			ResizeBarX->SetClickPosNDC(Scene.GetUIData()->GetWindowData().GetMousePositionNDC());
 			});
 
 		ScrollBarX->DetachFromCanvas();
@@ -374,18 +404,18 @@ namespace GEE
 		return element.GetCanvasPtr()->AddField(name, getFieldOffsetFunc);
 	}
 
-	EditorDescriptionBuilder::EditorDescriptionBuilder(EditorManager& editorHandle, UICanvasFieldCategory& cat):
+	EditorDescriptionBuilder::EditorDescriptionBuilder(Editor::EditorManager& editorHandle, UICanvasFieldCategory& cat):
 		EditorDescriptionBuilder(editorHandle, cat, *cat.GetCanvasPtr())
 	{
 		OptionalCategory = &cat;
 	}
 
-	EditorDescriptionBuilder::EditorDescriptionBuilder(EditorManager& editorHandle, UIActorDefault& descriptionParent) :
+	EditorDescriptionBuilder::EditorDescriptionBuilder(Editor::EditorManager& editorHandle, UIActorDefault& descriptionParent) :
 		EditorDescriptionBuilder(editorHandle, descriptionParent, *descriptionParent.GetCanvasPtr())
 	{
 	}
 
-	EditorDescriptionBuilder::EditorDescriptionBuilder(EditorManager& editorHandle, Actor& descriptionParent, UICanvas& canvas) :
+	EditorDescriptionBuilder::EditorDescriptionBuilder(Editor::EditorManager& editorHandle, Actor& descriptionParent, UICanvas& canvas) :
 		EditorHandle(editorHandle), EditorScene(descriptionParent.GetScene()), DescriptionParent(descriptionParent), CanvasRef(canvas), OptionalCategory(nullptr)
 	{
 	}
@@ -405,7 +435,7 @@ namespace GEE
 		return DescriptionParent;
 	}
 
-	EditorManager& EditorDescriptionBuilder::GetEditorHandle()
+	Editor::EditorManager& EditorDescriptionBuilder::GetEditorHandle()
 	{
 		return EditorHandle;
 	}

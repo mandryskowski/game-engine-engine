@@ -12,14 +12,20 @@ namespace GEE
 		return Type;
 	}
 
-	CursorMoveEvent::CursorMoveEvent(EventType type, Vec2u newPosition) :
-		Event(type), NewPosition(newPosition)
+	CursorMoveEvent::CursorMoveEvent(EventType type, Vec2f newPositionPx, Vec2u windowSizePx) :
+		CursorMoveEvent(type, Vec2f(newPositionPx.x, windowSizePx.y - newPositionPx.y) / static_cast<Vec2f>(windowSizePx) * 2.0f - 1.0f)
+	{
+
+	}
+
+	CursorMoveEvent::CursorMoveEvent(EventType type, Vec2f newPositionNDC) :
+		Event(type), NewPositionNDC(newPositionNDC)
 	{
 	}
 
-	Vec2u CursorMoveEvent::GetNewPosition() const
+	Vec2f CursorMoveEvent::GetNewPositionNDC() const
 	{
-		return NewPosition;
+		return NewPositionNDC;
 	}
 
 	MouseButtonEvent::MouseButtonEvent(EventType type, MouseButton button, int modifierBits) :

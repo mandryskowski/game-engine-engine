@@ -23,7 +23,9 @@ namespace GEE
 		virtual void Init(SystemWindow* window);
 
 		void LoadSceneFromFile(const std::string& path, const std::string& name = std::string());
-		virtual GameScene& CreateScene(const std::string& name, bool isAnUIScene = false) override;
+
+		virtual GameScene& CreateScene(std::string name, bool disallowChangingNameIfTaken = true) override;
+		virtual GameScene& CreateUIScene(std::string name, SystemWindow& associateWindow, bool disallowChangingNameIfTaken = true) override;
 		void AddScene(UniquePtr <GameScene> scene);
 		
 		/**
@@ -112,7 +114,7 @@ namespace GEE
 		unsigned long long TotalTickCount, TotalFrameCount;
 	};
 
-	struct GLFWEventProcessor
+	struct WindowEventProcessor
 	{
 		static void CursorPosCallback(SystemWindow*, double, double);
 		static void MouseButtonCallback(SystemWindow*, int button, int action, int mods);
@@ -120,6 +122,7 @@ namespace GEE
 		static void CharEnteredCallback(SystemWindow*, unsigned int codepoint);
 		static void ScrollCallback(SystemWindow*, double xoffset, double yoffset);
 		static void FileDropCallback(SystemWindow*, int count, const char** paths);
+		static void CursorLeaveEnterCallback(SystemWindow*, int enter);
 
 		static EventHolder* TargetHolder;
 	};

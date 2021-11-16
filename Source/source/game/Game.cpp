@@ -17,7 +17,7 @@ namespace GEE
 
 	Controller* mouseController = nullptr;  //there are 2 similiar camera variables: ActiveCamera and global MouseController. the first one is basically the camera we use to see the world (view mat); the second one is updated by mouse controls.
 											//this is a shitty comment that doesnt fit since a few months ago but i dont want to erase it
-	EventHolder* GLFWEventProcessor::TargetHolder = nullptr;
+	EventHolder* WindowEventProcessor::TargetHolder = nullptr;
 
 	Game::Game(const ShadingAlgorithm& shading, const GameSettings& settings) :
 		bGameTerminated(false),
@@ -60,17 +60,18 @@ namespace GEE
 		if (!Settings->Video.bVSync)
 			glfwSwapInterval(0);
 
-		GLFWEventProcessor::TargetHolder = &EventHolderObj;
+		WindowEventProcessor::TargetHolder = &EventHolderObj;
 
 		glfwSetInputMode(Window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 		glfwSetCursorPos(Window, (double)Settings->WindowSize.x / 2.0, (double)Settings->WindowSize.y / 2.0);
 
-		glfwSetCursorPosCallback(Window, GLFWEventProcessor::CursorPosCallback);
-		glfwSetMouseButtonCallback(Window, GLFWEventProcessor::MouseButtonCallback);
-		glfwSetKeyCallback(Window, GLFWEventProcessor::KeyPressedCallback);
-		glfwSetCharCallback(Window, GLFWEventProcessor::CharEnteredCallback);
-		glfwSetScrollCallback(Window, GLFWEventProcessor::ScrollCallback);
-		glfwSetDropCallback(Window, GLFWEventProcessor::FileDropCallback);
+		glfwSetCursorPosCallback(Window, WindowEventProcessor::CursorPosCallback);
+		glfwSetCursorEnterCallback(window, WindowEventProcessor::CursorLeaveEnterCallback);
+		glfwSetMouseButtonCallback(Window, WindowEventProcessor::MouseButtonCallback);
+		glfwSetKeyCallback(Window, WindowEventProcessor::KeyPressedCallback);
+		glfwSetCharCallback(Window, WindowEventProcessor::CharEnteredCallback);
+		glfwSetScrollCallback(Window, WindowEventProcessor::ScrollCallback);
+		glfwSetDropCallback(Window, WindowEventProcessor::FileDropCallback);
 		glfwSetWindowCloseCallback(Window, [](GLFWwindow* window) { static_cast<Game*>(glfwGetWindowUserPointer(window))->TerminateGame(); });
 
 		RenderEng.Init(Vec2u(Settings->Video.Resolution.x, Settings->Video.Resolution.y));
@@ -87,9 +88,25 @@ namespace GEE
 		EngineDataLoader::SetupSceneFromFile(this, path, name);
 	}
 
-	GameScene& Game::CreateScene(const std::string& name, bool isAnUIScene)
+	GameScene& Game::CreateScene(std::string name, bool disallowChangingNameIfTaken)
 	{
-		AddScene(MakeUnique<GameScene>(*this, name, isAnUIScene));
+		if (GetScene(name))
+		{
+			GEE_CORE_ASSERT(!disallowChangingNameIfTaken);
+			name = GetUniqueName(Scenes.begin(), Scenes.end(), [](UniquePtr<GameScene>& scene) { return scene->GetName(); }, name);
+		}
+		AddScene(MakeUnique<GameScene>(*this, name));
+		return *Scenes.back();
+	}
+
+	GameScene& Game::CreateUIScene(std::string name, SystemWindow& associateWindow, bool disallowChangingNameIfTaken)
+	{
+		if (GetScene(name))
+		{
+			GEE_CORE_ASSERT(!disallowChangingNameIfTaken);
+			name = GetUniqueName(Scenes.begin(), Scenes.end(), [](UniquePtr<GameScene>& scene) { return scene->GetName(); }, name);
+		}
+		AddScene(MakeUnique<GameScene>(*this, name, true, associateWindow));
 		return *Scenes.back();
 	}
 
@@ -367,15 +384,15 @@ namespace GEE
 	float pBegin = 0.0f;
 	bool DUPA = false;
 
-	void GLFWEventProcessor::CursorPosCallback(SystemWindow* window, double xpos, double ypos)
+	void WindowEventProcessor::CursorPosCallback(SystemWindow* window, double xpos, double ypos)
 	{
-		TargetHolder->PushEvent(*window, CursorMoveEvent(EventType::MouseMoved, Vec2f(static_cast<float>(xpos), static_cast<float>(ypos))));
+		Vec2i windowSize(0);
+		glfwGetWindowSize(window, &windowSize.x, &windowSize.y);
+
+		TargetHolder->PushEvent(*window, CursorMoveEvent(EventType::MouseMoved, Vec2f(xpos, ypos), windowSize));
 
 		if (!mouseController || !TargetHolder)
 			return;
-
-		Vec2i windowSize(0);
-		glfwGetWindowSize(window, &windowSize.x, &windowSize.y);
 
 		if (mouseController->GetLockMouseAtCenter())
 			glfwSetCursorPos(window, windowSize.x / 2, windowSize.y / 2);
@@ -383,33 +400,46 @@ namespace GEE
 		mouseController->OnMouseMovement(static_cast<Vec2f>(windowSize / 2), Vec2f(xpos, windowSize.y - ypos)); //Implement it as an Event instead! TODO
 	}
 
-	void GLFWEventProcessor::MouseButtonCallback(SystemWindow* window, int button, int action, int mods)
+	void WindowEventProcessor::MouseButtonCallback(SystemWindow* window, int button, int action, int mods)
 	{
 		TargetHolder->PushEvent(*window, MouseButtonEvent((action == GLFW_PRESS) ? (EventType::MousePressed) : (EventType::MouseReleased), static_cast<MouseButton>(button), mods));
 	}
 
-	void GLFWEventProcessor::KeyPressedCallback(SystemWindow* window, int key, int scancode, int action, int mods)
+	void WindowEventProcessor::KeyPressedCallback(SystemWindow* window, int key, int scancode, int action, int mods)
 	{
 		TargetHolder->PushEvent(*window, KeyEvent((action == GLFW_PRESS) ? (EventType::KeyPressed) : ((action == GLFW_REPEAT) ? (EventType::KeyRepeated) : (EventType::KeyReleased)), static_cast<Key>(key), mods));
 	}
 
-	void GLFWEventProcessor::CharEnteredCallback(SystemWindow* window, unsigned int codepoint)
+	void WindowEventProcessor::CharEnteredCallback(SystemWindow* window, unsigned int codepoint)
 	{
 		TargetHolder->PushEvent(*window, CharEnteredEvent(EventType::CharacterEntered, codepoint));
 	}
 
-	void GLFWEventProcessor::ScrollCallback(SystemWindow* window, double offsetX, double offsetY)
+	void WindowEventProcessor::ScrollCallback(SystemWindow* window, double offsetX, double offsetY)
 	{
-		std::cout << "Scrolled " << offsetX << ", " << offsetY << "\n";
 		Vec2d cursorPos(0.0);
 		glfwGetCursorPos(window, &cursorPos.x, &cursorPos.y);
+
+		Vec2i windowSize(0);
+		glfwGetWindowSize(window, &windowSize.x, &windowSize.y);
+
 		TargetHolder->PushEvent(*window, MouseScrollEvent(EventType::MouseScrolled, Vec2f(static_cast<float>(-offsetX), static_cast<float>(offsetY))));
-		TargetHolder->PushEvent(*window, CursorMoveEvent(EventType::MouseMoved, Vec2f(cursorPos)));	//When we scroll (e.g. a canvas), it is possible that some buttons or other objects relying on cursor position might be scrolled (moved) as well, so we need to create a CursorMoveEvent.
+		TargetHolder->PushEvent(*window, CursorMoveEvent(EventType::MouseMoved, static_cast<Vec2f>(cursorPos), windowSize));	//When we scroll (e.g. a canvas), it is possible that some buttons or other objects relying on cursor position might be scrolled (moved) as well, so we need to create a CursorMoveEvent.
 	}
 
-	void GLFWEventProcessor::FileDropCallback(SystemWindow* window, int count, const char** paths)
+	void WindowEventProcessor::FileDropCallback(SystemWindow* window, int count, const char** paths)
 	{
 
+	}
+
+	void WindowEventProcessor::CursorLeaveEnterCallback(SystemWindow* window, int enter)
+	{
+		Vec2d cursorPos;
+		glfwGetCursorPos(window, &cursorPos.x, &cursorPos.y);
+		if (!enter)
+		{
+			CursorPosCallback(window, cursorPos.x, cursorPos.y);
+		}
 	}
 
 	void APIENTRY DebugCallbacks::OpenGLDebug(GLenum source,	//Copied from learnopengl.com - I don't think it's worth it to rewrite a bunch of couts.

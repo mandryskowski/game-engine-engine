@@ -2,6 +2,7 @@
 #include <functional>
 #include <algorithm>
 #include <sstream>
+#include <glfw/glfw3.h>
 
 namespace GEE
 {
@@ -273,4 +274,45 @@ namespace GEE
 	{
 		return glm::abs(a - b) <= epsilon;
 	}
+
+	WindowData::WindowData(SystemWindow& window):
+		WindowRef(window)
+	{
+	}
+
+	Vec2d WindowData::GetMousePositionPx() const
+	{
+		Vec2d mousePos;
+		glfwGetCursorPos(&WindowRef, &mousePos.x, &mousePos.y);
+		mousePos.y = GetWindowSize().y - mousePos.y;
+
+		return mousePos;
+	}
+
+	Vec2d WindowData::GetMousePositionNDC() const
+	{
+		return pxConversion::PxToNDC(GetMousePositionPx(), GetWindowSize());
+	}
+
+	Vec2i WindowData::GetWindowSize() const
+	{
+		Vec2i windowSize;
+		glfwGetWindowSize(&WindowRef, &windowSize.x, &windowSize.y);
+		return windowSize;
+	}
+
+
+	Vec2d pxConversion::PxToNDC(Vec2d pos, Vec2i windowSize)
+	{
+		Vec2d mousePos = pos / static_cast<Vec2d>(windowSize);
+		return mousePos * 2.0 - 1.0;
+	}
+
+	Vec2d pxConversion::NDCToPx(Vec2d pos, Vec2i windowSize)
+	{
+		Vec2d mousePos = pos * 0.5 + 0.5;
+		return mousePos / static_cast<Vec2d>(windowSize);
+	}
+
+
 }

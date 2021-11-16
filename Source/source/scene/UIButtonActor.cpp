@@ -6,6 +6,7 @@
 #include <scene/TextComponent.h>
 #include <input/InputDevicesStateRetriever.h>
 #include <math/Box.h>
+#include <editor/EditorActions.h>
 
 namespace GEE
 {
@@ -171,18 +172,11 @@ namespace GEE
 		if (bInputDisabled)
 			return;
 
-		if (GetName() == "SettingsButton" && ev.GetType() == EventType::MousePressed && dynamic_cast<const MouseButtonEvent&>(ev).GetButton() == MouseButton::Right)
-			dynamic_cast<EditorManager*>(GameHandle)->CreatePopupMenu(GameHandle->GetInputRetriever().GetMousePositionNDC());
-
 		if (ev.GetType() == EventType::MouseMoved)
 		{
-			Vec2f cursorPos = dynamic_cast<const CursorMoveEvent*>(&ev)->GetNewPosition();
-			Vec2f windowSize((GameHandle->GetGameSettings()->WindowSize));
-			Vec2f windowBottomLeft(0.0f);
+			Vec2f cursorNDC = dynamic_cast<const CursorMoveEvent*>(&ev)->GetNewPositionNDC();
 
-			Vec2f cursorNDC = (Vec2f(cursorPos.x, windowSize.y - cursorPos.y) - windowBottomLeft) / windowSize * 2.0f - 1.0f;
-
-			bool bMouseInside = (Scene.GetCurrentBlockingCanvas() && !Scene.GetCurrentBlockingCanvas()->ShouldAcceptBlockedEvents(*this)) ? (false) : (ContainsMouse(cursorNDC));
+			bool bMouseInside = (Scene.GetUIData()->GetCurrentBlockingCanvas() && !Scene.GetUIData()->GetCurrentBlockingCanvas()->ShouldAcceptBlockedEvents(*this)) ? (false) : (ContainsMouse(cursorNDC));
 
 
 			if (bMouseInside)
@@ -383,7 +377,7 @@ namespace GEE
 	void UIActivableButtonActor::OnDeactivation()
 	{
 		std::cout << "Deactivating...\n";
-		State = ((ContainsMouse(GameHandle->GetInputRetriever().GetMousePositionNDC())) ? (EditorIconState::HOVER) : (EditorIconState::IDLE));
+		State = ((ContainsMouse(Scene.GetUIData()->GetWindowData().GetMousePositionNDC())) ? (EditorIconState::HOVER) : (EditorIconState::IDLE));
 		if (OnDeactivationFunc)
 			OnDeactivationFunc();
 	}
@@ -411,14 +405,14 @@ namespace GEE
 
 	void UIScrollBarActor::OnBeingClicked()
 	{
-		ClickPosNDC = GameHandle->GetInputRetriever().GetMousePositionNDC();
+		ClickPosNDC = Scene.GetUIData()->GetWindowData().GetMousePositionNDC();
 		UIButtonActor::OnBeingClicked();
 	}
 
 	void UIScrollBarActor::WhileBeingClicked()
 	{
 		UIButtonActor::WhileBeingClicked();
-		ClickPosNDC = GameHandle->GetInputRetriever().GetMousePositionNDC();
+		ClickPosNDC = Scene.GetUIData()->GetWindowData().GetMousePositionNDC();
 	}
 
 	const Vec2f& UIScrollBarActor::GetClickPosNDC()

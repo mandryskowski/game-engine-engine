@@ -184,9 +184,9 @@ namespace GEE
 			SkeletalMeshRenderer(*GameHandle->GetRenderEngineHandle()).SkeletalMeshInstances(info, meshInstances, *SkelInfo, GetTransform().GetWorldTransform(), *shader);
 		else
 		{
-			Renderer(*GameHandle->GetRenderEngineHandle()).StaticMeshInstances((CanvasPtr) ? (CanvasPtr->BindForRender(info, GameHandle->GetGameSettings()->WindowSize)) : (info), meshInstances, GetTransform().GetWorldTransform(), *shader, RenderAsBillboard);
+			Renderer(*GameHandle->GetRenderEngineHandle()).StaticMeshInstances((CanvasPtr) ? (CanvasPtr->BindForRender(info)) : (info), meshInstances, GetTransform().GetWorldTransform(), *shader, RenderAsBillboard);
 			if (CanvasPtr)
-				CanvasPtr->UnbindForRender(GameHandle->GetGameSettings()->WindowSize);
+				CanvasPtr->UnbindForRender();
 		}
 	}
 

@@ -57,6 +57,9 @@ namespace GEE
 		const Quatf& GetRot() const { return Rotation; }
 		const Vec3f& GetScale() const { return Scale; }
 
+		Vec2f GetPos2D() const { return static_cast<Vec2f>(Position); }
+		Vec2f GetScale2D() const { return static_cast<Vec2f>(Scale); }
+
 		Vec3f GetFrontVec() const;
 		Transform GetInverse() const;
 		Mat3f GetRotationMatrix(bool inverse = false) const;
