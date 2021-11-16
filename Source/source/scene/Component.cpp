@@ -258,6 +258,13 @@ namespace GEE
 		}
 	}
 
+	void Component::HandleEventAll(const Event& ev)
+	{
+		HandleEvent(ev);
+		for (int i = 0; i < static_cast<int>(Children.size()); i++)
+			Children[i]->HandleEventAll(ev);
+	}
+
 	void Component::QueueAnimation(Animation* animation)
 	{
 		for (int i = 0; i < static_cast<int>(animation->Channels.size()); i++)

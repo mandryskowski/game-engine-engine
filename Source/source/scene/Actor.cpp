@@ -181,6 +181,11 @@ namespace GEE
 			Children[i]->Setup();
 	}
 
+	void Actor::HandleEvent(const Event& ev)
+	{
+		RootComponent->HandleEventAll(ev);
+	}
+
 	void Actor::HandleEventAll(const Event& ev)
 	{
 		HandleEvent(ev);

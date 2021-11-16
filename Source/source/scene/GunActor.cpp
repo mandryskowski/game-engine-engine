@@ -66,6 +66,7 @@ namespace GEE
 
 	void GunActor::HandleEvent(const Event& ev)
 	{
+		Actor::HandleEvent(ev);
 	}
 
 	void GunActor::SetFireModel(ModelComponent* model)

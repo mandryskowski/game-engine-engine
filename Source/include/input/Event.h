@@ -165,6 +165,7 @@ namespace GEE
 	enum class EventType
 	{
 		WindowClosed,
+		WindowResized,
 		KeyPressed,
 		KeyRepeated,
 		KeyReleased,

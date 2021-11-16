@@ -113,6 +113,9 @@ namespace GEE
 		virtual void Update(float);
 		void UpdateAll(float dt);
 
+		virtual void HandleEvent(const Event& ev) {}
+		void HandleEventAll(const Event& ev);
+
 		virtual void QueueAnimation(Animation*);
 		void QueueAnimationAll(Animation*);
 

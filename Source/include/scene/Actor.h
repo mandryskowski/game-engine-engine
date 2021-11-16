@@ -81,7 +81,7 @@ namespace GEE
 
 		virtual void Setup();
 
-		virtual void HandleEvent(const Event& ev) {}
+		virtual void HandleEvent(const Event& ev);
 		virtual void HandleEventAll(const Event& ev);
 
 		virtual void Update(float);

@@ -41,7 +41,7 @@ namespace GEE
 
 		if (optionalIconData.IsValid())
 		{
-			auto& iconModel = button.CreateComponent<ModelComponent>("GEE_E_Button_Icon", Transform(Vec2f(-0.7f, 0.0f), Vec2f(0.1f, 0.8f)));
+			auto& iconModel = button.CreateComponent<ModelComponent>("GEE_E_Button_Icon", Transform(Vec2f(-0.9f, 0.0f), Vec2f(0.1f, 0.8f)));
 			iconModel.AddMeshInst(MeshInstance(DescriptionRoot->GetGameHandle()->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD), optionalIconData.GetMatInstance()));
 		}
 
@@ -55,33 +55,33 @@ namespace GEE
 
 		auto createSubPopup = [gameHandle = DescriptionRoot->GetGameHandle(), optionIndex, *this, prepareSubmenu, window = &Window]() mutable
 		{
+
 			Vec2f submenuPos(1.0f, 1.0f);
 			auto t = PopupCanvas->FromCanvasSpace(PopupCanvas->GetViewT().GetInverse() * PopupCanvas->ToCanvasSpace(DescriptionRoot->GetListElement(optionIndex).GetActorRef().GetTransform()->GetWorldTransform()));
-			std::cout << "^!^ " << DescriptionRoot->GetListElement(optionIndex).GetActorRef().GetTransform()->GetWorldTransform().GetPos2D() << "\n";
-			std::cout << "^^ " << t.GetPos2D() << "\n";
 			submenuPos = t.GetPos2D() + t.GetScale2D();
-			//submenuPos.y -= (optionIndex / (float)DescriptionRoot->GetListElementCount()) * 2.0f;
-			//submenuPos.y += PopupOptionSizePx.y / 2.0f;
-			//submenuPos = Vec2f(0.0f);
-			//submenuPos = Vec2f(1.0f) / submenuPos;
+		
 			PopupDescription desc = dynamic_cast<Editor::EditorManager*>(gameHandle)->CreatePopupMenu(submenuPos, *window);
 			prepareSubmenu(desc);
 			desc.RefreshPopup();
 		};
-		auto& button = DescriptionRoot->CreateChild<UIButtonActor>("Button_" + buttonContent, buttonContent,
-			[window = &Window, createSubPopup]() mutable
-			{
-				createSubPopup();
-			}, Transform(Vec2f(0.0f), Vec2f(0.9f)));
+		auto& button = DescriptionRoot->CreateChild<UIButtonActor>("Button_" + buttonContent, buttonContent, nullptr, Transform(Vec2f(0.0f), Vec2f(0.9f)));
 
-		auto& visualCue = button.GetRoot()->CreateComponent<ModelComponent>("GEE_E_Submenu_Triangle", Transform(Vec2f(0.7f, 0.0f), Vec2f(0.1f, 0.8f)));
+
+		button.SetOnHoverFunc([window = &Window, createSubPopup]() mutable
+		{
+			createSubPopup();
+			glfwSetWindowShouldClose(window, false);	// do not close the parent popup
+		});
+		button.SetOnUnhoverFunc([buttonPtr = &button, window = &Window]() { if (GeomTests::NDCContains(buttonPtr->GetScene().GetUIData()->GetWindowData().GetMousePositionNDC())) glfwFocusWindow(window); });
+
+		auto& visualCue = button.GetRoot()->CreateComponent<ModelComponent>("GEE_E_Submenu_Triangle", Transform(Vec2f(0.9f, 0.0f), Vec2f(0.1f, 0.8f)));
 		visualCue.AddMeshInst(visualCue.GetScene().GetGameHandle()->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD));
 		//visualCue.OverrideInstancesMaterial(visualCue.GetScene().GetGameHandle()->GetRenderEngineHandle()->FindMaterial("GEE_E_Popup_Secondary").get());
 		visualCue.OverrideInstancesMaterial(&IconData(*DescriptionRoot->GetGameHandle()->GetRenderEngineHandle(), "EditorAssets/more.png").GetMatInstance()->GetMaterialRef());
 			
 		if (optionalIconData.IsValid())
 		{
-			auto& iconModel = button.CreateComponent<ModelComponent>("GEE_E_Button_Icon", Transform(Vec2f(-0.7f, 0.0f), Vec2f(0.1f, 0.8f)));
+			auto& iconModel = button.CreateComponent<ModelComponent>("GEE_E_Button_Icon", Transform(Vec2f(-0.9f, 0.0f), Vec2f(0.1f, 0.8f)));
 			iconModel.AddMeshInst(MeshInstance(DescriptionRoot->GetGameHandle()->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD), optionalIconData.GetMatInstance()));
 		}
 
@@ -93,6 +93,7 @@ namespace GEE
 	{
 		ComputeView();
 		glfwSetWindowSize(&Window, PopupOptionSizePx.x, static_cast<int>(static_cast<float>(PopupOptionSizePx.y) * DescriptionRoot->GetBoundingBoxIncludingChildren().Size.y));
+		DescriptionRoot->HandleEventAll(Event(EventType::WindowResized));
 	}
 	void PopupDescription::ComputeView()
 	{

@@ -96,6 +96,8 @@ namespace GEE
 		*/
 		void Unstretch(UISpace space = UISpace::Window);
 
+		virtual void HandleEvent(const Event& ev) override;
+
 	private:
 		Vec2f MaxSize, ScaleRatio;
 		/**

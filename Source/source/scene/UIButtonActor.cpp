@@ -169,6 +169,7 @@ namespace GEE
 
 	void UIButtonActor::HandleEvent(const Event& ev)
 	{
+		Actor::HandleEvent(ev);
 		if (bInputDisabled)
 			return;
 
@@ -312,6 +313,10 @@ namespace GEE
 		auto& text = CreateComponent<TextConstantSizeComponent>("ButtonText", Transform(Vec2f(0.0f), Vec2f(1.0f)), content, "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
 		text.SetMaxSize(Vec2f(0.8f));
 		text.Unstretch();
+		text.Unstretch();
+		text.Unstretch();
+		text.Unstretch();
+		text.Unstretch();
 		return text;
 	}
 
@@ -321,8 +326,8 @@ namespace GEE
 		return point == glm::min(glm::max(rectLeftBottom, point), rectLeftBottom + Vec2f(rect.GetScale()) * 2.0f);
 	}
 
-	UIActivableButtonActor::UIActivableButtonActor(GameScene& scene, Actor* parentActor, const std::string& name,  std::function<void()> onClickFunc, std::function<void()> onDeactivationFunc) :
-		UIButtonActor(scene, parentActor, name, onClickFunc),
+	UIActivableButtonActor::UIActivableButtonActor(GameScene& scene, Actor* parentActor, const std::string& name,  std::function<void()> onClickFunc, std::function<void()> onDeactivationFunc, const Transform& transform) :
+		UIButtonActor(scene, parentActor, name, onClickFunc, transform),
 		OnDeactivationFunc(onDeactivationFunc)
 	{
 
@@ -337,8 +342,8 @@ namespace GEE
 
 		MatActive = MakeShared<MaterialInstance>(MaterialInstance(*matActive));
 	}
-	UIActivableButtonActor::UIActivableButtonActor(GameScene& scene, Actor* parentActor, const std::string& name, const std::string& buttonTextContent, std::function<void()> onClickFunc, std::function<void()> onDeactivationFunc) :
-		UIActivableButtonActor(scene, parentActor, name, onClickFunc, onDeactivationFunc)
+	UIActivableButtonActor::UIActivableButtonActor(GameScene& scene, Actor* parentActor, const std::string& name, const std::string& buttonTextContent, std::function<void()> onClickFunc, std::function<void()> onDeactivationFunc, const Transform& transform) :
+		UIActivableButtonActor(scene, parentActor, name, onClickFunc, onDeactivationFunc, transform)
 	{
 		CreateButtonText(buttonTextContent);
 	}
@@ -357,6 +362,7 @@ namespace GEE
 
 	void UIActivableButtonActor::HandleEvent(const Event& ev)
 	{
+		UIButtonActor::HandleEvent(ev);
 		bool wasActive = State == EditorIconState::ACTIVATED;
 		bool isActive = wasActive;
 		if ((ev.GetType() == EventType::MouseReleased && dynamic_cast<const MouseButtonEvent&>(ev).GetButton() == MouseButton::Left) || (ev.GetType() == EventType::FocusSwitched))	//When the user releases LMB anywhere or our scene is de-focused, we disable writing to the InputBox.

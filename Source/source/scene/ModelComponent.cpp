@@ -27,7 +27,6 @@ namespace GEE
 		SkelInfo(info),
 		RenderAsBillboard(false)
 	{
-		std::cout << "%%% Model component " << GetName() << ".  ID: " << IDSystem<ModelComponent>::GenerateID() << "\n";
 	}
 
 	ModelComponent::ModelComponent(ModelComponent&& model) :

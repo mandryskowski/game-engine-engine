@@ -253,7 +253,7 @@ namespace GEE
 			glfwSetCursorPosCallback(window, WindowEventProcessor::CursorPosCallback);
 			glfwSetMouseButtonCallback(window, WindowEventProcessor::MouseButtonCallback);
 			glfwSetCursorEnterCallback(window, WindowEventProcessor::CursorLeaveEnterCallback);
-			//glfwSetWindowFocusCallback(window, [](SystemWindow* window, int focused) { glfwSetWindowShouldClose(window, GLFW_TRUE); });
+			glfwSetWindowFocusCallback(window, [](SystemWindow* window, int focused) { if (!focused) glfwSetWindowShouldClose(window, GLFW_TRUE); });
 
 		
 			GameScene& popupScene = CreateUIScene("GEE_E_Popup_Window", *window, false);
@@ -815,14 +815,13 @@ namespace GEE
 			if (!actor)
 				return;
 
-			UICanvasActor& canvas = editorScene.CreateActorAtRoot<UICanvasActor>("GEE_E_Actors_Components_Canvas", Transform(Vec2f(-0.68f, 0.0f), Vec2f(0.32f, 0.5f)));
-			canvas.SetViewScale(Vec2f(1.0f, glm::sqrt(0.5f / 0.32f)));
+			UICanvasActor& canvas = editorScene.CreateActorAtRoot<UICanvasActor>("GEE_E_Actors_Components_Canvas", Transform(Vec2f(-0.68f, 0.0f), Vec2f(0.32f, 0.32f)));	//0.32, 0.50
+			//canvas.SetViewScale(Vec2f(1.0f, glm::sqrt(0.5f / 0.32f)));
 			canvas.SetPopupCreationFunc([this](PopupDescription desc)
 				{
-					desc.AddSubmenu("Create component", [this](PopupDescription desc) { desc.AddOption("Component", nullptr, IconData(*GetGameHandle()->GetRenderEngineHandle(), "EditorAssets/component_icon.png", Vec2i(3, 1), 0.0f)); desc.AddOption("Light", nullptr); });
-					desc.AddSubmenu("Refresh", [](PopupDescription desc) { desc.AddOption("Type 1", nullptr); desc.AddOption("Type 2", nullptr); }, IconData(*GetGameHandle()->GetRenderEngineHandle(), "EditorAssets/refresh_icon.png", Vec2i(3, 1), 0.0f));
-					desc.AddSubmenu("Types", [](PopupDescription desc) { desc.AddOption("Type 1", nullptr); desc.AddOption("Type 2", nullptr); });
-					desc.AddSubmenu("Delete", [](PopupDescription desc) { desc.AddOption("Type 1", nullptr); desc.AddOption("Type 2", nullptr); });
+					desc.AddSubmenu("Create component", [this](PopupDescription desc) { desc.AddOption("Component", nullptr, IconData(*GetGameHandle()->GetRenderEngineHandle(), "EditorAssets/component_icon.png", Vec2i(3, 1), 0.0f)); desc.AddOption("Light", nullptr, IconData(*GetGameHandle()->GetRenderEngineHandle(), "EditorAssets/lightcomponent_icon.png", Vec2i(3, 1), 0.0f)); });
+					desc.AddOption("Refresh", nullptr, IconData(*GetGameHandle()->GetRenderEngineHandle(), "EditorAssets/refresh_icon.png", Vec2i(3, 1), 0.0f));
+					desc.AddOption("Delete", nullptr);
 				});
 			UIActorDefault* scaleActor = canvas.GetScaleActor();
 
@@ -883,7 +882,7 @@ namespace GEE
 			else
 			{
 				canvas.AutoClampView();
-				canvas.SetViewScale(static_cast<Vec2f>(canvas.CanvasView.GetScale()) * Vec2f(1.0f, glm::sqrt(0.5f / 0.32f)));
+				//canvas.SetViewScale(static_cast<Vec2f>(canvas.CanvasView.GetScale()) * Vec2f(1.0f, glm::sqrt(0.5f / 0.32f)));
 			}
 		}
 
@@ -903,7 +902,7 @@ namespace GEE
 			if (!selectedScene)
 				return;
 
-			auto& aaa = editorScene.CreateActorAtRoot<UICanvasFieldCategory>("AAAAA");
+			auto& aaa = editorScene.CreateActorAtRoot<UIActorDefault>("AAAAA");
 			aaa.SetTransform(Transform(Vec2f(0.68f, 0.1f), Vec2f(0.0272f, 0.0272f)));
 
 			auto& plswork = aaa.CreateChild<UIActorDefault>("eeafksnflak");

@@ -216,6 +216,8 @@ namespace GEE
 		if (Scene.GetUIData()->GetCurrentBlockingCanvas() != this)
 			return;
 
+		Actor::HandleEvent(ev);
+
 		switch (ev.GetType())
 		{
 			case EventType::MouseScrolled:

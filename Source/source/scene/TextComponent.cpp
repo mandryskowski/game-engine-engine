@@ -183,8 +183,7 @@ namespace GEE
 		ScaleRatio(Vec2f(1.0f)),
 		PreviouslyAppliedScaleRatio(Vec2f(1.0f))
 	{
-		RecalculateScaleRatio(UISpace::Window);
-		UpdateSize();
+		Unstretch();
 	}
 
 	TextConstantSizeComponent::TextConstantSizeComponent(Actor& actor, Component* parentComp, const std::string& name, const Transform& transform, std::string content, std::string fontPath, std::pair<TextAlignment, TextAlignment> alignment) :
@@ -193,8 +192,7 @@ namespace GEE
 		ScaleRatio(Vec2f(1.0f)),
 		PreviouslyAppliedScaleRatio(Vec2f(1.0f))
 	{
-		RecalculateScaleRatio(UISpace::Window);
-		UpdateSize();
+		Unstretch();
 	}
 
 	TextConstantSizeComponent::TextConstantSizeComponent(TextConstantSizeComponent&& textComp) :
@@ -235,8 +233,10 @@ namespace GEE
 	void TextConstantSizeComponent::RecalculateScaleRatio(UISpace space)
 	{
 		Vec2f scale(1.0f);
+
 		if (space == UISpace::Window)
 			scale = Vec2f(1.0f) / Math::GetRatioOfComponents(static_cast<Vec2f>(Scene.GetUIData()->GetWindowData().GetWindowSize()));
+		scale /= PreviouslyAppliedScaleRatio;
 
 		switch (space)
 		{
@@ -247,16 +247,13 @@ namespace GEE
 			case UISpace::Window:
 			{
 				if (GetCanvasPtr())
-					scale *= GetCanvasPtr()->ToCanvasSpace(GetTransform().GetWorldTransform().GetScale2D());
+					scale *= GetCanvasPtr()->ToCanvasSpace(GetTransform().GetWorldTransform()).GetScale2D();
 				else
 					scale *= GetTransform().GetWorldTransform().GetScale2D();
 				break;
 			}
 			default: break;
 		}
-
-		scale /= PreviouslyAppliedScaleRatio;
-
 
 		if (GetCanvasPtr() && (space == UISpace::Canvas || space == UISpace::Window))
 			scale = (Mat2f)GetCanvasPtr()->GetViewMatrix() * scale;
@@ -269,6 +266,14 @@ namespace GEE
 		RecalculateScaleRatio(space);
 		UpdateSize();
 		UpdateSize();
+	}
+
+	void TextConstantSizeComponent::HandleEvent(const Event& ev)
+	{
+		TextComponent::HandleEvent(ev);
+
+		if (ev.GetType() == EventType::WindowResized)
+			Unstretch();
 	}
 
 	ScrollingTextComponent::ScrollingTextComponent(Actor& actorRef, Component* parentComp, const std::string& name, const Transform& transform, std::string content, SharedPtr<Font> font, std::pair<TextAlignment, TextAlignment> alignment):

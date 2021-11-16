@@ -114,7 +114,7 @@ namespace GEE
 			elementText.SetMaxSize(Vec2f(0.9f));
 			elementText.SetContent(obj.GetName());
 			elementText.Unstretch();
-			elementText.UpdateSize();
+			//elementText.UpdateSize();
 
 			std::vector<T*> children = obj.GetChildren();
 			for (auto& child : children)
