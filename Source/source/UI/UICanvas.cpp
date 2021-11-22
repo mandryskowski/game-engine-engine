@@ -89,9 +89,19 @@ namespace GEE
 		CanvasView.SetPosition(adjustedViewPos);
 	}
 
-	void UICanvas::AutoClampView(bool trueHorizontalFalseVertical)
+	void UICanvas::AutoClampView(bool horizontal, bool vertical)
 	{
-		float size = (trueHorizontalFalseVertical) ? (GetBoundingBox().Size.x) : (GetBoundingBox().Size.y);
+		if (horizontal && vertical)
+		{
+			SetViewScale(glm::max(Vec2f(0.001f), GetBoundingBox().Size));
+			return;
+		}
+
+		float size;
+		if (horizontal) size = GetBoundingBox().Size.x;
+		else if (vertical) size = GetBoundingBox().Size.y;
+		else return;
+
 		SetViewScale(Vec2f(glm::max(0.001f, size)));
 	}
 

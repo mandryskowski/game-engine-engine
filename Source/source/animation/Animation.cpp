@@ -5,7 +5,8 @@ namespace GEE
 {
 	float DUPA::AnimTime = 9999.0f;
 
-	Interpolation::Interpolation(float begin, float end, InterpolationType type, bool fadeAway, AnimBehaviour before, AnimBehaviour after)
+	Interpolation::Interpolation(Time begin, Time end, InterpolationType type, bool fadeAway, AnimBehaviour before, AnimBehaviour after):
+		OnUpdateFunc(nullptr)
 	{
 		Reset(begin, end);
 
@@ -29,12 +30,12 @@ namespace GEE
 		return T;
 	}
 
-	float Interpolation::GetDuration()
+	Time Interpolation::GetDuration()
 	{
 		return End;
 	}
 
-	void Interpolation::Reset(float begin, float end)
+	void Interpolation::Reset(Time begin, Time end)
 	{
 		if (begin != -1.0f)
 			Begin = begin;
@@ -51,7 +52,7 @@ namespace GEE
 		CurrentTime = End - CurrentTime;
 	}
 
-	void Interpolation::UpdateT(float deltaTime)
+	bool Interpolation::UpdateT(Time deltaTime)
 	{
 		CurrentTime += deltaTime;
 
@@ -74,6 +75,10 @@ namespace GEE
 
 		if (BeforeBehaviour == STOP && T < 0.0f)
 			T = 0.0f;
+
+		if (OnUpdateFunc)
+			return OnUpdateFunc(T);
+		return !IsChanging();
 	}
 
 	template<class ValType> ValType Interpolation::InterpolateValues(ValType y1, ValType y2)

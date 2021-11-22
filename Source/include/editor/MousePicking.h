@@ -18,7 +18,7 @@ namespace GEE
 		 * @param components 
 		 * @return 
 		*/
-		Component* PickComponent(RenderInfo info, GameScene& scene, const Vec2u& resolution, const Vec2u& mousePos, std::vector<Component*> components)
+		Component* PickComponent(SceneMatrixInfo info, GameScene& scene, const Vec2u& resolution, const Vec2u& mousePos, std::vector<Component*> components)
 		{
 			// Generate framebuffer
 			GEE_FB::Framebuffer framebuffer;
@@ -45,8 +45,8 @@ namespace GEE
 			{
 				unsigned int currentComponentIndex = 1;
 
-				info.UseMaterials = false;
-				info.AllowBlending = false;
+				info.SetUseMaterials(false);
+				info.SetAllowBlending(false);
 
 				std::vector<std::pair<Component*, unsigned int>> notRenderables;
 				notRenderables.reserve(components.size());	// avoid some overhead
@@ -71,7 +71,7 @@ namespace GEE
 					Shader* shader = nullptr;
 					if (compRenderableCast)
 						if (auto materials = compRenderableCast->GetMaterials(); !materials.empty() && materials.front())
-							shader = (materials.front()->GetRenderShaderName() == "Geometry") ? (info.TbCollection.GetTb<DeferredShadingToolbox>()->FindShader("Geometry")) : (Impl.RenderHandle.FindShader(materials.front()->GetRenderShaderName()));
+							shader = (materials.front()->GetRenderShaderName() == "Geometry") ? (info.GetTbCollection().GetTb<DeferredShadingToolbox>()->FindShader("Geometry")) : (Impl.RenderHandle.FindShader(materials.front()->GetRenderShaderName()));
 
 					if (!shader)
 					{
@@ -101,7 +101,7 @@ namespace GEE
 						it.first->GetDebugMatInst()->UpdateWholeUBOData(debugShader, Impl.RenderHandle.GetEmptyTexture());
 
 					debugShader->Uniform4fv("material.color", Vec4f(it.second, 0, 0, 1));
-					it.first->DebugRender(info, debugShader);
+					it.first->DebugRender(info, *debugShader);
 				}
 
 				debugShader->Uniform<bool>("material.useAlbedoAsMask", false);

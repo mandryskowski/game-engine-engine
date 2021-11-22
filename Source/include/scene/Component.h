@@ -113,14 +113,17 @@ namespace GEE
 		virtual void Update(float);
 		void UpdateAll(float dt);
 
+		virtual void HandleEvent(const Event& ev) {}
+		void HandleEventAll(const Event& ev);
+
 		virtual void QueueAnimation(Animation*);
 		void QueueAnimationAll(Animation*);
 
 		virtual void QueueKeyFrame(AnimationChannel&);
 		static void QueueKeyFrameAll(AnimationChannel&);
 
-		virtual void DebugRender(RenderInfo info, Shader* shader, const Vec3f& debugIconScale = Vec3f(0.05f)) const; //this method should only be called to render the component as something (usually a textured billboard) to debug the project.
-		void DebugRenderAll(RenderInfo info, Shader* shader) const;
+		virtual void DebugRender(SceneMatrixInfo info, Shader& shader, const Vec3f& debugIconScale = Vec3f(0.05f)) const; //this method should only be called to render the component as something (usually a textured billboard) to debug the project.
+		void DebugRenderAll(SceneMatrixInfo info, Shader& shader) const;
 
 		virtual SharedPtr<AtlasMaterial> LoadDebugRenderMaterial(const std::string& materialName, const std::string& path);
 
@@ -250,7 +253,7 @@ namespace GEE
 		for (unsigned int i = 0; i < Children.size(); i++)
 			Children[i]->GetAllComponents<CastToClass, CheckClass>(comps);	//robimy to samo we wszystkich "dzieciach"
 	}
-	void CollisionObjRendering(RenderInfo& info, GameManager& gameHandle, Physics::CollisionObject& obj, const Transform& t, const Vec3f& color = Vec3f(0.1f, 0.6f, 0.3f));
+	void CollisionObjRendering(SceneMatrixInfo& info, GameManager& gameHandle, Physics::CollisionObject& obj, const Transform& t, const Vec3f& color = Vec3f(0.1f, 0.6f, 0.3f));
 
 	struct CerealComponentSerializationData
 	{

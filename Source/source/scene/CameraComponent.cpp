@@ -32,9 +32,9 @@ namespace GEE
 		return Projection;
 	}
 
-	RenderInfo CameraComponent::GetRenderInfo(RenderToolboxCollection& renderCollection)
+	SceneMatrixInfo CameraComponent::GetRenderInfo(RenderingContextID contextID, RenderToolboxCollection& renderCollection)
 	{
-		return RenderInfo(renderCollection, GetViewMat(), GetProjectionMat(), Mat4f(1.0f), GetTransform().GetWorldTransform().GetPos());
+		return SceneMatrixInfo(contextID, renderCollection, *Scene.GetRenderData(), GetViewMat(), GetProjectionMat(), GetTransform().GetWorldTransform().GetPos());
 	}
 
 	void CameraComponent::Update(float deltaTime)

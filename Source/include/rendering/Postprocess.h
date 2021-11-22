@@ -48,7 +48,7 @@ namespace GEE
 			return PPToolbox<ToolboxType>(*this, toolboxCol);
 		}
 
-		static Texture GaussianBlur(PPToolbox<GaussianBlurToolbox> tb, const GEE_FB::Framebuffer& writeFramebuffer,
+	/*	static Texture GaussianBlur(PPToolbox<GaussianBlurToolbox> tb, const GEE_FB::Framebuffer& writeFramebuffer,
 		                            const Viewport* viewport, const Texture& tex, int passes,
 		                            unsigned int writeColorBuffer = 0);
 		Texture SSAOPass(RenderInfo&, const Texture& gPosition, const Texture& gNormal) const;
@@ -62,13 +62,15 @@ namespace GEE
 		void Render(RenderToolboxCollection& tbCollection, const GEE_FB::Framebuffer& finalFramebuffer, const Viewport* viewport, const Texture& colorTex, Texture blurTex = Texture(), const Texture& depthTex = Texture(), const Texture& velocityTex = Texture()) const;
 		void RenderFullscreenQuad(RenderToolboxCollection& tbCollection, Shader* shader = nullptr, bool useShader = true) const
 		{
-			RenderFullscreenQuad(RenderInfo(tbCollection, Mat4f(1.0f), Mat4f(1.0f), Mat4f(1.0f), Vec3f(0.0f), false), shader, useShader);
+			TbInfo<MatrixInfoExt> info(tbCollection, Mat4f(1.0f), Mat4f(1.0f), Vec3f(0.0f));
+			info.SetUseMaterials(false);
+			RenderFullscreenQuad(info, shader, useShader);
 		}
-		void RenderFullscreenQuad(RenderInfo& info, Shader* shader = nullptr, bool useShader = true) const {
+		void RenderFullscreenQuad(TbInfo<MatrixInfoExt> info, Shader* shader = nullptr, bool useShader = true) const {
 			if (!shader) shader = RenderHandle->FindShader("Quad");
 			if (useShader)	shader->Use();
-			RenderHandle->RenderStaticMesh(info, MeshInstance(RenderHandle->GetBasicShapeMesh(EngineBasicShape::QUAD), nullptr), Transform(), shader);
-		}
+			Renderer(*RenderHandle).StaticMeshInstances(info, { MeshInstance(RenderHandle->GetBasicShapeMesh(EngineBasicShape::QUAD) , nullptr) }, Transform(), *shader);
+		}*/
 
 		static void Dispose();
 	};

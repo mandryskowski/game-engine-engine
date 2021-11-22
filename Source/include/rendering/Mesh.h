@@ -39,7 +39,7 @@ namespace GEE
 		};
 
 		Mesh(const MeshLoc&);
-		unsigned int GetVAO() const;
+		unsigned int GetVAO(unsigned int VAOcontext = 0) const;
 		unsigned int GetVertexCount() const;
 		MeshLoc GetLocalization() const;
 		Material* GetMaterial();
@@ -53,9 +53,10 @@ namespace GEE
 		void SetMaterial(Material*);
 		void SetBoundingBox(const Boxf<Vec3f>&);
 
-		void Bind() const;
+		void Bind(unsigned int VAOcontext) const;
 		void LoadFromGLBuffers(unsigned int vertexCount, unsigned int VAO, unsigned int VBO, unsigned int indexCount = 0, unsigned int EBO = 0);
-		void GenerateVAO(const std::vector<Vertex>&, const std::vector<unsigned int>&, bool keepVerts = false);
+		void Generate(const std::vector<Vertex>&, const std::vector<unsigned int>&, bool keepVerts = false);
+		void GenerateVAO(unsigned int VAOcontext = 0);
 		void Render() const;
 		template <typename Archive> void Save(Archive& archive) const
 		{
@@ -82,7 +83,10 @@ namespace GEE
 
 		MeshLoc Localization;
 
-		unsigned int VAO, VBO, EBO;
+		// All VAOs generated for this mesh.
+		std::map<int, int> VAOs;
+		unsigned int VBO, EBO;
+
 		unsigned int VertexCount, IndexCount;
 		Material* DefaultMeshMaterial;
 
@@ -107,6 +111,7 @@ namespace GEE
 
 		Mesh& GetMesh();
 		const Mesh& GetMesh() const;
+		Material* GetMaterialPtr();
 		const Material* GetMaterialPtr() const;
 		MaterialInstance* GetMaterialInst() const;
 

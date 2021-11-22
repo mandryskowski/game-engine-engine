@@ -2,6 +2,7 @@
 #include <utility/Utility.h>
 #include <glfw/glfw3.h>
 #include <queue>
+#include <map>
 
 namespace GEE
 {
@@ -164,6 +165,7 @@ namespace GEE
 	enum class EventType
 	{
 		WindowClosed,
+		WindowResized,
 		KeyPressed,
 		KeyRepeated,
 		KeyReleased,
@@ -193,11 +195,12 @@ namespace GEE
 	class CursorMoveEvent : public Event
 	{
 	public:
-		CursorMoveEvent(EventType, Vec2u newPosition);
-		Vec2u GetNewPosition() const;
+		CursorMoveEvent(EventType, Vec2f newPositionPx, Vec2u windowSizePx);
+		CursorMoveEvent(EventType, Vec2f newPositionNDC);
+		Vec2f GetNewPositionNDC() const;
 
 	private:
-		Vec2u NewPosition;
+		Vec2f NewPositionNDC;
 	};
 
 	class MouseButtonEvent : public Event
@@ -247,10 +250,17 @@ namespace GEE
 	class EventHolder
 	{
 	public:
-		SharedPtr<Event> PollEvent();
+		SharedPtr<Event> PollEvent(SystemWindow&);
+		template <typename EventClass>
+		void PushEvent(SystemWindow&, const EventClass&);
 
-		friend struct GLFWEventProcessor;
 	private:
-		std::queue<SharedPtr<Event>> Events;
+		std::map<SystemWindow*, std::queue<SharedPtr<Event>>> Events;
 	};
+
+	template<typename EventClass>
+	inline void EventHolder::PushEvent(SystemWindow& window, const EventClass& event)
+	{
+		Events[&window].push(MakeShared<EventClass>(event));
+	}
 }

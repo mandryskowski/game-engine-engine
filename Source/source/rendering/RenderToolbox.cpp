@@ -31,13 +31,13 @@ namespace GEE
 
 		switch (settings.Shading)
 		{
-		case ShadingModel::SHADING_PHONG:
+		case ShadingAlgorithm::SHADING_PHONG:
 			settingsDefines += "#define PHONG_SHADING 1\n";
 			lightShadersNames = { "PhongDirectional", "PhongPoint", "PhongSpot" };
 			lightShadersDefines = { "#define DIRECTIONAL_LIGHT 1\n", "#define POINT_LIGHT 1\n", "#define SPOT_LIGHT 1\n" };
 			lightShadersPath = std::pair<std::string, std::string>("Shaders/phong.vs", "Shaders/phong.fs");
 			break;
-		case ShadingModel::SHADING_PBR_COOK_TORRANCE:
+		case ShadingAlgorithm::SHADING_PBR_COOK_TORRANCE:
 			settingsDefines += "#define PBR_SHADING 1\n";
 			//lightShadersNames = { "CookTorranceDirectional", "CookTorrancePoint", "CookTorranceSpot" };
 			lightShadersNames = { "Geometry", "Geometry", "Geometry" };
@@ -53,7 +53,7 @@ namespace GEE
 			std::pair<unsigned int, std::string>(2, "normal1"),
 			std::pair<unsigned int, std::string>(3, "depth1"),
 		};
-		if (settings.Shading == ShadingModel::SHADING_PBR_COOK_TORRANCE)
+		if (settings.Shading == ShadingAlgorithm::SHADING_PBR_COOK_TORRANCE)
 		{
 			std::vector<std::pair<unsigned int, std::string>> pbrTextures = {
 				std::pair<unsigned int, std::string>(4, "roughness1"),
@@ -129,13 +129,13 @@ namespace GEE
 
 		switch (settings.Shading)
 		{
-		case ShadingModel::SHADING_PHONG:
+		case ShadingAlgorithm::SHADING_PHONG:
 			settingsDefines += "#define PHONG_SHADING 1\n";
 			lightShadersNames = { "PhongDirectional", "PhongPoint", "PhongSpot" };
 			lightShadersDefines = { "#define DIRECTIONAL_LIGHT 1\n", "#define POINT_LIGHT 1\n", "#define SPOT_LIGHT 1\n" };
 			lightShadersPath = std::pair<std::string, std::string>("Shaders/phong.vs", "Shaders/phong.fs");
 			break;
-		case ShadingModel::SHADING_PBR_COOK_TORRANCE:
+		case ShadingAlgorithm::SHADING_PBR_COOK_TORRANCE:
 			settingsDefines += "#define PBR_SHADING 1\n";
 			lightShadersNames = { "CookTorranceDirectional", "CookTorrancePoint", "CookTorranceSpot", "CookTorranceIBL" };
 			lightShadersDefines = { "#define DIRECTIONAL_LIGHT 1\n", "#define POINT_LIGHT 1\n", "#define SPOT_LIGHT 1\n", "#define IBL_PASS 1\n" };
@@ -150,7 +150,7 @@ namespace GEE
 			std::pair<unsigned int, std::string>(2, "normal1"),
 			std::pair<unsigned int, std::string>(3, "depth1"),
 		};
-		if (settings.Shading == ShadingModel::SHADING_PBR_COOK_TORRANCE)
+		if (settings.Shading == ShadingAlgorithm::SHADING_PBR_COOK_TORRANCE)
 		{
 			std::vector<std::pair<unsigned int, std::string>> pbrTextures = {
 				std::pair<unsigned int, std::string>(4, "roughness1"),

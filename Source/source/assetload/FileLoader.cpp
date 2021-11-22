@@ -473,7 +473,7 @@ namespace GEE
 
 		if (meshPtr)
 		{
-			meshPtr->GenerateVAO(vertices, indices, keepVertsData);
+			meshPtr->Generate(vertices, indices, keepVertsData);
 
 			std::cout << meshPtr->GetLocalization().NodeName + "   Vertices:" << vertices.size() << "    Indices:" << indices.size() << "    Bones: " << mesh->mNumBones;
 			if (mesh->mNumBones > 0)

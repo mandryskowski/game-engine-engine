@@ -50,7 +50,7 @@ namespace GEE
 
 		virtual void Update(float deltaTime) override;
 
-		virtual void Render(const RenderInfo&, Shader* shader) override;
+		virtual void Render(const SceneMatrixInfo&, Shader* shader) override;
 
 		virtual void GetEditorDescription(EditorDescriptionBuilder);
 
@@ -81,6 +81,8 @@ namespace GEE
 			archive(CEREAL_NVP(RenderAsBillboard), CEREAL_NVP(MeshInstances), cereal::make_nvp("SkelInfoBatchID", skelInfoBatchID), cereal::make_nvp("SkelInfoID", skelInfoID), cereal::make_nvp("RenderableComponent", cereal::base_class<RenderableComponent>(this)));
 			if (skelInfoID >= 0)
 			{
+				std::cout << "!!!Name of scene: " << Scene.GetName() << "\n";
+				std::cout << "!!!Nr of batches: " << Scene.GetRenderData()->SkeletonBatches.size() << "\n";
 				SkelInfo = Scene.GetRenderData()->GetBatch(skelInfoBatchID)->GetInfo(skelInfoID);
 				std::cout << "Setting skelinfo of " << Name << " to " << skelInfoBatchID << ", " << skelInfoID << '\n';
 			}

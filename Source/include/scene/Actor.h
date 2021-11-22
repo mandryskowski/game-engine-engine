@@ -81,7 +81,7 @@ namespace GEE
 
 		virtual void Setup();
 
-		virtual void HandleEvent(const Event& ev) {}
+		virtual void HandleEvent(const Event& ev);
 		virtual void HandleEventAll(const Event& ev);
 
 		virtual void Update(float);
@@ -91,8 +91,8 @@ namespace GEE
 
 		void Delete();
 
-		virtual void DebugRender(RenderInfo info, Shader* shader) const; //this method should only be called to render the components as something (usually a textured billboard) to debug the project.
-		void DebugRenderAll(RenderInfo info, Shader* shader) const;
+		virtual void DebugRender(SceneMatrixInfo info, Shader* shader) const; //this method should only be called to render the components as something (usually a textured billboard) to debug the project.
+		void DebugRenderAll(SceneMatrixInfo info, Shader* shader) const;
 
 		Actor* FindActor(const std::string& name);
 		const Actor* FindActor(const std::string& name) const;

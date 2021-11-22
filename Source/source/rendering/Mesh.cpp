@@ -4,7 +4,6 @@
 namespace GEE
 {
 	Mesh::Mesh(const MeshLoc& name) :
-		VAO(0),
 		VBO(0),
 		EBO(0),
 		VertexCount(0),
@@ -19,9 +18,11 @@ namespace GEE
 			CastsShadow = false;
 	}
 
-	unsigned int Mesh::GetVAO() const
+	unsigned int Mesh::GetVAO(unsigned int VAOcontext) const
 	{
-		return VAO;
+		if (auto found = VAOs.find(VAOcontext); found != VAOs.end())
+			return found->second;
+		return 0;
 	}
 
 	unsigned int Mesh::GetVertexCount() const
@@ -81,27 +82,28 @@ namespace GEE
 		BoundingBox = bbox;
 	}
 
-	void Mesh::Bind() const
+	void Mesh::Bind(unsigned int VAOcontext) const
 	{
-		glBindVertexArray(VAO);
+		if (!GetVAO(VAOcontext))
+			const_cast<Mesh*>(this)->GenerateVAO(VAOcontext);
+		//GEE_CORE_ASSERT(VAOs.at(VAOcontext));
+		glBindVertexArray(VAOs.at(VAOcontext));
 	}
 
 	void Mesh::LoadFromGLBuffers(unsigned int vertexCount, unsigned int vao, unsigned int vbo, unsigned int indexCount, unsigned int ebo)
 	{
 		VertexCount = vertexCount;
 		IndexCount = indexCount;
-		VAO = vao;
+		VAOs[0] = vao;
 		VBO = vbo;
 		EBO = ebo;
 		DefaultMeshMaterial = nullptr;
 	}
 
-	void Mesh::GenerateVAO(const std::vector <Vertex>& vertices, const std::vector <unsigned int>& indices, bool keepVerts)
+	void Mesh::Generate(const std::vector <Vertex>& vertices, const std::vector <unsigned int>& indices, bool keepVerts)
 	{
-		glGenVertexArrays(1, &VAO);
+		glBindVertexArray(0);
 		glGenBuffers(1, &VBO);
-
-		glBindVertexArray(VAO);
 
 		glBindBuffer(GL_ARRAY_BUFFER, VBO);
 		glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * vertices.size(), &(vertices)[0], GL_STATIC_DRAW);
@@ -110,10 +112,32 @@ namespace GEE
 		{
 			glGenBuffers(1, &EBO);
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-			//std::cout << "uwagaaa: " + std::to_string(indices->size()) + "\n";
 			glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * indices.size(), &(indices)[0], GL_STATIC_DRAW);
-			//std::cout << "po uwadze\n";
 		}
+
+		VertexCount = vertices.size();
+		IndexCount = indices.size();
+
+		if (keepVerts)
+		{
+			VertsData = MakeShared<std::vector<Vertex>>(vertices);	//copy all vertices to heap
+			IndicesData = MakeShared<std::vector<unsigned int>>(indices);	//copy all indices to heap
+			std::cout << "Keeping vertices for a mesh that has verts and index count: " << VertexCount << " " << IndexCount << '\n';
+		}
+	}
+
+	void Mesh::GenerateVAO(unsigned int VAOcontext)
+	{
+		GEE_CORE_ASSERT(VBO);
+
+		unsigned int vao;
+		glGenVertexArrays(1, &vao);
+		glBindVertexArray(vao);
+
+		glBindBuffer(GL_ARRAY_BUFFER, VBO);
+
+		if (EBO)
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
 
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(offsetof(Vertex, Vertex::Position)));
 		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(offsetof(Vertex, Vertex::Normal)));
@@ -128,15 +152,9 @@ namespace GEE
 		for (int i = 0; i < 7; i++)
 			glEnableVertexAttribArray(i);
 
-		VertexCount = vertices.size();
-		IndexCount = indices.size();
+		glBindVertexArray(0);
 
-		if (keepVerts)
-		{
-			VertsData = MakeShared<std::vector<Vertex>>(vertices);	//copy all vertices to heap
-			IndicesData = MakeShared<std::vector<unsigned int>>(indices);	//copy all indices to heap
-			std::cout << "Keeping vertices for a mesh that has verts and index count: " << VertexCount << " " << IndexCount << '\n';
-		}
+		VAOs[VAOcontext] = vao;
 	}
 
 	void Mesh::Render() const
@@ -170,11 +188,11 @@ namespace GEE
 	}
 
 	MeshInstance::MeshInstance(const MeshInstance& mesh) :
-		MaterialInst(nullptr),
-		MeshRef(mesh.MeshRef)
+		MeshRef(mesh.MeshRef),
+		MaterialInst(mesh.MaterialInst)
 	{
-		if (mesh.MaterialInst)
-			MaterialInst = MakeShared<MaterialInstance>(mesh.MaterialInst->GetMaterialRef());	//create another instance of the same material
+		//if (mesh.MaterialInst)
+			//MaterialInst = MakeShared<MaterialInstance>(mesh.MaterialInst->GetMaterialRef());	//create another instance of the same material
 	}
 
 
@@ -192,6 +210,14 @@ namespace GEE
 	const Mesh& MeshInstance::GetMesh() const
 	{
 		return MeshRef;
+	}
+
+	Material* MeshInstance::GetMaterialPtr()
+	{
+		if (MaterialInst)
+			return &MaterialInst->GetMaterialRef();
+
+		return nullptr;
 	}
 
 	const Material* MeshInstance::GetMaterialPtr() const

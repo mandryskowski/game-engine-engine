@@ -41,5 +41,9 @@ namespace GEE
 		{
 			return (glm::step(leftDown1, rightUp2) * glm::step(rightUp2, rightUp1) == VecType(1.0f)) && (glm::step(leftDown1, leftDown2) * glm::step(leftDown2, rightUp1) == VecType(1.0f));
 		}
+		template <typename VecType> bool NDCContains(const VecType& point)
+		{
+			return Contains<VecType>(point, VecType(-1.0f), VecType(1.0f));
+		}
 	}
 }

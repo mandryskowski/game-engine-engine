@@ -21,12 +21,14 @@ namespace GEE
 		static float AnimTime;
 	};
 
+	typedef float Time;
+
 
 	class Interpolation
 	{
-		float CurrentTime;
-		float Begin;
-		float End;
+		Time CurrentTime;
+		Time Begin;
+		Time End;
 		float T;
 
 		InterpolationType Type;
@@ -34,15 +36,27 @@ namespace GEE
 
 		AnimBehaviour BeforeBehaviour, AfterBehaviour;
 
+		std::function<bool(float)> OnUpdateFunc;
+
 	public:
-		Interpolation(float begin, float end, InterpolationType type = InterpolationType::LINEAR, bool fadeAway = false, AnimBehaviour before = AnimBehaviour::STOP, AnimBehaviour after = AnimBehaviour::STOP);
+		Interpolation(Time begin, Time end, InterpolationType type = InterpolationType::LINEAR, bool fadeAway = false, AnimBehaviour before = AnimBehaviour::STOP, AnimBehaviour after = AnimBehaviour::STOP);
 		bool IsChanging();
 		float GetT();
-		float GetDuration();
+		Time GetDuration();
 
-		void Reset(float begin = -1.0f, float end = -1.0f);
+		void SetOnUpdateFunc(std::function<bool(Time)> func)
+		{
+			OnUpdateFunc = std::move(func);
+		}
+
+		void Reset(Time begin = -1.0f, Time end = -1.0f);
 		void Inverse();	//this method essentially changes the direction of the interpolation. When you inverse an Interpolation, the interpolation function and time become inversed, so T increases at the same pace
-		void UpdateT(float deltaTime);
+		/**
+		 * @brief Updates the T value and calls OnUpdateFunc, if it exists.
+		 * @param deltaTime: The difference in time between the last update call and this one. This engine uses a constant time-step, so unless you change anything it should be safe to assume that deltaTime will always be constant.
+		 * @return: a boolean indicating whether this Interpolation has finished. If OnUpdateFunc exists, it returns the value of it. If it doesn't, it returns true if the interpolation is not changing.
+		*/
+		bool UpdateT(Time deltaTime);
 
 		template <class ValType> ValType InterpolateValues(ValType y1, ValType y2);
 	};

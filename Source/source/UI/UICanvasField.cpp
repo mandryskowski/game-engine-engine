@@ -188,7 +188,7 @@ void UIMultipleListActor::NestList(UIListActor& list)
 
 	void UICanvasFieldCategory::SetOnExpansionFunc(std::function<void()> onExpansionFunc)
 	{
-		OnExpansionFunc = [this, onExpansionFunc]() { if (onExpansionFunc) onExpansionFunc(); for (auto& it : Children) it->HandleEventAll(CursorMoveEvent(EventType::MouseMoved, GameHandle->GetInputRetriever().GetMousePositionNDC())); };
+		OnExpansionFunc = [this, onExpansionFunc]() { if (onExpansionFunc) onExpansionFunc(); for (auto& it : Children) it->HandleEventAll(CursorMoveEvent(EventType::MouseMoved, Scene.GetUIData()->GetWindowData().GetMousePositionNDC())); };
 	}
 
 	void UICanvasFieldCategory::HandleEventAll(const Event& ev)

@@ -19,12 +19,20 @@ namespace GEE
 	class Game : public GameManager
 	{
 	public:
-		Game(const ShadingModel&, const GameSettings&);
+		Game(const ShadingAlgorithm&, const GameSettings&);
 		virtual void Init(SystemWindow* window);
 
 		void LoadSceneFromFile(const std::string& path, const std::string& name = std::string());
-		virtual GameScene& CreateScene(const std::string& name, bool isAnUIScene = false) override;
+
+		virtual GameScene& CreateScene(std::string name, bool disallowChangingNameIfTaken = true) override;
+		virtual GameScene& CreateUIScene(std::string name, SystemWindow& associateWindow, bool disallowChangingNameIfTaken = true) override;
 		void AddScene(UniquePtr <GameScene> scene);
+		
+		/**
+		 * @brief Add an Interpolation to be Updated each frame. This Interpolation will be removed if its UpdateT function returns true.
+		 * @param: the Interpolation object.
+		*/
+		virtual void AddInterpolation(const Interpolation&) override;
 		virtual void BindAudioListenerTransformPtr(Transform*) override;
 
 		/**
@@ -74,6 +82,7 @@ namespace GEE
 		void TerminateGame();
 		void SetMainScene(GameScene*);
 		virtual void DeleteScene(GameScene&) override;
+		std::vector<GameSceneRenderData*> GetSceneRenderDatas();
 
 		// If bGameTerminated is true, no more GameLoopIterations will occur.
 		bool bGameTerminated;
@@ -81,6 +90,7 @@ namespace GEE
 		SystemWindow* Window;
 
 		std::vector <UniquePtr <GameScene>> Scenes;	//The first scene (Scenes[0]) is referred to as the Main Scene. If you only use 1 scene in your application, don't bother with passing arround GameScene pointers - the Main Scene will be chosen automatically.
+		std::deque <UniquePtr<Interpolation>> Interpolations;
 		GameScene* MainScene;
 		GameScene* ActiveScene;	//which scene currently handles events
 		EventHolder EventHolderObj;
@@ -95,7 +105,7 @@ namespace GEE
 		Physics::PhysicsEngine PhysicsEng;
 		Audio::AudioEngine AudioEng;
 
-		const ShadingModel Shading;
+		const ShadingAlgorithm Shading;
 		bool GameStarted;
 		bool DebugMode;
 		float LoopBeginTime;
@@ -104,7 +114,7 @@ namespace GEE
 		unsigned long long TotalTickCount, TotalFrameCount;
 	};
 
-	struct GLFWEventProcessor
+	struct WindowEventProcessor
 	{
 		static void CursorPosCallback(SystemWindow*, double, double);
 		static void MouseButtonCallback(SystemWindow*, int button, int action, int mods);
@@ -112,8 +122,13 @@ namespace GEE
 		static void CharEnteredCallback(SystemWindow*, unsigned int codepoint);
 		static void ScrollCallback(SystemWindow*, double xoffset, double yoffset);
 		static void FileDropCallback(SystemWindow*, int count, const char** paths);
+		static void CursorLeaveEnterCallback(SystemWindow*, int enter);
 
 		static EventHolder* TargetHolder;
 	};
 
+	namespace DebugCallbacks
+	{
+		void APIENTRY OpenGLDebug(GLenum source, GLenum type, unsigned int id, GLenum severity, GLsizei length, const char* message, const void* userParam);
+	}
 }

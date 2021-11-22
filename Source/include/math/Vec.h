@@ -43,6 +43,8 @@ namespace GEE
 		{
 			return glm::value_ptr(obj);
 		}
+		
+		Vec2f GetRatioOfComponents(const Vec2f& vec);
 	}
 }
 

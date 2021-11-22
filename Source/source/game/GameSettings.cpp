@@ -74,7 +74,7 @@ namespace GEE
 		MonitorGamma = 2.2f;
 		POMLevel = SettingLevel::SETTING_NONE;
 		ShadowLevel = SettingLevel::SETTING_LOW;
-		Shading = ShadingModel::SHADING_FULL_LIT;
+		Shading = ShadingAlgorithm::SHADING_FULL_LIT;
 		TMType = ToneMappingType::TM_REINHARD;
 	}
 

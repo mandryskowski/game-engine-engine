@@ -4,6 +4,7 @@
 #include <rendering/RenderInfo.h>
 #include <rendering/RenderToolbox.h>
 #include <scene/LightProbeComponent.h>
+#include <rendering/Renderer.h>
 
 namespace GEE
 {
@@ -15,8 +16,9 @@ namespace GEE
 		Texture erTexture = Texture::Loader<float>::FromFile2D(filepath, Texture::Format::Float16::RGBA(), true, Texture::MinFilter::Bilinear(), Texture::MagFilter::Bilinear());	//load equirectangular hdr texture
 		int layer = probe.GetProbeIndex() * 6;
 
-		renderHandle->RenderCubemapFromTexture(probe.GetEnvironmentMap(), erTexture, Vec2u(1024), *renderHandle->FindShader("ErToCubemap"));
+		CubemapRenderer(*renderHandle).FromTexture(probe.GetEnvironmentMap(), erTexture, Vec2u(1024), *renderHandle->FindShader("ErToCubemap"));
 		probe.GetEnvironmentMap().Bind();
+		std::cout << "!!! Environment map ID: " << probe.GetEnvironmentMap().GetID() << "\n";
 		probe.OptionalFilepath = filepath;
 		glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
 
@@ -37,7 +39,7 @@ namespace GEE
 		renderHandle->FindShader("CubemapToIrradiance")->Use();
 		int layer = probe.GetProbeIndex() * 6;
 
-		renderHandle->RenderCubemapFromTexture(probeTexArrays->IrradianceMapArr, envMap, Vec2u(16), *renderHandle->FindShader("CubemapToIrradiance"), &layer);
+		CubemapRenderer(*renderHandle, 0).FromTexture(probeTexArrays->IrradianceMapArr, envMap, Vec2u(16), *renderHandle->FindShader("CubemapToIrradiance"), &layer);
 
 		if (PrimitiveDebugger::bDebugProbeLoading)
 			std::cout << "Prefiltering\n";
@@ -47,7 +49,7 @@ namespace GEE
 		{
 			layer = probe.GetProbeIndex() * 6;
 			renderHandle->FindShader("CubemapToPrefilter")->Uniform1f("roughness", static_cast<float>(mipmap) / 5.0f);
-			renderHandle->RenderCubemapFromTexture(probeTexArrays->PrefilterMapArr, envMap, Vec2f(256.0f) / std::pow(2.0f, static_cast<float>(mipmap)), *renderHandle->FindShader("CubemapToPrefilter"), &layer, mipmap);
+			CubemapRenderer(*renderHandle).FromTexture(probeTexArrays->PrefilterMapArr, envMap, Vec2f(256.0f) / std::pow(2.0f, static_cast<float>(mipmap)), *renderHandle->FindShader("CubemapToPrefilter"), &layer, mipmap);
 		}
 		if (PrimitiveDebugger::bDebugProbeLoading)
 			std::cout << "Ending\n";
@@ -69,7 +71,7 @@ namespace GEE
 		framebuffer.AttachTextures(probeTexArrays->BRDFLut);
 		framebuffer.Bind(true);
 		renderHandle->FindShader("BRDFLutGeneration")->Use();
-		renderHandle->RenderStaticMesh(RenderInfo(*renderHandle->GetCurrentTbCollection()), renderHandle->GetBasicShapeMesh(EngineBasicShape::QUAD), Transform(), renderHandle->FindShader("BRDFLutGeneration"));
+		Renderer(*renderHandle).StaticMeshInstances(SceneMatrixInfo(*renderHandle->GetCurrentTbCollection(), *sceneRenderData), { renderHandle->GetBasicShapeMesh(EngineBasicShape::QUAD) }, Transform(), *renderHandle->FindShader("BRDFLutGeneration"));
 
 		framebuffer.Dispose();
 	}

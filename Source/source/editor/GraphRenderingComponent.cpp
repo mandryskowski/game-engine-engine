@@ -3,6 +3,8 @@
 #include <scene/TextComponent.h>
 #include <numeric>
 
+#include <rendering/Renderer.h>
+
 namespace GEE
 {
 	GraphRenderingComponent::GraphRenderingComponent(Actor& actor, Component* parentComp, const std::string& name, const Transform& transform):
@@ -87,16 +89,18 @@ namespace GEE
 
 		GraphView = graphView;
 	}
-	void GraphRenderingComponent::Render(const RenderInfo& info, Shader* shader)
+	void GraphRenderingComponent::Render(const SceneMatrixInfo& info, Shader* shader)
 	{
 		if (GetHide())
 			return;
 
 		UpdateMarkerUniformData(*shader);
-		GameHandle->GetRenderEngineHandle()->RenderStaticMesh((CanvasPtr) ? (CanvasPtr->BindForRender(info, GameHandle->GetGameSettings()->WindowSize)) : (info), MeshInstance(GameHandle->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD), GraphMaterialInst), GetTransform().GetWorldTransform(), shader);
+		
+		
+		Renderer(*GameHandle->GetRenderEngineHandle()).StaticMeshInstances((CanvasPtr) ? (MatrixInfoExt(info.GetContextID(), CanvasPtr->BindForRender(info))) : (info), { MeshInstance(GameHandle->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD), GraphMaterialInst) }, GetTransform().GetWorldTransform(), *shader);
 
 		if (CanvasPtr)
-			CanvasPtr->UnbindForRender(GameHandle->GetGameSettings()->WindowSize);
+			CanvasPtr->UnbindForRender();
 	}
 	Vec2f GraphRenderingComponent::GraphRange::GetRangeBeginEnd() const
 	{

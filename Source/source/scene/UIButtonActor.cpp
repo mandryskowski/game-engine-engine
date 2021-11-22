@@ -6,6 +6,7 @@
 #include <scene/TextComponent.h>
 #include <input/InputDevicesStateRetriever.h>
 #include <math/Box.h>
+#include <editor/EditorActions.h>
 
 namespace GEE
 {
@@ -168,21 +169,15 @@ namespace GEE
 
 	void UIButtonActor::HandleEvent(const Event& ev)
 	{
+		Actor::HandleEvent(ev);
 		if (bInputDisabled)
 			return;
 
-		if (GetName() == "SettingsButton" && ev.GetType() == EventType::MousePressed && dynamic_cast<const MouseButtonEvent&>(ev).GetButton() == MouseButton::Right)
-			dynamic_cast<EditorManager*>(GameHandle)->CreatePopupMenu(GameHandle->GetInputRetriever().GetMousePositionNDC());
-
 		if (ev.GetType() == EventType::MouseMoved)
 		{
-			Vec2f cursorPos = dynamic_cast<const CursorMoveEvent*>(&ev)->GetNewPosition();
-			Vec2f windowSize((GameHandle->GetGameSettings()->WindowSize));
-			Vec2f windowBottomLeft(0.0f);
+			Vec2f cursorNDC = dynamic_cast<const CursorMoveEvent*>(&ev)->GetNewPositionNDC();
 
-			Vec2f cursorNDC = (Vec2f(cursorPos.x, windowSize.y - cursorPos.y) - windowBottomLeft) / windowSize * 2.0f - 1.0f;
-
-			bool bMouseInside = (Scene.GetCurrentBlockingCanvas() && !Scene.GetCurrentBlockingCanvas()->ShouldAcceptBlockedEvents(*this)) ? (false) : (ContainsMouse(cursorNDC));
+			bool bMouseInside = (Scene.GetUIData()->GetCurrentBlockingCanvas() && !Scene.GetUIData()->GetCurrentBlockingCanvas()->ShouldAcceptBlockedEvents(*this)) ? (false) : (ContainsMouse(cursorNDC));
 
 
 			if (bMouseInside)
@@ -318,6 +313,10 @@ namespace GEE
 		auto& text = CreateComponent<TextConstantSizeComponent>("ButtonText", Transform(Vec2f(0.0f), Vec2f(1.0f)), content, "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
 		text.SetMaxSize(Vec2f(0.8f));
 		text.Unstretch();
+		text.Unstretch();
+		text.Unstretch();
+		text.Unstretch();
+		text.Unstretch();
 		return text;
 	}
 
@@ -327,8 +326,8 @@ namespace GEE
 		return point == glm::min(glm::max(rectLeftBottom, point), rectLeftBottom + Vec2f(rect.GetScale()) * 2.0f);
 	}
 
-	UIActivableButtonActor::UIActivableButtonActor(GameScene& scene, Actor* parentActor, const std::string& name,  std::function<void()> onClickFunc, std::function<void()> onDeactivationFunc) :
-		UIButtonActor(scene, parentActor, name, onClickFunc),
+	UIActivableButtonActor::UIActivableButtonActor(GameScene& scene, Actor* parentActor, const std::string& name,  std::function<void()> onClickFunc, std::function<void()> onDeactivationFunc, const Transform& transform) :
+		UIButtonActor(scene, parentActor, name, onClickFunc, transform),
 		OnDeactivationFunc(onDeactivationFunc)
 	{
 
@@ -343,8 +342,8 @@ namespace GEE
 
 		MatActive = MakeShared<MaterialInstance>(MaterialInstance(*matActive));
 	}
-	UIActivableButtonActor::UIActivableButtonActor(GameScene& scene, Actor* parentActor, const std::string& name, const std::string& buttonTextContent, std::function<void()> onClickFunc, std::function<void()> onDeactivationFunc) :
-		UIActivableButtonActor(scene, parentActor, name, onClickFunc, onDeactivationFunc)
+	UIActivableButtonActor::UIActivableButtonActor(GameScene& scene, Actor* parentActor, const std::string& name, const std::string& buttonTextContent, std::function<void()> onClickFunc, std::function<void()> onDeactivationFunc, const Transform& transform) :
+		UIActivableButtonActor(scene, parentActor, name, onClickFunc, onDeactivationFunc, transform)
 	{
 		CreateButtonText(buttonTextContent);
 	}
@@ -363,6 +362,7 @@ namespace GEE
 
 	void UIActivableButtonActor::HandleEvent(const Event& ev)
 	{
+		UIButtonActor::HandleEvent(ev);
 		bool wasActive = State == EditorIconState::ACTIVATED;
 		bool isActive = wasActive;
 		if ((ev.GetType() == EventType::MouseReleased && dynamic_cast<const MouseButtonEvent&>(ev).GetButton() == MouseButton::Left) || (ev.GetType() == EventType::FocusSwitched))	//When the user releases LMB anywhere or our scene is de-focused, we disable writing to the InputBox.
@@ -383,7 +383,7 @@ namespace GEE
 	void UIActivableButtonActor::OnDeactivation()
 	{
 		std::cout << "Deactivating...\n";
-		State = ((ContainsMouse(GameHandle->GetInputRetriever().GetMousePositionNDC())) ? (EditorIconState::HOVER) : (EditorIconState::IDLE));
+		State = ((ContainsMouse(Scene.GetUIData()->GetWindowData().GetMousePositionNDC())) ? (EditorIconState::HOVER) : (EditorIconState::IDLE));
 		if (OnDeactivationFunc)
 			OnDeactivationFunc();
 	}
@@ -411,14 +411,14 @@ namespace GEE
 
 	void UIScrollBarActor::OnBeingClicked()
 	{
-		ClickPosNDC = GameHandle->GetInputRetriever().GetMousePositionNDC();
+		ClickPosNDC = Scene.GetUIData()->GetWindowData().GetMousePositionNDC();
 		UIButtonActor::OnBeingClicked();
 	}
 
 	void UIScrollBarActor::WhileBeingClicked()
 	{
 		UIButtonActor::WhileBeingClicked();
-		ClickPosNDC = GameHandle->GetInputRetriever().GetMousePositionNDC();
+		ClickPosNDC = Scene.GetUIData()->GetWindowData().GetMousePositionNDC();
 	}
 
 	const Vec2f& UIScrollBarActor::GetClickPosNDC()

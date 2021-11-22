@@ -12,6 +12,9 @@
 #include <rendering/RenderToolbox.h>
 #include <scene/CameraComponent.h>
 #include <scene/Controller.h>
+#include <game/IDSystem.h>
+
+#include <rendering/Renderer.h>
 
 namespace GEE
 {
@@ -168,21 +171,21 @@ namespace GEE
 			ComponentTransform.SetRotation(glm::rotate(Mat4f(1.0f), (float)glfwGetTime(), Vec3f(0.0f, 1.0f, 0.0f)));
 	}
 
-	void ModelComponent::Render(const RenderInfo& info, Shader* shader)
+	void ModelComponent::Render(const SceneMatrixInfo& info, Shader* shader)
 	{
 		if (GetHide())
 			return;
 
-		std::vector<std::reference_wrapper<const MeshInstance>> meshInstances;
-		std::transform(MeshInstances.begin(), MeshInstances.end(), std::back_inserter(meshInstances), [](UniquePtr<MeshInstance>& instVec) { return std::reference_wrapper<const MeshInstance>(*instVec); });
+		std::vector<MeshInstance> meshInstances;
+		std::transform(MeshInstances.begin(), MeshInstances.end(), std::back_inserter(meshInstances), [](UniquePtr<MeshInstance>& instVec) { return *instVec; });
 
 		if (SkelInfo && SkelInfo->GetBoneCount() > 0)
-			GameHandle->GetRenderEngineHandle()->RenderSkeletalMeshes(info, meshInstances, GetTransform().GetWorldTransform(), shader, *SkelInfo, &LastFrameMVP);
+			SkeletalMeshRenderer(*GameHandle->GetRenderEngineHandle()).SkeletalMeshInstances(info, meshInstances, *SkelInfo, GetTransform().GetWorldTransform(), *shader);
 		else
 		{
-			GameHandle->GetRenderEngineHandle()->RenderStaticMeshes((CanvasPtr) ? (CanvasPtr->BindForRender(info, GameHandle->GetGameSettings()->WindowSize)) : (info), meshInstances, GetTransform().GetWorldTransform(), shader, &LastFrameMVP, nullptr, RenderAsBillboard);
+			Renderer(*GameHandle->GetRenderEngineHandle()).StaticMeshInstances((CanvasPtr) ? (CanvasPtr->BindForRender(info)) : (info), meshInstances, GetTransform().GetWorldTransform(), *shader, RenderAsBillboard);
 			if (CanvasPtr)
-				CanvasPtr->UnbindForRender(GameHandle->GetGameSettings()->WindowSize);
+				CanvasPtr->UnbindForRender();
 		}
 	}
 
@@ -240,7 +243,20 @@ namespace GEE
 					}
 
 					window.SetOnCloseFunc([&meshPreviewScene, &renderHandle, viewportMaterial, &renderTbCollection]() { meshPreviewScene.MarkAsKilled();  renderHandle.EraseMaterial(*viewportMaterial); renderHandle.EraseRenderTbCollection(renderTbCollection); });
-					});
+				});
+
+				auto& materialButton = listActor.CreateChild<UIButtonActor>("EditMaterialButton", (meshInst->GetMaterialPtr()) ? (meshInst->GetMaterialPtr()->GetName()) : ("No material"), nullptr, Transform(Vec2f(2.5f, 0.0f), Vec2f(3.0f, 1.0f)));
+
+				materialButton.SetOnClickFunc([&, descBuilder]() mutable { 
+					UIWindowActor& matWindow = descBuilder.GetEditorScene().CreateActorAtRoot<UIWindowActor>(name + "MaterialWindow");
+					EditorDescriptionBuilder descBuilder(descBuilder.GetEditorHandle(), matWindow, matWindow);
+					meshInst->GetMaterialPtr()->GetEditorDescription(descBuilder);
+					matWindow.AutoClampView();
+					matWindow.RefreshFieldsList();
+				});
+
+				if (!meshInst->GetMaterialPtr())
+					materialButton.SetDisableInput(true);
 			});
 
 		descBuilder.AddField("Override materials").GetTemplates().ObjectInput<Material>(

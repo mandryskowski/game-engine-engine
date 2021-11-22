@@ -79,8 +79,8 @@ namespace GEE
 	class UIActivableButtonActor : public UIButtonActor
 	{
 	public:
-		UIActivableButtonActor(GameScene& scene, Actor* parentActor, const std::string& name, std::function<void()> onClickFunc = nullptr, std::function<void()> onDeactivationFunc = nullptr);
-		UIActivableButtonActor(GameScene& scene, Actor* parentActor, const std::string& name, const std::string& buttonTextContent, std::function<void()> onClickFunc = nullptr, std::function<void()> onDeactivationFunc = nullptr);
+		UIActivableButtonActor(GameScene& scene, Actor* parentActor, const std::string& name, std::function<void()> onClickFunc = nullptr, std::function<void()> onDeactivationFunc = nullptr, const Transform& = Transform());
+		UIActivableButtonActor(GameScene& scene, Actor* parentActor, const std::string& name, const std::string& buttonTextContent, std::function<void()> onClickFunc = nullptr, std::function<void()> onDeactivationFunc = nullptr, const Transform& = Transform());
 
 		void SetMatActive(MaterialInstance&&);
 		void SetOnDeactivationFunc(std::function<void()> onDeactivationFunc);

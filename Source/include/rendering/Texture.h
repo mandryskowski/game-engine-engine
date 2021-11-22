@@ -276,7 +276,7 @@ namespace GEE
 		std::string ShaderName;
 
 	public:
-		NamedTexture(const Texture& tex = Texture(), const std::string& name = "diffuse");
+		NamedTexture(const Texture& tex = Texture(), const std::string& name = "albedo1");
 
 		std::string GetShaderName() const;
 		void SetShaderName(const std::string&);

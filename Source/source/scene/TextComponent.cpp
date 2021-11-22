@@ -115,14 +115,13 @@ namespace GEE
 		TextMatInst = MakeUnique<MaterialInstance>(std::move(matInst));
 	}
 
-	void TextComponent::Render(const RenderInfo& info, Shader* shader)
+	void TextComponent::Render(const SceneMatrixInfo& info, Shader* shader)
 	{
 		if (!UsedFont || GetHide())
 			return;
-		GameHandle->GetRenderEngineHandle()->RenderText((CanvasPtr) ? (CanvasPtr->BindForRender(info, GameHandle->GetGameSettings()->WindowSize)) : (info), *UsedFont, Content, GetTransform().GetWorldTransform(), TextMatInst->GetMaterialRef().GetColor(), shader, false, Alignment);
-		//	GameHandle->GetRenderEngineHandle()->RenderStaticMesh(RenderInfo(*GameHandle->GetRenderEngineHandle()->GetCurrentTbCollection()), MeshInstance(GameHandle->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD)), Transform(), GameHandle->GetRenderEngineHandle()->FindShader("Debug")));
+		GameHandle->GetRenderEngineHandle()->RenderText((CanvasPtr) ? (CanvasPtr->BindForRender(info)) : (info), *UsedFont, Content, GetTransform().GetWorldTransform(), TextMatInst->GetMaterialRef().GetColor(), shader, false, Alignment);
 		if (CanvasPtr)
-			CanvasPtr->UnbindForRender(GameHandle->GetGameSettings()->WindowSize);
+			CanvasPtr->UnbindForRender();
 	}
 
 	void TextComponent::SetHorizontalAlignment(const TextAlignment horizontal)
@@ -184,8 +183,7 @@ namespace GEE
 		ScaleRatio(Vec2f(1.0f)),
 		PreviouslyAppliedScaleRatio(Vec2f(1.0f))
 	{
-		RecalculateScaleRatio();
-		UpdateSize();
+		Unstretch();
 	}
 
 	TextConstantSizeComponent::TextConstantSizeComponent(Actor& actor, Component* parentComp, const std::string& name, const Transform& transform, std::string content, std::string fontPath, std::pair<TextAlignment, TextAlignment> alignment) :
@@ -194,8 +192,7 @@ namespace GEE
 		ScaleRatio(Vec2f(1.0f)),
 		PreviouslyAppliedScaleRatio(Vec2f(1.0f))
 	{
-		RecalculateScaleRatio();
-		UpdateSize();
+		Unstretch();
 	}
 
 	TextConstantSizeComponent::TextConstantSizeComponent(TextConstantSizeComponent&& textComp) :
@@ -233,22 +230,50 @@ namespace GEE
 		PreviouslyAppliedScaleRatio = ScaleRatio;
 	}
 
-	void TextConstantSizeComponent::RecalculateScaleRatio(bool world)
+	void TextConstantSizeComponent::RecalculateScaleRatio(UISpace space)
 	{
-		Vec2f scale = static_cast<Vec2f>(((world)
-					? ((GetCanvasPtr()) ? (GetCanvasPtr()->ToCanvasSpace(GetTransform().GetWorldTransform())) : (GetTransform().GetWorldTransform()))
-					: (GetTransform())).GetScale()) / PreviouslyAppliedScaleRatio;
+		Vec2f scale(1.0f);
 
-		if (world && GetCanvasPtr())
+		if (space == UISpace::Window)
+			scale = Vec2f(1.0f) / Math::GetRatioOfComponents(static_cast<Vec2f>(Scene.GetUIData()->GetWindowData().GetWindowSize()));
+		scale /= PreviouslyAppliedScaleRatio;
+
+		switch (space)
+		{
+			case UISpace::Local:	scale *= GetTransform().GetScale2D(); break;
+			case UISpace::World:	scale *= GetTransform().GetWorldTransform().GetScale2D(); break;
+
+			case UISpace::Canvas:
+			case UISpace::Window:
+			{
+				if (GetCanvasPtr())
+					scale *= GetCanvasPtr()->ToCanvasSpace(GetTransform().GetWorldTransform()).GetScale2D();
+				else
+					scale *= GetTransform().GetWorldTransform().GetScale2D();
+				break;
+			}
+			default: break;
+		}
+
+		if (GetCanvasPtr() && (space == UISpace::Canvas || space == UISpace::Window))
 			scale = (Mat2f)GetCanvasPtr()->GetViewMatrix() * scale;
-		ScaleRatio = glm::min(Vec2f(scale.y / scale.x, scale.x / scale.y), Vec2f(1.0f));
+
+		ScaleRatio = Math::GetRatioOfComponents(scale);
 	}
 
-	void TextConstantSizeComponent::Unstretch(bool world)
+	void TextConstantSizeComponent::Unstretch(UISpace space)
 	{
-		RecalculateScaleRatio(world);
+		RecalculateScaleRatio(space);
 		UpdateSize();
 		UpdateSize();
+	}
+
+	void TextConstantSizeComponent::HandleEvent(const Event& ev)
+	{
+		TextComponent::HandleEvent(ev);
+
+		if (ev.GetType() == EventType::WindowResized)
+			Unstretch();
 	}
 
 	ScrollingTextComponent::ScrollingTextComponent(Actor& actorRef, Component* parentComp, const std::string& name, const Transform& transform, std::string content, SharedPtr<Font> font, std::pair<TextAlignment, TextAlignment> alignment):
@@ -289,14 +314,14 @@ namespace GEE
 		//	TimeSinceScrollReset -= (ScrollResetTime + ScrollCooldownTime) + ScrollCooldownTime;	// Two cooldowns: one after the text has been fully scrolled and one before scrolling. That's why we substract two cooldowns
 	}
 
-	void ScrollingTextComponent::Render(const RenderInfo& infoBeforeChange, Shader* shader)
+	void ScrollingTextComponent::Render(const SceneMatrixInfo& infoBeforeChange, Shader* shader)
 	{
 		if (!GetUsedFont() || GetHide())
 			return;
 
 		// Copy info
 		Transform renderTransform = GetTransform().GetWorldTransform();
-		RenderInfo info = infoBeforeChange;
+		SceneMatrixInfo info = infoBeforeChange;
 
 		// Set view matrix
 		float scroll = ScrollingInterp.GetT();
@@ -311,7 +336,7 @@ namespace GEE
 		const float posX = scroll * scrollLength;
 		const Mat4f scrollMat = Transform(Vec2f(posX + renderTransform.GetScale().x, 0.0f), Vec2f(1.0f)).GetViewMatrix();
 
-		info.view *= scrollMat;
+		info.SetView(info.GetView() * scrollMat);
 		info.CalculateVP();
 
 
@@ -323,20 +348,13 @@ namespace GEE
 		viewport.ToPxViewport(GameHandle->GetGameSettings()->WindowSize).SetScissor();
 
 		// Render
-		GameHandle->GetRenderEngineHandle()->RenderText((CanvasPtr) ? (CanvasPtr->BindForRender(info, GameHandle->GetGameSettings()->WindowSize)) : (info), *GetUsedFont(), GetContent(), renderTransform, GetTextMatInst()->GetMaterialRef().GetColor(), shader, false, std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, GetAlignment().second));
+		;// GameHandle->GetRenderEngineHandle()->RenderText((CanvasPtr) ? (CanvasPtr->BindForRender(info, GameHandle->GetGameSettings()->WindowSize)) : (info), *GetUsedFont(), GetContent(), renderTransform, GetTextMatInst()->GetMaterialRef().GetColor(), shader, false, std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, GetAlignment().second));
 
 		// Clean up after everything
 		if (CanvasPtr)
-			CanvasPtr->UnbindForRender(GameHandle->GetGameSettings()->WindowSize);
+			CanvasPtr->UnbindForRender();
 		Viewport(Vec2u(0), GameHandle->GetGameSettings()->WindowSize).SetOpenGLState();
 		glDisable(GL_SCISSOR_TEST);
-	}
-
-	Transform ScrollingTextComponent::GetParentWorldTransform() const
-	{
-		if (GetTransform().GetParentTransform())
-			return GetTransform().GetParentTransform()->GetWorldTransform();
-		return Transform();
 	}
 
 	float textUtil::GetTextLength(const std::string& str, const Vec2f& textScale, const Font& font)

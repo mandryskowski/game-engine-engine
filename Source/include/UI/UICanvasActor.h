@@ -13,6 +13,8 @@ namespace GEE
 	class UIActorDefault;
 	class UIElementTemplates;
 
+	class PopupDescription;
+
 	class UICanvasActor : public Actor, public UICanvas
 	{
 	public:
@@ -34,7 +36,12 @@ namespace GEE
 				CanvasParent = nullptr;
 		}
 
+		void SetPopupCreationFunc(std::function<void(PopupDescription)>);
 		virtual void SetCanvasView(const Transform&) override;
+		/**
+		 * @return The ModelComponent that is the canvas background. Can be nullptr.
+		*/
+		ModelComponent* GetCanvasBackground();
 
 		virtual Vec2f FromCanvasSpace(const Vec2f& canvasSpacePos) const override;
 		virtual Mat4f FromCanvasSpace(const Mat4f& canvasSpaceMat) const override;
@@ -49,6 +56,11 @@ namespace GEE
 		void KillResizeBars();
 		virtual void ClampViewToElements() override;
 
+		/**
+		 * @brief Create a quad model to distinguish between the canvas and other UI elements.
+		 * @param color: the colour of the background. Leave it at Vec3f(-1.0f) to use the default colour.
+		*/
+		void CreateCanvasBackgroundModel(const Vec3f& color = Vec3f(-1.0f));
 		template <typename ChildClass, typename... Args> ChildClass& CreateChildCanvas(Args&&...);
 
 		virtual Actor& AddChild(UniquePtr<Actor>) override;
@@ -58,8 +70,8 @@ namespace GEE
 		virtual void HandleEvent(const Event& ev) override;
 		virtual void HandleEventAll(const Event& ev) override;
 
-		virtual RenderInfo BindForRender(const RenderInfo&, const Vec2u& res) override;
-		virtual void UnbindForRender(const Vec2u& res) override;
+		virtual SceneMatrixInfo BindForRender(const SceneMatrixInfo&) override;
+		virtual void UnbindForRender() override;
 
 		~UICanvasActor();
 	protected:
@@ -75,8 +87,10 @@ namespace GEE
 		Vec3f FieldSize;
 		UIScrollBarActor* ScrollBarX, *ScrollBarY, *BothScrollBarsButton;
 		UIScrollBarActor* ResizeBarX, *ResizeBarY;
+		ModelComponent* CanvasBackground;
 
 		UICanvasActor* CanvasParent;
+		std::function<void(PopupDescription)> PopupCreationFunc;
 	};
 
 	class UICanvasFieldCategory : public UIAutomaticListActor
@@ -103,13 +117,13 @@ namespace GEE
 	class EditorDescriptionBuilder
 	{
 	public:
-		EditorDescriptionBuilder(EditorManager& editorHandle, UICanvasFieldCategory&);
-		EditorDescriptionBuilder(EditorManager&, UIActorDefault&);
-		EditorDescriptionBuilder(EditorManager&, Actor&, UICanvas&);
+		EditorDescriptionBuilder(Editor::EditorManager& editorHandle, UICanvasFieldCategory&);
+		EditorDescriptionBuilder(Editor::EditorManager&, UIActorDefault&);
+		EditorDescriptionBuilder(Editor::EditorManager&, Actor&, UICanvas&);
 		GameScene& GetEditorScene();
 		UICanvas& GetCanvas();
 		Actor& GetDescriptionParent();
-		EditorManager& GetEditorHandle();
+		Editor::EditorManager& GetEditorHandle();
 
 		UICanvasField& AddField(const std::string& name, std::function<Vec3f()> getFieldOffsetFunc = nullptr);	//equivalent to GetCanvasActor().AddField(...). I put it here for easier access.
 		UICanvasFieldCategory& AddCategory(const std::string& name);
@@ -123,7 +137,7 @@ namespace GEE
 
 		void DeleteDescription();
 	private:
-		EditorManager& EditorHandle;
+		Editor::EditorManager& EditorHandle;
 		GameScene& EditorScene;
 		Actor& DescriptionParent;
 		UICanvas& CanvasRef;

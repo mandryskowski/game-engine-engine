@@ -6,14 +6,14 @@ namespace GEE
 {
 	struct OutlineRenderer : public Renderer
 	{
-		OutlineRenderer(RenderEngineManager& renderHandle) : Renderer(renderHandle) {}
+		using Renderer::Renderer;
 		/**
 		 * @brief 
 		 * @param info 
 		 * @param comp 
 		 * @param targetFramebuffer: A stencil buffer must be attached
 		*/
-		void RenderOutlineStencil(RenderInfo info, Component* comp, GEE_FB::Framebuffer& targetFramebuffer)
+		void RenderOutlineStencil(SceneMatrixInfo info, Component* comp, GEE_FB::Framebuffer& targetFramebuffer)
 		{
 			if (!comp)
 				return;
@@ -36,14 +36,14 @@ namespace GEE
 
 			shader->Use();
 			// We will use our own material
-			info.UseMaterials = false;
+			info.SetUseMaterials(false);
 
 			auto renderFunc = [&]()
 			{
 				if (compRenderableCast)
 					compRenderableCast->Render(info, shader);
 				else
-					comp->DebugRender(info, shader);
+					comp->DebugRender(info, *shader);
 			};
 
 			renderFunc();
@@ -88,7 +88,7 @@ namespace GEE
 
 			targetFramebuffer.SetDrawSlots();
 		}
-		void RenderOutlineSilhouette(RenderInfo info, Component* comp, GEE_FB::Framebuffer& targetFramebuffer)
+		void RenderOutlineSilhouette(SceneMatrixInfo info, Component* comp, GEE_FB::Framebuffer& targetFramebuffer)
 		{
 			// Check if comp is a renderable (doesn't have to be, we can also render the debug icon)
 			auto compRenderableCast = dynamic_cast<RenderableComponent*>(comp);
@@ -98,7 +98,7 @@ namespace GEE
 			if (compRenderableCast)
 			{
 				if (auto materials = compRenderableCast->GetMaterials(); !materials.empty() && materials.front())
-					shader = (materials.front()->GetRenderShaderName() == "Geometry") ? (info.TbCollection.GetTb<DeferredShadingToolbox>()->FindShader("Geometry")) : (Impl.RenderHandle.FindShader(materials.front()->GetRenderShaderName()));
+					shader = (materials.front()->GetRenderShaderName() == "Geometry") ? (info.GetTbCollection().GetTb<DeferredShadingToolbox>()->FindShader("Geometry")) : (Impl.RenderHandle.FindShader(materials.front()->GetRenderShaderName()));
 			}
 			if (!shader)
 				shader = Impl.RenderHandle.FindShader("Forward_NoLight");
@@ -132,8 +132,8 @@ namespace GEE
 			glClear(GL_COLOR_BUFFER_BIT);
 			glEnable(GL_CULL_FACE);
 
-			info.UseMaterials = true;
-			info.CareAboutShader = true;
+			info.SetUseMaterials(true);
+			info.SetCareAboutShader(true);
 			shader->Use();
 
 			// Pass 1: render component's silhouette:
@@ -143,14 +143,14 @@ namespace GEE
 			if (compRenderableCast)
 				compRenderableCast->Render(info, shader);
 			else
-				comp->DebugRender(info, shader);
+				comp->DebugRender(info, *shader);
 
 			// Pass 2: render outline to targetFramebuffer
 			targetFramebuffer.Bind();
 			targetFramebuffer.SetDrawSlot(0);
 
-			info.UseMaterials = false;
-			info.CareAboutShader = false;
+			info.SetUseMaterials(false);
+			info.SetCareAboutShader(false);
 
 			if (shader = Impl.RenderHandle.FindShader("SilhouetteOutline"); !shader)
 			{
@@ -165,8 +165,10 @@ namespace GEE
 			silhouetteTexture.Bind(0);
 			
 			//renderFunc();
-			Impl.RenderHandle.GetBasicShapeMesh(EngineBasicShape::QUAD).Bind();
-			Impl.RenderHandle.RenderStaticMesh(RenderInfo(info.TbCollection, Mat4f(1.0f), Mat4f(1.0f), Mat4f(1.0f), Vec3f(0.0f), false), Impl.RenderHandle.GetBasicShapeMesh(EngineBasicShape::QUAD), Transform(), shader);
+			Impl.RenderHandle.GetBasicShapeMesh(EngineBasicShape::QUAD).Bind(info.GetContextID());
+			SceneMatrixInfo infoNoMaterials(info.GetTbCollection(), info.GetSceneRenderData());
+			infoNoMaterials.SetUseMaterials(false);
+			StaticMeshInstances(infoNoMaterials, { Impl.GetBasicShapeMesh(EngineBasicShape::QUAD) }, Transform(), *shader);
 
 			// Clean up after everything
 			glDepthMask(0xFF);

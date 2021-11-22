@@ -15,18 +15,29 @@
 
 namespace GEE
 {
-	GameScene::GameScene(GameManager& gameHandle, const std::string& name, bool isAnUIScene) :
-		RenderData(MakeUnique<GameSceneRenderData>(gameHandle.GetRenderEngineHandle(), isAnUIScene)),
-		PhysicsData(MakeUnique<Physics::GameScenePhysicsData>(gameHandle.GetPhysicsHandle())),
-		AudioData(MakeUnique<Audio::GameSceneAudioData>(gameHandle.GetAudioEngineHandle())),
+	GameScene::GameScene(GameManager& gameHandle, const std::string& name):
+		RenderData(MakeUnique<GameSceneRenderData>(*this, false)),
+		PhysicsData(MakeUnique<Physics::GameScenePhysicsData>(*this)),
+		AudioData(MakeUnique<Audio::GameSceneAudioData>(*this)),
+		UIData(nullptr),
 		ActiveCamera(nullptr),
 		Name(name),
 		GameHandle(&gameHandle),
-		bKillingProcessStarted(false),
-		CurrentBlockingCanvas(nullptr)
+		bKillingProcessStarted(false)
 	{
 		RootActor = MakeUnique<Actor>(*this, nullptr, "SceneRoot");
-		BlockingCanvases;
+	}
+	GameScene::GameScene(GameManager& gameHandle, const std::string& name, bool isAnUIScene, SystemWindow& associatedWindow) :
+		RenderData(MakeUnique<GameSceneRenderData>(*this, isAnUIScene)),
+		PhysicsData(MakeUnique<Physics::GameScenePhysicsData>(*this)),
+		AudioData(MakeUnique<Audio::GameSceneAudioData>(*this)),
+		UIData(MakeUnique<GameSceneUIData>(*this, associatedWindow)),
+		ActiveCamera(nullptr),
+		Name(name),
+		GameHandle(&gameHandle),
+		bKillingProcessStarted(false)
+	{
+		RootActor = MakeUnique<Actor>(*this, nullptr, "SceneRoot");
 	}
 
 	GameScene::GameScene(GameScene&& scene) :
@@ -37,8 +48,7 @@ namespace GEE
 		ActiveCamera(scene.ActiveCamera),
 		Name(scene.Name),
 		GameHandle(scene.GameHandle),
-		bKillingProcessStarted(scene.bKillingProcessStarted),
-		CurrentBlockingCanvas(nullptr)
+		bKillingProcessStarted(scene.bKillingProcessStarted)
 	{
 		RootActor = MakeUnique<Actor>(*this, nullptr, "SceneRoot");
 	}
@@ -78,6 +88,11 @@ namespace GEE
 		return AudioData.get();
 	}
 
+	GameSceneUIData* GameScene::GetUIData()
+	{
+		return UIData.get();
+	}
+
 	GameManager* GameScene::GetGameHandle()
 	{
 		return GameHandle;
@@ -106,22 +121,6 @@ namespace GEE
 		PostLoadLambdas.push_back(postLoadLambda);
 	}
 
-	void GameScene::AddBlockingCanvas(UICanvas& canvas)
-	{
-		BlockingCanvases.push_back(&canvas);
-		std::sort(BlockingCanvases.begin(), BlockingCanvases.end(), [](UICanvas* lhs, UICanvas* rhs) { return lhs->GetCanvasDepth() < rhs->GetCanvasDepth(); });
-	}
-
-	void GameScene::EraseBlockingCanvas(UICanvas& canvas)
-	{
-		BlockingCanvases.erase(std::remove_if(BlockingCanvases.begin(), BlockingCanvases.end(), [this, &canvas](UICanvas* canvasVec) { bool matches = canvasVec == &canvas; if (matches && CurrentBlockingCanvas == canvasVec) CurrentBlockingCanvas = nullptr; return matches; }), BlockingCanvases.end());	//should still be sorted
-	}
-
-	UICanvas* GameScene::GetCurrentBlockingCanvas() const
-	{
-		return CurrentBlockingCanvas;
-	}
-
 	std::string GameScene::GetUniqueActorName(const std::string& name) const
 	{
 		std::vector <Actor*> actorsWithSimilarNames;
@@ -132,12 +131,7 @@ namespace GEE
 		if (!sameNameExists)
 			return name;
 
-		int addedIndex = 1;
-		std::string currentNameCandidate = name + std::to_string(addedIndex);
-		while (std::find_if(actorsWithSimilarNames.begin(), actorsWithSimilarNames.end(), [currentNameCandidate](Actor* actor) { return actor->GetName() == currentNameCandidate; }) != actorsWithSimilarNames.end())
-			currentNameCandidate = name + std::to_string(++addedIndex);
-
-		return currentNameCandidate;
+		return GetUniqueName(actorsWithSimilarNames.begin(), actorsWithSimilarNames.end(), [](Actor* actor) { return actor->GetName(); }, name);
 	}
 
 	Actor& GameScene::AddActorToRoot(UniquePtr<Actor> actor)
@@ -163,16 +157,9 @@ namespace GEE
 
 	void GameScene::HandleEventAll(const Event& ev)
 	{
-		const Vec2f mouseNDC = GameHandle->GetInputRetriever().GetMousePositionNDC();
-		auto found = std::find_if(BlockingCanvases.rbegin(), BlockingCanvases.rend(), [&mouseNDC](UICanvas* canvas) { return canvas->ContainsMouseCheck(mouseNDC) && !(dynamic_cast<UICanvasActor*>(canvas)->IsBeingKilled()); });
-		if (found != BlockingCanvases.rend())
-			CurrentBlockingCanvas = *found;
-		else
-			CurrentBlockingCanvas = nullptr;
-		/*std::cout << "Current blocking canvas: " << CurrentBlockingCanvas;
-		if (CurrentBlockingCanvas)
-			std::cout << dynamic_cast<UICanvasActor*>(CurrentBlockingCanvas)->GetName();
-		std::cout << '\n';*/
+		if (UIData)
+			UIData->HandleEventAll(ev);
+
 		RootActor->HandleEventAll(ev);
 	}
 
@@ -221,8 +208,29 @@ namespace GEE
 		GameHandle->DeleteScene(*this);
 	}
 
-	GameSceneRenderData::GameSceneRenderData(RenderEngineManager* renderHandle, bool isAnUIScene) :
-		RenderHandle(renderHandle),
+	GameSceneData::GameSceneData(GameScene& scene) :
+		Scene(scene)
+	{
+	}
+
+	std::string GameSceneData::GetSceneName() const
+	{
+		return Scene.GetName();
+	}
+
+	GameScene& GameSceneData::GetScene()
+	{
+		return Scene;
+	}
+
+	const GameScene& GameSceneData::GetScene() const
+	{
+		return Scene;
+	}
+
+	GameSceneRenderData::GameSceneRenderData(GameScene& scene, bool isAnUIScene) :
+		GameSceneData(scene),
+		RenderHandle(scene.GetGameHandle()->GetRenderEngineHandle()),
 		ProbeTexArrays(MakeShared<LightProbeTextureArrays>(LightProbeTextureArrays())),
 		LightBlockBindingSlot(-1),
 		ProbesLoaded(false),
@@ -230,7 +238,7 @@ namespace GEE
 		bUIRenderableDepthsSortedDirtyFlag(false),
 		bLightProbesSortedDirtyFlag(false)
 	{
-		if (LightProbes.empty() && RenderHandle->GetShadingModel() == ShadingModel::SHADING_PBR_COOK_TORRANCE)
+		if (LightProbes.empty() && RenderHandle->GetShadingModel() == ShadingAlgorithm::SHADING_PBR_COOK_TORRANCE)
 		{
 			//LightProbeLoader::LoadLightProbeTextureArrays(this);
 			ProbeTexArrays->IrradianceMapArr.Bind(12);
@@ -445,8 +453,9 @@ namespace GEE
 
 	namespace Physics
 	{
-		GameScenePhysicsData::GameScenePhysicsData(PhysicsEngineManager* physicsHandle) :
-			PhysicsHandle(physicsHandle),
+		GameScenePhysicsData::GameScenePhysicsData(GameScene& scene) :
+			GameSceneData(scene),
+			PhysicsHandle(scene.GetGameHandle()->GetPhysicsHandle()),
 			WasSetup(false)
 		{
 		}
@@ -483,8 +492,9 @@ namespace GEE
 
 	namespace Audio
 	{
-		GameSceneAudioData::GameSceneAudioData(Audio::AudioEngineManager* audioHandle) :
-			AudioHandle(audioHandle)
+		GameSceneAudioData::GameSceneAudioData(GameScene& scene) :
+			GameSceneData(scene),
+			AudioHandle(scene.GetGameHandle()->GetAudioEngineHandle())
 		{
 		}
 
@@ -502,5 +512,50 @@ namespace GEE
 			return nullptr;
 		}
 	}
+
+	GameSceneUIData::GameSceneUIData(GameScene& scene, SystemWindow& window):
+		GameSceneData(scene),
+		CurrentBlockingCanvas(nullptr),
+		AssociatedWindow(&window)
+	{
+	}
+
+	WindowData GameSceneUIData::GetWindowData()
+	{
+		return WindowData(*AssociatedWindow);
+	}
+
+	SystemWindow* GameSceneUIData::GetWindow()
+	{
+		return AssociatedWindow;
+	}
+
+	void GameSceneUIData::AddBlockingCanvas(UICanvas& canvas)
+	{
+		BlockingCanvases.push_back(&canvas);
+		std::sort(BlockingCanvases.begin(), BlockingCanvases.end(), [](UICanvas* lhs, UICanvas* rhs) { return lhs->GetCanvasDepth() < rhs->GetCanvasDepth(); });
+	}
+
+	void GameSceneUIData::EraseBlockingCanvas(UICanvas& canvas)
+	{
+		BlockingCanvases.erase(std::remove_if(BlockingCanvases.begin(), BlockingCanvases.end(), [this, &canvas](UICanvas* canvasVec) { bool matches = canvasVec == &canvas; if (matches && CurrentBlockingCanvas == canvasVec) CurrentBlockingCanvas = nullptr; return matches; }), BlockingCanvases.end());	//should still be sorted
+	}
+
+	UICanvas* GameSceneUIData::GetCurrentBlockingCanvas() const
+	{
+		return CurrentBlockingCanvas;
+	}
+
+	void GameSceneUIData::HandleEventAll(const Event& ev)
+	{
+		const Vec2f mouseNDC = GetWindowData().GetMousePositionNDC();
+
+		auto found = std::find_if(BlockingCanvases.rbegin(), BlockingCanvases.rend(), [&mouseNDC](UICanvas* canvas) { return canvas->ContainsMouseCheck(mouseNDC) && !(dynamic_cast<UICanvasActor*>(canvas)->IsBeingKilled()); });
+		if (found != BlockingCanvases.rend())
+			CurrentBlockingCanvas = *found;
+		else
+			CurrentBlockingCanvas = nullptr;
+	}
+
 
 }

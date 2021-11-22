@@ -9,8 +9,21 @@
 #include <scene/UIInputBoxActor.h>
 #include <scene/TextComponent.h>
 
+#include <game/IDSystem.h>
+
 namespace GEE
 {
+	Material::Material(MaterialLoc loc, MaterialShaderHint shaderHint):
+		Localization(loc),
+		Shininess(0.0f),
+		DepthScale(0.0f),
+		Color(Vec4f(0.0f)),
+		RoughnessColor(0.0f),
+		MetallicColor(0.0f),
+		AoColor(0.0f)
+	{
+		SetShader(shaderHint);
+	}
 	Material::Material(MaterialLoc loc, float depthScale, Shader* shader) :
 		Localization(loc),
 		Shininess(0.0f),
@@ -24,6 +37,22 @@ namespace GEE
 			RenderShaderName = shader->GetName();
 		else
 			RenderShaderName = "Geometry";
+
+		//std::cout << "%%% Material " << loc.GetFullStr() << ".  ID: " << IDSystem<Material>::GenerateID() << "\n";
+	}
+
+	Material::Material(MaterialLoc loc, const Vec3f& color, MaterialShaderHint shaderHint):
+		Material(loc, 0.0f, nullptr)
+	{
+		SetColor(color);
+		SetShader(shaderHint);
+	}
+
+	Material::Material(MaterialLoc loc, const Vec4f& color, MaterialShaderHint shaderHint) :
+		Material(loc, 0.0f, nullptr)
+	{
+		SetColor(color);
+		SetShader(shaderHint);
 	}
 
 	const Material::MaterialLoc& Material::GetLocalization() const
@@ -71,6 +100,21 @@ namespace GEE
 		RenderShaderName = name;
 	}
 
+	void Material::SetShader(MaterialShaderHint shaderHint)
+	{
+		std::string shaderName;
+		switch (shaderHint)
+		{
+		case MaterialShaderHint::Simple:
+		default:
+			shaderName = "Forward_NoLight"; break;
+		case MaterialShaderHint::Lighting:
+			shaderName = "Geometry"; break;
+		}
+
+		SetRenderShaderName(shaderName);
+	}
+
 	void Material::SetColor(const Vec3f& color)
 	{
 		SetColor(Vec4f(color, 1.0f));
@@ -94,6 +138,11 @@ namespace GEE
 	void Material::SetAoColor(float ao)
 	{
 		AoColor = ao;
+	}
+
+	void Material::AddTexture(const NamedTexture& tex)
+	{
+		Textures.push_back(MakeShared<NamedTexture>(tex));
 	}
 
 	void Material::AddTexture(SharedPtr<NamedTexture> tex)

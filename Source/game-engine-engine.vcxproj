@@ -141,15 +141,18 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="include\editor\EditorManager.cpp" />
+    <ClCompile Include="include\editor\EditorMessageLogger.cpp" />
     <ClCompile Include="include\scene\PawnActor.cpp" />
     <ClCompile Include="include\scene\UIWindowActor.cpp" />
     <ClCompile Include="include\UI\UIActor.cpp" />
     <ClCompile Include="source\animation\AnimationManagerComponent.cpp" />
     <ClCompile Include="source\animation\SkeletonInfo.cpp" />
+    <ClCompile Include="source\editor\EditorActions.cpp" />
     <ClCompile Include="source\editor\GameEngineEngineEditor.cpp" />
     <ClCompile Include="source\editor\GraphRenderingComponent.cpp" />
     <ClCompile Include="source\game\GameManager.cpp" />
     <ClCompile Include="source\math\Vec.cpp" />
+    <ClCompile Include="source\rendering\Renderer.cpp" />
     <ClCompile Include="source\scene\Actor.cpp" />
     <ClCompile Include="source\animation\Animation.cpp" />
     <ClCompile Include="source\audio\AudioEngine.cpp" />
@@ -207,14 +210,18 @@
   <ItemGroup>
     <ClInclude Include="include\animation\AnimationManagerComponent.h" />
     <ClInclude Include="include\animation\SkeletonInfo.h" />
+    <ClInclude Include="include\editor\EditorActions.h" />
     <ClInclude Include="include\editor\EditorManager.h" />
+    <ClInclude Include="include\editor\EditorMessageLogger.h" />
     <ClInclude Include="include\editor\FPSCounter.h" />
     <ClInclude Include="include\editor\GameEngineEngineEditor.h" />
     <ClInclude Include="include\editor\GraphRenderingComponent.h" />
     <ClInclude Include="include\editor\MousePicking.h" />
     <ClInclude Include="include\editor\UIViewportWindow.h" />
+    <ClInclude Include="include\game\IDSystem.h" />
     <ClInclude Include="include\math\Vec.h" />
     <ClInclude Include="include\rendering\OutlineRenderer.h" />
+    <ClInclude Include="include\rendering\Renderer.h" />
     <ClInclude Include="include\scene\Actor.h" />
     <ClInclude Include="include\animation\Animation.h" />
     <ClInclude Include="include\audio\AudioEngine.h" />

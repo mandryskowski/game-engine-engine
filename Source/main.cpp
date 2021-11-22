@@ -24,7 +24,7 @@ extern "C"
 	__declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
 }
 
-EditorManager* EditorEventProcessor::EditorHandle = nullptr;
+Editor::EditorManager* Editor::EditorEventProcessor::EditorHandle = nullptr;
 
 int main(int argc, char** argv)
 {
@@ -81,7 +81,7 @@ int main(int argc, char** argv)
 	//settings.ViewportData = glm::uvec4(res.x * 0.3f, res.y * 0.4f, res.x * 0.4, res.y * 0.6f);
 	//settings.Video.Resolution = Vec2f(res.x * 0.4, res.y * 0.6f);
 
-	GameEngineEngineEditor editor(programWindow, settings);
+	Editor::GameEngineEngineEditor editor(programWindow, settings);
 	editor.SetupMainMenu();
 
 	editor.SetActiveScene(editor.GetScene("GEE_Main_Menu"));

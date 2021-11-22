@@ -41,7 +41,7 @@ namespace GEE
 		virtual void SetCanvasView(const Transform&);
 
 		virtual void ClampViewToElements();
-		void AutoClampView(bool trueHorizontalFalseVertical = true);	//Set to false to set view scale to 100% of vertical size, or leave it as it is to set it to 100% of horizontal size
+		void AutoClampView(bool horizontal = true, bool vertical = false);	//Set to false to set view scale to 100% of vertical size, or leave it as it is to set it to 100% of horizontal size
 
 		virtual UICanvasFieldCategory& AddCategory(const std::string& name) = 0;
 		virtual UICanvasField& AddField(const std::string& name, std::function<Vec3f()> getElementOffset = nullptr) = 0;
@@ -51,8 +51,8 @@ namespace GEE
 
 		void ScrollView(Vec2f offset);
 		void SetViewScale(Vec2f scale);
-		virtual RenderInfo BindForRender(const RenderInfo&, const Vec2u& res) = 0;
-		virtual void UnbindForRender(const Vec2u& res) = 0;
+		virtual SceneMatrixInfo BindForRender(const SceneMatrixInfo&) = 0;
+		virtual void UnbindForRender() = 0;
 
 		bool ContainsMouse() const; //Returns cached value. Guaranteed to be valid if called in HandleEvent() or HandleEventAll() of a child of UICanvasActor.
 

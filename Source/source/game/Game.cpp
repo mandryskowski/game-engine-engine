@@ -17,58 +17,9 @@ namespace GEE
 
 	Controller* mouseController = nullptr;  //there are 2 similiar camera variables: ActiveCamera and global MouseController. the first one is basically the camera we use to see the world (view mat); the second one is updated by mouse controls.
 											//this is a shitty comment that doesnt fit since a few months ago but i dont want to erase it
-	EventHolder* GLFWEventProcessor::TargetHolder = nullptr;
+	EventHolder* WindowEventProcessor::TargetHolder = nullptr;
 
-	void APIENTRY debugOutput(GLenum source,	//Copied from learnopengl.com - I don't think it's worth it to rewrite a bunch of couts.
-		GLenum type,
-		unsigned int id,
-		GLenum severity,
-		GLsizei length,
-		const char* message,
-		const void* userParam)
-	{
-		// ignore non-significant error/warning codes
-		if (id == 131169 || id == 131185 || id == 131218 || id == 131204) return;
-		if (type == GL_DEBUG_TYPE_PERFORMANCE_ARB)
-			return;
-
-		std::cout << "---------------" << std::endl;
-		std::cout << "Debug message (" << id << "): " << message << std::endl;
-
-		switch (source)
-		{
-		case GL_DEBUG_SOURCE_API_ARB:             std::cout << "Source: API"; break;
-		case GL_DEBUG_SOURCE_WINDOW_SYSTEM_ARB:   std::cout << "Source: Window System"; break;
-		case GL_DEBUG_SOURCE_SHADER_COMPILER_ARB: std::cout << "Source: Shader Compiler"; break;
-		case GL_DEBUG_SOURCE_THIRD_PARTY_ARB:     std::cout << "Source: Third Party"; break;
-		case GL_DEBUG_SOURCE_APPLICATION_ARB:     std::cout << "Source: Application"; break;
-		case GL_DEBUG_SOURCE_OTHER_ARB:           std::cout << "Source: Other"; break;
-		} std::cout << std::endl;
-
-		switch (type)
-		{
-		case GL_DEBUG_TYPE_ERROR_ARB:               std::cout << "Type: Error"; break;
-		case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR_ARB: std::cout << "Type: Deprecated Behaviour"; break;
-		case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR_ARB:  std::cout << "Type: Undefined Behaviour"; break;
-		case GL_DEBUG_TYPE_PORTABILITY_ARB:         std::cout << "Type: Portability"; break;
-		case GL_DEBUG_TYPE_PERFORMANCE_ARB:         std::cout << "Type: Performance"; break;
-			//case GL_DEBUG_TYPE_MARKER_ARB:              std::cout << "Type: Marker"; break;
-			//case GL_DEBUG_TYPE_PUSH_GROUP_ARB:          std::cout << "Type: Push Group"; break;
-			//case GL_DEBUG_TYPE_POP_GROUP_ARB:           std::cout << "Type: Pop Group"; break;
-		case GL_DEBUG_TYPE_OTHER_ARB:               std::cout << "Type: Other"; break;
-		} std::cout << std::endl;
-
-		switch (severity)
-		{
-		case GL_DEBUG_SEVERITY_HIGH_ARB:         std::cout << "Severity: high"; break;
-		case GL_DEBUG_SEVERITY_MEDIUM_ARB:       std::cout << "Severity: medium"; break;
-		case GL_DEBUG_SEVERITY_LOW_ARB:          std::cout << "Severity: low"; break;
-			//case GL_DEBUG_SEVERITY_NOTIFICATION_ARB: std::cout << "Severity: notification"; break;
-		} std::cout << std::endl;
-		std::cout << std::endl;
-	}
-
-	Game::Game(const ShadingModel& shading, const GameSettings& settings) :
+	Game::Game(const ShadingAlgorithm& shading, const GameSettings& settings) :
 		bGameTerminated(false),
 		AudioEng(static_cast<GameManager*>(this)),
 		RenderEng(static_cast<GameManager*>(this)),
@@ -87,7 +38,7 @@ namespace GEE
 		glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 
 		glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS_ARB);
-		glDebugMessageCallbackARB(debugOutput, nullptr);
+		glDebugMessageCallbackARB(DebugCallbacks::OpenGLDebug, nullptr);
 		glDebugMessageControlARB(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
 
 		DebugMode = true;
@@ -109,17 +60,18 @@ namespace GEE
 		if (!Settings->Video.bVSync)
 			glfwSwapInterval(0);
 
-		GLFWEventProcessor::TargetHolder = &EventHolderObj;
+		WindowEventProcessor::TargetHolder = &EventHolderObj;
 
 		glfwSetInputMode(Window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 		glfwSetCursorPos(Window, (double)Settings->WindowSize.x / 2.0, (double)Settings->WindowSize.y / 2.0);
 
-		glfwSetCursorPosCallback(Window, GLFWEventProcessor::CursorPosCallback);
-		glfwSetMouseButtonCallback(Window, GLFWEventProcessor::MouseButtonCallback);
-		glfwSetKeyCallback(Window, GLFWEventProcessor::KeyPressedCallback);
-		glfwSetCharCallback(Window, GLFWEventProcessor::CharEnteredCallback);
-		glfwSetScrollCallback(Window, GLFWEventProcessor::ScrollCallback);
-		glfwSetDropCallback(Window, GLFWEventProcessor::FileDropCallback);
+		glfwSetCursorPosCallback(Window, WindowEventProcessor::CursorPosCallback);
+		glfwSetCursorEnterCallback(window, WindowEventProcessor::CursorLeaveEnterCallback);
+		glfwSetMouseButtonCallback(Window, WindowEventProcessor::MouseButtonCallback);
+		glfwSetKeyCallback(Window, WindowEventProcessor::KeyPressedCallback);
+		glfwSetCharCallback(Window, WindowEventProcessor::CharEnteredCallback);
+		glfwSetScrollCallback(Window, WindowEventProcessor::ScrollCallback);
+		glfwSetDropCallback(Window, WindowEventProcessor::FileDropCallback);
 		glfwSetWindowCloseCallback(Window, [](GLFWwindow* window) { static_cast<Game*>(glfwGetWindowUserPointer(window))->TerminateGame(); });
 
 		RenderEng.Init(Vec2u(Settings->Video.Resolution.x, Settings->Video.Resolution.y));
@@ -136,9 +88,25 @@ namespace GEE
 		EngineDataLoader::SetupSceneFromFile(this, path, name);
 	}
 
-	GameScene& Game::CreateScene(const std::string& name, bool isAnUIScene)
+	GameScene& Game::CreateScene(std::string name, bool disallowChangingNameIfTaken)
 	{
-		AddScene(MakeUnique<GameScene>(*this, name, isAnUIScene));
+		if (GetScene(name))
+		{
+			GEE_CORE_ASSERT(!disallowChangingNameIfTaken);
+			name = GetUniqueName(Scenes.begin(), Scenes.end(), [](UniquePtr<GameScene>& scene) { return scene->GetName(); }, name);
+		}
+		AddScene(MakeUnique<GameScene>(*this, name));
+		return *Scenes.back();
+	}
+
+	GameScene& Game::CreateUIScene(std::string name, SystemWindow& associateWindow, bool disallowChangingNameIfTaken)
+	{
+		if (GetScene(name))
+		{
+			GEE_CORE_ASSERT(!disallowChangingNameIfTaken);
+			name = GetUniqueName(Scenes.begin(), Scenes.end(), [](UniquePtr<GameScene>& scene) { return scene->GetName(); }, name);
+		}
+		AddScene(MakeUnique<GameScene>(*this, name, true, associateWindow));
 		return *Scenes.back();
 	}
 
@@ -158,6 +126,11 @@ namespace GEE
 		std::cout << "Actors & components setup finished.\n";
 
 		std::cout << "Data loading finished.\n";
+	}
+
+	void Game::AddInterpolation(const Interpolation& interp)
+	{
+		Interpolations.push_back(MakeUnique<Interpolation>(interp));
 	}
 
 	void Game::BindAudioListenerTransformPtr(Transform* transform)
@@ -298,10 +271,6 @@ namespace GEE
 
 	void Game::PreGameLoop()
 	{
-		std::cout << "Render pass started.\n";
-		RenderEng.PreLoopPass();
-		std::cout << "Render pass done.\n";
-
 		float lastUpdateTime = (float)glfwGetTime();
 		const float timeStep = 1.0f / 60.0f;
 		float deltaTime = 0.0f;
@@ -370,7 +339,7 @@ namespace GEE
 
 	void Game::HandleEvents()
 	{
-		while (SharedPtr<Event> polledEvent = EventHolderObj.PollEvent())
+		while (SharedPtr<Event> polledEvent = EventHolderObj.PollEvent(*Window))
 		{
 			for (int i = 0; i < static_cast<int>(Scenes.size()); i++)
 				Scenes[i]->RootActor->HandleEventAll(*polledEvent);
@@ -386,6 +355,8 @@ namespace GEE
 			Scenes[i]->Update(deltaTime);
 
 		AudioEng.Update();
+
+		Interpolations.erase(std::remove_if(Interpolations.begin(), Interpolations.end(), [deltaTime](UniquePtr<Interpolation>& interp) { return interp->UpdateT(deltaTime); }), Interpolations.end());
 	}
 	void Game::TerminateGame()
 	{
@@ -402,18 +373,26 @@ namespace GEE
 		Scenes.erase(std::remove_if(Scenes.begin(), Scenes.end(), [&scene](UniquePtr<GameScene>& sceneVec) { return sceneVec.get() == &scene; }), Scenes.end());
 	}
 
+	std::vector<GameSceneRenderData*> Game::GetSceneRenderDatas()
+	{
+		std::vector<GameSceneRenderData*> renderDatas;
+		renderDatas.reserve(Scenes.size());
+		std::transform(Scenes.begin(), Scenes.end(), std::back_inserter(renderDatas), [](UniquePtr<GameScene>& scene) { return scene->GetRenderData(); });
+		return renderDatas;
+	}
+
 	float pBegin = 0.0f;
 	bool DUPA = false;
 
-	void GLFWEventProcessor::CursorPosCallback(SystemWindow* window, double xpos, double ypos)
+	void WindowEventProcessor::CursorPosCallback(SystemWindow* window, double xpos, double ypos)
 	{
-		TargetHolder->Events.push(MakeShared<CursorMoveEvent>(CursorMoveEvent(EventType::MouseMoved, Vec2f(static_cast<float>(xpos), static_cast<float>(ypos)))));
+		Vec2i windowSize(0);
+		glfwGetWindowSize(window, &windowSize.x, &windowSize.y);
+
+		TargetHolder->PushEvent(*window, CursorMoveEvent(EventType::MouseMoved, Vec2f(xpos, ypos), windowSize));
 
 		if (!mouseController || !TargetHolder)
 			return;
-
-		Vec2i windowSize(0);
-		glfwGetWindowSize(window, &windowSize.x, &windowSize.y);
 
 		if (mouseController->GetLockMouseAtCenter())
 			glfwSetCursorPos(window, windowSize.x / 2, windowSize.y / 2);
@@ -421,32 +400,94 @@ namespace GEE
 		mouseController->OnMouseMovement(static_cast<Vec2f>(windowSize / 2), Vec2f(xpos, windowSize.y - ypos)); //Implement it as an Event instead! TODO
 	}
 
-	void GLFWEventProcessor::MouseButtonCallback(SystemWindow* window, int button, int action, int mods)
+	void WindowEventProcessor::MouseButtonCallback(SystemWindow* window, int button, int action, int mods)
 	{
-		TargetHolder->Events.push(MakeShared<MouseButtonEvent>(MouseButtonEvent((action == GLFW_PRESS) ? (EventType::MousePressed) : (EventType::MouseReleased), static_cast<MouseButton>(button), mods)));
+		TargetHolder->PushEvent(*window, MouseButtonEvent((action == GLFW_PRESS) ? (EventType::MousePressed) : (EventType::MouseReleased), static_cast<MouseButton>(button), mods));
 	}
 
-	void GLFWEventProcessor::KeyPressedCallback(SystemWindow*, int key, int scancode, int action, int mods)
+	void WindowEventProcessor::KeyPressedCallback(SystemWindow* window, int key, int scancode, int action, int mods)
 	{
-		TargetHolder->Events.push(MakeShared<KeyEvent>(KeyEvent((action == GLFW_PRESS) ? (EventType::KeyPressed) : ((action == GLFW_REPEAT) ? (EventType::KeyRepeated) : (EventType::KeyReleased)), static_cast<Key>(key), mods)));
+		TargetHolder->PushEvent(*window, KeyEvent((action == GLFW_PRESS) ? (EventType::KeyPressed) : ((action == GLFW_REPEAT) ? (EventType::KeyRepeated) : (EventType::KeyReleased)), static_cast<Key>(key), mods));
 	}
 
-	void GLFWEventProcessor::CharEnteredCallback(SystemWindow*, unsigned int codepoint)
+	void WindowEventProcessor::CharEnteredCallback(SystemWindow* window, unsigned int codepoint)
 	{
-		TargetHolder->Events.push(MakeShared<CharEnteredEvent>(CharEnteredEvent(EventType::CharacterEntered, codepoint)));
+		TargetHolder->PushEvent(*window, CharEnteredEvent(EventType::CharacterEntered, codepoint));
 	}
 
-	void GLFWEventProcessor::ScrollCallback(SystemWindow* window, double offsetX, double offsetY)
+	void WindowEventProcessor::ScrollCallback(SystemWindow* window, double offsetX, double offsetY)
 	{
-		std::cout << "Scrolled " << offsetX << ", " << offsetY << "\n";
 		Vec2d cursorPos(0.0);
 		glfwGetCursorPos(window, &cursorPos.x, &cursorPos.y);
-		TargetHolder->Events.push(MakeShared<MouseScrollEvent>(MouseScrollEvent(EventType::MouseScrolled, Vec2f(static_cast<float>(-offsetX), static_cast<float>(offsetY)))));
-		TargetHolder->Events.push(MakeShared<CursorMoveEvent>(CursorMoveEvent(EventType::MouseMoved, Vec2f(cursorPos))));	//When we scroll (e.g. a canvas), it is possible that some buttons or other objects relying on cursor position might be scrolled (moved) as well, so we need to create a CursorMoveEvent.
+
+		Vec2i windowSize(0);
+		glfwGetWindowSize(window, &windowSize.x, &windowSize.y);
+
+		TargetHolder->PushEvent(*window, MouseScrollEvent(EventType::MouseScrolled, Vec2f(static_cast<float>(-offsetX), static_cast<float>(offsetY))));
+		TargetHolder->PushEvent(*window, CursorMoveEvent(EventType::MouseMoved, static_cast<Vec2f>(cursorPos), windowSize));	//When we scroll (e.g. a canvas), it is possible that some buttons or other objects relying on cursor position might be scrolled (moved) as well, so we need to create a CursorMoveEvent.
 	}
 
-	void GLFWEventProcessor::FileDropCallback(SystemWindow* window, int count, const char** paths)
+	void WindowEventProcessor::FileDropCallback(SystemWindow* window, int count, const char** paths)
 	{
 
+	}
+
+	void WindowEventProcessor::CursorLeaveEnterCallback(SystemWindow* window, int enter)
+	{
+		Vec2d cursorPos;
+		glfwGetCursorPos(window, &cursorPos.x, &cursorPos.y);
+		if (!enter)
+		{
+			CursorPosCallback(window, cursorPos.x, cursorPos.y);
+		}
+	}
+
+	void APIENTRY DebugCallbacks::OpenGLDebug(GLenum source,	//Copied from learnopengl.com - I don't think it's worth it to rewrite a bunch of couts.
+		GLenum type,
+		unsigned int id,
+		GLenum severity,
+		GLsizei length,
+		const char* message,
+		const void* userParam)
+	{
+		// ignore non-significant error/warning codes
+		if (id == 131169 || id == 131185 || id == 131218 || id == 131204) return;
+		if (type == GL_DEBUG_TYPE_PERFORMANCE_ARB)
+			return;
+
+		std::cout << "---------------" << std::endl;
+		std::cout << "Debug message (" << id << "): " << message << std::endl;
+
+		switch (source)
+		{
+		case GL_DEBUG_SOURCE_API_ARB:             std::cout << "Source: API"; break;
+		case GL_DEBUG_SOURCE_WINDOW_SYSTEM_ARB:   std::cout << "Source: Window System"; break;
+		case GL_DEBUG_SOURCE_SHADER_COMPILER_ARB: std::cout << "Source: Shader Compiler"; break;
+		case GL_DEBUG_SOURCE_THIRD_PARTY_ARB:     std::cout << "Source: Third Party"; break;
+		case GL_DEBUG_SOURCE_APPLICATION_ARB:     std::cout << "Source: Application"; break;
+		case GL_DEBUG_SOURCE_OTHER_ARB:           std::cout << "Source: Other"; break;
+		} std::cout << std::endl;
+
+		switch (type)
+		{
+		case GL_DEBUG_TYPE_ERROR_ARB:               std::cout << "Type: Error"; break;
+		case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR_ARB: std::cout << "Type: Deprecated Behaviour"; break;
+		case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR_ARB:  std::cout << "Type: Undefined Behaviour"; break;
+		case GL_DEBUG_TYPE_PORTABILITY_ARB:         std::cout << "Type: Portability"; break;
+		case GL_DEBUG_TYPE_PERFORMANCE_ARB:         std::cout << "Type: Performance"; break;
+			//case GL_DEBUG_TYPE_MARKER_ARB:              std::cout << "Type: Marker"; break;
+			//case GL_DEBUG_TYPE_PUSH_GROUP_ARB:          std::cout << "Type: Push Group"; break;
+			//case GL_DEBUG_TYPE_POP_GROUP_ARB:           std::cout << "Type: Pop Group"; break;
+		case GL_DEBUG_TYPE_OTHER_ARB:               std::cout << "Type: Other"; break;
+		} std::cout << std::endl;
+
+		switch (severity)
+		{
+		case GL_DEBUG_SEVERITY_HIGH_ARB:         std::cout << "Severity: high"; break;
+		case GL_DEBUG_SEVERITY_MEDIUM_ARB:       std::cout << "Severity: medium"; break;
+		case GL_DEBUG_SEVERITY_LOW_ARB:          std::cout << "Severity: low"; break;
+			//case GL_DEBUG_SEVERITY_NOTIFICATION_ARB: std::cout << "Severity: notification"; break;
+		} std::cout << std::endl;
+		std::cout << std::endl;
 	}
 }

@@ -39,6 +39,7 @@ namespace GEE
 
 	class AnimationManagerComponent;
 	class Transform;
+	class Interpolation;
 	struct Animation;
 
 
@@ -55,12 +56,19 @@ namespace GEE
 
 	class Shader;
 	class LightProbe;
+
+	class SkeletonBatch;
 	class SkeletonInfo;
 
 
 	struct GameSettings;
 	struct VideoSettings;
 	class InputDevicesStateRetriever;
+
+	class MatrixInfo;
+	class MatrixInfoExt;
+	class SceneMatrixInfo;
+
 	class RenderInfo;
 	class RenderToolboxCollection;
 
@@ -159,16 +167,21 @@ namespace GEE
 	class RenderEngineManager
 	{
 	public:
-		virtual const ShadingModel& GetShadingModel() = 0;
+		virtual const ShadingAlgorithm& GetShadingModel() = 0;
 		virtual Mesh& GetBasicShapeMesh(EngineBasicShape) = 0;
 		virtual Shader* GetLightShader(const RenderToolboxCollection& renderCol, LightType) = 0;
 		virtual RenderToolboxCollection* GetCurrentTbCollection() = 0;
 		virtual Texture GetEmptyTexture() = 0;
+		virtual SkeletonBatch* GetBoundSkeletonBatch() = 0;
 
 		//TODO: THIS SHOULD NOT BE HERE
+		virtual std::vector<Shader*> GetForwardShaders() = 0;
 		virtual std::vector<Material*> GetMaterials() = 0;
 
 		virtual void SetBoundMaterial(Material*) = 0;
+
+		virtual void BindSkeletonBatch(SkeletonBatch* batch) = 0;
+		virtual void BindSkeletonBatch(GameSceneRenderData* sceneRenderData, unsigned int index) = 0;
 
 		/**
 		 * @brief Add a new RenderToolboxCollection to the render engine to enable updating shadow maps automatically. By default, we load every toolbox that will be needed according to RenderToolboxCollection::Settings
@@ -178,8 +191,8 @@ namespace GEE
 		*/
 		virtual RenderToolboxCollection& AddRenderTbCollection(const RenderToolboxCollection& tbCollection,
 		                                                       bool setupToolboxesAccordingToSettings = true) = 0;
-
 		virtual Material* AddMaterial(SharedPtr<Material>) = 0;
+	public:
 		virtual SharedPtr<Shader> AddShader(SharedPtr<Shader>, bool bForwardShader = false) = 0;
 
 		virtual void EraseRenderTbCollection(RenderToolboxCollection& tbCollection) = 0;
@@ -187,30 +200,12 @@ namespace GEE
 
 		virtual Shader* FindShader(std::string) = 0;
 		virtual SharedPtr<Material> FindMaterial(std::string) = 0;
-
-		virtual void RenderCubemapFromTexture(Texture targetTex, Texture tex, Vec2u size, Shader&, int* layer = nullptr,
-		                                      int mipLevel = 0) = 0;
-		virtual void RenderCubemapFromScene(RenderInfo info, GameSceneRenderData* sceneRenderData,
-		                                    GEE_FB::Framebuffer target, GEE_FB::FramebufferAttachment targetTex,
-		                                    Shader* shader = nullptr, int* layer = nullptr,
-		                                    bool fullRender = false) = 0;
+	
 		//Pass a shader if you do not want the default shader to be used.
-		virtual void RenderText(const RenderInfo& info, const Font& font, std::string content, Transform t,
+		virtual void RenderText(const SceneMatrixInfo& info, const Font& font, std::string content, Transform t,
 		                        Vec3f color = Vec3f(1.0f), Shader* shader = nullptr, bool convertFromPx = false,
 		                        const std::pair<TextAlignment, TextAlignment>& = std::pair<
 			                        TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::BOTTOM)) = 0;
-		//Note: this function does not call the Use method of passed Shader. Do it manually.
-		virtual void RenderStaticMesh(const RenderInfo& info, const MeshInstance& mesh, const Transform& transform,
-		                              Shader* shader, Mat4f* lastFrameMVP = nullptr,
-		                              Material* overrideMaterial = nullptr, bool billboard = false) = 0;
-		//Note: this function does not call the Use method of passed Shader. Do it manually.
-		virtual void RenderStaticMeshes(const RenderInfo&, const std::vector<std::reference_wrapper<const MeshInstance>>& meshes,
-		                                const Transform& transform, Shader* shader, Mat4f* lastFrameMVP = nullptr,
-		                                Material* overrideMaterial = nullptr, bool billboard = false) = 0;
-		//Note: this function does not call the Use method of passed Shader. Do it manually
-		virtual void RenderSkeletalMeshes(const RenderInfo& info, const std::vector<std::reference_wrapper<const MeshInstance>>& meshes,
-		                                  const Transform& transform, Shader* shader, SkeletonInfo& skelInfo,
-		                                  Mat4f* lastFrameMVP, Material* overrideMaterial = nullptr) = 0;
 
 		virtual ~RenderEngineManager() = default;
 	protected:
@@ -226,7 +221,9 @@ namespace GEE
 		static GameScene* DefaultScene;
 		static GameManager& Get();
 	public:
-		virtual GameScene& CreateScene(const std::string& name, bool isAnUIScene = false) = 0;
+		virtual void AddInterpolation(const Interpolation&) = 0;
+		virtual GameScene& CreateScene(std::string name, bool disallowChangingNameIfTaken = true) = 0;
+		virtual GameScene& CreateUIScene(std::string name, SystemWindow& associateWindow, bool disallowChangingNameIfTaken = true) = 0;
 
 		virtual void BindAudioListenerTransformPtr(Transform*) = 0;
 		virtual void UnbindAudioListenerTransformPtr(Transform* transform) = 0;
