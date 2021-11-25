@@ -1,0 +1,112 @@
+#pragma once
+#include <game/GameManager.h>
+#include <math/Transform.h>
+#include <editor/EditorManager.h>
+
+namespace GEE
+{
+	class UIAutomaticListActor;
+
+	enum class Alignment
+	{
+		Left,
+		Center,
+		Right,
+		Bottom = Left,
+		Top = Right
+	};
+
+	class IconData
+	{
+	public:
+		/**
+		 * @brief Construct an invalid IconData object.
+		*/
+		IconData() : IconMaterial(nullptr), IconAtlasID(-1.0f) {}
+
+		IconData(RenderEngineManager& renderHandle, const std::string& texFilepath, Vec2i iconAtlasSize = Vec2i(0), float iconAtlasID = -1.0f);
+		bool IsValid() const;
+		SharedPtr<MaterialInstance> GetMatInstance() const;
+	private:
+		SharedPtr<Material> IconMaterial;
+		float IconAtlasID;
+	};
+
+	class Alignment2D
+	{
+	public:
+		Alignment2D(Alignment horizontal, Alignment vertical = Alignment::Center);
+
+		Alignment GetHorizontal() const;
+		Alignment GetVertical() const;
+	private:
+		Alignment Horizontal, Vertical;
+	};
+
+	class PopupDescription
+	{
+	public:
+		PopupDescription(SystemWindow& window, UIAutomaticListActor*, UICanvasActor* canvas);
+		void AddOption(const std::string&, std::function<void()>, const IconData& = IconData());
+		PopupDescription AddSubmenu(const std::string&, std::function<void(PopupDescription)> prepareSubmenu, const IconData& = IconData());
+		Transform GetView() { if (!bViewComputed) ComputeView(); return LastComputedView; }
+		/**
+		 * @brief Should be called after adding all the options and submenus.
+		*/
+		void RefreshPopup();
+	private:
+		void ComputeView();
+
+		SystemWindow& Window;
+		UIAutomaticListActor* DescriptionRoot;
+		UICanvasActor* PopupCanvas;
+		bool bViewComputed;
+		Transform LastComputedView;
+		Vec2i PopupOptionSizePx;
+	};
+
+	namespace Editor
+	{
+		class EditorActions
+		{
+		public:
+			EditorActions(EditorManager&);
+			void SelectComponent(Component* comp, GameScene& editorScene);
+			void SelectActor(Actor* actor, GameScene& editorScene);
+			void SelectScene(GameScene* selectedScene, GameScene& editorScene);
+
+			template <typename T> void AddActorToList(GameScene& editorScene, T& obj, UIAutomaticListActor& listParent, UICanvas& canvas);
+
+			void CreateComponentWindow(Actor&);
+		private:
+			EditorManager& EditorHandle;
+
+			Component* SelectedComp;
+			Actor* SelectedActor;
+			GameScene* SelectedScene;
+		};
+
+		template<typename T>
+		inline void EditorActions::AddActorToList(GameScene& editorScene, T& obj, UIAutomaticListActor& listParent, UICanvas& canvas)
+		{
+			if (obj.IsBeingKilled())
+				return;
+
+			UIButtonActor& element = listParent.CreateChild<UIButtonActor>(obj.GetName() + "'s Button", [this, &obj, &editorScene]() {this->Select(&obj, editorScene); });//*this, obj, &EditorManager::Select<T>));
+			element.SetTransform(Transform(Vec2f(1.5f, 0.0f), Vec2f(3.0f, 1.0f)));
+			TextConstantSizeComponent& elementText = element.CreateComponent<TextConstantSizeComponent>(obj.GetName() + "'s Text", Transform(Vec2f(0.0f), Vec2f(1.0f, 1.0f)), "", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
+			elementText.SetMaxSize(Vec2f(0.9f));
+			elementText.SetContent(obj.GetName());
+			elementText.Unstretch();
+			//elementText.UpdateSize();
+
+			std::vector<T*> children = obj.GetChildren();
+			for (auto& child : children)
+			{
+				//AddActorToList(editorScene, *child, listParent.CreateChild(UIListActor(editorScene, "NextLevel")), canvas);
+				UIAutomaticListActor& nestedList = listParent.CreateChild<UIAutomaticListActor>(child->GetName() + "'s nestedlist");
+				AddActorToList(editorScene, *child, nestedList, canvas);
+			}
+		}
+	}
+}
