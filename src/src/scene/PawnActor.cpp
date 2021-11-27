@@ -15,13 +15,20 @@ namespace GEE
 		PreAnimBonePos(Vec3f(0.0f)),
 		//RootBone(nullptr),
 		AnimManager(nullptr),
+		PawnSound(nullptr),
+		LastSoundTime(0.0f),
+		SoundCooldown(10.0f),
 		UpdateAnimsListInEditor(nullptr),
 		AnimIndex(0),
 		SpeedPerSec(1.0f),
 		CurrentTargetPos(Vec3f(0.0f)),
 		PathIndex(0),
 		Gun(nullptr),
-		PlayerTarget(nullptr)
+		PlayerTarget(nullptr),
+		Health(100.0f),
+		RespawnTime(5.0f),
+		DeathTime(0.0f),
+		State(PawnState::Idle)
 	{
 	}
 
@@ -34,7 +41,13 @@ namespace GEE
 	{
 		Actor::Update(deltaTime);
 
-		if (IsBeingKilled() || !AnimManager)
+		if (State == PawnState::Dying && GameHandle->GetProgramRuntime() - DeathTime >= RespawnTime)
+			Respawn();
+
+		if (State == PawnState::Respawning && AnimManager && (!AnimManager->GetCurrentAnim() || AnimManager->GetCurrentAnim()->HasFinished()))
+			State = PawnState::Idle;
+
+		if (IsBeingKilled() || !AnimManager || (State == PawnState::Dying || State == PawnState::Respawning))
 			return;
 
 		if (AnimManager->IsBeingKilled())
@@ -64,9 +77,8 @@ namespace GEE
 			if (!AnimManager->GetCurrentAnim())
 				AnimManager->SelectAnimation(AnimManager->GetAnimInstance(AnimIndex));
 
-			Vec3f posDir = CurrentTargetPos - GetTransform()->GetWorldTransform().GetPos();
-			posDir.y = 0.0f;
-			posDir = glm::normalize(posDir);
+			Vec3f posDir = glm::normalize(Math::CutYAxis(CurrentTargetPos - GetTransform()->GetWorldTransform().GetPos()));
+
 			if (PlayerTarget)
 			{
 				Vec3f playerDir = glm::normalize(PlayerTarget->GetTransform()->GetWorldTransform().GetPos() - GetTransform()->GetWorldTransform().GetPos());
@@ -76,12 +88,21 @@ namespace GEE
 				{
 					Gun->FireWeapon();
 					//Gun->GetTransform()->SetRotationWorld(quatFromDirectionVec(-playerDir));
-					posDir = glm::normalize(Vec3f(playerDir.x, 0.0f, playerDir.z));
+					posDir = glm::normalize(Math::CutYAxis(playerDir));
 
 				}
+				if (PawnSound && !PawnSound->IsPlaying() && distance < 3.0f && (GameHandle->GetProgramRuntime() - LastSoundTime) > SoundCooldown)
+				{
+					PawnSound->Play();
+					LastSoundTime = GameHandle->GetProgramRuntime() + PawnSound->GetCurrentSoundBuffer().Duration;
+				}
+
+				if (distance < 1.0f)
+					InflictDamage(30.0f * deltaTime);
+
 			}
 
-			GetTransform()->SetRotation(quatFromDirectionVec(-posDir));
+			GetTransform()->SetRotation(quatFromDirectionVec(posDir));
 
 			Vec3f velocity = GetTransform()->GetWorldTransform().GetRot() * Vec3f(0.0f, 0.0f, -1.0f * SpeedPerSec * deltaTime);
 
@@ -105,6 +126,8 @@ namespace GEE
 		descBuilder.AddField("Gun").GetTemplates().ObjectInput<Actor, GunActor>(*this, Gun);
 		descBuilder.AddField("Player target").GetTemplates().ObjectInput<Actor, Actor>(*Scene.GetRootActor(), PlayerTarget);
 
+		descBuilder.AddField("Sound source").GetTemplates().ObjectInput<Component, Audio::SoundSourceComponent>(*GetRoot(), [this](Audio::SoundSourceComponent* soundSource) { PawnSound = soundSource; });
+
 		UIInputBoxActor& speedInputBox = descBuilder.AddField("Speed").CreateChild<UIInputBoxActor>("SpeedInputBox");
 		speedInputBox.SetOnInputFunc([this](float val) { SpeedPerSec = val; }, [this]()->float { return SpeedPerSec; });
 
@@ -125,6 +148,29 @@ namespace GEE
 			UpdateAnimsListInEditor(AnimManager);
 	}
 
+	void PawnActor::InflictDamage(float damage, const Vec3f& optionalDirection)
+	{
+		Health = glm::max(Health - damage, 0.0f);
+
+		if (State != PawnState::Dying && Health <= 0.0f)
+		{
+			DeathTime = GameHandle->GetProgramRuntime();
+			State = PawnState::Dying;
+
+			if (AnimManager->GetCurrentAnim())
+				AnimManager->GetCurrentAnim()->Stop();
+
+			AnimManager->SelectAnimation(AnimManager->GetAnimInstance(0));
+			if (PawnSound)
+			{
+				PawnSound->Play();
+			}
+
+			if (optionalDirection != Vec3f(0.0f))
+				GetTransform()->SetRotation(quatFromDirectionVec(glm::normalize(optionalDirection)));
+		}
+	}
+
 	void PawnActor::MoveToPosition(const Vec3f& worldPos)
 	{
 		CurrentTargetPos = worldPos;
@@ -139,5 +185,18 @@ namespace GEE
 		case 2: MoveToPosition(Vec3f(-15.0f, 0.0f, -20.0f)); break;
 		case 3: MoveToPosition(Vec3f(-5.0f, 0.0f, -20.0f)); break;
 		}
+	}
+	void PawnActor::Respawn()
+	{
+		Health = 100.0f;
+		State = PawnState::Respawning;
+
+		if (!AnimManager)
+			return;
+
+		if (AnimManager->GetCurrentAnim())
+			AnimManager->GetCurrentAnim()->Stop();
+
+		AnimManager->SelectAnimation(AnimManager->GetAnimInstance(2));
 	}
 }

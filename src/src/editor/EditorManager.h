@@ -44,22 +44,18 @@ namespace GEE
 	class PopupDescription;
 	namespace Editor
 	{
+		class EditorActions;
+
 		class EditorManager
 		{
 		public:
 			virtual PopupDescription CreatePopupMenu(const Vec2f& posWindowSpace, SystemWindow& relativeWindow) = 0;
-			virtual void SelectComponent(Component* comp, GameScene& editorScene) = 0;
-			virtual void SelectActor(Actor* actor, GameScene& editorScene) = 0;
-			virtual void SelectScene(GameScene* scene, GameScene& editorScene) = 0;
-			template <typename T> void Select(T*, GameScene& editorScene);
+			virtual EditorActions& GetActions() = 0;
 
 			virtual void UpdateGameSettings() = 0;
 			virtual void UpdateEditorSettings() = 0;
 
 			virtual GameManager* GetGameHandle() = 0;
-			virtual Component* GetSelectedComponent() = 0;
-			virtual Actor* GetSelectedActor() = 0;
-			virtual GameScene* GetSelectedScene() = 0;
 			virtual GameSettings* GetEditorSettings() = 0;
 
 			virtual AtlasMaterial* GetDefaultEditorMaterial(EditorDefaultMaterial) = 0;

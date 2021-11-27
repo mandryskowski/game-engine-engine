@@ -490,6 +490,11 @@ namespace GEE
 		return glm::inverse(t.GetMatrix());
 	}
 
+	Vec3f Math::CutYAxis(const Vec3f& vec)
+	{
+		return Vec3f(vec.x, 0.0f, vec.z);
+	}
+
 	template void Transform::AddInterpolator<Vec3f>(std::string, float, float, Vec3f, Vec3f, InterpolationType, bool, AnimBehaviour, AnimBehaviour);
 	template void Transform::AddInterpolator<Vec3f>(std::string, float, float, Vec3f, InterpolationType, bool, AnimBehaviour, AnimBehaviour);
 
@@ -498,10 +503,10 @@ namespace GEE
 
 	Quatf quatFromDirectionVec(const Vec3f& dirVec, Vec3f up)
 	{
-		Vec3f right = glm::normalize(glm::cross(up, dirVec));
-		up = glm::normalize(glm::cross(dirVec, right));
+		Vec3f right = glm::normalize(glm::cross(up, -dirVec));
+		up = glm::normalize(glm::cross(-dirVec, right));
 
-		return Quatf(Mat3f(right, up, dirVec));
+		return Quatf(Mat3f(right, up, -dirVec));
 	}
 
 	Transform decompose(const Mat4f& mat)

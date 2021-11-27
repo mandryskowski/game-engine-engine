@@ -1,5 +1,4 @@
 #pragma once
-#include <game/GameScene.h>
 #include <cereal/types/memory.hpp>
 #include <cereal/types/vector.hpp>
 #include <math/Transform.h>
@@ -7,6 +6,7 @@
 #include <editor/EditorManager.h>
 #include <physics/CollisionObject.h>
 #include <rendering/Material.h>
+#include <game/GameScene.h>
 
 namespace GEE
 {
@@ -156,7 +156,7 @@ namespace GEE
 		Component* ParentComponent;
 		GameManager* GameHandle;
 
-		bool bKillingProcessStarted;
+		unsigned long long KillingProcessFrame;
 
 		SharedPtr<AtlasMaterial> DebugRenderMat;
 		SharedPtr<MaterialInstance> DebugRenderMatInst;

@@ -5,6 +5,13 @@
 
 namespace GEE
 {
+	enum PawnState
+	{
+		Idle,
+		Walking,
+		Dying,
+		Respawning
+	};
 	class PawnActor : public Actor
 	{
 	public:
@@ -12,6 +19,8 @@ namespace GEE
 		virtual void OnStart() override;
 		virtual void Update(float deltaTime);
 		virtual void GetEditorDescription(EditorDescriptionBuilder) override;
+
+		void InflictDamage(float damage, const Vec3f& optionalDirection = Vec3f(0.0f));
 		void MoveToPosition(const Vec3f& worldPos);
 		void MoveAlongPath();
 
@@ -35,10 +44,19 @@ namespace GEE
 				});
 		}
 	private:
+		void Respawn();
 		//Component* RootBone;
 		AnimationManagerComponent* AnimManager;
 		int AnimIndex;
 		Vec3f PreAnimBonePos;
+
+		PawnState State;
+
+		float Health;
+		float RespawnTime, DeathTime;
+
+		Audio::SoundSourceComponent* PawnSound;
+		float SoundCooldown, LastSoundTime;
 
 		Vec3f CurrentTargetPos;
 		float SpeedPerSec;

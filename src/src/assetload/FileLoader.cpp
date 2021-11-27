@@ -836,7 +836,14 @@ namespace GEE
 					LightProbeLoader::LoadLightProbeTextureArrays(scene.GetRenderData());
 					scene.GetRootActor()->Load(archive);
 
-					archive.serializeDeferments();
+					try
+					{
+						archive.serializeDeferments();
+					}
+					catch (Exception& exception)
+					{
+						std::cout << "ERROR: While loading deferments: " << exception.what() << '\n';
+					}
 
 					scene.Load();
 				}

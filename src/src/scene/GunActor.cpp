@@ -2,6 +2,7 @@
 #include <scene/SoundSourceComponent.h>
 #include <assetload/FileLoader.h>
 #include <input/Event.h>
+#include <scene/PawnActor.h>
 
 #include <UI/UICanvasActor.h>
 #include <UI/UIActor.h>
@@ -103,6 +104,12 @@ namespace GEE
 		if (GunBlast)
 			GunBlast->Play();
 
+		std::vector<PawnActor*> pawnActors;
+		Scene.GetRootActor()->GetAllActors<PawnActor>(&pawnActors);
+
+		if (!pawnActors.empty())
+			pawnActors[0]->InflictDamage(50.0f, Math::CutYAxis(GetTransform()->GetWorldTransform().GetPos() - pawnActors[0]->GetTransform()->GetWorldTransform().GetPos()));
+
 		GetRoot()->GetTransform().AddInterpolator<Quatf>("rotation", 0.0f, 0.25f, Quatf(Vec3f(0.0f)), toQuat(Vec3f(30.0f, 0.0f, 0.0f)), InterpolationType::QUINTIC, true);
 		GetRoot()->GetTransform().AddInterpolator<Quatf>("rotation", 0.25f, 1.25f, Quatf(Vec3f(0.0f)), InterpolationType::QUADRATIC, true);
 
@@ -114,14 +121,14 @@ namespace GEE
 		if (!rustedIronMaterial)
 		{
 			rustedIronMaterial = GameHandle->GetRenderEngineHandle()->AddMaterial(MakeShared<Material>("RustedIron"));
-			rustedIronMaterial->AddTexture(MakeShared<NamedTexture>(Texture::Loader<>::FromFile2D("EngineMaterials/rustediron_albedo.png", Texture::Format::SRGB(), false, Texture::MinFilter::Trilinear(), Texture::MagFilter::Bilinear()), "albedo1"));
-			rustedIronMaterial->AddTexture(MakeShared<NamedTexture>(Texture::Loader<>::FromFile2D("EngineMaterials/rustediron_metallic.png"), "metallic1"));
-			rustedIronMaterial->AddTexture(MakeShared<NamedTexture>(Texture::Loader<>::FromFile2D("EngineMaterials/rustediron_roughness.png"), "roughness1"));
-			rustedIronMaterial->AddTexture(MakeShared<NamedTexture>(Texture::Loader<>::FromFile2D("EngineMaterials/rustediron_normal.png"), "normal1"));
+			rustedIronMaterial->AddTexture(MakeShared<NamedTexture>(Texture::Loader<>::FromFile2D("Assets/External/Materials/rustediron/rustediron_albedo.png", Texture::Format::SRGB(), false, Texture::MinFilter::Trilinear(), Texture::MagFilter::Bilinear()), "albedo1"));
+			rustedIronMaterial->AddTexture(MakeShared<NamedTexture>(Texture::Loader<>::FromFile2D("Assets/External/Materials/rustediron/rustediron_metallic.png"), "metallic1"));
+			rustedIronMaterial->AddTexture(MakeShared<NamedTexture>(Texture::Loader<>::FromFile2D("Assets/External/Materials/rustediron/rustediron_roughness.png"), "roughness1"));
+			rustedIronMaterial->AddTexture(MakeShared<NamedTexture>(Texture::Loader<>::FromFile2D("Assets/External/Materials/rustediron/rustediron_normal.png"), "normal1"));
 		}
 
 		{
-			EngineDataLoader::LoadModel("hqSphere/hqSphere.obj", *bulletModel, MeshTreeInstancingType::ROOTTREE);
+			EngineDataLoader::LoadModel("Assets/External/hqSphere/hqSphere.obj", *bulletModel, MeshTreeInstancingType::ROOTTREE);
 			std::vector<ModelComponent*> models;
 			models.push_back(bulletModel.get());
 			bulletModel->GetAllComponents<ModelComponent>(&models);

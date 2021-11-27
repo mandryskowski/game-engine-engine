@@ -11,6 +11,7 @@
 #include <scene/GunActor.h>
 #include <scene/Controller.h>
 #include <input/InputDevicesStateRetriever.h>
+#include <editor/EditorActions.h>
 
 using namespace GEE;
 

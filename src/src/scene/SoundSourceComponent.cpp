@@ -25,6 +25,11 @@ namespace GEE
 			Audio::Loader::LoadSoundFromFile(bufferPath, *this);
 		}
 
+		SoundBuffer SoundSourceComponent::GetCurrentSoundBuffer() const
+		{
+			return SndBuffer;
+		}
+
 		void SoundSourceComponent::LoadSound(const SoundBuffer& buffer)
 		{
 			SndBuffer = buffer;
@@ -126,6 +131,7 @@ namespace GEE
 			alSourcefv(ALIndex, AL_POSITION, Math::GetDataPtr(Vec3f(0.0f)));
 			alSourcefv(ALIndex, AL_VELOCITY, Math::GetDataPtr(Vec3f(0.0f)));
 			alSourcei(ALIndex, AL_BUFFER, SndBuffer.ALIndex);
+			
 		}
 
 		namespace Loader
@@ -199,7 +205,10 @@ namespace GEE
 					std::transform(file.samples[0].begin(), file.samples[0].end(), std::back_inserter(charSamples), [path](const float& sample) { return static_cast<char>(sample * 128.0f); });
 
 					std::cout << path << ": " << charSamples.size() << ",  samplerate: " << file.getSampleRate() / 2 << ",  bitdepth: " << file.getBitDepth() << ",  length[s]: " << file.getLengthInSeconds() << '\n';
-					return LoadALBuffer(format, &charSamples[0], (ALsizei)charSamples.size(), (ALsizei)file.getSampleRate() / 2, path);
+
+					SoundBuffer loadedBuffer = LoadALBuffer(format, &charSamples[0], (ALsizei)charSamples.size(), (ALsizei)file.getSampleRate() / 2, path);
+					loadedBuffer.Duration = file.getLengthInSeconds();
+					return loadedBuffer;
 				}
 
 				SoundBuffer LoadBufferFromOgg(const std::string& path)
@@ -211,9 +220,11 @@ namespace GEE
 				SoundBuffer LoadALBuffer(ALenum format, ALvoid* data, ALsizei size, ALsizei freq, const std::string& path)
 				{
 					SoundBuffer buffer;
-
+					
+					size = size - size % 4;
 					alGenBuffers(1, &buffer.ALIndex);
-					alBufferData(buffer.ALIndex, format, data, size - size % 4, freq);
+					alBufferData(buffer.ALIndex, format, data, size, freq);
+
 
 					buffer.Path = path;
 

@@ -247,9 +247,12 @@ namespace GEE
 
 				auto& materialButton = listActor.CreateChild<UIButtonActor>("EditMaterialButton", (meshInst->GetMaterialPtr()) ? (meshInst->GetMaterialPtr()->GetName()) : ("No material"), nullptr, Transform(Vec2f(2.5f, 0.0f), Vec2f(3.0f, 1.0f)));
 
-				materialButton.SetOnClickFunc([&, descBuilder]() mutable { 
+				materialButton.SetOnClickFunc([&meshInst, descBuilder, name]() mutable { 
 					UIWindowActor& matWindow = descBuilder.GetEditorScene().CreateActorAtRoot<UIWindowActor>(name + "MaterialWindow");
 					EditorDescriptionBuilder descBuilder(descBuilder.GetEditorHandle(), matWindow, matWindow);
+					
+					if (!meshInst->GetMaterialPtr())
+						std::cout << "Mesh inst doesn't have material ptr!\n";
 					meshInst->GetMaterialPtr()->GetEditorDescription(descBuilder);
 					matWindow.AutoClampView();
 					matWindow.RefreshFieldsList();

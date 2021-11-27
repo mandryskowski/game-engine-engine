@@ -454,22 +454,22 @@ namespace GEE
 
 	void EditorDescriptionBuilder::SelectComponent(Component* comp)
 	{
-		EditorHandle.SelectComponent(comp, EditorScene);
+		EditorHandle.GetActions().SelectComponent(comp, EditorScene);
 	}
 
 	void EditorDescriptionBuilder::SelectActor(Actor* actor)
 	{
-		EditorHandle.SelectActor(actor, EditorScene);
+		EditorHandle.GetActions().SelectActor(actor, EditorScene);
 	}
 
 	void EditorDescriptionBuilder::RefreshComponent()
 	{
-		SelectComponent(EditorHandle.GetSelectedComponent());
+		SelectComponent(EditorHandle.GetActions().GetSelectedComponent());
 	}
 
 	void EditorDescriptionBuilder::RefreshScene()
 	{
-		EditorHandle.SelectScene(EditorHandle.GetSelectedScene(), EditorScene);
+		EditorHandle.GetActions().SelectScene(EditorHandle.GetActions().GetSelectedScene(), EditorScene);
 	}
 
 	void EditorDescriptionBuilder::DeleteDescription()

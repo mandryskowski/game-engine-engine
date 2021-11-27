@@ -2,9 +2,11 @@
 #include <game/GameManager.h>
 #include <math/Transform.h>
 #include <editor/EditorManager.h>
+#include <UI/UIListActor.h>
 
 namespace GEE
 {
+	class UIButtonActor;
 	class UIAutomaticListActor;
 
 	enum class Alignment
@@ -47,7 +49,7 @@ namespace GEE
 	{
 	public:
 		PopupDescription(SystemWindow& window, UIAutomaticListActor*, UICanvasActor* canvas);
-		void AddOption(const std::string&, std::function<void()>, const IconData& = IconData());
+		UIButtonActor& AddOption(const std::string&, std::function<void()>, const IconData& = IconData());
 		PopupDescription AddSubmenu(const std::string&, std::function<void(PopupDescription)> prepareSubmenu, const IconData& = IconData());
 		Transform GetView() { if (!bViewComputed) ComputeView(); return LastComputedView; }
 		/**
@@ -71,14 +73,23 @@ namespace GEE
 		{
 		public:
 			EditorActions(EditorManager&);
+
+			Component* GetSelectedComponent();
+			Actor* GetSelectedActor();
+			GameScene* GetSelectedScene();
+
 			void SelectComponent(Component* comp, GameScene& editorScene);
 			void SelectActor(Actor* actor, GameScene& editorScene);
 			void SelectScene(GameScene* selectedScene, GameScene& editorScene);
+			template <typename T> void Select(T*, GameScene& editorScene);
 
 			template <typename T> void AddActorToList(GameScene& editorScene, T& obj, UIAutomaticListActor& listParent, UICanvas& canvas);
 
-			void CreateComponentWindow(Actor&);
 		private:
+			Component* GetContextComp();
+			Actor* GetContextActor();
+			void CreateComponentWindow(Actor&);
+
 			EditorManager& EditorHandle;
 
 			Component* SelectedComp;

@@ -109,7 +109,7 @@ namespace GEE
 
 	void UIInputBoxActor::SetOnInputFunc(std::function<void(float)> inputFunc, std::function<float()> valueGetter, bool fixNumberStr)
 	{
-		std::function<std::string()> valueGetterStr = [=]() { return std::to_string(valueGetter()); };
+		std::function<std::string()> valueGetterStr = [=]() { return ToStringPrecision(valueGetter(), 2); };
 		if (fixNumberStr)
 		{
 			valueGetterStr = [=]() {

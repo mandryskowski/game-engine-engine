@@ -24,7 +24,7 @@ namespace GEE
 		ActiveCamera(nullptr),
 		Name(name),
 		GameHandle(&gameHandle),
-		bKillingProcessStarted(false)
+		KillingProcessFrame(0)
 	{
 		RootActor = MakeUnique<Actor>(*this, nullptr, "SceneRoot");
 	}
@@ -36,7 +36,7 @@ namespace GEE
 		ActiveCamera(nullptr),
 		Name(name),
 		GameHandle(&gameHandle),
-		bKillingProcessStarted(false)
+		KillingProcessFrame(0)
 	{
 		RootActor = MakeUnique<Actor>(*this, nullptr, "SceneRoot");
 	}
@@ -49,7 +49,7 @@ namespace GEE
 		ActiveCamera(scene.ActiveCamera),
 		Name(scene.Name),
 		GameHandle(scene.GameHandle),
-		bKillingProcessStarted(scene.bKillingProcessStarted)
+		KillingProcessFrame(scene.KillingProcessFrame)
 	{
 		RootActor = MakeUnique<Actor>(*this, nullptr, "SceneRoot");
 	}
@@ -101,7 +101,7 @@ namespace GEE
 
 	bool GameScene::IsBeingKilled() const
 	{
-		return bKillingProcessStarted;
+		return KillingProcessFrame != 0;
 	}
 
 	int GameScene::GetHierarchyTreeCount() const
@@ -196,7 +196,7 @@ namespace GEE
 
 	void GameScene::MarkAsKilled()
 	{
-		bKillingProcessStarted = true;
+		KillingProcessFrame = GameHandle->GetTotalFrameCount();
 		if (RootActor)
 			RootActor->MarkAsKilled();
 

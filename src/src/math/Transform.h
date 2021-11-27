@@ -141,6 +141,8 @@ namespace GEE
 	{
 		Mat4f SafeInverseMatrix(const Mat4f& t);
 		Mat4f SafeInverseMatrix(const Transform& t);
+
+		Vec3f CutYAxis(const Vec3f&);
 	}
 
 	Quatf quatFromDirectionVec(const Vec3f& dirVec, Vec3f up = Vec3f(0.0f, 1.0f, 0.0f));

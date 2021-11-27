@@ -1,5 +1,6 @@
 #pragma once
 #include <game/Game.h>
+#include <editor/EditorActions.h>
 #include <editor/EditorManager.h>
 #include <UI/UIListActor.h>
 #include <ctpl/ctpl_stl.h>
@@ -13,6 +14,8 @@ namespace GEE
 	class PopupDescription;
 	namespace Editor
 	{
+		class EditorActions;
+
 		struct EditorEventProcessor
 		{
 			static void FileDropCallback(SystemWindow* window, int count, const char** paths);
@@ -29,12 +32,11 @@ namespace GEE
 			virtual bool GameLoopIteration(float timeStep, float deltaTime) override;
 
 			virtual GameManager* GetGameHandle() override;
-			virtual Component* GetSelectedComponent() override;
-			virtual Actor* GetSelectedActor() override;
-			virtual GameScene* GetSelectedScene() override;
 			virtual std::vector<GameScene*> GetScenes() override;
 			GameSettings* GetEditorSettings() override;
 			virtual AtlasMaterial* GetDefaultEditorMaterial(EditorDefaultMaterial) override;
+			virtual EditorActions& GetActions() override;
+
 			virtual std::string ToRelativePath(const std::string&) override;
 			virtual bool CheckEEForceForwardShading() override
 			{
@@ -52,10 +54,6 @@ namespace GEE
 			virtual void Update(float deltaTime) override;
 			virtual void HandleEvents() override;
 
-			virtual void SelectComponent(Component* comp, GameScene& editorScene) override;
-
-			virtual void SelectActor(Actor* actor, GameScene& editorScene) override;
-			virtual void SelectScene(GameScene* selectedScene, GameScene& editorScene) override;
 			virtual void PreviewHierarchyTree(HierarchyTemplate::HierarchyTreeT& tree) override;
 			template <typename T> void AddActorToList(GameScene& editorScene, T& obj, UIAutomaticListActor& listParent, UICanvas& canvas);
 
@@ -104,9 +102,6 @@ namespace GEE
 			//	UICanvasActor* CanvasContext;
 			std::vector<UICanvasActor*> Canvases;
 
-			Component* SelectedComp;
-			Actor* SelectedActor;
-			GameScene* SelectedScene;
 			UniquePtr<EditorActions> Actions;
 
 			bool EEForceForwardShading;
@@ -121,7 +116,7 @@ namespace GEE
 			if (obj.IsBeingKilled())
 				return;
 
-			UIButtonActor& element = listParent.CreateChild<UIButtonActor>(obj.GetName() + "'s Button", [this, &obj, &editorScene]() {this->Select(&obj, editorScene); });//*this, obj, &EditorManager::Select<T>));
+			UIButtonActor& element = listParent.CreateChild<UIActivableButtonActor>(obj.GetName() + "'s Button", [this, &obj, &editorScene]() {Actions->Select(&obj, editorScene); });//*this, obj, &EditorManager::Select<T>));
 			element.SetTransform(Transform(Vec2f(1.5f, 0.0f), Vec2f(3.0f, 1.0f)));
 			TextConstantSizeComponent& elementText = element.CreateComponent<TextConstantSizeComponent>(obj.GetName() + "'s Text", Transform(Vec2f(0.0f), Vec2f(1.0f, 1.0f)), "", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
 			elementText.SetMaxSize(Vec2f(0.9f));

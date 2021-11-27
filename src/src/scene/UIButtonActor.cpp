@@ -21,8 +21,9 @@ namespace GEE
 		PrevClickTime(0.0f),
 		MaxDoubleClickTime(0.3f),
 		MatIdle(nullptr),
-		MatClick(nullptr),
 		MatHover(nullptr),
+		MatClick(nullptr),
+		MatActive(nullptr),
 		MatDisabled(nullptr),
 		PrevDeducedMaterial(nullptr),
 		State(EditorIconState::IDLE),
@@ -30,7 +31,7 @@ namespace GEE
 	{
 		ButtonModel = &CreateComponent<ModelComponent>(Name + "'s_Button_Model");
 
-		SharedPtr<Material> matIdle, matHover, matClick, matDisabled;
+		SharedPtr<Material> matIdle, matHover, matClick, matActive, matDisabled;
 		if ((matIdle = GameHandle->GetRenderEngineHandle()->FindMaterial("GEE_Button_Idle")) == nullptr)
 		{
 			matIdle = MakeShared<Material>("GEE_Button_Idle");
@@ -52,6 +53,13 @@ namespace GEE
 			matClick->SetRenderShaderName("Forward_NoLight");
 			GameHandle->GetRenderEngineHandle()->AddMaterial(matClick);
 		}
+		if ((matActive = GameHandle->GetRenderEngineHandle()->FindMaterial("GEE_Button_Active")) == nullptr)
+		{
+			matActive = MakeShared<Material>("GEE_Button_Active");
+			matActive->SetColor(Vec4f(0.75f, 0.75f, 0.22f, 1.0f));
+			matActive->SetRenderShaderName("Forward_NoLight");
+			GameHandle->GetRenderEngineHandle()->AddMaterial(matActive);
+		}
 		if ((matDisabled = GameHandle->GetRenderEngineHandle()->FindMaterial("GEE_Button_Disabled")) == nullptr)
 		{
 			matDisabled = MakeShared<Material>("GEE_Button_Disabled");
@@ -63,6 +71,7 @@ namespace GEE
 		MatIdle = MakeShared<MaterialInstance>(MaterialInstance(*matIdle));
 		MatHover = MakeShared<MaterialInstance>(MaterialInstance(*matHover));
 		MatClick = MakeShared<MaterialInstance>(MaterialInstance(*matClick));
+		MatActive = MakeShared<MaterialInstance>(MaterialInstance(*matActive));
 		MatDisabled = MakeShared<MaterialInstance>(MaterialInstance(*matDisabled));
 
 
@@ -156,6 +165,12 @@ namespace GEE
 	void UIButtonActor::SetWhileBeingClickedFunc(std::function<void()> whileBeingClickedFunc)
 	{
 		WhileBeingClickedFunc = whileBeingClickedFunc;
+	}
+
+	void UIButtonActor::CallOnClickFunc()
+	{
+		if (OnClickFunc)
+			OnClickFunc();
 	}
 
 	void UIButtonActor::DeleteButtonModel()
@@ -397,8 +412,8 @@ namespace GEE
 
 		if (State == EditorIconState::ACTIVATED)
 		{
-			ButtonModel->OverrideInstancesMaterialInstances(MatClick);
-			PrevDeducedMaterial = MatClick.get();
+			ButtonModel->OverrideInstancesMaterialInstances(MatActive);
+			PrevDeducedMaterial = MatActive.get();
 		}
 	}
 

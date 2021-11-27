@@ -7,12 +7,14 @@ namespace GEE
 	{
 		struct SoundBuffer
 		{
-			unsigned int ALIndex;
-			std::string Path;	//used for optimization; we don't load a buffer from file if this file was already read before (there will never be two buffers that share the same path)
 			bool IsValid() const
 			{
 				return ALIndex != 0;
 			}
+	//	private:
+			unsigned int ALIndex;
+			std::string Path;	//used for optimization; we don't load a buffer from file if this file was already read before (there will never be two buffers that share the same path)
+			float Duration;
 		};
 
 		class SoundSourceComponent : public Component
@@ -22,6 +24,7 @@ namespace GEE
 			SoundSourceComponent(Actor&, Component* parentComp, const std::string& name, SoundBuffer = SoundBuffer(), const Transform& = Transform());
 			SoundSourceComponent(Actor&, Component* parentComp, const std::string& name, const std::string& bufferPath, const Transform& = Transform());
 
+			SoundBuffer GetCurrentSoundBuffer() const;
 			void LoadSound(const SoundBuffer&);
 
 			void SetLoop(bool);

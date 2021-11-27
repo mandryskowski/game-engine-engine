@@ -17,7 +17,7 @@ namespace GEE
 		RootComponent(nullptr),
 		GameHandle(scene.GetGameHandle()),
 		ParentActor(parentActor),
-		bKillingProcessStarted(false),
+		KillingProcessFrame(0),
 		SetupStream(nullptr)
 	{
 		RootComponent = MakeUnique<Component>(*this, nullptr, Name + "'s root", t);
@@ -33,7 +33,7 @@ namespace GEE
 		SetupStream(moved.SetupStream),
 		Scene(moved.Scene),
 		GameHandle(moved.GameHandle),
-		bKillingProcessStarted(moved.bKillingProcessStarted)
+		KillingProcessFrame(moved.KillingProcessFrame)
 	{
 		std::cout << "UWAGA: MOVE CONSTRUCTOR NIE DZIALA. (" + Name + ") (" + Scene.GetName() + ")\n";
 		RootComponent = MakeUnique<Component>(*this, nullptr, Name + "'s root", Transform());
@@ -90,7 +90,7 @@ namespace GEE
 
 	bool Actor::IsBeingKilled() const
 	{
-		return bKillingProcessStarted;
+		return KillingProcessFrame != 0;
 	}
 
 	void Actor::SetName(const std::string& name)
@@ -202,7 +202,7 @@ namespace GEE
 
 	void Actor::UpdateAll(float deltaTime)
 	{
-		if (IsBeingKilled())
+		if (IsBeingKilled() && GameHandle->GetTotalFrameCount() != KillingProcessFrame)
 		{
 			Delete();
 			return;
@@ -215,7 +215,7 @@ namespace GEE
 
 	void Actor::MarkAsKilled()
 	{
-		bKillingProcessStarted = true;
+		KillingProcessFrame = GameHandle->GetTotalFrameCount();
 		if (!RootComponent->IsBeingKilled())	//Check if the root is not being killed to avoid infinite recursion (killing the root kills the actor which kills the root which kills the actor...)
 			RootComponent->MarkAsKilled();
 

@@ -30,6 +30,20 @@ namespace GEE
 
 	};
 
+	class Exception
+	{
+	public:
+		explicit Exception(const std::string& msg) : Message(msg) {}
+
+		const char* what() const noexcept
+		{
+			return Message.c_str();
+		}
+
+	private:
+		std::string Message;
+	};
+
 	class AnimationInstance
 	{
 		Animation& Anim;
@@ -63,15 +77,9 @@ namespace GEE
 			Component* comp = GameManager::DefaultScene->FindActor(rootCompActorName)->GetRoot()->GetComponent<Component>(rootCompName);
 
 			if (!anim)
-			{
-				std::cout << "ERROR: Cannot find anim " << animName << " in hierarchy tree " << animHierarchyTreePath << '\n';
-				exit(-42069);
-			}
+				throw(Exception("ERROR: Cannot find anim " + animName + " in hierarchy tree " + animHierarchyTreePath));
 			if (!comp)
-			{
-				std::cout << "ERROR: Cannot find anim root component " << rootCompName << " in actor " << rootCompActorName << '\n';
-				exit(-42069);
-			}
+				throw(Exception("ERROR: Cannot find anim root component " + rootCompName + " in actor " + rootCompActorName));
 
 			construct(*anim, *comp);
 		}
@@ -104,7 +112,10 @@ namespace GEE
 		{
 			std::cout << "robie animationmanagercomponent\n";
 			std::string currentAnimName;
-			archive(cereal::make_nvp("AnimInstances", cereal::defer(AnimInstances)), cereal::make_nvp("CurrentAnimName", currentAnimName), cereal::base_class<Component>(this));
+
+			archive(cereal::make_nvp("AnimInstances", cereal::defer(AnimInstances)));
+				
+			archive(cereal::make_nvp("CurrentAnimName", currentAnimName), cereal::base_class<Component>(this));
 
 			if (!currentAnimName.empty())
 				for (auto& it : AnimInstances)

@@ -145,7 +145,8 @@ namespace GEE
 		GameScene& Scene;
 		GameManager* GameHandle;
 
-		bool bKillingProcessStarted;
+		// If it equals 0, killing process has not started.
+		unsigned int KillingProcessFrame;
 	};
 
 

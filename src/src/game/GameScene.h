@@ -115,7 +115,7 @@ namespace GEE
 
 		CameraComponent* ActiveCamera;
 
-		bool bKillingProcessStarted;
+		unsigned long long KillingProcessFrame;
 
 		friend class Game;
 		friend class Editor::GameEngineEngineEditor;
@@ -332,3 +332,5 @@ namespace GEE
 		return RootActor->CreateChild<ActorClass>(std::forward<Args>(args)...);
 	}
 }
+
+#include <scene/Actor.h>

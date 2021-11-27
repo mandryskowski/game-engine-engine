@@ -21,7 +21,17 @@ GEE::Component* GEE::CerealComponentSerializationData::ParentComp = nullptr;
 namespace GEE
 {
 	Component::Component(Actor& actor, Component* parentComp, const std::string& name, const Transform& t) :
-		Name(name), ComponentTransform(t), Scene(actor.GetScene()), ActorRef(actor), ParentComponent(parentComp), GameHandle(actor.GetScene().GetGameHandle()), CollisionObj(nullptr), DebugRenderMat(nullptr), DebugRenderMatInst(nullptr), DebugRenderLastFrameMVP(Mat4f(1.0f)), bKillingProcessStarted(false)
+		Name(name),
+		ComponentTransform(t),
+		Scene(actor.GetScene()),
+		ActorRef(actor),
+		ParentComponent(parentComp),
+		GameHandle(actor.GetScene().GetGameHandle()),
+		CollisionObj(nullptr),
+		DebugRenderMat(nullptr),
+		DebugRenderMatInst(nullptr),
+		DebugRenderLastFrameMVP(Mat4f(1.0f)),
+		KillingProcessFrame(0)
 	{
 	}
 
@@ -37,7 +47,7 @@ namespace GEE
 		DebugRenderMat(comp.DebugRenderMat),
 		DebugRenderMatInst(comp.DebugRenderMatInst),
 		DebugRenderLastFrameMVP(comp.DebugRenderLastFrameMVP),
-		bKillingProcessStarted(comp.bKillingProcessStarted)
+		KillingProcessFrame(comp.KillingProcessFrame)
 	{
 		std::cout << "Komponentowy move...\n";
 	}
@@ -174,7 +184,7 @@ namespace GEE
 
 	bool Component::IsBeingKilled() const
 	{
-		return bKillingProcessStarted;
+		return KillingProcessFrame != 0;
 	}
 
 	UniquePtr<Component> Component::DetachChild(Component& soughtChild)
@@ -251,7 +261,7 @@ namespace GEE
 		for (int i = 0; i < static_cast<int>(Children.size()); i++)
 			Children[i]->UpdateAll(dt);
 
-		if (IsBeingKilled())
+		if (IsBeingKilled() && GameHandle->GetTotalFrameCount() != KillingProcessFrame)
 		{
 			Delete();
 			return;
@@ -544,7 +554,7 @@ namespace GEE
 
 	void Component::MarkAsKilled()
 	{
-		bKillingProcessStarted = true;
+		KillingProcessFrame = GameHandle->GetTotalFrameCount();
 		if (!ParentComponent)	//If this is the root component of an Actor, kill the Actor as well.
 			ActorRef.MarkAsKilled();
 		for (auto& it : Children)

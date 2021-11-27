@@ -28,6 +28,8 @@ namespace GEE
 		void SetOnBeingClickedFunc(std::function<void()> onBeingClickedFunc);
 		void SetWhileBeingClickedFunc(std::function<void()> whileBeingClickedFunc);
 
+		void CallOnClickFunc();
+
 		void DeleteButtonModel();
 
 		virtual void HandleEvent(const Event& ev) override;
@@ -54,7 +56,7 @@ namespace GEE
 		float PrevClickTime;
 
 		ModelComponent* ButtonModel;
-		SharedPtr<MaterialInstance> MatIdle, MatHover, MatClick, MatDisabled;
+		SharedPtr<MaterialInstance> MatIdle, MatHover, MatClick, MatActive, MatDisabled;
 		MaterialInstance* PrevDeducedMaterial;
 
 		EditorIconState State;

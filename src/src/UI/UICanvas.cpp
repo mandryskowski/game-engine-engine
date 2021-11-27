@@ -113,11 +113,7 @@ namespace GEE
 
 	void UICanvas::EraseTopLevelUIElement(UICanvasElement& element)
 	{
-		auto found = std::find_if(TopLevelUIElements.begin(), TopLevelUIElements.end(), [&](UICanvasElement* elementVec) { return elementVec == &element; });
-		if (found == TopLevelUIElements.end())
-			return;
-
-		TopLevelUIElements.erase(found);
+		TopLevelUIElements.erase(std::remove_if(TopLevelUIElements.begin(), TopLevelUIElements.end(), [this, &element](UICanvasElement* elementVec) {return elementVec == &element; }), TopLevelUIElements.end());
 	}
 
 
