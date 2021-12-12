@@ -1,4 +1,5 @@
 #include <scene/LightComponent.h>
+#include <game/GameScene.h>
 #include <rendering/Material.h>
 #include <scene/UIInputBoxActor.h>
 #include <UI/UICanvasActor.h>
@@ -31,6 +32,8 @@ namespace GEE
 		Scene.GetRenderData()->AddLight(*this);
 
 		TransformDirtyFlagIndex = ComponentTransform.AddDirtyFlag();
+
+		CalculateLightRadius();
 	}
 
 	LightComponent::LightComponent(LightComponent&& comp) :
@@ -53,6 +56,29 @@ namespace GEE
 	{
 		TransformDirtyFlagIndex = ComponentTransform.AddDirtyFlag();
 		Scene.GetRenderData()->AddLight(*this);
+	}
+
+	LightComponent& LightComponent::operator=(const LightComponent& light)
+	{
+		Component::operator=(light);
+
+		Type = light.Type;
+		Ambient = light.Ambient;
+		Diffuse = light.Diffuse;
+		Specular = light.Specular;
+		Attenuation = light.Attenuation;
+		ShadowBias = light.ShadowBias;
+		bShadowMapCullFronts = light.bShadowMapCullFronts;
+		CutOff = light.CutOff;
+		OuterCutOff = light.OuterCutOff;
+		LightIndex = light.LightIndex;
+		Far = light.Far;
+		Projection = light.Projection;
+		DirtyFlag = light.DirtyFlag;
+		ShadowMapNr = light.ShadowMapNr;
+		bHasValidShadowMap = light.bHasValidShadowMap;
+
+		return *this;
 	}
 
 	LightType LightComponent::GetType() const
@@ -283,13 +309,13 @@ namespace GEE
 		return Ambient;
 	}
 
-	MaterialInstance LightComponent::LoadDebugMatInst(EditorIconState state)
+	MaterialInstance LightComponent::LoadDebugMatInst(EditorButtonState state)
 	{
 		LoadDebugRenderMaterial("GEE_Mat_Default_Debug_LightComponent", "Assets/Editor/lightcomponent_icon.png");
 		return Component::LoadDebugMatInst(state);
 	}
 
-	void LightComponent::GetEditorDescription(EditorDescriptionBuilder descBuilder)
+	void LightComponent::GetEditorDescription(ComponentDescriptionBuilder descBuilder)
 	{
 		Component::GetEditorDescription(descBuilder);
 

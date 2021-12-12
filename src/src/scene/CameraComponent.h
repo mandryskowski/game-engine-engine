@@ -20,9 +20,9 @@ namespace GEE
 
 		virtual void Update(float);		//controls the component
 
-		virtual MaterialInstance LoadDebugMatInst(EditorIconState) override;
+		virtual MaterialInstance LoadDebugMatInst(EditorButtonState) override;
 
-		virtual void GetEditorDescription(EditorDescriptionBuilder);
+		virtual void GetEditorDescription(ComponentDescriptionBuilder) override;
 		template <typename Archive> void Save(Archive& archive) const
 		{
 			archive(CEREAL_NVP(RotationEuler), CEREAL_NVP(Projection), cereal::make_nvp("Active", Scene.GetActiveCamera() == this), cereal::make_nvp("Component", cereal::base_class<Component>(this)));

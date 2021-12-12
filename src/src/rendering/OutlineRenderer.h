@@ -94,14 +94,12 @@ namespace GEE
 			auto compRenderableCast = dynamic_cast<RenderableComponent*>(comp);
 
 			// Get/create shader
-			Shader* shader = nullptr;
+			Material::ShaderInfo shaderInfo = MaterialShaderHint::Simple;
 			if (compRenderableCast)
 			{
 				if (auto materials = compRenderableCast->GetMaterials(); !materials.empty() && materials.front())
-					shader = (materials.front()->GetRenderShaderName() == "Geometry") ? (info.GetTbCollection().GetTb<DeferredShadingToolbox>()->FindShader("Geometry")) : (Impl.RenderHandle.FindShader(materials.front()->GetRenderShaderName()));
+					shaderInfo = materials.front()->GetShaderInfo();
 			}
-			if (!shader)
-				shader = Impl.RenderHandle.FindShader("Forward_NoLight");
 
 			// Generate silhouetteFramebuffer
 			GEE_FB::Framebuffer silhouetteFramebuffer;
@@ -114,61 +112,51 @@ namespace GEE
 			silhouetteTexture.SetMinFilter(Texture::MinFilter::Nearest(), true);
 			silhouetteFramebuffer.AttachTextures(silhouetteTexture, targetFramebuffer.GetAnyDepthAttachment());
 
-			/*if (shader = Impl.RenderHandle.FindShader("Silhouette"); !shader)
-			{
-				auto createdShader = ShaderLoader::LoadShadersWithInclData("Silhouette", "#define OUTLINE_DISCARD_ALPHA 1\n", "Shaders/depth.vs", "Shaders/depth.fs");
-				Impl.RenderHandle.AddShader(createdShader);
-				shader = createdShader.get();
-				shader->Use();
-				shader->UniformBlockBinding("BoneMatrices", 10);
-				shader->SetExpectedMatrices({ MatrixType::MVP });
-				shader->AddTextureUnit(0, "albedo1");
-			}*/
-
-			//glEnable(GL_DEPTH_TEST);
-			glDepthMask(0x00);
-			silhouetteFramebuffer.Bind(true);
-			glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-			glClear(GL_COLOR_BUFFER_BIT);
-			glEnable(GL_CULL_FACE);
-
-			info.SetUseMaterials(true);
-			info.SetCareAboutShader(true);
-			shader->Use();
-
 			// Pass 1: render component's silhouette:
-
-			Impl.RenderHandle.SetBoundMaterial(nullptr);
-			
-			if (compRenderableCast)
-				compRenderableCast->Render(info, shader);
-			else
-				comp->DebugRender(info, *shader);
-
-			// Pass 2: render outline to targetFramebuffer
-			targetFramebuffer.Bind();
-			targetFramebuffer.SetDrawSlot(0);
-
-			info.SetUseMaterials(false);
-			info.SetCareAboutShader(false);
-
-			if (shader = Impl.RenderHandle.FindShader("SilhouetteOutline"); !shader)
 			{
-				auto createdShader = ShaderLoader::LoadShadersWithInclData("SilhouetteOutline", "#define OUTLINE_FROM_SILHOUETTE 1\n", "Shaders/quad.vs", "Shaders/quad.fs");
-				Impl.RenderHandle.AddShader(createdShader);
-				shader = createdShader.get();
+				Shader* shader = shaderInfo.RetrieveShaderForRendering(info.GetTbCollection());
+				glDepthMask(0x00);
+				silhouetteFramebuffer.Bind(true);
+				glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+				glClear(GL_COLOR_BUFFER_BIT);
+				glEnable(GL_CULL_FACE);
+
+				info.SetUseMaterials(true);
+				info.SetRequiredShaderInfo(shaderInfo);
+				shader->Use();
+
+				if (compRenderableCast)
+					compRenderableCast->Render(info, shader);
+				else
+					comp->DebugRender(info, *shader);
 			}
 
-			shader->Use();
-			shader->Uniform4fv("material.color", Vec4f(1.0f, 1.0f, 0.0f, 1.0f));
-			
-			silhouetteTexture.Bind(0);
-			
-			//renderFunc();
-			Impl.RenderHandle.GetBasicShapeMesh(EngineBasicShape::QUAD).Bind(info.GetContextID());
-			SceneMatrixInfo infoNoMaterials(info.GetTbCollection(), info.GetSceneRenderData());
-			infoNoMaterials.SetUseMaterials(false);
-			StaticMeshInstances(infoNoMaterials, { Impl.GetBasicShapeMesh(EngineBasicShape::QUAD) }, Transform(), *shader);
+			// Pass 2: render outline to targetFramebuffer
+			{
+				targetFramebuffer.Bind();
+				targetFramebuffer.SetDrawSlot(0);
+
+				info.SetUseMaterials(false);
+				info.StopRequiringShaderInfo();
+
+				Shader* shader;
+				if (shader = Impl.RenderHandle.FindShader("SilhouetteOutline"); !shader)
+				{
+					auto createdShader = ShaderLoader::LoadShadersWithInclData("SilhouetteOutline", "#define OUTLINE_FROM_SILHOUETTE 1\n", "Shaders/quad.vs", "Shaders/quad.fs");
+					Impl.RenderHandle.AddShader(createdShader);
+					shader = createdShader.get();
+				}
+
+				shader->Use();
+				shader->Uniform4fv("material.color", Vec4f(1.0f, 1.0f, 0.0f, 1.0f));
+
+				silhouetteTexture.Bind(0);
+
+				Impl.RenderHandle.GetBasicShapeMesh(EngineBasicShape::QUAD).Bind(info.GetContextID());
+				SceneMatrixInfo infoNoMaterials(info.GetTbCollection(), info.GetSceneRenderData());
+				infoNoMaterials.SetUseMaterials(false);
+				StaticMeshInstances(infoNoMaterials, { Impl.GetBasicShapeMesh(EngineBasicShape::QUAD) }, Transform(), *shader);
+			}
 
 			// Clean up after everything
 			glDepthMask(0xFF);

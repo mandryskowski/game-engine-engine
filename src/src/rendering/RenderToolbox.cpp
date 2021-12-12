@@ -11,12 +11,76 @@ namespace GEE
 {
 	using namespace GEE_FB;
 
-	ForwardShadingToolbox::ForwardShadingToolbox()
+	ShaderFromHintGetter::ShaderFromHintGetter(RenderEngineManager& renderHandle)
 	{
+		ShaderHintMap[MaterialShaderHint::Simple] = renderHandle.GetSimpleShader();
 	}
 
-	ForwardShadingToolbox::ForwardShadingToolbox(const GameSettings::VideoSettings& settings):
-		ForwardShadingToolbox()
+	Shader* ShaderFromHintGetter::GetShader(MaterialShaderHint hint)
+	{
+		return ShaderHintMap[hint];
+	}
+
+	void ShaderFromHintGetter::SetShader(MaterialShaderHint hint, Shader* shader)
+	{
+		ShaderHintMap[hint] = shader;
+	}
+
+	bool RenderToolbox::IsSetup()
+	{
+		return !(Shaders.empty() && Fbs.empty());
+	}
+
+	Shader* RenderToolbox::FindShader(std::string name)
+	{
+		auto found = std::find_if(Shaders.begin(), Shaders.end(), [name](SharedPtr<Shader>& shader) { return shader->GetName() == name; });
+		if (found != Shaders.end())
+			return found->get();
+
+		return nullptr;
+	}
+
+	void RenderToolbox::Dispose()
+	{
+		for (int i = 0; i < static_cast<int>(Fbs.size()); i++)
+			Fbs[i]->Dispose(true);
+
+		for (int i = 0; i < static_cast<int>(Shaders.size()); i++)
+			Shaders[i]->Dispose();
+
+		for (int i = 0; i < static_cast<int>(Textures.size()); i++)
+			Textures[i]->Dispose();
+
+		Fbs.clear();
+		Shaders.clear();
+		Textures.clear();
+	}
+
+	GEE_FB::Framebuffer* RenderToolbox::AddFramebuffer()
+	{
+		Fbs.push_back(MakeShared<GEE_FB::Framebuffer>());
+		return Fbs.back().get();
+	}
+
+	Shader* RenderToolbox::AddShader(const SharedPtr<Shader>& shader)
+	{
+		Shaders.push_back(shader);
+		return Shaders.back().get();
+	}
+
+	Texture* RenderToolbox::AddTexture(const Texture& tex)
+	{
+		Textures.push_back(MakeShared<Texture>(Texture(tex)));
+		return Textures.back().get();
+	}
+
+	void RenderToolbox::SetShaderHint(MaterialShaderHint hint, Shader* shader)
+	{
+		ShaderGetter->SetShader(hint, shader);
+	}
+
+	ForwardShadingToolbox::ForwardShadingToolbox(ShaderFromHintGetter& getter, const GameSettings::VideoSettings& settings):
+		RenderToolbox(getter)
 	{
 		Setup(settings);
 	}
@@ -84,16 +148,10 @@ namespace GEE
 		}
 	}
 
-
-
-	DeferredShadingToolbox::DeferredShadingToolbox() :
+	DeferredShadingToolbox::DeferredShadingToolbox(ShaderFromHintGetter& getter, const GameSettings::VideoSettings& settings) :
+		RenderToolbox(getter),
 		GFb(nullptr),
 		GeometryShader(nullptr)
-	{
-	}
-
-	DeferredShadingToolbox::DeferredShadingToolbox(const GameSettings::VideoSettings& settings) :
-		DeferredShadingToolbox()
 	{
 		Setup(settings);
 	}
@@ -194,15 +252,13 @@ namespace GEE
 		GeometryShader->SetOnMaterialWholeDataUpdateFunc([](Shader& shader, const Material& mat) {
 			MaterialUtil::DisableColorIfAlbedoTextureDetected(shader, mat);
 		});
+
+		SetShaderHint(MaterialShaderHint::Shaded, GeometryShader);
 	}
 
-	MainFramebufferToolbox::MainFramebufferToolbox() :
+	MainFramebufferToolbox::MainFramebufferToolbox(ShaderFromHintGetter& getter, const GameSettings::VideoSettings& settings, DeferredShadingToolbox* deferredTb) :
+		RenderToolbox(getter),
 		MainFb(nullptr)
-	{
-	}
-
-	MainFramebufferToolbox::MainFramebufferToolbox(const GameSettings::VideoSettings& settings, DeferredShadingToolbox* deferredTb) :
-		MainFramebufferToolbox()
 	{
 		Setup(settings, deferredTb);
 	}
@@ -238,14 +294,11 @@ namespace GEE
 
 	}
 
-	SSAOToolbox::SSAOToolbox() :
+	SSAOToolbox::SSAOToolbox(ShaderFromHintGetter& getter, const GameSettings::VideoSettings& settings):
+		RenderToolbox(getter),
 		SSAOFb(nullptr),
 		SSAOShader(nullptr),
 		SSAONoiseTex(nullptr)
-	{
-	}
-
-	SSAOToolbox::SSAOToolbox(const GameSettings::VideoSettings& settings)
 	{
 		Setup(settings);
 	}
@@ -316,13 +369,9 @@ namespace GEE
 		SSAONoiseTex->SetWrap(GL_REPEAT, GL_REPEAT, 0, true);
 	}
 
-	PrevFrameStorageToolbox::PrevFrameStorageToolbox() :
+	PrevFrameStorageToolbox::PrevFrameStorageToolbox(ShaderFromHintGetter& getter, const GameSettings::VideoSettings& settings) :
+		RenderToolbox(getter),
 		StorageFb(nullptr)
-	{
-	}
-
-	PrevFrameStorageToolbox::PrevFrameStorageToolbox(const GameSettings::VideoSettings& settings) :
-		PrevFrameStorageToolbox()
 	{
 		Setup(settings);
 	}
@@ -334,15 +383,11 @@ namespace GEE
 		StorageFb->AttachTextures(std::vector<NamedTexture>{ NamedTexture(Texture::Loader<>::ReserveEmpty2D(settings.Resolution, Texture::Format::RGBA()), "frame1"), NamedTexture(Texture::Loader<>::ReserveEmpty2D(settings.Resolution, Texture::Format::RGBA()), "frame2") });
 	}
 
-	SMAAToolbox::SMAAToolbox() :
+	SMAAToolbox::SMAAToolbox(ShaderFromHintGetter& getter, const GameSettings::VideoSettings& settings) :
+		RenderToolbox(getter),
 		SMAAShaders{ nullptr, nullptr, nullptr, nullptr },
 		SMAAAreaTex(nullptr),
 		SMAASearchTex(nullptr)
-	{
-	}
-
-	SMAAToolbox::SMAAToolbox(const GameSettings::VideoSettings& settings) :
-		SMAAToolbox()
 	{
 		Setup(settings);
 	}
@@ -410,14 +455,10 @@ namespace GEE
 		SMAASearchTex->SetMagFilter(Texture::MagFilter::Nearest());
 	}
 
-	ComposedImageStorageToolbox::ComposedImageStorageToolbox() :
+	ComposedImageStorageToolbox::ComposedImageStorageToolbox(ShaderFromHintGetter& getter, const GameSettings::VideoSettings& settings) :
+		RenderToolbox(getter),
 		ComposedImageFb(nullptr),
 		TonemapGammaShader(nullptr)
-	{
-	}
-
-	ComposedImageStorageToolbox::ComposedImageStorageToolbox(const GameSettings::VideoSettings& settings) :
-		ComposedImageStorageToolbox()
 	{
 		Setup(settings);
 	}
@@ -433,62 +474,10 @@ namespace GEE
 		TonemapGammaShader->Uniform1f("gamma", settings.MonitorGamma);
 	}
 
-	bool RenderToolbox::IsSetup()
-	{
-		return !(Shaders.empty() && Fbs.empty());
-	}
-
-	Shader* RenderToolbox::FindShader(std::string name)
-	{
-		auto found = std::find_if(Shaders.begin(), Shaders.end(), [name](SharedPtr<Shader>& shader) { return shader->GetName() == name; });
-		if (found != Shaders.end())
-			return found->get();
-
-		return nullptr;
-	}
-
-	void RenderToolbox::Dispose()
-	{
-		for (int i = 0; i < static_cast<int>(Fbs.size()); i++)
-			Fbs[i]->Dispose(true);
-
-		for (int i = 0; i < static_cast<int>(Shaders.size()); i++)
-			Shaders[i]->Dispose();
-
-		for (int i = 0; i < static_cast<int>(Textures.size()); i++)
-			Textures[i]->Dispose();
-
-		Fbs.clear();
-		Shaders.clear();
-		Textures.clear();
-	}
-
-	GEE_FB::Framebuffer* RenderToolbox::AddFramebuffer()
-	{
-		Fbs.push_back(MakeShared<GEE_FB::Framebuffer>());
-		return Fbs.back().get();
-	}
-
-	Shader* RenderToolbox::AddShader(const SharedPtr<Shader>& shader)
-	{
-		Shaders.push_back(shader);
-		return Shaders.back().get();
-	}
-
-	Texture* RenderToolbox::AddTexture(const Texture& tex)
-	{
-		Textures.push_back(MakeShared<Texture>(Texture(tex)));
-		return Textures.back().get();
-	}
-
-	GaussianBlurToolbox::GaussianBlurToolbox() :
+	GaussianBlurToolbox::GaussianBlurToolbox(ShaderFromHintGetter& getter, const GameSettings::VideoSettings& settings) :
+		RenderToolbox(getter),
 		BlurFramebuffers{ nullptr, nullptr },
 		GaussianBlurShader(nullptr)
-	{
-	}
-
-	GaussianBlurToolbox::GaussianBlurToolbox(const GameSettings::VideoSettings& settings) :
-		GaussianBlurToolbox()
 	{
 		Setup(settings);
 	}
@@ -510,24 +499,11 @@ namespace GEE
 		GaussianBlurShader->Uniform1i("tex", 0);
 	}
 
-	Shader* RenderToolboxCollection::FindShader(std::string name) const
-	{
-		for (int i = 0; i < static_cast<int>(Tbs.size()); i++)
-			if (Shader* shader = Tbs[i]->FindShader(name))
-				return shader;
-
-		return nullptr;
-	}
-
-	ShadowMappingToolbox::ShadowMappingToolbox() :
+	ShadowMappingToolbox::ShadowMappingToolbox(ShaderFromHintGetter& getter, const GameSettings::VideoSettings& settings) :
+		RenderToolbox(getter),
 		ShadowFramebuffer(nullptr),
 		ShadowMapArray(nullptr),
 		ShadowCubemapArray(nullptr)
-	{
-	}
-
-	ShadowMappingToolbox::ShadowMappingToolbox(const GameSettings::VideoSettings& settings) :
-		ShadowMappingToolbox()
 	{
 		Setup(settings);
 	}
@@ -557,13 +533,9 @@ namespace GEE
 		ShadowCubemapArray->SetMinFilter(Texture::MinFilter::Nearest(), true, true);
 	}
 
-	FinalRenderTargetToolbox::FinalRenderTargetToolbox() :
+	FinalRenderTargetToolbox::FinalRenderTargetToolbox(ShaderFromHintGetter& getter, const GameSettings::VideoSettings& settings) :
+		RenderToolbox(getter),
 		FinalFramebuffer(nullptr)
-	{
-	}
-
-	FinalRenderTargetToolbox::FinalRenderTargetToolbox(const GameSettings::VideoSettings& settings) :
-		FinalRenderTargetToolbox()
 	{
 		Setup(settings);
 	}
@@ -576,9 +548,6 @@ namespace GEE
 		RenderTarget = FinalFramebuffer->GetColorTexture(0);
 
 		FinalFramebuffer->Bind(false);
-		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE)
-			std::cout << "Final loaded!\n";
-		printVector(settings.Resolution, "REZOLUCJA monke");
 	}
 
 	GEE_FB::Framebuffer& FinalRenderTargetToolbox::GetFinalFramebuffer()
@@ -586,4 +555,84 @@ namespace GEE
 		return *FinalFramebuffer;
 	}
 
+
+	/**
+	* @brief Constructor of RenderToolboxCollection.
+	* @param name: the name of this RenderToolboxCollection
+	* @param settings: settings to be used for rendering. DO NOT pass a local variable that is about to be destroyed or you will encounter UB. (should be allocated on the heap)
+	*/
+
+	RenderToolboxCollection::RenderToolboxCollection(const std::string& name, const GameSettings::VideoSettings& settings, RenderEngineManager& renderHandle) :
+		Name(name),
+		Settings(settings),
+		ShaderGetter(MakeUnique<ShaderFromHintGetter>(renderHandle))
+	{
+
+	}
+
+	RenderToolboxCollection::RenderToolboxCollection(const RenderToolboxCollection& tbCol):
+		Tbs(tbCol.Tbs),
+		ShaderGetter(MakeUnique<ShaderFromHintGetter>(*tbCol.ShaderGetter)),
+		Name(tbCol.Name),
+		Settings(tbCol.Settings)
+	{
+		for (auto& it : Tbs)
+			it->ShaderGetter = ShaderGetter.get();
+	}
+
+	std::string RenderToolboxCollection::GetName() const
+	{
+		return Name;
+	}
+
+	void RenderToolboxCollection::AddTbsRequiredBySettings()
+	{
+		Dispose();
+
+		if (Settings.AAType == AA_SMAA1X || Settings.AAType == AA_SMAAT2X)
+			AddTb<SMAAToolbox>();
+
+		if (Settings.bBloom || Settings.AmbientOcclusionSamples > 0)
+			AddTb<GaussianBlurToolbox>();
+
+		if (Settings.AmbientOcclusionSamples > 0)
+			AddTb<SSAOToolbox>();
+
+		if (Settings.IsVelocityBufferNeeded())
+			AddTb<PrevFrameStorageToolbox>();
+
+		if (Settings.Shading != ShadingAlgorithm::SHADING_FULL_LIT)
+			AddTb<DeferredShadingToolbox>();
+
+		if (Settings.ShadowLevel > SettingLevel::SETTING_NONE)
+			AddTb<ShadowMappingToolbox>();
+
+		if (!Settings.DrawToWindowFBO)
+			AddTb<FinalRenderTargetToolbox>();
+
+		AddTb<ForwardShadingToolbox>();
+		AddTb<MainFramebufferToolbox>(GetTb<DeferredShadingToolbox>());
+		AddTb<ComposedImageStorageToolbox>();
+	}
+
+	const GameSettings::VideoSettings& RenderToolboxCollection::GetSettings() const
+	{
+		return Settings;
+	}
+
+	void RenderToolboxCollection::Dispose()
+	{
+		for (auto& tb : Tbs)
+			tb->Dispose();
+
+		Tbs.clear();
+	}
+
+	bool RenderToolboxCollection::ShouldLoadToolbox(RenderToolbox* toolbox, bool loadIfNotPresent)
+	{
+		if ((toolbox != nullptr && toolbox->IsSetup()) || (!loadIfNotPresent))
+			return false;
+
+		return true;
+	}
 }

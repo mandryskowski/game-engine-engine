@@ -4,11 +4,8 @@
 #include <glm/gtc/quaternion.hpp>
 #include <PhysX/PxPhysicsAPI.h>
 #include <math/Transform.h>
-#include <game/GameScene.h>
 #include <game/GameManager.h>
 #include <cereal/archives/json.hpp>
-
-#include <scene/hierarchy/HierarchyTree.h>
 
 #include <assetload/FileLoader.h>
 
@@ -48,45 +45,13 @@ namespace GEE
 			Transform ShapeTransform;
 			std::vector<Vec3f> VertData;
 			std::vector<unsigned int> IndicesData;
+
 			CollisionShape(CollisionShapeType type = CollisionShapeType::COLLISION_BOX);
 			CollisionShape(HTreeObjectLoc treeObjLoc, const std::string& meshName, CollisionShapeType type = CollisionShapeType::COLLISION_BOX);
 			ColShapeLoc* GetOptionalLocalization();	//NOTE: Can be nullptr
 			void SetOptionalLocalization(ColShapeLoc loc);
-			template <typename Archive> void Save(Archive& archive) const
-			{
-				std::string treeName, meshNodeName, meshSpecificName;
-				if (OptionalLocalization)
-				{
-					treeName = OptionalLocalization->GetTreeName();
-					meshNodeName = OptionalLocalization->ShapeMeshLoc.NodeName;
-					meshSpecificName = OptionalLocalization->ShapeMeshLoc.SpecificName;
-				}
-				std::cout << "Zapisuje col shape " << treeName << "###" << meshNodeName << "###" << meshSpecificName << "///";
-				if (OptionalLocalization)
-					std::cout << OptionalLocalization->ShapeMeshLoc.SpecificName << " " << OptionalLocalization->OptionalCorrespondingMesh.GetVertexCount() << '\n';
-				archive(CEREAL_NVP(Type), CEREAL_NVP(ShapeTransform), cereal::make_nvp("OptionalTreeName", treeName), cereal::make_nvp("OptionalMeshNodeName", meshNodeName), cereal::make_nvp("OptionalMeshSpecificName", meshSpecificName));
-			}
-			template <typename Archive> void Load(Archive& archive)
-			{
-				std::string treeName, meshNodeName, meshSpecificName;
-				archive(CEREAL_NVP(Type), CEREAL_NVP(ShapeTransform), cereal::make_nvp("OptionalTreeName", treeName), cereal::make_nvp("OptionalMeshNodeName", meshNodeName), cereal::make_nvp("OptionalMeshSpecificName", meshSpecificName));
-				if (Type == CollisionShapeType::COLLISION_TRIANGLE_MESH)
-				{
-					HierarchyTemplate::HierarchyTreeT* tree = EngineDataLoader::LoadHierarchyTree(*GameManager::DefaultScene, treeName);
-					if (treeName.empty() || (meshNodeName.empty() && meshSpecificName.empty()))
-					{
-						std::cout << "ERROR: While serializing Triangle Mesh CollisionShape - No file path or no mesh name detected. Shape will not be added to the physics scene. Nr of verts: " << VertData.size() << "\n";
-						return;
-					}
-
-					if (auto found = tree->FindTriangleMeshCollisionShape(meshNodeName, meshSpecificName))
-						*this = *found;
-					else if (auto foundMesh = tree->FindMesh(meshNodeName, meshSpecificName))
-						*this = *EngineDataLoader::LoadTriangleMeshCollisionShape(GameManager::Get().GetPhysicsHandle(), *foundMesh);
-					else
-						std::cout << "ERROR: Could not load " << meshNodeName << "###" << meshSpecificName << " from " << treeName << ".\n";
-				}
-			}
+			template <typename Archive> void Save(Archive& archive)	const;
+			template <typename Archive> void Load(Archive& archive);
 		};
 
 		struct CollisionObject

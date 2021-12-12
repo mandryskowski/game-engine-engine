@@ -178,7 +178,7 @@ namespace GEE
 
 	void Transform::SetRotation(float roll)
 	{
-		SetVecAxis<TVec::ROTATION_EULER, VecAxis::Z>(roll);
+		SetVecAxis<TVec::RotationEuler, VecAxis::Z>(roll);
 		FlagMyDirtiness();
 	}
 
@@ -399,6 +399,11 @@ namespace GEE
 	void Transform::GetEditorDescription(EditorDescriptionBuilder descBuilder)
 	{
 		descBuilder.AddField("Position").GetTemplates().VecInput<3, float>([this](int x, float val) {Vec3f pos = GetPos(); pos[x] = val; SetPosition(pos); }, [this](int x) { return GetPos()[x]; });
+
+		dynamic_cast<UIInputBoxActor*>(descBuilder.GetDescriptionParent().FindActor("VecBox0"))->SetRetrieveContentEachFrame(true);
+		dynamic_cast<UIInputBoxActor*>(descBuilder.GetDescriptionParent().FindActor("VecBox1"))->SetRetrieveContentEachFrame(true);
+		dynamic_cast<UIInputBoxActor*>(descBuilder.GetDescriptionParent().FindActor("VecBox2"))->SetRetrieveContentEachFrame(true);
+
 		descBuilder.AddField("Rotation").GetTemplates().VecInput<4, float>([this](int x, float val) {Quatf rot = GetRot(); rot[x] = val; SetRotation(glm::normalize(rot)); }, [this](int x) { return GetRot()[x]; });
 		descBuilder.AddField("Scale").GetTemplates().VecInput<3, float>([this](int x, float val) {Vec3f scale = GetScale(); scale[x] = val; SetScale(scale); }, [this](int x) { return GetScale()[x]; });
 	}

@@ -1,4 +1,5 @@
 #include <UI/UICanvasActor.h>
+#include <game/GameScene.h>
 #include <math/Transform.h>
 #include <scene/UIButtonActor.h>
 #include <input/InputDevicesStateRetriever.h>
@@ -234,18 +235,12 @@ namespace GEE
 					ScrollView(scrolledEv.GetOffset());
 				break;
 			}
-			case EventType::MousePressed:
+			case EventType::MouseReleased:
 			{
 				const MouseButtonEvent& buttonEv = dynamic_cast<const MouseButtonEvent&>(ev);
-				std::cout << (bool)PopupCreationFunc << '\n';
+				
 				if (buttonEv.GetButton() == MouseButton::Right && PopupCreationFunc)
-				{
-					std::cout << "1248!@$)*\n";
-					PopupDescription popupDesc = dynamic_cast<Editor::EditorManager*>(GameHandle)->CreatePopupMenu(Scene.GetUIData()->GetWindowData().GetMousePositionNDC(), *Scene.GetUIData()->GetWindow());
-					PopupCreationFunc(popupDesc);
-					popupDesc.RefreshPopup();
-
-				}
+					dynamic_cast<Editor::EditorManager*>(GameHandle)->RequestPopupMenu(Scene.GetUIData()->GetWindowData().GetMousePositionNDC(), *Scene.GetUIData()->GetWindow(), PopupCreationFunc);
 			}
 		}
 	}
@@ -266,7 +261,7 @@ namespace GEE
 				if (button)
 				{
 					button->HandleEventAll(ev);
-					if (button->GetState() != EditorIconState::IDLE)
+					if (button->GetState() != EditorIconState::Idle)
 						focusedOnThis = true;
 				}
 		}*/
@@ -325,8 +320,8 @@ namespace GEE
 			});
 
 		BothScrollBarsButton = &CreateChild<UIScrollBarActor>("BothScrollBarsButton", nullptr, [this]() {
-			if (ScrollBarX->GetState() == EditorIconState::IDLE)	ScrollBarX->OnBeingClicked();
-			if (ScrollBarY->GetState() == EditorIconState::IDLE)	ScrollBarY->OnBeingClicked();
+			if (ScrollBarX->GetState() == EditorButtonState::Idle)	ScrollBarX->OnBeingClicked();
+			if (ScrollBarY->GetState() == EditorButtonState::Idle)	ScrollBarY->OnBeingClicked();
 
 			ScrollBarX->WhileBeingClicked();
 			ScrollBarY->WhileBeingClicked();
@@ -381,8 +376,8 @@ namespace GEE
 			std::cerr << "ERROR! No scroll bar" << ((barAxis == VecAxis::X) ? (" X ") : (" Y ")) << "present.\n";
 			return;
 		}
-		scrollBar->GetTransform()->SetVecAxis<TVec::POSITION, barAxis>(barPos);
-		scrollBar->GetTransform()->SetVecAxis<TVec::SCALE, barAxis>(barSize);
+		scrollBar->GetTransform()->SetVecAxis<TVec::Position, barAxis>(barPos);
+		scrollBar->GetTransform()->SetVecAxis<TVec::Scale, barAxis>(barSize);
 
 		bool hide = floatComparison(barSize, 1.0f, std::numeric_limits<float>().epsilon());	//hide if we can't scroll on this axis
 		scrollBar->GetButtonModel()->SetHide(hide);
@@ -476,6 +471,48 @@ namespace GEE
 	{
 		for (auto& it : DescriptionParent.GetChildren())
 			it->MarkAsKilled();
+	}
+
+	ComponentDescriptionBuilder::ComponentDescriptionBuilder(Editor::EditorManager& editorHandle, UICanvasFieldCategory& category):
+		EditorDescriptionBuilder(editorHandle, category),
+		OptionalBuiltNode(nullptr)
+	{
+	}
+
+	ComponentDescriptionBuilder::ComponentDescriptionBuilder(Editor::EditorManager& editorHandle, UIActorDefault& actor):
+		EditorDescriptionBuilder(editorHandle, actor),
+		OptionalBuiltNode(nullptr)
+	{
+	}
+
+	ComponentDescriptionBuilder::ComponentDescriptionBuilder(Editor::EditorManager& editorHandle, Actor& actor, UICanvas& canvas):
+		EditorDescriptionBuilder(editorHandle, actor, canvas),
+		OptionalBuiltNode(nullptr)
+	{
+	}
+
+	void ComponentDescriptionBuilder::Refresh()
+	{
+		auto actions = GetEditorHandle().GetActions();
+		if (IsNodeBeingBuilt())
+			actions.PreviewHierarchyNode(*GetNodeBeingBuilt(), GetEditorScene());
+		else
+			actions.SelectComponent(actions.GetSelectedComponent(), GetEditorScene());
+	}
+
+	bool ComponentDescriptionBuilder::IsNodeBeingBuilt() const
+	{
+		return OptionalBuiltNode != nullptr;
+	}
+
+	void ComponentDescriptionBuilder::SetNodeBeingBuilt(HierarchyTemplate::HierarchyNodeBase* node)
+	{
+		OptionalBuiltNode = node;
+	}
+
+	HierarchyTemplate::HierarchyNodeBase* ComponentDescriptionBuilder::GetNodeBeingBuilt()
+	{
+		return OptionalBuiltNode;
 	}
 
 }

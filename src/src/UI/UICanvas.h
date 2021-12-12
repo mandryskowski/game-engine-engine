@@ -5,7 +5,6 @@
 
 namespace GEE
 {
-	class RenderInfo;
 	class UICanvasElement;
 	class Actor;
 	class UIActor;
@@ -79,4 +78,10 @@ namespace GEE
 
 		const unsigned int CanvasDepth;
 	};
+
+	namespace uiCanvasUtil
+	{
+		Vec4f ScreenToCanvasSpace(UICanvas& canvas, const Vec4f& vec);
+		Vec4f ScreenToLocalInCanvas(UICanvas& canvas, const Mat4f& localMatrix, const Vec4f& vec);
+	}
 }

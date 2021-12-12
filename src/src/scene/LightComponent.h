@@ -17,6 +17,13 @@ namespace GEE
 		LightComponent(Actor&, Component* parentComp, std::string name = "undefinedLight", LightType = LightType::POINT, unsigned int index = 0, unsigned int shadowMapNr = 0, float = 10.0f, Mat4f = glm::perspective(glm::radians(90.0f), 1.0f, 0.01f, 10.0f), Vec3f = Vec3f(0.0f), Vec3f = Vec3f(1.0f), Vec3f = Vec3f(0.5f), Vec3f = Vec3f(1.0f, 0.0f, 0.0f));
 		LightComponent(LightComponent&&);
 
+	protected:
+		friend class HierarchyTemplate::HierarchyNode<LightComponent>;
+		LightComponent& operator=(const LightComponent&);
+	public:
+		LightComponent& operator=(LightComponent&&) = delete;	//TODO: de-delete this, it should be written but i am too lazy
+
+
 		LightType GetType() const;
 		float GetFar() const;
 		unsigned int GetLightIndex() const;
@@ -44,20 +51,24 @@ namespace GEE
 		void UpdateUBOData(UniformBuffer*, size_t = -1);
 		Vec3f& operator[](unsigned int);
 
-		virtual	MaterialInstance LoadDebugMatInst(EditorIconState) override;
-		virtual void GetEditorDescription(EditorDescriptionBuilder) override;
+		virtual	MaterialInstance LoadDebugMatInst(EditorButtonState) override;
+		virtual void GetEditorDescription(ComponentDescriptionBuilder) override;
 
 		template <typename Archive> void Save(Archive& archive) const
 		{
-			archive(cereal::make_nvp("Lighttype", static_cast<int>(Type)), CEREAL_NVP(Ambient), CEREAL_NVP(Diffuse), CEREAL_NVP(Specular), CEREAL_NVP(Attenuation), CEREAL_NVP(CutOff), CEREAL_NVP(OuterCutOff), CEREAL_NVP(Far), cereal::make_nvp("Component", cereal::base_class<Component>(this)));
+			archive(cereal::make_nvp("Lighttype", static_cast<int>(Type)), CEREAL_NVP(Ambient), CEREAL_NVP(Diffuse), CEREAL_NVP(Specular), CEREAL_NVP(Attenuation), CEREAL_NVP(CutOff), CEREAL_NVP(OuterCutOff), CEREAL_NVP(Far), CEREAL_NVP(ShadowBias), CEREAL_NVP(bShadowMapCullFronts), cereal::make_nvp("Component", cereal::base_class<Component>(this)));
 		}
 		template <typename Archive> void Load(Archive& archive)
 		{
 			LightType type;
 			Vec3f ambient, diffuse, specular;
-			float attenuation, cutOff, outerCutOff, far;
+			float attenuation, cutOff, outerCutOff, far, shadowBias;
+			bool cullFronts;
 
-			archive(cereal::make_nvp("Lighttype", type), cereal::make_nvp("Ambient", ambient), cereal::make_nvp("Diffuse", diffuse), cereal::make_nvp("Specular", specular), cereal::make_nvp("Attenuation", attenuation), cereal::make_nvp("CutOff", cutOff), cereal::make_nvp("OuterCutOff", outerCutOff), cereal::make_nvp("Far", far), cereal::base_class<Component>(this));
+			archive(cereal::make_nvp("Lighttype", type), cereal::make_nvp("Ambient", ambient), cereal::make_nvp("Diffuse", diffuse), cereal::make_nvp("Specular", specular),
+					cereal::make_nvp("Attenuation", attenuation), cereal::make_nvp("CutOff", cutOff), cereal::make_nvp("OuterCutOff", outerCutOff), cereal::make_nvp("Far", far),
+					cereal::make_nvp("ShadowBias", shadowBias), cereal::make_nvp("bShadowMapCullFronts", cullFronts),
+					cereal::base_class<Component>(this));
 			SetType(type);
 			Ambient = ambient;
 			Diffuse = diffuse;
@@ -67,6 +78,8 @@ namespace GEE
 			SetAttenuation(attenuation);
 			SetCutOff(cutOff);
 			SetOuterCutOff(outerCutOff);
+			SetShadowBias(shadowBias);
+			bShadowMapCullFronts = cullFronts;
 
 			InvalidateCache();	//make sure that everything is invalidated; e.g. loading a point light won't invalidate its shadowmaps because the light type we set is identical
 		}
@@ -86,7 +99,7 @@ namespace GEE
 
 		float ShadowBias;
 		bool bShadowMapCullFronts;
-		//
+		
 
 		unsigned int LightIndex;
 		unsigned int ShadowMapNr;

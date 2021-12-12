@@ -131,6 +131,8 @@ namespace GEE
 		UIInputBoxActor& speedInputBox = descBuilder.AddField("Speed").CreateChild<UIInputBoxActor>("SpeedInputBox");
 		speedInputBox.SetOnInputFunc([this](float val) { SpeedPerSec = val; }, [this]()->float { return SpeedPerSec; });
 
+		descBuilder.AddField("Speed").GetTemplates().SliderUnitInterval([](float) {});
+
 		UICanvasField& animsField = descBuilder.AddField("Anim List");
 		UIAutomaticListActor& animsList = animsField.CreateChild<UIAutomaticListActor>("Animations list", Vec3f(3.0f, 0.0f, 0.0f));
 

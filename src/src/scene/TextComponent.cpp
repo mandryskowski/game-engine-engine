@@ -1,7 +1,9 @@
 #include <scene/TextComponent.h>
+#include <game/GameScene.h>
 #include <assetload/FileLoader.h>
 #include <rendering/RenderInfo.h>
 #include <rendering/Material.h>
+#include <rendering/RenderToolbox.h>
 #include <UI/Font.h>
 #include <UI/UICanvas.h>
 #include <math/Transform.h>
@@ -119,6 +121,10 @@ namespace GEE
 	{
 		if (!UsedFont || GetHide() || IsBeingKilled())
 			return;
+
+		if (!Material::ShaderInfo(MaterialShaderHint::None).MatchesRequiredInfo(info.GetRequiredShaderInfo()) && shader && shader != GameHandle->GetRenderEngineHandle()->FindShader("TextShader"))
+			return;
+
 		GameHandle->GetRenderEngineHandle()->RenderText((CanvasPtr) ? (CanvasPtr->BindForRender(info)) : (info), *UsedFont, Content, GetTransform().GetWorldTransform(), TextMatInst->GetMaterialRef().GetColor(), shader, false, Alignment);
 		if (CanvasPtr)
 			CanvasPtr->UnbindForRender();
@@ -145,7 +151,7 @@ namespace GEE
 		Alignment = alignment;
 	}
 
-	void TextComponent::GetEditorDescription(EditorDescriptionBuilder descBuilder)
+	void TextComponent::GetEditorDescription(ComponentDescriptionBuilder descBuilder)
 	{
 		RenderableComponent::GetEditorDescription(descBuilder);
 
@@ -166,7 +172,7 @@ namespace GEE
 		}
 	}
 
-	MaterialInstance TextComponent::LoadDebugMatInst(EditorIconState state)
+	MaterialInstance TextComponent::LoadDebugMatInst(EditorButtonState state)
 	{
 		LoadDebugRenderMaterial("GEE_Mat_Default_Debug_TextComponent", "Assets/Editor/textcomponent_icon.png");
 		return Component::LoadDebugMatInst(state);
@@ -345,7 +351,7 @@ namespace GEE
 		auto parentWorldT = GetTransform()./*GetParentTransform()->*/GetWorldTransform();
 		if (CanvasPtr) parentWorldT = CanvasPtr->FromCanvasSpace(CanvasPtr->GetViewT().GetInverse() * CanvasPtr->ToCanvasSpace(parentWorldT));
 		auto viewport = NDCViewport(parentWorldT.GetPos() - parentWorldT.GetScale(), parentWorldT.GetScale());
-		viewport.ToPxViewport(GameHandle->GetGameSettings()->WindowSize).SetScissor();
+		viewport.ToPxViewport(infoBeforeChange.GetTbCollection().GetSettings().Resolution).SetScissor();
 
 		// Render
 		;// GameHandle->GetRenderEngineHandle()->RenderText((CanvasPtr) ? (CanvasPtr->BindForRender(info, GameHandle->GetGameSettings()->WindowSize)) : (info), *GetUsedFont(), GetContent(), renderTransform, GetTextMatInst()->GetMaterialRef().GetColor(), shader, false, std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, GetAlignment().second));
@@ -353,7 +359,7 @@ namespace GEE
 		// Clean up after everything
 		if (CanvasPtr)
 			CanvasPtr->UnbindForRender();
-		Viewport(Vec2u(0), GameHandle->GetGameSettings()->WindowSize).SetOpenGLState();
+		Viewport(Vec2u(0), infoBeforeChange.GetTbCollection().GetSettings().Resolution).SetOpenGLState();
 		glDisable(GL_SCISSOR_TEST);
 	}
 

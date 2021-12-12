@@ -1,5 +1,6 @@
 #pragma once
 #include <utility/Utility.h>
+#include <cereal/access.hpp>
 
 namespace GEE
 {
@@ -42,8 +43,6 @@ namespace GEE
 
 	struct GameSettings
 	{
-		Vec2u WindowSize;
-
 		bool bWindowFullscreen;
 		std::string WindowTitle;
 
@@ -69,6 +68,8 @@ namespace GEE
 			bool IsTemporalReprojectionEnabled() const;
 			std::string GetShaderDefines(Vec2u resolution = Vec2u(0)) const;
 			virtual bool LoadSetting(std::stringstream& filestr, std::string settingName);
+
+			template <typename Archive> void Serialize(Archive& archive);
 		} Video;
 
 		/////////////////////////////
@@ -79,6 +80,9 @@ namespace GEE
 		void LoadFromFile(std::string path);
 
 		virtual bool LoadSetting(std::stringstream& filestr, std::string settingName);
+
+
+		template <typename Archive> void Serialize(Archive& archive);
 	};
 
 

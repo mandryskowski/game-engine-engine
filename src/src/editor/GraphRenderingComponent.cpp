@@ -15,7 +15,7 @@ namespace GEE
 			GraphMaterialInst = MakeShared<MaterialInstance>(*foundMaterial);
 		else
 		{
-			Material* material = GameHandle->GetRenderEngineHandle()->AddMaterial(MakeShared<Material>("GEE_Default_Graph_Material", 0.0f, GameHandle->GetRenderEngineHandle()->FindShader("GraphShader")));
+			Material* material = GameHandle->GetRenderEngineHandle()->AddMaterial(MakeShared<Material>("GEE_Default_Graph_Material", *GameHandle->GetRenderEngineHandle()->FindShader("GraphShader")));
 			GraphMaterialInst = MakeShared<MaterialInstance>(*material);
 		}
 	}
@@ -94,6 +94,9 @@ namespace GEE
 		if (GetHide())
 			return;
 
+		if (info.GetRequiredShaderInfo().IsValid() && shader != GameHandle->GetRenderEngineHandle()->FindShader("GraphShader"))
+			return;
+
 		UpdateMarkerUniformData(*shader);
 		
 		
@@ -125,7 +128,8 @@ namespace GEE
 	void GraphRenderingComponent::UpdateMarkerUniformData(Shader& shader)
 	{
 		shader.Uniform("dataPointsCount", static_cast<int>(GraphMarkersUnitInterval.size()));
-		shader.UniformArray("dataPoints", &GraphMarkersUnitInterval[0], GraphMarkersUnitInterval.size());
+		if (!GraphMarkersUnitInterval.empty())
+			shader.UniformArray("dataPoints", &GraphMarkersUnitInterval[0], GraphMarkersUnitInterval.size());
 		shader.Uniform("selectedRangeEndpoints", GetSelectedRange().GetRangeBeginEnd());
 	}
 
@@ -141,18 +145,15 @@ namespace GEE
 		Shader* textShader = GameHandle->GetRenderEngineHandle()->FindShader("TextShader");
 
 		MinFPSText = &CreateComponent<TextComponent>("MinFPSText", Transform(Vec2f(1.5f, -0.5f), Vec2f(0.1f)), "No data", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
-		auto redMaterial = MakeShared<Material>("Red", 0.0f, textShader);
-		redMaterial->SetColor(Vec4f(1.0f, 0.155f, 0.25f, 1.0f));
+		auto redMaterial = MakeShared<Material>("Red", Vec3f(1.0f, 0.155f, 0.25f), *textShader);
 		MinFPSText->SetMaterialInst(*GameHandle->GetRenderEngineHandle()->AddMaterial(redMaterial));
 
 		MaxFPSText = &CreateComponent<TextComponent>("MaxFPSText", Transform(Vec2f(1.5f, 0.5f), Vec2f(0.1f)), "No data", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
-		auto greenMaterial = MakeShared<Material>("Green", 0.0f, textShader);
-		greenMaterial->SetColor(Vec4f(0.155f, 1.0f, 0.25f, 1.0f));
+		auto greenMaterial = MakeShared<Material>("Green", Vec3f(0.155f, 1.0f, 0.25f), *textShader);
 		MaxFPSText->SetMaterialInst(*GameHandle->GetRenderEngineHandle()->AddMaterial(greenMaterial));
 
 		AvgFPSText = &CreateComponent<TextComponent>("AvgFPSText", Transform(Vec2f(1.5f, 0.0f), Vec2f(0.1f)), "No data", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
-		auto coralMaterial = MakeShared<Material>("Coral", 0.0f, textShader);
-		coralMaterial->SetColor(Vec4f(1.0f, 0.5f, 0.31f, 1.0f));
+		auto coralMaterial = MakeShared<Material>("Coral", Vec3f(1.0f, 0.5f, 0.31f), *textShader);
 		AvgFPSText->SetMaterialInst(*GameHandle->GetRenderEngineHandle()->AddMaterial(coralMaterial));
 	}
 

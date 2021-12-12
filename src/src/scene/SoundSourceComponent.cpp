@@ -1,4 +1,5 @@
 #include <scene/SoundSourceComponent.h>
+#include <game/GameScene.h>
 #include <rendering/Material.h>
 #include <iostream>
 #include <math/Transform.h>
@@ -94,13 +95,13 @@ namespace GEE
 				alSourcefv(ALIndex, AL_POSITION, Math::GetDataPtr(ComponentTransform.GetWorldTransform().GetPos()));
 		}
 
-		MaterialInstance SoundSourceComponent::LoadDebugMatInst(EditorIconState state)
+		MaterialInstance SoundSourceComponent::LoadDebugMatInst(EditorButtonState state)
 		{
 			LoadDebugRenderMaterial("GEE_Mat_Default_Debug_SoundSourceComponent", "Assets/Editor/soundsourcecomponent_debug.png");
 			return Component::LoadDebugMatInst(state);
 		}
 
-		void SoundSourceComponent::GetEditorDescription(EditorDescriptionBuilder descBuilder)
+		void SoundSourceComponent::GetEditorDescription(ComponentDescriptionBuilder descBuilder)
 		{
 			Component::GetEditorDescription(descBuilder);
 

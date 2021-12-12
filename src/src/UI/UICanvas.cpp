@@ -167,4 +167,14 @@ namespace GEE
 		return bContainsMouse;
 	}
 
+	Vec4f uiCanvasUtil::ScreenToCanvasSpace(UICanvas& canvas, const Vec4f& vec)
+	{
+		return glm::inverse(canvas.UICanvas::GetViewMatrix()) * glm::inverse(canvas.GetCanvasT()->GetWorldTransformMatrix()) * vec;
+	}
+
+	Vec4f uiCanvasUtil::ScreenToLocalInCanvas(UICanvas& canvas, const Mat4f& localMatrix, const Vec4f& vec)
+	{
+		return glm::inverse(canvas.ToCanvasSpace(localMatrix)) * ScreenToCanvasSpace(canvas, vec);
+	}
+
 }

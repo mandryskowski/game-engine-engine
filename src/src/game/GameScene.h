@@ -1,5 +1,6 @@
 #pragma once
-#include "GameManager.h"
+#include <game/GameManager.h>
+#include <scene/Actor.h>
 #include <utility/Utility.h>
 
 namespace GEE
@@ -37,6 +38,7 @@ namespace GEE
 		const Actor* GetRootActor() const;
 		CameraComponent* GetActiveCamera();
 		GameSceneRenderData* GetRenderData();
+		const GameSceneRenderData* GetRenderData() const;
 		Physics::GameScenePhysicsData* GetPhysicsData();
 		Audio::GameSceneAudioData* GetAudioData();
 		GameSceneUIData* GetUIData();
@@ -68,7 +70,16 @@ namespace GEE
 		template <typename ActorClass, typename... Args>
 		ActorClass& CreateActorAtRoot(Args&&...);
 
+		/**
+		 * @brief Creates a new HierarchyTree with the passed string as its name.
+		 * @param name: the name of the tree.
+		 * @return: a reference to the newly created tree.
+		*/
 		HierarchyTemplate::HierarchyTreeT& CreateHierarchyTree(const std::string& name);
+		
+		
+		HierarchyTemplate::HierarchyTreeT& CopyHierarchyTree(const HierarchyTemplate::HierarchyTreeT& tree);
+
 		HierarchyTemplate::HierarchyTreeT* FindHierarchyTree(const std::string& name,
 			HierarchyTemplate::HierarchyTreeT* treeToIgnore = nullptr);
 
@@ -79,11 +90,8 @@ namespace GEE
 
 		Actor* FindActor(std::string name);
 
-		void Load()
-		{
-			for (auto& it : PostLoadLambdas)
-				it();
-		}
+		template <typename Archive> void Save(Archive& archive) const;
+		template <typename Archive> void Load(Archive& archive);
 
 		~GameScene();
 		//private:	
@@ -92,11 +100,6 @@ namespace GEE
 
 	private:
 		void Delete();
-
-		struct Loader
-		{
-			static void LoadSceneFromFile();
-		};
 
 	private:
 		std::string Name;
@@ -108,8 +111,9 @@ namespace GEE
 		UniquePtr<Audio::GameSceneAudioData> AudioData;
 		UniquePtr<GameSceneUIData> UIData;
 
+	public:
 		std::vector<UniquePtr<HierarchyTemplate::HierarchyTreeT>> HierarchyTrees;
-
+	private:
 
 		std::vector<std::function<void()>> PostLoadLambdas;
 
@@ -332,5 +336,3 @@ namespace GEE
 		return RootActor->CreateChild<ActorClass>(std::forward<Args>(args)...);
 	}
 }
-
-#include <scene/Actor.h>

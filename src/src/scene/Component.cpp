@@ -1,4 +1,5 @@
 #include <scene/Component.h>
+#include <game/GameScene.h>
 #include <assetload/FileLoader.h>
 #include <scene/ModelComponent.h>
 #include <physics/CollisionObject.h>
@@ -11,6 +12,7 @@
 #include <UI/UICanvasField.h>
 #include <scene/UIWindowActor.h>
 #include <UI/UIListActor.h>
+#include <scene/hierarchy/HierarchyNode.h>
 
 #include <rendering/Renderer.h>
 
@@ -68,9 +70,7 @@ namespace GEE
 	{
 		Name = compT.Name;
 		ComponentTransform *= compT.ComponentTransform;
-		CollisionObj = (compT.CollisionObj) ? (MakeUnique<Physics::CollisionObject>(*compT.CollisionObj)) : (nullptr);
-		if (CollisionObj)
-			CollisionObj->TransformPtr = &ComponentTransform;
+		SetCollisionObject((compT.CollisionObj) ? (MakeUnique<Physics::CollisionObject>(*compT.CollisionObj)) : (nullptr));
 		DebugRenderMat = compT.DebugRenderMat;
 		DebugRenderMatInst = compT.DebugRenderMatInst;
 		DebugRenderLastFrameMVP = DebugRenderLastFrameMVP;
@@ -81,7 +81,7 @@ namespace GEE
 	void Component::OnStart()
 	{
 		if (!DebugRenderMatInst)
-			DebugRenderMatInst = MakeShared<MaterialInstance>(LoadDebugMatInst(EditorIconState::IDLE));
+			DebugRenderMatInst = MakeShared<MaterialInstance>(LoadDebugMatInst(EditorButtonState::Idle));
 	}
 
 	void Component::OnStartAll()
@@ -212,6 +212,9 @@ namespace GEE
 
 	void Component::Delete()
 	{
+		while (!Children.empty())
+			Children.front()->Delete();
+
 		if (ParentComponent)
 			ParentComponent->Children.erase(std::remove_if(ParentComponent->Children.begin(), ParentComponent->Children.end(), [this](UniquePtr<Component>& child) { return child.get() == this; }), ParentComponent->Children.end());
 	}
@@ -323,9 +326,9 @@ namespace GEE
 		if (!obj.ActorPtr)
 			return;
 		RenderEngineManager& renderEngHandle = *gameHandle.GetRenderEngineHandle();
-		Shader* shader = renderEngHandle.FindShader("Forward_NoLight");
+		Shader* shader = renderEngHandle.GetSimpleShader();
 		shader->Use();
-		Material material("CollisionShapeDebugMaterial\n");
+		Material material("CollisionShapeDebugMaterial");
 
 		physx::PxRigidDynamic* rigidDynamicCast = obj.ActorPtr->is<physx::PxRigidDynamic>();
 		bool sleeping = (rigidDynamicCast && rigidDynamicCast->isSleeping());
@@ -396,7 +399,6 @@ namespace GEE
 		texture->Bind();
 		texture->SetShaderName("albedo1");
 		DebugRenderMat->AddTexture(texture);
-		DebugRenderMat->SetRenderShaderName("Forward_NoLight");
 		GameHandle->GetRenderEngineHandle()->AddMaterial(DebugRenderMat);
 
 		return DebugRenderMat;
@@ -416,7 +418,7 @@ namespace GEE
 		return nullptr;
 	}
 
-	void Component::GetEditorDescription(EditorDescriptionBuilder descBuilder)
+	void Component::GetEditorDescription(ComponentDescriptionBuilder descBuilder)
 	{
 		UIInputBoxActor& textActor = descBuilder.CreateActor<UIInputBoxActor>("ComponentsNameActor");
 		textActor.SetTransform(Transform(Vec2f(0.0f, 1.5f), Vec2f(5.0f, 1.0f)));
@@ -448,26 +450,27 @@ namespace GEE
 
 		// Collision object category
 		auto& shapesListCategory = descBuilder.AddCategory("Collision object");
-		UIButtonActor& colObjectPresenceButton = shapesListCategory.CreateChild<UIButtonActor>("CollisionObjectButton", (CollisionObj) ? ("V") : ("X"));
+		Physics::CollisionObject* colObj = (descBuilder.IsNodeBeingBuilt()) ? (descBuilder.GetNodeBeingBuilt()->GetCollisionObject()) : (GetCollisionObj());;
+		UIButtonActor& colObjectPresenceButton = shapesListCategory.CreateChild<UIButtonActor>("CollisionObjectButton", (colObj) ? ("V") : ("X"));
 
-		colObjectPresenceButton.CreateChild<UIButtonActor>("AddColShape", "+", [this, descBuilder]() mutable {
+		colObjectPresenceButton.CreateChild<UIButtonActor>("AddColShape", "+", [this, colObj, descBuilder]() mutable {
 			UIWindowActor& shapeCreatorWindow = descBuilder.GetEditorScene().CreateActorAtRoot<UIWindowActor>("ShapeCreatorWindow");
 			shapeCreatorWindow.GetTransform()->SetScale(Vec2f(0.25f));
 			UIAutomaticListActor& buttonsList = shapeCreatorWindow.CreateChild<UIAutomaticListActor>("ButtonsList");
 
-			std::function <void(SharedPtr<Physics::CollisionShape>)> addShapeFunc = [this, descBuilder, &shapeCreatorWindow](SharedPtr<Physics::CollisionShape> shape) mutable {
-				if (!CollisionObj)
+			std::function <void(SharedPtr<Physics::CollisionShape>)> addShapeFunc = [this, colObj, descBuilder, &shapeCreatorWindow](SharedPtr<Physics::CollisionShape> shape) mutable {
+				if (!colObj)
 				{
-					UniquePtr<Physics::CollisionObject> colObj = MakeUnique<Physics::CollisionObject>(true);
-					colObj->AddShape(shape);
-					this->SetCollisionObject(std::move(colObj));
+					if (descBuilder.IsNodeBeingBuilt())
+						colObj = descBuilder.GetNodeBeingBuilt()->SetCollisionObject(MakeUnique<Physics::CollisionObject>(true));
+					else
+						colObj = SetCollisionObject(MakeUnique<Physics::CollisionObject>(true));
 				}
-				else
-					CollisionObj->AddShape(shape);
+				
+				colObj->AddShape(shape);
 
 				shapeCreatorWindow.MarkAsKilled();
-				descBuilder.SelectComponent(this);	//refresh
-
+				descBuilder.Refresh();
 			};
 
 			for (int i = Physics::CollisionShapeType::COLLISION_FIRST; i <= Physics::CollisionShapeType::COLLISION_LAST; i++)
@@ -509,17 +512,22 @@ namespace GEE
 		colObjectPresenceButton.CreateChild<UIButtonActor>("RemoveColObject", "-", [&]() { SetCollisionObject(nullptr); }, Transform(Vec2f(5.0f, 0.0f), Vec2f(0.5f)));
 
 		// Is static button
-		shapesListCategory.AddField("Is static").GetTemplates().TickBox([this](bool makeStatic) {
-			if (!CollisionObj) return;
-			CollisionObj->ScenePhysicsData->EraseCollisionObject(*CollisionObj);
-			CollisionObj->IsStatic = makeStatic;
-			CollisionObj->ScenePhysicsData->AddCollisionObject(*CollisionObj, GetTransform());
-			return;
+		shapesListCategory.AddField("Is static").GetTemplates().TickBox([this, colObj, descBuilder](bool makeStatic) {
+			if (!colObj) return;
+			colObj->IsStatic = makeStatic;
+
+			if (!descBuilder.IsNodeBeingBuilt())
+			{
+				colObj->ScenePhysicsData->EraseCollisionObject(*colObj);
+				colObj->ScenePhysicsData->AddCollisionObject(*colObj, GetTransform());
+			}
 		},
-		[this]() -> bool {
-			if (CollisionObj)
-				return CollisionObj->ActorPtr->is<physx::PxRigidDynamic>() == nullptr;
-			return false; });
+		[colObj]() -> bool {
+			if (colObj && colObj->ActorPtr)
+				return colObj->ActorPtr->is<physx::PxRigidDynamic>() == nullptr;
+			else if (colObj) return colObj->IsStatic;
+			return false;
+			});
 
 		// Collision shapes list
 		auto& shapesListField = shapesListCategory.AddField("List of shapes");
@@ -530,17 +538,17 @@ namespace GEE
 
 
 
-		if (CollisionObj)
-			for (auto& it : CollisionObj->Shapes)
+		if (colObj)
+			for (auto& it : colObj->Shapes)
 			{
 				std::string shapeTypeName = Physics::Util::collisionShapeTypeToString(it->Type);
-				UIButtonActor& shapeActor = shapesList.CreateChild<UIButtonActor>("ShapeSelectButton", shapeTypeName, [this, descBuilder, it]() mutable {
+				UIButtonActor& shapeActor = shapesList.CreateChild<UIButtonActor>("ShapeSelectButton", shapeTypeName, [colObj , descBuilder, it]() mutable {
 					UIWindowActor& shapeTransformWindow = descBuilder.GetEditorScene().CreateActorAtRoot<UIWindowActor>("ShapeTransformWindow");
 					shapeTransformWindow.GetTransform()->SetScale(Vec2f(0.25f));
 
 					EditorDescriptionBuilder shapeDescBuilder(descBuilder.GetEditorHandle(), *shapeTransformWindow.GetScaleActor());
 					it->ShapeTransform.GetEditorDescription(shapeDescBuilder);
-					shapeDescBuilder.AddField("Delete").CreateChild<UIButtonActor>("DeleteButton", "Delete", [this, it, descBuilder, &shapeTransformWindow]() mutable { CollisionObj->DetachShape(*it); shapeTransformWindow.MarkAsKilled(); descBuilder.RefreshComponent(); });
+					shapeDescBuilder.AddField("Delete").CreateChild<UIButtonActor>("DeleteButton", "Delete", [colObj, it, descBuilder, &shapeTransformWindow]() mutable { colObj->DetachShape(*it); shapeTransformWindow.MarkAsKilled(); descBuilder.RefreshComponent(); });
 
 					shapeTransformWindow.RefreshFieldsList();
 					shapeTransformWindow.AutoClampView();
@@ -561,20 +569,52 @@ namespace GEE
 			it->MarkAsKilled();
 	}
 
-	MaterialInstance Component::LoadDebugMatInst(EditorIconState state)
+	MaterialInstance Component::LoadDebugMatInst(EditorButtonState state)
 	{
 		DebugRenderMat = LoadDebugRenderMaterial("GEE_Mat_Default_Debug_Component", "Assets/Editor/component_icon.png");
 		switch (state)
 		{
-		case EditorIconState::IDLE:
+		case EditorButtonState::Idle:
 		default:
 			return MaterialInstance(*DebugRenderMat, DebugRenderMat->GetTextureIDInterpolatorTemplate(0.0f));
-		case EditorIconState::HOVER:
-		case EditorIconState::BEING_CLICKED_OUTSIDE:
+		case EditorButtonState::Hover:
+		case EditorButtonState::BeingClickedOutside:
 			return MaterialInstance(*DebugRenderMat, DebugRenderMat->GetTextureIDInterpolatorTemplate(1.0f));
-		case EditorIconState::BEING_CLICKED_INSIDE:
+		case EditorButtonState::BeingClickedInside:
 			return MaterialInstance(*DebugRenderMat, DebugRenderMat->GetTextureIDInterpolatorTemplate(2.0f));
 		}
+	}
+
+	template<typename Archive>
+	void Component::Save(Archive& archive) const
+	{
+		archive(CEREAL_NVP(Name), CEREAL_NVP(ComponentTransform), CEREAL_NVP(CollisionObj));
+		archive(CEREAL_NVP(Children));
+	}
+	template<typename Archive>
+	void Component::Load(Archive& archive)
+	{
+		archive(CEREAL_NVP(Name), CEREAL_NVP(ComponentTransform), CEREAL_NVP(CollisionObj));
+		if (CollisionObj)
+			Scene.GetPhysicsData()->AddCollisionObject(*CollisionObj, ComponentTransform);
+
+		std::cout << "Serializing comp " << Name << '\n';
+		if (GameHandle->HasStarted())
+			OnStartAll();
+
+		/*
+		This code is not very elegant; it's because Components and Actors are not default_constructible.
+		We always need to pass at least one reference to either the GameScene (in the case of Actors) or to the Actor (of the constructed Component).
+		Furthermore, if an Actor/Component is not at the root of hierarchy (of a scene/an actor) we should always pass the pointer to the parent to the constructor, since users might wrongly assume that an Actor/Component is the root if the parent pointer passed to the constructor is nullptr.
+		This might lead to bugs, so we avoid that.
+		*/
+
+		CerealComponentSerializationData::ParentComp = this;	//Set the static parent pointer to this
+		archive(CEREAL_NVP(Children));	//We want all children to be constructed using the pointer. IMPORTANT: The first child will be serialized (the Load method will be called) before the next child is constructed! So the ParentComp pointer will be changed to the address of the new child when we construct its children. We counteract that in the next line.
+		CerealComponentSerializationData::ParentComp = ParentComponent;	//There are no more children of this to serialize, so we "move up" the hierarchy and change the parent pointer to the parent of this, to allow brothers (other children of parent of this) to be constructed.
+
+		for (auto& it : Children)
+			it->GetTransform().SetParentTransform(&ComponentTransform);
 	}
 
 	Component::~Component()
@@ -585,4 +625,7 @@ namespace GEE
 		std::for_each(Children.begin(), Children.end(), [](UniquePtr<Component>& comp) {comp->GetTransform().SetParentTransform(nullptr); });
 		Children.clear();
 	}
+
+	template void Component::Save<cereal::JSONOutputArchive>(cereal::JSONOutputArchive&) const;
+	template void Component::Load<cereal::JSONInputArchive>(cereal::JSONInputArchive&);
 }

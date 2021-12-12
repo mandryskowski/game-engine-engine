@@ -1,6 +1,8 @@
 #include <editor/EditorMessageLogger.h>
+#include <game/GameScene.h>
 #include <scene/TextComponent.h>
 #include <scene/ModelComponent.h>
+#include <utility/Log.h>
 
 namespace GEE
 {
@@ -20,7 +22,6 @@ namespace GEE
 				EditorHandle.GetGameHandle()->GetRenderEngineHandle()->AddMaterial(createdMaterial);
 				IconsMaterial = createdMaterial.get();
 				IconsMaterial->AddTexture(NamedTexture(Texture::Loader<>::FromFile2D("Assets/Editor/messageicons.png", Texture::Format::RGBA(), true), "albedo1"));
-				IconsMaterial->SetRenderShaderName("Forward_NoLight");
 			}
 
 			auto& moreMessagesActor = EditorScene.CreateActorAtRoot<UIActorDefault>("GEE_E_More_Messages_Actor", Transform(Vec2f(0.8f, -0.9f + static_cast<float>(MessageSlots.size()) * 0.2f - 0.1f), Vec2f(0.1f, 0.01f)));
@@ -32,6 +33,7 @@ namespace GEE
 		}
 		void EditorMessageLogger::Log(const std::string& message, MessageType type)
 		{
+			GEE_LOG(message);
 			if (MessageSlots.back())
 			{
 				QueuedMessages.push(std::pair<std::string, MessageType>(message, type));

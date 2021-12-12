@@ -1,9 +1,11 @@
 #pragma once
 #include <math/Vec.h>
+#include <rendering/Material.h>
 namespace GEE
 {
 	class RenderToolboxCollection;
 	class GameSceneRenderData;
+	enum class MaterialShaderHint;
 
 	typedef unsigned int RenderingContextID;
 
@@ -45,39 +47,36 @@ namespace GEE
 	*/
 	class MatrixInfoExt : public MatrixInfo
 	{
-		void DefaultBools()
-		{
-			bUseMaterials = true;
-			bOnlyShadowCasters = false;
-			bCareAboutShader = false;
-			bMainPass = false;
-			bAllowBlending = true;
-		}
+		void DefaultBools();
 	public:
 		MatrixInfoExt(const MatrixInfo& info)
-			: MatrixInfo(info) { DefaultBools(); }
+			: MatrixInfo(info), RequiredShaderInfo(MaterialShaderHint::None) { DefaultBools(); }
+		MatrixInfoExt(const MatrixInfoExt& info)
+			: MatrixInfoExt(static_cast<const MatrixInfo&>(info)) { RequiredShaderInfo = info.RequiredShaderInfo;}
 		MatrixInfoExt(RenderingContextID contextID, const MatrixInfo& info) :
 			MatrixInfoExt(info) {  }
 			
 		MatrixInfoExt(RenderingContextID contextID, const Mat4f& view = Mat4f(1.0f), const Mat4f& projection = Mat4f(1.0f), const Vec3f& camPos = Vec3f(0.0f))
-			: MatrixInfo(view, projection, camPos, contextID) { DefaultBools(); }
+			: MatrixInfo(view, projection, camPos, contextID), RequiredShaderInfo(MaterialShaderHint::None) { DefaultBools(); }
 		MatrixInfoExt(const Mat4f& view = Mat4f(1.0f), const Mat4f& projection = Mat4f(1.0f), const Vec3f& camPos = Vec3f(0.0f))
 			: MatrixInfoExt(0, view, projection, camPos) { }
 
 		void SetUseMaterials(bool useMaterials) { bUseMaterials = useMaterials; }
 		void SetOnlyShadowCasters(bool onlyShadowCasters) { bOnlyShadowCasters = onlyShadowCasters; }
-		void SetCareAboutShader(bool careAboutShader) { bCareAboutShader = careAboutShader; }
+		void SetRequiredShaderInfo(Material::ShaderInfo info) { RequiredShaderInfo = info; }
+		void StopRequiringShaderInfo() { SetRequiredShaderInfo(Material::ShaderInfo(MaterialShaderHint::None)); }
 		void SetMainPass(bool mainPass) { bMainPass = mainPass; }
 		void SetAllowBlending(bool allowBlending) { bAllowBlending = allowBlending; }
 
 		bool GetUseMaterials() const { return bUseMaterials; }
 		bool GetOnlyShadowCasters() const { return bOnlyShadowCasters; }
-		bool GetCareAboutShader() const { return bCareAboutShader; }
 		bool GetMainPass() const { return bMainPass; }
 		bool GetAllowBlending() const { return bAllowBlending; }
+		Material::ShaderInfo GetRequiredShaderInfo() const { return RequiredShaderInfo; }
 
 	private:
-		bool bUseMaterials, bOnlyShadowCasters, bCareAboutShader, bMainPass, bAllowBlending;
+		bool bUseMaterials, bOnlyShadowCasters, bMainPass, bAllowBlending;
+		Material::ShaderInfo RequiredShaderInfo;
 	};
 
 	/**
@@ -117,25 +116,5 @@ namespace GEE
 			: InfoType(std::forward<Args>(args)...), TbCollection(tbCollection) {}
 	private:
 		RenderToolboxCollection& TbCollection;
-	};
-
-	class RenderInfo
-	{
-	public:
-		RenderToolboxCollection& TbCollection;
-		Vec3f camPos;
-		Mat4f view;
-		Mat4f projection;
-		Mat4f VP;
-		Mat4f previousFrameView;
-		bool UseMaterials;
-		bool OnlyShadowCasters;
-		bool CareAboutShader;
-		bool MainPass;
-
-		bool AllowBlending;
-
-		RenderInfo(RenderToolboxCollection& tbCollection, const Mat4f& v = Mat4f(1.0f), const Mat4f& p = glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f), const Mat4f& vp = glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f), const Vec3f& camPos = Vec3f(0.0f), bool materials = true, bool onlyshadow = false, bool careAboutShader = false, bool mainPass = false, bool allowBlending = true);
-		Mat4f CalculateVP();
 	};
 }

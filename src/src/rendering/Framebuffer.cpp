@@ -281,7 +281,8 @@ namespace GEE
 				currentColorAttachment++;
 			}
 
-			glDrawBuffers(attachmentsGL.size(), &attachmentsGL[0]);
+			if (!attachmentsGL.empty())
+				glDrawBuffers(attachmentsGL.size(), &attachmentsGL[0]);
 		}
 	}
 

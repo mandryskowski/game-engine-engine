@@ -3,6 +3,7 @@
 #include <math/Transform.h>
 #include <editor/EditorManager.h>
 #include <UI/UIListActor.h>
+#include <scene/hierarchy/HierarchyNode.h>
 
 namespace GEE
 {
@@ -83,6 +84,9 @@ namespace GEE
 			void SelectScene(GameScene* selectedScene, GameScene& editorScene);
 			template <typename T> void Select(T*, GameScene& editorScene);
 
+			void PreviewHierarchyTree(HierarchyTemplate::HierarchyTreeT& tree);
+			void PreviewHierarchyNode(HierarchyTemplate::HierarchyNodeBase& node, GameScene& editorScene);
+
 			template <typename T> void AddActorToList(GameScene& editorScene, T& obj, UIAutomaticListActor& listParent, UICanvas& canvas);
 
 		private:
@@ -97,6 +101,29 @@ namespace GEE
 			GameScene* SelectedScene;
 		};
 
+		struct FunctorHierarchyNodeCreator
+		{
+			FunctorHierarchyNodeCreator(HierarchyTemplate::HierarchyNodeBase& parent) : ParentNode(parent) {}
+			template <typename T>
+			HierarchyTemplate::HierarchyNode<T>& Create(const std::string& name)
+			{
+				return ParentNode.CreateChild<T>(name);
+			}
+		private:
+			HierarchyTemplate::HierarchyNodeBase& ParentNode;
+		};
+
+		class ContextMenusFactory
+		{
+		public:
+			ContextMenusFactory(RenderEngineManager&);
+			void AddComponent(PopupDescription, Component& contextComp, std::function<void()> onCreation);
+			template <typename TFunctor>
+			void AddComponent(PopupDescription, TFunctor&&, std::function<void()> onCreation);
+		private:
+			RenderEngineManager& RenderHandle;
+		};
+
 		template<typename T>
 		inline void EditorActions::AddActorToList(GameScene& editorScene, T& obj, UIAutomaticListActor& listParent, UICanvas& canvas)
 		{
@@ -109,6 +136,7 @@ namespace GEE
 			elementText.SetMaxSize(Vec2f(0.9f));
 			elementText.SetContent(obj.GetName());
 			elementText.Unstretch();
+			element.SetPopupCreationFunc([](PopupDescription desc) { desc.AddOption("Rename", nullptr); desc.AddOption("Delete", nullptr); });
 			//elementText.UpdateSize();
 
 			std::vector<T*> children = obj.GetChildren();

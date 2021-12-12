@@ -1,5 +1,6 @@
 #pragma once
 #include <scene/Actor.h>
+#include <game/GameScene.h>
 #include <scene/RenderableComponent.h>
 #include <UI/UICanvas.h>
 #include <UI/UIListActor.h>
@@ -143,6 +144,22 @@ namespace GEE
 		UICanvas& CanvasRef;
 
 		UICanvasFieldCategory* OptionalCategory;
+	};
+
+	class ComponentDescriptionBuilder : public EditorDescriptionBuilder
+	{
+	public:
+		ComponentDescriptionBuilder(Editor::EditorManager& editorHandle, UICanvasFieldCategory&);
+		ComponentDescriptionBuilder(Editor::EditorManager&, UIActorDefault&);
+		ComponentDescriptionBuilder(Editor::EditorManager&, Actor&, UICanvas&);
+		
+		void Refresh();
+
+		bool IsNodeBeingBuilt() const;
+		void SetNodeBeingBuilt(HierarchyTemplate::HierarchyNodeBase*);
+		HierarchyTemplate::HierarchyNodeBase* GetNodeBeingBuilt();
+	private:
+		HierarchyTemplate::HierarchyNodeBase* OptionalBuiltNode;
 	};
 
 	template <typename ChildClass, typename... Args>

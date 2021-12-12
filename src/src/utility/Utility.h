@@ -7,6 +7,12 @@
 #include <utility>
 
 struct GLFWwindow;
+
+#define GEE_REGISTER_TYPE(Type) CEREAL_REGISTER_TYPE(Type)
+#define GEE_REGISTER_POLYMORPHIC_RELATION(Base, Derived) CEREAL_REGISTER_POLYMORPHIC_RELATION(Base, Derived)
+#define GEE_REGISTER_POLYMORPHIC_TYPE(Base, Derived) GEE_REGISTER_TYPE(Derived); \
+													 CEREAL_REGISTER_POLYMORPHIC_RELATION(Base, Derived)
+
 namespace GEE
 {
 	template <typename T> using UniquePtr = std::unique_ptr<T>;
@@ -50,10 +56,21 @@ namespace GEE
 
 	class Actor;
 	class Component;
+	class GameScene;
 	struct CerealComponentSerializationData
 	{
 		static GEE::Actor* ActorRef;			//= dummy actor
 		static GEE::Component* ParentComp;		//= always nullptr
+	};
+
+	struct CerealTreeSerializationData
+	{
+		static GEE::GameScene* TreeScene;
+	};
+
+	struct CerealNodeSerializationData
+	{
+		static GEE::Actor* TempActor;
 	};
 
 	using SystemWindow = GLFWwindow;

@@ -1,5 +1,6 @@
 #include <scene/Actor.h>
 #include <scene/Component.h>
+#include <game/GameScene.h>
 #include <rendering/RenderInfo.h>
 #include <vector>
 
@@ -225,8 +226,14 @@ namespace GEE
 
 	void Actor::Delete()
 	{
+		while (!Children.empty())
+			Children.front()->Delete();
+
 		if (RootComponent)
+		{
+			RootComponent->Delete();
 			RootComponent = nullptr;
+		}
 
 		if (!ParentActor)
 			std::cout << "INFO: Cannot delete actor " + GetName() + " because it doesn't have a parent (it is probably the root of a scene). Hopefully it will be deleted when the scene gets deleted.\n";

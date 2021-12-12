@@ -24,7 +24,30 @@ public:
 
 int main()
 {
-	EightBallPoolGame game(nullptr, GameSettings());
+	glfwInit();
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+	glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, true);
+	
+	SystemWindow* programWindow = glfwCreateWindow(800, 600, "Eight Ball Pool", nullptr, nullptr);
+
+	if (!programWindow)
+	{
+		std::cerr << "nie dziala glfw :('\n";
+		return -1;
+	}
+
+	glfwMakeContextCurrent(programWindow);
+
+	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))	//zaladuj glad (openGL); jesli sie nie udalo, to konczymy program
+	{
+		std::cerr << "zjebalo sie.";
+		return -1;
+	}
+
+
+	EightBallPoolGame game(programWindow, GameSettings());
 	game.SetupMainMenu();
 
 	game.SetActiveScene(game.GetScene("GEE_Main_Menu"));

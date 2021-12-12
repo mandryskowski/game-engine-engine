@@ -1,4 +1,5 @@
 #include "UIWindowActor.h"
+#include <game/GameScene.h>
 #include <scene/UIButtonActor.h>
 #include <rendering/Material.h>
 #include <rendering/Texture.h>
@@ -42,7 +43,7 @@ namespace GEE
 		SetOnCloseFunc(nullptr);
 		CloseButton->SetTransform(Transform(Vec2f(1.15f, 1.15f), Vec2f(0.15f)));
 
-		AtlasMaterial& closeIconMat = *new AtlasMaterial(Material("GEE_Close_Icon_Material", 0.0f, GameHandle->GetRenderEngineHandle()->FindShader("Forward_NoLight")), glm::ivec2(3, 1));
+		AtlasMaterial& closeIconMat = *new AtlasMaterial("GEE_Close_Icon_Material", glm::ivec2(3, 1));
 		closeIconMat.AddTexture(MakeShared<NamedTexture>(Texture::Loader<>::FromFile2D("Assets/Editor/close_icon.png", Texture::Format::RGBA(), false, Texture::MinFilter::NearestInterpolateMipmap()), "albedo1"));
 		uiButtonActorUtil::ButtonMatsFromAtlas(*CloseButton, closeIconMat, 0.0f, 1.0f, 2.0f);
 
@@ -51,7 +52,7 @@ namespace GEE
 		DragButton->SetTransform(Transform(Vec2f(0.0f, 1.15f), Vec2f(1.0f, 0.15f)));
 
 		TextConstantSizeComponent& titleComp = DragButton->CreateComponent<TextConstantSizeComponent>("WindowTitle", Transform(Vec2f(-1.0f, 0.0f), Vec2f(0.15f / 1.0f, 1.0f)), GetFullCanvasName(), "", std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::CENTER));// .SetMaxSize(Vec2f(0.5f, 0.7f));
-		Material& titleMaterial = *new Material(Material("GEE_E_Title_Material", 0.0f, GameHandle->GetRenderEngineHandle()->FindShader("Forward_NoLight")));
+		Material& titleMaterial = *new Material("GEE_E_Title_Material");
 		titleMaterial.SetColor(Vec3f(0.8f));
 		titleComp.SetMaterialInst(titleMaterial);
 		titleComp.Unstretch();

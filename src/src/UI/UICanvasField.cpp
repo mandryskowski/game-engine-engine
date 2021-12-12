@@ -108,7 +108,8 @@ void UIMultipleListActor::NestList(UIListActor& list)
 
 	UICanvasField::UICanvasField(GameScene& scene, Actor* parentActor, const std::string& name) :
 		Actor(scene, parentActor, name),
-		UIActor(parentActor)
+		UIActor(parentActor),
+		TitleComp(nullptr)
 	{
 	}
 
@@ -117,11 +118,17 @@ void UIMultipleListActor::NestList(UIListActor& list)
 		Actor::OnStart();
 
 		uiCanvasFieldUtil::SetupComponents(*this);
+		TitleComp = GetRoot()->GetComponent<TextComponent>("ElementText");
 	}
 
 	UIElementTemplates UICanvasField::GetTemplates()
 	{
 		return UIElementTemplates(*this);
+	}
+
+	TextComponent* UICanvasField::GetTitleComp()
+	{
+		return TitleComp;
 	}
 
 	UICanvasFieldCategory::UICanvasFieldCategory(GameScene& scene, Actor* parentActor, const std::string& name) :
@@ -216,7 +223,7 @@ void UIMultipleListActor::NestList(UIListActor& list)
 
 	void UIElementTemplates::TickBox(std::function<bool()> setFunc)
 	{
-		AtlasMaterial* tickMaterial = new AtlasMaterial(Material("TickMaterial", 0.0f, GameHandle.GetRenderEngineHandle()->FindShader("Forward_NoLight")), glm::ivec2(3, 1));
+		AtlasMaterial* tickMaterial = new AtlasMaterial("TickMaterial", glm::ivec2(3, 1));
 		tickMaterial->AddTexture(MakeShared<NamedTexture>(Texture::Loader<>::FromFile2D("Assets/Editor/tick_icon.png", Texture::Format::RGBA(), true), "albedo1"));
 
 		UIButtonActor& billboardTickBoxActor = TemplateParent.CreateChild<UIButtonActor>("BillboardTickBox");
@@ -235,7 +242,7 @@ void UIMultipleListActor::NestList(UIListActor& list)
 
 	void UIElementTemplates::TickBox(std::function<void(bool)> setFunc, std::function<bool()> getFunc)
 	{
-		AtlasMaterial* tickMaterial = new AtlasMaterial(Material("TickMaterial", 0.0f, GameHandle.GetRenderEngineHandle()->FindShader("Forward_NoLight")), glm::ivec2(3, 1));
+		AtlasMaterial* tickMaterial = new AtlasMaterial("TickMaterial", glm::ivec2(3, 1));
 		tickMaterial->AddTexture(MakeShared<NamedTexture>(Texture::Loader<>::FromFile2D("Assets/Editor/tick_icon.png", Texture::Format::RGBA(), true), "albedo1"));
 
 		UIButtonActor& billboardTickBoxActor = TemplateParent.CreateChild<UIButtonActor>("BillboardTickBox");
@@ -249,12 +256,55 @@ void UIMultipleListActor::NestList(UIListActor& list)
 		billboardTickBoxActor.SetOnClickFunc(clickFunc);
 	}
 
+	void UIElementTemplates::SliderUnitInterval(std::function<void(float)> processUnitValue, float defaultValue)
+	{
+		SliderRawInterval(0.0f, 1.0f, processUnitValue, defaultValue);
+	}
+
+	void UIElementTemplates::SliderRawInterval(float begin, float end, std::function<void(float)> processRawValue, float defaultValue)
+	{
+		/*auto& sliderBackground = TemplateParent.CreateChild<UIButtonActor>("SliderBackground");
+		Material* sliderBackgroundMaterial;
+		if (sliderBackgroundMaterial = GameHandle.GetRenderEngineHandle()->FindMaterial("GEE_E_Slider_Background_Material").get(); !sliderBackgroundMaterial)
+		{
+			sliderBackgroundMaterial = GameHandle.GetRenderEngineHandle()->AddMaterial(MakeShared<Material>("GEE_E_Slider_Background_Material", 0.0f, GameHandle.GetRenderEngineHandle()->FindShader("Forward_NoLight")));
+			sliderBackgroundMaterial->SetColor(Vec4f(0.37f, 0.7f, 0.45f, 1.0f));
+		}
+		sliderBackground.SetMatIdle(*sliderBackgroundMaterial);*/
+
+
+		auto& slider = TemplateParent.CreateChild<UIScrollBarActor>("Slider");
+		slider.GetTransform()->SetScale(Vec2f(0.1f, 1.0f));
+		float scaleX = slider.GetTransform()->GetScale().x;
+		slider.GetTransform()->SetVecAxis<TVec::Position, VecAxis::X>(glm::clamp(scaleX + ((defaultValue - begin) / (end - begin)) * (1.0f - 2.0f * scaleX), 0.0f, 1.0f) * 2.0f - 1.0f);
+
+		auto sliderProcessClick = [*this, &slider, processRawValue, begin, end]()
+		{
+			float posScreenSpace = static_cast<float>(Scene.GetUIData()->GetWindowData().GetMousePositionNDC().x);
+			Mat4f sliderMat = TemplateParent.GetTransform()->GetWorldTransformMatrix();
+			float posLocalSpace = ((slider.GetCanvasPtr()) ? (uiCanvasUtil::ScreenToLocalInCanvas(*slider.GetCanvasPtr(), sliderMat, Vec4f(posScreenSpace, 0.0f, 0.0f, 1.0f))) : (Vec4f(sliderMat * Vec4f(posScreenSpace, 0.0f, 0.0f, 1.0f)))).x;
+			float sliderSize = slider.GetTransform()->GetScale().x;
+
+			slider.GetTransform()->SetVecAxis<TVec::Position, VecAxis::X>(glm::clamp(posLocalSpace, -1.0f + sliderSize, 1.0f - sliderSize));
+
+			slider.SetClickPosNDC(Scene.GetUIData()->GetWindowData().GetMousePositionNDC());
+
+			float unitValue = glm::clamp(posLocalSpace * 0.5f + 0.5f, 0.0f, 1.0f);
+			if (processRawValue)
+				processRawValue(unitValue * (end - begin) + begin);
+		};
+
+
+		slider.SetWhileBeingClickedFunc(sliderProcessClick);
+		//sliderBackground.SetOnClickFunc(sliderProcessClick);
+	}
+
 	void UIElementTemplates::HierarchyTreeInput(UIAutomaticListActor& list, GameScene& scene, std::function<void(HierarchyTemplate::HierarchyTreeT&)> setFunc)
 	{
 		for (int i = 0; i < scene.GetHierarchyTreeCount(); i++)
 		{
 			HierarchyTemplate::HierarchyTreeT* tree = scene.GetHierarchyTree(i);
-			UIButtonActor& treeButton = list.CreateChild<UIButtonActor>("TreeButton" + std::to_string(i), tree->GetName(), [tree, setFunc]() { setFunc(*tree); });
+			UIButtonActor& treeButton = list.CreateChild<UIButtonActor>("TreeButton" + std::to_string(i), tree->GetName().GetPath(), [tree, setFunc]() { setFunc(*tree); });
 		}
 
 	}
@@ -314,7 +364,7 @@ void UIMultipleListActor::NestList(UIListActor& list)
 		auto& backgroundQuad = actor.CreateComponent<ModelComponent>("BackgroundQuad", Transform(Vec2f(0.0f, pos.y), Vec2f(30.0f, 1.0f)));
 		backgroundQuad.AddMeshInst(actor.GetGameHandle()->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD));
 
-		auto backgroundMaterial = new Material("BackgroundMaterial", 0.0f, actor.GetGameHandle()->GetRenderEngineHandle()->FindShader("Forward_NoLight"));
+		auto backgroundMaterial = new Material("BackgroundMaterial");
 		backgroundMaterial->SetColor(backgroundColor);
 		backgroundQuad.OverrideInstancesMaterial(backgroundMaterial);
 
@@ -323,7 +373,7 @@ void UIMultipleListActor::NestList(UIListActor& list)
 		auto& separatorLine = actor.CreateComponent<ModelComponent>("SeparatorLine", Transform(Vec2f(-1.5f, pos.y), Vec2f(0.08f, 0.8f)));
 		separatorLine.AddMeshInst(actor.GetGameHandle()->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD));
 
-		auto separatorMaterial = new Material("SeparatorColor", 0.0f, actor.GetGameHandle()->GetRenderEngineHandle()->FindShader("Forward_NoLight"));
+		auto separatorMaterial = new Material("SeparatorColor");
 		separatorMaterial->SetColor(separatorColor);
 		separatorLine.OverrideInstancesMaterial(separatorMaterial);
 	}

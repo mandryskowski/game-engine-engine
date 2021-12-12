@@ -20,9 +20,9 @@ namespace GEE
 	{
 	public:
 		Game(const ShadingAlgorithm&, const GameSettings&);
-		virtual void Init(SystemWindow* window);
+		virtual void Init(SystemWindow* window, const Vec2u& windowSize);
 
-		void LoadSceneFromFile(const std::string& path, const std::string& name = std::string());
+		bool LoadSceneFromFile(const std::string& path, const std::string& name = std::string());
 
 		virtual GameScene& CreateScene(std::string name, bool disallowChangingNameIfTaken = true) override;
 		virtual GameScene& CreateUIScene(std::string name, SystemWindow& associateWindow, bool disallowChangingNameIfTaken = true) override;
@@ -63,6 +63,7 @@ namespace GEE
 		virtual unsigned long long GetTotalTickCount() const override;
 		virtual unsigned long long GetTotalFrameCount() const override;
 
+		virtual GameScene* GetActiveScene() override;
 		virtual void SetActiveScene(GameScene* scene) override;
 
 		virtual void SetCursorIcon(DefaultCursorIcon) override;

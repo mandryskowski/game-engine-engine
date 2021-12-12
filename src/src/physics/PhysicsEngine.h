@@ -1,13 +1,11 @@
 #pragma once
-#ifndef NDEBUG
+#if !defined(NDEBUG) && !defined(_DEBUG)
 #define NDEBUG
 #endif
 #include <PhysX/PxPhysicsAPI.h>
 
 #include <math/Vec.h>
 #include <glm/gtc/quaternion.hpp>
-
-#include <game/GameScene.h>
 
 #include <vector>
 #include <game/GameManager.h>
@@ -17,7 +15,6 @@ namespace GEE
 	struct CollisionShape;
 	class RenderEngine;
 	class Transform;
-	class RenderInfo;
 
 	namespace Physics
 	{
@@ -38,7 +35,6 @@ namespace GEE
 
 			virtual physx::PxController* CreateController(GameScenePhysicsData& scenePhysicsData, const Transform& t) override;
 
-			virtual void ApplyForce(CollisionObject&, Vec3f force) override;
 			void SetupScene(GameScenePhysicsData& scenePhysicsData);
 
 			void Update(float deltaTime);
@@ -65,11 +61,10 @@ namespace GEE
 			unsigned int VAO, VBO;
 			bool WasSetup;
 			bool* DebugModePtr;
-
 		};
 
 
-		void ApplyForce(CollisionObject&, const Vec3f& force);
+
 
 		namespace Util
 		{

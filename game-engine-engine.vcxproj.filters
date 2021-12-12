@@ -225,6 +225,15 @@
     <ClCompile Include="src\vendor\source\whereami\whereami.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\src\editor\MousePicking.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\src\physics\DynamicPhysicsObjects.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\src\editor\EditorRenderer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\src\animation\Animation.h">
@@ -441,6 +450,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\src\utility\Utility.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\src\physics\DynamicPhysicsObjects.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\src\editor\EditorRenderer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

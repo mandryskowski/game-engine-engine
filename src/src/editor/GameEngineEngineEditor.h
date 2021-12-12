@@ -3,7 +3,6 @@
 #include <editor/EditorActions.h>
 #include <editor/EditorManager.h>
 #include <UI/UIListActor.h>
-#include <ctpl/ctpl_stl.h>
 #include <editor/EditorMessageLogger.h>
 #include <unordered_map>
 #include <condition_variable>
@@ -36,13 +35,16 @@ namespace GEE
 			GameSettings* GetEditorSettings() override;
 			virtual AtlasMaterial* GetDefaultEditorMaterial(EditorDefaultMaterial) override;
 			virtual EditorActions& GetActions() override;
+			virtual EditorMessageLogger& GetEditorLogger(GameScene& scene) override;
+
+			virtual void RequestPopupMenu(const Vec2f& posWindowSpace, SystemWindow& relativeWindow, std::function<void(PopupDescription)> popupCreation) override;
 
 			virtual std::string ToRelativePath(const std::string&) override;
 			virtual bool CheckEEForceForwardShading() override
 			{
 				return EEForceForwardShading;
 			}
-			virtual void Init(SystemWindow* window) override;
+			virtual void Init(SystemWindow* window, const Vec2u& windowSize) override;
 
 			virtual PopupDescription CreatePopupMenu(const Vec2f& posWindowSpace, SystemWindow& relativeWindow) override;
 
@@ -54,7 +56,7 @@ namespace GEE
 			virtual void Update(float deltaTime) override;
 			virtual void HandleEvents() override;
 
-			virtual void PreviewHierarchyTree(HierarchyTemplate::HierarchyTreeT& tree) override;
+			//virtual void PreviewHierarchyTree(HierarchyTemplate::HierarchyTreeT& tree) override;
 			template <typename T> void AddActorToList(GameScene& editorScene, T& obj, UIAutomaticListActor& listParent, UICanvas& canvas);
 
 			virtual void PassMouseControl(Controller* controller) override;
@@ -63,10 +65,10 @@ namespace GEE
 			void LoadProject(const std::string& filepath);
 			void SaveProject();
 
+		virtual void SetDebugRenderComponents(bool) override;
 	private:
 		void UpdateRecentProjects();
 		void MaximizeViewport();
-		EditorMessageLogger& GetEditorLogger(GameScene& scene);
 
 			RenderToolboxCollection* ViewportRenderCollection, * HUDRenderCollection;
 			GameScene* EditorScene;
@@ -80,18 +82,15 @@ namespace GEE
 				std::reference_wrapper<GameScene> Scene;
 				unsigned int ID;
 			};
-			std::vector<Popup> OpenPopups;
-			std::deque<std::thread> PopupRenderThreads;
-			std::mutex ShouldRenderMutex;
-			std::condition_variable ShouldRenderVariable;
-			bool bRenderingPopups;
 
-			ctpl::thread_pool ThreadPool;
+			std::vector<Popup> OpenPopups;
+			std::function<void()> LastRenderPopupRequest;
+
 
 			GameSettings EditorSettings;
 			bool bDebugRenderComponents;
 
-		bool bViewportMaximzized;
+			bool bViewportMaximzized;
 
 
 			std::string ProjectName, ProjectFilepath;
@@ -109,28 +108,5 @@ namespace GEE
 			// Which Controller should be set after we switch from editor to game control
 			Controller* GameController;
 		};
-
-		template<typename T>
-		inline void GameEngineEngineEditor::AddActorToList(GameScene& editorScene, T& obj, UIAutomaticListActor& listParent, UICanvas& canvas)
-		{
-			if (obj.IsBeingKilled())
-				return;
-
-			UIButtonActor& element = listParent.CreateChild<UIActivableButtonActor>(obj.GetName() + "'s Button", [this, &obj, &editorScene]() {Actions->Select(&obj, editorScene); });//*this, obj, &EditorManager::Select<T>));
-			element.SetTransform(Transform(Vec2f(1.5f, 0.0f), Vec2f(3.0f, 1.0f)));
-			TextConstantSizeComponent& elementText = element.CreateComponent<TextConstantSizeComponent>(obj.GetName() + "'s Text", Transform(Vec2f(0.0f), Vec2f(1.0f, 1.0f)), "", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
-			elementText.SetMaxSize(Vec2f(0.9f));
-			elementText.SetContent(obj.GetName());
-			elementText.Unstretch();
-			//elementText.UpdateSize();
-
-			std::vector<T*> children = obj.GetChildren();
-			for (auto& child : children)
-			{
-				//AddActorToList(editorScene, *child, listParent.CreateChild(UIListActor(editorScene, "NextLevel")), canvas);
-				UIAutomaticListActor& nestedList = listParent.CreateChild<UIAutomaticListActor>(child->GetName() + "'s nestedlist");
-				AddActorToList(editorScene, *child, nestedList, canvas);
-			}
-		}
 	}
 }

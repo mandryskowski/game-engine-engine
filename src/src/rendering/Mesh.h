@@ -2,7 +2,6 @@
 #include "Material.h"
 #include <math/Box.h>
 #include <assetload/FileLoader.h>
-#include <scene/hierarchy/HierarchyTree.h>
 
 namespace GEE
 {
@@ -121,40 +120,8 @@ namespace GEE
 		void SetMaterial(Material*);
 		void SetMaterialInst(SharedPtr<MaterialInstance>);
 
-		template <typename Archive> void Save(Archive& archive)	const
-		{
-			Mesh mesh = MeshRef;
-			SharedPtr<MaterialInstance> materialInst = MaterialInst;
-			if (&MaterialInst->GetMaterialRef() == mesh.GetMaterial())
-				materialInst = nullptr;	//don't save the material instance if its the same as the mesh default material.
-
-			archive(cereal::make_nvp("MeshTreePath", mesh.GetLocalization().GetTreeName()), cereal::make_nvp("MeshNodeName", mesh.GetLocalization().NodeName), cereal::make_nvp("MeshSpecificName", mesh.GetLocalization().SpecificName));
-			archive(cereal::make_nvp("MaterialInst", materialInst));
-		}
-		template <typename Archive> static void load_and_construct(Archive& archive, cereal::construct<MeshInstance>& construct)
-		{
-			std::string meshTreePath, meshNodeName, meshSpecificName;
-			archive(cereal::make_nvp("MeshTreePath", meshTreePath), cereal::make_nvp("MeshNodeName", meshNodeName), cereal::make_nvp("MeshSpecificName", meshSpecificName));
-
-			HierarchyTemplate::HierarchyTreeT* tree = EngineDataLoader::LoadHierarchyTree(*GameManager::DefaultScene, meshTreePath);
-			Mesh* mesh = nullptr;
-
-			if (auto found = tree->FindMesh(meshNodeName, meshSpecificName))
-				mesh = found;
-			else
-			{
-				std::cout << "ERROR! Could not find mesh " << meshNodeName + " (" + meshSpecificName + ")" << " in hierarchytree " << meshTreePath << '\n';
-				exit(0);
-			}
-
-			SharedPtr<MaterialInstance> materialInst;
-			archive(cereal::make_nvp("MaterialInst", materialInst));
-
-			if (materialInst)
-				construct(MeshInstance(*mesh, materialInst));
-			else
-				construct(MeshInstance(*mesh));
-		}
+		template <typename Archive> void Save(Archive& archive)	const;
+		template <typename Archive> static void load_and_construct(Archive& archive, cereal::construct<MeshInstance>& construct);
 	};
 
 	unsigned int generateVAO(unsigned int&, std::vector<unsigned int>, size_t, float*, size_t = -1);

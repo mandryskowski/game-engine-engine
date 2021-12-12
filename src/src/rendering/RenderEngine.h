@@ -26,11 +26,10 @@ namespace GEE
 		virtual RenderToolboxCollection* GetCurrentTbCollection() override;
 		virtual Texture GetEmptyTexture() override;
 		virtual SkeletonBatch* GetBoundSkeletonBatch() override;
+		virtual Shader* GetSimpleShader() override;
 
-		virtual std::vector<Shader*> GetForwardShaders() override;
+		virtual std::vector<Shader*> GetCustomShaders() override;
 		virtual std::vector<Material*> GetMaterials() override;
-
-		virtual void SetBoundMaterial(Material*) override;
 
 		/**
 		 * @brief Add a new RenderToolboxCollection to the render engine to enable updating shadow maps automatically. By default, we load every toolbox that will be needed according to RenderToolboxCollection::Settings
@@ -40,7 +39,7 @@ namespace GEE
 		*/
 		virtual RenderToolboxCollection& AddRenderTbCollection(const RenderToolboxCollection& tbCollection, bool setupToolboxesAccordingToSettings = true) override;
 		virtual Material* AddMaterial(SharedPtr<Material> material) override;
-		virtual SharedPtr<Shader> AddShader(SharedPtr<Shader> shader, bool bForwardShader = false) override;
+		virtual SharedPtr<Shader> AddShader(SharedPtr<Shader> shader) override;
 
 		virtual void BindSkeletonBatch(SkeletonBatch* batch) override;
 		virtual void BindSkeletonBatch(GameSceneRenderData* sceneRenderData, unsigned int index) override;
@@ -51,25 +50,19 @@ namespace GEE
 		virtual SharedPtr<Material> FindMaterial(std::string) override;
 		virtual Shader* FindShader(std::string) override;
 
-		void RenderBoundInDebug(RenderInfo&, GLenum mode, GLint first, GLint count, Vec3f color = Vec3f(1.0f));
-
 		void PrepareScene(RenderingContextID contextID, RenderToolboxCollection& tbCollection, GameSceneRenderData* sceneRenderData);	//Call this method once per frame for each scene that will be rendered in order to prepare stuff like shadow maps
 
 		void PrepareFrame();
-
-		void TestRenderCubemap(RenderInfo& info, GameSceneRenderData* sceneRenderData);
 		
 		virtual void RenderText(const SceneMatrixInfo& info, const Font& font, std::string content, Transform t = Transform(), Vec3f color = Vec3f(1.0f), Shader* shader = nullptr, bool convertFromPx = false, const std::pair<TextAlignment, TextAlignment> & = std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::BOTTOM)) override; //Pass a shader if you do not want the default shader to be used.
-		//virtual void RenderStaticMesh(const RenderInfo& info, const MeshInstance& mesh, const Transform& transform, Shader* shader, Mat4f* lastFrameMVP = nullptr, Material* overrideMaterial = nullptr, bool billboard = false) override; //Note: this function does not call the Use method of passed Shader. Do it manually.
-		//virtual void RenderStaticMeshes(const RenderInfo& info, const std::vector<std::reference_wrapper<const MeshInstance>>& meshes, const Transform& transform, Shader* shader, Mat4f* lastFrameMVP = nullptr, Material* overrideMaterial = nullptr, bool billboard = false) override; //Note: this function does not call the Use method of passed Shader. Do it manually.
-		//virtual void RenderSkeletalMeshes(const RenderInfo& info, const std::vector<std::reference_wrapper<const MeshInstance>>& meshes, const Transform& transform, Shader* shader, SkeletonInfo& skelInfo, Mat4f* lastFrameMVP, Material* overrideMaterial = nullptr) override; //Note: this function does not call the Use method of passed Shader. Do it manually
 
 		void Dispose();
 
 	private:
-		virtual void AddSceneRenderDataPtr(GameSceneRenderData&) override;
 		friend class Game;
+		virtual void AddSceneRenderDataPtr(GameSceneRenderData&) override;
 		virtual void RemoveSceneRenderDataPtr(GameSceneRenderData&) override;
+		virtual SharedPtr<Shader> AddNonCustomShader(SharedPtr<Shader>);
 		void GenerateEngineObjects();
 		void LoadInternalShaders();
 		void Resize(Vec2u resolution);
@@ -84,14 +77,12 @@ namespace GEE
 		std::vector <SharedPtr <Material>> Materials;
 
 		std::vector <SharedPtr <Shader>> Shaders;
-		std::vector <SharedPtr <Shader>> UserShaders;
-		std::vector <SharedPtr <Shader>> ForwardShaders;		//We store forward shaders in a different vector to attempt rendering the scene at forward render stage. Putting non-forward-rendering shaders here will reduce performance.
+		std::vector <SharedPtr <Shader>> CustomShaders;	//Shaders created by the user used at the forward rendering stage.
 		//std::vector <SharedPtr <Shader>> SettingIndependentShaders;		//TODO: Put setting independent shaders here. When the user asks for a shader, search in CurrentTbCollection first. Then check here.
 		std::vector <Shader*> LightShaders;		//Same with light shaders
+		Shader* SimpleShader;
 		Texture EmptyTexture;
 
-		const Mesh* BoundMesh;
-		const Material* BoundMaterial;
 		SkeletonBatch* BoundSkeletonBatch;
 
 		std::vector <UniquePtr <RenderToolboxCollection>> RenderTbCollections;

@@ -1,4 +1,5 @@
 #include <rendering/LightProbe.h>
+#include <game/GameScene.h>
 #include <rendering/Framebuffer.h>
 #include <rendering/Shader.h>
 #include <rendering/RenderInfo.h>

@@ -1,11 +1,12 @@
 #include <animation/SkeletonInfo.h>
+#include <game/GameScene.h>
 #include <scene/BoneComponent.h>
+#include <scene/ModelComponent.h>
 
 namespace GEE
 {
 	SkeletonInfo::SkeletonInfo() :
 		GlobalInverseTransformCompPtr(nullptr),
-
 		BoneIDOffset(0),
 		BatchPtr(nullptr)
 	{
@@ -31,6 +32,16 @@ namespace GEE
 		return (BatchPtr) ? (BatchPtr->GetInfoID(*this)) : (-1);
 	}
 
+	void SkeletonInfo::AddModelCompRef(ModelComponent& model)
+	{
+		ModelsRef.push_back(&model);
+		std::cout << "(%) " << this << ", " << ModelsRef.size() << " models.\n";
+	}
+
+	void SkeletonInfo::EraseModelCompRef(ModelComponent& model)
+	{
+		ModelsRef.erase(std::remove_if(ModelsRef.begin(), ModelsRef.end(), [&model](ModelComponent* modelVec) { return modelVec == &model; }), ModelsRef.end());
+	}
 
 	void SkeletonInfo::SetGlobalInverseTransformCompPtr(const Component* comp)
 	{
@@ -96,6 +107,75 @@ namespace GEE
 			BoneUBOs[1].Generate(10, sizeof(Mat4f) * 1024, &identities[0][0][0], GL_STREAM_DRAW);
 		}
 		BoneUBOs[CurrentBoneUBOIndex].BindToSlot(10, false);
+	}
+
+	template<typename Archive>
+	void SkeletonInfo::Save(Archive& archive) const
+	{
+		std::vector<std::string> bonesActorsNames, boneNames;	//TODO: add scene name string here and in Load(Archive&)
+
+		for (auto it : Bones)
+		{
+			bonesActorsNames.push_back(it->GetActor().GetName());
+			boneNames.push_back(it->GetName());
+		}
+
+		archive(cereal::make_nvp("BonesActorsNames", bonesActorsNames),
+			cereal::make_nvp("BoneNames", boneNames),
+			cereal::make_nvp("GlobalInverseTransformCompPtrActorName", (GlobalInverseTransformCompPtr) ? (GlobalInverseTransformCompPtr->GetActor().GetName()) : (std::string())),
+			cereal::make_nvp("GlobalInverseTransformCompPtrName", (GlobalInverseTransformCompPtr) ? (GlobalInverseTransformCompPtr->GetName()) : (std::string())),
+			cereal::make_nvp("BatchID", BatchPtr->GetBatchID()),
+			CEREAL_NVP(BoneIDOffset));
+	}
+	template<typename Archive>
+	void SkeletonInfo::Load(Archive& archive)
+	{
+		std::vector<std::string> bonesActorsNames, boneNames;
+		std::string globalInverseTCompActorName = (GlobalInverseTransformCompPtr) ? (GlobalInverseTransformCompPtr->GetActor().GetName()) : (std::string());
+		std::string globalInverseTCompName = (GlobalInverseTransformCompPtr) ? (GlobalInverseTransformCompPtr->GetName()) : (std::string());
+		int batchID;
+
+		archive(cereal::make_nvp("BonesActorsNames", bonesActorsNames),
+			cereal::make_nvp("BoneNames", boneNames),
+			cereal::make_nvp("GlobalInverseTransformCompPtrActorName", globalInverseTCompActorName),
+			cereal::make_nvp("GlobalInverseTransformCompPtrName", globalInverseTCompName),
+			cereal::make_nvp("BatchID", batchID),
+			CEREAL_NVP(BoneIDOffset));
+
+		if (bonesActorsNames.size() != boneNames.size())
+		{
+			std::cout << "ERROR! BonesActorsNames' size different than boneNames'\n";
+			return;
+		}
+
+		std::function<void()> loadBonesFunc = [this, bonesActorsNames, boneNames, globalInverseTCompActorName, globalInverseTCompName, batchID]() {
+			BatchPtr = GameManager::DefaultScene->GetRenderData()->GetBatch(batchID);
+			for (int i = 0; i < static_cast<int>(bonesActorsNames.size()); i++)
+				if (BoneComponent* found = GameManager::DefaultScene->FindActor(bonesActorsNames[i])->GetRoot()->GetComponent<BoneComponent>(boneNames[i]))
+				{
+					Bones.push_back(found);
+					found->SetInfoPtr(this);
+				}
+				else
+					std::cout << "ERROR: Could not find bone " << boneNames[i] << " in actor " << bonesActorsNames[i] << ".\n";
+
+			GlobalInverseTransformCompPtr = GameManager::DefaultScene->FindActor(globalInverseTCompActorName)->GetRoot()->GetComponent<Component>(globalInverseTCompName);
+
+			SortBones();
+			BatchPtr->RecalculateBoneCount();
+		};
+
+		GameManager::DefaultScene->AddPostLoadLambda(loadBonesFunc);
+	}
+
+	template void SkeletonInfo::Save<cereal::JSONOutputArchive>(cereal::JSONOutputArchive&) const;
+	template void SkeletonInfo::Load<cereal::JSONInputArchive>(cereal::JSONInputArchive&);
+
+	SkeletonInfo::~SkeletonInfo()
+	{
+		std::cout << "SKELETON INFO BEING DESTROYED. " << ModelsRef.size() << " MODELS\n";
+		for (auto it : ModelsRef)
+			it->SignalSkeletonInfoDeath();
 	}
 
 	SkeletonBatch::SkeletonBatch() :
@@ -175,7 +255,8 @@ namespace GEE
 			Skeletons[i]->FillMatricesVec(boneMats);
 		}
 
-		GetBoneUBO().SubData(BoneCount * sizeof(Mat4f), &boneMats[0][0][0], 0);
+		if (!boneMats.empty())
+			GetBoneUBO().SubData(BoneCount * sizeof(Mat4f), &boneMats[0][0][0], 0);
 	}
 
 	void SkeletonBatch::VerifySkeletonsLives()

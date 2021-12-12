@@ -35,17 +35,9 @@ namespace GEE
 		extern const Material* BoundMaterial;
 	}
 
-	enum class ShaderHint
-	{
-		Default,
-		DefaultShaded,
-		AlwaysForwardShaded,
-		AlwaysDeferredShaded
-	};
-
 	enum class RendererShaderHint
 	{
-		Default,
+		DefaultForward,
 		Quad,
 		DepthOnly,
 		DepthOnlyLinearized,
@@ -76,14 +68,6 @@ namespace GEE
 		// Utility rendering function
 		void StaticMeshInstances(const MatrixInfoExt& info, const std::vector<MeshInstance>& meshes, const Transform& transform, Shader& shader, bool billboard = false); //Note: this function does not call the Use method of passed Shader. Do it manually.
 
-
-		struct WithContext
-		{
-			WithContext(const RenderInfo&);
-
-			void RenderVolume(EngineBasicShape, Shader&, const Transform* = nullptr);
-		};
-
 	protected:
 		struct ImplUtil
 		{
@@ -91,7 +75,7 @@ namespace GEE
 				:	RenderHandle(engineHandle), OptionalFramebuffer(optionalFramebuffer) {}
 			Mat4f GetCubemapView(GEE_FB::Axis cubemapSide);
 			Mesh GetBasicShapeMesh(EngineBasicShape);
-			Shader& GetShader(ShaderHint);
+			Shader& GetShader(MaterialShaderHint);
 			Shader& GetShader(RendererShaderHint);
 
 			struct MeshBinding
@@ -102,12 +86,7 @@ namespace GEE
 				static const Mesh* BoundMesh;
 			};
 
-			/*void BindMesh(const Mesh* mesh);
-			void UseShader(Shader* shader);
-			void BindMaterial(const Material* material);
-			void BindMaterialInstance(const MaterialInstance* materialInst);*/
 			RenderEngineManager& RenderHandle;
-
 			const GEE_FB::Framebuffer* OptionalFramebuffer;
 		} Impl;
 	};
@@ -166,7 +145,7 @@ namespace GEE
 			PreFramePass(0, tbCollection, sceneRenderData);
 		}
 
-		void FullRender(SceneMatrixInfo& info, Viewport = Viewport(Vec2f(0.0f), Vec2f(0.0f)), bool clearMainFB = true, bool modifyForwardsDepthForUI = false, std::function<void(GEE_FB::Framebuffer&)>&& renderIconsFunc = nullptr);	//This method renders a scene with lighting and some postprocessing that improve the visual quality (e.g. SSAO, if enabled).
+		void FullRender(SceneMatrixInfo& info, Viewport = Viewport(Vec2f(0.0f), Vec2f(0.0f)), bool clearMainFB = true, bool modifyForwardsDepthForUI = false, std::function<void(GEE_FB::Framebuffer&)>&& renderIconsFunc = nullptr, bool forceForwardShading = false);	//This method renders a scene with lighting and some postprocessing that improve the visual quality (e.g. SSAO, if enabled).
 		void RawRender(const SceneMatrixInfo& info, Shader& shader);
 		void RawUIScene(const SceneMatrixInfo& info);
 	};

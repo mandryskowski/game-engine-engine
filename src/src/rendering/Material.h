@@ -14,12 +14,6 @@
 namespace GEE
 {
 	struct MaterialLoadingData;
-	
-	enum class MaterialShaderHint
-	{
-		Simple,
-		Lighting
-	};
 
 	class Material
 	{
@@ -45,21 +39,76 @@ namespace GEE
 			}
 		};
 
+		struct ShaderInfo
+		{
+			ShaderInfo(MaterialShaderHint hint) : ShaderHint(hint), CustomShader(nullptr) {}
+			ShaderInfo(Shader& customShader) : ShaderHint(MaterialShaderHint::None), CustomShader(&customShader) {}
+
+			bool IsValid() const { return UsesShaderHint() || CustomShader; }
+			bool UsesShaderHint() const { return ShaderHint != MaterialShaderHint::None; }
+			bool MatchesRequiredInfo(const ShaderInfo& requiredInfo)
+			{
+				if (requiredInfo.UsesShaderHint())
+					return requiredInfo.GetShaderHint() == GetShaderHint();
+
+				return (!requiredInfo.GetCustomShader() || requiredInfo.GetCustomShader() == GetCustomShader());
+			}
+
+			MaterialShaderHint GetShaderHint() const { return ShaderHint; }
+			Shader* GetCustomShader() { return CustomShader; }
+			const Shader* GetCustomShader() const { return CustomShader; }
+
+			/**
+			 * @brief If this ShaderInfo refers to a custom shader, the shader will be returned. If this ShaderInfo contains a hint, the correct shader will be retrieved from the render toolbox collection.
+			 * @return a pointer to a Shader useful in rendering. Can be nullptr if this Shader info is not valid.
+			*/
+			Shader* RetrieveShaderForRendering(RenderToolboxCollection&);
+
+			template <typename Archive>
+			void Save(Archive& archive) const
+			{
+				archive(CEREAL_NVP(ShaderHint), cereal::make_nvp("CustomShaderName", (CustomShader) ? (CustomShader->GetName()) : (std::string())));
+			}
+
+			template <typename Archive>
+			void Load(Archive& archive)
+			{
+				std::string customShaderName;
+				archive(CEREAL_NVP(ShaderHint), customShaderName);
+
+				if (!customShaderName.empty())
+					CustomShader = GameManager::Get().GetRenderEngineHandle()->FindShader(customShaderName);
+			}
+
+			template <typename Archive>
+			static void load_and_construct(Archive& archive, cereal::construct<ShaderInfo>& construct)
+			{
+				construct(MaterialShaderHint::None);
+				construct->Load(archive);
+			}
+
+		private:
+			/*
+			*	Shader hints are useful if our material dose not use a specific type of shader
+			*	If they do, use the optional pointer
+			*/
+			MaterialShaderHint ShaderHint;
+			Shader* CustomShader;
+		};
+
 	public:
-		Material(MaterialLoc, MaterialShaderHint);
-		Material(MaterialLoc, float depthScale = 0.0f, Shader* shader = nullptr);
-		Material(MaterialLoc, const Vec3f& color, MaterialShaderHint = MaterialShaderHint::Simple);
-		Material(MaterialLoc, const Vec4f& color, MaterialShaderHint = MaterialShaderHint::Simple);
+		explicit Material(MaterialLoc, ShaderInfo = MaterialShaderHint::Simple);
+		explicit Material(MaterialLoc, const Vec3f& color, ShaderInfo = MaterialShaderHint::Simple);
+		explicit Material(MaterialLoc, const Vec4f& color, ShaderInfo = MaterialShaderHint::Simple);
 		const MaterialLoc& GetLocalization() const;
 		std::string GetName() const;
-		const std::string& GetRenderShaderName() const;
+		ShaderInfo GetShaderInfo() const;
 		Vec4f GetColor() const;
 		unsigned int GetTextureCount() const;
 		NamedTexture GetTexture(unsigned int i) const;
 		void SetDepthScale(float);
 		void SetShininess(float);
-		void SetRenderShaderName(const std::string&);
-		void SetShader(MaterialShaderHint);
+		void SetShaderInfo(ShaderInfo);
 
 		//Think twice before you use colours; you need a corresponding shader to make it work (one that has uniform vec4 color in it)
 		void SetColor(const Vec3f& color);
@@ -91,7 +140,7 @@ namespace GEE
 		{
 			archive(cereal::make_nvp("Name", GetLocalization().Name), cereal::make_nvp("Textures", Textures),
 			        CEREAL_NVP(Color), CEREAL_NVP(Shininess), CEREAL_NVP(RoughnessColor), CEREAL_NVP(MetallicColor),
-			        CEREAL_NVP(AoColor), CEREAL_NVP(DepthScale), CEREAL_NVP(RenderShaderName));
+			        CEREAL_NVP(AoColor), CEREAL_NVP(DepthScale), CEREAL_NVP(MatShaderInfo));
 		}
 
 		template <typename Archive>
@@ -100,9 +149,8 @@ namespace GEE
 			archive(cereal::make_nvp("Name", Localization.Name), cereal::make_nvp("Textures", Textures),
 			        cereal::make_nvp("Color", Color), cereal::make_nvp("Shininess", Shininess),
 			        CEREAL_NVP(RoughnessColor), CEREAL_NVP(MetallicColor), CEREAL_NVP(AoColor),
-			        cereal::make_nvp("DepthScale", DepthScale), cereal::make_nvp("RenderShaderName", RenderShaderName));
-			if (RenderShaderName.empty())
-				RenderShaderName = "Geometry";
+			        cereal::make_nvp("DepthScale", DepthScale), CEREAL_NVP(MatShaderInfo));
+
 		}
 
 		template <typename Archive>
@@ -117,6 +165,7 @@ namespace GEE
 
 	public:
 		MaterialLoc Localization;
+		ShaderInfo MatShaderInfo;
 		//Often used; NamedTextures (NamedTexture is a child class of Texture) are bound to the samplers which names correspond to ShaderName of a NamedTexture.
 		std::vector<SharedPtr<NamedTexture>> Textures;
 		//Used for some materials that only need a colour, e.g. for button materials - we can represent them as just a single color
@@ -124,7 +173,6 @@ namespace GEE
 		float Shininess;
 		//used in parallax mapping
 		float DepthScale;
-		std::string RenderShaderName;
 
 		float RoughnessColor, MetallicColor, AoColor;
 	};
@@ -160,8 +208,8 @@ namespace GEE
 		//if it isn't an integer, the shader will blend between two nearest textures in the atlas (f.e. 1.5 mixes texture 1 and 2 equally)
 
 	public:
-		AtlasMaterial(Material&& mat, Vec2i atlasSize = Vec2i(0));
-		AtlasMaterial(MaterialLoc loc, Vec2i atlasSize = Vec2i(0));
+		AtlasMaterial(Material&& mat, Vec2i atlasSize = Vec2i(0), ShaderInfo = MaterialShaderHint::Simple);
+		AtlasMaterial(MaterialLoc loc, Vec2i atlasSize = Vec2i(0), ShaderInfo = MaterialShaderHint::Simple);
 		float GetMaxTextureID() const;
 		virtual void UpdateInstanceUBOData(Shader* shader, bool setValuesToDefault = false) const override;
 		virtual void UpdateWholeUBOData(Shader* shader, Texture& emptyTexture) const override;
@@ -179,7 +227,7 @@ namespace GEE
 		template <typename Archive>
 		static void load_and_construct(Archive& archive, cereal::construct<AtlasMaterial>& construct)
 		{
-			construct("if_you_see_this_serializing_error_ocurred");
+			construct(MaterialLoc("if_you_see_this_serializing_error_ocurred"));
 			construct->Serialize(archive);
 		}
 
@@ -311,6 +359,6 @@ namespace cereal
 	};
 }
 
-CEREAL_REGISTER_TYPE(GEE::Material)
+GEE_REGISTER_TYPE(GEE::Material)
 
-CEREAL_REGISTER_TYPE(GEE::AtlasMaterial)
+GEE_REGISTER_TYPE(GEE::AtlasMaterial)

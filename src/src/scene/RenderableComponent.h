@@ -6,15 +6,15 @@ namespace GEE
 	class Renderable
 	{
 	public:
-		Renderable(GameScene& scene) : SceneRenderData(*scene.GetRenderData()), Hide(false), bCastsShadow(true) { SceneRenderData.AddRenderable(*this); }
-		Renderable(Renderable&& renderable) : SceneRenderData(renderable.SceneRenderData), Hide(renderable.Hide), bCastsShadow(renderable.bCastsShadow) { SceneRenderData.AddRenderable(*this); }
+		Renderable(GameScene& scene);
+		Renderable(Renderable&& renderable);
 		virtual void Render(const SceneMatrixInfo& info, Shader* shader) = 0;
-		bool GetHide() const { return Hide; }
-		void SetHide(bool hide) { Hide = hide; }
-		bool CastsShadow() const { return bCastsShadow; }
-		void SetCastsShadow(bool castsShadow) { bCastsShadow = castsShadow; }
-		virtual std::vector<const Material*> GetMaterials() const { return { nullptr }; }
-		virtual ~Renderable() { SceneRenderData.EraseRenderable(*this); }
+		bool GetHide() const;
+		void SetHide(bool hide);
+		bool CastsShadow() const;
+		void SetCastsShadow(bool castsShadow);
+		virtual std::vector<const Material*> GetMaterials() const;
+		virtual ~Renderable();
 	protected:
 		virtual unsigned int GetUIDepth() const { return 0; }
 		bool Hide;
@@ -36,7 +36,7 @@ namespace GEE
 			Component(std::move(comp)),
 			Renderable(std::move(comp)) {}
 		virtual void DebugRender(SceneMatrixInfo info, Shader& shader, const Vec3f& debugIconScale) const override {}
-		virtual void GetEditorDescription(EditorDescriptionBuilder) override;
+		virtual void GetEditorDescription(ComponentDescriptionBuilder) override;
 		template <typename Archive>
 		void Save(Archive& archive) const
 		{

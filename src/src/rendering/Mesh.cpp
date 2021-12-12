@@ -1,5 +1,6 @@
 #include <rendering/Mesh.h>
 #include <assetload/FileLoader.h>
+#include <scene/hierarchy/HierarchyTree.h>
 
 namespace GEE
 {
@@ -242,6 +243,47 @@ namespace GEE
 	{
 		MaterialInst = matInst;
 	}
+
+	template<typename Archive>
+	inline void MeshInstance::Save(Archive& archive) const
+	{
+		Mesh mesh = MeshRef;
+		SharedPtr<MaterialInstance> materialInst = MaterialInst;
+		if (&MaterialInst->GetMaterialRef() == mesh.GetMaterial())
+			materialInst = nullptr;	//don't save the material instance if its the same as the mesh default material.
+
+		archive(cereal::make_nvp("MeshTreePath", mesh.GetLocalization().GetTreeName()), cereal::make_nvp("MeshNodeName", mesh.GetLocalization().NodeName), cereal::make_nvp("MeshSpecificName", mesh.GetLocalization().SpecificName));
+		archive(cereal::make_nvp("MaterialInst", materialInst));
+	}
+	template<typename Archive>
+	inline void MeshInstance::load_and_construct(Archive& archive, cereal::construct<MeshInstance>& construct)
+	{
+		std::string meshTreePath, meshNodeName, meshSpecificName;
+		archive(cereal::make_nvp("MeshTreePath", meshTreePath), cereal::make_nvp("MeshNodeName", meshNodeName), cereal::make_nvp("MeshSpecificName", meshSpecificName));
+
+		HierarchyTemplate::HierarchyTreeT* tree = EngineDataLoader::LoadHierarchyTree(*GameManager::DefaultScene, meshTreePath);
+		Mesh* mesh = nullptr;
+
+		if (auto found = tree->FindMesh(meshNodeName, meshSpecificName))
+			mesh = found;
+		else
+		{
+			std::cout << "ERROR! Could not find mesh " << meshNodeName + " (" + meshSpecificName + ")" << " in hierarchytree " << meshTreePath << '\n';
+			exit(0);
+		}
+
+		SharedPtr<MaterialInstance> materialInst;
+		archive(cereal::make_nvp("MaterialInst", materialInst));
+
+		if (materialInst)
+			construct(MeshInstance(*mesh, materialInst));
+		else
+			construct(MeshInstance(*mesh));
+	}
+
+
+	template void MeshInstance::Save<cereal::JSONOutputArchive>(cereal::JSONOutputArchive&) const;
+	template void MeshInstance::load_and_construct<cereal::JSONInputArchive>(cereal::JSONInputArchive&, cereal::construct<MeshInstance>&);
 
 	/*
 		====================================================================

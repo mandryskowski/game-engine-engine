@@ -76,7 +76,6 @@ int main(int argc, char** argv)
 	std::cout << "max2: " << max_v_uniforms << "\n";
 
 	GameSettings settings;
-	//settings.LoadFromFile("Settings.ini");
 	
 	//Vec2f res = static_cast<Vec2f>(settings.WindowSize);
 	//settings.ViewportData = glm::uvec4(res.x * 0.3f, res.y * 0.4f, res.x * 0.4, res.y * 0.6f);

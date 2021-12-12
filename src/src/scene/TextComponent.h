@@ -32,8 +32,8 @@ namespace GEE
 		void SetAlignment(const TextAlignment horizontal, const TextAlignment vertical = TextAlignment::TOP);	//Change what Component::ComponentTransform::Position
 		void SetAlignment(const std::pair<TextAlignment, TextAlignment>& alignment);	//Change what Component::ComponentTransform::Position
 
-		virtual void GetEditorDescription(EditorDescriptionBuilder) override;
-		virtual MaterialInstance LoadDebugMatInst(EditorIconState) override;
+		virtual void GetEditorDescription(ComponentDescriptionBuilder) override;
+		virtual MaterialInstance LoadDebugMatInst(EditorButtonState) override;
 
 		virtual unsigned int GetUIDepth() const override;
 

@@ -30,13 +30,13 @@ namespace GEE
 		W_Axis
 	};
 
-	enum class EditorIconState
+	enum class EditorButtonState
 	{
-		IDLE,
-		HOVER,
-		BEING_CLICKED_INSIDE,
-		BEING_CLICKED_OUTSIDE,
-		ACTIVATED
+		Idle,
+		Hover,
+		BeingClickedInside,
+		BeingClickedOutside,
+		Activated
 	};
 
 	class UICanvasActor;
@@ -45,12 +45,17 @@ namespace GEE
 	namespace Editor
 	{
 		class EditorActions;
+		class EditorMessageLogger;
 
 		class EditorManager
 		{
 		public:
 			virtual PopupDescription CreatePopupMenu(const Vec2f& posWindowSpace, SystemWindow& relativeWindow) = 0;
 			virtual EditorActions& GetActions() = 0;
+
+			virtual EditorMessageLogger& GetEditorLogger(GameScene& scene) = 0;
+
+			virtual void RequestPopupMenu(const Vec2f&, SystemWindow&, std::function<void(PopupDescription)>) = 0;
 
 			virtual void UpdateGameSettings() = 0;
 			virtual void UpdateEditorSettings() = 0;
@@ -62,9 +67,11 @@ namespace GEE
 
 			virtual std::string ToRelativePath(const std::string&) = 0;
 
-			virtual void PreviewHierarchyTree(HierarchyTemplate::HierarchyTreeT& tree) = 0;
+			//virtual void PreviewHierarchyTree(HierarchyTemplate::HierarchyTreeT& tree) = 0;
 
 			virtual ~EditorManager() = default;
+
+			virtual void SetDebugRenderComponents(bool) = 0;
 		};
 	}
 }

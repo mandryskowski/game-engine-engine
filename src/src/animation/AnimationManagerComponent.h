@@ -1,5 +1,6 @@
 #pragma once
 #include <animation/Animation.h>
+#include <game/GameScene.h>
 #include <scene/Component.h>
 #include <deque>
 
@@ -63,26 +64,8 @@ namespace GEE
 		void Stop();
 		void Restart();
 
-		template <typename Archive> void Save(Archive& archive) const
-		{
-			archive(cereal::make_nvp("AnimHierarchyTreePath", GetLocalization().GetTreeName()), cereal::make_nvp("AnimName", GetLocalization().Name), cereal::make_nvp("RootCompName", AnimRootComp.GetName()), cereal::make_nvp("RootCompActorName", AnimRootComp.GetActor().GetName()));
-		}
-		template <typename Archive> static void load_and_construct(Archive& archive, cereal::construct<AnimationInstance>& construct)
-		{
-			std::cout << "a tera instancje animacji\n";
-			std::string animHierarchyTreePath, animName, rootCompName, rootCompActorName;
-			archive(cereal::make_nvp("AnimHierarchyTreePath", animHierarchyTreePath), cereal::make_nvp("AnimName", animName), cereal::make_nvp("RootCompName", rootCompName), cereal::make_nvp("RootCompActorName", rootCompActorName));
-
-			Animation* anim = GameManager::Get().FindHierarchyTree(animHierarchyTreePath)->FindAnimation(animName);
-			Component* comp = GameManager::DefaultScene->FindActor(rootCompActorName)->GetRoot()->GetComponent<Component>(rootCompName);
-
-			if (!anim)
-				throw(Exception("ERROR: Cannot find anim " + animName + " in hierarchy tree " + animHierarchyTreePath));
-			if (!comp)
-				throw(Exception("ERROR: Cannot find anim root component " + rootCompName + " in actor " + rootCompActorName));
-
-			construct(*anim, *comp);
-		}
+		template <typename Archive> void Save(Archive& archive) const;
+		template <typename Archive> static void load_and_construct(Archive& archive, cereal::construct<AnimationInstance>& construct);
 	};
 
 	class AnimationManagerComponent : public Component
@@ -102,7 +85,7 @@ namespace GEE
 		virtual void Update(float) override;
 		void SelectAnimation(AnimationInstance*);
 
-		virtual void GetEditorDescription(EditorDescriptionBuilder) override;
+		virtual void GetEditorDescription(ComponentDescriptionBuilder) override;
 
 		template <typename Archive> void Save(Archive& archive) const
 		{
@@ -123,8 +106,6 @@ namespace GEE
 						SelectAnimation(it.get());
 		}
 	};
-
-
 }
 
 GEE_POLYMORPHIC_SERIALIZABLE_COMPONENT(GEE::Component, GEE::AnimationManagerComponent)

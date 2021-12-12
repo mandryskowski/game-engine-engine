@@ -2,6 +2,7 @@
 #include <input/Event.h>
 #include <scene/TextComponent.h>
 #include <scene/ModelComponent.h>
+#include <input/InputDevicesStateRetriever.h>
 
 namespace GEE
 {
@@ -12,9 +13,9 @@ namespace GEE
 		RetrieveContentEachFrame(false),
 		CaretComponent(nullptr)
 	{
-		if (name == "VecBox0")
-			ContentTextComp = &CreateComponent<ScrollingTextComponent>("ButtonText", Transform(Vec2f(0.0f), Vec2f(1.0f)), "0", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
-		else
+		//if (name == "VecBox0")
+			//ContentTextComp = &CreateComponent<ScrollingTextComponent>("ButtonText", Transform(Vec2f(0.0f), Vec2f(1.0f)), "0", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
+		//else
 			ContentTextComp = &CreateButtonText("0");
 
 		return;
@@ -24,7 +25,6 @@ namespace GEE
 		if (!caretMaterial) 
 		{
 			caretMaterial = MakeShared<Material>("GEE_E_Caret_Material");
-			caretMaterial->SetRenderShaderName("Forward_NoLight");
 			caretMaterial->SetColor(Vec4f(1.0f));
 			GameHandle->GetRenderEngineHandle()->AddMaterial(caretMaterial);
 		}
@@ -90,7 +90,7 @@ namespace GEE
 		if (!ContentTextComp)
 			return;
 
-		SetOnDeactivationFunc([=]() { inputFunc(ContentTextComp->GetContent()); /*valuegetter*/ });
+		SetOnDeactivationFunc([=]() { inputFunc(ContentTextComp->GetContent()); if (ValueGetter) ValueGetter();/*valuegetter*/ });
 
 		if (valueGetter)
 		{
@@ -109,7 +109,7 @@ namespace GEE
 
 	void UIInputBoxActor::SetOnInputFunc(std::function<void(float)> inputFunc, std::function<float()> valueGetter, bool fixNumberStr)
 	{
-		std::function<std::string()> valueGetterStr = [=]() { return ToStringPrecision(valueGetter(), 2); };
+		std::function<std::string()> valueGetterStr = [=]() { return ToStringPrecision(valueGetter()); };
 		if (fixNumberStr)
 		{
 			valueGetterStr = [=]() {
@@ -141,7 +141,7 @@ namespace GEE
 
 
 
-		if (RetrieveContentEachFrame && ValueGetter && GetState() != EditorIconState::ACTIVATED)
+		if (RetrieveContentEachFrame && ValueGetter && GetState() != EditorButtonState::Activated)
 			ValueGetter();
 	}
 
@@ -149,7 +149,7 @@ namespace GEE
 	{
 		UIActivableButtonActor::HandleEvent(ev);
 
-		if (!ContentTextComp || State != EditorIconState::ACTIVATED)
+		if (!ContentTextComp || State != EditorButtonState::Activated)
 			return;
 
 		const std::string& content = ContentTextComp->GetContent();
@@ -163,7 +163,7 @@ namespace GEE
 		{
 			const KeyEvent& keyEv = dynamic_cast<const KeyEvent&>(ev);
 			if (keyEv.GetKeyCode() == Key::Backspace && !content.empty())
-				ContentTextComp->SetContent(content.substr(0, content.length() - 1)); //erase the last letter
+				ContentTextComp->SetContent((GameHandle->GetInputRetriever().IsKeyPressed(Key::LeftControl)) ? (std::string()) : (content.substr(0, content.length() - 1))); //erase the last letter
 		}
 	}
 

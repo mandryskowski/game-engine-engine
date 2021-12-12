@@ -201,7 +201,7 @@ namespace GEE
 	}
 }
 
-#define GEE_SERIALIZABLE_ACTOR(Type, ...) CEREAL_REGISTER_TYPE(Type);									  						 \
+#define GEE_SERIALIZABLE_ACTOR(Type, ...) GEE_REGISTER_TYPE(Type);									  							 \
 namespace cereal																						  						 \
 {																										  						 \
 	template <> struct LoadAndConstruct<Type>															  						 \
