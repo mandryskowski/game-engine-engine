@@ -1,6 +1,7 @@
 #define MAX_LIGHTS 16
 #define M_PI 3.14159265359
 #define MAX_PREFILTER_MIPMAP 4.0
+#define SOFT_SHADOWS 1
 
 #if !defined(POINT_LIGHT) && !defined(DIRECTIONAL_LIGHT) && !defined(SPOT_LIGHT) && !defined(IBL_PASS)
 #error Cannot compile Cook-Torrance shader without defining POINT_LIGHT, DIRECTIONAL_LIGHT, SPOT_LIGHT or IBL_PASS.
@@ -88,42 +89,56 @@ layout (std140) uniform Lights
 float CalcShadow3D(Light light, vec3 fragPosition)
 {
 	vec3 lightToFrag = fragPosition - light.position.xyz;
-	
+
 	#ifdef SOFT_SHADOWS
-	for (int z = -1; z < = 1; z++)
+	vec3 sampleOffsetDirections[20] = vec3[]
+	(
+	   vec3( 1,  1,  1), vec3( 1, -1,  1), vec3(-1, -1,  1), vec3(-1,  1,  1), 
+	   vec3( 1,  1, -1), vec3( 1, -1, -1), vec3(-1, -1, -1), vec3(-1,  1, -1),
+	   vec3( 1,  1,  0), vec3( 1, -1,  0), vec3(-1, -1,  0), vec3(-1,  1,  0),
+	   vec3( 1,  0,  1), vec3(-1,  0,  1), vec3( 1,  0, -1), vec3(-1,  0, -1),
+	   vec3( 0,  1,  1), vec3( 0, -1,  1), vec3( 0, -1, -1), vec3( 0,  1, -1)
+	);   
+	float shadowHits = 0.0;
+	float diskRadius = 0.01;
+	float minDiskRadius = 0.01;
+	float maxDiskRadius = 0.05;
+	diskRadius = minDiskRadius + (length(camPos.xyz - fragPosition) / light.far) * (maxDiskRadius - minDiskRadius);
+	int samples = 20;
+	for (int i = 0;  i < samples; i++)
 	{
-		for (int y = -1; y < = 1; y++)
-		{
-			for (int x = -1; x <= 1; x++)
-			{
-				
-			}
-		}
+		float texDepth = texture(shadowCubemaps, vec4(lightToFrag + sampleOffsetDirections[i] * diskRadius, light.shadowMapNr)).r * light.far;
+		if (length(lightToFrag) > texDepth + light.ambientAndShadowBias.a)
+			shadowHits += 1.0;
 	}
+	return shadowHits / float(samples);
 	#endif
 
-	return ((length(lightToFrag) / light.far > texture(shadowCubemaps, vec4(lightToFrag, light.shadowMapNr)).r + light.ambientAndShadowBias.a) ? (1.0) : (0.0));
+	float texDepth = texture(shadowCubemaps, vec4(lightToFrag, light.shadowMapNr)).r;
+	return ((length(lightToFrag) > texDepth + light.ambientAndShadowBias.a) ? (1.0) : (0.0));
 }
 #else
 float CalcShadow2D(Light light, vec3 fragPosition)
-{
+{	
 	vec4 lightProj = light.lightSpaceMatrix * vec4(fragPosition, 1.0);
 	vec3 lightCoords = lightProj.xyz /= lightProj.w;
 	lightCoords = lightCoords * 0.5 + 0.5;
 	
 	#ifdef SOFT_SHADOWS
-	vec2 texCoord = gl_FragCoord.xy / vec2(SCR_WIDTH, SCR_HEIGHT);
+	vec2 texCoord = 1.0 / vec2(textureSize(shadowMaps, 0).xy);
 	float shadowHits = 0.0;
-	for (int y = -1; y < = 1; y++)
+	float offset = 0.01;
+	float samples = 4.0;
+	for (float y = -offset; y <= offset; y += offset / (samples * 0.5))
 	{
-		for (int x = -1; x <= 1; x++)
+		for (float x = -offset; x <= offset; x += offset / (samples * 0.5))
 		{
-			if (lightCoords.z > texture(shadowMaps, vec3(lightCoords.xy + texCoord * vec2(float(x), float(y)), light.shadowMapNr)).r + light.ambientAndShadowBias.a)
-				shadowHits++;
+			if (lightCoords.z > texture(shadowMaps, vec3(lightCoords.xy + texCoord * vec2(x, y), light.shadowMapNr)).r + light.ambientAndShadowBias.a)
+				shadowHits += 1.0;
 		}
 	}
 	
-	return shadowHits / 9.0;
+	return shadowHits / (samples * samples);
 	#endif
 	
 	return (lightCoords.z > texture(shadowMaps, vec3(lightCoords.xy, light.shadowMapNr)).r + light.ambientAndShadowBias.a) ? (1.0) : (0.0);

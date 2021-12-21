@@ -920,7 +920,6 @@ namespace GEE
 				RenderEng.PrepareScene(0, *ViewportRenderCollection, GetMainScene()->GetRenderData());
 				SceneMatrixInfo mainSceneRenderInfo = GetMainScene()->ActiveCamera->GetRenderInfo(0, *ViewportRenderCollection);
 
-
 				// Main render
 				if (!GetInputRetriever().IsKeyPressed(Key::F3))
 				{
@@ -977,7 +976,7 @@ namespace GEE
 
 				RenderEng.RenderText(SceneMatrixInfo(*ViewportRenderCollection, *GetMainScene()->GetRenderData()), *DefaultFont, "No camera", Transform(Vec2f(0.0f, -0.8f), Vec2f(0.1f)), Vec3f(1.0f, 0.0f, 0.0f), nullptr, false, std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
 
-			}
+		}
 
 		bool renderEditorScene = EditorScene && EditorScene->ActiveCamera;
 		if (renderEditorScene)

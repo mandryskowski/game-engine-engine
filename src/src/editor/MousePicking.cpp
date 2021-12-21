@@ -77,6 +77,11 @@ namespace GEE
 					currentComponentIndex++;
 					continue;
 				}
+				else
+				{
+					std::cout << "Rendering " << shader->GetName() << '\n';
+					std::cout << "Required shader: " << info.GetRequiredShaderInfo().GetCustomShader() << ". Hint: " << (int)info.GetRequiredShaderInfo().GetShaderHint() << '\n';
+				}
 
 				shader->Use();
 				shader->Uniform<Vec4f>("material.color", Vec4f(currentComponentIndex++, 0, 0, 1));
