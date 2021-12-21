@@ -108,7 +108,7 @@ float CalcShadow3D(Light light, vec3 fragPosition)
 	for (int i = 0;  i < samples; i++)
 	{
 		float texDepth = texture(shadowCubemaps, vec4(lightToFrag + sampleOffsetDirections[i] * diskRadius, light.shadowMapNr)).r * light.far;
-		if (length(lightToFrag) > texDepth + light.ambientAndShadowBias.a)
+		if (length(lightToFrag) > texDepth /*+ light.ambientAndShadowBias.a*/)
 			shadowHits += 1.0;
 	}
 	return shadowHits / float(samples);
@@ -127,13 +127,13 @@ float CalcShadow2D(Light light, vec3 fragPosition)
 	#ifdef SOFT_SHADOWS
 	vec2 texCoord = 1.0 / vec2(textureSize(shadowMaps, 0).xy);
 	float shadowHits = 0.0;
-	float offset = 0.01;
+	float offset = 0.5;
 	float samples = 4.0;
 	for (float y = -offset; y <= offset; y += offset / (samples * 0.5))
 	{
 		for (float x = -offset; x <= offset; x += offset / (samples * 0.5))
 		{
-			if (lightCoords.z > texture(shadowMaps, vec3(lightCoords.xy + texCoord * vec2(x, y), light.shadowMapNr)).r + light.ambientAndShadowBias.a)
+			if (lightCoords.z > texture(shadowMaps, vec3(lightCoords.xy + texCoord * vec2(x, y), light.shadowMapNr)).r /*+ light.ambientAndShadowBias.a*/)
 				shadowHits += 1.0;
 		}
 	}

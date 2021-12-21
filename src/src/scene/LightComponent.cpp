@@ -91,6 +91,11 @@ namespace GEE
 		return Far;
 	}
 
+	float LightComponent::GetShadowBias() const
+	{
+		return ShadowBias;
+	}
+
 	unsigned int LightComponent::GetLightIndex() const
 	{
 		return LightIndex;

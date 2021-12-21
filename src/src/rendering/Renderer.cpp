@@ -292,13 +292,9 @@ namespace GEE
 			Viewport(shadowsTb->ShadowMapArray->GetSize2D()).SetOpenGLState();
 		}
 		glEnable(GL_DEPTH_TEST);
-		glEnable(GL_CULL_FACE);
-		glCullFace(GL_FRONT);
 		glDrawBuffer(GL_NONE);
 
 		bool bCubemapBound = false;
-		float timeSum = 0.0f;
-		float time1;
 
 		shadowsTb->ShadowMapArray->Bind(10);
 		shadowsTb->ShadowCubemapArray->Bind(11);
@@ -312,13 +308,17 @@ namespace GEE
 				continue;
 
 			if (light.ShouldCullFrontsForShadowMap())
+			{
+				glEnable(GL_CULL_FACE);
 				glCullFace(GL_FRONT);
+			}
 			else
-				glCullFace(GL_BACK);
+			{
+				glDisable(GL_CULL_FACE);
+			}
 
 			if (light.GetType() == LightType::POINT)
 			{
-				time1 = (float)glfwGetTime();
 				if (!bCubemapBound)
 				{
 					Impl.GetShader(RendererShaderHint::DepthOnlyLinearized).Use();
@@ -331,10 +331,10 @@ namespace GEE
 				Mat4f projection = light.GetProjection();
 
 				Impl.GetShader(RendererShaderHint::DepthOnlyLinearized).Uniform1f("far", light.GetFar());
+				Impl.GetShader(RendererShaderHint::DepthOnlyLinearized).Uniform<float>("lightBias", light.GetShadowBias());
 				Impl.GetShader(RendererShaderHint::DepthOnlyLinearized).Uniform3fv("lightPos", lightPos);
 
 				int cubemapFirst = light.GetShadowMapNr() * 6;
-				timeSum += (float)glfwGetTime() - time1;
 
 
 				SceneMatrixInfo info(contextID, tbCollection, sceneRenderData, viewTranslation, projection, lightPos);
@@ -347,7 +347,6 @@ namespace GEE
 			}
 			else
 			{
-				time1 = glfwGetTime();
 				if (bCubemapBound || i == 0)
 				{
 					Impl.GetShader(RendererShaderHint::DepthOnly).Use();
@@ -358,7 +357,8 @@ namespace GEE
 				Mat4f projection = light.GetProjection();
 				Mat4f VP = projection * view;
 
-				timeSum += (float)glfwGetTime() - time1;
+				Impl.GetShader(RendererShaderHint::DepthOnly).Uniform<float>("lightBias", light.GetShadowBias());
+
 				shadowsTb->ShadowFramebuffer->Attach(GEE_FB::FramebufferAttachment(*shadowsTb->ShadowMapArray, light.GetShadowMapNr(), GEE_FB::AttachmentSlot::Depth()), false, false);
 				glClear(GL_DEPTH_BUFFER_BIT);
 
@@ -376,6 +376,7 @@ namespace GEE
 		}
 
 		glActiveTexture(GL_TEXTURE0);
+		glEnable(GL_CULL_FACE);
 		glCullFace(GL_BACK);
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		//std::cout << "Wyczyscilem sobie " << timeSum * 1000.0f << "ms.\n";
