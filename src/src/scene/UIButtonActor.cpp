@@ -61,11 +61,11 @@ namespace GEE
 			GameHandle->GetRenderEngineHandle()->AddMaterial(matDisabled);
 		}
 
-		MatIdle = MakeShared<MaterialInstance>(MaterialInstance(*matIdle));
-		MatHover = MakeShared<MaterialInstance>(MaterialInstance(*matHover));
-		MatClick = MakeShared<MaterialInstance>(MaterialInstance(*matClick));
-		MatActive = MakeShared<MaterialInstance>(MaterialInstance(*matActive));
-		MatDisabled = MakeShared<MaterialInstance>(MaterialInstance(*matDisabled));
+		MatIdle = MakeShared<MaterialInstance>(matIdle);
+		MatHover = MakeShared<MaterialInstance>(matHover);
+		MatClick = MakeShared<MaterialInstance>(matClick);
+		MatActive = MakeShared<MaterialInstance>(matActive);
+		MatDisabled = MakeShared<MaterialInstance>(matDisabled);
 
 
 		ButtonModel->AddMeshInst(MeshInstance(GameHandle->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD), MatIdle));
@@ -355,7 +355,7 @@ namespace GEE
 			GameHandle->GetRenderEngineHandle()->AddMaterial(matActive);
 		}
 
-		MatActive = MakeShared<MaterialInstance>(MaterialInstance(*matActive));
+		MatActive = MakeShared<MaterialInstance>(matActive);
 	}
 	UIActivableButtonActor::UIActivableButtonActor(GameScene& scene, Actor* parentActor, const std::string& name, const std::string& buttonTextContent, std::function<void()> onClickFunc, std::function<void()> onDeactivationFunc, const Transform& transform) :
 		UIActivableButtonActor(scene, parentActor, name, onClickFunc, onDeactivationFunc, transform)
@@ -471,11 +471,11 @@ namespace GEE
 		ClickPosNDC = pos;
 	}
 
-	void uiButtonActorUtil::ButtonMatsFromAtlas(UIButtonActor& button, AtlasMaterial& atlasMat, float idleID, float hoverID, float clickID, float disabledID)
+	void uiButtonActorUtil::ButtonMatsFromAtlas(UIButtonActor& button, SharedPtr<AtlasMaterial> atlasMat, float idleID, float hoverID, float clickID, float disabledID)
 	{
-		button.SetMatIdle(MaterialInstance(atlasMat, atlasMat.GetTextureIDInterpolatorTemplate(idleID)));
-		if (hoverID >= 0.0f) button.SetMatHover(MaterialInstance(atlasMat, atlasMat.GetTextureIDInterpolatorTemplate(hoverID)));
-		if (clickID >= 0.0f) button.SetMatClick(MaterialInstance(atlasMat, atlasMat.GetTextureIDInterpolatorTemplate(clickID)));
-		if (disabledID >= 0.0f) button.SetMatDisabled(MaterialInstance(atlasMat, atlasMat.GetTextureIDInterpolatorTemplate(disabledID)));
+		button.SetMatIdle(MaterialInstance(atlasMat, atlasMat->GetTextureIDInterpolatorTemplate(idleID)));
+		if (hoverID >= 0.0f) button.SetMatHover(MaterialInstance(atlasMat, atlasMat->GetTextureIDInterpolatorTemplate(hoverID)));
+		if (clickID >= 0.0f) button.SetMatClick(MaterialInstance(atlasMat, atlasMat->GetTextureIDInterpolatorTemplate(clickID)));
+		if (disabledID >= 0.0f) button.SetMatDisabled(MaterialInstance(atlasMat, atlasMat->GetTextureIDInterpolatorTemplate(disabledID)));
 	}
 }

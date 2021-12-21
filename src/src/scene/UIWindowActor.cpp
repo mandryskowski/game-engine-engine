@@ -43,8 +43,8 @@ namespace GEE
 		SetOnCloseFunc(nullptr);
 		CloseButton->SetTransform(Transform(Vec2f(1.15f, 1.15f), Vec2f(0.15f)));
 
-		AtlasMaterial& closeIconMat = *new AtlasMaterial("GEE_Close_Icon_Material", glm::ivec2(3, 1));
-		closeIconMat.AddTexture(MakeShared<NamedTexture>(Texture::Loader<>::FromFile2D("Assets/Editor/close_icon.png", Texture::Format::RGBA(), false, Texture::MinFilter::NearestInterpolateMipmap()), "albedo1"));
+		auto closeIconMat = MakeShared<AtlasMaterial>("GEE_Close_Icon_Material", glm::ivec2(3, 1));
+		closeIconMat->AddTexture(MakeShared<NamedTexture>(Texture::Loader<>::FromFile2D("Assets/Editor/close_icon.png", Texture::Format::RGBA(), false, Texture::MinFilter::NearestInterpolateMipmap()), "albedo1"));
 		uiButtonActorUtil::ButtonMatsFromAtlas(*CloseButton, closeIconMat, 0.0f, 1.0f, 2.0f);
 
 		DragButton = &CreateChild<UIScrollBarActor>("GEE_E_Drag_Button");
@@ -52,8 +52,8 @@ namespace GEE
 		DragButton->SetTransform(Transform(Vec2f(0.0f, 1.15f), Vec2f(1.0f, 0.15f)));
 
 		TextConstantSizeComponent& titleComp = DragButton->CreateComponent<TextConstantSizeComponent>("WindowTitle", Transform(Vec2f(-1.0f, 0.0f), Vec2f(0.15f / 1.0f, 1.0f)), GetFullCanvasName(), "", std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::CENTER));// .SetMaxSize(Vec2f(0.5f, 0.7f));
-		Material& titleMaterial = *new Material("GEE_E_Title_Material");
-		titleMaterial.SetColor(Vec3f(0.8f));
+		auto titleMaterial = MakeShared<Material>("GEE_E_Title_Material");
+		titleMaterial->SetColor(Vec3f(0.8f));
 		titleComp.SetMaterialInst(titleMaterial);
 		titleComp.Unstretch();
 

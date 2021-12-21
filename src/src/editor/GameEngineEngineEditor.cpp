@@ -192,7 +192,7 @@ namespace GEE
 			moreMat->AddTexture(MakeShared<NamedTexture>(Texture::Loader<>::FromFile2D("Assets/Editor/more_icon.png", Texture::Format::RGBA(), true), "albedo1"));
 
 			
-			GetRenderEngineHandle()->AddMaterial(MakeShared<Material>("GEE_Default_Text_Material", Vec3f(1.0f)));
+			GetRenderEngineHandle()->AddMaterial(MakeShared<Material>("GEE_Default_Text_Material", Vec3f(1.0f), *RenderEng.FindShader("TextShader")));
 			GetRenderEngineHandle()->AddMaterial(MakeShared<Material>("GEE_Default_X_Axis", Vec3f(0.39f, 0.18f, 0.18f)));
 			GetRenderEngineHandle()->AddMaterial(MakeShared<Material>("GEE_Default_Y_Axis", Vec3f(0.18f, 0.39f, 0.25f)));
 			GetRenderEngineHandle()->AddMaterial(MakeShared<Material>("GEE_Default_Z_Axis", Vec3f(0.18f, 0.25f, 0.39f)));
@@ -370,7 +370,7 @@ namespace GEE
 							}, IconData(RenderEng, "Assets/Editor/scene_preview_types.png", Vec2i(2, 3), iconAtlasID));
 						};
 
-						//desc.AddSubmenu("Light", [this, addPreview](PopupDescription submenuDesc) { addPreview(submenuDesc, "Light 1", [this]() { return ViewportRenderCollection->GetTb<ShadowMappingToolbox>()->ShadowMapArray; }, 4.0f); });
+						//desc.AddSubmenu("Light shadow map", [this, addPreview](PopupDescription submenuDesc) { addPreview(submenuDesc, "Light 1", [this]() { return ViewportRenderCollection->GetTb<ShadowMappingToolbox>()->ShadowMapArray; }, 4.0f); });
 
 						addPreview(desc, "Albedo", [this]() { return ViewportRenderCollection->GetTb<DeferredShadingToolbox>()->GetGeometryFramebuffer()->GetColorTexture(0); }, 0.0f);
 						addPreview(desc, "Position", [this]() {return ViewportRenderCollection->GetTb<DeferredShadingToolbox>()->GetGeometryFramebuffer()->GetColorTexture(1); }, 1.0f);
@@ -409,8 +409,8 @@ namespace GEE
 
 				auto mainButtonTheme = [&](UIButtonActor& button, float iconID) {
 					button.GetRoot()->GetComponent("ButtonText")->GetTransform().SetPosition(Vec2f(0.0f, -0.6f));
-					button.CreateComponent<ModelComponent>("SettingsIcon", Transform(Vec2f(0.0f, 0.3f), Vec2f(0.75f))).AddMeshInst(MeshInstance(RenderEng.GetBasicShapeMesh(EngineBasicShape::QUAD), MakeShared<MaterialInstance>(*mainIconsMat, mainIconsMat->GetTextureIDInterpolatorTemplate(iconID))));
-					button.GetRoot()->GetComponent<ModelComponent>("SettingsIcon")->OverrideInstancesMaterialInstances(MakeShared<MaterialInstance>(*mainIconsMat, mainIconsMat->GetTextureIDInterpolatorTemplate(iconID)));
+					button.CreateComponent<ModelComponent>("SettingsIcon", Transform(Vec2f(0.0f, 0.3f), Vec2f(0.75f))).AddMeshInst(MeshInstance(RenderEng.GetBasicShapeMesh(EngineBasicShape::QUAD), MakeShared<MaterialInstance>(mainIconsMat, mainIconsMat->GetTextureIDInterpolatorTemplate(iconID))));
+					button.GetRoot()->GetComponent<ModelComponent>("SettingsIcon")->OverrideInstancesMaterialInstances(MakeShared<MaterialInstance>(mainIconsMat, mainIconsMat->GetTextureIDInterpolatorTemplate(iconID)));
 				};
 			
 			
@@ -434,7 +434,7 @@ namespace GEE
 						}
 
 					auto& addTreeButton = meshTreesList.CreateChild<UIButtonActor>("AddHierarchyTreeButton", [this, windowRefreshFunc]() { /* set name to make the tree a local resource (this is a hack) */ GetScene("GEE_Main")->CreateHierarchyTree("").SetName("CreatedTree"); windowRefreshFunc(); });
-					uiButtonActorUtil::ButtonMatsFromAtlas(addTreeButton, *dynamic_cast<AtlasMaterial*>(GetRenderEngineHandle()->FindMaterial("GEE_E_Add_Icon_Mat").get()), 0.0f, 1.0f, 2.0f);
+					uiButtonActorUtil::ButtonMatsFromAtlas(addTreeButton, GetRenderEngineHandle()->FindMaterial<AtlasMaterial>("GEE_E_Add_Icon_Mat"), 0.0f, 1.0f, 2.0f);
 
 					meshTreesList.Refresh();
 					window.ClampViewToElements();
@@ -455,7 +455,7 @@ namespace GEE
 						if (auto newWindow = dynamic_cast<UIWindowActor*>(editorScene.FindActor("MaterialsPreviewWindow")))
 							newWindow->SetCanvasView(view);
 					});
-					uiButtonActorUtil::ButtonMatsFromAtlas(addMaterialButton, *dynamic_cast<AtlasMaterial*>(GetRenderEngineHandle()->FindMaterial("GEE_E_Add_Icon_Mat").get()), 0.0f, 1.0f, 2.0f);
+					uiButtonActorUtil::ButtonMatsFromAtlas(addMaterialButton, GetRenderEngineHandle()->FindMaterial<AtlasMaterial>("GEE_E_Add_Icon_Mat"), 0.0f, 1.0f, 2.0f);
 
 					for (auto& it : RenderEng.Materials)
 					{
@@ -518,7 +518,7 @@ namespace GEE
 								return;
 							UIWindowActor& texPreviewWindow = window.CreateChildCanvas<UIWindowActor>("PreviewTexWindow");
 							ModelComponent& texPreviewQuad = texPreviewWindow.CreateChild<UIActorDefault>("TexPreviewActor").CreateComponent<ModelComponent>("TexPreviewQuad");
-							Material* mat = new Material("TexturePreviewMat");
+							auto mat = MakeShared<Material>("TexturePreviewMat");
 							mat->AddTexture(MakeShared<NamedTexture>(Texture::FromGeneratedGlId(Vec2u(0), GL_TEXTURE_2D, *texID, Texture::Format::RGBA()), "albedo1"));
 							texPreviewQuad.AddMeshInst(MeshInstance(GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD), mat));
 
@@ -611,7 +611,7 @@ namespace GEE
 				auto& infoText = graphButton.CreateComponent<TextComponent>("InfoText", Transform(Vec2f(-0.0f, 1.0f), Vec2f(0.05f)), "FPS - the lower the better\n<Hold SHIFT while dragging mouse to inspect a range>", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::BOTTOM));
 				auto greyMaterial = MakeShared<Material>("Grey");
 				greyMaterial->SetColor(Vec4f(Vec3f(0.5f), 1.0f));
-				infoText.SetMaterialInst(*RenderEng.AddMaterial(greyMaterial));
+				infoText.SetMaterialInst(RenderEng.AddMaterial(greyMaterial));
 
 					profilerWindow.AutoClampView();
 				});
@@ -633,7 +633,7 @@ namespace GEE
 			SharedPtr<Material> scenePreviewMaterial = MakeShared<Material>("GEE_3D_SCENE_PREVIEW_MATERIAL");
 			RenderEng.AddMaterial(scenePreviewMaterial);
 			scenePreviewMaterial->AddTexture(MakeShared<NamedTexture>(ViewportRenderCollection->GetTb<FinalRenderTargetToolbox>()->GetFinalFramebuffer().GetColorTexture(0), "albedo1"));
-			EditorScene->FindActor("SceneViewportActor")->GetRoot()->GetComponent<ModelComponent>("SceneViewportQuad")->OverrideInstancesMaterial(scenePreviewMaterial.get());
+			EditorScene->FindActor("SceneViewportActor")->GetRoot()->GetComponent<ModelComponent>("SceneViewportQuad")->OverrideInstancesMaterial(scenePreviewMaterial);
 		}
 
 		void GameEngineEngineEditor::SetupMainMenu()
@@ -651,13 +651,13 @@ namespace GEE
 				RenderEng.AddMaterial(titleMaterial);
 				titleMaterial->SetColor(hsvToRgb(Vec3f(300.0f, 1.0f, 1.0f)));
 
-				engineTitleTextComp.SetMaterialInst(MaterialInstance(*titleMaterial));
+				engineTitleTextComp.SetMaterialInst(MaterialInstance(titleMaterial));
 
 				TextComponent& engineSubtitleTextComp = engineTitleActor.CreateComponent<TextComponent>("EngineSubtitleTextComp", Transform(), "made by swetroniusz", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
 				engineSubtitleTextComp.SetTransform(Transform(Vec2f(0.0f, -0.15f), Vec2f(0.045f)));
-				Material* subtitleMaterial = RenderEng.AddMaterial(MakeShared<Material>("GEE_Engine_Subtitle"));
+				auto  subtitleMaterial = RenderEng.AddMaterial(MakeShared<Material>("GEE_Engine_Subtitle"));
 				subtitleMaterial->SetColor(hsvToRgb(Vec3f(300.0f, 0.4f, 0.3f)));
-				engineSubtitleTextComp.SetMaterialInst(*subtitleMaterial);
+				engineSubtitleTextComp.SetMaterialInst(subtitleMaterial);
 			}
 
 			mainMenuScene.CreateActorAtRoot<UIButtonActor>("NewProjectButton", "New project", [this, &mainMenuScene]() {
@@ -972,7 +972,7 @@ namespace GEE
 			glClear(GL_COLOR_BUFFER_BIT);
 
 				RenderEng.GetSimpleShader()->Use();
-				Renderer(RenderEng).StaticMeshInstances(SceneMatrixInfo(*ViewportRenderCollection, *GetMainScene()->GetRenderData()), { MeshInstance(RenderEng.GetBasicShapeMesh(EngineBasicShape::QUAD), RenderEng.FindMaterial("GEE_No_Camera_Icon").get()) }, Transform(), *RenderEng.GetSimpleShader());
+				Renderer(RenderEng).StaticMeshInstances(SceneMatrixInfo(*ViewportRenderCollection, *GetMainScene()->GetRenderData()), { MeshInstance(RenderEng.GetBasicShapeMesh(EngineBasicShape::QUAD), RenderEng.FindMaterial("GEE_No_Camera_Icon")) }, Transform(), *RenderEng.GetSimpleShader());
 
 				RenderEng.RenderText(SceneMatrixInfo(*ViewportRenderCollection, *GetMainScene()->GetRenderData()), *DefaultFont, "No camera", Transform(Vec2f(0.0f, -0.8f), Vec2f(0.1f)), Vec3f(1.0f, 0.0f, 0.0f), nullptr, false, std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
 
@@ -991,7 +991,7 @@ namespace GEE
 				glViewport(0, 0, windowSize.x, windowSize.y);
 				RenderEng.GetSimpleShader()->Use();
 				RenderEng.GetSimpleShader()->Uniform2fv("atlasData", Vec2f(0.0f));
-				Renderer(RenderEng).StaticMeshInstances(MatrixInfoExt(), { MeshInstance(RenderEng.GetBasicShapeMesh(EngineBasicShape::QUAD), RenderEng.FindMaterial("GEE_3D_SCENE_PREVIEW_MATERIAL").get())}, EditorScene->FindActor("SceneViewportActor")->GetTransform()->GetWorldTransform(), *RenderEng.GetSimpleShader());
+				Renderer(RenderEng).StaticMeshInstances(MatrixInfoExt(), { MeshInstance(RenderEng.GetBasicShapeMesh(EngineBasicShape::QUAD), RenderEng.FindMaterial("GEE_3D_SCENE_PREVIEW_MATERIAL"))}, EditorScene->FindActor("SceneViewportActor")->GetTransform()->GetWorldTransform(), *RenderEng.GetSimpleShader());
 			}
 			else
 			{

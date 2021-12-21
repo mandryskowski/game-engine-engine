@@ -36,12 +36,12 @@ namespace GEE
 		return Localization;
 	}
 
-	Material* Mesh::GetMaterial()
+	SharedPtr<Material> Mesh::GetMaterial()
 	{
 		return DefaultMeshMaterial;
 	}
 
-	const Material* Mesh::GetMaterial() const
+	const SharedPtr<Material> Mesh::GetMaterial() const
 	{
 		return DefaultMeshMaterial;
 	}
@@ -73,7 +73,7 @@ namespace GEE
 		return CastsShadow;
 	}
 
-	void Mesh::SetMaterial(Material* material)
+	void Mesh::SetMaterial(SharedPtr<Material> material)
 	{
 		DefaultMeshMaterial = material;
 	}
@@ -173,17 +173,17 @@ namespace GEE
 	*/
 
 
-	MeshInstance::MeshInstance(Mesh& mesh, Material* overrideMaterial) :
+	MeshInstance::MeshInstance(Mesh& mesh, SharedPtr<Material> overrideMaterial) :
 		MeshRef(mesh),
 		MaterialInst(nullptr)
 	{
-		Material* material = (overrideMaterial) ? (overrideMaterial) : (mesh.GetMaterial());
+		SharedPtr<Material> material = (overrideMaterial) ? (overrideMaterial) : (mesh.GetMaterial());
 		if (material)
-			MaterialInst = MakeShared<MaterialInstance>(MaterialInstance(*material));
+			MaterialInst = MakeShared<MaterialInstance>(material);
 	}
 
 	MeshInstance::MeshInstance(Mesh& mesh, SharedPtr<MaterialInstance> matInst) :
-		MeshInstance(mesh, nullptr)
+		MeshInstance(mesh, SharedPtr<Material>(nullptr))
 	{
 		SetMaterialInst(matInst);
 	}
@@ -213,18 +213,18 @@ namespace GEE
 		return MeshRef;
 	}
 
-	Material* MeshInstance::GetMaterialPtr()
+	SharedPtr<Material> MeshInstance::GetMaterialPtr()
 	{
 		if (MaterialInst)
-			return &MaterialInst->GetMaterialRef();
+			return MaterialInst->GetMaterialPtr();
 
 		return nullptr;
 	}
 
-	const Material* MeshInstance::GetMaterialPtr() const
+	const SharedPtr<Material> MeshInstance::GetMaterialPtr() const
 	{
 		if (MaterialInst)
-			return &MaterialInst->GetMaterialRef();
+			return MaterialInst->GetMaterialPtr();
 
 		return nullptr;
 	}
@@ -234,9 +234,9 @@ namespace GEE
 		return MaterialInst.get();
 	}
 
-	void MeshInstance::SetMaterial(Material* mat)
+	void MeshInstance::SetMaterial(SharedPtr<Material> mat)
 	{
-		MaterialInst = MakeShared<MaterialInstance>(*mat);
+		MaterialInst = MakeShared<MaterialInstance>(mat);
 	}
 
 	void MeshInstance::SetMaterialInst(SharedPtr<MaterialInstance> matInst)
@@ -249,7 +249,7 @@ namespace GEE
 	{
 		Mesh mesh = MeshRef;
 		SharedPtr<MaterialInstance> materialInst = MaterialInst;
-		if (&MaterialInst->GetMaterialRef() == mesh.GetMaterial())
+		if (&MaterialInst->GetMaterialRef() == mesh.GetMaterial().get())
 			materialInst = nullptr;	//don't save the material instance if its the same as the mesh default material.
 
 		archive(cereal::make_nvp("MeshTreePath", mesh.GetLocalization().GetTreeName()), cereal::make_nvp("MeshNodeName", mesh.GetLocalization().NodeName), cereal::make_nvp("MeshSpecificName", mesh.GetLocalization().SpecificName));
@@ -276,9 +276,9 @@ namespace GEE
 		archive(cereal::make_nvp("MaterialInst", materialInst));
 
 		if (materialInst)
-			construct(MeshInstance(*mesh, materialInst));
+			construct(*mesh, materialInst);
 		else
-			construct(MeshInstance(*mesh));
+			construct(*mesh);
 	}
 
 

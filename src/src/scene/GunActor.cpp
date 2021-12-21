@@ -114,7 +114,7 @@ namespace GEE
 		//TODO: Change it so the bullet is fired at the barrel, not at the center
 		UniquePtr<ModelComponent> bulletModel = MakeUnique<ModelComponent>(ModelComponent(actor, nullptr, "BulletModel", Transform(GetTransform()->GetWorldTransform().GetPos(), Vec3f(0.0f), Vec3f(BulletRadius))));
 		bulletModel->OnStart();
-		Material* rustedIronMaterial = GameHandle->GetRenderEngineHandle()->FindMaterial("RustedIron").get();
+		SharedPtr<Material> rustedIronMaterial = GameHandle->GetRenderEngineHandle()->FindMaterial("RustedIron");
 		if (!rustedIronMaterial)
 		{
 			rustedIronMaterial = GameHandle->GetRenderEngineHandle()->AddMaterial(MakeShared<Material>("RustedIron"));

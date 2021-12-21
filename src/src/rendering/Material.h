@@ -1,5 +1,6 @@
 #pragma once
 #include <animation/Animation.h>
+#include <game/GameManager.h>
 #include <stb/stb_image.h>
 #include <assimp/scene.h>
 #include <rendering/Texture.h>
@@ -243,11 +244,13 @@ namespace GEE
 	struct MaterialInstance
 	{
 	public:
-		MaterialInstance(Material&);
-		MaterialInstance(Material&, InterpolatorBase&, bool drawBefore = true, bool drawAfter = true);
+		MaterialInstance(SharedPtr<Material>);
+		MaterialInstance(SharedPtr<Material>, InterpolatorBase&, bool drawBefore = true, bool drawAfter = true);
 		MaterialInstance(const MaterialInstance&) = delete;
 		MaterialInstance(MaterialInstance&&);
 
+		SharedPtr<Material> GetMaterialPtr();
+		const SharedPtr<Material> GetMaterialPtr() const;
 		Material& GetMaterialRef();
 		const Material& GetMaterialRef() const;
 		bool IsAnimated() const;
@@ -270,14 +273,9 @@ namespace GEE
 		template <typename Archive>
 		void Save(Archive& archive) const
 		{
-			SharedPtr<Material> mat = GameManager::Get().GetRenderEngineHandle()->FindMaterial(
-				MaterialRef.GetLocalization().Name);
+			SharedPtr<Material> mat = MaterialPtr;
 			if (!mat)
-			{
-				std::cout << "ERROR! Cannot save materialinstance of " << MaterialRef.GetLocalization().Name <<
-					". The most likely cause of this is that the material has not been added to the RenderEngine, and thus cannot be found.\n";
 				return;
-			}
 			std::string name = mat->Localization.Name, treeName = mat->Localization.GetTreeName();
 			archive(cereal::make_nvp("MaterialName", name), cereal::make_nvp("MaterialOptionalPath", treeName));
 			if (treeName.empty())
@@ -312,12 +310,12 @@ namespace GEE
 			        cereal::make_nvp("DrawAfterAnim", drawAfterAnim));
 
 
-			construct(*mat); // , drawBeforeAnim, drawAfterAnim);
+			construct(mat); // , drawBeforeAnim, drawAfterAnim);
 
 			//GameManager::DefaultScene->AddPostLoadLambda([mat]() { std::cout << "uwaga robie " << mat << '\n'; GameManager::Get().GetRenderEngineHandle()->AddMaterial(mat); });
 		}
 	private:
-		Material& MaterialRef;
+		SharedPtr<Material> MaterialPtr;
 		InterpolatorBase* AnimationInterp; //optional; use if you animate the material
 		bool DrawBeforeAnim, DrawAfterAnim;
 	};

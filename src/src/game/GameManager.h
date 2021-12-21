@@ -185,7 +185,7 @@ namespace GEE
 
 		//TODO: THIS SHOULD NOT BE HERE
 		virtual std::vector<Shader*> GetCustomShaders() = 0;
-		virtual std::vector<Material*> GetMaterials() = 0;
+		virtual std::vector<SharedPtr<Material>> GetMaterials() = 0;
 
 		virtual void BindSkeletonBatch(SkeletonBatch* batch) = 0;
 		virtual void BindSkeletonBatch(GameSceneRenderData* sceneRenderData, unsigned int index) = 0;
@@ -198,16 +198,17 @@ namespace GEE
 		*/
 		virtual RenderToolboxCollection& AddRenderTbCollection(const RenderToolboxCollection& tbCollection,
 		                                                       bool setupToolboxesAccordingToSettings = true) = 0;
-		virtual Material* AddMaterial(SharedPtr<Material>) = 0;
+		virtual SharedPtr<Material> AddMaterial(SharedPtr<Material>) = 0;
 		virtual SharedPtr<Shader> AddShader(SharedPtr<Shader>) = 0;
 
 		virtual void EraseRenderTbCollection(RenderToolboxCollection& tbCollection) = 0;
 		virtual void EraseMaterial(Material&) = 0;
 
-		virtual Shader* FindShader(std::string) = 0;
-		virtual SharedPtr<Material> FindMaterial(std::string) = 0;
-	
-		//Pass a shader if you do not want the default shader to be used.
+		template <typename T = Material> SharedPtr<T> FindMaterial(const std::string& name);
+	protected:
+		virtual SharedPtr<Material> FindMaterialImpl(const std::string&) = 0;
+	public:
+		virtual Shader* FindShader(const std::string& name) = 0;
 		virtual void RenderText(const SceneMatrixInfo& info, const Font& font, std::string content, Transform t,
 		                        Vec3f color = Vec3f(1.0f), Shader* shader = nullptr, bool convertFromPx = false,
 		                        const std::pair<TextAlignment, TextAlignment>& = std::pair<
@@ -221,6 +222,12 @@ namespace GEE
 		virtual SharedPtr<Shader> AddNonCustomShader(SharedPtr<Shader>) = 0;
 		friend class GameScene;
 	};
+
+	template<typename T>
+	SharedPtr<T> RenderEngineManager::FindMaterial(const std::string& name)
+	{
+		return std::dynamic_pointer_cast<T, Material>(FindMaterialImpl(name));
+	}
 	
 
 	class GameManager

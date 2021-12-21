@@ -154,6 +154,16 @@ namespace GEE
 		AddShader(ShaderLoader::LoadShaders("TextShader", "Shaders/text.vs", "Shaders/text.fs"));
 		Shaders.back()->SetExpectedMatrices(std::vector<MatrixType>{MatrixType::MVP});
 
+		for (int i = 0; i < 2; i++)
+		{
+			Shaders.push_back(AddShader(ShaderLoader::LoadShadersWithInclData("ShadowMapVisualisation_" + (i == 0) ? ("2D") : ("3D"), "#define LIGHT_2D\n", "Shaders/shadowMapVisualisation.vs", "Shaders/shadowMapVisualisation.fs")));
+			Shaders.back()->SetExpectedMatrices(std::vector<MatrixType>{MatrixType::MODEL, MatrixType::MVP});
+			Shaders.back()->UniformBlockBinding("BoneMatrices", 10);
+			Shaders.back()->Use();
+			Shaders.back()->Uniform1i("shadowMaps", 10);
+			Shaders.back()->Uniform1i("shadowCubemaps", 11);
+		}
+
 		//load debug shaders
 		AddNonCustomShader(ShaderLoader::LoadShaders("Debug", "Shaders/debug.vs", "Shaders/debug.fs"))->SetExpectedMatrices(std::vector<MatrixType>{MatrixType::MVP});
 	}
@@ -221,14 +231,9 @@ namespace GEE
 		return shaders;
 	}
 
-	std::vector<Material*> RenderEngine::GetMaterials()
+	std::vector<SharedPtr<Material>> RenderEngine::GetMaterials()
 	{
-		std::vector<Material*> materials;
-		materials.reserve(Materials.size());
-		for (auto& it : Materials)
-			materials.push_back(it.get());
-
-		return materials;
+		return Materials;
 	}
 
 	RenderToolboxCollection& RenderEngine::AddRenderTbCollection(const RenderToolboxCollection& tbCollection, bool setupToolboxesAccordingToSettings)
@@ -242,13 +247,13 @@ namespace GEE
 		return *RenderTbCollections.back();
 	}
 
-	Material* RenderEngine::AddMaterial(SharedPtr<Material>  material)
+	SharedPtr<Material> RenderEngine::AddMaterial(SharedPtr<Material>  material)
 	{
 		std::cout << "Adding material " << Materials.size() << " (" << material << ")";
 		if (material)
 			std::cout << " (" << material->GetLocalization().Name << ")\n";
 		Materials.push_back(material);
-		return Materials.back().get();
+		return Materials.back();
 	}
 
 	SharedPtr<Shader> RenderEngine::AddShader(SharedPtr<Shader> shader)
@@ -287,7 +292,7 @@ namespace GEE
 		Materials.erase(std::remove_if(Materials.begin(), Materials.end(), [&mat](SharedPtr<Material>& matVec) {return matVec.get() == &mat; }), Materials.end());
 	}
 
-	SharedPtr<Material> RenderEngine::FindMaterial(std::string name)
+	SharedPtr<Material> RenderEngine::FindMaterialImpl(const std::string& name)
 	{
 		if (name.empty())
 			return nullptr;
@@ -299,7 +304,7 @@ namespace GEE
 		return nullptr;
 	}
 
-	Shader* RenderEngine::FindShader(std::string name)
+	Shader* RenderEngine::FindShader(const std::string& name)
 	{
 
 		if (auto shaderIt = std::find_if(Shaders.begin(), Shaders.end(), [name](SharedPtr<Shader> shader) { return shader->GetName() == name; }); shaderIt != Shaders.end())
@@ -397,7 +402,7 @@ namespace GEE
 
 		const Mat3f& textRot = t.GetRotationMatrix();
 
-		Material textMaterial("TextMaterial", *FindShader("TextShader"));
+		auto textMaterial = MakeShared<Material>("TextMaterial", *FindShader("TextShader"));
 
 		Transform initialT = t;
 
@@ -418,7 +423,7 @@ namespace GEE
 			t.SetScale(halfExtent);
 			//printVector(vp * t.GetWorldTransformMatrix() * Vec4f(0.0f, 0.0f, 0.0f, 1.0f), "Letter " + std::to_string(i));
 
-			Renderer(*this).StaticMeshInstances(info, { MeshInstance(GetBasicShapeMesh(EngineBasicShape::QUAD), &textMaterial) }, t, *shader);
+			Renderer(*this).StaticMeshInstances(info, { MeshInstance(GetBasicShapeMesh(EngineBasicShape::QUAD), textMaterial) }, t, *shader);
 			t.Move(textRot * -Vec3f(c.Bearing * halfExtent, 0.0f) * 2.0f);
 
 			t.Move(textRot * Vec3f(c.Advance * halfExtent.x, 0.0f, 0.0f) * 2.0f);

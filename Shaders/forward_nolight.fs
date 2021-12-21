@@ -1,4 +1,5 @@
 #define TEXTURE_ALPHA_DISCARD_THRESHOLD 0.1
+
 struct Material
 {
 	vec4 color;

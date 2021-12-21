@@ -166,7 +166,7 @@ namespace GEE
 		CanvasBackground->AddMeshInst(GameHandle->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD));
 
 		if (color == Vec3f(-1.0f))
-			CanvasBackground->OverrideInstancesMaterial(GameHandle->GetRenderEngineHandle()->FindMaterial("GEE_E_Canvas_Background_Material").get());
+			CanvasBackground->OverrideInstancesMaterial(GameHandle->GetRenderEngineHandle()->FindMaterial("GEE_E_Canvas_Background_Material"));
 		else
 		{
 			CanvasBackground->OverrideInstancesMaterial(GameHandle->GetRenderEngineHandle()->AddMaterial(MakeShared<Material>("CanvasBackgroundMaterial", color, MaterialShaderHint::Simple)));

@@ -501,7 +501,7 @@ namespace GEE
 				{
 					if ((*loadedAiMaterialsPtr)[i] == assimpMaterial)
 					{
-						meshPtr->SetMaterial(matLoadingData->LoadedMaterials[i].get());	//MaterialLoadingData::LoadedMaterials and MaterialLoadingData::LoadedAiMaterials are the same size, so the (assimp material -> engine material) indices match too
+						meshPtr->SetMaterial(matLoadingData->LoadedMaterials[i]);	//MaterialLoadingData::LoadedMaterials and MaterialLoadingData::LoadedAiMaterials are the same size, so the (assimp material -> engine material) indices match too
 						return;
 					}
 				}
@@ -528,7 +528,7 @@ namespace GEE
 			material->LoadFromAiMaterial(scene, assimpMaterial, directory, matLoadingData);
 
 			if (meshPtr)
-				meshPtr->SetMaterial(material.get());
+				meshPtr->SetMaterial(material);
 
 			if (matLoadingData)
 			{
@@ -665,7 +665,7 @@ namespace GEE
 				if (input == "material" && modelNodeCast)
 				{
 					input = multipleWordInput(filestr);	//get material name (could be a path, so multiple word input is possible)
-					Material* foundMaterial = gameHandle.GetRenderEngineHandle()->FindMaterial(input).get();
+					auto foundMaterial = gameHandle.GetRenderEngineHandle()->FindMaterial(input);
 
 					if (!foundMaterial) //if no material of this name was found, check if the input is of format: file.obj:name
 					{
@@ -676,18 +676,18 @@ namespace GEE
 							continue;
 						}
 
-						std::function<Material* (HierarchyTemplate::HierarchyNodeBase&, const std::string&)> findMaterialFunc = [&findMaterialFunc](HierarchyTemplate::HierarchyNodeBase& node, const std::string& materialName) -> Material* {
+						std::function<SharedPtr<Material> (HierarchyTemplate::HierarchyNodeBase&, const std::string&)> findMaterialFunc = [&findMaterialFunc](HierarchyTemplate::HierarchyNodeBase& node, const std::string& materialName) -> SharedPtr<Material> {
 							if (auto cast = dynamic_cast<HierarchyTemplate::HierarchyNode<ModelComponent>*>(&node))
 							{
 								std::cout << cast->GetCompT().GetName() << " lolxd " << cast->GetCompT().GetMeshInstanceCount() << "\n";
 								for (int i = 0; i < cast->GetCompT().GetMeshInstanceCount(); i++)
 								{
 									std::cout << "mat " << cast->GetCompT().GetMeshInstance(i).GetMaterialPtr() << '\n';
-									if (const Material* material = cast->GetCompT().GetMeshInstance(i).GetMaterialPtr())
+									if (auto material = cast->GetCompT().GetMeshInstance(i).GetMaterialPtr())
 									{
 										std::cout << material->GetLocalization().Name << " is equal to " << materialName << "?\n";
 										if (material->GetLocalization().Name == materialName)
-											return const_cast<Material*>(material);
+											return material;
 									}
 								}
 							}

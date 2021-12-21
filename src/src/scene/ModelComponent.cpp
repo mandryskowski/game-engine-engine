@@ -51,7 +51,7 @@ namespace GEE
 		Component::operator=(compT);
 
 		for (int i = 0; i < compT.GetMeshInstanceCount(); i++)
-			AddMeshInst(MeshInstance(const_cast<Mesh&>(compT.GetMeshInstance(i).GetMesh()), const_cast<Material*>(compT.GetMeshInstance(i).GetMaterialPtr())));
+			AddMeshInst(MeshInstance(const_cast<Mesh&>(compT.GetMeshInstance(i).GetMesh()), compT.GetMeshInstance(i).GetMaterialPtr()));
 
 		/*if (overrideMaterial)
 			OverrideInstancesMaterial(overrideMaterial);
@@ -60,7 +60,7 @@ namespace GEE
 		return *this;
 	}
 
-	void ModelComponent::OverrideInstancesMaterial(Material* overrideMat)
+	void ModelComponent::OverrideInstancesMaterial(SharedPtr<Material> overrideMat)
 	{
 		for (auto& it : MeshInstances)
 			it->SetMaterial(overrideMat);
@@ -126,8 +126,8 @@ namespace GEE
 		std::vector<const Material*> materials;
 		for (auto& it : MeshInstances)
 		{
-			if (std::find(materials.begin(), materials.end(), it->GetMaterialPtr()) == materials.end())	// do not repeat any materials
-				materials.push_back(it->GetMaterialPtr());
+			if (std::find(materials.begin(), materials.end(), it->GetMaterialPtr().get()) == materials.end())	// do not repeat any materials
+				materials.push_back(it->GetMaterialPtr().get());
 		}
 
 		return materials;
@@ -253,9 +253,9 @@ namespace GEE
 					SharedPtr<Material> viewportMaterial = MakeShared<Material>("GEE_E_Mesh_Preview_Viewport");
 					renderHandle.AddMaterial(viewportMaterial);
 					viewportMaterial->AddTexture(MakeShared<NamedTexture>(renderTbCollection.GetTb<FinalRenderTargetToolbox>()->GetFinalFramebuffer().GetColorTexture(0), "albedo1"));
-					viewportButton.SetMatIdle(*viewportMaterial);
-					viewportButton.SetMatClick(*viewportMaterial);
-					viewportButton.SetMatHover(*viewportMaterial);
+					viewportButton.SetMatIdle(viewportMaterial);
+					viewportButton.SetMatClick(viewportMaterial);
+					viewportButton.SetMatHover(viewportMaterial);
 
 					{
 						std::stringstream boxSizeStream;
@@ -285,9 +285,10 @@ namespace GEE
 					materialButton.SetDisableInput(true);
 			});
 
+
 		descBuilder.AddField("Override materials").GetTemplates().ObjectInput<Material>(
-			[this]() { return GameHandle->GetRenderEngineHandle()->GetMaterials(); },
-			[this](Material* material) { OverrideInstancesMaterial(material); });
+			[this]() {  auto materials = GameHandle->GetRenderEngineHandle()->GetMaterials(); std::vector<Material*> materialsPtr; materialsPtr.resize(materials.size()); std::transform(materials.begin(), materials.end(), materialsPtr.begin(), [](SharedPtr<Material> mat) { return mat.get(); }); return materialsPtr; },
+			[this](Material* material) {  auto materials = GameHandle->GetRenderEngineHandle()->GetMaterials(); auto found = std::find_if(materials.begin(), materials.end(), [material](SharedPtr<Material> matVec) { return matVec.get() == material; }); OverrideInstancesMaterial(*found); });
 	}
 
 

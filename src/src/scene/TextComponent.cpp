@@ -24,10 +24,10 @@ namespace GEE
 		TextMatInst(nullptr),
 		Alignment(TextAlignment::LEFT, TextAlignment::BOTTOM)
 	{
-		Material& mat = *GameHandle->GetRenderEngineHandle()->FindMaterial("GEE_Default_Text_Material");
+		auto mat = GameHandle->GetRenderEngineHandle()->FindMaterial("GEE_Default_Text_Material");
 		//mat-SetColor(Vec4f(0.7f, 0.2f, 0.6f, 1.0f));
 
-		TextMatInst = MakeUnique<MaterialInstance>(MaterialInstance(mat));
+		TextMatInst = MakeUnique<MaterialInstance>(mat);
 		SetAlignment(alignment);
 		SetContent(content);
 	}

@@ -16,11 +16,11 @@ namespace GEE
 			MessageSlots(4, nullptr),
 			QueuedMessagesText(nullptr)
 		{
-			if (IconsMaterial = dynamic_cast<AtlasMaterial*>(EditorHandle.GetGameHandle()->GetRenderEngineHandle()->FindMaterial("GEE_E_Message_Icons").get()); !IconsMaterial)
+			if (IconsMaterial = EditorHandle.GetGameHandle()->GetRenderEngineHandle()->FindMaterial<AtlasMaterial>("GEE_E_Message_Icons"); !IconsMaterial)
 			{
 				auto createdMaterial = MakeShared<AtlasMaterial>(AtlasMaterial("GEE_E_Message_Icons", Vec2i(2, 2)));
 				EditorHandle.GetGameHandle()->GetRenderEngineHandle()->AddMaterial(createdMaterial);
-				IconsMaterial = createdMaterial.get();
+				IconsMaterial = createdMaterial;
 				IconsMaterial->AddTexture(NamedTexture(Texture::Loader<>::FromFile2D("Assets/Editor/messageicons.png", Texture::Format::RGBA(), true), "albedo1"));
 			}
 
@@ -66,7 +66,7 @@ namespace GEE
 
 			auto& iconModel = content.CreateComponent<ModelComponent>("GEE_E_LogIcon", Transform(Vec2f(-1.4f, 0.0f), Vec2f(0.5f)));
 			iconModel.AddMeshInst(EditorHandle.GetGameHandle()->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD));
-			iconModel.OverrideInstancesMaterialInstances(MakeShared<MaterialInstance>(*IconsMaterial, IconsMaterial->GetTextureIDInterpolatorTemplate(static_cast<float>(type))));
+			iconModel.OverrideInstancesMaterialInstances(MakeShared<MaterialInstance>(IconsMaterial, IconsMaterial->GetTextureIDInterpolatorTemplate(static_cast<float>(type))));
 		}
 		void EditorMessageLogger::AddMessageToSlot(UIWindowActor& message)
 		{

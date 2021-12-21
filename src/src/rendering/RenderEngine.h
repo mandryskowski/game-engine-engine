@@ -29,7 +29,7 @@ namespace GEE
 		virtual Shader* GetSimpleShader() override;
 
 		virtual std::vector<Shader*> GetCustomShaders() override;
-		virtual std::vector<Material*> GetMaterials() override;
+		virtual std::vector<SharedPtr<Material>> GetMaterials() override;
 
 		/**
 		 * @brief Add a new RenderToolboxCollection to the render engine to enable updating shadow maps automatically. By default, we load every toolbox that will be needed according to RenderToolboxCollection::Settings
@@ -38,7 +38,7 @@ namespace GEE
 		 * @return a reference to the added RenderToolboxCollection
 		*/
 		virtual RenderToolboxCollection& AddRenderTbCollection(const RenderToolboxCollection& tbCollection, bool setupToolboxesAccordingToSettings = true) override;
-		virtual Material* AddMaterial(SharedPtr<Material> material) override;
+		virtual SharedPtr<Material> AddMaterial(SharedPtr<Material> material) override;
 		virtual SharedPtr<Shader> AddShader(SharedPtr<Shader> shader) override;
 
 		virtual void BindSkeletonBatch(SkeletonBatch* batch) override;
@@ -47,8 +47,11 @@ namespace GEE
 		virtual void EraseRenderTbCollection(RenderToolboxCollection& tbCollection) override;
 		virtual void EraseMaterial(Material&) override;
 
-		virtual SharedPtr<Material> FindMaterial(std::string) override;
-		virtual Shader* FindShader(std::string) override;
+
+	private:
+		virtual SharedPtr<Material> FindMaterialImpl(const std::string&) override;
+	public:
+		virtual Shader* FindShader(const std::string& name) override;
 
 		void PrepareScene(RenderingContextID contextID, RenderToolboxCollection& tbCollection, GameSceneRenderData* sceneRenderData);	//Call this method once per frame for each scene that will be rendered in order to prepare stuff like shadow maps
 

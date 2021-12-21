@@ -297,7 +297,7 @@ namespace GEE
 				auto& redColorField = descBuilder.AddField(colorNames[colorChannel]);
 				Vec3f color(0.0f);
 				color[colorChannel] = 1.0f;
-				redColorField.GetTitleComp()->SetMaterialInst(MaterialInstance(*new Material("", color)));
+				redColorField.GetTitleComp()->SetMaterialInst(MaterialInstance(MakeShared<Material>("", color)));
 				redColorField.GetTemplates().SliderUnitInterval([this, colorChannel](float val) { Color[colorChannel] = val; }, Color[colorChannel]);
 			}
 		}
@@ -307,10 +307,10 @@ namespace GEE
 
 		std::function<void(UIAutomaticListActor&, NamedTexture&)> addTextureButtonFunc = [this, &list, descBuilder](UIAutomaticListActor& list, NamedTexture& tex) mutable {
 			std::string texName = tex.GetPath();
-			Material* dummyMaterial = new Material("dummy");
+			auto dummyMaterial = MakeShared<Material>("dummy");
 			dummyMaterial->AddTexture(MakeShared<NamedTexture>(NamedTexture((Texture)tex, "albedo1")));
 			UIButtonActor& texButton = list.CreateChild<UIButtonActor>(texName + "Button", texName);
-			texButton.SetMatDisabled(*dummyMaterial);
+			texButton.SetMatDisabled(dummyMaterial);
 			texButton.SetDisableInput(true);
 			texButton.CreateChild<UIButtonActor>("DeleteTexture", "Delete", [this, &list, &tex, &texButton, descBuilder]() mutable { texButton.MarkAsKilled(); RemoveTexture(tex); dynamic_cast<UICanvasActor*>(&descBuilder.GetCanvas())->RefreshFieldsList(); }).GetTransform()->Move(Vec2f(2.0f, 0.0f));
 			texButton.CreateComponent<TextComponent>("TexShaderNameButton", Transform(Vec2f(3.0f, 0.0f)), tex.GetShaderName(), "");
@@ -343,12 +343,12 @@ namespace GEE
 		for (auto& it : Textures)
 			addTextureButtonFunc(list, *it);
 
-		AtlasMaterial* addIconMat = dynamic_cast<AtlasMaterial*>(descBuilder.GetEditorHandle().GetGameHandle()->GetRenderEngineHandle()->FindMaterial("GEE_E_Add_Icon_Mat").get());
+		auto addIconMat = descBuilder.GetEditorHandle().GetGameHandle()->GetRenderEngineHandle()->FindMaterial<AtlasMaterial>("GEE_E_Add_Icon_Mat");
 		if (addIconMat)
 		{
-			addTexToMaterialButton.SetMatIdle(MaterialInstance(*addIconMat, addIconMat->GetTextureIDInterpolatorTemplate(0.0f)));
-			addTexToMaterialButton.SetMatHover(MaterialInstance(*addIconMat, addIconMat->GetTextureIDInterpolatorTemplate(1.0f)));
-			addTexToMaterialButton.SetMatClick(MaterialInstance(*addIconMat, addIconMat->GetTextureIDInterpolatorTemplate(2.0f)));
+			addTexToMaterialButton.SetMatIdle(MaterialInstance(addIconMat, addIconMat->GetTextureIDInterpolatorTemplate(0.0f)));
+			addTexToMaterialButton.SetMatHover(MaterialInstance(addIconMat, addIconMat->GetTextureIDInterpolatorTemplate(1.0f)));
+			addTexToMaterialButton.SetMatClick(MaterialInstance(addIconMat, addIconMat->GetTextureIDInterpolatorTemplate(2.0f)));
 		}
 
 		list.Refresh();
@@ -422,38 +422,51 @@ namespace GEE
 	========================================================================================================================
 	*/
 
-	MaterialInstance::MaterialInstance(Material& materialRef) :
-		MaterialRef(materialRef),
+	MaterialInstance::MaterialInstance(SharedPtr<Material> materialPtr) :
+		MaterialPtr(materialPtr),
 		AnimationInterp(nullptr),
 		DrawBeforeAnim(true),
 		DrawAfterAnim(true)
 	{
+		GEE_CORE_ASSERT(MaterialPtr);
 	}
 
-	MaterialInstance::MaterialInstance(Material& materialRef, InterpolatorBase& interp, bool drawBefore, bool drawAfter) :
-		MaterialRef(materialRef),
+	MaterialInstance::MaterialInstance(SharedPtr<Material> materialPtr, InterpolatorBase& interp, bool drawBefore, bool drawAfter) :
+		MaterialPtr(materialPtr),
 		AnimationInterp(&interp),
 		DrawBeforeAnim(drawBefore),
 		DrawAfterAnim(drawAfter)
 	{
+		GEE_CORE_ASSERT(MaterialPtr);
 	}
 
 	MaterialInstance::MaterialInstance(MaterialInstance&& matInst) :
-		MaterialRef(matInst.MaterialRef),
+		MaterialPtr(matInst.MaterialPtr),
 		AnimationInterp(matInst.AnimationInterp),
 		DrawBeforeAnim(matInst.DrawBeforeAnim),
 		DrawAfterAnim(matInst.DrawAfterAnim)
 	{
+		GEE_CORE_ASSERT(MaterialPtr);
+	}
+
+	SharedPtr<Material> MaterialInstance::GetMaterialPtr()
+	{
+		return MaterialPtr;
+	}
+
+	const SharedPtr<Material> MaterialInstance::GetMaterialPtr() const
+	{
+		return MaterialPtr;
 	}
 
 	Material& MaterialInstance::GetMaterialRef()
 	{
-		return MaterialRef;
+		return *MaterialPtr;
 	}
 
 	const Material& MaterialInstance::GetMaterialRef() const
 	{
-		return MaterialRef;
+		return *MaterialPtr;
 	}
 
 	bool MaterialInstance::IsAnimated() const
@@ -505,18 +518,18 @@ namespace GEE
 	{
 		if (AnimationInterp)
 			AnimationInterp->UpdateInterpolatedValPtr();	//Update animated values for each instance
-		MaterialRef.UpdateInstanceUBOData(shader, AnimationInterp == nullptr);	//If no animation is present, just ask for setting the default material values.
+		MaterialPtr->UpdateInstanceUBOData(shader, AnimationInterp == nullptr);	//If no animation is present, just ask for setting the default material values.
 	}
 
 	void MaterialInstance::UpdateWholeUBOData(Shader* shader, Texture& emptyTexture) const
 	{
 		UpdateInstanceUBOData(shader);
-		MaterialRef.UpdateWholeUBOData(shader, emptyTexture);
+		MaterialPtr->UpdateWholeUBOData(shader, emptyTexture);
 	}
 
 	MaterialInstance& MaterialInstance::operator=(MaterialInstance&& matInst)
 	{
-		MaterialRef = matInst.MaterialRef;
+		MaterialPtr = matInst.MaterialPtr;
 		AnimationInterp = matInst.AnimationInterp;
 		DrawBeforeAnim = matInst.DrawBeforeAnim;
 		DrawAfterAnim = matInst.DrawAfterAnim;

@@ -29,7 +29,7 @@ namespace GEE
 			GameHandle->GetRenderEngineHandle()->AddMaterial(caretMaterial);
 		}
 		CaretComponent->AddMeshInst(GameHandle->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD));
-		CaretComponent->OverrideInstancesMaterial(caretMaterial.get());
+		CaretComponent->OverrideInstancesMaterial(caretMaterial);
 
 	}
 

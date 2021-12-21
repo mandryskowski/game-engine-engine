@@ -112,8 +112,8 @@ namespace GEE
 			inputBoxActor.SetTransform(Transform(Vec2f(float(axis) * 2.0f, 0.0f), Vec2f(1.0f)));
 			inputBoxActor.SetOnInputFunc([axis, setFunc](float val) {setFunc(axis, val); }, [axis, getFunc]() -> float { return getFunc(axis); }, true);
 
-			if (Material* found = GameHandle.GetRenderEngineHandle()->FindMaterial(materialNames[axis]).get())
-				inputBoxActor.SetMatIdle(*found);
+			if (auto found = GameHandle.GetRenderEngineHandle()->FindMaterial(materialNames[axis]))
+				inputBoxActor.SetMatIdle(found);
 		}
 		for (int axis = 0; axis < length; axis++)
 			allBoxes[axis]->SetOnClickFunc([*this, allBoxes]()

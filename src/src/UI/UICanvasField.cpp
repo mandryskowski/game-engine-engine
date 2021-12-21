@@ -223,7 +223,7 @@ void UIMultipleListActor::NestList(UIListActor& list)
 
 	void UIElementTemplates::TickBox(std::function<bool()> setFunc)
 	{
-		AtlasMaterial* tickMaterial = new AtlasMaterial("TickMaterial", glm::ivec2(3, 1));
+		SharedPtr<AtlasMaterial> tickMaterial = MakeShared<AtlasMaterial>("TickMaterial", glm::ivec2(3, 1));
 		tickMaterial->AddTexture(MakeShared<NamedTexture>(Texture::Loader<>::FromFile2D("Assets/Editor/tick_icon.png", Texture::Format::RGBA(), true), "albedo1"));
 
 		UIButtonActor& billboardTickBoxActor = TemplateParent.CreateChild<UIButtonActor>("BillboardTickBox");
@@ -231,7 +231,7 @@ void UIMultipleListActor::NestList(UIListActor& list)
 		ModelComponent& billboardTickModel = billboardTickBoxActor.CreateComponent<ModelComponent>("TickModel");
 		billboardTickModel.AddMeshInst(GameHandle.GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD));
 		billboardTickModel.SetHide(true);
-		billboardTickModel.OverrideInstancesMaterialInstances(MakeShared<MaterialInstance>(MaterialInstance(*tickMaterial, tickMaterial->GetTextureIDInterpolatorTemplate(0.0f))));
+		billboardTickModel.OverrideInstancesMaterialInstances(MakeShared<MaterialInstance>(tickMaterial, tickMaterial->GetTextureIDInterpolatorTemplate(0.0f)));
 
 		auto tickHideFunc = [&billboardTickModel, setFunc]() { billboardTickModel.SetHide(!setFunc()); };
 		billboardTickBoxActor.SetOnClickFunc(tickHideFunc);
@@ -242,7 +242,7 @@ void UIMultipleListActor::NestList(UIListActor& list)
 
 	void UIElementTemplates::TickBox(std::function<void(bool)> setFunc, std::function<bool()> getFunc)
 	{
-		AtlasMaterial* tickMaterial = new AtlasMaterial("TickMaterial", glm::ivec2(3, 1));
+		auto tickMaterial = MakeShared<AtlasMaterial>("TickMaterial", glm::ivec2(3, 1));
 		tickMaterial->AddTexture(MakeShared<NamedTexture>(Texture::Loader<>::FromFile2D("Assets/Editor/tick_icon.png", Texture::Format::RGBA(), true), "albedo1"));
 
 		UIButtonActor& billboardTickBoxActor = TemplateParent.CreateChild<UIButtonActor>("BillboardTickBox");
@@ -250,7 +250,7 @@ void UIMultipleListActor::NestList(UIListActor& list)
 		ModelComponent& billboardTickModel = billboardTickBoxActor.CreateComponent<ModelComponent>("TickModel");
 		billboardTickModel.AddMeshInst(GameHandle.GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD));
 		billboardTickModel.SetHide(!getFunc());
-		billboardTickModel.OverrideInstancesMaterialInstances(MakeShared<MaterialInstance>(MaterialInstance(*tickMaterial, tickMaterial->GetTextureIDInterpolatorTemplate(0.0f))));
+		billboardTickModel.OverrideInstancesMaterialInstances(MakeShared<MaterialInstance>(tickMaterial, tickMaterial->GetTextureIDInterpolatorTemplate(0.0f)));
 
 		auto clickFunc = [&billboardTickModel, setFunc, getFunc]() { bool updatedVal = !getFunc(); setFunc(updatedVal); billboardTickModel.SetHide(!getFunc());  };
 		billboardTickBoxActor.SetOnClickFunc(clickFunc);
@@ -331,11 +331,11 @@ void UIMultipleListActor::NestList(UIListActor& list)
 		pathInputBox.SetTransform(Transform(Vec2f(2.0f, 0.0f), Vec2f(3.0f, 1.0f)));
 		pathInputBox.SetOnInputFunc(setFunc, getFunc);
 		UIButtonActor& selectFileActor = TemplateParent.CreateChild<UIButtonActor>("SelectFileButton");
-		AtlasMaterial* moreMat = dynamic_cast<AtlasMaterial*>(GameHandle.GetRenderEngineHandle()->FindMaterial("GEE_E_More_Mat").get());
+		SharedPtr<AtlasMaterial> moreMat = GameHandle.GetRenderEngineHandle()->FindMaterial<AtlasMaterial>("GEE_E_More_Mat");
 
-		selectFileActor.SetMatIdle(MaterialInstance(*moreMat, moreMat->GetTextureIDInterpolatorTemplate(0.0f)));
-		selectFileActor.SetMatHover(MaterialInstance(*moreMat, moreMat->GetTextureIDInterpolatorTemplate(1.0f)));
-		selectFileActor.SetMatClick(MaterialInstance(*moreMat, moreMat->GetTextureIDInterpolatorTemplate(2.0f)));
+		selectFileActor.SetMatIdle(MaterialInstance(moreMat, moreMat->GetTextureIDInterpolatorTemplate(0.0f)));
+		selectFileActor.SetMatHover(MaterialInstance(moreMat, moreMat->GetTextureIDInterpolatorTemplate(1.0f)));
+		selectFileActor.SetMatClick(MaterialInstance(moreMat, moreMat->GetTextureIDInterpolatorTemplate(2.0f)));
 
 		selectFileActor.SetTransform(Transform(Vec2f(6.0f, 0.0f), Vec2f(1.0f, 1.0f)));
 
@@ -349,11 +349,11 @@ void UIMultipleListActor::NestList(UIListActor& list)
 		pathInputBox.SetTransform(Transform(Vec2f(2.0f, 0.0f), Vec2f(3.0f, 1.0f)));
 		pathInputBox.SetOnInputFunc(setFunc, getFunc);
 		UIButtonActor& selectFileActor = TemplateParent.CreateChild<UIButtonActor>("SelectFolderButton");
-		AtlasMaterial* moreMat = dynamic_cast<AtlasMaterial*>(GameHandle.GetRenderEngineHandle()->FindMaterial("GEE_E_More_Mat").get());
+		SharedPtr<AtlasMaterial> moreMat = GameHandle.GetRenderEngineHandle()->FindMaterial<AtlasMaterial>("GEE_E_More_Mat");
 
-		selectFileActor.SetMatIdle(MaterialInstance(*moreMat, moreMat->GetTextureIDInterpolatorTemplate(0.0f)));
-		selectFileActor.SetMatHover(MaterialInstance(*moreMat, moreMat->GetTextureIDInterpolatorTemplate(1.0f)));
-		selectFileActor.SetMatClick(MaterialInstance(*moreMat, moreMat->GetTextureIDInterpolatorTemplate(2.0f)));
+		selectFileActor.SetMatIdle(MaterialInstance(moreMat, moreMat->GetTextureIDInterpolatorTemplate(0.0f)));
+		selectFileActor.SetMatHover(MaterialInstance(moreMat, moreMat->GetTextureIDInterpolatorTemplate(1.0f)));
+		selectFileActor.SetMatClick(MaterialInstance(moreMat, moreMat->GetTextureIDInterpolatorTemplate(2.0f)));
 
 		selectFileActor.SetTransform(Transform(Vec2f(6.0f, 0.0f), Vec2f(1.0f, 1.0f)));
 		selectFileActor.SetOnClickFunc([&pathInputBox]() { const char* path = tinyfd_selectFolderDialog("Select folder", "C:\\"); if (path) pathInputBox.PutString(path); });
@@ -364,7 +364,7 @@ void UIMultipleListActor::NestList(UIListActor& list)
 		auto& backgroundQuad = actor.CreateComponent<ModelComponent>("BackgroundQuad", Transform(Vec2f(0.0f, pos.y), Vec2f(30.0f, 1.0f)));
 		backgroundQuad.AddMeshInst(actor.GetGameHandle()->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD));
 
-		auto backgroundMaterial = new Material("BackgroundMaterial");
+		auto backgroundMaterial = MakeShared<Material>("BackgroundMaterial");
 		backgroundMaterial->SetColor(backgroundColor);
 		backgroundQuad.OverrideInstancesMaterial(backgroundMaterial);
 
@@ -373,7 +373,7 @@ void UIMultipleListActor::NestList(UIListActor& list)
 		auto& separatorLine = actor.CreateComponent<ModelComponent>("SeparatorLine", Transform(Vec2f(-1.5f, pos.y), Vec2f(0.08f, 0.8f)));
 		separatorLine.AddMeshInst(actor.GetGameHandle()->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD));
 
-		auto separatorMaterial = new Material("SeparatorColor");
+		auto separatorMaterial = MakeShared<Material>("SeparatorColor");
 		separatorMaterial->SetColor(separatorColor);
 		separatorLine.OverrideInstancesMaterial(separatorMaterial);
 	}

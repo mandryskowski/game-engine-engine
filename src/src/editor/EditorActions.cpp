@@ -96,7 +96,7 @@ namespace GEE
 		auto& visualCue = button.GetRoot()->CreateComponent<ModelComponent>("GEE_E_Submenu_Triangle", Transform(Vec2f(0.9f, 0.0f), Vec2f(0.1f, 0.8f)));
 		visualCue.AddMeshInst(visualCue.GetScene().GetGameHandle()->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD));
 		//visualCue.OverrideInstancesMaterial(visualCue.GetScene().GetGameHandle()->GetRenderEngineHandle()->FindMaterial("GEE_E_Popup_Secondary").get());
-		visualCue.OverrideInstancesMaterial(&IconData(*DescriptionRoot->GetGameHandle()->GetRenderEngineHandle(), "Assets/Editor/more.png").GetMatInstance()->GetMaterialRef());
+		visualCue.OverrideInstancesMaterial(IconData(*DescriptionRoot->GetGameHandle()->GetRenderEngineHandle(), "Assets/Editor/more.png").GetMatInstance()->GetMaterialPtr());
 			
 		if (optionalIconData.IsValid())
 		{
@@ -141,10 +141,10 @@ namespace GEE
 	{
 		GEE_CORE_ASSERT(IconMaterial);
 		if (IconAtlasID >= 0.0f)
-			if (auto materialCast = dynamic_cast<AtlasMaterial*>(IconMaterial.get()))
-				return MakeShared<MaterialInstance>(*materialCast, materialCast->GetTextureIDInterpolatorTemplate(IconAtlasID));
+			if (auto materialCast = std::dynamic_pointer_cast<AtlasMaterial, Material>(IconMaterial))
+				return MakeShared<MaterialInstance>(materialCast, materialCast->GetTextureIDInterpolatorTemplate(IconAtlasID));
 
-		return MakeShared<MaterialInstance>(*IconMaterial);
+		return MakeShared<MaterialInstance>(IconMaterial);
 	}
 
 	namespace Editor
@@ -262,7 +262,7 @@ namespace GEE
 				canvas.FieldsList->Refresh();
 
 			UIButtonActor& refreshButton = scaleActor->CreateChild<UIButtonActor>("GEE_E_Scene_Refresh_Button", [this, actor, &editorScene]() { this->SelectActor(actor, editorScene); }, Transform(Vec2f(6.0f, 0.0f), Vec2f(0.5f)));
-			uiButtonActorUtil::ButtonMatsFromAtlas(refreshButton, *dynamic_cast<AtlasMaterial*>(gameHandle.GetRenderEngineHandle()->FindMaterial("GEE_E_Refresh_Icon_Mat").get()), 0.0f, 1.0f, 2.0f);
+			uiButtonActorUtil::ButtonMatsFromAtlas(refreshButton, gameHandle.GetRenderEngineHandle()->FindMaterial<AtlasMaterial>("GEE_E_Refresh_Icon_Mat"), 0.0f, 1.0f, 2.0f);
 
 			UIButtonActor& addActorButton = scaleActor->CreateChild<UIButtonActor>("GEE_E_Scene_Add_Actor_Button", [&, this, actor]() {
 				UIWindowActor& compSelectWindow = editorScene.CreateActorAtRoot<UIWindowActor>(&canvas, "GEE_E_Component_Selection_Window", Transform(Vec2f(0.0f, -0.5f), Vec2f(0.3f)));
@@ -293,8 +293,8 @@ namespace GEE
 
 				}, Transform(Vec2f(8.0f, 0.0f), Vec2f(0.5f)));
 
-			AtlasMaterial& addIconMat = *dynamic_cast<AtlasMaterial*>(gameHandle.GetRenderEngineHandle()->FindMaterial("GEE_E_Add_Icon_Mat").get());
-			addIconMat.AddTexture(MakeShared<NamedTexture>(Texture::Loader<>::FromFile2D("Assets/Editor/add_icon.png", Texture::Format::RGBA(), false, Texture::MinFilter::NearestInterpolateMipmap()), "albedo1"));
+			auto addIconMat = gameHandle.GetRenderEngineHandle()->FindMaterial<AtlasMaterial>("GEE_E_Add_Icon_Mat");
+			addIconMat->AddTexture(MakeShared<NamedTexture>(Texture::Loader<>::FromFile2D("Assets/Editor/add_icon.png", Texture::Format::RGBA(), false, Texture::MinFilter::NearestInterpolateMipmap()), "albedo1"));
 			uiButtonActorUtil::ButtonMatsFromAtlas(addActorButton, addIconMat, 0.0f, 1.0f, 2.0f);
 
 			if (!previousCanvasView.IsEmpty() && sameActor)
@@ -349,7 +349,7 @@ namespace GEE
 			});
 
 			UIButtonActor& refreshButton = canvas.CreateChild<UIButtonActor>("GEE_E_Scene_Refresh_Button", [this, selectedScene, &editorScene]() { this->SelectScene(selectedScene, editorScene); }, Transform(Vec2f(6.0f, 0.0f), Vec2f(0.5f)));
-			uiButtonActorUtil::ButtonMatsFromAtlas(refreshButton, *dynamic_cast<AtlasMaterial*>(renderHandle.FindMaterial("GEE_E_Refresh_Icon_Mat").get()), 0.0f, 1.0f, 2.0f);
+			uiButtonActorUtil::ButtonMatsFromAtlas(refreshButton, renderHandle.FindMaterial<AtlasMaterial>("GEE_E_Refresh_Icon_Mat"), 0.0f, 1.0f, 2.0f);
 
 
 
@@ -377,8 +377,8 @@ namespace GEE
 				createActorButton(6, [this, &editorScene, &selectedScene, getSelectedActor]() -> CueController& { return getSelectedActor().CreateChild<CueController>(selectedScene->GetUniqueActorName("A CueController")); }, "CueController");
 				}, Transform(Vec2f(8.0f, 0.0f), Vec2f(0.5f)));
 
-			AtlasMaterial& addActorMat = *new AtlasMaterial(Material("GEE_E_Add_Actor_Material"), glm::ivec2(3, 1));
-			addActorMat.AddTexture(MakeShared<NamedTexture>(Texture::Loader<>::FromFile2D("Assets/Editor/add_icon.png", Texture::Format::RGBA(), false, Texture::MinFilter::NearestInterpolateMipmap()), "albedo1"));
+			auto addActorMat = MakeShared<AtlasMaterial>(Material("GEE_E_Add_Actor_Material"), glm::ivec2(3, 1));
+			addActorMat->AddTexture(MakeShared<NamedTexture>(Texture::Loader<>::FromFile2D("Assets/Editor/add_icon.png", Texture::Format::RGBA(), false, Texture::MinFilter::NearestInterpolateMipmap()), "albedo1"));
 			uiButtonActorUtil::ButtonMatsFromAtlas(addActorButton, addActorMat, 0.0f, 1.0f, 2.0f);
 
 			UIAutomaticListActor& listActor = canvas.CreateChild<UIAutomaticListActor>("ListActor");

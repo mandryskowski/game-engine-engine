@@ -46,7 +46,7 @@ namespace GEE
 		{
 			const Mesh& mesh = meshInst.GetMesh();
 			MaterialInstance* materialInst = meshInst.GetMaterialInst();
-			const Material* material = meshInst.GetMaterialPtr();
+			const Material* material = meshInst.GetMaterialPtr().get();
 
 			if ((material && !material->GetShaderInfo().MatchesRequiredInfo(info.GetRequiredShaderInfo())) ||
 				(info.GetOnlyShadowCasters() && !mesh.CanCastShadow()) || 
@@ -899,7 +899,7 @@ namespace GEE
 	{
 		if (!shader) shader = Impl.RenderHandle.FindShader("Quad");
 		if (useShader)	shader->Use();
-		StaticMeshInstances(info, { MeshInstance(Impl.GetBasicShapeMesh(EngineBasicShape::QUAD), nullptr) }, Transform(), *shader);
+		StaticMeshInstances(info, { MeshInstance(Impl.GetBasicShapeMesh(EngineBasicShape::QUAD)) }, Transform(), *shader);
 	}
 	void LightProbeRenderer::AllSceneProbes(RenderingContextID contextID, GameSceneRenderData& sceneRenderData)
 	{
@@ -978,7 +978,7 @@ namespace GEE
 		{
 			const Mesh& mesh = meshInst.GetMesh();
 			MaterialInstance* materialInst = meshInst.GetMaterialInst();
-			const Material* material = meshInst.GetMaterialPtr();
+			const Material* material = meshInst.GetMaterialPtr().get();
 
 			if ((material && material->GetShaderInfo().MatchesRequiredInfo(info.GetRequiredShaderInfo())) ||
 				(info.GetOnlyShadowCasters() && !mesh.CanCastShadow()) ||
