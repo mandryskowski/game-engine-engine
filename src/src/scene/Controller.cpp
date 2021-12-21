@@ -1,13 +1,17 @@
 #include <scene/Controller.h>
+#include <game/GameScene.h>
 #include <scene/Component.h>
 #include <physics/CollisionObject.h>
+#include <physics/DynamicPhysicsObjects.h>
 #include <animation/Animation.h>
 #include <input/InputDevicesStateRetriever.h>
-#include <PhysX/PxPhysicsAPI.h>
 #include <scene/TextComponent.h>
 #include <scene/CameraComponent.h>
 #include <scene/GunActor.h>
 #include <math/Transform.h>
+
+#include <scene/hierarchy/HierarchyTree.h>
+#include <scene/hierarchy/HierarchyNode.h>
 
 #include <input/Event.h>
 #include <UI/UICanvasActor.h>
@@ -92,7 +96,7 @@ namespace GEE
 	{
 		Controller::Update(deltaTime);
 
-		if (!PossessedActor)
+		if (!PossessedActor || &Scene != GameHandle->GetActiveScene())
 			return;
 
 		const Vec3i& movementDir = GetMovementDirFromPressedKeys();
@@ -104,7 +108,7 @@ namespace GEE
 		PossessedActor->GetTransform()->Move(glm::normalize(rotatedMovementDir) * deltaTime);
 	}
 
-	void FreeRoamingController::OnMouseMovement(const Vec2f& previousPosPx, const Vec2f& currentPosPx)
+	void FreeRoamingController::OnMouseMovement(const Vec2f& previousPosPx, const Vec2f& currentPosPx, const Vec2u& windowSize)
 	{
 		if (!PossessedActor)
 			return;
@@ -173,7 +177,7 @@ namespace GEE
 
 	void FPSController::Update(float deltaTime)
 	{
-		if (!PossessedActor)
+		if (!PossessedActor || &Scene != GameHandle->GetActiveScene())
 			return;
 
 		if (PossessedActor->IsBeingKilled())
@@ -283,6 +287,7 @@ namespace GEE
 	}
 	CueController::CueController(GameScene& scene, Actor* parentActor, const std::string& name):
 		Controller(scene, parentActor, name),
+		WhiteBallActor(nullptr),
 		CueHitPower(0.01f)
 	{
 	}
@@ -290,7 +295,7 @@ namespace GEE
 	{
 		Controller::HandleEvent(ev);
 
-		if (ev.GetType() != EventType::MouseReleased || !WhiteBallActor || !PossessedActor || !WhiteBallActor->GetRoot()->GetCollisionObj())
+		if (ev.GetType() != EventType::MouseReleased || !WhiteBallActor || !PossessedActor || &Scene != GameHandle->GetActiveScene() || !WhiteBallActor->GetRoot()->GetCollisionObj())
 			return;
 
 		if (auto cast = dynamic_cast<const MouseButtonEvent*>(&ev))
@@ -299,7 +304,8 @@ namespace GEE
 				Vec3f cueDir = PossessedActor->GetTransform()->GetWorldTransform().GetPos() - WhiteBallActor->GetTransform()->GetWorldTransform().GetPos();
 				cueDir.y = 0.0f;
 				cueDir = glm::normalize(cueDir);
-				GameHandle->GetPhysicsHandle()->ApplyForce(*WhiteBallActor->GetRoot()->GetCollisionObj(), CueHitPower * cueDir);
+				Physics::SetLinearDamping(*WhiteBallActor->GetRoot()->GetCollisionObj(), 1.0f);
+				Physics::ApplyForce(*WhiteBallActor->GetRoot()->GetCollisionObj(), CueHitPower * -cueDir);
 			}
 	}
 	void CueController::GetEditorDescription(EditorDescriptionBuilder descBuilder)
@@ -310,12 +316,12 @@ namespace GEE
 		descBuilder.AddField("Cue").GetTemplates().ObjectInput<Actor, Actor>(*Scene.GetRootActor(), [this](Actor* cue) { SetPossessedActor(cue); });
 		descBuilder.AddField("Cue hit power").CreateChild<UIInputBoxActor>("CueHitPowerInputBox", [this](float val) { CueHitPower = val; }, [this]() { return CueHitPower; });
 	}
-	void CueController::OnMouseMovement(const Vec2f&, const Vec2f& currentPosPx)
+	void CueController::OnMouseMovement(const Vec2f&, const Vec2f& currentPosPx, const Vec2u& windowSize)
 	{
 		if (!PossessedActor || !WhiteBallActor || !Scene.GetActiveCamera())
 			return;
 
-		const Vec2f currentPosViewportSpace = static_cast<Vec2f>(glm::inverse(GameHandle->GetScene("GEE_Editor")->FindActor("SceneViewportActor")->GetTransform()->GetWorldTransformMatrix()) * Vec4f(pxConversion::PxToNDC(currentPosPx, GameHandle->GetGameSettings()->WindowSize), 0.0f, 1.0f));
+		const Vec2f currentPosViewportSpace = static_cast<Vec2f>(glm::inverse(GameHandle->GetScene("GEE_Editor")->FindActor("SceneViewportActor")->GetTransform()->GetWorldTransformMatrix()) * Vec4f(pxConversion::PxToNDC(currentPosPx, windowSize), 0.0f, 1.0f));
 
 		const Vec4f whiteBallProj = Scene.GetActiveCamera()->GetProjectionMat() * Scene.GetActiveCamera()->GetViewMat() *  Vec4f(WhiteBallActor->GetTransform()->GetWorldTransform().GetPos(), 1.0f);
 		const Vec2f whiteBallViewportSpace = (static_cast<Vec3f>(whiteBallProj) / whiteBallProj.z);
@@ -327,5 +333,16 @@ namespace GEE
 		float cueRotation = glm::degrees(std::atan2(mouseDir.y, mouseDir.x));
 
 		WhiteBallActor->GetTransform()->SetRotation(Vec3f(0.0f, cueRotation + 90.0f, 0.0f));
+	}
+	void CueController::Update(float deltaTime)
+	{
+		Controller::Update(deltaTime);
+
+		if (WhiteBallActor && WhiteBallActor->GetRoot()->GetCollisionObj() && WhiteBallActor->GetTransform()->GetPos().y < 0.95f)
+		{
+			WhiteBallActor->SetTransform(Scene.FindHierarchyTree("Pooltable")->GetRoot().FindNode("PoolBall_White")->GetCompBaseType().GetTransform());
+			Physics::SetLinearVelocity(*WhiteBallActor->GetRoot()->GetCollisionObj(), Vec3f(0.0f));
+			Physics::SetAngularVelocity(*WhiteBallActor->GetRoot()->GetCollisionObj(), Vec3f(0.0f));
+		}
 	}
 }

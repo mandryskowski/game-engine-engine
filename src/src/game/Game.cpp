@@ -48,14 +48,14 @@ namespace GEE
 		GEE_FB::Framebuffer DefaultFramebuffer;
 	}
 
-	void Game::Init(SystemWindow* window)
+	void Game::Init(SystemWindow* window, const Vec2u& windowSize)
 	{
 		Window = window;
 		glfwSetWindowUserPointer(Window, this);
-		glfwSetWindowSize(Window, Settings->WindowSize.x, Settings->WindowSize.y);
+		glfwSetWindowSize(Window, windowSize.x, windowSize.y);
 
 		if (Settings->bWindowFullscreen)
-			glfwSetWindowMonitor(Window, glfwGetPrimaryMonitor(), 0, 0, Settings->WindowSize.x, Settings->WindowSize.y, 60);
+			glfwSetWindowMonitor(Window, glfwGetPrimaryMonitor(), 0, 0, windowSize.x, windowSize.y, 60);
 
 		if (!Settings->Video.bVSync)
 			glfwSwapInterval(0);
@@ -63,7 +63,7 @@ namespace GEE
 		WindowEventProcessor::TargetHolder = &EventHolderObj;
 
 		glfwSetInputMode(Window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-		glfwSetCursorPos(Window, (double)Settings->WindowSize.x / 2.0, (double)Settings->WindowSize.y / 2.0);
+		glfwSetCursorPos(Window, (double)windowSize.x / 2.0, (double)windowSize.y / 2.0);
 
 		glfwSetCursorPosCallback(Window, WindowEventProcessor::CursorPosCallback);
 		glfwSetCursorEnterCallback(window, WindowEventProcessor::CursorLeaveEnterCallback);
@@ -82,10 +82,10 @@ namespace GEE
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	}
 
-	void Game::LoadSceneFromFile(const std::string& path, const std::string& name)
+	bool Game::LoadSceneFromFile(const std::string& path, const std::string& name)
 	{
 		std::cout << "Loading scene " + name + " from filepath " + path + "\n";
-		EngineDataLoader::SetupSceneFromFile(this, path, name);
+		return EngineDataLoader::SetupSceneFromFile(this, path, name);
 	}
 
 	GameScene& Game::CreateScene(std::string name, bool disallowChangingNameIfTaken)
@@ -155,7 +155,9 @@ namespace GEE
 		{
 			if (controller->GetHideCursor())
 				glfwSetInputMode(Window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-			glfwSetCursorPos(Window, (double)Settings->WindowSize.x / 2.0, (double)Settings->WindowSize.y / 2.0);
+
+			Vec2i windowSize = WindowData(*Window).GetWindowSize();
+			glfwSetCursorPos(Window, (double)windowSize.x / 2.0, (double)windowSize.y / 2.0);
 		}
 	}
 
@@ -235,6 +237,11 @@ namespace GEE
 	unsigned long long Game::GetTotalFrameCount() const
 	{
 		return TotalFrameCount;
+	}
+
+	GameScene* Game::GetActiveScene()
+	{
+		return ActiveScene;
 	}
 
 	void Game::SetActiveScene(GameScene* scene)
@@ -370,6 +377,7 @@ namespace GEE
 	void Game::DeleteScene(GameScene& scene)
 	{
 		std::cout << "Deleting scene " << scene.GetName() << '\n';
+		scene.GetRootActor()->Delete();
 		Scenes.erase(std::remove_if(Scenes.begin(), Scenes.end(), [&scene](UniquePtr<GameScene>& sceneVec) { return sceneVec.get() == &scene; }), Scenes.end());
 	}
 
@@ -397,7 +405,7 @@ namespace GEE
 		if (mouseController->GetLockMouseAtCenter())
 			glfwSetCursorPos(window, windowSize.x / 2, windowSize.y / 2);
 
-		mouseController->OnMouseMovement(static_cast<Vec2f>(windowSize / 2), Vec2f(xpos, windowSize.y - ypos)); //Implement it as an Event instead! TODO
+		mouseController->OnMouseMovement(static_cast<Vec2f>(windowSize / 2), Vec2f(xpos, windowSize.y - ypos), windowSize); //Implement it as an Event instead! TODO
 	}
 
 	void WindowEventProcessor::MouseButtonCallback(SystemWindow* window, int button, int action, int mods)

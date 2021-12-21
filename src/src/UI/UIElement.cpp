@@ -65,11 +65,13 @@ namespace GEE
 
 	void UICanvasElement::SetParentElement(UICanvasElement& element)
 	{
+		GEE_CORE_ASSERT(&element);
 		element.AddChildElement(*this);
 	}
 
 	void UICanvasElement::AddChildElement(UICanvasElement& element)
 	{
+		GEE_CORE_ASSERT(&element);
 		element.ParentElement = this;
 		ChildUIElements.push_back(&element);
 		if (GetCanvasPtr())
@@ -83,6 +85,7 @@ namespace GEE
 
 	void UICanvasElement::AttachToCanvas(UICanvas& canvas)
 	{
+		GEE_CORE_ASSERT(&canvas);
 		CanvasPtr = &canvas;
 		ElementDepth = CanvasPtr->GetCanvasDepth();
 	}
@@ -91,7 +94,8 @@ namespace GEE
 	{
 		if (ParentElement)
 		{
-			ParentElement->ChildUIElements.erase(std::remove_if(ChildUIElements.begin(), ChildUIElements.end(), [this](UICanvasElement* elementVec) {return elementVec == this; }), ChildUIElements.end());
+			auto& vec = ParentElement->ChildUIElements;
+			vec.erase(std::remove_if(vec.begin(), vec.end(), [this](UICanvasElement* elementVec) {return elementVec == this; }), vec.end());
 			ParentElement = nullptr;
 		}
 		else if (CanvasPtr)

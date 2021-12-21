@@ -6,7 +6,6 @@
 #include <editor/EditorManager.h>
 #include <physics/CollisionObject.h>
 #include <rendering/Material.h>
-#include <game/GameScene.h>
 
 namespace GEE
 {
@@ -24,7 +23,7 @@ namespace GEE
 
 	};
 
-	class EditorDescriptionBuilder;
+	class ComponentDescriptionBuilder;
 
 	class Killable
 	{
@@ -129,11 +128,11 @@ namespace GEE
 
 		Component* SearchForComponent(std::string name);
 
-		virtual void GetEditorDescription(EditorDescriptionBuilder);
+		virtual void GetEditorDescription(ComponentDescriptionBuilder);
 
 		void MarkAsKilled();
 
-		template <typename Archive> void Save(Archive& archive)	 const;
+		template <typename Archive> void Save(Archive& archive) const;
 		template <typename Archive> void Load(Archive& archive);
 		virtual ~Component();
 
@@ -143,7 +142,7 @@ namespace GEE
 		void MoveChildren(Component& moveTo);
 		void Delete();
 
-		virtual MaterialInstance LoadDebugMatInst(EditorIconState);
+		virtual MaterialInstance LoadDebugMatInst(EditorButtonState);
 
 		std::string Name;
 
@@ -186,37 +185,7 @@ namespace GEE
 
 		return (ChildClass&)childRef;
 	}
-	template<typename Archive>
-	void Component::Save(Archive& archive) const
-	{
-		archive(CEREAL_NVP(Name), CEREAL_NVP(ComponentTransform), CEREAL_NVP(CollisionObj));
-		archive(CEREAL_NVP(Children));
-	}
-	template<typename Archive>
-	void Component::Load(Archive& archive)
-	{
-		archive(CEREAL_NVP(Name), CEREAL_NVP(ComponentTransform), CEREAL_NVP(CollisionObj));
-		if (CollisionObj)
-			Scene.GetPhysicsData()->AddCollisionObject(*CollisionObj, ComponentTransform);
 
-		std::cout << "Serializing comp " << Name << '\n';
-		if (GameHandle->HasStarted())
-			OnStartAll();
-
-		/*
-		This code is not very elegant; it's because Components and Actors are not default_constructible.
-		We always need to pass at least one reference to either the GameScene (in the case of Actors) or to the Actor (of the constructed Component).
-		Furthermore, if an Actor/Component is not at the root of hierarchy (of a scene/an actor) we should always pass the pointer to the parent to the constructor, since users might wrongly assume that an Actor/Component is the root if the parent pointer passed to the constructor is nullptr.
-		This might lead to bugs, so we avoid that.
-		*/
-
-		CerealComponentSerializationData::ParentComp = this;	//Set the static parent pointer to this
-		archive(CEREAL_NVP(Children));	//We want all children to be constructed using the pointer. IMPORTANT: The first child will be serialized (the Load method will be called) before the next child is constructed! So the ParentComp pointer will be changed to the address of the new child when we construct its children. We counteract that in the next line.
-		CerealComponentSerializationData::ParentComp = ParentComponent;	//There are no more children of this to serialize, so we "move up" the hierarchy and change the parent pointer to the parent of this, to allow brothers (other children of parent of this) to be constructed.
-
-		for (auto& it : Children)
-			it->GetTransform().SetParentTransform(&ComponentTransform);
-	}
 	template<class CompClass>
 	inline CompClass* Component::GetComponent(const std::string& name)
 	{
@@ -261,7 +230,7 @@ namespace GEE
 }
 
  
-#define GEE_SERIALIZABLE_COMPONENT(Type, ...) CEREAL_REGISTER_TYPE(Type);	   													 									\
+#define GEE_SERIALIZABLE_COMPONENT(Type, ...) GEE_REGISTER_TYPE(Type);	   													 										\
 namespace cereal																				 																	\
 {																								 																	\
 	template <> struct LoadAndConstruct<Type>													 																	\
@@ -269,7 +238,7 @@ namespace cereal																				 																	\
 		template <class Archive>																 																	\
 		static void load_and_construct(Archive& ar, cereal::construct<Type>& construct)			 																	\
 		{																						 																	\
-			if (!GEE::CerealComponentSerializationData::ActorRef)																									\
+			if (!GEE::CerealComponentSerializationData::ActorRef)																											\
 				return;																																				\
 																																									\
 			/* We set the name to serialization-error since it will be replaced by its original name anyways. */													\

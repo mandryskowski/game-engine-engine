@@ -34,7 +34,7 @@ namespace GEE
 		void SetLockMouseAtCenter(bool);
 
 		virtual void SetPossessedActor(Actor*);
-		virtual void OnMouseMovement(const Vec2f& previousPosPx, const Vec2f& currentPosPx) {}
+		virtual void OnMouseMovement(const Vec2f& previousPosPx, const Vec2f& currentPosPx, const Vec2u& windowSize) {}
 
 		template <typename Archive> void Save(Archive& archive) const
 		{
@@ -62,7 +62,7 @@ namespace GEE
 
 		virtual Vec3i GetMovementDirFromPressedKeys();
 		virtual void Update(float deltaTime) override;
-		virtual void OnMouseMovement(const Vec2f& previousPosPx, const Vec2f& currentPosPx) override;
+		virtual void OnMouseMovement(const Vec2f& previousPosPx, const Vec2f& currentPosPx, const Vec2u& windowSize) override;
 
 		virtual void GetEditorDescription(EditorDescriptionBuilder) override;
 	private:
@@ -121,7 +121,8 @@ namespace GEE
 		virtual void HandleEvent(const Event& ev) override;
 
 		virtual void GetEditorDescription(EditorDescriptionBuilder) override;
-		virtual void OnMouseMovement(const Vec2f& previousPosPx, const Vec2f& currentPosPx) override;
+		virtual void OnMouseMovement(const Vec2f& previousPosPx, const Vec2f& currentPosPx, const Vec2u& windowSize) override;
+		virtual void Update(float deltaTime) override;
 
 		template <typename Archive> void Save(Archive& archive) const
 		{

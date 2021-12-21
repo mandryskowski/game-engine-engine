@@ -5,31 +5,35 @@
 #include <animation/Animation.h>
 #include <scene/Actor.h>
 
+GEE::GameScene* GEE::CerealTreeSerializationData::TreeScene = nullptr;
 namespace GEE
 {
 	using namespace HierarchyTemplate;
 
-	HierarchyTreeT::HierarchyTreeT(GameScene& scene, const std::string& name) :
+	HierarchyTreeT::HierarchyTreeT(GameScene& scene, const HierarchyLocalization& name) :
 		Scene(scene),
 		Name(name),
 		Root(nullptr),
-		TempActor(MakeUnique<Actor>(scene, nullptr, name + "TempActor")),
+		TempActor(MakeUnique<Actor>(scene, nullptr, name.GetPath() + "TempActor")),
 		TreeBoneMapping(nullptr)
 	{
-		Root = static_unique_pointer_cast<HierarchyNodeBase>(MakeUnique<HierarchyNode<Component>>(*TempActor, name));	//root has the same name as the tree
+		Root = static_unique_pointer_cast<HierarchyNodeBase>(MakeUnique<HierarchyNode<Component>>(*TempActor, name.GetPath()));	//root has the same name as the tree
 	}
 
 	HierarchyTreeT::HierarchyTreeT(const HierarchyTreeT& tree) :
 		Scene(tree.Scene),
-		Name(tree.Name),
+		Name(HierarchyLocalization::LocalResourceName(tree.Name.GetPath() + "_Copy")),
 		Root(nullptr),
-		TempActor(MakeUnique<Actor>(tree.Scene, nullptr, tree.Name + "TempActor")),
+		TempActor(MakeUnique<Actor>(tree.Scene, nullptr, tree.Name.GetPath() + "TempActor")),
 		TreeBoneMapping((tree.TreeBoneMapping) ? (MakeUnique<BoneMapping>(*tree.TreeBoneMapping)) : (nullptr))
 	{
 		if (tree.Root)
 			Root = tree.Root->Copy(*TempActor, true);
 		else
-			Root = static_unique_pointer_cast<HierarchyNodeBase>(MakeUnique<HierarchyNode<Component>>(*TempActor, Name));	//root has the same name as the tree
+			Root = static_unique_pointer_cast<HierarchyNodeBase>(MakeUnique<HierarchyNode<Component>>(*TempActor, Name.GetPath()));	//root has the same name as the tree
+
+		TreeAnimations.reserve(tree.TreeAnimations.size());
+		std::transform(tree.TreeAnimations.begin(), tree.TreeAnimations.end(), std::back_inserter(TreeAnimations), [](const UniquePtr<Animation>& anim) { return MakeUnique<Animation>(*anim); });
 	}
 
 	HierarchyTreeT::HierarchyTreeT(HierarchyTreeT&& tree) :
@@ -37,15 +41,16 @@ namespace GEE
 		Name(tree.Name),
 		Root(std::move(tree.Root)),
 		TempActor(std::move(tree.TempActor)),
-		TreeBoneMapping((tree.TreeBoneMapping) ? (std::move(tree.TreeBoneMapping)) : (nullptr))
+		TreeBoneMapping((tree.TreeBoneMapping) ? (std::move(tree.TreeBoneMapping)) : (nullptr)),
+		TreeAnimations(std::move(tree.TreeAnimations))
 	{
 		if (!Root)
-			Root = static_unique_pointer_cast<HierarchyNodeBase>(MakeUnique<HierarchyNode<Component>>(*TempActor, Name));	//root has the same name as the tree
+			Root = static_unique_pointer_cast<HierarchyNodeBase>(MakeUnique<HierarchyNode<Component>>(*TempActor, Name.GetPath()));	//root has the same name as the tree
 		if (!TempActor)
-			TempActor = MakeUnique<Actor>(Scene, nullptr, Name + "TempActor");
+			TempActor = MakeUnique<Actor>(Scene, nullptr, Name.GetPath() + "TempActor");
 	}
 
-	const std::string& HierarchyTreeT::GetName() const
+	const HierarchyLocalization& HierarchyTreeT::GetName() const
 	{
 		return Name;
 	}
@@ -70,6 +75,11 @@ namespace GEE
 	unsigned int HierarchyTreeT::GetAnimationCount()
 	{
 		return TreeAnimations.size();
+	}
+
+	Actor& HierarchyTemplate::HierarchyTreeT::GetTempActor()
+	{
+		return *TempActor;
 	}
 
 	void HierarchyTreeT::SetRoot(UniquePtr<HierarchyNodeBase> root)
@@ -181,7 +191,33 @@ namespace GEE
 		return meshes;
 	}
 
-	//HierarchyTree::Root points to an incomplete type. We are forced to write a constructor, but we don't really need to write anything in it, so we just keep the default one.
+	template<typename Archive>
+	void HierarchyTreeT::Save(Archive& archive) const
+	{
+		archive(cereal::make_nvp("LocalResourcePath", Name.GetPath()), CEREAL_NVP(Root));
+	}
+
+	template<typename Archive>
+	void HierarchyTreeT::Load(Archive& archive)
+	{
+		std::cout << "^^^ Loading tree\n";
+		std::string localPath;
+		CerealNodeSerializationData::TempActor = &GetTempActor();
+		archive(cereal::make_nvp("LocalResourcePath", localPath), CEREAL_NVP(Root));
+		CerealNodeSerializationData::TempActor = nullptr;
+		Name = HierarchyLocalization(localPath, true);
+		std::cout << "vvv Finished loading tree\n";
+	}
+
+	template void HierarchyTreeT::Save<cereal::JSONOutputArchive>(cereal::JSONOutputArchive&) const;
+	template void HierarchyTreeT::Load<cereal::JSONInputArchive>(cereal::JSONInputArchive&);
+
+	//HierarchyTree::Root points to an incomplete type. We are forced to define a constructor, but we don't really need to write anything in it, so we just keep the default one.
 	HierarchyTreeT::~HierarchyTreeT() = default;
+
+	void HierarchyTemplate::HierarchyTreeT::SetName(const std::string& filepath)
+	{
+		Name = HierarchyLocalization::LocalResourceName(filepath);
+	}
 
 }

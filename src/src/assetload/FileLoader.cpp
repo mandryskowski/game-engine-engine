@@ -26,6 +26,7 @@
 #include <functional>
 #include <fstream>
 
+#include <editor/EditorManager.h>
 #include <animation/AnimationManagerComponent.h>
 
 namespace GEE
@@ -70,7 +71,11 @@ namespace GEE
 
 			filestr >> shaderName >> shininess >> depthScale >> texCount;
 
-			material->SetRenderShaderName(shaderName);
+			if (shaderName == "Forward_NoLight")
+				material->SetShaderInfo(MaterialShaderHint::Simple);
+			else if (shaderName == "Geometry")
+				material->SetShaderInfo(MaterialShaderHint::Shaded);
+
 			material->SetShininess(shininess);
 			material->SetDepthScale(depthScale);
 
@@ -128,7 +133,7 @@ namespace GEE
 				shader->AddTextureUnit(unitIndex, texUnitName);
 			}
 
-			renderEngHandle->AddShader(shader, true);
+			renderEngHandle->AddShader(shader);
 		}
 	}
 
@@ -515,7 +520,7 @@ namespace GEE
 			std::string materialNameStr = materialName.C_Str();
 			if (materialNameStr.size() > 6 && materialNameStr.substr(materialNameStr.size() - 6) == "_atlas")
 			{
-				material = std::static_pointer_cast<Material>(MakeShared<AtlasMaterial>(Material(Material::MaterialLoc(treeObjLoc, materialNameStr), 0.0f, GameManager::Get().GetRenderEngineHandle()->FindShader("Forward_NoLight")), glm::ivec2(4, 2)));	//TODO: remove this ivec2(4, 2)
+				material = std::static_pointer_cast<Material>(MakeShared<AtlasMaterial>(Material::MaterialLoc(treeObjLoc, materialNameStr), glm::ivec2(4, 2)));	//TODO: remove this ivec2(4, 2)
 			}
 			else
 				material = MakeShared<Material>(Material::MaterialLoc(treeObjLoc, materialNameStr));	//we name all materials "undefined" by default; their name should be contained in the files
@@ -638,13 +643,13 @@ namespace GEE
 			{
 				nodeName = input;
 				if (PrimitiveDebugger::bDebugMeshTrees)
-					std::cout << "Edytuje " << treeToEdit->GetName() << ", a w nim " << nodeName << ".\n";
+					std::cout << "Edytuje " << treeToEdit->GetName().GetPath() << ", a w nim " << nodeName << ".\n";
 			}
 
 			HierarchyTemplate::HierarchyNodeBase* foundNode = treeToEdit->GetRoot().FindNode(nodeName);
 			if (!foundNode)
 			{
-				std::cerr << "ERROR! Can't find " << input << " in tree " << treeToEdit->GetName() << ".\n";
+				std::cerr << "ERROR! Can't find " << input << " in tree " << treeToEdit->GetName().GetPath() << ".\n";
 				return;
 			}
 			if (PrimitiveDebugger::bDebugMeshTrees)
@@ -774,7 +779,7 @@ namespace GEE
 		}
 	}
 
-	void EngineDataLoader::LoadComponentsFromHierarchyTree(Component& comp, const HierarchyTemplate::HierarchyTreeT& tree, const HierarchyTemplate::HierarchyNodeBase& node, SkeletonInfo& skeletonInfo, Material* overrideMaterial)
+	void EngineDataLoader::LoadComponentsFromHierarchyTree(Component& comp, const HierarchyTemplate::HierarchyTreeT& tree, const HierarchyTemplate::HierarchyNodeBase& node, SkeletonInfo& skeletonInfo, const std::vector<HierarchyTemplate::HierarchyNodeBase*>& selectedComponents, Material* overrideMaterial)
 	{
 		if (PrimitiveDebugger::bDebugMeshTrees)
 		{
@@ -791,6 +796,9 @@ namespace GEE
 
 		for (int i = 0; i < node.GetChildCount(); i++)	//WAZNE!!!! zmien meshNodeCast na node jak naprawisz childow
 		{
+			if (!selectedComponents.empty() && std::find(selectedComponents.begin(), selectedComponents.end(), node.GetChild(i)) == selectedComponents.end())
+				continue;
+
 			Component* child = nullptr;
 
 			if (dynamic_cast<const HierarchyTemplate::HierarchyNode<ModelComponent>*>(node.GetChild(i)))
@@ -808,16 +816,19 @@ namespace GEE
 			else
 				child = &comp.CreateComponent<Component>(node.GetChild(i)->GetCompBaseType().GetName(), Transform());
 
-			LoadComponentsFromHierarchyTree(*child, tree, *node.GetChild(i), skeletonInfo, overrideMaterial);
+			LoadComponentsFromHierarchyTree(*child, tree, *node.GetChild(i), skeletonInfo, {}, overrideMaterial);
 		}
 	}
 
-	void EngineDataLoader::SetupSceneFromFile(GameManager* gameHandle, const std::string& filepath, const std::string& name)
+	bool EngineDataLoader::SetupSceneFromFile(GameManager* gameHandle, const std::string& filepath, const std::string& name)
 	{	
 		GameScene& scene = gameHandle->CreateScene((name.empty()) ? (filepath) : (name));
 		std::ifstream file(filepath);
 		std::string fileExtension = getFilepathExtension(filepath);
 		std::stringstream filestr;
+
+		if (!file.good())
+			return false;
 
 		filestr << file.rdbuf();
 		file.close();
@@ -833,8 +844,44 @@ namespace GEE
 					cereal::JSONInputArchive archive(filestr);
 					GEE::CerealActorSerializationData::ScenePtr = &scene;
 					scene.GetRenderData()->LoadSkeletonBatches(archive);
+					CerealTreeSerializationData::TreeScene = &scene;
+
+					{
+						std::vector<UniquePtr<HierarchyTemplate::HierarchyTreeT>> localHierarchyTrees;
+						archive(cereal::make_nvp("HierarchyTrees", localHierarchyTrees));
+						CerealTreeSerializationData::TreeScene = nullptr;
+						
+						std::cout << "Loaded " << localHierarchyTrees.size() << " trees.\n";
+						for (auto& smartPtr : localHierarchyTrees)
+							scene.HierarchyTrees.push_back(UniquePtr<HierarchyTemplate::HierarchyTreeT>(smartPtr.release()));
+					}
+
 					LightProbeLoader::LoadLightProbeTextureArrays(scene.GetRenderData());
 					scene.GetRootActor()->Load(archive);
+
+					try
+					{
+						gameHandle->GetGameSettings()->Serialize(archive);
+					}
+					catch (cereal::Exception& exception)
+					{
+						std::cout << "ERROR: While loading game settings: " << exception.what() << '\n';
+					}
+
+					try
+					{
+						if (Editor::EditorManager* editorHandle = dynamic_cast<Editor::EditorManager*>(gameHandle))
+						{
+							bool bDebugRenderComponents;
+							archive(CEREAL_NVP(bDebugRenderComponents));
+							editorHandle->SetDebugRenderComponents(bDebugRenderComponents);
+						}
+					}
+					catch (cereal::Exception& exception)
+					{
+						std::cout << "ERROR: While loading editor settings: " << exception.what() << '\n';
+					}
+
 
 					try
 					{
@@ -845,7 +892,7 @@ namespace GEE
 						std::cout << "ERROR: While loading deferments: " << exception.what() << '\n';
 					}
 
-					scene.Load();
+					scene.Load(archive);
 				}
 				catch (cereal::Exception& ex)
 				{
@@ -941,11 +988,12 @@ namespace GEE
 		}
 
 		std::cout << "Level loading finished.\n";
+		return true;
 	}
 
 	void EngineDataLoader::LoadModel(std::string path, Component& comp, MeshTreeInstancingType type, Material* overrideMaterial)
 	{
-		InstantiateTree(comp, *LoadHierarchyTree(comp.GetScene(), path), overrideMaterial);
+		InstantiateTree(comp, *LoadHierarchyTree(comp.GetScene(), path), {}, overrideMaterial);
 	}
 
 
@@ -954,10 +1002,10 @@ namespace GEE
 		GameManager& gameHandle = *scene.GetGameHandle();
 		if (path.empty())
 		{
-			if (!treePtr || treePtr->GetName().empty())
+			if (!treePtr || treePtr->GetName().GetPath().empty())
 				return nullptr;
 
-			path = treePtr->GetName();
+			path = treePtr->GetName().GetPath();
 		}
 
 		RenderEngineManager& renderHandle = *gameHandle.GetRenderEngineHandle();
@@ -1005,16 +1053,17 @@ namespace GEE
 			renderHandle.AddMaterial(matLoadingData.LoadedMaterials[j]);
 
 		for (unsigned int i = 0; i < matLoadingData.LoadedMaterials.size(); i++)
-			if (matLoadingData.LoadedMaterials[i]->GetRenderShaderName().empty())
-				matLoadingData.LoadedMaterials[i]->SetRenderShaderName("Geometry");
+			//if (matLoadingData.LoadedMaterials[i]->GetRenderShaderName().empty())
+			//	matLoadingData.LoadedMaterials[i]->SetRenderShaderName("Geometry");
+			matLoadingData.LoadedMaterials[i]->SetShaderInfo(MaterialShaderHint::Shaded);
 
 		return treePtr;
 	}
 
-	void EngineDataLoader::InstantiateTree(Component& comp, HierarchyTemplate::HierarchyTreeT& tree, Material* overrideMaterial)
+	void EngineDataLoader::InstantiateTree(Component& comp, HierarchyTemplate::HierarchyTreeT& tree, const std::vector<HierarchyTemplate::HierarchyNodeBase*>& selectedComponents, Material* overrideMaterial)
 	{
 		SkeletonInfo& skelInfo = *comp.GetScene().GetRenderData()->AddSkeletonInfo();
-		LoadComponentsFromHierarchyTree(comp, tree, tree.GetRoot(), skelInfo, overrideMaterial);
+		LoadComponentsFromHierarchyTree(comp, tree, tree.GetRoot(), skelInfo, selectedComponents, overrideMaterial);
 		skelInfo.SetGlobalInverseTransformCompPtr(&comp);
 		skelInfo.SortBones();
 		if (tree.GetAnimationCount() > 0)

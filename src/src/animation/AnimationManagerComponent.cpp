@@ -1,4 +1,5 @@
 #include <animation/AnimationManagerComponent.h>
+#include <scene/hierarchy/HierarchyTree.h>
 #include <scene/Component.h>
 #include <functional>
 
@@ -231,6 +232,33 @@ namespace GEE
 		TimePassed = 0.0f;
 	}
 
+	template<typename Archive>
+	inline void AnimationInstance::Save(Archive& archive) const
+	{
+		archive(cereal::make_nvp("AnimHierarchyTreePath", GetLocalization().GetTreeName()), cereal::make_nvp("AnimName", GetLocalization().Name), cereal::make_nvp("RootCompName", AnimRootComp.GetName()), cereal::make_nvp("RootCompActorName", AnimRootComp.GetActor().GetName()));
+	}
+
+	template<typename Archive>
+	inline void AnimationInstance::load_and_construct(Archive& archive, cereal::construct<AnimationInstance>& construct)
+	{
+		std::cout << "a tera instancje animacji\n";
+		std::string animHierarchyTreePath, animName, rootCompName, rootCompActorName;
+		archive(cereal::make_nvp("AnimHierarchyTreePath", animHierarchyTreePath), cereal::make_nvp("AnimName", animName), cereal::make_nvp("RootCompName", rootCompName), cereal::make_nvp("RootCompActorName", rootCompActorName));
+
+		Animation* anim = GameManager::Get().FindHierarchyTree(animHierarchyTreePath)->FindAnimation(animName);
+		Component* comp = GameManager::DefaultScene->FindActor(rootCompActorName)->GetRoot()->GetComponent<Component>(rootCompName);
+
+		if (!anim)
+			throw(Exception("ERROR: Cannot find anim " + animName + " in hierarchy tree " + animHierarchyTreePath));
+		if (!comp)
+			throw(Exception("ERROR: Cannot find anim root component " + rootCompName + " in actor " + rootCompActorName));
+
+		construct(*anim, *comp);
+	}
+
+	template void AnimationInstance::Save<cereal::JSONOutputArchive>(cereal::JSONOutputArchive&) const;
+	template void AnimationInstance::load_and_construct<cereal::JSONInputArchive>(cereal::JSONInputArchive&, cereal::construct<AnimationInstance>&);
+
 	AnimationManagerComponent::AnimationManagerComponent(Actor& actor, Component* parentComp, const std::string& name) :
 		Component(actor, parentComp, name, Transform()),
 		CurrentAnim(nullptr)
@@ -288,7 +316,7 @@ namespace GEE
 			CurrentAnim->Restart();
 	}
 
-	void AnimationManagerComponent::GetEditorDescription(EditorDescriptionBuilder descBuilder)
+	void AnimationManagerComponent::GetEditorDescription(ComponentDescriptionBuilder descBuilder)
 	{
 		Component::GetEditorDescription(descBuilder);
 

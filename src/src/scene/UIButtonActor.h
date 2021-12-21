@@ -27,6 +27,7 @@ namespace GEE
 		void SetOnUnhoverFunc(std::function<void()> onUnhoverFunc);
 		void SetOnBeingClickedFunc(std::function<void()> onBeingClickedFunc);
 		void SetWhileBeingClickedFunc(std::function<void()> whileBeingClickedFunc);
+		void SetPopupCreationFunc(std::function<void(PopupDescription)>);
 
 		void CallOnClickFunc();
 
@@ -42,15 +43,16 @@ namespace GEE
 		virtual void OnBeingClicked();
 		virtual void WhileBeingClicked();
 
-		EditorIconState GetState();
+		EditorButtonState GetState();
 
 
 		bool ContainsMouse(Vec2f cursorNDC);
-	protected:
 		virtual void DeduceMaterial();
+	protected:
 		TextConstantSizeComponent& CreateButtonText(const std::string& content);
 
 		std::function<void()> OnClickFunc, OnDoubleClickFunc, OnHoverFunc, OnUnhoverFunc, OnBeingClickedFunc, WhileBeingClickedFunc;
+		std::function<void(PopupDescription)> PopupCreationFunc;
 
 		const float MaxDoubleClickTime;
 		float PrevClickTime;
@@ -59,7 +61,7 @@ namespace GEE
 		SharedPtr<MaterialInstance> MatIdle, MatHover, MatClick, MatActive, MatDisabled;
 		MaterialInstance* PrevDeducedMaterial;
 
-		EditorIconState State;
+		EditorButtonState State;
 
 		bool bInputDisabled;
 	};
@@ -84,17 +86,21 @@ namespace GEE
 		UIActivableButtonActor(GameScene& scene, Actor* parentActor, const std::string& name, std::function<void()> onClickFunc = nullptr, std::function<void()> onDeactivationFunc = nullptr, const Transform& = Transform());
 		UIActivableButtonActor(GameScene& scene, Actor* parentActor, const std::string& name, const std::string& buttonTextContent, std::function<void()> onClickFunc = nullptr, std::function<void()> onDeactivationFunc = nullptr, const Transform& = Transform());
 
+		void SetDeactivateOnClickAnywhere(bool deactivateOnClick);
 		void SetMatActive(MaterialInstance&&);
 		void SetOnDeactivationFunc(std::function<void()> onDeactivationFunc);
+
+		void SetActive(bool active);
 
 		virtual void HandleEvent(const Event& ev) override;
 		virtual void OnClick() override;	//On activation
 		virtual void OnDeactivation();
-	protected:
 		virtual void DeduceMaterial() override;
+	protected:
 
 		std::function<void()> OnDeactivationFunc;
 		SharedPtr<MaterialInstance> MatActive;
+		bool bDeactivateOnClickAnywhere;
 	};
 
 	class UIScrollBarActor : public UIButtonActor

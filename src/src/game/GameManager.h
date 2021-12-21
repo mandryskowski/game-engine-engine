@@ -51,6 +51,7 @@ namespace GEE
 
 	class Texture;
 	class Material;
+	enum class MaterialShaderHint;
 	struct MaterialInstance;
 	class AtlasMaterial;
 
@@ -69,7 +70,6 @@ namespace GEE
 	class MatrixInfoExt;
 	class SceneMatrixInfo;
 
-	class RenderInfo;
 	class RenderToolboxCollection;
 
 	struct LightProbeTextureArrays;
@@ -94,6 +94,18 @@ namespace GEE
 		class HierarchyTreeT;
 	}
 
+	enum class MaterialShaderHint
+	{
+		None,
+		Simple,
+		Shaded,
+	};
+
+	struct VaryingMaterialShaderHints
+	{
+	public:
+		static MaterialShaderHint Shaded() { return MaterialShaderHint::Shaded; }
+	};
 	enum class TextAlignment
 	{
 		LEFT,
@@ -137,8 +149,6 @@ namespace GEE
 
 			virtual physx::PxController* CreateController(GameScenePhysicsData& scenePhysicsData, const Transform& t) = 0;
 
-			virtual void ApplyForce(CollisionObject&, Vec3f force) = 0;
-
 			virtual ~PhysicsEngineManager() = default;
 		protected:
 			virtual void RemoveScenePhysicsDataPtr(GameScenePhysicsData& scenePhysicsData) = 0;
@@ -167,16 +177,15 @@ namespace GEE
 	public:
 		virtual const ShadingAlgorithm& GetShadingModel() = 0;
 		virtual Mesh& GetBasicShapeMesh(EngineBasicShape) = 0;
+		virtual Shader* GetSimpleShader() = 0;
 		virtual Shader* GetLightShader(const RenderToolboxCollection& renderCol, LightType) = 0;
 		virtual RenderToolboxCollection* GetCurrentTbCollection() = 0;
 		virtual Texture GetEmptyTexture() = 0;
 		virtual SkeletonBatch* GetBoundSkeletonBatch() = 0;
 
 		//TODO: THIS SHOULD NOT BE HERE
-		virtual std::vector<Shader*> GetForwardShaders() = 0;
+		virtual std::vector<Shader*> GetCustomShaders() = 0;
 		virtual std::vector<Material*> GetMaterials() = 0;
-
-		virtual void SetBoundMaterial(Material*) = 0;
 
 		virtual void BindSkeletonBatch(SkeletonBatch* batch) = 0;
 		virtual void BindSkeletonBatch(GameSceneRenderData* sceneRenderData, unsigned int index) = 0;
@@ -190,8 +199,7 @@ namespace GEE
 		virtual RenderToolboxCollection& AddRenderTbCollection(const RenderToolboxCollection& tbCollection,
 		                                                       bool setupToolboxesAccordingToSettings = true) = 0;
 		virtual Material* AddMaterial(SharedPtr<Material>) = 0;
-	public:
-		virtual SharedPtr<Shader> AddShader(SharedPtr<Shader>, bool bForwardShader = false) = 0;
+		virtual SharedPtr<Shader> AddShader(SharedPtr<Shader>) = 0;
 
 		virtual void EraseRenderTbCollection(RenderToolboxCollection& tbCollection) = 0;
 		virtual void EraseMaterial(Material&) = 0;
@@ -209,6 +217,8 @@ namespace GEE
 	protected:
 		virtual void AddSceneRenderDataPtr(GameSceneRenderData&) = 0;
 		virtual void RemoveSceneRenderDataPtr(GameSceneRenderData&) = 0;
+
+		virtual SharedPtr<Shader> AddNonCustomShader(SharedPtr<Shader>) = 0;
 		friend class GameScene;
 	};
 	
@@ -249,6 +259,7 @@ namespace GEE
 
 		virtual GameSettings* GetGameSettings() = 0;
 
+		virtual GameScene* GetActiveScene() = 0;
 		virtual void SetActiveScene(GameScene* scene) = 0;
 
 		virtual void SetCursorIcon(DefaultCursorIcon) = 0;

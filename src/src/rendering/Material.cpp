@@ -9,50 +9,32 @@
 #include <scene/UIInputBoxActor.h>
 #include <scene/TextComponent.h>
 
+#include <rendering/RenderToolbox.h>
+
 #include <game/IDSystem.h>
 
 namespace GEE
 {
-	Material::Material(MaterialLoc loc, MaterialShaderHint shaderHint):
+	Material::Material(MaterialLoc loc, ShaderInfo shaderInfo):
 		Localization(loc),
 		Shininess(0.0f),
 		DepthScale(0.0f),
 		Color(Vec4f(0.0f)),
 		RoughnessColor(0.0f),
 		MetallicColor(0.0f),
-		AoColor(0.0f)
+		AoColor(0.0f),
+		MatShaderInfo(shaderInfo)
 	{
-		SetShader(shaderHint);
-	}
-	Material::Material(MaterialLoc loc, float depthScale, Shader* shader) :
-		Localization(loc),
-		Shininess(0.0f),
-		DepthScale(depthScale),
-		Color(Vec4f(0.0f)),
-		RoughnessColor(0.0f),
-		MetallicColor(0.0f),
-		AoColor(0.0f)
-	{
-		if (shader)
-			RenderShaderName = shader->GetName();
-		else
-			RenderShaderName = "Geometry";
-
-		//std::cout << "%%% Material " << loc.GetFullStr() << ".  ID: " << IDSystem<Material>::GenerateID() << "\n";
 	}
 
-	Material::Material(MaterialLoc loc, const Vec3f& color, MaterialShaderHint shaderHint):
-		Material(loc, 0.0f, nullptr)
+	Material::Material(MaterialLoc loc, const Vec3f& color, ShaderInfo shaderInfo) :
+		Material(loc, Vec4f(color, 1.0f), shaderInfo)
+	{}
+
+	Material::Material(MaterialLoc loc, const Vec4f& color, ShaderInfo shaderInfo) :
+		Material(loc, shaderInfo)
 	{
 		SetColor(color);
-		SetShader(shaderHint);
-	}
-
-	Material::Material(MaterialLoc loc, const Vec4f& color, MaterialShaderHint shaderHint) :
-		Material(loc, 0.0f, nullptr)
-	{
-		SetColor(color);
-		SetShader(shaderHint);
 	}
 
 	const Material::MaterialLoc& Material::GetLocalization() const
@@ -65,9 +47,9 @@ namespace GEE
 		return GetLocalization().GetFullStr();
 	}
 
-	const std::string& Material::GetRenderShaderName() const
+	Material::ShaderInfo Material::GetShaderInfo() const
 	{
-		return RenderShaderName;
+		return MatShaderInfo;
 	}
 
 	Vec4f Material::GetColor() const
@@ -95,24 +77,9 @@ namespace GEE
 		Shininess = shine;
 	}
 
-	void Material::SetRenderShaderName(const std::string& name)
+	void Material::SetShaderInfo(ShaderInfo shaderInfo)
 	{
-		RenderShaderName = name;
-	}
-
-	void Material::SetShader(MaterialShaderHint shaderHint)
-	{
-		std::string shaderName;
-		switch (shaderHint)
-		{
-		case MaterialShaderHint::Simple:
-		default:
-			shaderName = "Forward_NoLight"; break;
-		case MaterialShaderHint::Lighting:
-			shaderName = "Geometry"; break;
-		}
-
-		SetRenderShaderName(shaderName);
+		MatShaderInfo = shaderInfo;
 	}
 
 	void Material::SetColor(const Vec3f& color)
@@ -318,14 +285,29 @@ namespace GEE
 	void Material::GetEditorDescription(EditorDescriptionBuilder descBuilder)
 	{
 		descBuilder.AddField("Material name").CreateChild<UIInputBoxActor>("MaterialNameInputBox", [=](const std::string& materialName) { Localization.Name = materialName; }, [=]() { return GetName(); });
-		descBuilder.AddField("Shader name").CreateChild<UIInputBoxActor>("ShaderNameInputBox", [=](const std::string& shaderName) { SetRenderShaderName(shaderName); }, [=]() { return GetRenderShaderName(); });// .SetDisableInput(true);
+		//descBuilder.AddField("Shader name").CreateChild<UIInputBoxActor>("ShaderNameInputBox", [=](const std::string& shaderName) { SetRenderShaderName(shaderName); }, [=]() { return GetRenderShaderName(); });// .SetDisableInput(true);
 		descBuilder.AddField("Color").GetTemplates().VecInput<4, float>(Color);
+		for (int i = 0; i < 4; i++)
+			descBuilder.GetDescriptionParent().GetActor<UIInputBoxActor>("VecBox" + std::to_string(i))->SetRetrieveContentEachFrame(true);
+		
+		{
+			std::string colorNames[] = { "Red", "Green", "Blue" };
+			for (int colorChannel = 0; colorChannel < 3; colorChannel++)
+			{
+				auto& redColorField = descBuilder.AddField(colorNames[colorChannel]);
+				Vec3f color(0.0f);
+				color[colorChannel] = 1.0f;
+				redColorField.GetTitleComp()->SetMaterialInst(MaterialInstance(*new Material("", color)));
+				redColorField.GetTemplates().SliderUnitInterval([this, colorChannel](float val) { Color[colorChannel] = val; }, Color[colorChannel]);
+			}
+		}
+
 		UICanvasFieldCategory& texturesCat = descBuilder.AddCategory("Textures");
 		UIAutomaticListActor& list = texturesCat.CreateChild<UIAutomaticListActor>("TexturesList");
 
 		std::function<void(UIAutomaticListActor&, NamedTexture&)> addTextureButtonFunc = [this, &list, descBuilder](UIAutomaticListActor& list, NamedTexture& tex) mutable {
 			std::string texName = tex.GetPath();
-			Material* dummyMaterial = new Material("dummy", 0.0f, descBuilder.GetEditorHandle().GetGameHandle()->GetRenderEngineHandle()->FindShader("Forward_NoLight"));
+			Material* dummyMaterial = new Material("dummy");
 			dummyMaterial->AddTexture(MakeShared<NamedTexture>(NamedTexture((Texture)tex, "albedo1")));
 			UIButtonActor& texButton = list.CreateChild<UIButtonActor>(texName + "Button", texName);
 			texButton.SetMatDisabled(*dummyMaterial);
@@ -384,15 +366,16 @@ namespace GEE
 	========================================================================================================================
 	*/
 
-	AtlasMaterial::AtlasMaterial(Material&& material, Vec2i atlasSize) :
+	AtlasMaterial::AtlasMaterial(Material&& material, Vec2i atlasSize, ShaderInfo shaderInfo) :
 		Material(material),
 		AtlasSize(static_cast<Vec2f>(atlasSize)),
 		TextureID(0.0f)
 	{
+		SetShaderInfo(shaderInfo);
 	}
 
-	AtlasMaterial::AtlasMaterial(Material::MaterialLoc loc, Vec2i atlasSize) :
-		AtlasMaterial(Material(loc), atlasSize)
+	AtlasMaterial::AtlasMaterial(Material::MaterialLoc loc, Vec2i atlasSize, ShaderInfo shaderInfo) :
+		AtlasMaterial(Material(loc), atlasSize, shaderInfo)
 	{
 	}
 
@@ -553,6 +536,13 @@ namespace GEE
 	void MaterialLoadingData::AddTexture(SharedPtr<NamedTexture> tex)
 	{
 		LoadedTextures.push_back(tex);
+	}
+	Shader* Material::ShaderInfo::RetrieveShaderForRendering(RenderToolboxCollection& tbCol)
+	{
+		if (CustomShader)
+			return CustomShader;
+
+		return tbCol.GetShaderFromHint(GetShaderHint());
 	}
 }
 

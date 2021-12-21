@@ -1,4 +1,5 @@
 #include <rendering/RenderEngine.h>
+#include <game/GameScene.h>
 #include <rendering/Postprocess.h>
 #include <assetload/FileLoader.h>
 #include <scene/LightComponent.h>
@@ -23,9 +24,8 @@ namespace GEE
 		PreviousFrameView(Mat4f(1.0f)),
 		CubemapData(),
 		BoundSkeletonBatch(nullptr),
-		BoundMesh(nullptr),
-		BoundMaterial(nullptr),
-		CurrentTbCollection(nullptr)
+		CurrentTbCollection(nullptr),
+		SimpleShader(nullptr)
 	{
 		//configure some openGL settings 
 		glEnable(GL_DEPTH_TEST);
@@ -95,6 +95,12 @@ namespace GEE
 		ScenesRenderData.erase(std::remove_if(ScenesRenderData.begin(), ScenesRenderData.end(), [&sceneRenderData](GameSceneRenderData* sceneRenderDataVec) { return sceneRenderDataVec == &sceneRenderData; }), ScenesRenderData.end());
 	}
 
+	SharedPtr<Shader> RenderEngine::AddNonCustomShader(SharedPtr<Shader> shader)
+	{
+		Shaders.push_back(shader);
+		return Shaders.back();
+	}
+
 	void RenderEngine::GenerateEngineObjects()
 	{
 		//Add the engine objects to the tree collection. This way models loaded from the level file can simply use the internal engine meshes for stuff like particles
@@ -138,19 +144,18 @@ namespace GEE
 
 		Shaders.push_back(ShaderLoader::LoadShaders("BRDFLutGeneration", "Shaders/brdfLutGeneration.vs", "Shaders/brdfLutGeneration.fs"));
 
-		AddShader(ShaderLoader::LoadShaders("Forward_NoLight", "Shaders/forward_nolight.vs", "Shaders/forward_nolight.fs"), true);
+		SimpleShader = AddNonCustomShader(ShaderLoader::LoadShaders("Forward_NoLight", "Shaders/forward_nolight.vs", "Shaders/forward_nolight.fs")).get();
 		Shaders.back()->SetExpectedMatrices(std::vector<MatrixType>{MatrixType::MVP});
 		Shaders.back()->AddTextureUnit(0, "albedo1");
 		Shaders.back()->SetOnMaterialWholeDataUpdateFunc([](Shader& shader, const Material& mat) {
 			MaterialUtil::DisableColorIfAlbedoTextureDetected(shader, mat);
-			});
+		});
 
-		AddShader(ShaderLoader::LoadShaders("TextShader", "Shaders/text.vs", "Shaders/text.fs"), true);
+		AddShader(ShaderLoader::LoadShaders("TextShader", "Shaders/text.vs", "Shaders/text.fs"));
 		Shaders.back()->SetExpectedMatrices(std::vector<MatrixType>{MatrixType::MVP});
 
 		//load debug shaders
-		Shaders.push_back(ShaderLoader::LoadShaders("Debug", "Shaders/debug.vs", "Shaders/debug.fs"));
-		Shaders.back()->SetExpectedMatrices(std::vector<MatrixType>{MatrixType::MVP});
+		AddNonCustomShader(ShaderLoader::LoadShaders("Debug", "Shaders/debug.vs", "Shaders/debug.fs"))->SetExpectedMatrices(std::vector<MatrixType>{MatrixType::MVP});
 	}
 
 	void RenderEngine::Resize(Vec2u resolution)
@@ -201,11 +206,16 @@ namespace GEE
 		return BoundSkeletonBatch;
 	}
 
-	std::vector<Shader*> RenderEngine::GetForwardShaders()
+	Shader* RenderEngine::GetSimpleShader()
+	{
+		return SimpleShader;
+	}
+
+	std::vector<Shader*> RenderEngine::GetCustomShaders()
 	{
 		std::vector<Shader*> shaders;
-		shaders.reserve(ForwardShaders.size());
-		for (auto& it : ForwardShaders)
+		shaders.reserve(CustomShaders.size());
+		for (auto& it : CustomShaders)
 			shaders.push_back(it.get());
 
 		return shaders;
@@ -219,11 +229,6 @@ namespace GEE
 			materials.push_back(it.get());
 
 		return materials;
-	}
-
-	void RenderEngine::SetBoundMaterial(Material* material)
-	{
-		BoundMaterial = material;
 	}
 
 	RenderToolboxCollection& RenderEngine::AddRenderTbCollection(const RenderToolboxCollection& tbCollection, bool setupToolboxesAccordingToSettings)
@@ -246,12 +251,10 @@ namespace GEE
 		return Materials.back().get();
 	}
 
-	SharedPtr<Shader> RenderEngine::AddShader(SharedPtr<Shader> shader, bool bForwardShader)
+	SharedPtr<Shader> RenderEngine::AddShader(SharedPtr<Shader> shader)
 	{
-		if (bForwardShader)
-			ForwardShaders.push_back(shader);
-
 		Shaders.push_back(shader);
+		CustomShaders.push_back(shader);
 
 		return Shaders.back();
 	}
@@ -306,15 +309,6 @@ namespace GEE
 		return nullptr;
 	}
 
-	void RenderEngine::RenderBoundInDebug(RenderInfo& info, GLenum mode, GLint first, GLint count, Vec3f color)
-	{
-		Shader* debugShader = FindShader("Debug");
-		debugShader->Use();
-		debugShader->UniformMatrix4fv("MVP", info.VP);
-		debugShader->Uniform3fv("color", color);
-		glDrawArrays(mode, first, count);
-	}
-
 	void RenderEngine::PrepareScene(RenderingContextID contextID, RenderToolboxCollection& tbCollection, GameSceneRenderData* sceneRenderData)
 	{
 		if (sceneRenderData->ContainsLights() && (GameHandle->GetGameSettings()->Video.ShadowLevel > SettingLevel::SETTING_MEDIUM || sceneRenderData->HasLightWithoutShadowMap()))
@@ -342,39 +336,9 @@ namespace GEE
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	}
 
-	/*void RenderEngine::TestRenderCubemap(RenderInfo& info, GameSceneRenderData* sceneRenderData)
-	{
-		sceneRenderData->LightProbes.back()->GetEnvironmentMap().Bind(0);
-		//sceneRenderData->ProbeTexArrays->PrefilterMapArr.Bind(0);
-		//LightProbes[1]->EnvironmentMap.Bind(0);
-		FindShader("Cubemap")->Use();
-		FindShader("Cubemap")->Uniform1f("mipLevel", (float)std::fmod(glfwGetTime(), 4.0));
-
-		bool bCalcVelocity = GameHandle->GetGameSettings()->Video.IsVelocityBufferNeeded() && info.MainPass;
-		bool jitter = info.MainPass && GameHandle->GetGameSettings()->Video.IsTemporalReprojectionEnabled();
-
-		Mat4f jitteredVP = (jitter) ? (Postprocessing.GetJitterMat(info.TbCollection.GetSettings(), Postprocessing.GetFrameIndex()) * info.VP) : (info.VP);
-
-		if (bCalcVelocity)
-		{
-			FindShader("Cubemap")->UniformMatrix4fv("prevVP", info.projection * info.previousFrameView);
-			FindShader("Cubemap")->UniformMatrix4fv("flickerMat", Postprocessing.GetJitterMat(info.TbCollection.GetSettings(), Postprocessing.GetFrameIndex()));
-			FindShader("Cubemap")->UniformMatrix4fv("prevFlickerMat", Postprocessing.GetJitterMat(info.TbCollection.GetSettings(), (Postprocessing.GetFrameIndex() + 1) % 2));
-		}
-		else
-		{
-			FindShader("Cubemap")->UniformMatrix4fv("prevVP", Mat4f(1.0f));
-			FindShader("Cubemap")->UniformMatrix4fv("flickerMat", Mat4f(1.0f));
-			FindShader("Cubemap")->UniformMatrix4fv("prevFlickerMat", Mat4f(1.0f));
-		}
-
-
-		RenderStaticMesh(info, GetBasicShapeMesh(EngineBasicShape::CUBE), Transform(), FindShader("Cubemap"));
-	}*/
-
 	void RenderEngine::RenderText(const SceneMatrixInfo& infoPreConvert, const Font& font, std::string content, Transform t, Vec3f color, Shader* shader, bool convertFromPx, const std::pair<TextAlignment, TextAlignment>& alignment)
 	{
-		if (infoPreConvert.GetCareAboutShader() && shader && shader != FindShader("TextShader"))	///TODO: CHANGE IT SO TEXTS USE MATERIALS SO THEY CAN BE RENDERED USING DIFFERENT SHADERS!!!!
+		if (!Material::ShaderInfo(MaterialShaderHint::None).MatchesRequiredInfo(infoPreConvert.GetRequiredShaderInfo()) && shader && shader != FindShader("TextShader"))	///TODO: CHANGE IT SO TEXTS USE MATERIALS SO THEY CAN BE RENDERED USING DIFFERENT SHADERS!!!!
 			return;
 
 		if (!shader)
@@ -395,7 +359,7 @@ namespace GEE
 			shader->Uniform4fv("material.color", Vec4f(color, 1.0f));
 		font.GetBitmapsArray().Bind(0);
 
-		Vec2f resolution(GameHandle->GetGameSettings()->WindowSize);// (GameHandle->GetGameSettings()->ViewportData.z, GameHandle->GetGameSettings()->ViewportData.w);s
+		Vec2f resolution(infoPreConvert.GetTbCollection().GetSettings().Resolution);
 
 		SceneMatrixInfo info = infoPreConvert;
 		if (convertFromPx)
@@ -433,7 +397,7 @@ namespace GEE
 
 		const Mat3f& textRot = t.GetRotationMatrix();
 
-		Material textMaterial("TextMaterial", 0.0f, FindShader("TextShader"));
+		Material textMaterial("TextMaterial", *FindShader("TextShader"));
 
 		Transform initialT = t;
 
@@ -463,171 +427,15 @@ namespace GEE
 		glDisable(GL_BLEND);
 	}
 
-	/*void RenderEngine::RenderStaticMesh(const RenderInfo& info, const MeshInstance& mesh, const Transform& transform, Shader* shader, Mat4f* lastFrameMVP, Material* material, bool billboard)
-	{
-		RenderStaticMeshes(info, { mesh }, transform, shader, lastFrameMVP, material, billboard);
-	}
-
-	void RenderEngine::RenderStaticMeshes(const RenderInfo& info, const std::vector<std::reference_wrapper<const MeshInstance>>& meshes, const Transform& transform, Shader* shader, Mat4f* lastFrameMVP, Material* overrideMaterial, bool billboard)
-	{
-		if (meshes.empty())
-			return;
-
-		UniquePtr<MaterialInstance> createdInstance = ((overrideMaterial) ? (MakeUnique<MaterialInstance>(MaterialInstance(*overrideMaterial))) : (nullptr));
-
-		bool handledShader = false;
-		for (int i = 0; i < static_cast<int>(meshes.size()); i++)
-		{
-			const MeshInstance& meshInst = meshes[i];
-			const Mesh& mesh = meshInst.GetMesh();
-			MaterialInstance* materialInst = ((overrideMaterial) ? (createdInstance.get()) : (meshInst.GetMaterialInst()));
-			const Material* material = ((overrideMaterial) ? (overrideMaterial) : (meshInst.GetMaterialPtr()));
-
-			if ((info.CareAboutShader && material && shader->GetName() != material->GetRenderShaderName()) || (info.OnlyShadowCasters && !mesh.CanCastShadow()) || (materialInst && !materialInst->ShouldBeDrawn()))
-				continue;
-
-			if (!handledShader)
-			{
-				handledShader = true;
-
-				Mat4f modelMat = transform.GetWorldTransformMatrix();	//the ComponentTransform's world transform is cached
-				if (billboard)
-					modelMat = modelMat * Mat4f(glm::inverse(transform.GetWorldTransform().GetRotationMatrix()) * glm::inverse(Mat3f(info.view)));
-
-
-				shader->BindMatrices(modelMat, &info.view, &info.projection, &info.VP);
-				shader->CallPreRenderFunc();
-
-				bool bCalcVelocity = GameHandle->GetGameSettings()->Video.IsVelocityBufferNeeded() && info.MainPass;
-				if (bCalcVelocity && lastFrameMVP)	// Velocity buffer calculation. Used for temporal anti-aliasing.
-				{
-					bool jitter = info.MainPass && GameHandle->GetGameSettings()->Video.IsTemporalReprojectionEnabled();
-					if (jitter)
-					{
-						Mat4f jitteredMVP = Postprocessing.GetJitterMat(info.TbCollection.GetSettings(), Postprocessing.GetFrameIndex()) * info.VP * modelMat;
-						shader->UniformMatrix4fv("MVP", jitteredMVP);
-						shader->UniformMatrix4fv("prevMVP", *lastFrameMVP);
-						*lastFrameMVP = jitteredMVP;
-					}
-					else
-					{
-						shader->UniformMatrix4fv("prevMVP", *lastFrameMVP);
-						*lastFrameMVP = info.VP * modelMat;
-					}
-				}
-
-			}
-
-			if (BoundMesh != &mesh || i == 0)
-			{
-				mesh.Bind();
-				BoundMesh = &mesh;
-			}
-
-			if (info.UseMaterials && material)
-			{
-				if (BoundMaterial != material) // If the currently bound material is different than the one used by this mesh, change it in the shader.
-				{
-					materialInst->UpdateWholeUBOData(shader, EmptyTexture);
-					BoundMaterial = material;
-				}
-				else if (BoundMaterial) // If the currently bound material is the same, there is no need to send it all to the shader. Just send the information specific to this material instance.
-					materialInst->UpdateInstanceUBOData(shader);
-			}
-
-			mesh.Render();
-		}
-	}
-
-	void RenderEngine::RenderSkeletalMeshes(const RenderInfo& info, const std::vector<std::reference_wrapper<const MeshInstance>>& meshes, const Transform& transform, Shader* shader, SkeletonInfo& skelInfo, Mat4f* lastFrameMVP, Material* overrideMaterial)
-	{
-		if (meshes.empty())
-			return;
-
-		UniquePtr<MaterialInstance> createdInstance = ((overrideMaterial) ? (MakeUnique<MaterialInstance>(MaterialInstance(*overrideMaterial))) : (nullptr));
-
-
-		//TODO: Pass the bone matrices from the last frame to fix velocity buffer calculation
-
-		bool handledShader = false;
-		for (int i = 0; i < static_cast<int>(meshes.size()); i++)
-		{
-			const MeshInstance& meshInst = meshes[i];
-			const Mesh& mesh = meshInst.GetMesh();
-			MaterialInstance* materialInst = ((overrideMaterial) ? (createdInstance.get()) : (meshInst.GetMaterialInst()));
-			const Material* material = ((overrideMaterial) ? (overrideMaterial) : (meshInst.GetMaterialPtr()));
-
-			if ((info.CareAboutShader && material && shader->GetName() != material->GetRenderShaderName()) || (info.OnlyShadowCasters && !mesh.CanCastShadow()) || !materialInst->ShouldBeDrawn())
-				continue;
-
-			if (!handledShader)
-			{
-				handledShader = true;
-
-				shader->Uniform1i("boneIDOffset", skelInfo.GetBoneIDOffset());
-
-				Mat4f modelMat = transform.GetWorldTransformMatrix();	//the ComponentTransform's world transform is cached
-				bool bCalcVelocity = GameHandle->GetGameSettings()->Video.IsVelocityBufferNeeded() && info.MainPass;
-				bool jitter = info.MainPass && GameHandle->GetGameSettings()->Video.IsTemporalReprojectionEnabled();
-
-				shader->BindMatrices(modelMat, &info.view, &info.projection, &info.VP);
-				shader->CallPreRenderFunc();
-
-				if (bCalcVelocity)
-				{
-					if (jitter)
-					{
-						Mat4f jitteredMVP = info.VP * modelMat * Postprocessing.GetJitterMat(info.TbCollection.GetSettings(), Postprocessing.GetFrameIndex());
-						shader->UniformMatrix4fv("MVP", jitteredMVP);
-						shader->UniformMatrix4fv("prevMVP", *lastFrameMVP);
-						*lastFrameMVP = jitteredMVP;
-					}
-					else
-					{
-						shader->UniformMatrix4fv("prevMVP", *lastFrameMVP);
-						*lastFrameMVP = info.VP * modelMat;
-					}
-				}
-			}
-			if (skelInfo.GetBatchPtr() != BoundSkeletonBatch)
-				BindSkeletonBatch(skelInfo.GetBatchPtr());
-
-			shader->Uniform1i("boneIDOffset", skelInfo.GetBoneIDOffset());
-
-			if (BoundMesh != &mesh || i == 0)
-			{
-				mesh.Bind();
-				BoundMesh = &mesh;
-			}
-
-			if (info.UseMaterials && material)
-			{
-				if (BoundMaterial != material) //jesli zbindowany jest inny material niz potrzebny obecnie, musimy zmienic go w shaderze
-				{
-					materialInst->UpdateWholeUBOData(shader, EmptyTexture);
-					BoundMaterial = material;
-				}
-				else if (BoundMaterial) //jesli ostatni zbindowany material jest taki sam, to nie musimy zmieniac wszystkich danych w shaderze; oszczedzmy sobie roboty
-					materialInst->UpdateInstanceUBOData(shader);
-			}
-
-			mesh.Render();
-		}
-	}*/
-
 	void RenderEngine::Dispose()
 	{
 		RenderTbCollections.clear();
 		CubemapData.DefaultFramebuffer.Dispose(false);
 
 		Postprocessing.Dispose();
-		//ShadowFramebuffer.Dispose();
-
-		//CurrentTbCollection->ShadowsTb->ShadowMapArray->Dispose();
-		//CurrentTbCollection->ShadowsTb->ShadowCubemapArray->Dispose();
 
 		for (auto i = Shaders.begin(); i != Shaders.end(); i++)
-			if (std::find(ForwardShaders.begin(), ForwardShaders.end(), *i) == ForwardShaders.end())
+			if (std::find_if(CustomShaders.begin(), CustomShaders.end(), [&](SharedPtr<Shader>& forwardShader) { return forwardShader.get() == i->get(); }) == CustomShaders.end())
 			{
 				(*i)->Dispose();
 				Shaders.erase(i);
@@ -672,57 +480,3 @@ namespace GEE
 		return Vec3f(0.0f, -1.0f, 0.0f);
 	}
 }
-
-/*void GEE::Renderer::ImplUtil::BindMesh(const Mesh* mesh)
-{
-	if (Bindings::BoundMesh != mesh)
-	{
-		if (mesh) mesh->Bind();
-		Bindings::BoundMesh = mesh;
-	}
-}
-
-void GEE::Renderer::ImplUtil::UseShader(Shader* shader)
-{
-	if (Bindings::UsedShader != shader)
-	{
-		if (shader) shader->Use();
-		Bindings::UsedShader = shader;
-	}
-}
-
-void GEE::Renderer::Impl::BindMaterial(const Material* material)
-{
-	if (Bindings::BoundMaterial == material)
-		return;
-
-	if (material)
-	{
-		Texture t;
-		material->UpdateWholeUBOData(Bindings::UsedShader, t);
-	}
-	Bindings::BoundMaterial = material;
-}
-
-void GEE::Renderer::Impl::BindMaterialInstance(const MaterialInstance* materialInst)
-{
-	BindMaterial(&materialInst->MaterialRef);
-
-	if (materialInst)
-		materialInst->UpdateInstanceUBOData(Bindings::UsedShader);
-}
-
-void GEE::Renderer::Impl::MeshBinding::Set(const Mesh* mesh)
-{
-	if (BoundMesh != mesh)
-	{
-		if (mesh) mesh->Bind();
-		BoundMesh = mesh;
-	}
-}
-
-const GEE::Mesh* GEE::Renderer::Impl::MeshBinding::Get()
-{
-	return BoundMesh;
-}
-*/

@@ -88,6 +88,19 @@ layout (std140) uniform Lights
 float CalcShadow3D(Light light, vec3 fragPosition)
 {
 	vec3 lightToFrag = fragPosition - light.position.xyz;
+	
+	#ifdef SOFT_SHADOWS
+	for (int z = -1; z < = 1; z++)
+	{
+		for (int y = -1; y < = 1; y++)
+		{
+			for (int x = -1; x <= 1; x++)
+			{
+				
+			}
+		}
+	}
+	#endif
 
 	return ((length(lightToFrag) / light.far > texture(shadowCubemaps, vec4(lightToFrag, light.shadowMapNr)).r + light.ambientAndShadowBias.a) ? (1.0) : (0.0));
 }
@@ -97,6 +110,21 @@ float CalcShadow2D(Light light, vec3 fragPosition)
 	vec4 lightProj = light.lightSpaceMatrix * vec4(fragPosition, 1.0);
 	vec3 lightCoords = lightProj.xyz /= lightProj.w;
 	lightCoords = lightCoords * 0.5 + 0.5;
+	
+	#ifdef SOFT_SHADOWS
+	vec2 texCoord = gl_FragCoord.xy / vec2(SCR_WIDTH, SCR_HEIGHT);
+	float shadowHits = 0.0;
+	for (int y = -1; y < = 1; y++)
+	{
+		for (int x = -1; x <= 1; x++)
+		{
+			if (lightCoords.z > texture(shadowMaps, vec3(lightCoords.xy + texCoord * vec2(float(x), float(y)), light.shadowMapNr)).r + light.ambientAndShadowBias.a)
+				shadowHits++;
+		}
+	}
+	
+	return shadowHits / 9.0;
+	#endif
 	
 	return (lightCoords.z > texture(shadowMaps, vec3(lightCoords.xy, light.shadowMapNr)).r + light.ambientAndShadowBias.a) ? (1.0) : (0.0);
 }

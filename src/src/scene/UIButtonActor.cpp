@@ -1,4 +1,5 @@
 #include <scene/UIButtonActor.h>
+#include <game/GameScene.h>
 #include <scene/ModelComponent.h>
 #include <game/GameSettings.h>
 #include <input/Event.h>
@@ -18,15 +19,16 @@ namespace GEE
 		OnUnhoverFunc(nullptr),
 		OnBeingClickedFunc(nullptr),
 		WhileBeingClickedFunc(nullptr),
+		PopupCreationFunc(nullptr),
 		PrevClickTime(0.0f),
 		MaxDoubleClickTime(0.3f),
 		MatIdle(nullptr),
 		MatHover(nullptr),
-		MatClick(nullptr),
+		MatClick(nullptr),  
 		MatActive(nullptr),
 		MatDisabled(nullptr),
 		PrevDeducedMaterial(nullptr),
-		State(EditorIconState::IDLE),
+		State(EditorButtonState::Idle),
 		bInputDisabled(false)
 	{
 		ButtonModel = &CreateComponent<ModelComponent>(Name + "'s_Button_Model");
@@ -34,37 +36,28 @@ namespace GEE
 		SharedPtr<Material> matIdle, matHover, matClick, matActive, matDisabled;
 		if ((matIdle = GameHandle->GetRenderEngineHandle()->FindMaterial("GEE_Button_Idle")) == nullptr)
 		{
-			matIdle = MakeShared<Material>("GEE_Button_Idle");
+			matIdle = MakeShared<Material>("GEE_Button_Idle", Vec3f(0.4118f, 0.0909f, 0.4973f));
 			matIdle->SetColor(Vec4f(0.4118f, 0.0909f, 0.4973f, 1.0f));
-			matIdle->SetRenderShaderName("Forward_NoLight");
 			GameHandle->GetRenderEngineHandle()->AddMaterial(matIdle);
 		}
 		if ((matHover = GameHandle->GetRenderEngineHandle()->FindMaterial("GEE_Button_Hover")) == nullptr)
 		{
-			matHover = MakeShared<Material>("GEE_Button_Hover");
-			matHover->SetColor(Vec4f(0.831684f, 0.2f, 0.2f, 1.0f));
-			matHover->SetRenderShaderName("Forward_NoLight");
+			matHover = MakeShared<Material>("GEE_Button_Hover", Vec3f(0.831684f, 0.2f, 0.2f));
 			GameHandle->GetRenderEngineHandle()->AddMaterial(matHover);
 		}
 		if ((matClick = GameHandle->GetRenderEngineHandle()->FindMaterial("GEE_Button_Click")) == nullptr)
 		{
-			matClick = MakeShared<Material>("GEE_Button_Click");
-			matClick->SetColor(Vec4f(0.773018f, 0.773018f, 0.773018f, 1.0f));
-			matClick->SetRenderShaderName("Forward_NoLight");
+			matClick = MakeShared<Material>("GEE_Button_Click", Vec3f(0.773018f, 0.773018f, 0.773018f));
 			GameHandle->GetRenderEngineHandle()->AddMaterial(matClick);
 		}
 		if ((matActive = GameHandle->GetRenderEngineHandle()->FindMaterial("GEE_Button_Active")) == nullptr)
 		{
-			matActive = MakeShared<Material>("GEE_Button_Active");
-			matActive->SetColor(Vec4f(0.75f, 0.75f, 0.22f, 1.0f));
-			matActive->SetRenderShaderName("Forward_NoLight");
+			matActive = MakeShared<Material>("GEE_Button_Active", Vec3f(0.75f, 0.75f, 0.22f));
 			GameHandle->GetRenderEngineHandle()->AddMaterial(matActive);
 		}
 		if ((matDisabled = GameHandle->GetRenderEngineHandle()->FindMaterial("GEE_Button_Disabled")) == nullptr)
 		{
-			matDisabled = MakeShared<Material>("GEE_Button_Disabled");
-			matDisabled->SetColor(Vec4f(0.3f, 0.3f, 0.3f, 1.0f));
-			matDisabled->SetRenderShaderName("Forward_NoLight");
+			matDisabled = MakeShared<Material>("GEE_Button_Disabled", Vec3f(0.3f, 0.3f, 0.3f));
 			GameHandle->GetRenderEngineHandle()->AddMaterial(matDisabled);
 		}
 
@@ -132,7 +125,7 @@ namespace GEE
 	void UIButtonActor::SetDisableInput(bool disable)
 	{
 		if (disable && !bInputDisabled)
-			State = EditorIconState::IDLE;
+			State = EditorButtonState::Idle;
 		bInputDisabled = disable;
 		DeduceMaterial();
 	}
@@ -167,6 +160,11 @@ namespace GEE
 		WhileBeingClickedFunc = whileBeingClickedFunc;
 	}
 
+	void UIButtonActor::SetPopupCreationFunc(std::function<void(PopupDescription)> popupCreationFunc)
+	{
+		PopupCreationFunc = popupCreationFunc;
+	}
+
 	void UIButtonActor::CallOnClickFunc()
 	{
 		if (OnClickFunc)
@@ -197,30 +195,32 @@ namespace GEE
 
 			if (bMouseInside)
 			{
-				if (State == EditorIconState::IDLE || State == EditorIconState::BEING_CLICKED_OUTSIDE)
+				if (State == EditorButtonState::Idle || State == EditorButtonState::BeingClickedOutside)
 					OnHover();
 			}
-			else if (State == EditorIconState::HOVER || State == EditorIconState::BEING_CLICKED_INSIDE)
+			else if (State == EditorButtonState::Hover || State == EditorButtonState::BeingClickedInside)
 				OnUnhover();
 		}
-		else if (ev.GetType() == EventType::MousePressed && dynamic_cast<const MouseButtonEvent&>(ev).GetButton() == MouseButton::Left && State == EditorIconState::HOVER)
+		else if (ev.GetType() == EventType::MousePressed && dynamic_cast<const MouseButtonEvent&>(ev).GetButton() == MouseButton::Left && State == EditorButtonState::Hover)
 			OnBeingClicked();
 		else if (ev.GetType() == EventType::MouseReleased && dynamic_cast<const MouseButtonEvent&>(ev).GetButton() == MouseButton::Left)
 		{
-			if (State == EditorIconState::BEING_CLICKED_INSIDE)
+			if (State == EditorButtonState::BeingClickedInside)
 			{
 				if (GameHandle->GetProgramRuntime() - PrevClickTime <= MaxDoubleClickTime)
 					OnDoubleClick();
 				else
 					OnClick();
 			}
-			else if (State == EditorIconState::BEING_CLICKED_OUTSIDE)
-				State = EditorIconState::IDLE;
+			else if (State == EditorButtonState::BeingClickedOutside)
+				State = EditorButtonState::Idle;
 		}
+		else if (State == EditorButtonState::Hover && ev.GetType() == EventType::MouseReleased && dynamic_cast<const MouseButtonEvent&>(ev).GetButton() == MouseButton::Right && PopupCreationFunc)
+			 dynamic_cast<Editor::EditorManager*>(GameHandle)->RequestPopupMenu(Scene.GetUIData()->GetWindowData().GetMousePositionNDC(), *Scene.GetUIData()->GetWindow(), PopupCreationFunc);
 		else if (ev.GetType() == EventType::FocusSwitched)
-			State = EditorIconState::IDLE;
+			State = EditorButtonState::Idle;
 
-		if (State == EditorIconState::BEING_CLICKED_INSIDE || State == EditorIconState::BEING_CLICKED_OUTSIDE)
+		if (State == EditorButtonState::BeingClickedInside || State == EditorButtonState::BeingClickedOutside)
 			WhileBeingClicked();
 
 		DeduceMaterial();
@@ -228,14 +228,14 @@ namespace GEE
 
 	void UIButtonActor::OnHover()
 	{
-		State = (State == EditorIconState::BEING_CLICKED_OUTSIDE) ? (EditorIconState::BEING_CLICKED_INSIDE) : (EditorIconState::HOVER);
+		State = (State == EditorButtonState::BeingClickedOutside) ? (EditorButtonState::BeingClickedInside) : (EditorButtonState::Hover);
 		if (OnHoverFunc)
 			OnHoverFunc();
 	}
 
 	void UIButtonActor::OnUnhover()
 	{
-		State = (State == EditorIconState::BEING_CLICKED_INSIDE) ? (EditorIconState::BEING_CLICKED_OUTSIDE) : (EditorIconState::IDLE);
+		State = (State == EditorButtonState::BeingClickedInside) ? (EditorButtonState::BeingClickedOutside) : (EditorButtonState::Idle);
 		if (OnUnhoverFunc)
 			OnUnhoverFunc();
 	}
@@ -243,7 +243,7 @@ namespace GEE
 	void UIButtonActor::OnClick()
 	{
 		std::cout << "Clicked " + Name + "!\n";
-		State = EditorIconState::HOVER;
+		State = EditorButtonState::Hover;
 		PrevClickTime = GameHandle->GetProgramRuntime();
 		if (OnClickFunc)
 			OnClickFunc();
@@ -251,7 +251,7 @@ namespace GEE
 
 	void UIButtonActor::OnDoubleClick()
 	{
-		State = EditorIconState::HOVER;
+		State = EditorButtonState::Hover;
 		PrevClickTime = GameHandle->GetProgramRuntime();
 		if (OnDoubleClickFunc)
 			OnDoubleClickFunc();
@@ -259,7 +259,7 @@ namespace GEE
 
 	void UIButtonActor::OnBeingClicked()
 	{
-		State = EditorIconState::BEING_CLICKED_INSIDE;
+		State = EditorButtonState::BeingClickedInside;
 		if (OnBeingClickedFunc)
 			OnBeingClickedFunc();
 	}
@@ -270,7 +270,7 @@ namespace GEE
 			WhileBeingClickedFunc();
 	}
 
-	EditorIconState UIButtonActor::GetState()
+	EditorButtonState UIButtonActor::GetState()
 	{
 		return State;
 	}
@@ -300,12 +300,12 @@ namespace GEE
 		{
 			switch (State)
 			{
-			case EditorIconState::IDLE:
+			case EditorButtonState::Idle:
 				currentMatInst = &MatIdle; break;
-			case EditorIconState::HOVER:
-			case EditorIconState::BEING_CLICKED_OUTSIDE:
+			case EditorButtonState::Hover:
+			case EditorButtonState::BeingClickedOutside:
 				currentMatInst = &MatHover; break;
-			case EditorIconState::BEING_CLICKED_INSIDE:
+			case EditorButtonState::BeingClickedInside:
 				currentMatInst = &MatClick; break;
 			default:
 				ButtonModel->OverrideInstancesMaterialInstances(nullptr);
@@ -343,7 +343,8 @@ namespace GEE
 
 	UIActivableButtonActor::UIActivableButtonActor(GameScene& scene, Actor* parentActor, const std::string& name,  std::function<void()> onClickFunc, std::function<void()> onDeactivationFunc, const Transform& transform) :
 		UIButtonActor(scene, parentActor, name, onClickFunc, transform),
-		OnDeactivationFunc(onDeactivationFunc)
+		OnDeactivationFunc(onDeactivationFunc),
+		bDeactivateOnClickAnywhere(true)
 	{
 
 		SharedPtr<Material> matActive;
@@ -351,7 +352,6 @@ namespace GEE
 		{
 			matActive = MakeShared<Material>("GEE_Button_Active");
 			matActive->SetColor(Vec4f(1.0f));
-			matActive->SetRenderShaderName("Forward_NoLight");
 			GameHandle->GetRenderEngineHandle()->AddMaterial(matActive);
 		}
 
@@ -364,6 +364,11 @@ namespace GEE
 	}
 
 
+	void UIActivableButtonActor::SetDeactivateOnClickAnywhere(bool deactivateOnClick)
+	{
+		bDeactivateOnClickAnywhere = deactivateOnClick;
+	}
+
 	void UIActivableButtonActor::SetMatActive(MaterialInstance&& mat)
 	{
 		MatActive = MakeShared<MaterialInstance>(std::move(mat));
@@ -375,13 +380,33 @@ namespace GEE
 		OnDeactivationFunc = onDeactivationFunc;
 	}
 
+	void UIActivableButtonActor::SetActive(bool active)
+	{
+		if (active)
+			State = EditorButtonState::Activated;
+		else if (State == EditorButtonState::Activated)
+			State = EditorButtonState::Idle;
+
+		DeduceMaterial();
+	}
+
 	void UIActivableButtonActor::HandleEvent(const Event& ev)
 	{
-		bool wasActive = State == EditorIconState::ACTIVATED;
+		bool wasActive = State == EditorButtonState::Activated;
 		bool isActive = wasActive;
+		const MouseButtonEvent* buttonEvCast = dynamic_cast<const MouseButtonEvent*>(&ev);
 
-		if ((ev.GetType() == EventType::MouseReleased && dynamic_cast<const MouseButtonEvent&>(ev).GetButton() == MouseButton::Left) || (ev.GetType() == EventType::FocusSwitched))	//When the user releases LMB anywhere or our scene is de-focused, we disable writing to the InputBox.
+		if (bDeactivateOnClickAnywhere)
+		{
+		if (((ev.GetType() == EventType::MouseReleased && buttonEvCast->GetButton() == MouseButton::Left) || (ev.GetType() == EventType::FocusSwitched)) && !(buttonEvCast && buttonEvCast->GetModifierBits() & KeyModifierFlags::Alt))	//When the user releases LMB anywhere or our scene is de-focused, we disable writing to the InputBox.
 			isActive = false;
+		}
+		else
+		{
+			bool mouseInside = (Scene.GetUIData()->GetCurrentBlockingCanvas() && !Scene.GetUIData()->GetCurrentBlockingCanvas()->ShouldAcceptBlockedEvents(*this)) ? (false) : (ContainsMouse(Scene.GetUIData()->GetWindowData().GetMousePositionNDC()));
+			if ((ev.GetType() == EventType::MouseReleased && buttonEvCast->GetButton() == MouseButton::Left) && mouseInside)
+				isActive = false;
+		}
 
 		if ((!isActive && wasActive) || (isActive && (ev.GetType() == EventType::KeyPressed || ev.GetType() == EventType::KeyRepeated) && dynamic_cast<const KeyEvent&>(ev).GetKeyCode() == Key::Enter))
 			OnDeactivation();
@@ -392,13 +417,13 @@ namespace GEE
 	void UIActivableButtonActor::OnClick()
 	{
 		UIButtonActor::OnClick();
-		State = EditorIconState::ACTIVATED;
+		State = EditorButtonState::Activated;
 	}
 
 	void UIActivableButtonActor::OnDeactivation()
 	{
 		std::cout << "Deactivating...\n";
-		State = ((ContainsMouse(Scene.GetUIData()->GetWindowData().GetMousePositionNDC())) ? (EditorIconState::HOVER) : (EditorIconState::IDLE));
+		State = ((ContainsMouse(Scene.GetUIData()->GetWindowData().GetMousePositionNDC())) ? (EditorButtonState::Hover) : (EditorButtonState::Idle));
 		if (OnDeactivationFunc)
 			OnDeactivationFunc();
 	}
@@ -410,7 +435,7 @@ namespace GEE
 
 		UIButtonActor::DeduceMaterial();
 
-		if (State == EditorIconState::ACTIVATED)
+		if (State == EditorButtonState::Activated)
 		{
 			ButtonModel->OverrideInstancesMaterialInstances(MatActive);
 			PrevDeducedMaterial = MatActive.get();

@@ -1,4 +1,5 @@
 #include <scene/LightProbeComponent.h>
+#include <game/GameScene.h>
 #include <rendering/Framebuffer.h>
 #include <rendering/RenderToolbox.h>
 #include <rendering/Material.h>
@@ -67,13 +68,13 @@ namespace GEE
 		ProbeIndex = index;
 	}
 
-	MaterialInstance LightProbeComponent::LoadDebugMatInst(EditorIconState state)
+	MaterialInstance LightProbeComponent::LoadDebugMatInst(EditorButtonState state)
 	{
 		LoadDebugRenderMaterial("GEE_Mat_Default_Debug_LightProbeComponent", "Assets/Editor/lightprobecomponent_icon.png");
 		return Component::LoadDebugMatInst(state);
 	}
 
-	void LightProbeComponent::GetEditorDescription(EditorDescriptionBuilder descBuilder)
+	void LightProbeComponent::GetEditorDescription(ComponentDescriptionBuilder descBuilder)
 	{
 		Component::GetEditorDescription(descBuilder);
 

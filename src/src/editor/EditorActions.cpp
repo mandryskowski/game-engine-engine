@@ -1,4 +1,5 @@
 #include <editor/EditorActions.h>
+#include <game/GameScene.h>
 #include <UI/UIListActor.h>
 #include <scene/UIButtonActor.h>
 #include <UI/UICanvasActor.h>
@@ -14,7 +15,10 @@
 #include <scene/GunActor.h>
 #include <scene/PawnActor.h>
 
+#include <assetload/FileLoader.h>
 
+#include <scene/hierarchy/HierarchyTree.h>
+#include <scene/hierarchy/HierarchyNode.h>
 
 #include <scene/ModelComponent.h>
 #include <editor/EditorManager.h>
@@ -33,7 +37,6 @@ namespace GEE
 		{
 			secondaryMat = MakeShared<Material>("GEE_E_Popup_Secondary");
 			secondaryMat->SetColor(Vec3f(0.5f, 0.3f, 0.5f));
-			secondaryMat->SetRenderShaderName("Forward_NoLight");
 			actor->GetGameHandle()->GetRenderEngineHandle()->AddMaterial(secondaryMat);
 		}
 		PopupCanvas->CreateCanvasBackgroundModel(Vec3f(0.5f, 0.3f, 0.5f));
@@ -48,6 +51,9 @@ namespace GEE
 				buttonFunc();
 		}, Transform(Vec2f(0.0f), Vec2f(0.9f)));
 
+		if (!buttonFunc)
+			button.SetDisableInput(true);
+
 		if (optionalIconData.IsValid())
 		{
 			auto& iconModel = button.CreateComponent<ModelComponent>("GEE_E_Button_Icon", Transform(Vec2f(-0.9f, 0.0f), Vec2f(0.1f, 0.8f)));
@@ -59,11 +65,11 @@ namespace GEE
 		return button;
 		//button.GetRoot()->GetComponent<TextConstantSizeComponent>("ButtonText")->Unstretch(UISpace::Window);
 	}
-	PopupDescription PopupDescription::AddSubmenu(const std::string& buttonContent, std::function<void(PopupDescription)> prepareSubmenu, const IconData& optionalIconData)
+	PopupDescription PopupDescription::AddSubmenu(const std::string& buttonContent, std::function<void(PopupDescription)> prepareSubmenuFunc, const IconData& optionalIconData)
 	{
 		int optionIndex = DescriptionRoot->GetListElementCount();
 
-		auto createSubPopup = [gameHandle = DescriptionRoot->GetGameHandle(), optionIndex, *this, prepareSubmenu, window = &Window]() mutable
+		auto createSubPopup = [gameHandle = DescriptionRoot->GetGameHandle(), optionIndex, *this, prepareSubmenuFunc, window = &Window]() mutable
 		{
 
 			Vec2f submenuPos(1.0f, 1.0f);
@@ -71,11 +77,14 @@ namespace GEE
 			submenuPos = t.GetPos2D() + t.GetScale2D();
 		
 			PopupDescription desc = dynamic_cast<Editor::EditorManager*>(gameHandle)->CreatePopupMenu(submenuPos, *window);
-			prepareSubmenu(desc);
+			if (prepareSubmenuFunc)
+				prepareSubmenuFunc(desc);
 			desc.RefreshPopup();
 		};
 		auto& button = DescriptionRoot->CreateChild<UIButtonActor>("Button_" + buttonContent, buttonContent, nullptr, Transform(Vec2f(0.0f), Vec2f(0.9f)));
 
+		if (!prepareSubmenuFunc)
+			button.SetDisableInput(true);
 
 		button.SetOnHoverFunc([window = &Window, createSubPopup]() mutable
 		{
@@ -121,7 +130,6 @@ namespace GEE
 				IconMaterial = MakeShared<Material>("TEX:" + texFilepath);
 
 			IconMaterial->AddTexture(Texture::Loader<>::FromFile2D(texFilepath, Texture::Format::RGBA(), true, Texture::MinFilter::Bilinear()));
-			IconMaterial->SetRenderShaderName("Forward_NoLight");
 			renderHandle.AddMaterial(IconMaterial);
 		}
 	}
@@ -187,7 +195,7 @@ namespace GEE
 			canvas.SetTransform(Transform(Vec2f(0.7f, -0.125f), Vec2f(0.3f, 0.375f)));
 			UIActorDefault* scaleActor = canvas.GetScaleActor();
 
-			comp->GetEditorDescription(EditorDescriptionBuilder(EditorHandle, *scaleActor));
+			comp->GetEditorDescription(ComponentDescriptionBuilder(EditorHandle, *scaleActor));
 
 			canvas.RefreshFieldsList();
 
@@ -230,12 +238,7 @@ namespace GEE
 				auto& refreshButton = desc.AddOption("Refresh",[&]() { SelectActor(GetSelectedActor(), editorScene); }, IconData(renderHandle, "Assets/Editor/refresh_icon.png", Vec2i(3, 1), 0.0f));
 				desc.AddSubmenu("Create component", [&](PopupDescription desc)
 				{
-					desc.AddOption("Component", [&]() { GetContextComp()->CreateComponent<Component>("A Component"); refreshButton.CallOnClickFunc(); }, IconData(renderHandle, "Assets/Editor/component_icon.png", Vec2i(3, 1), 0.0f));
-					desc.AddOption("Light", [&]() { GetContextComp()->CreateComponent<LightComponent>("A LightComponent"); refreshButton.CallOnClickFunc(); }, IconData(renderHandle, "Assets/Editor/lightcomponent_icon.png", Vec2i(3, 1), 0.0f));
-					desc.AddOption("Sound source", [&]() { GetContextComp()->CreateComponent<Audio::SoundSourceComponent>("A SoundSourceComponent"); refreshButton.CallOnClickFunc(); }, IconData(renderHandle, "Assets/Editor/soundsourcecomponent_debug.png", Vec2i(3, 1), 0.0f));
-					desc.AddOption("Camera", [&]() { GetContextComp()->CreateComponent<CameraComponent>("A CameraComponent"); refreshButton.CallOnClickFunc(); }, IconData(renderHandle, "Assets/Editor/cameracomponent_icon.png", Vec2i(3, 1), 0.0f));
-					desc.AddOption("Text", [&]() { GetContextComp()->CreateComponent<TextComponent>("A TextComponent", Transform(), "Sample text", ""); refreshButton.CallOnClickFunc(); }, IconData(renderHandle, "Assets/Editor/textcomponent_icon.png", Vec2i(3, 1), 0.0f));
-					desc.AddOption("Light probe", [&]() { GetContextComp()->CreateComponent<LightProbeComponent>("A LightProbeComponent"); refreshButton.CallOnClickFunc(); }, IconData(renderHandle, "Assets/Editor/lightprobecomponent_icon.png", Vec2i(3, 1), 0.0f));
+					ContextMenusFactory(renderHandle).AddComponent(desc, *GetContextComp(), [&]() { refreshButton.CallOnClickFunc(); });
 				});
 				desc.AddOption("Delete", nullptr);
 			});
@@ -272,9 +275,9 @@ namespace GEE
 
 					Component& exampleComponent = createCompFunc();
 
-					compButton.SetMatIdle(exampleComponent.LoadDebugMatInst(EditorIconState::IDLE));
-					compButton.SetMatHover(exampleComponent.LoadDebugMatInst(EditorIconState::HOVER));
-					compButton.SetMatClick(exampleComponent.LoadDebugMatInst(EditorIconState::BEING_CLICKED_INSIDE));
+					compButton.SetMatIdle(exampleComponent.LoadDebugMatInst(EditorButtonState::Idle));
+					compButton.SetMatHover(exampleComponent.LoadDebugMatInst(EditorButtonState::Hover));
+					compButton.SetMatClick(exampleComponent.LoadDebugMatInst(EditorButtonState::BeingClickedInside));
 
 					actor->GetRoot()->DetachChild(exampleComponent);
 				};
@@ -374,7 +377,7 @@ namespace GEE
 				createActorButton(6, [this, &editorScene, &selectedScene, getSelectedActor]() -> CueController& { return getSelectedActor().CreateChild<CueController>(selectedScene->GetUniqueActorName("A CueController")); }, "CueController");
 				}, Transform(Vec2f(8.0f, 0.0f), Vec2f(0.5f)));
 
-			AtlasMaterial& addActorMat = *new AtlasMaterial(Material("GEE_E_Add_Actor_Material", 0.0f, renderHandle.FindShader("Forward_NoLight")), glm::ivec2(3, 1));
+			AtlasMaterial& addActorMat = *new AtlasMaterial(Material("GEE_E_Add_Actor_Material"), glm::ivec2(3, 1));
 			addActorMat.AddTexture(MakeShared<NamedTexture>(Texture::Loader<>::FromFile2D("Assets/Editor/add_icon.png", Texture::Format::RGBA(), false, Texture::MinFilter::NearestInterpolateMipmap()), "albedo1"));
 			uiButtonActorUtil::ButtonMatsFromAtlas(addActorButton, addActorMat, 0.0f, 1.0f, 2.0f);
 
@@ -383,10 +386,140 @@ namespace GEE
 
 			listActor.Refresh();
 
-			editorScene.GetRootActor()->DebugActorHierarchy();
+			//editorScene.GetRootActor()->DebugActorHierarchy();
 
 			canvas.AutoClampView();
 			canvas.SetViewScale(static_cast<Vec2f>(canvas.CanvasView.GetScale()) * Vec2f(1.0f, glm::sqrt(0.32f / 0.32f)));
+		}
+
+		void EditorActions::PreviewHierarchyTree(HierarchyTemplate::HierarchyTreeT& tree)
+		{
+			GameScene& editorScene = *EditorHandle.GetGameHandle()->GetScene("GEE_Editor");
+			UIWindowActor& previewWindow = editorScene.CreateActorAtRoot<UIWindowActor>("Mesh node preview window");
+
+			previewWindow.AddField("Name").CreateChild<UIInputBoxActor>("NameInputBox", [&tree](const std::string& name) { tree.SetName(name); }, [&tree]() { return tree.GetName().GetPath(); }).SetDisableInput(!tree.GetName().IsALocalResource());
+			previewWindow.AddField("Tree origin").CreateChild<UIButtonActor>("OriginButton", (tree.GetName().IsALocalResource()) ? ("Local") : ("File")).SetDisableInput(true);
+			previewWindow.AddField("Delete tree").CreateChild<UIButtonActor>("DeleteButton", "Delete").SetDisableInput(true);
+			auto& list = previewWindow.AddField("Mesh nodes list").CreateChild<UIAutomaticListActor>("MeshNodesList");
+
+
+			std::vector<std::pair<HierarchyTemplate::HierarchyNodeBase&, UIActivableButtonActor*>> buttons;
+
+			std::function<void(HierarchyTemplate::HierarchyNodeBase&, UIAutomaticListActor&)> createNodeButtons = [&](HierarchyTemplate::HierarchyNodeBase& node, UIAutomaticListActor& listParent) {
+				auto& element = listParent.CreateChild<UIActivableButtonActor>("Button", node.GetCompBaseType().GetName(), nullptr);
+				buttons.push_back(std::pair<HierarchyTemplate::HierarchyNodeBase&, UIActivableButtonActor*>(node, &element));
+				element.SetDeactivateOnClickAnywhere(false);
+				element.OnClick();
+				element.DeduceMaterial();
+				element.SetTransform(Transform(Vec2f(1.5f, 0.0f), Vec2f(3.0f, 1.0f)));
+				element.GetRoot()->GetComponent<TextConstantSizeComponent>("ButtonText")->Unstretch();
+				element.SetPopupCreationFunc([&](PopupDescription desc)
+				{
+					desc.AddOption("Instantiate to selected", [this, &node, &editorScene]()
+					{
+						if (!GetContextComp())
+							return;
+
+						Actor& actor = GetContextComp()->GetActor();
+						Component* createdComp = nullptr;
+						if (GetContextComp() == actor.GetRoot())
+						{
+							actor.ReplaceRoot(node.GenerateComp(actor));
+							createdComp = actor.GetRoot();
+						}
+						else
+						{
+							createdComp = &GetContextComp()->ParentComponent->AddComponent(node.GenerateComp(actor));
+							GetContextComp()->MarkAsKilled();
+						}
+
+						SelectActor(GetContextActor(), editorScene);
+						SelectComponent(createdComp, editorScene);
+					});
+					desc.AddOption("Edit", (tree.GetName().IsALocalResource()) ? (
+					[*this, editorScenePtr = &editorScene, nodePtr = &node]() mutable {
+						PreviewHierarchyNode(*nodePtr, *editorScenePtr);
+					}) : (std::function<void()>(nullptr)));
+					desc.AddSubmenu("Add node", (tree.GetName().IsALocalResource()) ? ([&](PopupDescription submenuDesc)
+					{
+						//Component& tempComp = tree.GetTempActor().CreateComponent<Component>("GEE_E_ADD_NODE_TEMP_COMPONENT");
+						ContextMenusFactory(*EditorHandle.GetGameHandle()->GetRenderEngineHandle()).AddComponent(submenuDesc, FunctorHierarchyNodeCreator(node), [&]() { previewWindow.MarkAsKilled(); PreviewHierarchyTree(tree); });
+						/*ContextMenusFactory(*EditorHandle.GetGameHandle()->GetRenderEngineHandle()).AddComponent(submenuDesc, tempComp, [&]()
+							{
+
+							std::vector<Component*> createdCompVector;
+							tempComp.GetAllComponents<Component>(&createdCompVector);
+							node.CreateChild<decltype(createdCompVector[0])>("test");
+							tempComp.MarkAsKilled();
+						});*/
+					}) : (std::function<void(PopupDescription)>(nullptr)));
+					
+					desc.AddOption("Delete node", (&node == &tree.GetRoot() || !tree.GetName().IsALocalResource()) ? (std::function<void()>(nullptr)) : ([&]() { node.Delete(); }));
+				});
+
+				for (int i = 0; i < static_cast<int>(node.GetChildCount()); i++)
+				{
+					HierarchyTemplate::HierarchyNodeBase& child = *node.GetChild(i);
+					UIAutomaticListActor& nestedList = listParent.CreateChild<UIAutomaticListActor>(child.GetCompBaseType().GetName() + "'s nestedlist");
+					createNodeButtons(child, nestedList);
+				}
+			};
+
+			createNodeButtons(tree.GetRoot(), list);
+
+			UIButtonActor& instantiateButton = list.CreateChild<UIButtonActor>("InstantiateButton", "Instantiate", [this, &tree, &editorScene, buttons]() {
+				// Get selected component to instantiate to
+				std::function<Component* ()> getSelectedComp = [this]() -> Component* { return ((GetSelectedComponent()) ? (GetSelectedComponent()) : ((GetSelectedActor()) ? (GetSelectedActor()->GetRoot()) : (nullptr))); };
+
+				// Get selected nodes
+				std::vector<HierarchyTemplate::HierarchyNodeBase*> selectedNodes;
+				for (auto& it : buttons)
+					if (it.second->GetState() == EditorButtonState::Activated)
+						selectedNodes.push_back(&it.first);
+
+				// Instantiate
+				if (Component* selectedComp = getSelectedComp(); selectedComp && !selectedNodes.empty())
+					EngineDataLoader::InstantiateTree(*selectedComp, tree, selectedNodes);
+
+				// Refresh
+				SelectActor(GetSelectedActor(), editorScene);
+				});
+
+			list.CreateChild<UIButtonActor>("SelectAllButton", "Select all", [this, buttons]() {
+				for (auto it : buttons)
+				{
+					it.second->OnClick();
+					it.second->DeduceMaterial();
+				}
+
+				});
+
+			list.CreateChild<UIButtonActor>("DeselectAllButton", "Deselect all", [this, buttons]() {
+				for (auto it : buttons)
+				{
+					it.second->OnDeactivation();
+					it.second->DeduceMaterial();
+				}
+				});
+
+			previewWindow.RefreshFieldsList();
+			list.Refresh();
+			previewWindow.AutoClampView();
+		}
+
+		void EditorActions::PreviewHierarchyNode(HierarchyTemplate::HierarchyNodeBase& node, GameScene& editorScene)
+		{
+			if (Actor* foundWindow = editorScene.FindActor("GEE_E_Node_Preview_Window"))
+				foundWindow->MarkAsKilled();
+			auto& nodeWindow = editorScene.CreateActorAtRoot<UIWindowActor>("GEE_E_Node_Preview_Window");
+			nodeWindow.CreateCanvasBackgroundModel(Vec3f(0.6f, 0.3f, 0.6f));
+
+			ComponentDescriptionBuilder nodeCompDesc(EditorHandle, nodeWindow, nodeWindow);
+			nodeCompDesc.SetNodeBeingBuilt(&node);
+			node.GetCompBaseType().GetEditorDescription(nodeCompDesc);
+
+			nodeWindow.RefreshFieldsList();
+			nodeWindow.AutoClampView();
 		}
 
 		Component* EditorActions::GetContextComp()
@@ -409,6 +542,34 @@ namespace GEE
 		template <> void EditorActions::Select<Component>(Component* obj, GameScene& editorScene) { SelectComponent(obj, editorScene); }
 		template <> void EditorActions::Select<Actor>(Actor* obj, GameScene& editorScene) { SelectActor(obj, editorScene); }
 		template <> void EditorActions::Select<GameScene>(GameScene* obj, GameScene& editorScene) { SelectScene(obj, editorScene); }
-	}
 
+		ContextMenusFactory::ContextMenusFactory(RenderEngineManager& renderHandle):
+			RenderHandle(renderHandle)
+		{
+		}
+
+		void ContextMenusFactory::AddComponent(PopupDescription desc, Component& contextComp, std::function<void()> onCreation)
+		{
+			desc.AddOption("Component", [&, onCreation]() { contextComp.CreateComponent<Component>("A Component"); if (onCreation) onCreation(); }, IconData(RenderHandle, "Assets/Editor/component_icon.png", Vec2i(3, 1), 0.0f));
+			desc.AddOption("Light", [&, onCreation]() { contextComp.CreateComponent<LightComponent>("A LightComponent"); if (onCreation) onCreation(); }, IconData(RenderHandle, "Assets/Editor/lightcomponent_icon.png", Vec2i(3, 1), 0.0f));
+			desc.AddOption("Sound source", [&, onCreation]() { contextComp.CreateComponent<Audio::SoundSourceComponent>("A SoundSourceComponent"); if (onCreation) onCreation(); }, IconData(RenderHandle, "Assets/Editor/soundsourcecomponent_debug.png", Vec2i(3, 1), 0.0f));
+			desc.AddOption("Camera", [&, onCreation]() { contextComp.CreateComponent<CameraComponent>("A CameraComponent"); if (onCreation) onCreation(); }, IconData(RenderHandle, "Assets/Editor/cameracomponent_icon.png", Vec2i(3, 1), 0.0f));
+			desc.AddOption("Text", [&, onCreation]() { contextComp.CreateComponent<TextComponent>("A TextComponent", Transform(), "Sample text", ""); if (onCreation) onCreation(); }, IconData(RenderHandle, "Assets/Editor/textcomponent_icon.png", Vec2i(3, 1), 0.0f));
+			desc.AddOption("Light probe", [&, onCreation]() { contextComp.CreateComponent<LightProbeComponent>("A LightProbeComponent"); if (onCreation) onCreation(); }, IconData(RenderHandle, "Assets/Editor/lightprobecomponent_icon.png", Vec2i(3, 1), 0.0f));
+		}
+
+		template<typename TFunctor>
+		void ContextMenusFactory::AddComponent(PopupDescription desc, TFunctor&& functor, std::function<void()> onCreation)
+		{
+			desc.AddOption("Component", [onCreation, functor]() mutable { functor.Create<Component>("A Component"); if (onCreation) onCreation(); }, IconData(RenderHandle, "Assets/Editor/component_icon.png", Vec2i(3, 1), 0.0f));
+			desc.AddOption("Model", [onCreation, functor]() mutable { functor.Create<ModelComponent>("A ModelComponent"); if (onCreation) onCreation(); }, IconData(RenderHandle, "Assets/Editor/component_icon.png", Vec2i(3, 1), 0.0f));
+			desc.AddOption("Light", [onCreation, functor]() mutable { functor.Create<LightComponent>("A LightComponent"); if (onCreation) onCreation(); }, IconData(RenderHandle, "Assets/Editor/lightcomponent_icon.png", Vec2i(3, 1), 0.0f));
+		//	desc.AddOption("Sound source", [&]() { functor.Create<Audio::SoundSourceComponent>("A SoundSourceComponent"); if (onCreation) onCreation(); }, IconData(RenderHandle, "Assets/Editor/soundsourcecomponent_debug.png", Vec2i(3, 1), 0.0f));
+			//desc.AddOption("Camera", [&]() { functor.Create<CameraComponent>("A CameraComponent"); if (onCreation) onCreation(); }, IconData(RenderHandle, "Assets/Editor/cameracomponent_icon.png", Vec2i(3, 1), 0.0f));
+			//desc.AddOption("Text", [&]() { functor.Create<TextComponent>("A TextComponent", Transform(), "Sample text", ""); if (onCreation) onCreation(); }, IconData(RenderHandle, "Assets/Editor/textcomponent_icon.png", Vec2i(3, 1), 0.0f));
+			//desc.AddOption("Light probe", [&]() { functor.Create<LightProbeComponent>("A LightProbeComponent"); if (onCreation) onCreation(); }, IconData(RenderHandle, "Assets/Editor/lightprobecomponent_icon.png", Vec2i(3, 1), 0.0f));
+		}
+		template void ContextMenusFactory::AddComponent<FunctorHierarchyNodeCreator>(PopupDescription desc, FunctorHierarchyNodeCreator&& functor, std::function<void()> onCreation);
 }
+
+}	

@@ -1,0 +1,163 @@
+{
+    "SkeletonBatches": [],
+    "HierarchyTrees": [
+        {
+            "ptr_wrapper": {
+                "valid": 1,
+                "data": {
+                    "LocalResourcePath": "Assets\\EngineObjects\\cone.obj",
+                    "Root": {
+                        "polymorphic_id": 2147483649,
+                        "polymorphic_name": "GEE::HierarchyTemplate::HierarchyNode<GEE::Component>",
+                        "ptr_wrapper": {
+                            "valid": 1,
+                            "data": {
+                                "CompT": {
+                                    "Name": "Assets\\EngineObjects\\cone.obj",
+                                    "ComponentTransform": {
+                                        "Position": {
+                                            "x": 0.0,
+                                            "y": 0.0,
+                                            "z": 0.0
+                                        },
+                                        "Rotation": {
+                                            "x": 0.0,
+                                            "y": 0.0,
+                                            "z": 0.0,
+                                            "w": 1.0
+                                        },
+                                        "Scale": {
+                                            "x": 1.0,
+                                            "y": 1.0,
+                                            "z": 1.0
+                                        }
+                                    },
+                                    "CollisionObj": {
+                                        "ptr_wrapper": {
+                                            "valid": 0
+                                        }
+                                    },
+                                    "Children": []
+                                },
+                                "Children": [
+                                    {
+                                        "polymorphic_id": 2147483650,
+                                        "polymorphic_name": "GEE::HierarchyTemplate::HierarchyNode<GEE::ModelComponent>",
+                                        "ptr_wrapper": {
+                                            "valid": 1,
+                                            "data": {
+                                                "CompT": {
+                                                    "RenderAsBillboard": false,
+                                                    "MeshInstances": [
+                                                        {
+                                                            "ptr_wrapper": {
+                                                                "valid": 1,
+                                                                "data": {
+                                                                    "MeshTreePath": "Assets\\EngineObjects\\cone.obj",
+                                                                    "MeshNodeName": "Cone",
+                                                                    "MeshSpecificName": "Cone",
+                                                                    "MaterialInst": {
+                                                                        "ptr_wrapper": {
+                                                                            "id": 0
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    ],
+                                                    "SkelInfoBatchID": -1,
+                                                    "SkelInfoID": -1,
+                                                    "RenderableComponent": {
+                                                        "Hide": false,
+                                                        "CastsShadow": true,
+                                                        "Component": {
+                                                            "Name": "Cone",
+                                                            "ComponentTransform": {
+                                                                "Position": {
+                                                                    "x": 0.0,
+                                                                    "y": 0.0,
+                                                                    "z": 0.0
+                                                                },
+                                                                "Rotation": {
+                                                                    "x": 0.0,
+                                                                    "y": 0.0,
+                                                                    "z": 0.0,
+                                                                    "w": 1.0
+                                                                },
+                                                                "Scale": {
+                                                                    "x": 1.0,
+                                                                    "y": 1.0,
+                                                                    "z": 1.0
+                                                                }
+                                                            },
+                                                            "CollisionObj": {
+                                                                "ptr_wrapper": {
+                                                                    "valid": 0
+                                                                }
+                                                            },
+                                                            "Children": []
+                                                        }
+                                                    }
+                                                },
+                                                "Children": []
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    ],
+    "Name": "SceneRoot",
+    "RootComponent": {
+        "polymorphic_id": 1073741824,
+        "ptr_wrapper": {
+            "valid": 1,
+            "data": {
+                "Name": "SceneRoot's root",
+                "ComponentTransform": {
+                    "Position": {
+                        "x": 0.0,
+                        "y": 0.0,
+                        "z": 0.0
+                    },
+                    "Rotation": {
+                        "x": 0.0,
+                        "y": 0.0,
+                        "z": 0.0,
+                        "w": 1.0
+                    },
+                    "Scale": {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "z": 1.0
+                    }
+                },
+                "CollisionObj": {
+                    "ptr_wrapper": {
+                        "valid": 0
+                    }
+                },
+                "Children": []
+            }
+        }
+    },
+    "Children": [],
+    "bWindowFullscreen": false,
+    "WindowTitle": "game-engine-engine",
+    "Video": {
+        "AmbientOcclusionSamples": 64,
+        "bVSync": false,
+        "bBloom": true,
+        "AAType": 1,
+        "AALevel": 4,
+        "MonitorGamma": 2.200000047683716,
+        "POMLevel": 1,
+        "ShadowLevel": 3,
+        "TMType": 1
+    },
+    "bDebugRenderComponents": true
+}

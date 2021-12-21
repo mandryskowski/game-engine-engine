@@ -1,4 +1,6 @@
 #include <physics/PhysicsEngine.h>
+#include <physics/DynamicPhysicsObjects.h>
+#include <game/GameScene.h>
 #include <array>
 #include <rendering/RenderEngine.h>
 #include <physics/CollisionObject.h>
@@ -54,7 +56,7 @@ namespace GEE
 			if (!Cooking)
 				std::cerr << "ERROR! Can't initialize cooking.\n";
 
-			DefaultMaterial = Physics->createMaterial(1.0f, 0.5f, 0.1f);
+			DefaultMaterial = Physics->createMaterial(1.0f, 0.5f, 1.0f);
 		}
 
 		PxShape* PhysicsEngine::CreateTriangleMeshShape(CollisionShape* colShape, Vec3f scale)
@@ -195,11 +197,6 @@ namespace GEE
 			PxShape* shape = shapes[0];
 			//shape->setLocalPose(physx::PxTransform(physx::PxVec3(0.0f), physx::PxQuat(physx::PxHalfPi, physx::PxVec3(0.0f, 0.0f, 1.0f))));	//rotate it so we get a vertical capsule (without this line the capsule would be oriented towards X+, I guess that's how physX defaults it)
 			return controller;
-		}
-
-		void PhysicsEngine::ApplyForce(CollisionObject& obj, Vec3f force)
-		{
-			Physics::ApplyForce(obj, force);
 		}
 
 		void PhysicsEngine::SetupScene(GameScenePhysicsData& scenePhysicsData)
@@ -429,14 +426,6 @@ namespace GEE
 
 			//Foundation->release();
 			std::cout << "Physics engine successfully destroyed!\n";
-		}
-
-		void ApplyForce(CollisionObject& obj, const Vec3f& force)
-		{
-			PxRigidDynamic* body = obj.ActorPtr->is<PxRigidDynamic>();
-
-			if (body)
-				body->addForce(toPx(force), PxForceMode::eIMPULSE);
 		}
 
 		namespace Util

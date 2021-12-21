@@ -1,6 +1,9 @@
 #include <scene/hierarchy/HierarchyNode.h>
+#include <game/GameScene.h>
 #include <scene/Actor.h>
+#include <scene/LightComponent.h>
 
+GEE::Actor* GEE::CerealNodeSerializationData::TempActor = nullptr;
 namespace GEE
 {
 	using namespace HierarchyTemplate;
@@ -52,6 +55,15 @@ namespace GEE
 	}
 
 	template<typename CompType>
+	UniquePtr<Component> HierarchyTemplate::HierarchyNode<CompType>::GenerateComp(Actor& compActor) const
+	{
+		UniquePtr<CompType> comp = MakeUnique<CompType>(compActor, nullptr, "generated");
+		InstantiateToComp(*comp);
+
+		return static_unique_pointer_cast<Component, CompType>(std::move(comp));
+	}
+
+	template<typename CompType>
 	HierarchyNodeBase* HierarchyTemplate::HierarchyNode<CompType>::GetChild(unsigned int index) const
 	{
 		if (index > Children.size() - 1)
@@ -99,6 +111,7 @@ namespace GEE
 	template<typename CompType>
 	HierarchyNodeBase& HierarchyTemplate::HierarchyNode<CompType>::AddChild(UniquePtr<HierarchyNodeBase> child)
 	{
+		child->SetParent(this);
 		Children.push_back(std::move(child));
 		return *Children.back().get();
 	}
@@ -123,9 +136,10 @@ namespace GEE
 	}
 
 	template<typename CompType>
-	void HierarchyTemplate::HierarchyNode<CompType>::SetCollisionObject(UniquePtr<Physics::CollisionObject> collisionObj)
+	Physics::CollisionObject* HierarchyTemplate::HierarchyNode<CompType>::SetCollisionObject(UniquePtr<Physics::CollisionObject> collisionObj)
 	{
 		CollisionObj = std::move(collisionObj);
+		return CollisionObj.get();
 	}
 
 	template<typename CompType>
@@ -137,6 +151,35 @@ namespace GEE
 		CollisionObj->AddShape(shape);
 	}
 
+	template<typename CompType>
+	void HierarchyTemplate::HierarchyNode<CompType>::Delete()
+	{
+		GEE_CORE_ASSERT(Parent);
+		Parent->RemoveChild(this);
+	}
+
+	template<typename CompType>
+	void HierarchyTemplate::HierarchyNode<CompType>::SetParent(HierarchyNodeBase* parent)
+	{
+		Parent = parent;
+	}
+
+	template<typename CompType>
+	void HierarchyTemplate::HierarchyNode<CompType>::RemoveChild(HierarchyNodeBase* child)
+	{
+		Children.erase(std::remove_if(Children.begin(), Children.end(), [child](UniquePtr<HierarchyNodeBase>& popup) { return popup.get() == child; }), Children.end());
+	}
+
+	template<typename CompType>
+	template<typename Archive>
+	void HierarchyNode<CompType>::Serialize(Archive& archive)
+	{
+		std::cout << "^^^ Serializing node.\n";
+		archive(CEREAL_NVP(CompT), CEREAL_NVP(CollisionObj), CEREAL_NVP(Children));
+	}
+
+	template void HierarchyNode<>::Serialize<cereal::JSONInputArchive>(cereal::JSONInputArchive&);
+	template void HierarchyNode<>::Serialize<cereal::JSONOutputArchive>(cereal::JSONOutputArchive&);
 
 	template <> HierarchyNode<ModelComponent>::HierarchyNode(Actor& tempActor, const std::string& name) :
 		CompT(ModelComponent(tempActor, nullptr, name))
@@ -163,7 +206,10 @@ namespace GEE
 		CompT.GetScene().GetRenderData()->EraseRenderable(CompT);
 	}
 
+
 	template class HierarchyNode<ModelComponent>;
 	template class HierarchyNode<BoneComponent>;
 	template class HierarchyNode<Component>;
+
+	template class HierarchyNode<LightComponent>;
 }

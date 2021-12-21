@@ -15,10 +15,10 @@ namespace GEE
 
 	enum class TVec	//TransformVector
 	{
-		POSITION,
-		ROTATION,
-		SCALE,
-		ROTATION_EULER
+		Position,
+		Rotation,
+		Scale,
+		RotationEuler
 	};
 
 
@@ -89,14 +89,14 @@ namespace GEE
 		template <TVec vec, VecAxis axis> void SetVecAxis(float val)
 		{
 			unsigned int axisIndex = static_cast<unsigned int>(axis);
-			GEE_CORE_ASSERT(axisIndex <= 2 || (vec == TVec::ROTATION && axisIndex <= 3));
+			GEE_CORE_ASSERT(axisIndex <= 2 || (vec == TVec::Rotation && axisIndex <= 3));
 
 			switch (vec)
 			{
-			case TVec::POSITION: Position[axisIndex] = val; break;
-			case TVec::ROTATION: Rotation[axisIndex] = val; break;
-			case TVec::ROTATION_EULER: Vec3f euler = toEuler(GetRot()); euler[axisIndex] = val; SetRotation(euler); break;
-			case TVec::SCALE: Scale[axisIndex] = val; break;
+			case TVec::Position: Position[axisIndex] = val; break;
+			case TVec::Rotation: Rotation[axisIndex] = val; break;
+			case TVec::RotationEuler: Vec3f euler = toEuler(GetRot()); euler[axisIndex] = val; SetRotation(euler); break;
+			case TVec::Scale: Scale[axisIndex] = val; break;
 			}
 
 			FlagMyDirtiness();

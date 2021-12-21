@@ -2,20 +2,27 @@
 #include <game/GameManager.h>
 #include <game/GameSettings.h>
 #include "Framebuffer.h"
+#include <map>
 
 namespace GEE
 {
-	struct ToolboxCollectionInfo
+	class ShaderFromHintGetter
 	{
-		std::string Name;
-		Vec2f Resolution;
-		GameSettings Settings;
-		ShadingAlgorithm Shading;
+	public:
+		ShaderFromHintGetter(RenderEngineManager& renderHandle);
+		Shader* GetShader(MaterialShaderHint hint);
+	private:
+		void SetShader(MaterialShaderHint hint, Shader* shader);
+		friend class RenderToolbox;
+		std::map<MaterialShaderHint, Shader*> ShaderHintMap;
 	};
+
+
 
 	class RenderToolbox
 	{
 	public:
+		RenderToolbox(ShaderFromHintGetter& shaders) : ShaderGetter(&shaders) {}
 		virtual bool IsSetup();
 		Shader* FindShader(std::string name);
 
@@ -24,17 +31,20 @@ namespace GEE
 		GEE_FB::Framebuffer* AddFramebuffer();
 		Shader* AddShader(const SharedPtr<Shader>& shader);
 		Texture* AddTexture(const Texture & = Texture());
+		void SetShaderHint(MaterialShaderHint, Shader*);
 
 		std::vector<SharedPtr<GEE_FB::Framebuffer>> Fbs;
-		std::vector<SharedPtr<Shader>> Shaders;	//add type ShaderVariant?
+		std::vector<SharedPtr<Shader>> Shaders;
 		std::vector<SharedPtr<Texture>> Textures;
+
+		ShaderFromHintGetter* ShaderGetter;
+		friend class RenderToolboxCollection;
 	};
 
 	class ForwardShadingToolbox : public RenderToolbox
 	{
 	public:
-		ForwardShadingToolbox();
-		ForwardShadingToolbox(const GameSettings::VideoSettings& settings);
+		ForwardShadingToolbox(ShaderFromHintGetter&, const GameSettings::VideoSettings& settings);
 		void Setup(const GameSettings::VideoSettings& settings);
 
 		friend class MainFramebufferToolbox;
@@ -47,8 +57,7 @@ namespace GEE
 	class DeferredShadingToolbox : public RenderToolbox
 	{
 	public:
-		DeferredShadingToolbox();
-		DeferredShadingToolbox(const GameSettings::VideoSettings& settings);
+		DeferredShadingToolbox(ShaderFromHintGetter&, const GameSettings::VideoSettings& settings);
 		void Setup(const GameSettings::VideoSettings& settings);
 
 		const GEE_FB::Framebuffer* GetGeometryFramebuffer() const { return GFb; }
@@ -67,8 +76,7 @@ namespace GEE
 	class MainFramebufferToolbox : public RenderToolbox
 	{
 	public:
-		MainFramebufferToolbox();
-		MainFramebufferToolbox(const GameSettings::VideoSettings& settings, DeferredShadingToolbox* deferredTb = nullptr);
+		MainFramebufferToolbox(ShaderFromHintGetter&, const GameSettings::VideoSettings& settings, DeferredShadingToolbox* deferredTb = nullptr);
 		void Setup(const GameSettings::VideoSettings& settings, DeferredShadingToolbox* deferredTb = nullptr);	//Pass a DeferredShadingToolbox to reuse some textures and save memory.
 
 		friend struct SceneRenderer;
@@ -79,8 +87,7 @@ namespace GEE
 	class SSAOToolbox : public RenderToolbox
 	{
 	public:
-		SSAOToolbox();
-		SSAOToolbox(const GameSettings::VideoSettings& settings);
+		SSAOToolbox(ShaderFromHintGetter&, const GameSettings::VideoSettings& settings);
 		void Setup(const GameSettings::VideoSettings& settings);
 
 		friend class Postprocess;
@@ -97,8 +104,7 @@ namespace GEE
 	class PrevFrameStorageToolbox : public RenderToolbox
 	{
 	public:
-		PrevFrameStorageToolbox();
-		PrevFrameStorageToolbox(const GameSettings::VideoSettings& settings);
+		PrevFrameStorageToolbox(ShaderFromHintGetter&, const GameSettings::VideoSettings& settings);
 		void Setup(const GameSettings::VideoSettings& settings);
 
 		friend class Postprocess;
@@ -110,8 +116,7 @@ namespace GEE
 	class SMAAToolbox : public RenderToolbox
 	{
 	public:
-		SMAAToolbox();
-		SMAAToolbox(const GameSettings::VideoSettings& settings);
+		SMAAToolbox(ShaderFromHintGetter&, const GameSettings::VideoSettings& settings);
 		void Setup(const GameSettings::VideoSettings& settings);
 
 		friend class Postprocess;
@@ -127,8 +132,7 @@ namespace GEE
 	class ComposedImageStorageToolbox : public RenderToolbox
 	{
 	public:
-		ComposedImageStorageToolbox();
-		ComposedImageStorageToolbox(const GameSettings::VideoSettings& settings);
+		ComposedImageStorageToolbox(ShaderFromHintGetter&, const GameSettings::VideoSettings& settings);
 		void Setup(const GameSettings::VideoSettings& settings);
 
 		friend class Postprocess;
@@ -142,8 +146,7 @@ namespace GEE
 	class GaussianBlurToolbox : public RenderToolbox
 	{
 	public:
-		GaussianBlurToolbox();
-		GaussianBlurToolbox(const GameSettings::VideoSettings& settings);
+		GaussianBlurToolbox(ShaderFromHintGetter&, const GameSettings::VideoSettings& settings);
 		void Setup(const GameSettings::VideoSettings& settings);
 
 		friend class Postprocess;
@@ -159,11 +162,11 @@ namespace GEE
 	class ShadowMappingToolbox : public RenderToolbox
 	{
 	public:
-		ShadowMappingToolbox();
-		ShadowMappingToolbox(const GameSettings::VideoSettings& settings);
+		ShadowMappingToolbox(ShaderFromHintGetter&, const GameSettings::VideoSettings& settings);
 		void Setup(const GameSettings::VideoSettings& settings);
 		friend class RenderEngine;
 		friend struct ShadowMapRenderer;
+		friend class GameEngineEngineEditor;
 	private:
 		GEE_FB::Framebuffer* ShadowFramebuffer;
 		Texture* ShadowMapArray, * ShadowCubemapArray;
@@ -172,8 +175,7 @@ namespace GEE
 	class FinalRenderTargetToolbox : public RenderToolbox
 	{
 	public:
-		FinalRenderTargetToolbox();
-		FinalRenderTargetToolbox(const GameSettings::VideoSettings& settings);
+		FinalRenderTargetToolbox(ShaderFromHintGetter&, const GameSettings::VideoSettings& settings);
 		void Setup(const GameSettings::VideoSettings&);
 		GEE_FB::Framebuffer& GetFinalFramebuffer();
 		friend class RenderEngine;
@@ -190,105 +192,73 @@ namespace GEE
 		 * @param name: the name of this RenderToolboxCollection
 		 * @param settings: settings to be used for rendering. DO NOT pass a local variable that is about to be destroyed or you will encounter UB. (should be allocated on the heap)
 		*/
-		RenderToolboxCollection(const std::string& name, const GameSettings::VideoSettings& settings) :
-			Name(name),
-			Settings(settings)
-		{
+		RenderToolboxCollection(const std::string& name, const GameSettings::VideoSettings& settings, RenderEngineManager& renderHandle);
+		RenderToolboxCollection(const RenderToolboxCollection&);
 
-		}
-		std::string GetName() const
+		std::string GetName() const;
+		template <typename T> T* GetTb() const;
+
+		template <typename T, typename... Args> void AddTb(Args&&... args);
+		virtual void AddTbsRequiredBySettings();
+
+		Shader* GetShaderFromHint(MaterialShaderHint hint) { return ShaderGetter->GetShader(hint); }
+		const Shader* GetShaderFromHint(MaterialShaderHint hint) const { return ShaderGetter->GetShader(hint); }
+
+		Shader* FindShader(std::string name) const
 		{
-			return Name;
-		}
-		template <class T> T* GetTb() const
-		{
-			for (int i = 0; i < Tbs.size(); i++)
-				if (T* castedObj = dynamic_cast<T*>(Tbs[i].get()))
-					return castedObj;
+			for (int i = 0; i < static_cast<int>(Tbs.size()); i++)
+				if (Shader* shader = Tbs[i]->FindShader(name))
+					return shader;
 
 			return nullptr;
 		}
-		template <class T> void AddTb(const T& obj)
-		{
-			if (GetTb<T>())
-			{
-				std::cerr << "WARNING! A toolbox collection contains two toolboxes of the same type.\n";
-				DisposeOfTb<T>();
-			}
-
-			Tbs.push_back(MakeShared<T>(T(obj)));
-		}
-		virtual void AddTbsRequiredBySettings()
-		{
-			Dispose();
-
-			std::cout << "Tobox 1.\n";
-			if (Settings.AAType == AA_SMAA1X || Settings.AAType == AA_SMAAT2X)
-				AddTb<SMAAToolbox>(SMAAToolbox(Settings));
-			std::cout << "Tobox 2.\n";
-			if (Settings.bBloom || Settings.AmbientOcclusionSamples > 0)
-				AddTb<GaussianBlurToolbox>(GaussianBlurToolbox(Settings));
-			std::cout << "Tobox 3.\n";
-			if (Settings.AmbientOcclusionSamples > 0)
-				AddTb<SSAOToolbox>(SSAOToolbox(Settings));
-			std::cout << "Tobox 4.\n";
-			if (Settings.IsVelocityBufferNeeded())
-				AddTb<PrevFrameStorageToolbox>(PrevFrameStorageToolbox(Settings));
-			std::cout << "Tobox 5.\n";
-			if (Settings.Shading != ShadingAlgorithm::SHADING_FULL_LIT)
-				AddTb<DeferredShadingToolbox>(DeferredShadingToolbox(Settings));
-			std::cout << "Tobox 6.\n";
-			if (Settings.ShadowLevel > SettingLevel::SETTING_NONE)
-				AddTb<ShadowMappingToolbox>(ShadowMappingToolbox(Settings));
-			std::cout << "Tobox 7.\n";
-			if (!Settings.DrawToWindowFBO)
-				AddTb<FinalRenderTargetToolbox>(FinalRenderTargetToolbox(Settings));
-
-			AddTb<ForwardShadingToolbox>(ForwardShadingToolbox(Settings));
-			AddTb<MainFramebufferToolbox>(MainFramebufferToolbox(Settings, GetTb<DeferredShadingToolbox>()));
-			std::cout << "Tobox 8.\n";
-			AddTb<ComposedImageStorageToolbox>(ComposedImageStorageToolbox(Settings));
-			std::cout << "Tobox 9.\n";
-		}
-		Shader* FindShader(std::string name) const;
-		const GameSettings::VideoSettings& GetSettings()
-		{
-			return Settings;
-		}
-		void Dispose()
-		{
-			for (auto& tb : Tbs)
-				tb->Dispose();
-
-			Tbs.clear();
-		}
+		const GameSettings::VideoSettings& GetSettings() const;
+		void Dispose();
 
 		friend class RenderEngine;
 
 	private:
-		template <class T> void DisposeOfTb()
-		{
-			auto it = Tbs.begin();
-			while (it != Tbs.end())
-			{
-				if (dynamic_cast<T*>(it->get()))
-					Tbs.erase(it);
+		template <typename T> void DisposeOfTb();
 
-				it++;
-			}
-		}
-
-		static bool ShouldLoadToolbox(RenderToolbox* toolbox, bool loadIfNotPresent)
-		{
-			if ((toolbox != nullptr && toolbox->IsSetup()) || (!loadIfNotPresent))
-				return false;
-
-			return true;
-		}
+		static bool ShouldLoadToolbox(RenderToolbox* toolbox, bool loadIfNotPresent);
 
 		std::vector<SharedPtr<RenderToolbox>> Tbs;
+		UniquePtr<ShaderFromHintGetter> ShaderGetter;
 
 		std::string Name;
 		const GameSettings::VideoSettings& Settings;
 	};
+
+	template<typename T>
+	T* RenderToolboxCollection::GetTb() const
+	{
+		for (int i = 0; i < Tbs.size(); i++)
+			if (T* castedObj = dynamic_cast<T*>(Tbs[i].get()))
+				return castedObj;
+
+		return nullptr;
+	}
+	template<typename T, typename... Args>
+	void RenderToolboxCollection::AddTb(Args&&... args)
+	{
+		if (GetTb<T>())
+		{
+			std::cerr << "WARNING! A toolbox collection contains two toolboxes of the same type.\n";
+			DisposeOfTb<T>();
+		}
+
+		Tbs.push_back(MakeShared<T>(*ShaderGetter, Settings, std::forward<Args>(args)...));
+	}
+	template<typename T>
+	void RenderToolboxCollection::DisposeOfTb()
+	{
+		auto it = Tbs.begin();
+		while (it != Tbs.end())
+		{
+			if (dynamic_cast<T*>(it->get()))
+				Tbs.erase(it);
+
+			it++;
+		}
+	}
 }

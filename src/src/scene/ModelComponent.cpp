@@ -14,6 +14,9 @@
 #include <scene/Controller.h>
 #include <game/IDSystem.h>
 
+#include <editor/EditorActions.h>
+#include <scene/hierarchy/HierarchyTree.h>
+
 #include <rendering/Renderer.h>
 
 namespace GEE
@@ -27,6 +30,8 @@ namespace GEE
 		SkelInfo(info),
 		RenderAsBillboard(false)
 	{
+		if (SkelInfo)
+			SkelInfo->AddModelCompRef(*this);
 	}
 
 	ModelComponent::ModelComponent(ModelComponent&& model) :
@@ -37,6 +42,8 @@ namespace GEE
 		RenderAsBillboard(model.RenderAsBillboard),
 		LastFrameMVP(model.LastFrameMVP)
 	{
+		if (SkelInfo)
+			SkelInfo->AddModelCompRef(*this);
 	}
 
 	ModelComponent& ModelComponent::operator=(const ModelComponent& compT)
@@ -72,7 +79,13 @@ namespace GEE
 
 	void ModelComponent::SetSkeletonInfo(SkeletonInfo* info)
 	{
+		if (SkelInfo)
+			SkelInfo->EraseModelCompRef(*this);
+
 		SkelInfo = info;
+
+		if (SkelInfo)
+			SkelInfo->AddModelCompRef(*this);
 	}
 
 	void ModelComponent::SetRenderAsBillboard(bool billboard)
@@ -173,9 +186,17 @@ namespace GEE
 
 	void ModelComponent::Render(const SceneMatrixInfo& info, Shader* shader)
 	{
-		if (GetHide() || IsBeingKilled())
+		if (GetHide() || IsBeingKilled() || MeshInstances.empty())
 			return;
 
+		bool anyMeetsShaderRequirements = false;
+		for (auto& it : MeshInstances)
+			if (!info.GetRequiredShaderInfo().IsValid() || (it->GetMaterialPtr() && it->GetMaterialPtr()->GetShaderInfo().MatchesRequiredInfo(info.GetRequiredShaderInfo())))
+				anyMeetsShaderRequirements = true;
+
+		if (!anyMeetsShaderRequirements)
+			return;
+			
 		std::vector<MeshInstance> meshInstances;
 		std::transform(MeshInstances.begin(), MeshInstances.end(), std::back_inserter(meshInstances), [](UniquePtr<MeshInstance>& instVec) { return *instVec; });
 
@@ -189,7 +210,7 @@ namespace GEE
 		}
 	}
 
-	void ModelComponent::GetEditorDescription(EditorDescriptionBuilder descBuilder)
+	void ModelComponent::GetEditorDescription(ComponentDescriptionBuilder descBuilder)
 	{
 		RenderableComponent::GetEditorDescription(descBuilder);
 
@@ -200,7 +221,7 @@ namespace GEE
 		cat.GetTemplates().ListSelection<UniquePtr<MeshInstance>>(MeshInstances.begin(), MeshInstances.end(), [this, descBuilder](UIAutomaticListActor& listActor, UniquePtr<MeshInstance>& meshInst)
 			{
 				std::string name = meshInst->GetMesh().GetLocalization().NodeName + " (" + meshInst->GetMesh().GetLocalization().SpecificName + ")";
-				listActor.CreateChild<UIButtonActor>(name + "Button", name, [this, descBuilder, &meshInst]() mutable {
+				auto& meshButton = listActor.CreateChild<UIButtonActor>(name + "Button", name, [this, descBuilder, &meshInst]() mutable {
 					UIWindowActor& window = dynamic_cast<UICanvasActor*>(&descBuilder.GetCanvas())->CreateChildCanvas<UIWindowActor>("MeshViewport");
 					window.SetTransform(Transform(Vec2f(0.0f), Vec2f(0.5f)));
 
@@ -226,10 +247,10 @@ namespace GEE
 
 					GameSettings* settings = new GameSettings(*GameHandle->GetGameSettings());
 
-					settings->WindowSize = Vec2u(1024);
-					RenderToolboxCollection& renderTbCollection = renderHandle.AddRenderTbCollection(RenderToolboxCollection("GEE_E_Mesh_Preview_Toolbox_Collection", settings->Video));
+					settings->Video.Resolution = Vec2u(1024);
+					RenderToolboxCollection& renderTbCollection = renderHandle.AddRenderTbCollection(RenderToolboxCollection("GEE_E_Mesh_Preview_Toolbox_Collection", settings->Video, *GameHandle->GetRenderEngineHandle()));
 
-					SharedPtr<Material> viewportMaterial = MakeShared<Material>("GEE_E_Mesh_Preview_Viewport", 0.0f, renderHandle.FindShader("Forward_NoLight"));
+					SharedPtr<Material> viewportMaterial = MakeShared<Material>("GEE_E_Mesh_Preview_Viewport");
 					renderHandle.AddMaterial(viewportMaterial);
 					viewportMaterial->AddTexture(MakeShared<NamedTexture>(renderTbCollection.GetTb<FinalRenderTargetToolbox>()->GetFinalFramebuffer().GetColorTexture(0), "albedo1"));
 					viewportButton.SetMatIdle(*viewportMaterial);
@@ -244,6 +265,8 @@ namespace GEE
 
 					window.SetOnCloseFunc([&meshPreviewScene, &renderHandle, viewportMaterial, &renderTbCollection]() { meshPreviewScene.MarkAsKilled();  renderHandle.EraseMaterial(*viewportMaterial); renderHandle.EraseRenderTbCollection(renderTbCollection); });
 				});
+
+				meshButton.SetPopupCreationFunc([this, descBuilder, treePtr = GameHandle->FindHierarchyTree(meshInst->GetMesh().GetLocalization().GetTreeName())](PopupDescription popupDesc) { popupDesc.AddOption("Open hierarchy tree", [this, descBuilder, treePtr]() mutable { descBuilder.GetEditorHandle().GetActions().PreviewHierarchyTree(*treePtr); }); });
 
 				auto& materialButton = listActor.CreateChild<UIButtonActor>("EditMaterialButton", (meshInst->GetMaterialPtr()) ? (meshInst->GetMaterialPtr()->GetName()) : ("No material"), nullptr, Transform(Vec2f(2.5f, 0.0f), Vec2f(3.0f, 1.0f)));
 
@@ -267,9 +290,43 @@ namespace GEE
 			[this](Material* material) { OverrideInstancesMaterial(material); });
 	}
 
+
+	template<typename Archive>
+	void ModelComponent::Save(Archive& archive) const
+	{
+		archive(CEREAL_NVP(RenderAsBillboard), CEREAL_NVP(MeshInstances), cereal::make_nvp("SkelInfoBatchID", (SkelInfo) ? (SkelInfo->GetBatchPtr()->GetBatchID()) : (-1)), cereal::make_nvp("SkelInfoID", (SkelInfo) ? (SkelInfo->GetInfoID()) : (-1)), cereal::make_nvp("RenderableComponent", cereal::base_class<RenderableComponent>(this)));
+	}
+
+	template<typename Archive>
+	void ModelComponent::Load(Archive& archive)	//Assumptions: Order of batches and their Skeletons is not changed during loading.
+	{
+		int skelInfoBatchID, skelInfoID;
+		archive(CEREAL_NVP(RenderAsBillboard), CEREAL_NVP(MeshInstances), cereal::make_nvp("SkelInfoBatchID", skelInfoBatchID), cereal::make_nvp("SkelInfoID", skelInfoID), cereal::make_nvp("RenderableComponent", cereal::base_class<RenderableComponent>(this)));
+		if (skelInfoID >= 0)
+		{
+			std::cout << "!!!Name of scene: " << Scene.GetName() << "\n";
+			std::cout << "!!!Nr of batches: " << Scene.GetRenderData()->SkeletonBatches.size() << "\n";
+			SetSkeletonInfo(Scene.GetRenderData()->GetBatch(skelInfoBatchID)->GetInfo(skelInfoID));
+			std::cout << "Setting skelinfo of " << Name << " to " << skelInfoBatchID << ", " << skelInfoID << '\n';
+		}
+	}
+
+	ModelComponent::~ModelComponent()
+	{
+		if (SkelInfo)
+			SkelInfo->EraseModelCompRef(*this);
+	}
+
 	unsigned int ModelComponent::GetUIDepth() const
 	{
 		return GetElementDepth();
 	}
 
+	void ModelComponent::SignalSkeletonInfoDeath()
+	{
+		SkelInfo = nullptr;
+	}
+
+	template void ModelComponent::Save<cereal::JSONOutputArchive>(cereal::JSONOutputArchive&) const;
+	template void ModelComponent::Load<cereal::JSONInputArchive>(cereal::JSONInputArchive&);
 }

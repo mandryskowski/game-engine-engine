@@ -31,18 +31,48 @@ namespace GEE
 
 		class HierarchyNodeBase;
 
+		class HierarchyLocalization
+		{
+		public:
+			static HierarchyLocalization Filepath(const std::string& str)
+			{
+				return HierarchyLocalization(str, false);
+			}
+			static HierarchyLocalization LocalResourceName(const std::string& str)
+			{
+				return HierarchyLocalization(str, true);
+			}
+			std::string GetPath() const
+			{
+				return Path;
+			}
+			bool IsALocalResource() const
+			{
+				return bLocalResource;
+			}
+		private:
+			HierarchyLocalization(const std::string& path, bool bLocalResource) : Path(path), bLocalResource(bLocalResource) {}
+
+			friend class HierarchyTreeT;
+			std::string Path;
+			bool bLocalResource;
+		};
+
+		
+
 		class HierarchyTreeT
 		{
 		public:
-			HierarchyTreeT(GameScene& scene, const std::string& name);
+			HierarchyTreeT(GameScene& scene, const HierarchyLocalization& name);
 			HierarchyTreeT(const HierarchyTreeT& tree);
 			HierarchyTreeT(HierarchyTreeT&& tree);
 
-			const std::string& GetName() const;
+			const HierarchyLocalization& GetName() const;
 			HierarchyNodeBase& GetRoot();
 			BoneMapping& GetBoneMapping() const;
 			Animation& GetAnimation(unsigned int index);
 			unsigned int GetAnimationCount();
+			Actor& GetTempActor();
 
 			void SetRoot(UniquePtr<HierarchyNodeBase> root);
 
@@ -54,10 +84,19 @@ namespace GEE
 			void RemoveVertsData();
 			std::vector<Mesh> GetMeshes();
 
+			template <typename Archive> void Save(Archive& archive) const;
+			template <typename Archive> void Load(Archive& archive);
+
+			HierarchyTreeT& operator=(const HierarchyTreeT&) = delete;
+			HierarchyTreeT& operator=(HierarchyTreeT&&) = delete;
+
 			~HierarchyTreeT();
 
+			void SetName(const std::string& filepath);
 		private:
-			std::string Name;	//(this can also be referred to as the path)
+
+
+			HierarchyLocalization Name;	//(this can also be referred to as the path)
 			GameScene& Scene;
 			UniquePtr<HierarchyNodeBase> Root;
 			UniquePtr<Actor> TempActor;
@@ -66,4 +105,21 @@ namespace GEE
 			mutable UniquePtr<BoneMapping> TreeBoneMapping;
 		};
 	}
+}
+
+namespace cereal
+{
+	template <> struct LoadAndConstruct<GEE::HierarchyTemplate::HierarchyTreeT>
+	{
+		template <class Archive>
+		static void load_and_construct(Archive& ar, cereal::construct<GEE::HierarchyTemplate::HierarchyTreeT>& construct)
+		{
+			if (!GEE::CerealTreeSerializationData::TreeScene)
+				return;
+			
+			/* We set the name to serialization-error since it will be replaced by its original name anyways. */
+			construct(*GEE::CerealTreeSerializationData::TreeScene, GEE::HierarchyTemplate::HierarchyLocalization::LocalResourceName("serialization-error"));
+			construct->Load(ar);
+		}
+	};																							 													 																			
 }

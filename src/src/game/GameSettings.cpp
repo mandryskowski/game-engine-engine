@@ -1,12 +1,12 @@
 #include <game/GameSettings.h>
 #include <fstream>
 #include <sstream>
+#include <cereal/archives/json.hpp>
 
 namespace GEE
 {
 	GameSettings::GameSettings()
 	{
-		WindowSize = Vec2u(800, 600);
 		bWindowFullscreen = false;
 		WindowTitle = "kulki";
 	}
@@ -43,7 +43,7 @@ namespace GEE
 	bool GameSettings::LoadSetting(std::stringstream& filestr, std::string settingName)
 	{
 		if (settingName == "windowsize")
-			filestr >> WindowSize.x >> WindowSize.y;	//rozmiar okna jest dwuwymiarowy, wiec wczytaj 2 liczby (2 wymiary)
+			filestr >> Video.Resolution.x >> Video.Resolution.y;	//rozmiar okna jest dwuwymiarowy, wiec wczytaj 2 liczby (2 wymiary)
 		else if (settingName == "fullscreen")
 			filestr >> bWindowFullscreen;				//bool wczytujemy tak jak int - 0 jest falszywe a wieksza wartosc (1) prawdziwa
 		else if (settingName == "windowtitle")
@@ -62,6 +62,14 @@ namespace GEE
 	}
 
 	template void LoadEnum<SettingLevel>(std::stringstream& filestr, SettingLevel& var);
+
+	template<typename Archive>
+	void GameSettings::Serialize(Archive& archive)
+	{
+		archive(CEREAL_NVP(bWindowFullscreen), CEREAL_NVP(WindowTitle), CEREAL_NVP(Video));
+	}
+	template void GameSettings::Serialize<cereal::JSONOutputArchive>(cereal::JSONOutputArchive&);
+	template void GameSettings::Serialize<cereal::JSONInputArchive>(cereal::JSONInputArchive&);
 
 	GameSettings::VideoSettings::VideoSettings()
 	{
@@ -151,4 +159,12 @@ namespace GEE
 
 		return true;
 	}
+
+	template<typename Archive>
+	void GameSettings::VideoSettings::Serialize(Archive& archive)
+	{
+		archive(CEREAL_NVP(AmbientOcclusionSamples), CEREAL_NVP(bVSync), CEREAL_NVP(bBloom), CEREAL_NVP(AAType), CEREAL_NVP(AALevel), CEREAL_NVP(MonitorGamma), CEREAL_NVP(POMLevel), CEREAL_NVP(ShadowLevel), CEREAL_NVP(TMType));
+	}
+	template void GameSettings::VideoSettings::Serialize<cereal::JSONOutputArchive>(cereal::JSONOutputArchive&);
+	template void GameSettings::VideoSettings::Serialize<cereal::JSONInputArchive>(cereal::JSONInputArchive&);
 }

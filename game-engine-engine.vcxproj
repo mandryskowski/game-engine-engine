@@ -30,22 +30,22 @@
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
-    <CLRSupport>Safe</CLRSupport>
+    <CLRSupport>false</CLRSupport>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <CLRSupport>false</CLRSupport>
     <WholeProgramOptimization>false</WholeProgramOptimization>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
   </PropertyGroup>
@@ -69,8 +69,9 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>C:\Dev\Include;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\Dev\Lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(SolutionDir)src\src\;$(SolutionDir)src\vendor\include\;$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)src\vendor\lib\;$(LibraryPath)</LibraryPath>
+    <OutDir>$(SolutionDir)</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>true</LinkIncremental>
@@ -89,15 +90,18 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <Optimization>Disabled</Optimization>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <TargetMachine>MachineX86</TargetMachine>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <SubSystem>Windows</SubSystem>
+      <SubSystem>Console</SubSystem>
+      <AdditionalDependencies>opengl32.lib;glfw32/glfw3_32.lib;AL32/OpenAL32.lib;PhysX32/debug/PhysX_32.lib;PhysX32/debug/PhysXCommon_32.lib;PhysX32/debug/PhysXFoundation_32.lib;PhysX32/debug/PhysXPvdSDK_static_32.lib;PhysX32/debug/PhysXExtensions_static_32.lib;PhysX32/debug/PhysXCharacterKinematic_static_32.lib;PhysX32/debug/PhysXCooking_32.lib;assimp/assimp-vc142-mt.lib;freetype32/freetype.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -155,8 +159,10 @@
     <ClCompile Include="src\src\editor\EditorActions.cpp" />
     <ClCompile Include="src\src\editor\EditorManager.cpp" />
     <ClCompile Include="src\src\editor\EditorMessageLogger.cpp" />
+    <ClCompile Include="src\src\editor\EditorRenderer.cpp" />
     <ClCompile Include="src\src\editor\GameEngineEngineEditor.cpp" />
     <ClCompile Include="src\src\editor\GraphRenderingComponent.cpp" />
+    <ClCompile Include="src\src\editor\MousePicking.cpp" />
     <ClCompile Include="src\src\game\Game.cpp" />
     <ClCompile Include="src\src\game\GameManager.cpp" />
     <ClCompile Include="src\src\game\GameScene.cpp" />
@@ -168,6 +174,7 @@
     <ClCompile Include="src\src\math\Transform.cpp" />
     <ClCompile Include="src\src\math\Vec.cpp" />
     <ClCompile Include="src\src\physics\CollisionObject.cpp" />
+    <ClCompile Include="src\src\physics\DynamicPhysicsObjects.cpp" />
     <ClCompile Include="src\src\physics\PhysicsEngine.cpp" />
     <ClCompile Include="src\src\rendering\Framebuffer.cpp" />
     <ClCompile Include="src\src\rendering\LightProbe.cpp" />
@@ -225,6 +232,7 @@
     <ClInclude Include="src\src\editor\EditorActions.h" />
     <ClInclude Include="src\src\editor\EditorManager.h" />
     <ClInclude Include="src\src\editor\EditorMessageLogger.h" />
+    <ClInclude Include="src\src\editor\EditorRenderer.h" />
     <ClInclude Include="src\src\editor\FPSCounter.h" />
     <ClInclude Include="src\src\editor\GameEngineEngineEditor.h" />
     <ClInclude Include="src\src\editor\GraphRenderingComponent.h" />
@@ -241,6 +249,7 @@
     <ClInclude Include="src\src\math\Transform.h" />
     <ClInclude Include="src\src\math\Vec.h" />
     <ClInclude Include="src\src\physics\CollisionObject.h" />
+    <ClInclude Include="src\src\physics\DynamicPhysicsObjects.h" />
     <ClInclude Include="src\src\physics\PhysicsEngine.h" />
     <ClInclude Include="src\src\rendering\Framebuffer.h" />
     <ClInclude Include="src\src\rendering\LightProbe.h" />

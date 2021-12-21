@@ -35,12 +35,12 @@ namespace GEE
 	class EngineDataLoader
 	{
 	public:
-		static void SetupSceneFromFile(GameManager*, const std::string& path, const std::string& name);
+		static bool SetupSceneFromFile(GameManager*, const std::string& path, const std::string& name);
 		static void LoadModel(std::string path, Component& comp, MeshTreeInstancingType type, Material* overrideMaterial = nullptr);
 
 		static HierarchyTemplate::HierarchyTreeT* LoadHierarchyTree(GameScene&, std::string path, HierarchyTemplate::HierarchyTreeT* treePtr = nullptr, bool keepVertsData = true);
 
-		static void InstantiateTree(Component& comp, HierarchyTemplate::HierarchyTreeT&, Material* overrideMaterial = nullptr);
+		static void InstantiateTree(Component& comp, HierarchyTemplate::HierarchyTreeT&, const std::vector<HierarchyTemplate::HierarchyNodeBase*>& selectedComponents = {}, Material* overrideMaterial = nullptr);
 
 		static SharedPtr<Font> LoadFont(GameManager& gameHandle, const std::string& path);
 		template <class T = GameSettings> static T LoadSettingsFromFile(std::string path);
@@ -66,7 +66,7 @@ namespace GEE
 
 		static void LoadHierarchyNodeFromAi(GameManager&, const aiScene*, const std::string& directory, MaterialLoadingData* matLoadingData, const HTreeObjectLoc& treeObjLoc, HierarchyTemplate::HierarchyNodeBase& hierarchyNode, aiNode* node, BoneMapping& boneMapping, aiBone* bone = nullptr, const Transform& parentTransform = Transform(), bool keepVertsData = false);
 
-		static void LoadComponentsFromHierarchyTree(Component& comp, const HierarchyTemplate::HierarchyTreeT&, const HierarchyTemplate::HierarchyNodeBase&, SkeletonInfo& skeletonInfo, Material* overrideMaterial = nullptr);
+		static void LoadComponentsFromHierarchyTree(Component& comp, const HierarchyTemplate::HierarchyTreeT&, const HierarchyTemplate::HierarchyNodeBase&, SkeletonInfo& skeletonInfo, const std::vector<HierarchyTemplate::HierarchyNodeBase*>& selectedComponents = {}, Material* overrideMaterial = nullptr);
 
 		static FT_Library* FTLib;
 	};

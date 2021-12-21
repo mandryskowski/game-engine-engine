@@ -1,7 +1,6 @@
 #include <UI/UIComponent.h>
 #include <UI/UICanvas.h>
-#include <scene/Actor.h>
-#include <scene/Component.h>
+#include <game/GameScene.h>
 
 #include <UI/UICanvasActor.h>
 

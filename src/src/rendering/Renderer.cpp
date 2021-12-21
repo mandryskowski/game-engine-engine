@@ -48,7 +48,7 @@ namespace GEE
 			MaterialInstance* materialInst = meshInst.GetMaterialInst();
 			const Material* material = meshInst.GetMaterialPtr();
 
-			if ((info.GetCareAboutShader() && material && shader.GetName() != material->GetRenderShaderName()) ||
+			if ((material && !material->GetShaderInfo().MatchesRequiredInfo(info.GetRequiredShaderInfo())) ||
 				(info.GetOnlyShadowCasters() && !mesh.CanCastShadow()) || 
 				(materialInst && !materialInst->ShouldBeDrawn()))
 				continue;
@@ -102,8 +102,8 @@ namespace GEE
 	{
 		switch (hint)
 		{
-		case RendererShaderHint::Default:
-			return *RenderHandle.FindShader("Forward_NoLight");
+		case RendererShaderHint::DefaultForward:
+			return *RenderHandle.GetSimpleShader();
 		case RendererShaderHint::DepthOnly:
 			return *RenderHandle.FindShader("Depth");
 		case RendererShaderHint::DepthOnlyLinearized:
@@ -159,7 +159,7 @@ namespace GEE
 			info.SetView(Impl.GetCubemapView(static_cast<GEE_FB::Axis>(i)));
 			info.SetProjection(glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, 0.0f, 2.0f));
 			info.CalculateVP();
-			info.SetCareAboutShader(false);
+			info.StopRequiringShaderInfo();
 
 			StaticMeshInstances(info, { cubeMesh }, Transform(), shader);
 			framebuffer.Detach(GEE_FB::AttachmentSlot::Color(0));
@@ -271,6 +271,7 @@ namespace GEE
 			Volume((volume->GetShape() == EngineBasicShape::QUAD) ? (MatrixInfoExt()) : (info), volume->GetShape(), *shader, volume->GetRenderTransform());
 		}
 
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		glDisable(GL_BLEND);
 		glCullFace(GL_BACK);
 		glDepthFunc(GL_LEQUAL);
@@ -339,7 +340,7 @@ namespace GEE
 				SceneMatrixInfo info(contextID, tbCollection, sceneRenderData, viewTranslation, projection, lightPos);
 				info.SetUseMaterials(false);
 				info.SetOnlyShadowCasters(true);
-				info.SetCareAboutShader(false);
+				info.StopRequiringShaderInfo();
 				shadowsTb->ShadowFramebuffer->Attachments.push_back(GEE_FB::FramebufferAttachment(*shadowsTb->ShadowCubemapArray, GEE_FB::AttachmentSlot::Depth()));
 
 				CubemapRenderer(Impl.RenderHandle, shadowsTb->ShadowFramebuffer).FromScene(info, *shadowsTb->ShadowFramebuffer, shadowsTb->ShadowFramebuffer->GetAnyDepthAttachment(), &Impl.GetShader(RendererShaderHint::DepthOnlyLinearized), &cubemapFirst);
@@ -400,7 +401,7 @@ namespace GEE
 			ShadowMapRenderer(Impl).ShadowMaps(contextID, tbCollection, sceneRenderData, sceneRenderData.Lights);
 	}
 
-	void SceneRenderer::FullRender(SceneMatrixInfo& info, Viewport viewport, bool clearMainFB, bool modifyForwardsDepthForUI, std::function<void(GEE_FB::Framebuffer&)>&& renderIconsFunc)
+	void SceneRenderer::FullRender(SceneMatrixInfo& info, Viewport viewport, bool clearMainFB, bool modifyForwardsDepthForUI, std::function<void(GEE_FB::Framebuffer&)>&& renderIconsFunc, bool forceForwardShading)
 	{
 		auto& tbCollection = info.GetTbCollection();
 		auto& sceneRenderData = info.GetSceneRenderData();
@@ -422,7 +423,7 @@ namespace GEE
 
 		glDepthFunc(GL_LEQUAL);
 
-		if (true)//!GameHandle->CheckEEForceForwardShading())
+		if (!forceForwardShading)
 		{
 			////////////////////2. Deferred Shading
 			if (useLightingAlgorithms)
@@ -440,7 +441,7 @@ namespace GEE
 				glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 				info.SetMainPass(true);
-				info.SetCareAboutShader(true);
+				info.SetRequiredShaderInfo(MaterialShaderHint::Shaded);
 
 
 				////////////////////2.1 Geometry pass of Deferred Shading
@@ -452,8 +453,9 @@ namespace GEE
 				gShader->Uniform3fv("camPos", info.GetCamPosition());
 
 				RawRender(info, *gShader);
+
 				info.SetMainPass(false);
-				info.SetCareAboutShader(false);
+				info.StopRequiringShaderInfo();
 
 
 				if (debugPhysics)
@@ -474,6 +476,8 @@ namespace GEE
 				glClearBufferfv(GL_COLOR, 0, Math::GetDataPtr(Vec3f(0.0f, 0.0f, 0.0f))); // Clear ONLY the color buffers. The depth information stays for the light pass (we need to know which light volumes actually contain any objects that are affected by the light)
 				if (tbCollection.GetSettings().bBloom)
 					glClearBufferfv(GL_COLOR, 1, Math::GetDataPtr(Vec3f(0.0f)));
+				else
+					Texture().Bind(1);
 				
 				for (int i = 0; i < 4; i++)	// Bind all GBuffer textures (Albedo+Specular, Position, Normal, PBR Cook-Torrance Alpha+Metalness+AmbientOcclusion)
 					GFramebuffer.GetColorTexture(i).Bind(i);
@@ -531,8 +535,9 @@ namespace GEE
 				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 			}
 			
+			////////////////// Forward Shading
 			info.SetMainPass(true);
-			info.SetCareAboutShader(true);
+			info.SetRequiredShaderInfo(MaterialShaderHint::Shaded);
 			auto forwardTb = tbCollection.GetTb<ForwardShadingToolbox>();
 			if (!forwardTb->LightShaders.empty())
 			{
@@ -547,8 +552,8 @@ namespace GEE
 		
 		////////////////////3.25 Render global cubemap
 		info.SetMainPass(false);
-		info.SetCareAboutShader(false);
-
+		info.StopRequiringShaderInfo();
+	
 		if (sceneRenderData.ContainsLightProbes())
 		{
 			sceneRenderData.LightProbes.back()->GetEnvironmentMap().Bind(0);
@@ -567,22 +572,29 @@ namespace GEE
 		glDisable(GL_CULL_FACE);
 		glEnable(GL_BLEND);
 		info.SetMainPass(true);
-		info.SetCareAboutShader(true);
 		
 		if (modifyForwardsDepthForUI)
 			RawUIScene(info);
 		else
-			for (auto shader : this->Impl.RenderHandle.GetForwardShaders())
+		{
+			info.SetRequiredShaderInfo(MaterialShaderHint::Simple);
+			RawRender(info, *Impl.RenderHandle.GetSimpleShader());
+			for (auto shader : this->Impl.RenderHandle.GetCustomShaders())
+			{
+				info.SetRequiredShaderInfo(*shader);
 				RawRender(info, *shader);
-
-		Impl.RenderHandle.FindShader("Forward_NoLight")->Use();
-		Impl.RenderHandle.FindShader("Forward_NoLight")->Uniform2fv("atlasData", Vec2f(0.0f));
-		Impl.RenderHandle.FindShader("Forward_NoLight")->Uniform2fv("atlasTexOffset", Vec2f(0.0f));
+			}
+		}
+		
+		Shader& defaultForwardShader = Impl.GetShader(RendererShaderHint::DefaultForward);
+		defaultForwardShader.Use();
+		defaultForwardShader.Uniform2fv("atlasData", Vec2f(0.0f));
+		defaultForwardShader.Uniform2fv("atlasTexOffset", Vec2f(0.0f));
 
 
 		info.SetMainPass(false);
-		info.SetCareAboutShader(false);
-
+		info.StopRequiringShaderInfo();
+		
 		glDisable(GL_DEPTH_TEST);
 		glDisable(GL_BLEND);
 
@@ -628,8 +640,15 @@ namespace GEE
 		renderData.AssertThatUIRenderablesAreSorted();
 
 		glDepthFunc(GL_LEQUAL);
-		for (auto& shader : Impl.RenderHandle.GetForwardShaders())
+		auto forwardShaders = Impl.RenderHandle.GetCustomShaders();
+		forwardShaders.insert(forwardShaders.begin(), Impl.RenderHandle.GetSimpleShader());
+		for (auto& shader : forwardShaders)
 		{
+			if (shader == Impl.RenderHandle.GetSimpleShader())
+				info.SetRequiredShaderInfo(MaterialShaderHint::Simple);
+			else
+				info.SetRequiredShaderInfo(*shader);
+
 			shader->Use();
 			info.SetView(infoTemplate.GetView());
 			//Render from back to front (elements inserted last in the container probably have the biggest depth; early depth testing should work better using this method
@@ -820,6 +839,8 @@ namespace GEE
 		colorTex.Bind(0);
 		if (blurTex.HasBeenGenerated())
 			blurTex.Bind(1);
+		else
+			Texture().Bind(1);
 		tb.GetTb().TonemapGammaShader->Uniform1i("HDRbuffer", 0);
 
 		tb.RenderFullscreenQuad(tb.GetTb().TonemapGammaShader);
@@ -900,16 +921,9 @@ namespace GEE
 		settings.TMType = ToneMappingType::TM_NONE;	//Do not tonemap when rendering probes; we want to keep HDR data
 
 		std::cout << "Probe rendering for " << sceneRenderData.LightProbes.size() << " probes.\n";
-		//Dispose();
-		//Init(Vec2u(1024));
 
-		RenderToolboxCollection probeRenderingCollection("LightProbeRendering", settings);
+		RenderToolboxCollection probeRenderingCollection("LightProbeRendering", settings, *sceneRenderData.GetRenderHandle());
 		probeRenderingCollection.AddTbsRequiredBySettings();
-
-
-		//RenderInfo info;
-
-		//info.Projection = &p;
 
 		GEE_FB::Framebuffer framebuffer;
 		framebuffer.Generate();
@@ -965,7 +979,7 @@ namespace GEE
 			MaterialInstance* materialInst = meshInst.GetMaterialInst();
 			const Material* material = meshInst.GetMaterialPtr();
 
-			if ((info.GetCareAboutShader() && material && shader.GetName() != material->GetRenderShaderName()) ||
+			if ((material && material->GetShaderInfo().MatchesRequiredInfo(info.GetRequiredShaderInfo())) ||
 				(info.GetOnlyShadowCasters() && !mesh.CanCastShadow()) ||
 				!materialInst->ShouldBeDrawn())
 				continue;

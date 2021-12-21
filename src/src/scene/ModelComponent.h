@@ -53,7 +53,7 @@ namespace GEE
 
 		virtual void Render(const SceneMatrixInfo&, Shader* shader) override;
 
-		virtual void GetEditorDescription(EditorDescriptionBuilder);
+		virtual void GetEditorDescription(ComponentDescriptionBuilder) override;
 
 		/*virtual void DebugRender(RenderInfo info, Shader* shader) const override
 		{
@@ -72,26 +72,16 @@ namespace GEE
 			}
 		}*/
 
-		template <typename Archive> void Save(Archive& archive) const
-		{
-			archive(CEREAL_NVP(RenderAsBillboard), CEREAL_NVP(MeshInstances), cereal::make_nvp("SkelInfoBatchID", (SkelInfo) ? (SkelInfo->GetBatchPtr()->GetBatchID()) : (-1)), cereal::make_nvp("SkelInfoID", (SkelInfo) ? (SkelInfo->GetInfoID()) : (-1)), cereal::make_nvp("RenderableComponent", cereal::base_class<RenderableComponent>(this)));
-		}
-		template <typename Archive> void Load(Archive& archive)	//Assumptions: Order of batches and their Skeletons is not changed during loading.
-		{
-			int skelInfoBatchID, skelInfoID;
-			archive(CEREAL_NVP(RenderAsBillboard), CEREAL_NVP(MeshInstances), cereal::make_nvp("SkelInfoBatchID", skelInfoBatchID), cereal::make_nvp("SkelInfoID", skelInfoID), cereal::make_nvp("RenderableComponent", cereal::base_class<RenderableComponent>(this)));
-			if (skelInfoID >= 0)
-			{
-				std::cout << "!!!Name of scene: " << Scene.GetName() << "\n";
-				std::cout << "!!!Nr of batches: " << Scene.GetRenderData()->SkeletonBatches.size() << "\n";
-				SkelInfo = Scene.GetRenderData()->GetBatch(skelInfoBatchID)->GetInfo(skelInfoID);
-				std::cout << "Setting skelinfo of " << Name << " to " << skelInfoBatchID << ", " << skelInfoID << '\n';
-			}
-		}
+		template <typename Archive> void Save(Archive& archive) const;
+		template <typename Archive> void Load(Archive& archive);
 
-
+		virtual ~ModelComponent();
 	protected:
 		virtual unsigned int GetUIDepth() const override;
+		void SignalSkeletonInfoDeath();
+
+		friend class SkeletonInfo;
+
 		std::vector<UniquePtr<MeshInstance>> MeshInstances;
 		SkeletonInfo* SkelInfo;
 		bool RenderAsBillboard;
@@ -99,7 +89,5 @@ namespace GEE
 		mutable Mat4f LastFrameMVP;	//for velocity buffer; this field is only updated when velocity buffer is needed (for temporal AA/motion blur), in any other case it will be set to an identity matrix
 
 	};
-
-	
 }
 GEE_POLYMORPHIC_SERIALIZABLE_COMPONENT(GEE::Component, GEE::ModelComponent)

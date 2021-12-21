@@ -1,4 +1,6 @@
 #include <scene/GunActor.h>
+#include <physics/DynamicPhysicsObjects.h>
+#include <game/GameScene.h>
 #include <scene/SoundSourceComponent.h>
 #include <assetload/FileLoader.h>
 #include <input/Event.h>
@@ -42,11 +44,6 @@ namespace GEE
 
 		SetFireModel(GetRoot()->GetComponent<ModelComponent>("FireParticle"));
 		std::cout << "Wyszukalem se: " << FireModel << ".\n";
-
-		/*
-		GunModel->GetTransform()->AddInterpolator("position", 10.0f, 20.0f, Vec3f(0.0f, 0.0f, -10.0f), InterpolationType::LINEAR);
-		GunModel->GetTransform()->AddInterpolator("rotation", 10.0f, 5.0f, Vec3f(360.0f, 0.0f, 0.0f), InterpolationType::QUADRATIC, false, AnimBehaviour::STOP, AnimBehaviour::EXTRAPOLATE);
-		GunModel->GetTransform()->AddInterpolator("scale", 10.0f, 10.0f, Vec3f(0.3f, 0.3f, 0.2f), InterpolationType::CONSTANT);*/
 
 		GunBlast = Scene.GetAudioData()->FindSource("DoubleBarrelBlast");
 
@@ -138,7 +135,7 @@ namespace GEE
 
 		UniquePtr<Physics::CollisionObject> dupa = MakeUnique<Physics::CollisionObject>(false, Physics::CollisionShapeType::COLLISION_SPHERE);
 		Physics::CollisionObject& col = *bulletModel->SetCollisionObject(std::move(dupa));	//dupa is no longer valid
-		GameHandle->GetPhysicsHandle()->ApplyForce(col, GetRoot()->GetTransform().GetWorldTransform().GetFrontVec() * ImpulseFactor);
+		Physics::ApplyForce(col, GetRoot()->GetTransform().GetWorldTransform().GetFrontVec() * ImpulseFactor);
 		col.ActorPtr->is<physx::PxRigidDynamic>()->setLinearDamping(0.5f);
 		col.ActorPtr->is<physx::PxRigidDynamic>()->setAngularDamping(0.5f);
 

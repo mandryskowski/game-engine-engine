@@ -9,7 +9,6 @@
 
 namespace GEE
 {
-	class RenderInfo;
 	class GaussianBlurToolbox;
 	class SMAAToolbox;
 	class ComposedImageStorageToolbox;

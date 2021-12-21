@@ -16,7 +16,7 @@ namespace GEE
 		if (!IsValidTreeElement())
 			return std::string();
 
-		return TreePtr->GetName();
+		return TreePtr->GetName().GetPath();
 	}
 	GameManager& GameManager::Get()
 	{

@@ -20,8 +20,8 @@ namespace GEE
 
 		void SetProbeIndex(unsigned int);
 
-		virtual	MaterialInstance LoadDebugMatInst(EditorIconState) override;
-		virtual void GetEditorDescription(EditorDescriptionBuilder) override;
+		virtual	MaterialInstance LoadDebugMatInst(EditorButtonState) override;
+		virtual void GetEditorDescription(ComponentDescriptionBuilder) override;
 		template <typename Archive> void Save(Archive& archive) const
 		{
 			archive(CEREAL_NVP(Shape), CEREAL_NVP(OptionalFilepath), CEREAL_NVP(ProbeIntensity), cereal::make_nvp("Component", cereal::base_class<Component>(this)));

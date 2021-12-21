@@ -13,6 +13,7 @@
 
 #include <input/InputDevicesStateRetriever.h>
 #include <UI/UICanvasActor.h>
+#include <editor/EditorMessageLogger.h>
 
 namespace GEE
 {
@@ -75,6 +76,11 @@ namespace GEE
 	}
 
 	GameSceneRenderData* GameScene::GetRenderData()
+	{
+		return RenderData.get();
+	}
+
+	const GameSceneRenderData* GameScene::GetRenderData() const
 	{
 		return RenderData.get();
 	}
@@ -142,14 +148,20 @@ namespace GEE
 
 	HierarchyTemplate::HierarchyTreeT& GameScene::CreateHierarchyTree(const std::string& name)
 	{
-		HierarchyTrees.push_back(MakeUnique<HierarchyTemplate::HierarchyTreeT>(HierarchyTemplate::HierarchyTreeT(*this, name)));
-		std::cout << "Utworzono drzewo z root " << &HierarchyTrees.back()->GetRoot() << " - " << HierarchyTrees.back()->GetName() << '\n';
+		HierarchyTrees.push_back(MakeUnique<HierarchyTemplate::HierarchyTreeT>(HierarchyTemplate::HierarchyTreeT(*this, HierarchyTemplate::HierarchyLocalization::Filepath(name))));
+		std::cout << "Utworzono drzewo z root " << &HierarchyTrees.back()->GetRoot() << " - " << HierarchyTrees.back()->GetName().GetPath() << '\n';
+		return *HierarchyTrees.back();
+	}
+
+	HierarchyTemplate::HierarchyTreeT& GameScene::CopyHierarchyTree(const HierarchyTemplate::HierarchyTreeT& tree)
+	{
+		HierarchyTrees.push_back(MakeUnique<HierarchyTemplate::HierarchyTreeT>(tree));
 		return *HierarchyTrees.back();
 	}
 
 	HierarchyTemplate::HierarchyTreeT* GameScene::FindHierarchyTree(const std::string& name, HierarchyTemplate::HierarchyTreeT* treeToIgnore)
 	{
-		auto found = std::find_if(HierarchyTrees.begin(), HierarchyTrees.end(), [name, treeToIgnore](const UniquePtr<HierarchyTemplate::HierarchyTreeT>& tree) { return tree->GetName() == name && tree.get() != treeToIgnore; });
+		auto found = std::find_if(HierarchyTrees.begin(), HierarchyTrees.end(), [name, treeToIgnore](const UniquePtr<HierarchyTemplate::HierarchyTreeT>& tree) { return tree->GetName().GetPath() == name && tree.get() != treeToIgnore; });
 		if (found != HierarchyTrees.end())
 			return (*found).get();
 
@@ -188,6 +200,52 @@ namespace GEE
 	{
 		return RootActor->FindActor(name);
 	}
+
+	template<typename Archive>
+	inline void GameScene::Save(Archive& archive) const
+	{
+		try
+		{
+			GetRenderData()->SaveSkeletonBatches(archive);
+
+			/* Save only the local hierarchy trees.
+			*  We use a hack to get a different vector containing only unique pointers.
+			*  They have to be unique, since cereal cannot serialize raw pointers - only the smart ones.
+			*  This looks ugly, but no trees are destroyed since we release the pointers.
+			*/
+			{
+				std::vector<UniquePtr<HierarchyTemplate::HierarchyTreeT>> hierarchyTrees;
+				hierarchyTrees.reserve(HierarchyTrees.size());
+
+				for (auto& treePtr : HierarchyTrees)
+					if (treePtr->GetName().IsALocalResource())
+						hierarchyTrees.push_back(UniquePtr<HierarchyTemplate::HierarchyTreeT>(treePtr.get()));
+
+				archive(cereal::make_nvp("HierarchyTrees", hierarchyTrees));
+
+				for (auto& hackedPtr : hierarchyTrees)
+					hackedPtr.release();
+			}
+
+			GetRootActor()->Save(archive);
+			GameHandle->GetGameSettings()->Serialize(archive);
+		}
+		catch (cereal::Exception& ex)
+		{
+			std::cout << "ERROR While saving scene: " << ex.what() << '\n';
+			if (Editor::EditorManager* editorHandle = dynamic_cast<Editor::EditorManager*>(GameHandle))
+				editorHandle->GetEditorLogger(*GameHandle->GetScene("GEE_Editor")).Log(ex.what(), Editor::EditorMessageLogger::MessageType::Error);
+		}
+	}
+	template<typename Archive>
+	inline void GameScene::Load(Archive& archive)
+	{
+		for (auto& it : PostLoadLambdas)
+			it();
+	}
+
+	template void GameScene::Save<cereal::JSONOutputArchive>(cereal::JSONOutputArchive&) const;
+	template void GameScene::Load<cereal::JSONInputArchive>(cereal::JSONInputArchive&);
 
 	GameScene::~GameScene()
 	{

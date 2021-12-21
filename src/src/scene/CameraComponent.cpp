@@ -1,4 +1,5 @@
 #include <scene/CameraComponent.h>
+#include <game/GameScene.h>
 #include <rendering/RenderInfo.h>
 #include <rendering/Material.h>
 
@@ -42,13 +43,13 @@ namespace GEE
 		Component::Update(deltaTime);
 	}
 
-	MaterialInstance CameraComponent::LoadDebugMatInst(EditorIconState state)
+	MaterialInstance CameraComponent::LoadDebugMatInst(EditorButtonState state)
 	{
 		LoadDebugRenderMaterial("GEE_Mat_Default_Debug_CameraComponent", "Assets/Editor/cameracomponent_icon.png");
 		return Component::LoadDebugMatInst(state);
 	}
 
-	void CameraComponent::GetEditorDescription(EditorDescriptionBuilder descBuilder)
+	void CameraComponent::GetEditorDescription(ComponentDescriptionBuilder descBuilder)
 	{
 		Component::GetEditorDescription(descBuilder);
 
