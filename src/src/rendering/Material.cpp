@@ -284,8 +284,33 @@ namespace GEE
 
 	void Material::GetEditorDescription(EditorDescriptionBuilder descBuilder)
 	{
+		std::function<std::string()> getShaderName = [this]() -> std::string
+		{
+			ShaderInfo shaderInfo = GetShaderInfo();
+			if (shaderInfo.UsesShaderHint())
+			{
+				switch (shaderInfo.GetShaderHint())
+				{
+				case MaterialShaderHint::Simple: return "Simple";
+				case MaterialShaderHint::Shaded: return "Shaded";
+				}
+			}
+			if (Shader* customShader = shaderInfo.GetCustomShader())
+				return customShader->GetName();
+		};
+
 		descBuilder.AddField("Material name").CreateChild<UIInputBoxActor>("MaterialNameInputBox", [=](const std::string& materialName) { Localization.Name = materialName; }, [=]() { return GetName(); });
-		//descBuilder.AddField("Shader name").CreateChild<UIInputBoxActor>("ShaderNameInputBox", [=](const std::string& shaderName) { SetRenderShaderName(shaderName); }, [=]() { return GetRenderShaderName(); });// .SetDisableInput(true);
+		descBuilder.AddField("Shader").CreateChild<UIButtonActor>("SelectShaderButton", getShaderName(), [this, descBuilder]() mutable {
+			UIWindowActor& window = descBuilder.GetEditorScene().CreateActorAtRoot<UIWindowActor>("ShaderSelectionWindow");
+			window.SetViewScale(Vec2f(1.0f, 6.0f));
+			UIAutomaticListActor& list = window.CreateChild<UIAutomaticListActor>("ShaderList");
+
+			list.CreateChild<UIButtonActor>("Simple_Button", "Simple", [this, &window]() { SetShaderInfo(MaterialShaderHint::Simple); window.MarkAsKilled(); });
+			list.CreateChild<UIButtonActor>("Shaded_Button", "Shaded", [this, &window]() { SetShaderInfo(MaterialShaderHint::Shaded); window.MarkAsKilled(); });
+
+			list.Refresh();
+			window.ClampViewToElements();
+		});
 		descBuilder.AddField("Color").GetTemplates().VecInput<4, float>(Color);
 		for (int i = 0; i < 4; i++)
 			descBuilder.GetDescriptionParent().GetActor<UIInputBoxActor>("VecBox" + std::to_string(i))->SetRetrieveContentEachFrame(true);
@@ -414,6 +439,57 @@ namespace GEE
 		Material::GetEditorDescription(descBuilder);
 
 		descBuilder.AddField("Atlas size").GetTemplates().VecInput(AtlasSize);
+
+		UICanvasFieldCategory& texturesCat = descBuilder.AddCategory("Textures");
+		UIAutomaticListActor& list = texturesCat.CreateChild<UIAutomaticListActor>("TexturesList");
+
+		std::function<void(UIAutomaticListActor&, NamedTexture&)> addTextureButtonFunc = [this, &list, descBuilder](UIAutomaticListActor& list, NamedTexture& tex) mutable {
+			std::string texName = tex.GetPath();
+			auto dummyMaterial = MakeShared<Material>("dummy");
+			dummyMaterial->AddTexture(MakeShared<NamedTexture>(NamedTexture((Texture)tex, "albedo1")));
+			UIButtonActor& texButton = list.CreateChild<UIButtonActor>(texName + "Button", texName);
+			texButton.SetMatDisabled(dummyMaterial);
+			texButton.SetDisableInput(true);
+			texButton.CreateChild<UIButtonActor>("DeleteTexture", "Delete", [this, &list, &tex, &texButton, descBuilder]() mutable { texButton.MarkAsKilled(); RemoveTexture(tex); dynamic_cast<UICanvasActor*>(&descBuilder.GetCanvas())->RefreshFieldsList(); }).GetTransform()->Move(Vec2f(2.0f, 0.0f));
+			texButton.CreateComponent<TextComponent>("TexShaderNameButton", Transform(Vec2f(3.0f, 0.0f)), tex.GetShaderName(), "");
+		};
+
+		UIButtonActor& addTexToMaterialButton = list.CreateChild<UIButtonActor>("AddTextureToMaterialButton", [this, addTextureButtonFunc, &list, descBuilder]() mutable {
+			UIWindowActor& addTexWindow = dynamic_cast<UICanvasActor*>(&descBuilder.GetCanvas())->CreateChildCanvas<UIWindowActor>("AddTextureWindow");
+			EditorDescriptionBuilder texWindowDescBuilder(descBuilder.GetEditorHandle(), addTexWindow, addTexWindow);
+			SharedPtr<std::string> path = MakeShared<std::string>();
+			SharedPtr<std::string> shaderName = MakeShared<std::string>("albedo1");
+			SharedPtr<bool> sRGB = MakeShared<bool>(false);
+
+			texWindowDescBuilder.AddField("Tex path").GetTemplates().PathInput([this, path](const std::string& str) {
+				*path = str;
+				}, [path]() { return *path; }, { "*.png", "*.jpg" });
+			texWindowDescBuilder.AddField("Shader name").CreateChild<UIInputBoxActor>("ShaderNameInputBox").SetOnInputFunc([shaderName](const std::string& input) { *shaderName = input; }, [shaderName]() { return *shaderName; });
+			texWindowDescBuilder.AddField("sRGB").GetTemplates().TickBox([sRGB]() { return *sRGB = !(*sRGB); });
+			texWindowDescBuilder.AddField("Add texture").CreateChild<UIButtonActor>("OKButton", "OK", [this, path, shaderName, sRGB, &addTextureButtonFunc, &list, &addTexWindow, descBuilder]() mutable {
+				auto tex = MakeShared<NamedTexture>(Texture::Loader<>::FromFile2D(*path, (*sRGB) ? (Texture::Format::SRGBA()) : (Texture::Format::RGBA())), *shaderName);
+				AddTexture(tex);
+				addTextureButtonFunc(list, *tex);
+				addTexWindow.MarkAsKilled();
+				dynamic_cast<UICanvasActor*>(&descBuilder.GetCanvas())->RefreshFieldsList();
+				});
+
+			addTexWindow.AutoClampView();
+			addTexWindow.RefreshFieldsList();
+			});
+
+		for (auto& it : Textures)
+			addTextureButtonFunc(list, *it);
+
+		auto addIconMat = descBuilder.GetEditorHandle().GetGameHandle()->GetRenderEngineHandle()->FindMaterial<AtlasMaterial>("GEE_E_Add_Icon_Mat");
+		if (addIconMat)
+		{
+			addTexToMaterialButton.SetMatIdle(MaterialInstance(addIconMat, addIconMat->GetTextureIDInterpolatorTemplate(0.0f)));
+			addTexToMaterialButton.SetMatHover(MaterialInstance(addIconMat, addIconMat->GetTextureIDInterpolatorTemplate(1.0f)));
+			addTexToMaterialButton.SetMatClick(MaterialInstance(addIconMat, addIconMat->GetTextureIDInterpolatorTemplate(2.0f)));
+		}
+
+		list.Refresh();
 	}
 
 	/*

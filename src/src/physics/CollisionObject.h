@@ -86,6 +86,7 @@ namespace GEE
 		namespace Util
 		{
 			std::string collisionShapeTypeToString(CollisionShapeType type);
+			Vec3f toVecColor(physx::PxDebugColor::Enum);
 
 			Vec3f toGlm(physx::PxVec3);
 			Vec3f toGlm(physx::PxExtendedVec3);

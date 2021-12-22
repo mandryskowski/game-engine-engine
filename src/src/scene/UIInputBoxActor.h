@@ -16,12 +16,15 @@ namespace GEE
 
 		virtual void OnStart() override;
 
+		TextComponent* GetContentTextComp();
 		std::string GetContent();
 		void PutString(const std::string&);
 
 		void SetOnInputFunc(std::function<void(const std::string&)> inputFunc, std::function<std::string()> valueGetter);
 		void SetOnInputFunc(std::function<void(float)> inputFunc, std::function<float()> valueGetter, bool fixNumberStr = true);
 		void SetRetrieveContentEachFrame(bool);
+
+		void UpdateValue();
 
 		virtual void Update(float deltaTime) override;
 

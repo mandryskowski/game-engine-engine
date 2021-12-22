@@ -1,10 +1,12 @@
 #include <UI/Font.h>
 #include <iostream>
+#include <utility/Asserts.h>
 
 namespace GEE
 {
-	Font::Font(const std::string& path) :
-		Path(path)
+	Font::Variation::Variation(const std::string& path):
+		Path(path),
+		BaselineHeight(0.0f)
 	{
 		BitmapsArray = Texture::Loader<>::ReserveEmpty2DArray(Vec3u(64, 64, 128), Texture::Format::Red());
 		BitmapsArray.SetMinFilter(Texture::MinFilter::Trilinear());
@@ -14,34 +16,52 @@ namespace GEE
 		std::cout << BitmapsArray.GetID() << ".\n";
 	}
 
-	Texture Font::GetBitmapsArray() const
+	Texture Font::Variation::GetBitmapsArray() const
 	{
 		return BitmapsArray;
 	}
 
-	float Font::GetBaselineHeight() const
+	float Font::Variation::GetBaselineHeight() const
 	{
 		return BaselineHeight;
 	}
 
-	const std::string& Font::GetPath() const
+	const std::string& Font::Variation::GetPath() const
 	{
 		return Path;
 	}
 
-	const Character& Font::GetCharacter(unsigned int index) const
+	const Character& Font::Variation::GetCharacter(unsigned int index) const
 	{
+		GEE_CORE_ASSERT(index < Characters.size());
 		return Characters[index];
 	}
 
-	void Font::SetBaselineHeight(float height)
+	void Font::Variation::SetBaselineHeight(float height)
 	{
 		BaselineHeight = height;
 	}
 
-	void Font::AddCharacter(const Character& character)
+	void Font::Variation::AddCharacter(const Character& character)
 	{
 		Characters.push_back(character);
 	}
 
+	Font::Font(const std::string& regularPath, const std::string& boldPath, const std::string& italicPath, const std::string& boldItalicPath)
+	{
+		Variations[FontStyle::Regular] = MakeShared<Variation>(regularPath);
+		Variations[FontStyle::Bold] = MakeShared<Variation>(boldPath);
+		Variations[FontStyle::Italic] = MakeShared<Variation>(italicPath);
+		Variations[FontStyle::BoldItalic] = MakeShared<Variation>(boldItalicPath);
+	}
+
+	Font::Variation* Font::GetVariation(FontStyle type)
+	{
+		return Variations[type].get();
+	}
+
+	const Font::Variation* Font::GetVariation(FontStyle type) const
+	{
+		return Variations.at(type).get();
+	}
 }

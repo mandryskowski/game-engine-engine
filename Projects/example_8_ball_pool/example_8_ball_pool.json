@@ -43,6 +43,19 @@
                                     "BoneIDOffset": 0
                                 }
                             }
+                        },
+                        {
+                            "ptr_wrapper": {
+                                "id": 2147483653,
+                                "data": {
+                                    "BonesActorsNames": [],
+                                    "BoneNames": [],
+                                    "GlobalInverseTransformCompPtrActorName": "Metalsheet",
+                                    "GlobalInverseTransformCompPtrName": "ENG_QUAD",
+                                    "BatchID": 0,
+                                    "BoneIDOffset": 0
+                                }
+                            }
                         }
                     ],
                     "BoneCount": 0
@@ -193,7 +206,7 @@
                                                             "Shapes": [
                                                                 {
                                                                     "ptr_wrapper": {
-                                                                        "id": 2147483653,
+                                                                        "id": 2147483654,
                                                                         "data": {
                                                                             "Type": 3,
                                                                             "ShapeTransform": {
@@ -222,7 +235,7 @@
                                                                 },
                                                                 {
                                                                     "ptr_wrapper": {
-                                                                        "id": 2147483654,
+                                                                        "id": 2147483655,
                                                                         "data": {
                                                                             "Type": 3,
                                                                             "ShapeTransform": {
@@ -458,7 +471,7 @@
                                                             "Shapes": [
                                                                 {
                                                                     "ptr_wrapper": {
-                                                                        "id": 2147483655,
+                                                                        "id": 2147483656,
                                                                         "data": {
                                                                             "Type": 1,
                                                                             "ShapeTransform": {
@@ -560,7 +573,7 @@
                                                             "Shapes": [
                                                                 {
                                                                     "ptr_wrapper": {
-                                                                        "id": 2147483656,
+                                                                        "id": 2147483657,
                                                                         "data": {
                                                                             "Type": 1,
                                                                             "ShapeTransform": {
@@ -662,7 +675,7 @@
                                                             "Shapes": [
                                                                 {
                                                                     "ptr_wrapper": {
-                                                                        "id": 2147483657,
+                                                                        "id": 2147483658,
                                                                         "data": {
                                                                             "Type": 1,
                                                                             "ShapeTransform": {
@@ -764,7 +777,7 @@
                                                             "Shapes": [
                                                                 {
                                                                     "ptr_wrapper": {
-                                                                        "id": 2147483658,
+                                                                        "id": 2147483659,
                                                                         "data": {
                                                                             "Type": 1,
                                                                             "ShapeTransform": {
@@ -866,7 +879,7 @@
                                                             "Shapes": [
                                                                 {
                                                                     "ptr_wrapper": {
-                                                                        "id": 2147483659,
+                                                                        "id": 2147483660,
                                                                         "data": {
                                                                             "Type": 1,
                                                                             "ShapeTransform": {
@@ -968,7 +981,7 @@
                                                             "Shapes": [
                                                                 {
                                                                     "ptr_wrapper": {
-                                                                        "id": 2147483660,
+                                                                        "id": 2147483661,
                                                                         "data": {
                                                                             "Type": 1,
                                                                             "ShapeTransform": {
@@ -1070,7 +1083,7 @@
                                                             "Shapes": [
                                                                 {
                                                                     "ptr_wrapper": {
-                                                                        "id": 2147483661,
+                                                                        "id": 2147483662,
                                                                         "data": {
                                                                             "Type": 1,
                                                                             "ShapeTransform": {
@@ -1172,7 +1185,7 @@
                                                             "Shapes": [
                                                                 {
                                                                     "ptr_wrapper": {
-                                                                        "id": 2147483662,
+                                                                        "id": 2147483663,
                                                                         "data": {
                                                                             "Type": 1,
                                                                             "ShapeTransform": {
@@ -1274,7 +1287,7 @@
                                                             "Shapes": [
                                                                 {
                                                                     "ptr_wrapper": {
-                                                                        "id": 2147483663,
+                                                                        "id": 2147483664,
                                                                         "data": {
                                                                             "Type": 1,
                                                                             "ShapeTransform": {
@@ -1376,7 +1389,7 @@
                                                             "Shapes": [
                                                                 {
                                                                     "ptr_wrapper": {
-                                                                        "id": 2147483664,
+                                                                        "id": 2147483665,
                                                                         "data": {
                                                                             "Type": 1,
                                                                             "ShapeTransform": {
@@ -1478,7 +1491,7 @@
                                                             "Shapes": [
                                                                 {
                                                                     "ptr_wrapper": {
-                                                                        "id": 2147483665,
+                                                                        "id": 2147483666,
                                                                         "data": {
                                                                             "Type": 1,
                                                                             "ShapeTransform": {
@@ -1580,7 +1593,7 @@
                                                             "Shapes": [
                                                                 {
                                                                     "ptr_wrapper": {
-                                                                        "id": 2147483666,
+                                                                        "id": 2147483667,
                                                                         "data": {
                                                                             "Type": 1,
                                                                             "ShapeTransform": {
@@ -1682,7 +1695,7 @@
                                                             "Shapes": [
                                                                 {
                                                                     "ptr_wrapper": {
-                                                                        "id": 2147483667,
+                                                                        "id": 2147483668,
                                                                         "data": {
                                                                             "Type": 1,
                                                                             "ShapeTransform": {
@@ -1784,7 +1797,7 @@
                                                             "Shapes": [
                                                                 {
                                                                     "ptr_wrapper": {
-                                                                        "id": 2147483668,
+                                                                        "id": 2147483669,
                                                                         "data": {
                                                                             "Type": 1,
                                                                             "ShapeTransform": {
@@ -1886,7 +1899,7 @@
                                                             "Shapes": [
                                                                 {
                                                                     "ptr_wrapper": {
-                                                                        "id": 2147483669,
+                                                                        "id": 2147483670,
                                                                         "data": {
                                                                             "Type": 1,
                                                                             "ShapeTransform": {
@@ -1988,7 +2001,7 @@
                                                             "Shapes": [
                                                                 {
                                                                     "ptr_wrapper": {
-                                                                        "id": 2147483670,
+                                                                        "id": 2147483671,
                                                                         "data": {
                                                                             "Type": 1,
                                                                             "ShapeTransform": {
@@ -2080,15 +2093,15 @@
                                 "Name": "A Camera's root",
                                 "ComponentTransform": {
                                     "Position": {
-                                        "x": 1.133993148803711,
-                                        "y": 1.372522234916687,
-                                        "z": 0.2871568202972412
+                                        "x": 0.17478810250759126,
+                                        "y": 2.36374831199646,
+                                        "z": 0.3504992127418518
                                     },
                                     "Rotation": {
-                                        "x": -0.22372688353061677,
-                                        "y": 0.19493289291858674,
-                                        "z": 0.045721106231212619,
-                                        "w": 0.9538642168045044
+                                        "x": -0.37773820757865908,
+                                        "y": 0.12904825806617738,
+                                        "z": 0.053255755454301837,
+                                        "w": 0.9153274297714233
                                     },
                                     "Scale": {
                                         "x": 1.0,
@@ -2405,12 +2418,12 @@
                                                                     "Shapes": [
                                                                         {
                                                                             "ptr_wrapper": {
-                                                                                "id": 5
+                                                                                "id": 6
                                                                             }
                                                                         },
                                                                         {
                                                                             "ptr_wrapper": {
-                                                                                "id": 6
+                                                                                "id": 7
                                                                             }
                                                                         }
                                                                     ]
@@ -3249,12 +3262,12 @@
                                                     "y": 0.5,
                                                     "z": 0.5
                                                 },
-                                                "Attenuation": 0.10000000149011612,
+                                                "Attenuation": 1.0,
                                                 "CutOff": 1.0,
                                                 "OuterCutOff": 1.0,
-                                                "Far": 22.405357360839845,
+                                                "Far": 7.085196018218994,
                                                 "ShadowBias": 0.10000000149011612,
-                                                "bShadowMapCullFronts": true,
+                                                "bShadowMapCullFronts": false,
                                                 "Component": {
                                                     "Name": "A LightComponent",
                                                     "ComponentTransform": {
@@ -3270,9 +3283,9 @@
                                                             "w": 1.0
                                                         },
                                                         "Scale": {
-                                                            "x": 22.405357360839845,
-                                                            "y": 22.405357360839845,
-                                                            "z": 22.405357360839845
+                                                            "x": 7.085196018218994,
+                                                            "y": 7.085196018218994,
+                                                            "z": 7.085196018218994
                                                         }
                                                     },
                                                     "CollisionObj": {
@@ -3342,7 +3355,7 @@
                                                                     "Shapes": [
                                                                         {
                                                                             "ptr_wrapper": {
-                                                                                "id": 7
+                                                                                "id": 8
                                                                             }
                                                                         }
                                                                     ]
@@ -3448,7 +3461,7 @@
                                                                     "Shapes": [
                                                                         {
                                                                             "ptr_wrapper": {
-                                                                                "id": 8
+                                                                                "id": 9
                                                                             }
                                                                         }
                                                                     ]
@@ -3518,7 +3531,7 @@
                                                                     "Shapes": [
                                                                         {
                                                                             "ptr_wrapper": {
-                                                                                "id": 9
+                                                                                "id": 10
                                                                             }
                                                                         }
                                                                     ]
@@ -3588,7 +3601,7 @@
                                                                     "Shapes": [
                                                                         {
                                                                             "ptr_wrapper": {
-                                                                                "id": 10
+                                                                                "id": 11
                                                                             }
                                                                         }
                                                                     ]
@@ -3672,7 +3685,7 @@
                                                     "Shapes": [
                                                         {
                                                             "ptr_wrapper": {
-                                                                "id": 22
+                                                                "id": 23
                                                             }
                                                         }
                                                     ]
@@ -3756,6 +3769,188 @@
                             }
                         }
                     ]
+                }
+            }
+        },
+        {
+            "polymorphic_id": 1073741824,
+            "ptr_wrapper": {
+                "valid": 1,
+                "data": {
+                    "Name": "Metalsheet",
+                    "RootComponent": {
+                        "polymorphic_id": 1073741824,
+                        "ptr_wrapper": {
+                            "valid": 1,
+                            "data": {
+                                "Name": "ENG_QUAD",
+                                "ComponentTransform": {
+                                    "Position": {
+                                        "x": 0.0,
+                                        "y": 1.5,
+                                        "z": 0.0
+                                    },
+                                    "Rotation": {
+                                        "x": -0.7071067690849304,
+                                        "y": -0.0,
+                                        "z": 0.0,
+                                        "w": 0.7071067690849304
+                                    },
+                                    "Scale": {
+                                        "x": 0.10000000149011612,
+                                        "y": 0.10000000149011612,
+                                        "z": 0.10000000149011612
+                                    }
+                                },
+                                "CollisionObj": {
+                                    "ptr_wrapper": {
+                                        "valid": 0
+                                    }
+                                },
+                                "Children": [
+                                    {
+                                        "polymorphic_id": 6,
+                                        "ptr_wrapper": {
+                                            "valid": 1,
+                                            "data": {
+                                                "RenderAsBillboard": false,
+                                                "MeshInstances": [
+                                                    {
+                                                        "ptr_wrapper": {
+                                                            "valid": 1,
+                                                            "data": {
+                                                                "MeshTreePath": "ENG_QUAD",
+                                                                "MeshNodeName": "Quad",
+                                                                "MeshSpecificName": "Quad_NoShadow",
+                                                                "MaterialInst": {
+                                                                    "ptr_wrapper": {
+                                                                        "id": 2147483672,
+                                                                        "data": {
+                                                                            "MaterialName": "Metal",
+                                                                            "MaterialOptionalPath": "",
+                                                                            "ExternalMaterial": {
+                                                                                "polymorphic_id": 2147483657,
+                                                                                "polymorphic_name": "GEE::AtlasMaterial",
+                                                                                "ptr_wrapper": {
+                                                                                    "id": 2147483673,
+                                                                                    "data": {
+                                                                                        "AtlasSize": {
+                                                                                            "x": 0.0,
+                                                                                            "y": 0.0
+                                                                                        },
+                                                                                        "TextureID": 0.0,
+                                                                                        "Material": {
+                                                                                            "Name": "Metal",
+                                                                                            "Textures": [
+                                                                                                {
+                                                                                                    "ptr_wrapper": {
+                                                                                                        "id": 2147483674,
+                                                                                                        "data": {
+                                                                                                            "ShaderName": "albedo1",
+                                                                                                            "Texture": {
+                                                                                                                "Type": 3553,
+                                                                                                                "InternalFormat": 35906,
+                                                                                                                "Path": "C:\\Users\\48511\\source\\repos\\swetroniusz\\game-engine-engine\\Assets\\External\\Materials\\rustediron\\rustediron_albedo.png"
+                                                                                                            }
+                                                                                                        }
+                                                                                                    }
+                                                                                                },
+                                                                                                {
+                                                                                                    "ptr_wrapper": {
+                                                                                                        "id": 2147483675,
+                                                                                                        "data": {
+                                                                                                            "ShaderName": "metallic1",
+                                                                                                            "Texture": {
+                                                                                                                "Type": 3553,
+                                                                                                                "InternalFormat": 6408,
+                                                                                                                "Path": "C:\\Users\\48511\\source\\repos\\swetroniusz\\game-engine-engine\\Assets\\External\\Materials\\rustediron\\rustediron_metallic.png"
+                                                                                                            }
+                                                                                                        }
+                                                                                                    }
+                                                                                                },
+                                                                                                {
+                                                                                                    "ptr_wrapper": {
+                                                                                                        "id": 2147483676,
+                                                                                                        "data": {
+                                                                                                            "ShaderName": "roughness1",
+                                                                                                            "Texture": {
+                                                                                                                "Type": 3553,
+                                                                                                                "InternalFormat": 6408,
+                                                                                                                "Path": "C:\\Users\\48511\\source\\repos\\swetroniusz\\game-engine-engine\\Assets\\External\\Materials\\rustediron\\rustediron_roughness.png"
+                                                                                                            }
+                                                                                                        }
+                                                                                                    }
+                                                                                                }
+                                                                                            ],
+                                                                                            "Color": {
+                                                                                                "x": 0.0,
+                                                                                                "y": 0.0,
+                                                                                                "z": 0.0,
+                                                                                                "w": 0.0
+                                                                                            },
+                                                                                            "Shininess": 0.0,
+                                                                                            "RoughnessColor": 0.0,
+                                                                                            "MetallicColor": 0.0,
+                                                                                            "AoColor": 0.0,
+                                                                                            "DepthScale": 0.0,
+                                                                                            "MatShaderInfo": {
+                                                                                                "ShaderHint": 2,
+                                                                                                "CustomShaderName": ""
+                                                                                            }
+                                                                                        }
+                                                                                    }
+                                                                                }
+                                                                            },
+                                                                            "DrawBeforeAnim": true,
+                                                                            "DrawAfterAnim": true
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                ],
+                                                "SkelInfoBatchID": 0,
+                                                "SkelInfoID": 3,
+                                                "RenderableComponent": {
+                                                    "Hide": false,
+                                                    "CastsShadow": true,
+                                                    "Component": {
+                                                        "Name": "Quad",
+                                                        "ComponentTransform": {
+                                                            "Position": {
+                                                                "x": 0.0,
+                                                                "y": 0.0,
+                                                                "z": 0.0
+                                                            },
+                                                            "Rotation": {
+                                                                "x": 0.0,
+                                                                "y": 0.0,
+                                                                "z": 0.0,
+                                                                "w": 1.0
+                                                            },
+                                                            "Scale": {
+                                                                "x": 1.0,
+                                                                "y": 1.0,
+                                                                "z": 1.0
+                                                            }
+                                                        },
+                                                        "CollisionObj": {
+                                                            "ptr_wrapper": {
+                                                                "valid": 0
+                                                            }
+                                                        },
+                                                        "Children": []
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "Children": []
                 }
             }
         }

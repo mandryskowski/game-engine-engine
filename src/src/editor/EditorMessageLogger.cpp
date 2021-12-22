@@ -16,16 +16,10 @@ namespace GEE
 			MessageSlots(4, nullptr),
 			QueuedMessagesText(nullptr)
 		{
-			if (IconsMaterial = EditorHandle.GetGameHandle()->GetRenderEngineHandle()->FindMaterial<AtlasMaterial>("GEE_E_Message_Icons"); !IconsMaterial)
-			{
-				auto createdMaterial = MakeShared<AtlasMaterial>(AtlasMaterial("GEE_E_Message_Icons", Vec2i(2, 2)));
-				EditorHandle.GetGameHandle()->GetRenderEngineHandle()->AddMaterial(createdMaterial);
-				IconsMaterial = createdMaterial;
-				IconsMaterial->AddTexture(NamedTexture(Texture::Loader<>::FromFile2D("Assets/Editor/messageicons.png", Texture::Format::RGBA(), true), "albedo1"));
-			}
-
+			IconsMaterial = EditorHandle.GetGameHandle()->GetRenderEngineHandle()->FindMaterial<AtlasMaterial>("GEE_E_Icons");
+			
 			auto& moreMessagesActor = EditorScene.CreateActorAtRoot<UIActorDefault>("GEE_E_More_Messages_Actor", Transform(Vec2f(0.8f, -0.9f + static_cast<float>(MessageSlots.size()) * 0.2f - 0.1f), Vec2f(0.1f, 0.01f)));
-			auto& moreMessagesText = moreMessagesActor.CreateComponent<TextConstantSizeComponent>("GEE_E_More_Messages_Text", Transform(), "0 more...", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::BOTTOM));
+			auto& moreMessagesText = moreMessagesActor.CreateComponent<TextConstantSizeComponent>("GEE_E_More_Messages_Text", Transform(), "0 more...", "", Alignment2D::Bottom());
 
 			moreMessagesText.Unstretch();
 			QueuedMessagesText = &moreMessagesText;
@@ -60,13 +54,13 @@ namespace GEE
 			closeButton->GetTransform()->SetPosition(Vec2f(1.0f) - static_cast<Vec2f>(closeButton->GetTransform()->GetScale()));
 
 			auto& content = logWindow.CreateChild<UIActorDefault>("GEE_E_LogWindowContent");
-			auto& messageText = content.CreateComponent<TextConstantSizeComponent>("GEE_E_LogText", Transform(Vec2f(-0.8f, 0.0f), Vec2f(1.6f, 2.0f)), message, "", std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::CENTER));// .Unstretch();
+			auto& messageText = content.CreateComponent<TextConstantSizeComponent>("GEE_E_LogText", Transform(Vec2f(-0.8f, 0.0f), Vec2f(1.6f, 2.0f)), message, "", Alignment2D::LeftCenter());// .Unstretch();
 			messageText.Unstretch(UISpace::Local);
 	
 
 			auto& iconModel = content.CreateComponent<ModelComponent>("GEE_E_LogIcon", Transform(Vec2f(-1.4f, 0.0f), Vec2f(0.5f)));
 			iconModel.AddMeshInst(EditorHandle.GetGameHandle()->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD));
-			iconModel.OverrideInstancesMaterialInstances(MakeShared<MaterialInstance>(IconsMaterial, IconsMaterial->GetTextureIDInterpolatorTemplate(static_cast<float>(type))));
+			iconModel.OverrideInstancesMaterialInstances(MakeShared<MaterialInstance>(IconsMaterial, IconsMaterial->GetTextureIDInterpolatorTemplate(5.0f + static_cast<float>(type))));
 		}
 		void EditorMessageLogger::AddMessageToSlot(UIWindowActor& message)
 		{

@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <utility/Alignment.h>
 
 typedef unsigned int GLenum;
 
@@ -106,14 +107,6 @@ namespace GEE
 	public:
 		static MaterialShaderHint Shaded() { return MaterialShaderHint::Shaded; }
 	};
-	enum class TextAlignment
-	{
-		LEFT,
-		CENTER,
-		RIGHT,
-		BOTTOM = LEFT,
-		TOP = RIGHT
-	};
 
 	// These values correspond to GLFW macros. Check official GLFW documentation.
 	enum class DefaultCursorIcon
@@ -124,6 +117,14 @@ namespace GEE
 		Hand = 0x00036004,
 		HorizontalResize = 0x00036005,
 		VerticalResize = 0x00036006
+	};
+
+	enum class FontStyle
+	{
+		Regular,
+		Bold,
+		Italic,
+		BoldItalic
 	};
 
 	class PostprocessManager
@@ -153,6 +154,7 @@ namespace GEE
 		protected:
 			virtual void RemoveScenePhysicsDataPtr(GameScenePhysicsData& scenePhysicsData) = 0;
 			friend class GameScene;
+			friend class GameRenderer;
 		};
 	}
 
@@ -209,10 +211,7 @@ namespace GEE
 		virtual SharedPtr<Material> FindMaterialImpl(const std::string&) = 0;
 	public:
 		virtual Shader* FindShader(const std::string& name) = 0;
-		virtual void RenderText(const SceneMatrixInfo& info, const Font& font, std::string content, Transform t,
-		                        Vec3f color = Vec3f(1.0f), Shader* shader = nullptr, bool convertFromPx = false,
-		                        const std::pair<TextAlignment, TextAlignment>& = std::pair<
-			                        TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::BOTTOM)) = 0;
+		virtual RenderToolboxCollection* FindTbCollection(const std::string& name) = 0;
 
 		virtual ~RenderEngineManager() = default;
 	protected:

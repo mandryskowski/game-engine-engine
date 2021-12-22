@@ -77,7 +77,7 @@ namespace GEE
 		RenderEng.Init(Vec2u(Settings->Video.Resolution.x, Settings->Video.Resolution.y));
 		PhysicsEng.Init();
 
-		DefaultFont = EngineDataLoader::LoadFont(*this, "Assets/Editor/fonts/Atkinson-Hyperlegible-Regular-102.otf");
+		DefaultFont = EngineDataLoader::LoadFont(*this, "Assets/Editor/fonts/Atkinson-Hyperlegible-Regular-102.otf", "Assets/Editor/fonts/Atkinson-Hyperlegible-Bold-102.otf", "Assets/Editor/fonts/Atkinson-Hyperlegible-Italic-102.otf", "Assets/Editor/fonts/Atkinson-Hyperlegible-BoldItalic-102.otf");
 
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	}
@@ -265,7 +265,7 @@ namespace GEE
 
 	SharedPtr<Font> Game::FindFont(const std::string& path)
 	{
-		auto found = std::find_if(Fonts.begin(), Fonts.end(), [path](SharedPtr<Font> font) {return font->GetPath() == path; });
+		auto found = std::find_if(Fonts.begin(), Fonts.end(), [path](SharedPtr<Font> font) {return font->GetVariation(FontStyle::Regular)->GetPath() == path; });
 		if (found != Fonts.end())
 			return *found;
 

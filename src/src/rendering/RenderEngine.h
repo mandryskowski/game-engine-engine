@@ -53,11 +53,7 @@ namespace GEE
 	public:
 		virtual Shader* FindShader(const std::string& name) override;
 
-		void PrepareScene(RenderingContextID contextID, RenderToolboxCollection& tbCollection, GameSceneRenderData* sceneRenderData);	//Call this method once per frame for each scene that will be rendered in order to prepare stuff like shadow maps
-
-		void PrepareFrame();
-		
-		virtual void RenderText(const SceneMatrixInfo& info, const Font& font, std::string content, Transform t = Transform(), Vec3f color = Vec3f(1.0f), Shader* shader = nullptr, bool convertFromPx = false, const std::pair<TextAlignment, TextAlignment> & = std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::BOTTOM)) override; //Pass a shader if you do not want the default shader to be used.
+		virtual RenderToolboxCollection* FindTbCollection(const std::string& name) override;
 
 		void Dispose();
 

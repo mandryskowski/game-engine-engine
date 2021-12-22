@@ -423,6 +423,7 @@ namespace GEE
 		UIInputBoxActor& textActor = descBuilder.CreateActor<UIInputBoxActor>("ComponentsNameActor");
 		textActor.SetTransform(Transform(Vec2f(0.0f, 1.5f), Vec2f(5.0f, 1.0f)));
 		textActor.GetButtonModel()->SetHide(true);
+		textActor.GetContentTextComp()->SetFontStyle(FontStyle::Bold);
 
 		ModelComponent& prettyQuad = textActor.CreateComponent<ModelComponent>("PrettyQuad");
 		prettyQuad.AddMeshInst(MeshInstance(GameHandle->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD), textActor.GetButtonModel()->GetMeshInstance(0).GetMaterialPtr()));

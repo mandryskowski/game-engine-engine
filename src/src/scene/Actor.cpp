@@ -273,10 +273,11 @@ namespace GEE
 
 	void Actor::GetEditorDescription(EditorDescriptionBuilder descBuilder)
 	{
-		UIInputBoxActor& textActor = descBuilder.CreateActor<UIInputBoxActor>("ComponentsNameActor");
+		UIInputBoxActor& textActor = descBuilder.CreateActor<UIInputBoxActor>("ActorsNameActor");
 		textActor.SetTransform(Transform(Vec2f(0.0f, 1.5f), Vec2f(5.0f, 1.25f)));
 		textActor.SetOnInputFunc([this](const std::string& content) { if (Scene.GetUniqueActorName(content) == content) SetName(content);}, [this]() -> std::string { return GetName(); });
 		textActor.DeleteButtonModel();
+		textActor.GetContentTextComp()->SetFontStyle(FontStyle::Bold);
 
 
 		UICanvasField& deleteField = descBuilder.AddField("Delete");

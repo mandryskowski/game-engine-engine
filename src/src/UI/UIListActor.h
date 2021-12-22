@@ -47,7 +47,7 @@ namespace GEE
 		UIListActor(GameScene& scene, Actor* parentActor, const std::string& name);
 		UIListActor(UIListActor&&);
 
-		void Refresh();
+		virtual void Refresh();
 
 		virtual Vec3f GetListOffset();
 		Vec3f GetListBegin();

@@ -39,9 +39,13 @@ namespace GEE
 		void TickBox(bool& modifiedBool);
 		void TickBox(std::function<bool()> setFunc);
 		void TickBox(std::function<void(bool)> setFunc, std::function<bool()> getFunc);
-
-		template <unsigned int length, typename T = float> void VecInput(std::function<void(int, T)> setFunc, std::function<T(int)> getFunc);	//encapsulated
-		template <unsigned int length, typename T> void VecInput(Vec<length, T>& modifiedVec);	//not encapsulated
+		
+		struct VecInputDescription
+		{
+			std::vector<UIInputBoxActor*> VecInputBoxes;
+		};
+		template <unsigned int length, typename T = float> VecInputDescription VecInput(std::function<void(int, T)> setFunc, std::function<T(int)> getFunc);	//encapsulated
+		template <unsigned int length, typename T> VecInputDescription VecInput(Vec<length, T>& modifiedVec);	//not encapsulated
 
 		/**
 		 * @brief Creates a slider which is a child of the actor tied to this UIElementTemplates object.
@@ -74,7 +78,7 @@ namespace GEE
 		GameManager& GameHandle;
 	};
 
-	// Tied to a scene
+	//s Tied to a scene
 	class GenericUITemplates
 	{
 	public:
@@ -96,7 +100,7 @@ namespace GEE
 
 	// UIElementTemplates template methods definitions
 	template <unsigned int length, typename T>
-	inline void UIElementTemplates::VecInput(std::function<void(int, T)> setFunc, std::function<T(int)> getFunc)
+	inline UIElementTemplates::VecInputDescription UIElementTemplates::VecInput(std::function<void(int, T)> setFunc, std::function<T(int)> getFunc)
 	{
 		const std::string materialNames[] = {
 			"GEE_Default_X_Axis", "GEE_Default_Y_Axis", "GEE_Default_Z_Axis", "GEE_Default_W_Axis"
@@ -104,31 +108,46 @@ namespace GEE
 
 		GEE_CORE_ASSERT(length <= 4);
 
-		std::vector<UIInputBoxActor*> allBoxes;
+		VecInputDescription desc;
+		char axisChar[] = {'x', 'y', 'z', 'w'};
 		for (int axis = 0; axis < length; axis++)
 		{
 			UIInputBoxActor& inputBoxActor = TemplateParent.CreateChild<UIInputBoxActor>("VecBox" + std::to_string(axis));
-			allBoxes.push_back(&inputBoxActor);
-			inputBoxActor.SetTransform(Transform(Vec2f(float(axis) * 2.0f, 0.0f), Vec2f(1.0f)));
-			inputBoxActor.SetOnInputFunc([axis, setFunc](float val) {setFunc(axis, val); }, [axis, getFunc]() -> float { return getFunc(axis); }, true);
+			desc.VecInputBoxes.push_back(&inputBoxActor);
+			inputBoxActor.SetTransform(Transform(Vec2f(float(axis) * 2.0f, 0.0f), Vec2f(1.0f, 0.6f)));
+
+			std::function<void(float)> input = nullptr;
+			std::function<float()> getter = nullptr;
+			if (setFunc) input = [axis, setFunc](float val) {setFunc(axis, val); };
+			if (getFunc) getter = [axis, getFunc]() -> float { return getFunc(axis); };
+
+			inputBoxActor.SetOnInputFunc(input, getter, true);
+
+			auto& axisText = inputBoxActor.GetRoot()->CreateComponent<TextComponent>("AxisText", Transform(Vec2f(0.0f, -1.0f), Vec2f(0.35f)), std::string(1, axisChar[axis]), "", Alignment2D::Top());
+			axisText.Unstretch();
 
 			if (auto found = GameHandle.GetRenderEngineHandle()->FindMaterial(materialNames[axis]))
+			{
 				inputBoxActor.SetMatIdle(found);
+				axisText.SetMaterialInst(found);
+			}
 		}
 		for (int axis = 0; axis < length; axis++)
-			allBoxes[axis]->SetOnClickFunc([*this, allBoxes]()
+			desc.VecInputBoxes[axis]->SetOnClickFunc([*this, allBoxes = desc.VecInputBoxes]()
 			{
 			std::cout << "all boxes size: " << allBoxes.size() << '\n';
 			if (GameHandle.GetInputRetriever().IsKeyPressed(Key::LeftAlt))
 				for (auto box : allBoxes)
 					box->SetActive(true);
 			});
+
+		return desc;
 	}
 
 	template<unsigned int length, typename T>
-	inline void UIElementTemplates::VecInput(Vec<length, T>& modifiedVec)
+	inline UIElementTemplates::VecInputDescription UIElementTemplates::VecInput(Vec<length, T>& modifiedVec)
 	{
-		VecInput<length, T>([&](float x, T val) { modifiedVec[x] = val; }, [&](float x) -> T { return modifiedVec[x]; });
+		return VecInput<length, T>([&](float x, T val) { modifiedVec[x] = val; }, [&](float x) -> T { return modifiedVec[x]; });
 	}
 
 
@@ -164,12 +183,12 @@ namespace GEE
 			std::vector<ObjectType*> availableObjects = getObjectsFunc();
 
 			auto& deleteMe123 = list.CreateChild<UIButtonActor>("Nullptr object button", "nullptr", [&window, setFunc, &compNameButton]() { setFunc(nullptr); window.MarkAsKilled(); if (auto buttonText = compNameButton.GetRoot()->GetComponent<TextConstantSizeComponent>("ButtonText")) buttonText->SetContent("nullptr"); });
-			//deleteMe123.CreateComponent<ScrollingTextComponent>("ButtonText", Transform(Vec2f(0.0f), Vec2f(0.25f, 1.0f)), "Nullptr", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::CENTER));
+			//deleteMe123.CreateComponent<ScrollingTextComponent>("ButtonText", Transform(Vec2f(0.0f), Vec2f(0.25f, 1.0f)), "Nullptr", "", Alignment2D::LeftCenter());
 			for (auto& it : availableObjects)
 			{
 				auto& a = list.CreateChild<UIButtonActor>(it->GetName() + ", Matching object button", it->GetName(), [&window, setFunc, it, &compNameButton]() { setFunc(it); window.MarkAsKilled(); if (auto buttonText = compNameButton.GetRoot()->GetComponent<TextConstantSizeComponent>("ButtonText")) { buttonText->SetContent(it->GetName()); buttonText->Unstretch(); } });
 				a.GetRoot()->GetComponent<TextConstantSizeComponent>("ButtonText")->Unstretch();
-				//a.CreateComponent<TextConstantSizeComponent>("ButtonText", Transform(Vec2f(0.0f), Vec2f(0.25f, 1.0f)), it->GetName(), "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER)).SetMaxSize(Vec2f(0.8f));
+				//a.CreateComponent<TextConstantSizeComponent>("ButtonText", Transform(Vec2f(0.0f), Vec2f(0.25f, 1.0f)), it->GetName(), "", Alignment2D::Center()).SetMaxSize(Vec2f(0.8f));
 			}
 			list.Refresh();
 
@@ -220,7 +239,7 @@ namespace GEE
 		confirmationWindow.KillResizeBars();
 
 		auto& textActor = confirmationWindow.CreateChild<UIActorDefault>("TextActor", Transform(Vec2f(0.0f, 1.0f), Vec2f(0.9f)));
-		textActor.CreateComponent<TextConstantSizeComponent>("TextComponent", Transform(), promptText, "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::TOP));
+		textActor.CreateComponent<TextConstantSizeComponent>("TextComponent", Transform(), promptText, "", Alignment2D::Top());
 
 		auto& declineButton = confirmationWindow.CreateChild<UIButtonActor>("DeclineButton", "No", [=, &confirmationWindow]() { onDenial(); confirmationWindow.MarkAsKilled(); }, Transform(Vec2f(-0.5f, -0.8f), Vec2f(0.2f)));
 		auto& confirmButton = confirmationWindow.CreateChild<UIButtonActor>("ConfirmButton", "Yes", [=, &confirmationWindow]() {  onConfirmation(); confirmationWindow.MarkAsKilled(); }, Transform(Vec2f(0.5f, -0.8f), Vec2f(0.2f)));

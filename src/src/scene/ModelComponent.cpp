@@ -181,7 +181,7 @@ namespace GEE
 				it->GetMaterialInst()->Update(deltaTime);
 
 		if (Name == "MeshPreviewModel")
-			ComponentTransform.SetRotation(glm::rotate(Mat4f(1.0f), (float)glfwGetTime(), Vec3f(0.0f, 1.0f, 0.0f)));
+			;// ComponentTransform.SetRotation(glm::rotate(Mat4f(1.0f), (float)glfwGetTime(), Vec3f(0.0f, 1.0f, 0.0f)));
 	}
 
 	void ModelComponent::Render(const SceneMatrixInfo& info, Shader* shader)
@@ -217,7 +217,7 @@ namespace GEE
 		descBuilder.AddField("Render as billboard").GetTemplates().TickBox(RenderAsBillboard);
 
 		UICanvasFieldCategory& cat = descBuilder.GetCanvas().AddCategory("Mesh instances");
-		cat.GetExpandButton()->CreateComponent<TextConstantSizeComponent>("NrMeshInstancesText", Transform(), std::to_string(MeshInstances.size()), "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
+		cat.GetExpandButton()->CreateComponent<TextConstantSizeComponent>("NrMeshInstancesText", Transform(), std::to_string(MeshInstances.size()), "", Alignment2D::Center());
 		cat.GetTemplates().ListSelection<UniquePtr<MeshInstance>>(MeshInstances.begin(), MeshInstances.end(), [this, descBuilder](UIAutomaticListActor& listActor, UniquePtr<MeshInstance>& meshInst)
 			{
 				std::string name = meshInst->GetMesh().GetLocalization().NodeName + " (" + meshInst->GetMesh().GetLocalization().SpecificName + ")";
@@ -234,11 +234,14 @@ namespace GEE
 					model.AddMeshInst(*meshInst);
 
 					Actor& camActor = meshPreviewScene.CreateActorAtRoot<Actor>("MeshPreviewCameraActor");
-					CameraComponent& cam = camActor.CreateComponent<CameraComponent>("MeshPreviewCamera", glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 100.0f));
-					camActor.GetTransform()->Move(Vec3f(0.0f, 0.0f, 10.0f));
-					meshPreviewScene.BindActiveCamera(&cam);
-
-					FPSController& camController = camActor.CreateChild<FPSController>("MeshPreviewCameraController");
+					CameraComponent& cam = camActor.CreateComponent<CameraComponent>("MeshPreviewCamera", glm::perspective(glm::radians(90.0f), 1.0f, 0.01f, 100.0f));
+					{
+						auto meshBB = meshInst->GetMesh().GetBoundingBox();
+						camActor.GetTransform()->SetPosition(meshBB.Position + glm::normalize(Vec3f(1.0f, 1.0f, 1.0f)) * glm::length(meshBB.Size) * 1.5f);
+						camActor.GetTransform()->SetRotation(quatFromDirectionVec(glm::normalize(meshBB.Position - camActor.GetTransform()->GetPos())));
+						meshPreviewScene.BindActiveCamera(&cam);
+					}
+					auto& camController = camActor.CreateChild<FreeRoamingController>("MeshPreviewCameraController");
 					camController.SetPossessedActor(&camActor);
 
 					UIButtonActor& viewportButton = window.CreateChild<UIButtonActor>("MeshPreviewViewportActor", [this, &meshPreviewScene, &camController]() { std::cout << "VIEWPORT WCISIETY\n"; GameHandle->SetActiveScene(&meshPreviewScene); GameHandle->PassMouseControl(&camController); });
@@ -260,7 +263,7 @@ namespace GEE
 					{
 						std::stringstream boxSizeStream;
 						boxSizeStream << meshInst->GetMesh().GetBoundingBox().Size;
-						window.CreateChild<UIActorDefault>("MeshSizeTextActor").CreateComponent<TextConstantSizeComponent>("MeshSizeText", Transform(Vec2f(1.0f, -1.0f), Vec2f(0.2f)), "Size: " + boxSizeStream.str(), "", std::pair<TextAlignment, TextAlignment>(TextAlignment::RIGHT, TextAlignment::BOTTOM));
+						window.CreateChild<UIActorDefault>("MeshSizeTextActor").CreateComponent<TextConstantSizeComponent>("MeshSizeText", Transform(Vec2f(1.0f, -1.0f), Vec2f(0.2f)), "Size: " + boxSizeStream.str(), "", Alignment2D::RightBottom());
 					}
 
 					window.SetOnCloseFunc([&meshPreviewScene, &renderHandle, viewportMaterial, &renderTbCollection]() { meshPreviewScene.MarkAsKilled();  renderHandle.EraseMaterial(*viewportMaterial); renderHandle.EraseRenderTbCollection(renderTbCollection); });

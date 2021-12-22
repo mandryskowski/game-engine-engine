@@ -10,15 +10,6 @@ namespace GEE
 	class UIButtonActor;
 	class UIAutomaticListActor;
 
-	enum class Alignment
-	{
-		Left,
-		Center,
-		Right,
-		Bottom = Left,
-		Top = Right
-	};
-
 	class IconData
 	{
 	public:
@@ -33,17 +24,6 @@ namespace GEE
 	private:
 		SharedPtr<Material> IconMaterial;
 		float IconAtlasID;
-	};
-
-	class Alignment2D
-	{
-	public:
-		Alignment2D(Alignment horizontal, Alignment vertical = Alignment::Center);
-
-		Alignment GetHorizontal() const;
-		Alignment GetVertical() const;
-	private:
-		Alignment Horizontal, Vertical;
 	};
 
 	class PopupDescription
@@ -70,6 +50,14 @@ namespace GEE
 
 	namespace Editor
 	{
+		struct EditorPopup
+		{
+			EditorPopup(unsigned int id, SystemWindow& window, GameScene& scene) : Window(window), Scene(scene), ID(id) {}
+			std::reference_wrapper<SystemWindow> Window;
+			std::reference_wrapper<GameScene> Scene;
+			unsigned int ID;
+		};
+
 		class EditorActions
 		{
 		public:
@@ -93,6 +81,7 @@ namespace GEE
 			Component* GetContextComp();
 			Actor* GetContextActor();
 			void CreateComponentWindow(Actor&);
+			friend class GameEngineEngineEditor;
 
 			EditorManager& EditorHandle;
 
@@ -132,7 +121,8 @@ namespace GEE
 
 			UIButtonActor& element = listParent.CreateChild<UIButtonActor>(obj.GetName() + "'s Button", [this, &obj, &editorScene]() {this->Select(&obj, editorScene); });//*this, obj, &EditorManager::Select<T>));
 			element.SetTransform(Transform(Vec2f(1.5f, 0.0f), Vec2f(3.0f, 1.0f)));
-			TextConstantSizeComponent& elementText = element.CreateComponent<TextConstantSizeComponent>(obj.GetName() + "'s Text", Transform(Vec2f(0.0f), Vec2f(1.0f, 1.0f)), "", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
+			TextConstantSizeComponent& elementText = element.CreateComponent<TextConstantSizeComponent>(obj.GetName() + "'s Text", Transform(Vec2f(0.0f), Vec2f(1.0f, 1.0f)), "", "", Alignment2D::Center());
+			elementText.SetFontStyle(FontStyle::Italic);
 			elementText.SetMaxSize(Vec2f(0.9f));
 			elementText.SetContent(obj.GetName());
 			elementText.Unstretch();

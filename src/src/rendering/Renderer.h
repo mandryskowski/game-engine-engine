@@ -3,6 +3,7 @@
 #include <rendering/Viewport.h>
 #include <rendering/Texture.h>
 #include <rendering/RenderToolbox.h>
+#include <UI/Font.h>
 
 namespace GEE
 {
@@ -224,11 +225,37 @@ namespace GEE
 		void SkeletalMeshInstances(const MatrixInfoExt& info, const std::vector<MeshInstance>& meshes, SkeletonInfo& skelInfo, const Transform& transform, Shader& shader);
 	};
 
-	class PhysicsDebugRenderer : public Renderer
+	class TextRenderer : public Renderer
 	{
 	public:
 		using Renderer::Renderer;
 
+		void RenderText(const SceneMatrixInfo& info, const Font::Variation&, std::string content, Transform t = Transform(), Vec3f color = Vec3f(1.0f), Shader* shader = nullptr, bool convertFromPx = false, Alignment2D = Alignment2D::LeftCenter()); //Pass a shader if you do not want the default shader to be used.
+	};
+
+	class GameRenderer : public Renderer
+	{
+	public:
+		using Renderer::Renderer;
+
+		virtual void RenderPass(GameScene* mainScene, GameScene* editorScene, GameScene* menuScene, GameScene* meshPreviewScene) = 0;
+
+		void PrepareFrame(GameScene* mainScene);
+		void EnsureShadowMapCorectness(RenderingContextID contextID, RenderToolboxCollection& tbCollection, GameSceneRenderData* sceneRenderData);
+	};
+
+
+	class PhysicsDebugRenderer : public Renderer
+	{
+	public:
+		PhysicsDebugRenderer(RenderEngineManager&, const GEE_FB::Framebuffer* optionalFramebuffer = nullptr);
+		PhysicsDebugRenderer(const ImplUtil&);
+
+		void DebugRender(Physics::GameScenePhysicsData& scenePhysicsData, SceneMatrixInfo& info);
+		virtual ~PhysicsDebugRenderer();
+	private:
 		void BoundSceneDebug(SceneMatrixInfo&, GLenum mode, GLint first, GLint count, Vec3f color = Vec3f(1.0f));
+
+		unsigned int VAO, VBO;
 	};
 }

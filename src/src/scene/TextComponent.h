@@ -3,13 +3,23 @@
 #include <rendering/Material.h>
 #include <UI/UIComponent.h>
 #include <UI/Font.h>
+#include <utility/Alignment.h>
 namespace GEE
 {
+	enum class UISpace
+	{
+		Local,
+		World,
+		Canvas,
+		Window
+	};
+
+
 	class TextComponent : public RenderableComponent, public UIComponent
 	{
 	public:
-		TextComponent(Actor&, Component* parentComp, const std::string& name = std::string(), const Transform& transform = Transform(), std::string content = std::string(), SharedPtr<Font> font = nullptr, std::pair<TextAlignment, TextAlignment> = std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::CENTER));
-		TextComponent(Actor&, Component* parentComp, const std::string& name = std::string(), const Transform& transform = Transform(), std::string content = std::string(), std::string fontPath = std::string(), std::pair<TextAlignment, TextAlignment> = std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::CENTER));
+		TextComponent(Actor&, Component* parentComp, const std::string& name = std::string(), const Transform& transform = Transform(), const std::string& content = std::string(), SharedPtr<Font> font = nullptr, Alignment2D = Alignment2D::LeftCenter());
+		TextComponent(Actor&, Component* parentComp, const std::string& name = std::string(), const Transform& transform = Transform(), const std::string& content = std::string(), const std::string& fontPath = std::string(), Alignment2D = Alignment2D::LeftCenter());
 		TextComponent(const TextComponent&) = delete;
 		TextComponent(TextComponent&&);
 
@@ -18,19 +28,27 @@ namespace GEE
 		float GetTextLength(bool world = true) const;
 		float GetTextHeight(bool world = true) const;
 		virtual std::vector<const Material*> GetMaterials() const override;
-		Font* GetUsedFont();
+		Font* GetFont();
 		MaterialInstance* GetTextMatInst();
-		std::pair<TextAlignment, TextAlignment> GetAlignment() const;
+		Alignment2D GetAlignment() const;
 
 		virtual void SetContent(const std::string&);
 		void SetMaterialInst(MaterialInstance&&);
+		void SetFont(SharedPtr<Font> font) { _Font = font; }
+		void SetFont(const std::string& fontPath);
+		void SetFontStyle(FontStyle style) { _FontStyle = style; }
 
 		virtual void Render(const SceneMatrixInfo& info, Shader* shader) override;
 
-		void SetHorizontalAlignment(const TextAlignment);
-		void SetVerticalAlignment(const TextAlignment);
-		void SetAlignment(const TextAlignment horizontal, const TextAlignment vertical = TextAlignment::TOP);	//Change what Component::ComponentTransform::Position
-		void SetAlignment(const std::pair<TextAlignment, TextAlignment>& alignment);	//Change what Component::ComponentTransform::Position
+		void SetHorizontalAlignment(Alignment);
+		void SetVerticalAlignment(Alignment);
+		void SetAlignment(Alignment2D);
+
+		/**
+		 * @brief Unstretch the text (make the scale uniform) based on this Component's Transform. The scale X and Y will be set to the smallest component of the two.
+		 * @param space: The space to be used in order to compute ScaleRatio. You can use local/world transform, canvas and window space.
+		*/
+		virtual void Unstretch(UISpace space = UISpace::Window);
 
 		virtual void GetEditorDescription(ComponentDescriptionBuilder) override;
 		virtual MaterialInstance LoadDebugMatInst(EditorButtonState) override;
@@ -40,46 +58,43 @@ namespace GEE
 		template <typename Archive> void Save(Archive& archive) const
 		{
 			std::string fontPath;
-			if (UsedFont)
-				fontPath = UsedFont->GetPath();
-			archive(cereal::make_nvp("FontPath", fontPath), cereal::make_nvp("Content", Content), cereal::make_nvp("HAlignment", Alignment.first), cereal::make_nvp("VAlignment", Alignment.second), cereal::make_nvp("RenderableComponent", cereal::base_class<RenderableComponent>(this)));
+			if (_Font)
+				fontPath = _Font->GetVariation(FontStyle::Regular)->GetPath();
+			archive(cereal::make_nvp("FontPath", fontPath), cereal::make_nvp("Content", Content), cereal::make_nvp("HAlignment", _Alignment.GetHorizontal()), cereal::make_nvp("VAlignment", _Alignment.GetVertical()), cereal::make_nvp("RenderableComponent", cereal::base_class<RenderableComponent>(this)));
 		}
 		template <typename Archive> void Load(Archive& archive)
 		{
 			std::string fontPath;
-			archive(cereal::make_nvp("FontPath", fontPath), cereal::make_nvp("Content", Content), cereal::make_nvp("HAlignment", Alignment.first), cereal::make_nvp("VAlignment", Alignment.second), cereal::make_nvp("RenderableComponent", cereal::base_class<RenderableComponent>(this)));
+			Alignment alignmentH, alignmentV;
+			archive(cereal::make_nvp("FontPath", fontPath), cereal::make_nvp("Content", Content), cereal::make_nvp("HAlignment", alignmentH), cereal::make_nvp("VAlignment", alignmentV), cereal::make_nvp("RenderableComponent", cereal::base_class<RenderableComponent>(this)));
+			SetAlignment(Alignment2D(alignmentH, alignmentV));
 
 			if (!fontPath.empty())
-				UsedFont = EngineDataLoader::LoadFont(*GameHandle, fontPath);
+				_Font = EngineDataLoader::LoadFont(*GameHandle, fontPath);
 		}
 
 	private:
 		std::string Content;
-		SharedPtr<Font> UsedFont;
+		SharedPtr<Font> _Font;
 		UniquePtr<MaterialInstance> TextMatInst;
 
-		std::pair<TextAlignment, TextAlignment> Alignment;		/*Vertical and horziontal alignment. Alignment is in relation to Component::ComponentTransform::Position
-																  Default alignment is LEFT and BOTTOM. This means that Component::ComponentTransform::Position marks the bottom-left corner of the text.
-																  CENTER alignment means that the TextComponent is  centred around Component::ComponentTransform::Position.
-																  RIGHT means that the text is moved during rendering so it ends at Component::ComponentTransform::Position and TOP that the next never goes above previous Component::ComponentTransform::Position::y.
-																  Note that Component::ComponentTransform::Position is not always at the bottom-left corner of the text.
-																  Use a function (that DOES NOT EXIST YET. TODO) to get the bottom-left corner of the text.
-																*/
-	};
+		/*Vertical and horziontal alignment. Alignment is in relation to Component::ComponentTransform::Position
+		  Default alignment is Left and Center. This means that Component::ComponentTransform::Position marks the left-center point of the text.
+		  CENTER alignment means that the TextComponent is  centred around Component::ComponentTransform::Position.
+		  RIGHT means that the text is moved during rendering so it ends at Component::ComponentTransform::Position and TOP that the next never goes above previous Component::ComponentTransform::Position::y.
+		  Note that Component::ComponentTransform::Position is not always at the bottom-left corner of the text.
+		  Use a function (that DOES NOT EXIST YET. TODO) to get the bottom-left corner of the text.
+		*/
+		Alignment2D _Alignment;								
 
-	enum class UISpace
-	{
-		Local,
-		World,
-		Canvas,
-		Window
+		FontStyle _FontStyle;
 	};
 
 	class TextConstantSizeComponent : public TextComponent
 	{
 	public:
-		TextConstantSizeComponent(Actor&, Component* parentComp, const std::string& name = std::string(), const Transform& transform = Transform(), std::string content = std::string(), SharedPtr<Font> font = nullptr, std::pair<TextAlignment, TextAlignment> = std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::BOTTOM));
-		TextConstantSizeComponent(Actor&, Component* parentComp, const std::string& name = std::string(), const Transform& transform = Transform(), std::string content = std::string(), std::string fontPath = std::string(), std::pair<TextAlignment, TextAlignment> = std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::BOTTOM));
+		TextConstantSizeComponent(Actor&, Component* parentComp, const std::string& name = std::string(), const Transform& transform = Transform(), std::string content = std::string(), SharedPtr<Font> font = nullptr, Alignment2D = Alignment2D::LeftCenter());
+		TextConstantSizeComponent(Actor&, Component* parentComp, const std::string& name = std::string(), const Transform& transform = Transform(), std::string content = std::string(), std::string fontPath = std::string(), Alignment2D = Alignment2D::LeftCenter());
 		TextConstantSizeComponent(const TextConstantSizeComponent&) = delete;
 		TextConstantSizeComponent(TextConstantSizeComponent&&);
 		void SetMaxSize(const Vec2f&);
@@ -94,7 +109,7 @@ namespace GEE
 		 * @brief Unstretch the text (make the scale uniform) based on this Component's Transform. The scale X and Y will be set to the smallest component of the two.
 		 * @param space: The space to be used in order to compute ScaleRatio. You can use local/world transform, canvas and window space.
 		*/
-		void Unstretch(UISpace space = UISpace::Window);
+		virtual void Unstretch(UISpace space = UISpace::Window) override;
 
 		virtual void HandleEvent(const Event& ev) override;
 
@@ -109,8 +124,8 @@ namespace GEE
 	class ScrollingTextComponent : public TextComponent
 	{
 	public:
-		ScrollingTextComponent(Actor&, Component* parentComp, const std::string& name = std::string(), const Transform& transform = Transform(), std::string content = std::string(), SharedPtr<Font> font = nullptr, std::pair<TextAlignment, TextAlignment> = std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::BOTTOM));
-		ScrollingTextComponent(Actor&, Component* parentComp, const std::string& name = std::string(), const Transform& transform = Transform(), std::string content = std::string(), std::string fontPath = std::string(), std::pair<TextAlignment, TextAlignment> = std::pair<TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::BOTTOM));
+		ScrollingTextComponent(Actor&, Component* parentComp, const std::string& name = std::string(), const Transform& transform = Transform(), std::string content = std::string(), SharedPtr<Font> font = nullptr, Alignment2D = Alignment2D::LeftCenter());
+		ScrollingTextComponent(Actor&, Component* parentComp, const std::string& name = std::string(), const Transform& transform = Transform(), std::string content = std::string(), std::string fontPath = std::string(), Alignment2D = Alignment2D::LeftCenter());
 
 		virtual Boxf<Vec2f> GetBoundingBox(bool world = true) const override;	//Canvas space
 
@@ -125,8 +140,10 @@ namespace GEE
 
 	namespace textUtil
 	{
-		float GetTextLength(const std::string& str, const Vec2f& textScale, const Font& font);
-		float GetTextHeight(const std::string& str, const Vec2f& textScale, const Font& font);
+		float GetTextLength(const std::string& str, const Vec2f& textScale, const Font::Variation&);
+		float GetTextHeight(const std::string& str, const Vec2f& textScale, const Font::Variation&);
+
+		Vec2f ComputeScaleRatio(UISpace, const Transform& textTransform, UICanvas* canvas, const WindowData* windowData, const Vec2f& optionalPreviouslyAppliedRatio = Vec2f(1.0f));
 	}
 }
 GEE_POLYMORPHIC_SERIALIZABLE_COMPONENT(GEE::Component, GEE::TextComponent, GEE::Transform(), "", "")
