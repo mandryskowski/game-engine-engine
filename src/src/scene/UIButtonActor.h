@@ -77,7 +77,7 @@ namespace GEE
 		 * @param clickID: ID of the click texture. Leave at -1.0f if you don't want to change the click mat instance.
 		 * @param disabledID: ID of the disabled texture. Leave at -1.0f if you don't want to change the disabled mat instance.
 		*/
-		void ButtonMatsFromAtlas(UIButtonActor& button, AtlasMaterial& atlasMat, float idleID, float hoverID = -1.0f, float clickID = -1.0f, float disabledID = -1.0f);
+		void ButtonMatsFromAtlas(UIButtonActor& button, SharedPtr<AtlasMaterial> atlasMat, float idleID, float hoverID = -1.0f, float clickID = -1.0f, float disabledID = -1.0f);
 	}
 
 	class UIActivableButtonActor : public UIButtonActor

@@ -43,15 +43,15 @@ namespace GEE
 		unsigned int GetVAO(unsigned int VAOcontext = 0) const;
 		unsigned int GetVertexCount() const;
 		MeshLoc GetLocalization() const;
-		Material* GetMaterial();
-		const Material* GetMaterial() const;
+		SharedPtr<Material> GetMaterial();
+		const SharedPtr<Material> GetMaterial() const;
 		std::vector<Vertex>* GetVertsData() const;
 		std::vector<unsigned int>* GetIndicesData() const;
 		Boxf<Vec3f> GetBoundingBox() const;
 		void RemoveVertsAndIndicesData() const;
 		bool CanCastShadow() const;
 
-		void SetMaterial(Material*);
+		void SetMaterial(SharedPtr<Material>);
 		void SetBoundingBox(const Boxf<Vec3f>&);
 
 		void Bind(unsigned int VAOcontext) const;
@@ -90,7 +90,7 @@ namespace GEE
 		unsigned int VBO, EBO;
 
 		unsigned int VertexCount, IndexCount;
-		Material* DefaultMeshMaterial;
+		SharedPtr<Material> DefaultMeshMaterial;
 
 		mutable SharedPtr<std::vector<Vertex>> VertsData;
 		mutable SharedPtr<std::vector<unsigned int>> IndicesData;
@@ -106,18 +106,18 @@ namespace GEE
 		SharedPtr<MaterialInstance> MaterialInst;
 
 	public:
-		MeshInstance(Mesh& mesh, Material* overrideMaterial = nullptr);
+		MeshInstance(Mesh& mesh, SharedPtr<Material> overrideMaterial = nullptr);
 		MeshInstance(Mesh& mesh, SharedPtr<MaterialInstance>);
 		MeshInstance(const MeshInstance&);
 		MeshInstance(MeshInstance&&) noexcept;
 
 		Mesh& GetMesh();
 		const Mesh& GetMesh() const;
-		Material* GetMaterialPtr();
-		const Material* GetMaterialPtr() const;
+		SharedPtr<Material> GetMaterialPtr();
+		const SharedPtr<Material> GetMaterialPtr() const;
 		MaterialInstance* GetMaterialInst() const;
 
-		void SetMaterial(Material*);
+		void SetMaterial(SharedPtr<Material>);
 		void SetMaterialInst(SharedPtr<MaterialInstance>);
 
 		template <typename Archive> void Save(Archive& archive)	const;

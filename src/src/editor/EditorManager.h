@@ -46,6 +46,7 @@ namespace GEE
 	{
 		class EditorActions;
 		class EditorMessageLogger;
+		struct EditorPopup;
 
 		class EditorManager
 		{
@@ -54,6 +55,9 @@ namespace GEE
 			virtual EditorActions& GetActions() = 0;
 
 			virtual EditorMessageLogger& GetEditorLogger(GameScene& scene) = 0;
+			virtual bool GetViewportMaximized() const = 0;
+			virtual bool GetDebugRenderComponents() const = 0;
+			virtual bool GetDebugRenderPhysicsMeshes() const = 0;
 
 			virtual void RequestPopupMenu(const Vec2f&, SystemWindow&, std::function<void(PopupDescription)>) = 0;
 
@@ -72,6 +76,10 @@ namespace GEE
 			virtual ~EditorManager() = default;
 
 			virtual void SetDebugRenderComponents(bool) = 0;
+
+		private:
+			virtual const std::vector<EditorPopup>& GetPopupsForRendering() = 0;
+			friend class EditorRenderer;
 		};
 	}
 }

@@ -14,7 +14,7 @@ namespace GEE
 		CaretComponent(nullptr)
 	{
 		//if (name == "VecBox0")
-			//ContentTextComp = &CreateComponent<ScrollingTextComponent>("ButtonText", Transform(Vec2f(0.0f), Vec2f(1.0f)), "0", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
+			//ContentTextComp = &CreateComponent<ScrollingTextComponent>("ButtonText", Transform(Vec2f(0.0f), Vec2f(1.0f)), "0", "", Alignment2D::Center());
 		//else
 			ContentTextComp = &CreateButtonText("0");
 
@@ -29,7 +29,7 @@ namespace GEE
 			GameHandle->GetRenderEngineHandle()->AddMaterial(caretMaterial);
 		}
 		CaretComponent->AddMeshInst(GameHandle->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD));
-		CaretComponent->OverrideInstancesMaterial(caretMaterial.get());
+		CaretComponent->OverrideInstancesMaterial(caretMaterial);
 
 	}
 
@@ -64,6 +64,11 @@ namespace GEE
 
 	void UIInputBoxActor::OnStart()
 	{
+	}
+
+	TextComponent* UIInputBoxActor::GetContentTextComp()
+	{
+		return ContentTextComp;
 	}
 
 	std::string UIInputBoxActor::GetContent()
@@ -109,8 +114,9 @@ namespace GEE
 
 	void UIInputBoxActor::SetOnInputFunc(std::function<void(float)> inputFunc, std::function<float()> valueGetter, bool fixNumberStr)
 	{
-		std::function<std::string()> valueGetterStr = [=]() { return ToStringPrecision(valueGetter()); };
-		if (fixNumberStr)
+		std::function<std::string()> valueGetterStr = nullptr;
+		if (valueGetter) valueGetterStr = [=]() { return ToStringPrecision(valueGetter()); };
+		if (fixNumberStr && valueGetter)
 		{
 			valueGetterStr = [=]() {
 				std::string str = valueGetterStr();
@@ -122,17 +128,27 @@ namespace GEE
 			};
 		}
 
-		SetOnInputFunc([=](const std::string& content) {
+		std::function<void(const std::string&)> inputFuncStr;
+		if (inputFunc) inputFuncStr = [=](const std::string& content)
+		{
 			if (content.empty()) return 0.0f;
 			try { float val = std::stof(content); inputFunc(val); }
 			catch (std::exception& exception) { std::cout << "ERROR: Std exception: " << exception.what() << '\n'; }
-			},
-			valueGetterStr);
+		};
+
+
+		SetOnInputFunc(inputFuncStr, valueGetterStr);
 	}
 
 	void UIInputBoxActor::SetRetrieveContentEachFrame(bool retrieveContent)
 	{
 		RetrieveContentEachFrame = retrieveContent;
+	}
+
+	void UIInputBoxActor::UpdateValue()
+	{
+		if (ValueGetter)
+			ValueGetter();
 	}
 
 	void UIInputBoxActor::Update(float deltaTime)

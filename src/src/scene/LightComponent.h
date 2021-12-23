@@ -26,6 +26,7 @@ namespace GEE
 
 		LightType GetType() const;
 		float GetFar() const;
+		float GetShadowBias() const;
 		unsigned int GetLightIndex() const;
 		unsigned int GetShadowMapNr() const;
 		Mat4f GetProjection() const;

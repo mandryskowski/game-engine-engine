@@ -41,7 +41,6 @@ namespace GEE
 			void UpdateTransforms();
 			void UpdatePxTransforms();
 
-			void DebugRender(GameScenePhysicsData& scenePhysicsData, RenderEngineManager&, SceneMatrixInfo&);
 			~PhysicsEngine();
 
 		private:
@@ -68,7 +67,6 @@ namespace GEE
 
 		namespace Util
 		{
-			Vec3f toVecColor(physx::PxDebugColor::Enum);
 		}
 	}
 }

@@ -42,7 +42,7 @@ namespace GEE
 
 		static void InstantiateTree(Component& comp, HierarchyTemplate::HierarchyTreeT&, const std::vector<HierarchyTemplate::HierarchyNodeBase*>& selectedComponents = {}, Material* overrideMaterial = nullptr);
 
-		static SharedPtr<Font> LoadFont(GameManager& gameHandle, const std::string& path);
+		static SharedPtr<Font> LoadFont(GameManager& gameHandle, const std::string& regularPath, const std::string& boldPath = "", const std::string& italicPath = "", const std::string& boldItalicPath = "");
 		template <class T = GameSettings> static T LoadSettingsFromFile(std::string path);
 
 		static SharedPtr<Physics::CollisionShape> LoadTriangleMeshCollisionShape(Physics::PhysicsEngineManager* physicsHandle, const Mesh& mesh);

@@ -25,6 +25,7 @@ namespace GEE
 		virtual const Transform* GetCanvasT() const = 0;
 
 		virtual Vec2f FromCanvasSpace(const Vec2f& canvasSpaceTransform) const = 0;
+		virtual Vec2f ScaleFromCanvasSpace(const Vec2f& canvasSpaceScale) const = 0;
 		virtual Mat4f FromCanvasSpace(const Mat4f& canvasSpaceTransform) const = 0;
 		virtual Transform FromCanvasSpace(const Transform& canvasSpaceTransform) const = 0;
 		virtual Vec2f ToCanvasSpace(const Vec2f& worldTransform) const = 0;
@@ -37,7 +38,7 @@ namespace GEE
 
 		unsigned int GetCanvasDepth() const;
 
-		virtual void SetCanvasView(const Transform&);
+		virtual void SetCanvasView(const Transform&, bool clampView = true);
 
 		virtual void ClampViewToElements();
 		void AutoClampView(bool horizontal = true, bool vertical = false);	//Set to false to set view scale to 100% of vertical size, or leave it as it is to set it to 100% of horizontal size

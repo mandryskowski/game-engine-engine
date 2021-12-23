@@ -169,6 +169,27 @@ namespace GEE
 				return "CannotCastCollisionShapeToString";
 			}
 
+			Vec3f toVecColor(PxDebugColor::Enum col)
+			{
+				switch (col)
+				{
+				case PxDebugColor::eARGB_BLACK: return Vec3f(0.0f);
+				case PxDebugColor::eARGB_BLUE: return Vec3f(0.0f, 0.0f, 1.0f);
+				case PxDebugColor::eARGB_CYAN: return Vec3f(0.5f, 0.5f, 1.0f);
+				case PxDebugColor::eARGB_DARKBLUE: return Vec3f(0.0f, 0.0f, 0.75f);
+				case PxDebugColor::eARGB_DARKGREEN: return Vec3f(0.0f, 0.75f, 0.0f);
+				case PxDebugColor::eARGB_DARKRED: return Vec3f(0.75f, 0.0f, 0.0f);
+				case PxDebugColor::eARGB_GREEN: return Vec3f(0.0f, 1.0f, 0.0f);
+				case PxDebugColor::eARGB_GREY: return Vec3f(0.5f, 0.5f, 0.5f);
+				case PxDebugColor::eARGB_MAGENTA: return Vec3f(1.0f, 0.0f, 1.0f);
+				case PxDebugColor::eARGB_RED: return Vec3f(1.0f, 0.0f, 0.0f);
+				case PxDebugColor::eARGB_WHITE: return Vec3f(1.0f);
+				case PxDebugColor::eARGB_YELLOW: return Vec3f(1.0f, 1.0f, 0.0f);
+				}
+
+				return Vec3f(0.0f);
+			}
+
 			Vec3f toGlm(PxVec3 pxVec)
 			{
 				return Vec3f(pxVec.x, pxVec.y, pxVec.z);

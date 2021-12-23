@@ -154,6 +154,16 @@ namespace GEE
 		AddShader(ShaderLoader::LoadShaders("TextShader", "Shaders/text.vs", "Shaders/text.fs"));
 		Shaders.back()->SetExpectedMatrices(std::vector<MatrixType>{MatrixType::MVP});
 
+		for (int i = 0; i < 2; i++)
+		{
+			Shaders.push_back(AddShader(ShaderLoader::LoadShadersWithInclData("ShadowMapVisualisation_" + ((i == 0) ? (std::string("2D")) : (std::string("3D"))), "#define LIGHT_2D\n", "Shaders/shadowMapVisualisation.vs", "Shaders/shadowMapVisualisation.fs")));
+			Shaders.back()->SetExpectedMatrices(std::vector<MatrixType>{MatrixType::MODEL, MatrixType::MVP});
+			Shaders.back()->UniformBlockBinding("BoneMatrices", 10);
+			Shaders.back()->Use();
+			Shaders.back()->Uniform1i("shadowMaps", 10);
+			Shaders.back()->Uniform1i("shadowCubemaps", 11);
+		}
+
 		//load debug shaders
 		AddNonCustomShader(ShaderLoader::LoadShaders("Debug", "Shaders/debug.vs", "Shaders/debug.fs"))->SetExpectedMatrices(std::vector<MatrixType>{MatrixType::MVP});
 	}
@@ -221,14 +231,9 @@ namespace GEE
 		return shaders;
 	}
 
-	std::vector<Material*> RenderEngine::GetMaterials()
+	std::vector<SharedPtr<Material>> RenderEngine::GetMaterials()
 	{
-		std::vector<Material*> materials;
-		materials.reserve(Materials.size());
-		for (auto& it : Materials)
-			materials.push_back(it.get());
-
-		return materials;
+		return Materials;
 	}
 
 	RenderToolboxCollection& RenderEngine::AddRenderTbCollection(const RenderToolboxCollection& tbCollection, bool setupToolboxesAccordingToSettings)
@@ -242,13 +247,13 @@ namespace GEE
 		return *RenderTbCollections.back();
 	}
 
-	Material* RenderEngine::AddMaterial(SharedPtr<Material>  material)
+	SharedPtr<Material> RenderEngine::AddMaterial(SharedPtr<Material>  material)
 	{
 		std::cout << "Adding material " << Materials.size() << " (" << material << ")";
 		if (material)
 			std::cout << " (" << material->GetLocalization().Name << ")\n";
 		Materials.push_back(material);
-		return Materials.back().get();
+		return Materials.back();
 	}
 
 	SharedPtr<Shader> RenderEngine::AddShader(SharedPtr<Shader> shader)
@@ -287,7 +292,7 @@ namespace GEE
 		Materials.erase(std::remove_if(Materials.begin(), Materials.end(), [&mat](SharedPtr<Material>& matVec) {return matVec.get() == &mat; }), Materials.end());
 	}
 
-	SharedPtr<Material> RenderEngine::FindMaterial(std::string name)
+	SharedPtr<Material> RenderEngine::FindMaterialImpl(const std::string& name)
 	{
 		if (name.empty())
 			return nullptr;
@@ -299,7 +304,7 @@ namespace GEE
 		return nullptr;
 	}
 
-	Shader* RenderEngine::FindShader(std::string name)
+	Shader* RenderEngine::FindShader(const std::string& name)
 	{
 
 		if (auto shaderIt = std::find_if(Shaders.begin(), Shaders.end(), [name](SharedPtr<Shader> shader) { return shader->GetName() == name; }); shaderIt != Shaders.end())
@@ -309,122 +314,13 @@ namespace GEE
 		return nullptr;
 	}
 
-	void RenderEngine::PrepareScene(RenderingContextID contextID, RenderToolboxCollection& tbCollection, GameSceneRenderData* sceneRenderData)
+	RenderToolboxCollection* GEE::RenderEngine::FindTbCollection(const std::string& name)
 	{
-		if (sceneRenderData->ContainsLights() && (GameHandle->GetGameSettings()->Video.ShadowLevel > SettingLevel::SETTING_MEDIUM || sceneRenderData->HasLightWithoutShadowMap()))
-			ShadowMapRenderer(*this).ShadowMaps(contextID, tbCollection, *sceneRenderData, sceneRenderData->Lights);
-	}
+		auto found = std::find_if(RenderTbCollections.begin(), RenderTbCollections.end(), [&name](UniquePtr<RenderToolboxCollection>& tbCol) { return tbCol->GetName() == name; });
+		if (found == RenderTbCollections.end())
+			return nullptr;
 
-
-	void RenderEngine::PrepareFrame()
-	{
-		if (GameHandle->GetMainScene())
-		{
-			for (auto& it : GameHandle->GetMainScene()->GetRenderData()->SkeletonBatches)
-				it->SwapBoneUBOs();
-
-			BindSkeletonBatch(GameHandle->GetMainScene()->GetRenderData(), static_cast<unsigned int>(0));
-		}
-
-		//std::cout << "***Shaders deubg***\n";
-		//for (auto& it : Shaders)
-		//	std::cout << it->GetName() << '\n';
-
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		glDrawBuffer(GL_BACK);
-		glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	}
-
-	void RenderEngine::RenderText(const SceneMatrixInfo& infoPreConvert, const Font& font, std::string content, Transform t, Vec3f color, Shader* shader, bool convertFromPx, const std::pair<TextAlignment, TextAlignment>& alignment)
-	{
-		if (!Material::ShaderInfo(MaterialShaderHint::None).MatchesRequiredInfo(infoPreConvert.GetRequiredShaderInfo()) && shader && shader != FindShader("TextShader"))	///TODO: CHANGE IT SO TEXTS USE MATERIALS SO THEY CAN BE RENDERED USING DIFFERENT SHADERS!!!!
-			return;
-
-		if (!shader)
-		{
-			shader = FindShader("TextShader");
-			shader->Use();
-		}
-
-		if (infoPreConvert.GetAllowBlending())
-		{
-			glEnable(GL_BLEND);
-			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-			glBlendEquation(GL_FUNC_ADD);
-		}
-
-
-		if (infoPreConvert.GetUseMaterials())	// TODO: Przetestuj - sprawdz czy nic nie zniknelo i czy moge usunac  info.UseMaterials = true;  z linijki 969
-			shader->Uniform4fv("material.color", Vec4f(color, 1.0f));
-		font.GetBitmapsArray().Bind(0);
-
-		Vec2f resolution(infoPreConvert.GetTbCollection().GetSettings().Resolution);
-
-		SceneMatrixInfo info = infoPreConvert;
-		if (convertFromPx)
-		{
-			Mat4f pxConvertMatrix = glm::ortho(0.0f, resolution.x, 0.0f, resolution.y);
-			const Mat4f& proj = info.GetProjection();
-			info.CalculateVP();
-			Mat4f vp = info.GetVP() * pxConvertMatrix;
-			info.SetVPArtificially(vp);
-		}
-
-		Vec2f halfExtent = t.GetScale();
-		float textHeight = t.GetScale().y;// textUtil::GetTextHeight(content, t.GetScale(), font);
-		//	halfExtent.y *= 1.0f - font.GetBaselineHeight() / 4.0f;	//Account for baseline height (we move the character quads by the height in the next line, so we have to shrink them a bit so that the text fits within halfExtent)
-		t.Move(Vec3f(0.0f, -t.GetScale().y * 2.0f + font.GetBaselineHeight() * t.GetScale().y * 2.0f, 0.0f));	//align to bottom (-t.ScaleRef.y), move down to the bottom of it (-t.ScaleRef.y), and then move up to baseline height (-t.ScaleRef.y * 2.0f + font.GetBaselineHeight() * halfExtent.y * 2.0f)
-
-		// Align horizontally
-		if (alignment.first != TextAlignment::LEFT)
-		{
-			float textLength = textUtil::GetTextLength(content, t.GetScale(), font);
-
-			t.Move(t.GetRot() * Vec3f(-textLength / 2.0f * (static_cast<float>(alignment.first) - static_cast<float>(TextAlignment::LEFT)), 0.0f, 0.0f));
-		}
-
-		// Align vertically
-		if (alignment.second != TextAlignment::BOTTOM)
-			t.Move(t.GetRot() * Vec3f(0.0f, -textHeight * (static_cast<float>(alignment.second) - static_cast<float>(TextAlignment::BOTTOM)), 0.0f));
-
-		// Account for multiple lines if the text is not aligned to TOP. Each line (excluding the first one, that's why we cancel out the first line) moves the text up by its scale if it is aligned to BOTTOM and by 1/2 of its scale if it is aligned to CENTER.
-		if (auto firstLineBreak = content.find_first_of('\n'); alignment.second != TextAlignment::TOP && firstLineBreak != std::string::npos)
-			;// t.Move(t.GetRot() * Vec3f(0.0f, (textHeight - textUtil::GetTextHeight(content.substr(0, firstLineBreak), t.GetScale(), font)) / 2.0f * (static_cast<float>(TextAlignment::TOP) - static_cast<float>(alignment.second)), 0.0f));
-
-		//t.Move(Vec3f(0.0f, -64.0f, 0.0f));
-		//t.Move(Vec3f(0.0f, 11.0f, 0.0f) / scale);
-
-		const Mat3f& textRot = t.GetRotationMatrix();
-
-		Material textMaterial("TextMaterial", *FindShader("TextShader"));
-
-		Transform initialT = t;
-
-		info.SetUseMaterials(false);	// do not bind materials before rendering quads
-
-		for (int i = 0; i < static_cast<int>(content.length()); i++)
-		{
-			if (content[i] == '\n')
-			{
-				initialT.Move(Vec2f(0.0f, -halfExtent.y * 2.0f));
-				t = initialT;
-				continue;
-			}
-			shader->Uniform1i("material.glyphNr", content[i]);
-			const Character& c = font.GetCharacter(content[i]);
-
-			t.Move(textRot * Vec3f(c.Bearing * halfExtent, 0.0f) * 2.0f);
-			t.SetScale(halfExtent);
-			//printVector(vp * t.GetWorldTransformMatrix() * Vec4f(0.0f, 0.0f, 0.0f, 1.0f), "Letter " + std::to_string(i));
-
-			Renderer(*this).StaticMeshInstances(info, { MeshInstance(GetBasicShapeMesh(EngineBasicShape::QUAD), &textMaterial) }, t, *shader);
-			t.Move(textRot * -Vec3f(c.Bearing * halfExtent, 0.0f) * 2.0f);
-
-			t.Move(textRot * Vec3f(c.Advance * halfExtent.x, 0.0f, 0.0f) * 2.0f);
-		}
-		
-		glDisable(GL_BLEND);
+		return found->get();
 	}
 
 	void RenderEngine::Dispose()

@@ -272,7 +272,7 @@ namespace GEE
 			currentActor->MoveCompToRoot(*comp);
 
 		if (name == "CameraText")
-			dynamic_cast<TextComponent*>(comp)->SetAlignment(TextAlignment::CENTER, TextAlignment::CENTER);
+			dynamic_cast<TextComponent*>(comp)->SetAlignment(Alignment2D::Center());
 
 		//////Check for an error
 
@@ -501,7 +501,7 @@ namespace GEE
 				{
 					if ((*loadedAiMaterialsPtr)[i] == assimpMaterial)
 					{
-						meshPtr->SetMaterial(matLoadingData->LoadedMaterials[i].get());	//MaterialLoadingData::LoadedMaterials and MaterialLoadingData::LoadedAiMaterials are the same size, so the (assimp material -> engine material) indices match too
+						meshPtr->SetMaterial(matLoadingData->LoadedMaterials[i]);	//MaterialLoadingData::LoadedMaterials and MaterialLoadingData::LoadedAiMaterials are the same size, so the (assimp material -> engine material) indices match too
 						return;
 					}
 				}
@@ -528,7 +528,7 @@ namespace GEE
 			material->LoadFromAiMaterial(scene, assimpMaterial, directory, matLoadingData);
 
 			if (meshPtr)
-				meshPtr->SetMaterial(material.get());
+				meshPtr->SetMaterial(material);
 
 			if (matLoadingData)
 			{
@@ -665,7 +665,7 @@ namespace GEE
 				if (input == "material" && modelNodeCast)
 				{
 					input = multipleWordInput(filestr);	//get material name (could be a path, so multiple word input is possible)
-					Material* foundMaterial = gameHandle.GetRenderEngineHandle()->FindMaterial(input).get();
+					auto foundMaterial = gameHandle.GetRenderEngineHandle()->FindMaterial(input);
 
 					if (!foundMaterial) //if no material of this name was found, check if the input is of format: file.obj:name
 					{
@@ -676,18 +676,18 @@ namespace GEE
 							continue;
 						}
 
-						std::function<Material* (HierarchyTemplate::HierarchyNodeBase&, const std::string&)> findMaterialFunc = [&findMaterialFunc](HierarchyTemplate::HierarchyNodeBase& node, const std::string& materialName) -> Material* {
+						std::function<SharedPtr<Material> (HierarchyTemplate::HierarchyNodeBase&, const std::string&)> findMaterialFunc = [&findMaterialFunc](HierarchyTemplate::HierarchyNodeBase& node, const std::string& materialName) -> SharedPtr<Material> {
 							if (auto cast = dynamic_cast<HierarchyTemplate::HierarchyNode<ModelComponent>*>(&node))
 							{
 								std::cout << cast->GetCompT().GetName() << " lolxd " << cast->GetCompT().GetMeshInstanceCount() << "\n";
 								for (int i = 0; i < cast->GetCompT().GetMeshInstanceCount(); i++)
 								{
 									std::cout << "mat " << cast->GetCompT().GetMeshInstance(i).GetMaterialPtr() << '\n';
-									if (const Material* material = cast->GetCompT().GetMeshInstance(i).GetMaterialPtr())
+									if (auto material = cast->GetCompT().GetMeshInstance(i).GetMaterialPtr())
 									{
 										std::cout << material->GetLocalization().Name << " is equal to " << materialName << "?\n";
 										if (material->GetLocalization().Name == materialName)
-											return const_cast<Material*>(material);
+											return material;
 									}
 								}
 							}
@@ -1079,8 +1079,12 @@ namespace GEE
 		skelInfo.GetBatchPtr()->RecalculateBoneCount();
 	}
 
-	SharedPtr<Font> EngineDataLoader::LoadFont(GameManager& gameHandle, const std::string& path)
+	SharedPtr<Font> EngineDataLoader::LoadFont(GameManager& gameHandle, const std::string& regularPath, const std::string& boldPath, const std::string& italicPath, const std::string& boldItalicPath)
 	{
+		SharedPtr<Font> font = MakeShared<Font>(Font(regularPath, boldPath, italicPath, boldItalicPath));
+
+		const std::string paths[] = { regularPath, boldPath, italicPath, boldItalicPath };
+
 		if (!FTLib)
 		{
 			FTLib = new FT_Library;
@@ -1093,45 +1097,53 @@ namespace GEE
 			}
 		}
 
-		if (auto found = gameHandle.FindFont(path))
+		if (auto found = gameHandle.FindFont(regularPath))
 			return found;
 
-		FT_Face face;
-		if (FT_New_Face(*FTLib, path.c_str(), 0, &face))
+		for (int i = 0; i <= static_cast<int>(FontStyle::BoldItalic); i++)
 		{
-			std::cerr << "ERROR! Cannot load font " + path + ".\n";
-			return nullptr;
-		}
-
-		FT_Set_Pixel_Sizes(face, 0, 64);
-
-		SharedPtr<Font> font = MakeShared<Font>(Font(path));
-		glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-		const float advanceUnit = 1.0f / 64.0f;
-		const float pixelScale = 1.0f / 64.0f;
-
-		font->SetBaselineHeight(static_cast<float>(face->ascender) * pixelScale * advanceUnit);
-
-		for (int i = 0; i < 128; i++)
-		{
-			if (FT_Load_Char(face, i, FT_LOAD_RENDER))
-			{
-				std::cerr << "Can't load glyph " << char(i) << ".\n";
+			if (paths[i].empty())
 				continue;
+
+			auto& path = paths[i];
+
+			FT_Face face;
+			if (FT_New_Face(*FTLib, path.c_str(), 0, &face))
+			{
+				std::cerr << "ERROR! Cannot load font " + path + ".\n";
+				return nullptr;
 			}
 
-			font->GetBitmapsArray().Bind(0);
-			glTexSubImage3D(font->GetBitmapsArray().GetType(), 0, 0, 0, i, face->glyph->bitmap.width, face->glyph->bitmap.rows, 1, GL_RED, GL_UNSIGNED_BYTE, face->glyph->bitmap.buffer);
-			Character character = Character();
-			character.ID = i;
-			character.Size = Vec2f(face->glyph->bitmap.width, face->glyph->bitmap.rows) * pixelScale;
-			character.Bearing = Vec2f(face->glyph->bitmap_left, face->glyph->bitmap_top) * pixelScale;
-			character.Advance = static_cast<float>(face->glyph->advance.x) * pixelScale * advanceUnit;
+			FT_Set_Pixel_Sizes(face, 0, 64);
 
-			font->AddCharacter(character);
+			Font::Variation& fontVariation = *font->GetVariation(static_cast<FontStyle>(i));
+			glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+			const float advanceUnit = 1.0f / 64.0f;
+			const float pixelScale = 1.0f / 64.0f;
+
+			fontVariation.SetBaselineHeight(static_cast<float>(face->ascender) * pixelScale * advanceUnit);
+
+			for (int i = 0; i < 128; i++)
+			{
+				if (FT_Load_Char(face, i, FT_LOAD_RENDER))
+				{
+					std::cerr << "Can't load glyph " << char(i) << ".\n";
+					continue;
+				}
+
+				fontVariation.GetBitmapsArray().Bind(0);
+				glTexSubImage3D(fontVariation.GetBitmapsArray().GetType(), 0, 0, 0, i, face->glyph->bitmap.width, face->glyph->bitmap.rows, 1, GL_RED, GL_UNSIGNED_BYTE, face->glyph->bitmap.buffer);
+				Character character = Character();
+				character.ID = i;
+				character.Size = Vec2f(face->glyph->bitmap.width, face->glyph->bitmap.rows) * pixelScale;
+				character.Bearing = Vec2f(face->glyph->bitmap_left, face->glyph->bitmap_top) * pixelScale;
+				character.Advance = static_cast<float>(face->glyph->advance.x) * pixelScale * advanceUnit;
+
+				fontVariation.AddCharacter(character);
+			}
+
+			fontVariation.GetBitmapsArray().GenerateMipmap();
 		}
-
-		font->GetBitmapsArray().GenerateMipmap();
 
 		return font;
 	}

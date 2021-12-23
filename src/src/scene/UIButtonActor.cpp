@@ -9,6 +9,9 @@
 #include <math/Box.h>
 #include <editor/EditorActions.h>
 
+
+#include <scene/UIWindowActor.h>
+
 namespace GEE
 {
 	UIButtonActor::UIButtonActor(GameScene& scene, Actor* parentActor, const std::string& name, std::function<void()> onClickFunc, const Transform& t) :
@@ -61,15 +64,17 @@ namespace GEE
 			GameHandle->GetRenderEngineHandle()->AddMaterial(matDisabled);
 		}
 
-		MatIdle = MakeShared<MaterialInstance>(MaterialInstance(*matIdle));
-		MatHover = MakeShared<MaterialInstance>(MaterialInstance(*matHover));
-		MatClick = MakeShared<MaterialInstance>(MaterialInstance(*matClick));
-		MatActive = MakeShared<MaterialInstance>(MaterialInstance(*matActive));
-		MatDisabled = MakeShared<MaterialInstance>(MaterialInstance(*matDisabled));
+		MatIdle = MakeShared<MaterialInstance>(matIdle);
+		MatHover = MakeShared<MaterialInstance>(matHover);
+		MatClick = MakeShared<MaterialInstance>(matClick);
+		MatActive = MakeShared<MaterialInstance>(matActive);
+		MatDisabled = MakeShared<MaterialInstance>(matDisabled);
 
 
 		ButtonModel->AddMeshInst(MeshInstance(GameHandle->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD), MatIdle));
 		PrevDeducedMaterial = MatIdle.get();
+
+		PopupCreationFunc = [this](PopupDescription desc) { desc.AddOption("Transform", [this]() { auto& window = Scene.CreateActorAtRoot<UIWindowActor>("Button transform"); ComponentDescriptionBuilder descBuilder(*dynamic_cast<Editor::EditorManager*>(GameHandle), window, window); GetRoot()->GetEditorDescription(descBuilder); window.AutoClampView(); window.RefreshFieldsList();  }); };
 	}
 
 	UIButtonActor::UIButtonActor(GameScene& scene, Actor* parentActor, const std::string& name, const std::string& buttonTextContent, std::function<void()> onClickFunc, const Transform& t) :
@@ -325,7 +330,7 @@ namespace GEE
 
 	TextConstantSizeComponent& UIButtonActor::CreateButtonText(const std::string& content)
 	{
-		auto& text = CreateComponent<TextConstantSizeComponent>("ButtonText", Transform(Vec2f(0.0f), Vec2f(1.0f)), content, "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
+		auto& text = CreateComponent<TextConstantSizeComponent>("ButtonText", Transform(Vec2f(0.0f), Vec2f(1.0f)), content, "", Alignment2D::Center());
 		text.SetMaxSize(Vec2f(0.8f));
 		text.Unstretch();
 		text.Unstretch();
@@ -355,7 +360,7 @@ namespace GEE
 			GameHandle->GetRenderEngineHandle()->AddMaterial(matActive);
 		}
 
-		MatActive = MakeShared<MaterialInstance>(MaterialInstance(*matActive));
+		MatActive = MakeShared<MaterialInstance>(matActive);
 	}
 	UIActivableButtonActor::UIActivableButtonActor(GameScene& scene, Actor* parentActor, const std::string& name, const std::string& buttonTextContent, std::function<void()> onClickFunc, std::function<void()> onDeactivationFunc, const Transform& transform) :
 		UIActivableButtonActor(scene, parentActor, name, onClickFunc, onDeactivationFunc, transform)
@@ -471,11 +476,11 @@ namespace GEE
 		ClickPosNDC = pos;
 	}
 
-	void uiButtonActorUtil::ButtonMatsFromAtlas(UIButtonActor& button, AtlasMaterial& atlasMat, float idleID, float hoverID, float clickID, float disabledID)
+	void uiButtonActorUtil::ButtonMatsFromAtlas(UIButtonActor& button, SharedPtr<AtlasMaterial> atlasMat, float idleID, float hoverID, float clickID, float disabledID)
 	{
-		button.SetMatIdle(MaterialInstance(atlasMat, atlasMat.GetTextureIDInterpolatorTemplate(idleID)));
-		if (hoverID >= 0.0f) button.SetMatHover(MaterialInstance(atlasMat, atlasMat.GetTextureIDInterpolatorTemplate(hoverID)));
-		if (clickID >= 0.0f) button.SetMatClick(MaterialInstance(atlasMat, atlasMat.GetTextureIDInterpolatorTemplate(clickID)));
-		if (disabledID >= 0.0f) button.SetMatDisabled(MaterialInstance(atlasMat, atlasMat.GetTextureIDInterpolatorTemplate(disabledID)));
+		button.SetMatIdle(MaterialInstance(atlasMat, atlasMat->GetTextureIDInterpolatorTemplate(idleID)));
+		if (hoverID >= 0.0f) button.SetMatHover(MaterialInstance(atlasMat, atlasMat->GetTextureIDInterpolatorTemplate(hoverID)));
+		if (clickID >= 0.0f) button.SetMatClick(MaterialInstance(atlasMat, atlasMat->GetTextureIDInterpolatorTemplate(clickID)));
+		if (disabledID >= 0.0f) button.SetMatDisabled(MaterialInstance(atlasMat, atlasMat->GetTextureIDInterpolatorTemplate(disabledID)));
 	}
 }

@@ -56,7 +56,7 @@ namespace GEE
 			if (!Cooking)
 				std::cerr << "ERROR! Can't initialize cooking.\n";
 
-			DefaultMaterial = Physics->createMaterial(1.0f, 0.5f, 1.0f);
+			DefaultMaterial = Physics->createMaterial(1.0f, 0.5f, 0.5f);
 		}
 
 		PxShape* PhysicsEngine::CreateTriangleMeshShape(CollisionShape* colShape, Vec3f scale)
@@ -352,60 +352,6 @@ namespace GEE
 			}
 		}
 
-		void PhysicsEngine::DebugRender(GameScenePhysicsData& scenePhysicsData, RenderEngineManager& renderEng, SceneMatrixInfo& info)
-		{
-			if (!(*DebugModePtr))
-			{
-				std::cerr << "ERROR! Physics debug render called, but DebugMode is false.\n";
-				return;
-			}
-
-			const PxRenderBuffer& rb = scenePhysicsData.PhysXScene->getRenderBuffer();
-
-			std::vector<std::array<Vec3f, 2>> verts;
-			int sizeSum = rb.getNbPoints() + rb.getNbLines() * 2 + rb.getNbTriangles() * 3;
-			int v = 0;
-			verts.resize(sizeSum);
-
-			for (int i = 0; i < static_cast<int>(rb.getNbPoints()); i++)
-			{
-				const PxDebugPoint& point = rb.getPoints()[i];
-
-				verts[v][0] = toGlm(point.pos);
-				verts[v++][1] = toVecColor(static_cast<PxDebugColor::Enum>(point.color));
-			}
-
-			for (int i = 0; i < static_cast<int>(rb.getNbLines()); i++)
-			{
-				const PxDebugLine& line = rb.getLines()[i];
-
-				verts[v][0] = toGlm(line.pos0);
-				verts[v++][1] = toVecColor(static_cast<PxDebugColor::Enum>(line.color0));
-				verts[v][0] = toGlm(line.pos1);
-				verts[v++][1] = toVecColor(static_cast<PxDebugColor::Enum>(line.color1));
-			}
-
-			for (int i = 0; i < static_cast<int>(rb.getNbTriangles()); i++)
-			{
-				const PxDebugTriangle& triangle = rb.getTriangles()[i];
-
-				verts[v][0] = toGlm(triangle.pos0);
-				verts[v++][1] = toVecColor(static_cast<PxDebugColor::Enum>(triangle.color0));
-				verts[v][0] = toGlm(triangle.pos1);
-				verts[v++][1] = toVecColor(static_cast<PxDebugColor::Enum>(triangle.color1));
-				verts[v][0] = toGlm(triangle.pos2);
-				verts[v++][1] = toVecColor(static_cast<PxDebugColor::Enum>(triangle.color2));
-			}
-
-			glBindVertexArray(VAO);
-			glBindBuffer(GL_ARRAY_BUFFER, VBO);
-			glBufferData(GL_ARRAY_BUFFER, sizeof(Vec3f) * 2 * verts.size(), &verts[0][0], GL_STATIC_DRAW);
-
-			PhysicsDebugRenderer(renderEng).BoundSceneDebug(info, GL_POINTS, 0, rb.getNbPoints(), Vec3f(0.0f));
-			PhysicsDebugRenderer(renderEng).BoundSceneDebug(info, GL_LINES, rb.getNbPoints(), rb.getNbLines() * 2, Vec3f(0.0f));
-			PhysicsDebugRenderer(renderEng).BoundSceneDebug(info, GL_TRIANGLES, rb.getNbPoints() + rb.getNbLines() * 2, rb.getNbTriangles() * 3, Vec3f(0.0f));
-		}
-
 		PhysicsEngine::~PhysicsEngine()
 		{
 			for (int i = 0; i < static_cast<int>(ScenesPhysicsData.size()); i++)
@@ -426,30 +372,6 @@ namespace GEE
 
 			//Foundation->release();
 			std::cout << "Physics engine successfully destroyed!\n";
-		}
-
-		namespace Util
-		{
-			Vec3f toVecColor(PxDebugColor::Enum col)
-			{
-				switch (col)
-				{
-				case PxDebugColor::eARGB_BLACK: return Vec3f(0.0f);
-				case PxDebugColor::eARGB_BLUE: return Vec3f(0.0f, 0.0f, 1.0f);
-				case PxDebugColor::eARGB_CYAN: return Vec3f(0.5f, 0.5f, 1.0f);
-				case PxDebugColor::eARGB_DARKBLUE: return Vec3f(0.0f, 0.0f, 0.75f);
-				case PxDebugColor::eARGB_DARKGREEN: return Vec3f(0.0f, 0.75f, 0.0f);
-				case PxDebugColor::eARGB_DARKRED: return Vec3f(0.75f, 0.0f, 0.0f);
-				case PxDebugColor::eARGB_GREEN: return Vec3f(0.0f, 1.0f, 0.0f);
-				case PxDebugColor::eARGB_GREY: return Vec3f(0.5f, 0.5f, 0.5f);
-				case PxDebugColor::eARGB_MAGENTA: return Vec3f(1.0f, 0.0f, 1.0f);
-				case PxDebugColor::eARGB_RED: return Vec3f(1.0f, 0.0f, 0.0f);
-				case PxDebugColor::eARGB_WHITE: return Vec3f(1.0f);
-				case PxDebugColor::eARGB_YELLOW: return Vec3f(1.0f, 1.0f, 0.0f);
-				}
-
-				return Vec3f(0.0f);
-			}
 		}
 	}
 }

@@ -303,6 +303,7 @@ namespace GEE
 			Physics::PhysicsEngineManager* GetPhysicsHandle();
 
 			friend class PhysicsEngine;
+			friend class PhysicsDebugRenderer;
 
 		private:
 			Physics::PhysicsEngineManager* PhysicsHandle;

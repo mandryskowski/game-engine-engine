@@ -398,14 +398,18 @@ namespace GEE
 
 	void Transform::GetEditorDescription(EditorDescriptionBuilder descBuilder)
 	{
-		descBuilder.AddField("Position").GetTemplates().VecInput<3, float>([this](int x, float val) {Vec3f pos = GetPos(); pos[x] = val; SetPosition(pos); }, [this](int x) { return GetPos()[x]; });
+		auto posVecBoxes = descBuilder.AddField("Position").GetTemplates().VecInput<3, float>([this](int axis, float val) {Vec3f pos = GetPos(); pos[axis] = val; SetPosition(pos); }, [this](int axis) { return GetPos()[axis]; }).VecInputBoxes;
+		for (auto it : posVecBoxes)
+			it->SetRetrieveContentEachFrame(true);
 
-		dynamic_cast<UIInputBoxActor*>(descBuilder.GetDescriptionParent().FindActor("VecBox0"))->SetRetrieveContentEachFrame(true);
-		dynamic_cast<UIInputBoxActor*>(descBuilder.GetDescriptionParent().FindActor("VecBox1"))->SetRetrieveContentEachFrame(true);
-		dynamic_cast<UIInputBoxActor*>(descBuilder.GetDescriptionParent().FindActor("VecBox2"))->SetRetrieveContentEachFrame(true);
+		auto rotQuatVecBoxes = descBuilder.AddField("Rotation Quat").GetTemplates().VecInput<4, float>(nullptr, nullptr).VecInputBoxes;
+		auto rotEulerVecBoxes = descBuilder.AddField("Rotation Euler").GetTemplates().VecInput<3, float>([this, rotQuatVecBoxes](int axis, float val) {Vec3f rot = toEuler(GetRot()); rot[axis] = val; SetRotation(rot); for (auto it : rotQuatVecBoxes) it->UpdateValue(); }, [this](int axis) { return toEuler(GetRot())[axis]; }).VecInputBoxes;
 
-		descBuilder.AddField("Rotation").GetTemplates().VecInput<4, float>([this](int x, float val) {Quatf rot = GetRot(); rot[x] = val; SetRotation(glm::normalize(rot)); }, [this](int x) { return GetRot()[x]; });
-		descBuilder.AddField("Scale").GetTemplates().VecInput<3, float>([this](int x, float val) {Vec3f scale = GetScale(); scale[x] = val; SetScale(scale); }, [this](int x) { return GetScale()[x]; });
+		// Defer setting input funcs of quaternion vec boxes because we need euler vec boxes to be created in order to update their value upon editting the quaternion value. If we did it right away, we wouldn't have had any reference to euler boxes, so we do it here.
+		for (int i = 0; i < static_cast<int>(rotQuatVecBoxes.size()); i++)
+			rotQuatVecBoxes[i]->SetOnInputFunc([this, i, rotEulerVecBoxes](float val) {Quatf rot = GetRot(); rot[i] = val; SetRotation(glm::normalize(rot)); for (auto it : rotEulerVecBoxes) it->UpdateValue(); }, [this, i]() { return GetRot()[i]; });
+
+		descBuilder.AddField("Scale").GetTemplates().VecInput<3, float>([this](int axis, float val) {Vec3f scale = GetScale(); scale[axis] = val; SetScale(scale); }, [this](int axis) { return GetScale()[axis]; });
 	}
 
 	void Transform::Print(std::string name) const

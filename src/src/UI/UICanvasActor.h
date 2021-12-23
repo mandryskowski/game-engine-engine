@@ -38,13 +38,14 @@ namespace GEE
 		}
 
 		void SetPopupCreationFunc(std::function<void(PopupDescription)>);
-		virtual void SetCanvasView(const Transform&) override;
+		virtual void SetCanvasView(const Transform&, bool clampView = true) override;
 		/**
 		 * @return The ModelComponent that is the canvas background. Can be nullptr.
 		*/
 		ModelComponent* GetCanvasBackground();
 
 		virtual Vec2f FromCanvasSpace(const Vec2f& canvasSpacePos) const override;
+		virtual Vec2f ScaleFromCanvasSpace(const Vec2f& canvasSpaceScale) const override;
 		virtual Mat4f FromCanvasSpace(const Mat4f& canvasSpaceMat) const override;
 		virtual Transform FromCanvasSpace(const Transform& canvasSpaceTransform) const override;
 		virtual Vec2f ToCanvasSpace(const Vec2f& worldPos) const override;
@@ -105,14 +106,19 @@ namespace GEE
 		UIElementTemplates GetTemplates();
 
 		UICanvasField& AddField(const std::string& name, std::function<Vec3f()> getElementOffset = nullptr);
+		UICanvasFieldCategory& AddCategory(const std::string& name);
 
 		virtual Vec3f GetListOffset() override;
 		void SetOnExpansionFunc(std::function<void()> onExpansionFunc);
 
 		virtual void HandleEventAll(const Event& ev) override;
+
+		virtual void Refresh() override;
+
 	private:
 		std::function<void()> OnExpansionFunc;
 		UIButtonActor* ExpandButton;
+		ModelComponent* CategoryBackgroundQuad;
 	};
 
 	class EditorDescriptionBuilder

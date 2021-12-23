@@ -81,10 +81,10 @@ namespace GEE
 		PopupCreationFunc = popupCreation;
 	}
 
-	void UICanvasActor::SetCanvasView(const Transform& canvasView)
+	void UICanvasActor::SetCanvasView(const Transform& canvasView, bool clampView)
 	{
 		CanvasView = canvasView;
-		ClampViewToElements();
+		if (clampView) ClampViewToElements();
 		if (ScrollBarX) UpdateScrollBarT<VecAxis::X>();
 		if (ScrollBarY) UpdateScrollBarT<VecAxis::Y>();
 	}
@@ -97,6 +97,11 @@ namespace GEE
 	Vec2f UICanvasActor::FromCanvasSpace(const Vec2f& canvasSpacePos) const
 	{
 		return GetCanvasT()->GetWorldTransformMatrix() * Vec4f(canvasSpacePos, 0.0f, 1.0f);
+	}
+
+	Vec2f UICanvasActor::ScaleFromCanvasSpace(const Vec2f& canvasSpaceScale) const
+	{
+		return (Mat2f)GetCanvasT()->GetWorldTransformMatrix() * canvasSpaceScale;
 	}
 
 	Mat4f UICanvasActor::FromCanvasSpace(const Mat4f& canvasSpaceMat) const
@@ -166,7 +171,7 @@ namespace GEE
 		CanvasBackground->AddMeshInst(GameHandle->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD));
 
 		if (color == Vec3f(-1.0f))
-			CanvasBackground->OverrideInstancesMaterial(GameHandle->GetRenderEngineHandle()->FindMaterial("GEE_E_Canvas_Background_Material").get());
+			CanvasBackground->OverrideInstancesMaterial(GameHandle->GetRenderEngineHandle()->FindMaterial("GEE_E_Canvas_Background_Material"));
 		else
 		{
 			CanvasBackground->OverrideInstancesMaterial(GameHandle->GetRenderEngineHandle()->AddMaterial(MakeShared<Material>("CanvasBackgroundMaterial", color, MaterialShaderHint::Simple)));
@@ -241,6 +246,37 @@ namespace GEE
 				
 				if (buttonEv.GetButton() == MouseButton::Right && PopupCreationFunc)
 					dynamic_cast<Editor::EditorManager*>(GameHandle)->RequestPopupMenu(Scene.GetUIData()->GetWindowData().GetMousePositionNDC(), *Scene.GetUIData()->GetWindow(), PopupCreationFunc);
+				break;
+			}
+			case EventType::KeyReleased:
+			{
+				const KeyEvent& keyEv = dynamic_cast<const KeyEvent&>(ev);
+				if (keyEv.GetKeyCode() == Key::F && keyEv.GetModifierBits() & KeyModifierFlags::Control)
+				{
+					auto& searchBar = CreateChild<UIInputBoxActor>("SearchBar", [](const std::string&) {}, []() { return "search..."; });
+					searchBar.SetMatIdle(MakeShared<Material>("SearchBarMaterial", hsvToRgb(Vec3f(220.0f, 0.53f, 0.4f))));
+					searchBar.SetTransform(Transform(Vec2f(0.0f), Vec2f(0.6f, 0.6f / 4.0f)));
+					searchBar.DetachFromCanvas();
+					searchBar.CallOnClickFunc();
+
+					{
+						auto searchBarText = dynamic_cast<TextConstantSizeComponent*>(searchBar.GetContentTextComp());
+						searchBarText->GetTransform().Move(Vec2f(0.25f, 0.0f));
+						searchBarText->SetMaxSize(Vec2f(0.75f, 1.0f) * 0.6f);
+						searchBarText->Unstretch();
+						searchBarText->SetMaterialInst(MakeShared<Material>("SearchBarTextMaterial", Vec4f(1.0f, 1.0f, 1.0f, 0.3f)));
+					}
+
+					
+
+					auto& searchIcon = searchBar.GetRoot()->CreateComponent<ModelComponent>("SearchIcon");
+					auto& renderHandle = *GameHandle->GetRenderEngineHandle();
+					auto iconsMaterial = renderHandle.FindMaterial<AtlasMaterial>("GEE_E_Icons");
+					searchIcon.AddMeshInst(MeshInstance(renderHandle.GetBasicShapeMesh(EngineBasicShape::QUAD), MakeShared<MaterialInstance>(iconsMaterial, iconsMaterial->GetTextureIDInterpolatorTemplate(9.0f))));
+					AddTopLevelUIElement(searchIcon);
+					searchIcon.DetachFromCanvas();
+					searchIcon.SetTransform(Transform(Vec2f(-0.75f, 0.0f), Vec2f(1.0f / 4.0f, 1.0f)));
+				}
 			}
 		}
 	}

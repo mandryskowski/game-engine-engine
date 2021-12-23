@@ -52,7 +52,7 @@ namespace GEE
 		MatrixInfoExt(const MatrixInfo& info)
 			: MatrixInfo(info), RequiredShaderInfo(MaterialShaderHint::None) { DefaultBools(); }
 		MatrixInfoExt(const MatrixInfoExt& info)
-			: MatrixInfoExt(static_cast<const MatrixInfo&>(info)) { RequiredShaderInfo = info.RequiredShaderInfo;}
+			: MatrixInfo(info), RequiredShaderInfo(info.RequiredShaderInfo), bUseMaterials(info.bUseMaterials), bOnlyShadowCasters(info.bOnlyShadowCasters), bMainPass(info.bMainPass), bAllowBlending(info.bAllowBlending) { }
 		MatrixInfoExt(RenderingContextID contextID, const MatrixInfo& info) :
 			MatrixInfoExt(info) {  }
 			

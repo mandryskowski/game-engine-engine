@@ -39,8 +39,15 @@ void main()
 }
 
 #else	// OUTLINE_DISCARD_ALPHA
+
+#if __VERSION__ >= 420
+layout(depth_greater) out float gl_FragDepth;
+#endif
+
+uniform float lightBias;
+
 void main()
 {
-	;
+	gl_FragDepth = gl_FragCoord.z + ((gl_FrontFacing) ? (lightBias) : (0.0));
 }
 #endif 

@@ -216,6 +216,7 @@
     <ClCompile Include="src\src\UI\UIComponent.cpp" />
     <ClCompile Include="src\src\UI\UIElement.cpp" />
     <ClCompile Include="src\src\UI\UIListActor.cpp" />
+    <ClCompile Include="src\src\utility\Alignment.cpp" />
     <ClCompile Include="src\src\utility\Profiling.cpp" />
     <ClCompile Include="src\src\utility\Utility.cpp" />
     <ClCompile Include="src\vendor\source\glad\glad.c" />
@@ -292,6 +293,7 @@
     <ClInclude Include="src\src\UI\UIComponent.h" />
     <ClInclude Include="src\src\UI\UIElement.h" />
     <ClInclude Include="src\src\UI\UIListActor.h" />
+    <ClInclude Include="src\src\utility\Alignment.h" />
     <ClInclude Include="src\src\utility\Asserts.h" />
     <ClInclude Include="src\src\utility\Log.h" />
     <ClInclude Include="src\src\utility\OperatingSystem.h" />

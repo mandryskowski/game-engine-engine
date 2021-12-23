@@ -70,7 +70,7 @@ namespace GEE
 	void FreeRoamingController::SetPossessedActor(Actor* actor)
 	{
 		Controller::SetPossessedActor(actor);
-		RotationEuler = Vec3f(0.0f);
+		RotationEuler = toEuler(actor->GetTransform()->GetRot());
 	}
 
 	Vec3i FreeRoamingController::GetMovementDirFromPressedKeys()

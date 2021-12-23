@@ -51,7 +51,7 @@ namespace GEE
 		Component::operator=(compT);
 
 		for (int i = 0; i < compT.GetMeshInstanceCount(); i++)
-			AddMeshInst(MeshInstance(const_cast<Mesh&>(compT.GetMeshInstance(i).GetMesh()), const_cast<Material*>(compT.GetMeshInstance(i).GetMaterialPtr())));
+			AddMeshInst(MeshInstance(const_cast<Mesh&>(compT.GetMeshInstance(i).GetMesh()), compT.GetMeshInstance(i).GetMaterialPtr()));
 
 		/*if (overrideMaterial)
 			OverrideInstancesMaterial(overrideMaterial);
@@ -60,7 +60,7 @@ namespace GEE
 		return *this;
 	}
 
-	void ModelComponent::OverrideInstancesMaterial(Material* overrideMat)
+	void ModelComponent::OverrideInstancesMaterial(SharedPtr<Material> overrideMat)
 	{
 		for (auto& it : MeshInstances)
 			it->SetMaterial(overrideMat);
@@ -126,8 +126,8 @@ namespace GEE
 		std::vector<const Material*> materials;
 		for (auto& it : MeshInstances)
 		{
-			if (std::find(materials.begin(), materials.end(), it->GetMaterialPtr()) == materials.end())	// do not repeat any materials
-				materials.push_back(it->GetMaterialPtr());
+			if (std::find(materials.begin(), materials.end(), it->GetMaterialPtr().get()) == materials.end())	// do not repeat any materials
+				materials.push_back(it->GetMaterialPtr().get());
 		}
 
 		return materials;
@@ -181,7 +181,7 @@ namespace GEE
 				it->GetMaterialInst()->Update(deltaTime);
 
 		if (Name == "MeshPreviewModel")
-			ComponentTransform.SetRotation(glm::rotate(Mat4f(1.0f), (float)glfwGetTime(), Vec3f(0.0f, 1.0f, 0.0f)));
+			;// ComponentTransform.SetRotation(glm::rotate(Mat4f(1.0f), (float)glfwGetTime(), Vec3f(0.0f, 1.0f, 0.0f)));
 	}
 
 	void ModelComponent::Render(const SceneMatrixInfo& info, Shader* shader)
@@ -217,7 +217,7 @@ namespace GEE
 		descBuilder.AddField("Render as billboard").GetTemplates().TickBox(RenderAsBillboard);
 
 		UICanvasFieldCategory& cat = descBuilder.GetCanvas().AddCategory("Mesh instances");
-		cat.GetExpandButton()->CreateComponent<TextConstantSizeComponent>("NrMeshInstancesText", Transform(), std::to_string(MeshInstances.size()), "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
+		cat.GetExpandButton()->CreateComponent<TextConstantSizeComponent>("NrMeshInstancesText", Transform(), std::to_string(MeshInstances.size()), "", Alignment2D::Center());
 		cat.GetTemplates().ListSelection<UniquePtr<MeshInstance>>(MeshInstances.begin(), MeshInstances.end(), [this, descBuilder](UIAutomaticListActor& listActor, UniquePtr<MeshInstance>& meshInst)
 			{
 				std::string name = meshInst->GetMesh().GetLocalization().NodeName + " (" + meshInst->GetMesh().GetLocalization().SpecificName + ")";
@@ -234,11 +234,14 @@ namespace GEE
 					model.AddMeshInst(*meshInst);
 
 					Actor& camActor = meshPreviewScene.CreateActorAtRoot<Actor>("MeshPreviewCameraActor");
-					CameraComponent& cam = camActor.CreateComponent<CameraComponent>("MeshPreviewCamera", glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 100.0f));
-					camActor.GetTransform()->Move(Vec3f(0.0f, 0.0f, 10.0f));
-					meshPreviewScene.BindActiveCamera(&cam);
-
-					FPSController& camController = camActor.CreateChild<FPSController>("MeshPreviewCameraController");
+					CameraComponent& cam = camActor.CreateComponent<CameraComponent>("MeshPreviewCamera", glm::perspective(glm::radians(90.0f), 1.0f, 0.01f, 100.0f));
+					{
+						auto meshBB = meshInst->GetMesh().GetBoundingBox();
+						camActor.GetTransform()->SetPosition(meshBB.Position + glm::normalize(Vec3f(1.0f, 1.0f, 1.0f)) * glm::length(meshBB.Size) * 1.5f);
+						camActor.GetTransform()->SetRotation(quatFromDirectionVec(glm::normalize(meshBB.Position - camActor.GetTransform()->GetPos())));
+						meshPreviewScene.BindActiveCamera(&cam);
+					}
+					auto& camController = camActor.CreateChild<FreeRoamingController>("MeshPreviewCameraController");
 					camController.SetPossessedActor(&camActor);
 
 					UIButtonActor& viewportButton = window.CreateChild<UIButtonActor>("MeshPreviewViewportActor", [this, &meshPreviewScene, &camController]() { std::cout << "VIEWPORT WCISIETY\n"; GameHandle->SetActiveScene(&meshPreviewScene); GameHandle->PassMouseControl(&camController); });
@@ -253,14 +256,14 @@ namespace GEE
 					SharedPtr<Material> viewportMaterial = MakeShared<Material>("GEE_E_Mesh_Preview_Viewport");
 					renderHandle.AddMaterial(viewportMaterial);
 					viewportMaterial->AddTexture(MakeShared<NamedTexture>(renderTbCollection.GetTb<FinalRenderTargetToolbox>()->GetFinalFramebuffer().GetColorTexture(0), "albedo1"));
-					viewportButton.SetMatIdle(*viewportMaterial);
-					viewportButton.SetMatClick(*viewportMaterial);
-					viewportButton.SetMatHover(*viewportMaterial);
+					viewportButton.SetMatIdle(viewportMaterial);
+					viewportButton.SetMatClick(viewportMaterial);
+					viewportButton.SetMatHover(viewportMaterial);
 
 					{
 						std::stringstream boxSizeStream;
 						boxSizeStream << meshInst->GetMesh().GetBoundingBox().Size;
-						window.CreateChild<UIActorDefault>("MeshSizeTextActor").CreateComponent<TextConstantSizeComponent>("MeshSizeText", Transform(Vec2f(1.0f, -1.0f), Vec2f(0.2f)), "Size: " + boxSizeStream.str(), "", std::pair<TextAlignment, TextAlignment>(TextAlignment::RIGHT, TextAlignment::BOTTOM));
+						window.CreateChild<UIActorDefault>("MeshSizeTextActor").CreateComponent<TextConstantSizeComponent>("MeshSizeText", Transform(Vec2f(1.0f, -1.0f), Vec2f(0.2f)), "Size: " + boxSizeStream.str(), "", Alignment2D::RightBottom());
 					}
 
 					window.SetOnCloseFunc([&meshPreviewScene, &renderHandle, viewportMaterial, &renderTbCollection]() { meshPreviewScene.MarkAsKilled();  renderHandle.EraseMaterial(*viewportMaterial); renderHandle.EraseRenderTbCollection(renderTbCollection); });
@@ -285,9 +288,10 @@ namespace GEE
 					materialButton.SetDisableInput(true);
 			});
 
+
 		descBuilder.AddField("Override materials").GetTemplates().ObjectInput<Material>(
-			[this]() { return GameHandle->GetRenderEngineHandle()->GetMaterials(); },
-			[this](Material* material) { OverrideInstancesMaterial(material); });
+			[this]() {  auto materials = GameHandle->GetRenderEngineHandle()->GetMaterials(); std::vector<Material*> materialsPtr; materialsPtr.resize(materials.size()); std::transform(materials.begin(), materials.end(), materialsPtr.begin(), [](SharedPtr<Material> mat) { return mat.get(); }); return materialsPtr; },
+			[this](Material* material) {  auto materials = GameHandle->GetRenderEngineHandle()->GetMaterials(); auto found = std::find_if(materials.begin(), materials.end(), [material](SharedPtr<Material> matVec) { return matVec.get() == material; }); OverrideInstancesMaterial(*found); });
 	}
 
 

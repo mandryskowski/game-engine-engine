@@ -328,11 +328,11 @@ namespace GEE
 		RenderEngineManager& renderEngHandle = *gameHandle.GetRenderEngineHandle();
 		Shader* shader = renderEngHandle.GetSimpleShader();
 		shader->Use();
-		Material material("CollisionShapeDebugMaterial");
+		auto material = MakeShared<Material>("CollisionShapeDebugMaterial");
 
 		physx::PxRigidDynamic* rigidDynamicCast = obj.ActorPtr->is<physx::PxRigidDynamic>();
 		bool sleeping = (rigidDynamicCast && rigidDynamicCast->isSleeping());
-		material.SetColor((sleeping) ? (Vec3f(1.0) - color) : (color));
+		material->SetColor((sleeping) ? (Vec3f(1.0) - color) : (color));
 		if (!shader)
 			return;
 
@@ -356,7 +356,7 @@ namespace GEE
 			//std::cout << "Debug-rendering col shape mesh " << mesh->GetLocalization().NodeName << " " << mesh->GetLocalization().SpecificName << '\n';
 			//printVector(color, "Color");
 			 
-			Renderer(*gameHandle.GetRenderEngineHandle()).StaticMeshInstances(info, { MeshInstance(*mesh, &material) }, t * shapeTransform, *shader);
+			Renderer(*gameHandle.GetRenderEngineHandle()).StaticMeshInstances(info, { MeshInstance(*mesh, material) }, t * shapeTransform, *shader);
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		}
 	}
@@ -423,9 +423,10 @@ namespace GEE
 		UIInputBoxActor& textActor = descBuilder.CreateActor<UIInputBoxActor>("ComponentsNameActor");
 		textActor.SetTransform(Transform(Vec2f(0.0f, 1.5f), Vec2f(5.0f, 1.0f)));
 		textActor.GetButtonModel()->SetHide(true);
+		textActor.GetContentTextComp()->SetFontStyle(FontStyle::Bold);
 
 		ModelComponent& prettyQuad = textActor.CreateComponent<ModelComponent>("PrettyQuad");
-		prettyQuad.AddMeshInst(MeshInstance(GameHandle->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD), const_cast<Material*>(textActor.GetButtonModel()->GetMeshInstance(0).GetMaterialPtr())));
+		prettyQuad.AddMeshInst(MeshInstance(GameHandle->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD), textActor.GetButtonModel()->GetMeshInstance(0).GetMaterialPtr()));
 		prettyQuad.SetTransform(Transform(Vec2f(0.0f, -0.21f), Vec2f(1.0f, 0.01f)));
 		textActor.SetOnInputFunc([this, &prettyQuad, &textActor](const std::string& content) { SetName(content); /*prettyQuad.SetTransform(Transform(Vec2f(0.0f, -0.625f), Vec2f(textActor.GetRoot()->GetComponent<TextComponent>("ComponentsNameActorText")->GetTextLength(), 0.025f)));*/ }, [this]() -> std::string { return GetName(); });
 
@@ -576,12 +577,12 @@ namespace GEE
 		{
 		case EditorButtonState::Idle:
 		default:
-			return MaterialInstance(*DebugRenderMat, DebugRenderMat->GetTextureIDInterpolatorTemplate(0.0f));
+			return MaterialInstance(DebugRenderMat, DebugRenderMat->GetTextureIDInterpolatorTemplate(0.0f));
 		case EditorButtonState::Hover:
 		case EditorButtonState::BeingClickedOutside:
-			return MaterialInstance(*DebugRenderMat, DebugRenderMat->GetTextureIDInterpolatorTemplate(1.0f));
+			return MaterialInstance(DebugRenderMat, DebugRenderMat->GetTextureIDInterpolatorTemplate(1.0f));
 		case EditorButtonState::BeingClickedInside:
-			return MaterialInstance(*DebugRenderMat, DebugRenderMat->GetTextureIDInterpolatorTemplate(2.0f));
+			return MaterialInstance(DebugRenderMat, DebugRenderMat->GetTextureIDInterpolatorTemplate(2.0f));
 		}
 	}
 

@@ -25,7 +25,7 @@ namespace GEE
 			void UpdateQueuedMessagesText();
 			EditorManager& EditorHandle;
 			GameScene& EditorScene;
-			AtlasMaterial* IconsMaterial;
+			SharedPtr<AtlasMaterial> IconsMaterial;
 
 			std::vector<UIWindowActor*> MessageSlots;
 			std::queue<std::pair<std::string, MessageType>> QueuedMessages;

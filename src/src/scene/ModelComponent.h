@@ -31,7 +31,7 @@ namespace GEE
 	public:
 		ModelComponent& operator=(ModelComponent&&) = delete;	//TODO: de-delete this, it should be written but i am too lazy
 
-		void OverrideInstancesMaterial(Material* material);	//Overrides MeshInstances' materials with the one passed as the argument
+		void OverrideInstancesMaterial(SharedPtr<Material> material);	//Overrides MeshInstances' materials with the one passed as the argument
 		void OverrideInstancesMaterialInstances(SharedPtr<MaterialInstance> matInst);	//Overrides MeshInstances' materials with the one passed as the argument
 		void SetLastFrameMVP(const Mat4f& lastMVP) const;
 		void SetSkeletonInfo(SkeletonInfo*);

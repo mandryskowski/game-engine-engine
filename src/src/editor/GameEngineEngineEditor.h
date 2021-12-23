@@ -15,6 +15,12 @@ namespace GEE
 	{
 		class EditorActions;
 
+		class GameEngineEngineEditorSettings : public GameSettings
+		{
+		public:
+
+		};
+
 		struct EditorEventProcessor
 		{
 			static void FileDropCallback(SystemWindow* window, int count, const char** paths);
@@ -36,6 +42,9 @@ namespace GEE
 			virtual AtlasMaterial* GetDefaultEditorMaterial(EditorDefaultMaterial) override;
 			virtual EditorActions& GetActions() override;
 			virtual EditorMessageLogger& GetEditorLogger(GameScene& scene) override;
+			virtual bool GetViewportMaximized() const override { return bViewportMaximized; }
+			virtual bool GetDebugRenderComponents() const override { return bDebugRenderComponents; }
+			virtual bool GetDebugRenderPhysicsMeshes() const override { return bDebugRenderPhysicsMeshes; }
 
 			virtual void RequestPopupMenu(const Vec2f& posWindowSpace, SystemWindow& relativeWindow, std::function<void(PopupDescription)> popupCreation) override;
 
@@ -67,6 +76,7 @@ namespace GEE
 
 		virtual void SetDebugRenderComponents(bool) override;
 	private:
+		virtual const std::vector<EditorPopup>& GetPopupsForRendering() override;
 		void UpdateRecentProjects();
 		void MaximizeViewport();
 
@@ -75,23 +85,15 @@ namespace GEE
 
 			std::unordered_map<GameScene*, EditorMessageLogger> Logs;
 
-			struct Popup
-			{
-				Popup(unsigned int id, SystemWindow& window, GameScene& scene) : Window(window), Scene(scene), ID(id) {}
-				std::reference_wrapper<SystemWindow> Window;
-				std::reference_wrapper<GameScene> Scene;
-				unsigned int ID;
-			};
-
-			std::vector<Popup> OpenPopups;
+			std::vector<EditorPopup> OpenPopups;
 			std::function<void()> LastRenderPopupRequest;
 
 
 			GameSettings EditorSettings;
-			bool bDebugRenderComponents;
+			bool bDebugRenderComponents, bDebugRenderPhysicsMeshes;
+			bool bViewportMaximized;
 
-			bool bViewportMaximzized;
-
+			Vec2f TestTranslateLastPos;
 
 			std::string ProjectName, ProjectFilepath;
 			std::string ExecutableFolder;

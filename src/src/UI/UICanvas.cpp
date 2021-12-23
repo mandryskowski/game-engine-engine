@@ -68,7 +68,7 @@ namespace GEE
 		return CanvasDepth;
 	}
 
-	void UICanvas::SetCanvasView(const Transform& canvasView)
+	void UICanvas::SetCanvasView(const Transform& canvasView, bool clampView)
 	{
 		CanvasView = canvasView;
 	}

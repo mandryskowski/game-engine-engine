@@ -49,6 +49,7 @@ namespace GEE
 		unsigned int CurrentBoneUBOIndex;
 
 		friend class RenderEngine;
+		friend class GameRenderer;
 		void SwapBoneUBOs();
 	public:
 		SkeletonBatch();

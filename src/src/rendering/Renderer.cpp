@@ -8,7 +8,9 @@
 #include <scene/LightProbeComponent.h>
 #include <rendering/OutlineRenderer.h>
 #include <scene/LightComponent.h>
+#include <scene/TextComponent.h>
 #include <editor/EditorManager.h>
+#include <physics/CollisionObject.h>
 
 namespace GEE
 {
@@ -46,7 +48,7 @@ namespace GEE
 		{
 			const Mesh& mesh = meshInst.GetMesh();
 			MaterialInstance* materialInst = meshInst.GetMaterialInst();
-			const Material* material = meshInst.GetMaterialPtr();
+			const Material* material = meshInst.GetMaterialPtr().get();
 
 			if ((material && !material->GetShaderInfo().MatchesRequiredInfo(info.GetRequiredShaderInfo())) ||
 				(info.GetOnlyShadowCasters() && !mesh.CanCastShadow()) || 
@@ -292,13 +294,9 @@ namespace GEE
 			Viewport(shadowsTb->ShadowMapArray->GetSize2D()).SetOpenGLState();
 		}
 		glEnable(GL_DEPTH_TEST);
-		glEnable(GL_CULL_FACE);
-		glCullFace(GL_FRONT);
 		glDrawBuffer(GL_NONE);
 
 		bool bCubemapBound = false;
-		float timeSum = 0.0f;
-		float time1;
 
 		shadowsTb->ShadowMapArray->Bind(10);
 		shadowsTb->ShadowCubemapArray->Bind(11);
@@ -312,13 +310,17 @@ namespace GEE
 				continue;
 
 			if (light.ShouldCullFrontsForShadowMap())
+			{
+				glEnable(GL_CULL_FACE);
 				glCullFace(GL_FRONT);
+			}
 			else
-				glCullFace(GL_BACK);
+			{
+				glDisable(GL_CULL_FACE);
+			}
 
 			if (light.GetType() == LightType::POINT)
 			{
-				time1 = (float)glfwGetTime();
 				if (!bCubemapBound)
 				{
 					Impl.GetShader(RendererShaderHint::DepthOnlyLinearized).Use();
@@ -331,10 +333,10 @@ namespace GEE
 				Mat4f projection = light.GetProjection();
 
 				Impl.GetShader(RendererShaderHint::DepthOnlyLinearized).Uniform1f("far", light.GetFar());
+				Impl.GetShader(RendererShaderHint::DepthOnlyLinearized).Uniform<float>("lightBias", light.GetShadowBias());
 				Impl.GetShader(RendererShaderHint::DepthOnlyLinearized).Uniform3fv("lightPos", lightPos);
 
 				int cubemapFirst = light.GetShadowMapNr() * 6;
-				timeSum += (float)glfwGetTime() - time1;
 
 
 				SceneMatrixInfo info(contextID, tbCollection, sceneRenderData, viewTranslation, projection, lightPos);
@@ -347,7 +349,6 @@ namespace GEE
 			}
 			else
 			{
-				time1 = glfwGetTime();
 				if (bCubemapBound || i == 0)
 				{
 					Impl.GetShader(RendererShaderHint::DepthOnly).Use();
@@ -358,7 +359,8 @@ namespace GEE
 				Mat4f projection = light.GetProjection();
 				Mat4f VP = projection * view;
 
-				timeSum += (float)glfwGetTime() - time1;
+				Impl.GetShader(RendererShaderHint::DepthOnly).Uniform<float>("lightBias", light.GetShadowBias());
+
 				shadowsTb->ShadowFramebuffer->Attach(GEE_FB::FramebufferAttachment(*shadowsTb->ShadowMapArray, light.GetShadowMapNr(), GEE_FB::AttachmentSlot::Depth()), false, false);
 				glClear(GL_DEPTH_BUFFER_BIT);
 
@@ -376,6 +378,7 @@ namespace GEE
 		}
 
 		glActiveTexture(GL_TEXTURE0);
+		glEnable(GL_CULL_FACE);
 		glCullFace(GL_BACK);
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		//std::cout << "Wyczyscilem sobie " << timeSum * 1000.0f << "ms.\n";
@@ -651,12 +654,13 @@ namespace GEE
 
 			shader->Use();
 			info.SetView(infoTemplate.GetView());
+			info.SetView(glm::translate(info.GetView(), Vec3f(0.0f, 0.0f, 2550.0f)));
 			//Render from back to front (elements inserted last in the container probably have the biggest depth; early depth testing should work better using this method
-			for (auto it = renderData.Renderables.rbegin(); it != renderData.Renderables.rend(); it++)
+			for (auto it = renderData.Renderables.begin(); it != renderData.Renderables.end(); it++)
 			{
 				//float uiDepth = static_cast<float>(it->get().GetUIDepth());
 				//info.view = (uiDepth !=	0.0f) ? (glm::translate(maxDepthMat, Vec3f(0.0f, 0.0f, -uiDepth))) : (maxDepthMat);
-				info.SetView(glm::translate(info.GetView(), Vec3f(0.0f, 0.0f, 1.0f)));
+				info.SetView(glm::translate(info.GetView(), Vec3f(0.0f, 0.0f, -1.0f)));
 				info.CalculateVP();
 				(*it)->Render(info, shader);
 			}
@@ -898,7 +902,7 @@ namespace GEE
 	{
 		if (!shader) shader = Impl.RenderHandle.FindShader("Quad");
 		if (useShader)	shader->Use();
-		StaticMeshInstances(info, { MeshInstance(Impl.GetBasicShapeMesh(EngineBasicShape::QUAD), nullptr) }, Transform(), *shader);
+		StaticMeshInstances(info, { MeshInstance(Impl.GetBasicShapeMesh(EngineBasicShape::QUAD)) }, Transform(), *shader);
 	}
 	void LightProbeRenderer::AllSceneProbes(RenderingContextID contextID, GameSceneRenderData& sceneRenderData)
 	{
@@ -977,7 +981,7 @@ namespace GEE
 		{
 			const Mesh& mesh = meshInst.GetMesh();
 			MaterialInstance* materialInst = meshInst.GetMaterialInst();
-			const Material* material = meshInst.GetMaterialPtr();
+			const Material* material = meshInst.GetMaterialPtr().get();
 
 			if ((material && material->GetShaderInfo().MatchesRequiredInfo(info.GetRequiredShaderInfo())) ||
 				(info.GetOnlyShadowCasters() && !mesh.CanCastShadow()) ||
@@ -1020,6 +1024,78 @@ namespace GEE
 			mesh.Render();
 		}
 	}
+	PhysicsDebugRenderer::PhysicsDebugRenderer(RenderEngineManager& renderHandle, const GEE_FB::Framebuffer* optionalFramebuffer):
+		Renderer(renderHandle, optionalFramebuffer),
+		VAO(0),
+		VBO(0)
+	{
+		glGenVertexArrays(1, &VAO);
+		glGenBuffers(1, &VBO);
+	}
+	PhysicsDebugRenderer::PhysicsDebugRenderer(const ImplUtil& impl):
+		Renderer(impl),
+		VAO(0),
+		VBO(0)
+	{
+		glGenVertexArrays(1, &VAO);
+		glGenBuffers(1, &VBO);
+	}
+	void PhysicsDebugRenderer::DebugRender(Physics::GameScenePhysicsData& scenePhysicsData, SceneMatrixInfo& info)
+	{
+		using namespace Physics::Util;
+		const physx::PxRenderBuffer& rb = scenePhysicsData.PhysXScene->getRenderBuffer();
+
+		std::vector<std::array<Vec3f, 2>> verts;
+		int sizeSum = rb.getNbPoints() + rb.getNbLines() * 2 + rb.getNbTriangles() * 3;
+		int v = 0;
+		verts.resize(sizeSum);
+
+		for (int i = 0; i < static_cast<int>(rb.getNbPoints()); i++)
+		{
+			const physx::PxDebugPoint& point = rb.getPoints()[i];
+
+			verts[v][0] = toGlm(point.pos);
+			verts[v++][1] = toVecColor(static_cast<physx::PxDebugColor::Enum>(point.color));
+		}
+
+		for (int i = 0; i < static_cast<int>(rb.getNbLines()); i++)
+		{
+			const physx::PxDebugLine& line = rb.getLines()[i];
+
+			verts[v][0] = toGlm(line.pos0);
+			verts[v++][1] = toVecColor(static_cast<physx::PxDebugColor::Enum>(line.color0));
+			verts[v][0] = toGlm(line.pos1);
+			verts[v++][1] = toVecColor(static_cast<physx::PxDebugColor::Enum>(line.color1));
+		}
+
+		for (int i = 0; i < static_cast<int>(rb.getNbTriangles()); i++)
+		{
+			const physx::PxDebugTriangle& triangle = rb.getTriangles()[i];
+
+			verts[v][0] = toGlm(triangle.pos0);
+			verts[v++][1] = toVecColor(static_cast<physx::PxDebugColor::Enum>(triangle.color0));
+			verts[v][0] = toGlm(triangle.pos1);
+			verts[v++][1] = toVecColor(static_cast<physx::PxDebugColor::Enum>(triangle.color1));
+			verts[v][0] = toGlm(triangle.pos2);
+			verts[v++][1] = toVecColor(static_cast<physx::PxDebugColor::Enum>(triangle.color2));
+		}
+
+		glBindVertexArray(VAO);
+		glBindBuffer(GL_ARRAY_BUFFER, VBO);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(Vec3f) * 2 * verts.size(), &verts[0][0], GL_STATIC_DRAW);
+
+		BoundSceneDebug(info, GL_POINTS, 0, rb.getNbPoints(), Vec3f(0.0f));
+		BoundSceneDebug(info, GL_LINES, rb.getNbPoints(), rb.getNbLines() * 2, Vec3f(0.0f));
+		BoundSceneDebug(info, GL_TRIANGLES, rb.getNbPoints() + rb.getNbLines() * 2, rb.getNbTriangles() * 3, Vec3f(0.0f));
+	}
+	PhysicsDebugRenderer::~PhysicsDebugRenderer()
+	{
+		if (VAO)
+			glDeleteVertexArrays(1, &VAO);
+
+		if (VBO)
+			glDeleteBuffers(1, &VBO);
+	}
 	void PhysicsDebugRenderer::BoundSceneDebug(SceneMatrixInfo& info, GLenum mode, GLint first, GLint count, Vec3f color)
 	{
 		Shader* debugShader = Impl.RenderHandle.FindShader("Debug");
@@ -1027,5 +1103,116 @@ namespace GEE
 		debugShader->UniformMatrix4fv("MVP", info.GetVP());
 		debugShader->Uniform3fv("color", color);
 		glDrawArrays(mode, first, count);
+	}
+	void GameRenderer::PrepareFrame(GameScene* mainScene)
+	{
+		if (mainScene)
+		{
+			for (auto& it : mainScene->GetRenderData()->SkeletonBatches)
+				it->SwapBoneUBOs();
+
+			Impl.RenderHandle.BindSkeletonBatch(mainScene->GetRenderData(), static_cast<unsigned int>(0));
+		}
+
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glDrawBuffer(GL_BACK);
+		glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	}
+	void GameRenderer::EnsureShadowMapCorectness(RenderingContextID contextID, RenderToolboxCollection& tbCollection, GameSceneRenderData* sceneRenderData)
+	{
+		if (sceneRenderData->ContainsLights() && (tbCollection.GetSettings().ShadowLevel > SettingLevel::SETTING_MEDIUM || sceneRenderData->HasLightWithoutShadowMap()))
+			ShadowMapRenderer(Impl.RenderHandle).ShadowMaps(contextID, tbCollection, *sceneRenderData, sceneRenderData->Lights);
+	}
+	void TextRenderer::RenderText(const SceneMatrixInfo& infoPreConvert, const Font::Variation& fontVariation, std::string content, Transform t, Vec3f color, Shader* shader, bool convertFromPx, Alignment2D alignment)
+	{
+		if (!Material::ShaderInfo(MaterialShaderHint::None).MatchesRequiredInfo(infoPreConvert.GetRequiredShaderInfo()) && shader && shader != Impl.RenderHandle.FindShader("TextShader"))	///TODO: CHANGE IT SO TEXTS USE MATERIALS SO THEY CAN BE RENDERED USING DIFFERENT SHADERS!!!!
+			return;
+
+
+		if (!shader)
+		{
+			shader = Impl.RenderHandle.FindShader("TextShader");
+			shader->Use();
+		}
+
+		if (infoPreConvert.GetAllowBlending())
+		{
+			glEnable(GL_BLEND);
+			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+			glBlendEquation(GL_FUNC_ADD);
+		}
+
+
+		if (infoPreConvert.GetUseMaterials())	// TODO: Przetestuj - sprawdz czy nic nie zniknelo i czy moge usunac  info.UseMaterials = true;  z linijki 969
+			shader->Uniform4fv("material.color", Vec4f(color, 1.0f));
+		fontVariation.GetBitmapsArray().Bind(0);
+
+		Vec2f resolution(infoPreConvert.GetTbCollection().GetSettings().Resolution);
+
+		SceneMatrixInfo info = infoPreConvert;
+		if (convertFromPx)
+		{
+			Mat4f pxConvertMatrix = glm::ortho(0.0f, resolution.x, 0.0f, resolution.y);
+			const Mat4f& proj = info.GetProjection();
+			info.CalculateVP();
+			Mat4f vp = info.GetVP() * pxConvertMatrix;
+			info.SetVPArtificially(vp);
+		}
+
+		Vec2f halfExtent = t.GetScale();
+		float textHeight = t.GetScale().y;// textUtil::GetTextHeight(content, t.GetScale(), font);
+		//	halfExtent.y *= 1.0f - font.GetBaselineHeight() / 4.0f;	//Account for baseline height (we move the character quads by the height in the next line, so we have to shrink them a bit so that the text fits within halfExtent)
+		t.Move(Vec3f(0.0f, -t.GetScale().y * 2.0f + fontVariation.GetBaselineHeight() * t.GetScale().y * 2.0f, 0.0f));	//align to bottom (-t.ScaleRef.y), move down to the bottom of it (-t.ScaleRef.y), and then move up to baseline height (-t.ScaleRef.y * 2.0f + font.GetBaselineHeight() * halfExtent.y * 2.0f)
+
+		// Align horizontally
+		if (alignment.GetHorizontal() != Alignment::Left)
+		{
+			float textLength = textUtil::GetTextLength(content, t.GetScale(), fontVariation);
+
+			t.Move(t.GetRot() * Vec3f(-textLength / 2.0f * (static_cast<float>(alignment.GetHorizontal()) - static_cast<float>(Alignment::Left)), 0.0f, 0.0f));
+		}
+
+		// Align vertically
+		if (alignment.GetVertical() != Alignment::Bottom)
+			t.Move(t.GetRot() * Vec3f(0.0f, -textHeight * (static_cast<float>(alignment.GetVertical()) - static_cast<float>(Alignment::Bottom)), 0.0f));
+
+		// Account for multiple lines if the text is not aligned to TOP. Each line (excluding the first one, that's why we cancel out the first line) moves the text up by its scale if it is aligned to Bottom and by 1/2 of its scale if it is aligned to CENTER.
+		if (auto firstLineBreak = content.find_first_of('\n'); alignment.GetVertical() != Alignment::Top && firstLineBreak != std::string::npos)
+			;// t.Move(t.GetRot() * Vec3f(0.0f, (textHeight - textUtil::GetTextHeight(content.substr(0, firstLineBreak), t.GetScale(), font)) / 2.0f * (static_cast<float>(Alignment::Top) - static_cast<float>(alignment.GetVertical())), 0.0f));
+
+		//t.Move(Vec3f(0.0f, -64.0f, 0.0f));
+		//t.Move(Vec3f(0.0f, 11.0f, 0.0f) / scale);
+
+		const Mat3f& textRot = t.GetRotationMatrix();
+
+		auto textMaterial = MakeShared<Material>("TextMaterial", *Impl.RenderHandle.FindShader("TextShader"));
+
+		Transform initialT = t;
+
+		info.SetUseMaterials(false);	// do not bind materials before rendering quads
+
+		for (int i = 0; i < static_cast<int>(content.length()); i++)
+		{
+			if (content[i] == '\n')
+			{
+				initialT.Move(Vec2f(0.0f, -halfExtent.y * 2.0f));
+				t = initialT;
+				continue;
+			}
+			shader->Uniform1i("material.glyphNr", content[i]);
+			const Character& c = fontVariation.GetCharacter(content[i]);
+
+			t.Move(textRot * Vec3f(c.Bearing * halfExtent, 0.0f) * 2.0f);
+			t.SetScale(halfExtent);
+			//printVector(vp * t.GetWorldTransformMatrix() * Vec4f(0.0f, 0.0f, 0.0f, 1.0f), "Letter " + std::to_string(i));
+
+			Renderer(*this).StaticMeshInstances(info, { MeshInstance(Impl.GetBasicShapeMesh(EngineBasicShape::QUAD), textMaterial) }, t, *shader);
+			t.Move(textRot * -Vec3f(c.Bearing * halfExtent, 0.0f) * 2.0f);
+
+			t.Move(textRot * Vec3f(c.Advance * halfExtent.x, 0.0f, 0.0f) * 2.0f);
+		}
+
+		glDisable(GL_BLEND);
 	}
 }

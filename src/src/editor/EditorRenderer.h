@@ -4,18 +4,24 @@
 
 namespace GEE
 {
-	class EditorRenderer : public Renderer
+	namespace Editor
 	{
-	public:
-		EditorRenderer(Editor::EditorManager&, RenderToolboxCollection& mainSceneCol, RenderToolboxCollection& uiCol, SystemWindow& mainWindow);
-		void FullRender(GameScene* mainScene, GameScene* editorScene, GameScene* menuScene);
+		class EditorRenderer : public GameRenderer
+		{
+		public:
+			EditorRenderer(Editor::EditorManager&, RenderToolboxCollection& mainSceneCol, RenderToolboxCollection& uiCol, SystemWindow& mainWindow);
+			virtual void RenderPass(GameScene* mainScene, GameScene* editorScene, GameScene* menuScene, GameScene* meshPreviewScene) override;
 
-		void RenderMainMenu(RenderToolboxCollection&);
-		void RenderEditorScene(RenderToolboxCollection&);
+			void RenderMainScene(GameScene*);
+			void RenderEditorScene(GameScene*);
+			void RenderMainMenu(GameScene*);
+			void RenderMeshPreview(GameScene*, RenderToolboxCollection&);
+			void RenderPopups();
 
-	private:
-		SystemWindow* MainWindow;
-		Editor::EditorManager& EditorHandle;
-		RenderToolboxCollection *MainSceneCollection, *UICollection;
-	};
+		private:
+			SystemWindow* MainWindow;
+			Editor::EditorManager& EditorHandle;
+			RenderToolboxCollection* MainSceneCollection, * UICollection;
+		};
+	}
 }

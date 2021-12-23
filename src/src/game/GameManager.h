@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <utility/Alignment.h>
 
 typedef unsigned int GLenum;
 
@@ -106,14 +107,6 @@ namespace GEE
 	public:
 		static MaterialShaderHint Shaded() { return MaterialShaderHint::Shaded; }
 	};
-	enum class TextAlignment
-	{
-		LEFT,
-		CENTER,
-		RIGHT,
-		BOTTOM = LEFT,
-		TOP = RIGHT
-	};
 
 	// These values correspond to GLFW macros. Check official GLFW documentation.
 	enum class DefaultCursorIcon
@@ -124,6 +117,14 @@ namespace GEE
 		Hand = 0x00036004,
 		HorizontalResize = 0x00036005,
 		VerticalResize = 0x00036006
+	};
+
+	enum class FontStyle
+	{
+		Regular,
+		Bold,
+		Italic,
+		BoldItalic
 	};
 
 	class PostprocessManager
@@ -153,6 +154,7 @@ namespace GEE
 		protected:
 			virtual void RemoveScenePhysicsDataPtr(GameScenePhysicsData& scenePhysicsData) = 0;
 			friend class GameScene;
+			friend class GameRenderer;
 		};
 	}
 
@@ -185,7 +187,7 @@ namespace GEE
 
 		//TODO: THIS SHOULD NOT BE HERE
 		virtual std::vector<Shader*> GetCustomShaders() = 0;
-		virtual std::vector<Material*> GetMaterials() = 0;
+		virtual std::vector<SharedPtr<Material>> GetMaterials() = 0;
 
 		virtual void BindSkeletonBatch(SkeletonBatch* batch) = 0;
 		virtual void BindSkeletonBatch(GameSceneRenderData* sceneRenderData, unsigned int index) = 0;
@@ -198,20 +200,18 @@ namespace GEE
 		*/
 		virtual RenderToolboxCollection& AddRenderTbCollection(const RenderToolboxCollection& tbCollection,
 		                                                       bool setupToolboxesAccordingToSettings = true) = 0;
-		virtual Material* AddMaterial(SharedPtr<Material>) = 0;
+		virtual SharedPtr<Material> AddMaterial(SharedPtr<Material>) = 0;
 		virtual SharedPtr<Shader> AddShader(SharedPtr<Shader>) = 0;
 
 		virtual void EraseRenderTbCollection(RenderToolboxCollection& tbCollection) = 0;
 		virtual void EraseMaterial(Material&) = 0;
 
-		virtual Shader* FindShader(std::string) = 0;
-		virtual SharedPtr<Material> FindMaterial(std::string) = 0;
-	
-		//Pass a shader if you do not want the default shader to be used.
-		virtual void RenderText(const SceneMatrixInfo& info, const Font& font, std::string content, Transform t,
-		                        Vec3f color = Vec3f(1.0f), Shader* shader = nullptr, bool convertFromPx = false,
-		                        const std::pair<TextAlignment, TextAlignment>& = std::pair<
-			                        TextAlignment, TextAlignment>(TextAlignment::LEFT, TextAlignment::BOTTOM)) = 0;
+		template <typename T = Material> SharedPtr<T> FindMaterial(const std::string& name);
+	protected:
+		virtual SharedPtr<Material> FindMaterialImpl(const std::string&) = 0;
+	public:
+		virtual Shader* FindShader(const std::string& name) = 0;
+		virtual RenderToolboxCollection* FindTbCollection(const std::string& name) = 0;
 
 		virtual ~RenderEngineManager() = default;
 	protected:
@@ -221,6 +221,12 @@ namespace GEE
 		virtual SharedPtr<Shader> AddNonCustomShader(SharedPtr<Shader>) = 0;
 		friend class GameScene;
 	};
+
+	template<typename T>
+	SharedPtr<T> RenderEngineManager::FindMaterial(const std::string& name)
+	{
+		return std::dynamic_pointer_cast<T, Material>(FindMaterialImpl(name));
+	}
 	
 
 	class GameManager
