@@ -75,7 +75,7 @@ namespace GEE
 			ImplUtil(RenderEngineManager& engineHandle, const GEE_FB::Framebuffer* optionalFramebuffer = nullptr)
 				:	RenderHandle(engineHandle), OptionalFramebuffer(optionalFramebuffer) {}
 			Mat4f GetCubemapView(GEE_FB::Axis cubemapSide);
-			Mesh GetBasicShapeMesh(EngineBasicShape);
+			Mesh& GetBasicShapeMesh(EngineBasicShape);
 			Shader& GetShader(MaterialShaderHint);
 			Shader& GetShader(RendererShaderHint);
 

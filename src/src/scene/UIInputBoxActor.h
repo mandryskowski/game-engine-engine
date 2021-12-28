@@ -30,14 +30,20 @@ namespace GEE
 
 		virtual void HandleEvent(const Event& ev) override;
 		virtual void OnClick() override;	//On activation
+		virtual void OnHover() override;
+		virtual void OnUnhover() override;
 		virtual void OnDeactivation() override;
 	private:
+		void UpdateCaretModel();
+		void UpdateCaretModel(unsigned int changeCaretPos);
+
 		std::function<void()> ValueGetter;
 		TextComponent* ContentTextComp;
 		bool RetrieveContentEachFrame;
 
 		ModelComponent* CaretComponent;	//SetHide() every x seconds
 		unsigned int CaretPosition;
+		Interpolation CaretAnim;
 
 	};
 }

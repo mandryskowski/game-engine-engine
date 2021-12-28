@@ -108,10 +108,10 @@ namespace GEE
 
 		GameScene& engineObjScene = GameHandle->CreateScene("GEE_Engine_Objects");
 
-		EngineDataLoader::LoadHierarchyTree(engineObjScene, "Assets/EngineObjects/quad.obj", &engineObjScene.CreateHierarchyTree("ENG_QUAD"));
-		EngineDataLoader::LoadHierarchyTree(engineObjScene, "Assets/EngineObjects/cube.obj", &engineObjScene.CreateHierarchyTree("ENG_CUBE"));
-		EngineDataLoader::LoadHierarchyTree(engineObjScene, "Assets/EngineObjects/sphere.obj", &engineObjScene.CreateHierarchyTree("ENG_SPHERE"));
-		EngineDataLoader::LoadHierarchyTree(engineObjScene, "Assets/EngineObjects/cone.obj", &engineObjScene.CreateHierarchyTree("ENG_CONE"));
+		BasicShapes[EngineBasicShape::QUAD] = EngineDataLoader::LoadHierarchyTree(engineObjScene, "Assets/EngineObjects/quad.obj", &engineObjScene.CreateHierarchyTree("ENG_QUAD"))->FindMesh("Quad");
+		BasicShapes[EngineBasicShape::CUBE] = EngineDataLoader::LoadHierarchyTree(engineObjScene, "Assets/EngineObjects/cube.obj", &engineObjScene.CreateHierarchyTree("ENG_CUBE"))->FindMesh("Cube");
+		BasicShapes[EngineBasicShape::SPHERE] = EngineDataLoader::LoadHierarchyTree(engineObjScene, "Assets/EngineObjects/sphere.obj", &engineObjScene.CreateHierarchyTree("ENG_SPHERE"))->FindMesh("Sphere");
+		BasicShapes[EngineBasicShape::CONE] = EngineDataLoader::LoadHierarchyTree(engineObjScene, "Assets/EngineObjects/cone.obj", &engineObjScene.CreateHierarchyTree("ENG_CONE"))->FindMesh("Cone");
 
 		//GameHandle->FindHierarchyTree("ENG_QUAD")->FindMesh("Quad")->Localization.HierarchyTreePath = "ENG_QUAD";
 		GameHandle->FindHierarchyTree("ENG_QUAD")->FindMesh("Quad")->Localization.SpecificName = "Quad_NoShadow";
@@ -181,19 +181,7 @@ namespace GEE
 
 	Mesh& RenderEngine::GetBasicShapeMesh(EngineBasicShape type)
 	{
-		switch (type)
-		{
-		case EngineBasicShape::QUAD:
-			return *GameHandle->FindHierarchyTree("ENG_QUAD")->FindMesh("Quad");
-		case EngineBasicShape::CUBE:
-			return *GameHandle->FindHierarchyTree("ENG_CUBE")->FindMesh("Cube");
-		case EngineBasicShape::SPHERE:
-			return *GameHandle->FindHierarchyTree("ENG_SPHERE")->FindMesh("Sphere");
-		case EngineBasicShape::CONE:
-			return *GameHandle->FindHierarchyTree("ENG_CONE")->FindMesh("Cone");
-		default:
-			std::cout << "ERROR! Enum value " << static_cast<int>(type) << " does not represent a basic shape mesh.\n";
-		}
+		return *BasicShapes[type];
 	}
 
 	Shader* RenderEngine::GetLightShader(const RenderToolboxCollection& renderCol, LightType type)

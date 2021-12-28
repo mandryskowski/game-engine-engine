@@ -29,6 +29,7 @@ namespace GEE
 		float GetTextHeight(bool world = true) const;
 		virtual std::vector<const Material*> GetMaterials() const override;
 		Font* GetFont();
+		Font::Variation* GetFontVariation();
 		MaterialInstance* GetTextMatInst();
 		Alignment2D GetAlignment() const;
 
@@ -143,7 +144,12 @@ namespace GEE
 		float GetTextLength(const std::string& str, const Vec2f& textScale, const Font::Variation&);
 		float GetTextHeight(const std::string& str, const Vec2f& textScale, const Font::Variation&);
 
-		Vec2f ComputeScaleRatio(UISpace, const Transform& textTransform, UICanvas* canvas, const WindowData* windowData, const Vec2f& optionalPreviouslyAppliedRatio = Vec2f(1.0f));
+		Boxf<Vec2f> ComputeBBox(const std::string& str, const Transform& spaceTransform, const Font::Variation&, Alignment2D);
+
+		Vec2f ComputeScaleRatio(UISpace space, const Transform& ownedTextTransform, UICanvas* canvas, const WindowData* windowData, const Vec2f& optionalPreviouslyAppliedRatio = Vec2f(1.0f));
+
+		Transform OwnedToSpaceTransform(UISpace space, const Transform& ownedTransform, const UICanvas* canvas, const WindowData* windowData);
+
 	}
 }
 GEE_POLYMORPHIC_SERIALIZABLE_COMPONENT(GEE::Component, GEE::TextComponent, GEE::Transform(), "", "")

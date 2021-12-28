@@ -58,14 +58,10 @@ namespace GEE
 	Boxf<Vec2f> TextComponent::GetBoundingBox(bool world) const
 	{
 		Transform transform = (world) ? (GetTransform().GetWorldTransform()) : (GetTransform());
-		if (GetCanvasPtr() && world)
-			transform = GetCanvasPtr()->ToCanvasSpace(transform);
+		if (CanvasPtr && world)
+			transform = CanvasPtr->ToCanvasSpace(transform);
 
-		float halfTextLength = GetTextLength(world) / 2.0f;
-
-		Vec2f alignmentOffset((static_cast<float>(_Alignment.GetHorizontal()) - static_cast<float>(Alignment::Center)) * -halfTextLength, (static_cast<float>(_Alignment.GetVertical()) - static_cast<float>(Alignment::Center)) * -transform.GetScale().y);
-
-		return Boxf<Vec2f>(Vec2f(transform.GetPos()) + alignmentOffset, Vec2f(halfTextLength, GetTextHeight(world)));
+		return textUtil::ComputeBBox(Content, transform, *_Font->GetVariation(_FontStyle), _Alignment);
 	}
 
 	float TextComponent::GetTextLength(bool world) const
@@ -99,6 +95,11 @@ namespace GEE
 		return _Font.get();
 	}
 
+	Font::Variation* TextComponent::GetFontVariation()
+	{
+		return _Font->GetVariation(_FontStyle);
+	}
+
 	MaterialInstance* TextComponent::GetTextMatInst()
 	{
 		return TextMatInst.get();
@@ -129,7 +130,7 @@ namespace GEE
 		if (!_Font || GetHide() || IsBeingKilled())
 			return;
 
-		if (!Material::ShaderInfo(MaterialShaderHint::None).MatchesRequiredInfo(info.GetRequiredShaderInfo()) && shader && shader != GameHandle->GetRenderEngineHandle()->FindShader("TextShader"))
+		if (!Material::ShaderInfo(MaterialShaderHint::None).MatchesRequiredInfo(info.GetRequiredShaderInfo()) && shader && shader->GetName() != "TextShader")
 			return;
 
 		TextRenderer(*GameHandle->GetRenderEngineHandle()).RenderText((CanvasPtr) ? (CanvasPtr->BindForRender(info)) : (info), *_Font->GetVariation(_FontStyle), Content, GetTransform().GetWorldTransform(), TextMatInst->GetMaterialRef().GetColor(), shader, false, _Alignment);
@@ -379,12 +380,21 @@ namespace GEE
 		return (textHeight + thisLineMaxHeight) * textScale.y;
 	}
 
+	Boxf<Vec2f> textUtil::ComputeBBox(const std::string& str, const Transform& spaceTransform, const Font::Variation& fontVariation, Alignment2D alignment)
+	{
+		float halfTextLength = GetTextLength(str, spaceTransform.GetScale2D(), fontVariation) / 2.0f;
+
+		Vec2f alignmentOffset((static_cast<float>(alignment.GetHorizontal()) - static_cast<float>(Alignment::Center)) * -halfTextLength, (static_cast<float>(alignment.GetVertical()) - static_cast<float>(Alignment::Center)) * -spaceTransform.GetScale().y);
+
+		return Boxf<Vec2f>(Vec2f(spaceTransform.GetPos()) + alignmentOffset, Vec2f(halfTextLength, GetTextHeight(str, spaceTransform.GetScale2D(), fontVariation)));
+	}
+
 	Vec2f textUtil::ComputeScaleRatio(UISpace space, const Transform& textTransform, UICanvas* canvas, const WindowData* windowData, const Vec2f& optionalPreviouslyAppliedRatio)
 	{
 		Vec2f scale(1.0f);
 
 		if (space == UISpace::Window && windowData)
-			scale = Vec2f(1.0f) / Math::GetRatioOfComponents(windowData->GetWindowSize());
+			scale /= Math::GetRatioOfComponents(windowData->GetWindowSize());
 		scale /= optionalPreviouslyAppliedRatio; 
 
 		switch (space)
@@ -404,15 +414,32 @@ namespace GEE
 		default: break;
 		}
 
-		if (canvas && (space == UISpace::Canvas || space == UISpace::Window))
-		{
-			
-			if (canvas->GetViewT().GetScale2D() == Vec2f(8.0f, 5.0f)) std::cout << "Scale before: " << scale << '\n';
-			//scale = (Mat2f)canvas->GetViewMatrix() * scale;
-			if (canvas->GetViewT().GetScale2D() == Vec2f(8.0f, 5.0f)) std::cout << "Scale after: " << scale << '\n';
-		}
-
 		return Math::GetRatioOfComponents(scale);
 	}
+	Transform textUtil::OwnedToSpaceTransform(UISpace space, const Transform& ownedTransform, const UICanvas* canvas, const WindowData* windowData)
+	{
+			
+		switch (space)
+		{
+		case UISpace::Local:	return ownedTransform;
+		case UISpace::World:	return ownedTransform.GetWorldTransform();
 
+		case UISpace::Canvas:
+		{
+			if (canvas)
+				return canvas->FromCanvasSpace(canvas->GetViewT().GetInverse() * canvas->ToCanvasSpace(ownedTransform.GetWorldTransform()));
+			else
+				return ownedTransform.GetWorldTransform();
+		}
+		case UISpace::Window:
+		{
+			Transform windowT(Vec2f(0.0f), (windowData) ? (Math::GetRatioOfComponents(windowData->GetWindowSize())) : (Vec2f(0.0f)));
+			if (canvas)
+				return windowT * canvas->FromCanvasSpace(canvas->GetViewT().GetInverse() * canvas->ToCanvasSpace(ownedTransform.GetWorldTransform()));
+			else
+				return windowT * ownedTransform.GetWorldTransform();
+		}
+		default: return Transform();
+		}
+	}
 }

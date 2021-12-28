@@ -210,7 +210,7 @@ namespace GEE
 			OnBeingClicked();
 		else if (ev.GetType() == EventType::MouseReleased && dynamic_cast<const MouseButtonEvent&>(ev).GetButton() == MouseButton::Left)
 		{
-			if (State == EditorButtonState::BeingClickedInside)
+			if (State == EditorButtonState::BeingClickedInside || State == EditorButtonState::Activated)
 			{
 				if (GameHandle->GetProgramRuntime() - PrevClickTime <= MaxDoubleClickTime)
 					OnDoubleClick();
@@ -349,9 +349,9 @@ namespace GEE
 	UIActivableButtonActor::UIActivableButtonActor(GameScene& scene, Actor* parentActor, const std::string& name,  std::function<void()> onClickFunc, std::function<void()> onDeactivationFunc, const Transform& transform) :
 		UIButtonActor(scene, parentActor, name, onClickFunc, transform),
 		OnDeactivationFunc(onDeactivationFunc),
-		bDeactivateOnClickAnywhere(true)
+		bDeactivateOnClickAnywhere(true),
+		bDeactivateOnClickingAgain(true)
 	{
-
 		SharedPtr<Material> matActive;
 		if ((matActive = GameHandle->GetRenderEngineHandle()->FindMaterial("GEE_Button_Active")) == nullptr)
 		{
@@ -398,23 +398,32 @@ namespace GEE
 	void UIActivableButtonActor::HandleEvent(const Event& ev)
 	{
 		bool wasActive = State == EditorButtonState::Activated;
-		bool isActive = wasActive;
-		const MouseButtonEvent* buttonEvCast = dynamic_cast<const MouseButtonEvent*>(&ev);
 
-		if (bDeactivateOnClickAnywhere)
+		if (wasActive)
 		{
-		if (((ev.GetType() == EventType::MouseReleased && buttonEvCast->GetButton() == MouseButton::Left) || (ev.GetType() == EventType::FocusSwitched)) && !(buttonEvCast && buttonEvCast->GetModifierBits() & KeyModifierFlags::Alt))	//When the user releases LMB anywhere or our scene is de-focused, we disable writing to the InputBox.
-			isActive = false;
-		}
-		else
-		{
+			bool isActive = wasActive;
+
+
+			const MouseButtonEvent* buttonEvCast = dynamic_cast<const MouseButtonEvent*>(&ev);	// todo: hide it inside an if so we dont use dynamic cast every time we handle an event
+
 			bool mouseInside = (Scene.GetUIData()->GetCurrentBlockingCanvas() && !Scene.GetUIData()->GetCurrentBlockingCanvas()->ShouldAcceptBlockedEvents(*this)) ? (false) : (ContainsMouse(Scene.GetUIData()->GetWindowData().GetMousePositionNDC()));
-			if ((ev.GetType() == EventType::MouseReleased && buttonEvCast->GetButton() == MouseButton::Left) && mouseInside)
-				isActive = false;
-		}
 
-		if ((!isActive && wasActive) || (isActive && (ev.GetType() == EventType::KeyPressed || ev.GetType() == EventType::KeyRepeated) && dynamic_cast<const KeyEvent&>(ev).GetKeyCode() == Key::Enter))
-			OnDeactivation();
+			if (ev.GetType() == EventType::FocusSwitched)
+				isActive = false;
+			if (bDeactivateOnClickAnywhere)
+			{
+				if (((ev.GetType() == EventType::MouseReleased && buttonEvCast->GetButton() == MouseButton::Left)) && (bDeactivateOnClickingAgain || !mouseInside) && !(buttonEvCast && buttonEvCast->GetModifierBits() & KeyModifierFlags::Alt))	//When the user releases LMB anywhere, we disable writing to the InputBox.
+					isActive = false;
+			}
+			else if (bDeactivateOnClickingAgain)
+			{
+				if ((ev.GetType() == EventType::MouseReleased && buttonEvCast->GetButton() == MouseButton::Left) && mouseInside)
+					isActive = false;
+			}
+
+			if ((!isActive && wasActive) || (isActive && (ev.GetType() == EventType::KeyPressed || ev.GetType() == EventType::KeyRepeated) && dynamic_cast<const KeyEvent&>(ev).GetKeyCode() == Key::Enter))
+				OnDeactivation();
+		}
 
 		UIButtonActor::HandleEvent(ev);	//If LMB is released while the mouse is hovering over the InputBox, OnClick() will be called and writing will be enabled.
 	}

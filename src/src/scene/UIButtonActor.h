@@ -100,7 +100,7 @@ namespace GEE
 
 		std::function<void()> OnDeactivationFunc;
 		SharedPtr<MaterialInstance> MatActive;
-		bool bDeactivateOnClickAnywhere;
+		bool bDeactivateOnClickAnywhere, bDeactivateOnClickingAgain;
 	};
 
 	class UIScrollBarActor : public UIButtonActor

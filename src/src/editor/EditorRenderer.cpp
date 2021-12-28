@@ -61,18 +61,25 @@ namespace GEE
 				{
 					SceneRenderer(Impl.RenderHandle, &MainSceneCollection->GetTb<FinalRenderTargetToolbox>()->GetFinalFramebuffer()).FullRender(mainSceneRenderInfo, Viewport(Vec2f(0.0f)), true, false,
 						[&](GEE_FB::Framebuffer& mainFramebuffer) {
-							if (EditorHandle.GetDebugRenderComponents())
+							if (EditorHandle.GetDebugRenderComponents())	// Render debug icons
 							{
 								mainFramebuffer.SetDrawSlot(0);
 								Impl.RenderHandle.GetSimpleShader()->Use();
 								mainScene->GetRootActor()->DebugRenderAll(mainScene->GetActiveCamera()->GetRenderInfo(0, *MainSceneCollection), Impl.RenderHandle.GetSimpleShader());
 								mainFramebuffer.SetDrawSlots();
 							}
-							if (Component* selectedComponent = EditorHandle.GetActions().GetSelectedComponent(); selectedComponent && selectedComponent->GetScene().GetRenderData() == mainScene->GetRenderData())
+							if (Component* selectedComponent = EditorHandle.GetActions().GetSelectedComponent(); selectedComponent && selectedComponent->GetScene().GetRenderData() == mainScene->GetRenderData())	// Render selected component outline and gizmos
+							{
 								OutlineRenderer(*EditorHandle.GetGameHandle()->GetRenderEngineHandle()).RenderOutlineSilhouette(mainSceneRenderInfo, EditorHandle.GetActions().GetSelectedComponent(), mainFramebuffer);
+
+								// Gizmos
+								Impl.RenderHandle.GetBasicShapeMesh(EngineBasicShape::CONE);
+							}
 
 							if (EditorHandle.GetGameHandle()->GetInputRetriever().IsKeyPressed(Key::F2))
 								PhysicsDebugRenderer(Impl).DebugRender(*mainScene->GetPhysicsData(), mainSceneRenderInfo);
+
+
 
 						}, EditorHandle.GetGameHandle()->CheckEEForceForwardShading());
 

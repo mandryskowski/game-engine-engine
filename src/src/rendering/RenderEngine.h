@@ -75,6 +75,7 @@ namespace GEE
 	public:
 		std::vector <SharedPtr <Material>> Materials;
 
+		std::unordered_map<EngineBasicShape, Mesh*> BasicShapes;
 		std::vector <SharedPtr <Shader>> Shaders;
 		std::vector <SharedPtr <Shader>> CustomShaders;	//Shaders created by the user used at the forward rendering stage.
 		//std::vector <SharedPtr <Shader>> SettingIndependentShaders;		//TODO: Put setting independent shaders here. When the user asks for a shader, search in CurrentTbCollection first. Then check here.
