@@ -117,14 +117,14 @@ namespace GEE
 		{
 		case SPOT:
 			if (Ambient == Vec3f(0.0f))
-				return EngineBasicShape::CONE;
+				return EngineBasicShape::Cone;
 		case POINT:
-			return EngineBasicShape::SPHERE;
+			return EngineBasicShape::Sphere;
 		case DIRECTIONAL:
-			return EngineBasicShape::QUAD;
+			return EngineBasicShape::Quad;
 		default:
 			std::cerr << "ERROR! Unknown light type: " << (int)Type << ".\n";
-			return EngineBasicShape::SPHERE;
+			return EngineBasicShape::Sphere;
 		}
 	}
 
@@ -314,10 +314,10 @@ namespace GEE
 		return Ambient;
 	}
 
-	MaterialInstance LightComponent::LoadDebugMatInst(EditorButtonState state)
+	MaterialInstance LightComponent::GetDebugMatInst(ButtonMaterialType type)
 	{
 		LoadDebugRenderMaterial("GEE_Mat_Default_Debug_LightComponent", "Assets/Editor/lightcomponent_icon.png");
-		return Component::LoadDebugMatInst(state);
+		return Component::GetDebugMatInst(type);
 	}
 
 	void LightComponent::GetEditorDescription(ComponentDescriptionBuilder descBuilder)

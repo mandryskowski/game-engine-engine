@@ -23,6 +23,7 @@ namespace GEE
 		void SetOnInputFunc(std::function<void(const std::string&)> inputFunc, std::function<std::string()> valueGetter);
 		void SetOnInputFunc(std::function<void(float)> inputFunc, std::function<float()> valueGetter, bool fixNumberStr = true);
 		void SetRetrieveContentEachFrame(bool);
+		virtual void SetActive(bool active) override;
 
 		void UpdateValue();
 

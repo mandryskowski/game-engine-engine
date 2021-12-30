@@ -33,7 +33,7 @@
     <CLRSupport>false</CLRSupport>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <CLRSupport>false</CLRSupport>
@@ -101,7 +101,7 @@
       <TargetMachine>MachineX86</TargetMachine>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
-      <AdditionalDependencies>opengl32.lib;glfw32/glfw3_32.lib;AL32/OpenAL32.lib;PhysX32/debug/PhysX_32.lib;PhysX32/debug/PhysXCommon_32.lib;PhysX32/debug/PhysXFoundation_32.lib;PhysX32/debug/PhysXPvdSDK_static_32.lib;PhysX32/debug/PhysXExtensions_static_32.lib;PhysX32/debug/PhysXCharacterKinematic_static_32.lib;PhysX32/debug/PhysXCooking_32.lib;assimp/assimp-vc142-mt.lib;freetype32/freetype.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opengl32.lib;glfw32/glfw3_32.lib;AL32/debug/OpenAL32.lib;PhysX32/debug/PhysX_32.lib;PhysX32/debug/PhysXCommon_32.lib;PhysX32/debug/PhysXFoundation_32.lib;PhysX32/debug/PhysXPvdSDK_static_32.lib;PhysX32/debug/PhysXExtensions_static_32.lib;PhysX32/debug/PhysXCharacterKinematic_static_32.lib;PhysX32/debug/PhysXCooking_32.lib;assimp/assimp-vc142-mt.lib;freetype32/freetype.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -176,6 +176,7 @@
     <ClCompile Include="src\src\physics\CollisionObject.cpp" />
     <ClCompile Include="src\src\physics\DynamicPhysicsObjects.cpp" />
     <ClCompile Include="src\src\physics\PhysicsEngine.cpp" />
+    <ClCompile Include="src\src\physics\PhysicsObjects.cpp" />
     <ClCompile Include="src\src\rendering\Framebuffer.cpp" />
     <ClCompile Include="src\src\rendering\LightProbe.cpp" />
     <ClCompile Include="src\src\rendering\Material.cpp" />
@@ -252,6 +253,7 @@
     <ClInclude Include="src\src\physics\CollisionObject.h" />
     <ClInclude Include="src\src\physics\DynamicPhysicsObjects.h" />
     <ClInclude Include="src\src\physics\PhysicsEngine.h" />
+    <ClInclude Include="src\src\physics\PhysicsObjects.h" />
     <ClInclude Include="src\src\rendering\Framebuffer.h" />
     <ClInclude Include="src\src\rendering\LightProbe.h" />
     <ClInclude Include="src\src\rendering\Material.h" />

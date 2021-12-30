@@ -30,12 +30,14 @@ namespace GEE
 			caretMaterial->SetColor(Vec4f(1.0f));
 			GameHandle->GetRenderEngineHandle()->AddMaterial(caretMaterial);
 		}
-		CaretComponent->AddMeshInst(GameHandle->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD));
+		CaretComponent->AddMeshInst(GameHandle->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::Quad));
 		CaretComponent->OverrideInstancesMaterial(caretMaterial);
+		CaretComponent->SetHide(true);
 
 		CaretAnim.SetOnUpdateFunc([this](float T) { return T >= 1.0f; });
 
 		bDeactivateOnClickingAgain = false;
+		bDeactivateOnPressingEnter = true;
 	}
 
 	UIInputBoxActor::UIInputBoxActor(GameScene& scene, Actor* parentActor, const std::string& name, std::function<void(const std::string&)> inputFunc, std::function<std::string()> valueGetter) :
@@ -155,6 +157,20 @@ namespace GEE
 		RetrieveContentEachFrame = retrieveContent;
 	}
 
+	void UIInputBoxActor::SetActive(bool active)
+	{
+		UIActivableButtonActor::SetActive(active);
+
+		if (active)
+		{
+			if (!(GetStateBits() & ButtonStateFlags::Active) && ValueGetter)
+				ValueGetter();
+
+			if (ContentTextComp)
+				UpdateCaretModel(ContentTextComp->GetContent().length());			
+		}
+	}
+
 	void UIInputBoxActor::UpdateValue()
 	{
 		if (ValueGetter)
@@ -167,7 +183,7 @@ namespace GEE
 
 		// Caret anim
 
-		if (GetState() != EditorButtonState::Activated)
+		if (!(GetStateBits() & ButtonStateFlags::Active))
 			CaretComponent->SetHide(true);
 		else if (CaretAnim.UpdateT(deltaTime))
 		{
@@ -175,7 +191,9 @@ namespace GEE
 			CaretComponent->SetHide(!CaretComponent->GetHide());
 		}
 
-		if (RetrieveContentEachFrame && ValueGetter && GetState() != EditorButtonState::Activated)
+		UpdateCaretModel();
+
+		if (RetrieveContentEachFrame && ValueGetter && !(GetStateBits() & ButtonStateFlags::Active))
 			ValueGetter();
 	}
 
@@ -183,7 +201,7 @@ namespace GEE
 	{
 		UIActivableButtonActor::HandleEvent(ev);
 
-		if (!ContentTextComp || State != EditorButtonState::Activated)
+		if (!ContentTextComp || !(GetStateBits() & ButtonStateFlags::Active))
 			return;
 
 		std::string content = ContentTextComp->GetContent();
@@ -198,13 +216,27 @@ namespace GEE
 		else if (ev.GetType() == EventType::KeyPressed || ev.GetType() == EventType::KeyRepeated)
 		{
 			const KeyEvent& keyEv = dynamic_cast<const KeyEvent&>(ev);
+			std::cout << "Pressed " << (int)keyEv.GetKeyCode() << '\n';
+			Key key = keyEv.GetKeyCode();
 
-			if (keyEv.GetKeyCode() == Key::Backspace && CaretPosition != 0)
+			if (~keyEv.GetModifierBits() & KeyModifierFlags::NumLock)
+			{
+				switch (key)
+				{
+					case Key::Keypad1: key = Key::End; break;
+					case Key::Keypad4: key = Key::LeftArrow; break;
+					case Key::Keypad6: key = Key::RightArrow; break;
+					case Key::Keypad7: key = Key::Home; break;
+				}
+			}
+
+			
+			if (key == Key::Backspace && CaretPosition != 0)
 			{
 				ContentTextComp->SetContent((GameHandle->GetInputRetriever().IsKeyPressed(Key::LeftControl)) ? (content.erase(0, CaretPosition)) : (content.erase(CaretPosition - 1, 1))); //erase the last letter
 				UpdateCaretModel((GameHandle->GetInputRetriever().IsKeyPressed(Key::LeftControl)) ? (0) : (CaretPosition - 1));
 			}
-			else if (keyEv.GetKeyCode() == Key::Delete && !content.empty() && CaretPosition != content.length())
+			else if (key == Key::Delete && !content.empty() && CaretPosition != content.length())
 			{
 				ContentTextComp->SetContent((GameHandle->GetInputRetriever().IsKeyPressed(Key::LeftControl)) ? (content.erase(CaretPosition)) : (content.erase(CaretPosition, 1))); //erase the last letter
 
@@ -214,18 +246,24 @@ namespace GEE
 				*/
 
 				UpdateCaretModel((GameHandle->GetInputRetriever().IsKeyPressed(Key::LeftControl)) ? (GetContentTextComp()->GetContent().length()) : (CaretPosition));	
-
 			}
-			else if (keyEv.GetKeyCode() == Key::LeftArrow && CaretPosition != 0)
+			else if ((key == Key::LeftArrow && keyEv.GetModifierBits() & KeyModifierFlags::Control) || (key == Key::Home) || (key == Key::Keypad7 && ~keyEv.GetModifierBits() & KeyModifierFlags::NumLock))
 			{
-				UpdateCaretModel((GameHandle->GetInputRetriever().IsKeyPressed(Key::LeftControl)) ? (0) : (CaretPosition - 1));
+				UpdateCaretModel(0);
 			}
-			else if (keyEv.GetKeyCode() == Key::RightArrow)
+			else if (CaretPosition != 0 && key == Key::LeftArrow)
 			{
-				auto length = GetContentTextComp()->GetContent().length();
-				UpdateCaretModel((GameHandle->GetInputRetriever().IsKeyPressed(Key::LeftControl)) ? (length) : (glm::clamp(CaretPosition + 1, static_cast<unsigned int>(0), length)));
+				UpdateCaretModel(CaretPosition - 1);
 			}
-			else if (keyEv.GetKeyCode() == Key::V && keyEv.GetModifierBits() & KeyModifierFlags::Control)
+			else if ((keyEv.GetModifierBits() & KeyModifierFlags::Control && key == Key::RightArrow) || (key == Key::End))
+			{
+				UpdateCaretModel(GetContentTextComp()->GetContent().length());
+			}
+			else if (CaretPosition != GetContentTextComp()->GetContent().length() && key == Key::RightArrow)
+			{
+				UpdateCaretModel(CaretPosition + 1);
+			}
+			else if (key == Key::V && keyEv.GetModifierBits() & KeyModifierFlags::Control)
 			{
 				auto clipboardContent = glfwGetClipboardString(Scene.GetUIData()->GetWindow());
 				ContentTextComp->SetContent(content.insert(CaretPosition, clipboardContent));
@@ -237,7 +275,7 @@ namespace GEE
 	void UIInputBoxActor::OnClick()
 	{
 		UIActivableButtonActor::OnClick();
-		if (State != EditorButtonState::Activated && ValueGetter)
+		if (!(GetStateBits() & ButtonStateFlags::Active) && ValueGetter)
 			ValueGetter();
 
 		if (!ContentTextComp)
@@ -290,6 +328,9 @@ namespace GEE
 		auto wholeTextBB = textUtil::ComputeBBox(GetContentTextComp()->GetContent().substr(0, CaretPosition), GetContentTextComp()->GetTransform(), *GetContentTextComp()->GetFontVariation(), GetContentTextComp()->GetAlignment());
 		auto notIncludedText = textUtil::ComputeBBox(GetContentTextComp()->GetContent().substr(CaretPosition), GetContentTextComp()->GetTransform(), *GetContentTextComp()->GetFontVariation(), GetContentTextComp()->GetAlignment());
 
+		const float caretWidthPx = 5.0f;
+		float caretWidthNDC = (caretWidthPx / static_cast<float>(Scene.GetUIData()->GetWindowData().GetWindowSize().x) / textUtil::ComputeScale(UISpace::Canvas, *GetTransform(), GetCanvasPtr(), &Scene.GetUIData()->GetWindowData()).x);
+		CaretComponent->GetTransform().SetScale(Vec2f(caretWidthNDC / 2.0f, 1.0f));
 		CaretComponent->GetTransform().SetPosition(Vec2f(wholeTextBB.Position.x + (wholeTextBB.Size.x - notIncludedText.Size.x) + CaretComponent->GetTransform().GetScale2D().x, 0.0f));
 		CaretAnim.Reset();
 		CaretComponent->SetHide(false);

@@ -66,7 +66,7 @@ namespace GEE
 			{
 				Transform transform = world * Transform(it->GetMesh().GetBoundingBox().Position, Quatf(Vec3f(0.0f)), it->GetMesh().GetBoundingBox().Size);
 				glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-				GameHandle->GetRenderEngineHandle()->RenderStaticMesh(info, MeshInstance(GameHandle->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::CUBE), &colorMat), transform, shader, nullptr, nullptr);
+				GameHandle->GetRenderEngineHandle()->RenderStaticMesh(info, MeshInstance(GameHandle->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::Cube), &colorMat), transform, shader, nullptr, nullptr);
 				glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 				colorMat.SetColor(colorMat.GetColor() - 0.1f);
 			}

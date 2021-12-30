@@ -25,7 +25,8 @@ namespace GEE
 		ActiveCamera(nullptr),
 		Name(name),
 		GameHandle(&gameHandle),
-		KillingProcessFrame(0)
+		KillingProcessFrame(0),
+		bHasStarted(false)
 	{
 		RootActor = MakeUnique<Actor>(*this, nullptr, "SceneRoot");
 	}
@@ -53,6 +54,15 @@ namespace GEE
 		KillingProcessFrame(scene.KillingProcessFrame)
 	{
 		RootActor = MakeUnique<Actor>(*this, nullptr, "SceneRoot");
+	}
+
+	void GameScene::MarkAsStarted()
+	{
+		if (bHasStarted)
+			return;
+
+		bHasStarted = true;
+		RootActor->OnStartAll();
 	}
 
 	const std::string& GameScene::GetName() const
@@ -524,6 +534,7 @@ namespace GEE
 			CollisionObjects.push_back(&object);
 			object.ScenePhysicsData = this;
 			object.TransformPtr = &t;
+			object.TransformDirtyFlag = t.AddDirtyFlag();
 
 			if (WasSetup)
 				PhysicsHandle->AddCollisionObjectToPxPipeline(*this, object);

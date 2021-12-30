@@ -426,7 +426,7 @@ namespace GEE
 
 	Interpolator<float>& AtlasMaterial::GetTextureIDInterpolatorTemplate(float constantTextureID)
 	{
-		return GetTextureIDInterpolatorTemplate(Interpolation(0.0f, 0.0f, InterpolationType::CONSTANT), constantTextureID, constantTextureID);
+		return GetTextureIDInterpolatorTemplate(Interpolation(0.0f, 0.0f, InterpolationType::Constant), constantTextureID, constantTextureID);
 	}
 
 	Interpolator<float>& AtlasMaterial::GetTextureIDInterpolatorTemplate(const Interpolation& interp, float min, float max)

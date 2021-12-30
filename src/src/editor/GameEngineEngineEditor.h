@@ -79,36 +79,37 @@ namespace GEE
 		virtual const std::vector<EditorPopup>& GetPopupsForRendering() override;
 		void UpdateRecentProjects();
 		void MaximizeViewport();
+		void UpdateControllerCameraInfo();
 
-			RenderToolboxCollection* ViewportRenderCollection, * HUDRenderCollection;
-			GameScene* EditorScene;
+		RenderToolboxCollection* ViewportRenderCollection, * HUDRenderCollection;
+		GameScene* EditorScene;
 
-			std::unordered_map<GameScene*, EditorMessageLogger> Logs;
+		std::unordered_map<GameScene*, EditorMessageLogger> Logs;
 
-			std::vector<EditorPopup> OpenPopups;
-			std::function<void()> LastRenderPopupRequest;
+		std::vector<EditorPopup> OpenPopups;
+		std::function<void()> LastRenderPopupRequest;
 
 
-			GameSettings EditorSettings;
-			bool bDebugRenderComponents, bDebugRenderPhysicsMeshes;
-			bool bViewportMaximized;
+		GameSettings EditorSettings;
+		bool bDebugRenderComponents, bDebugRenderPhysicsMeshes;
+		bool bViewportMaximized;
 
-			Vec2f TestTranslateLastPos;
+		Vec2f TestTranslateLastPos;
 
-			std::string ProjectName, ProjectFilepath;
-			std::string ExecutableFolder;
+		std::string ProjectName, ProjectFilepath;
+		std::string ExecutableFolder;
 
-			Profiling Profiler;
+		Profiling Profiler;
 
-			//	UICanvasActor* CanvasContext;
-			std::vector<UICanvasActor*> Canvases;
+		//	UICanvasActor* CanvasContext;
+		std::vector<UICanvasActor*> Canvases;
 
-			UniquePtr<EditorActions> Actions;
+		UniquePtr<EditorActions> Actions;
 
-			bool EEForceForwardShading;
+		bool EEForceForwardShading;
 
-			// Which Controller should be set after we switch from editor to game control
-			Controller* GameController;
+		// Which Controller should be set after we switch from editor to game control
+		Controller* GameController;
 		};
 	}
 }

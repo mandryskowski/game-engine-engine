@@ -20,7 +20,7 @@ namespace GEE
 
 		virtual void Update(float);		//controls the component
 
-		virtual MaterialInstance LoadDebugMatInst(EditorButtonState) override;
+		virtual	MaterialInstance GetDebugMatInst(ButtonMaterialType) override;
 
 		virtual void GetEditorDescription(ComponentDescriptionBuilder) override;
 		template <typename Archive> void Save(Archive& archive) const

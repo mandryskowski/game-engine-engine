@@ -175,13 +175,13 @@ void UIMultipleListActor::NestList(UIListActor& list)
 		titleBackgroundMaterial->SetColor(titleBackgroundColor);
 
 		auto& titleBackgroundQuad = CreateComponent<ModelComponent>("BackgroundQuad", Transform(Vec2f(0.0f, 2.0f), Vec2f(30.0f, 1.0f)));
-		titleBackgroundQuad.AddMeshInst(GetGameHandle()->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD));
+		titleBackgroundQuad.AddMeshInst(GetGameHandle()->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::Quad));
 		titleBackgroundQuad.OverrideInstancesMaterial(titleBackgroundMaterial);
 
 		CreateComponent<TextComponent>("ElementText", Transform(Vec2f(0.0f, 2.0f), Vec2f(0.75f)), GetName(), "Assets/Editor/Fonts/Atkinson-Hyperlegible-Bold-102.otf", Alignment2D::Center()).Unstretch();
 
 		CategoryBackgroundQuad = &CreateComponent<ModelComponent>("BackgroundQuad", Transform(Vec2f(0.0f, 0.0f), Vec2f(30.0f, 0.0f)));
-		CategoryBackgroundQuad->AddMeshInst(GetGameHandle()->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD));
+		CategoryBackgroundQuad->AddMeshInst(GetGameHandle()->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::Quad));
 		CategoryBackgroundQuad->OverrideInstancesMaterial(MakeShared<Material>("CategoryBackgroundMaterial", hsvToRgb(Vec3f(218.0f, 0.521f, 0.188f))));
 
 		//uiCanvasFieldUtil::SetupComponents(*this, Vec2f(0.0f, 2.0f), Vec4f(0.045f, 0.06f, 0.09f, 1.0f));
@@ -268,7 +268,7 @@ void UIMultipleListActor::NestList(UIListActor& list)
 		UIButtonActor& billboardTickBoxActor = TemplateParent.CreateChild<UIButtonActor>("BillboardTickBox");
 
 		ModelComponent& billboardTickModel = billboardTickBoxActor.CreateComponent<ModelComponent>("TickModel");
-		billboardTickModel.AddMeshInst(GameHandle.GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD));
+		billboardTickModel.AddMeshInst(GameHandle.GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::Quad));
 		billboardTickModel.SetHide(true);
 		billboardTickModel.OverrideInstancesMaterialInstances(MakeShared<MaterialInstance>(tickMaterial, tickMaterial->GetTextureIDInterpolatorTemplate(0.0f)));
 
@@ -287,7 +287,7 @@ void UIMultipleListActor::NestList(UIListActor& list)
 		UIButtonActor& billboardTickBoxActor = TemplateParent.CreateChild<UIButtonActor>("BillboardTickBox");
 
 		ModelComponent& billboardTickModel = billboardTickBoxActor.CreateComponent<ModelComponent>("TickModel");
-		billboardTickModel.AddMeshInst(GameHandle.GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD));
+		billboardTickModel.AddMeshInst(GameHandle.GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::Quad));
 		billboardTickModel.SetHide(!getFunc());
 		billboardTickModel.OverrideInstancesMaterialInstances(MakeShared<MaterialInstance>(tickMaterial, tickMaterial->GetTextureIDInterpolatorTemplate(0.0f)));
 
@@ -300,7 +300,7 @@ void UIMultipleListActor::NestList(UIListActor& list)
 		SliderRawInterval(0.0f, 1.0f, processUnitValue, defaultValue);
 	}
 
-	void UIElementTemplates::SliderRawInterval(float begin, float end, std::function<void(float)> processRawValue, float defaultValue)
+	void UIElementTemplates::SliderRawInterval(float begin, float end, std::function<void(float)> processRawValueFunc, float defaultValue)
 	{
 		/*auto& sliderBackground = TemplateParent.CreateChild<UIButtonActor>("SliderBackground");
 		Material* sliderBackgroundMaterial;
@@ -312,12 +312,13 @@ void UIMultipleListActor::NestList(UIListActor& list)
 		sliderBackground.SetMatIdle(*sliderBackgroundMaterial);*/
 
 
+		auto& valueText = TemplateParent.CreateChild<UIActorDefault>("SliderValueTextActor").CreateComponent<TextConstantSizeComponent>("SliderValueText", Transform(), ToStringPrecision(defaultValue, 3), "", Alignment2D::Center());
 		auto& slider = TemplateParent.CreateChild<UIScrollBarActor>("Slider");
 		slider.GetTransform()->SetScale(Vec2f(0.1f, 1.0f));
 		float scaleX = slider.GetTransform()->GetScale().x;
 		slider.GetTransform()->SetVecAxis<TVec::Position, VecAxis::X>(glm::clamp(scaleX / 2.0f + ((defaultValue - begin) / (end - begin)) * (1.0f - scaleX), 0.0f, 1.0f) * 2.0f - 1.0f);
 
-		auto sliderProcessClick = [*this, &slider, processRawValue, begin, end]()
+		auto sliderProcessClick = [*this, &slider, &valueText, processRawValueFunc, begin, end]()
 		{
 			float posScreenSpace = static_cast<float>(Scene.GetUIData()->GetWindowData().GetMousePositionNDC().x);
 			Mat4f sliderMat = TemplateParent.GetTransform()->GetWorldTransformMatrix();
@@ -329,8 +330,10 @@ void UIMultipleListActor::NestList(UIListActor& list)
 			slider.SetClickPosNDC(Scene.GetUIData()->GetWindowData().GetMousePositionNDC());
 
 			float unitValue = ((slider.GetTransform()->GetPos().x - sliderSize) * 0.5f + 0.5f) / (1.0f - sliderSize);
-			if (processRawValue)
-				processRawValue(unitValue * (end - begin) + begin);
+			if (processRawValueFunc)
+				processRawValueFunc(unitValue * (end - begin) + begin);
+
+			valueText.SetContent(ToStringPrecision(unitValue * (end - begin) + begin, 3));
 		};
 
 
@@ -401,7 +404,7 @@ void UIMultipleListActor::NestList(UIListActor& list)
 	void uiCanvasFieldUtil::SetupComponents(Actor& actor, const Vec2f& pos, const Vec4f& backgroundColor, const Vec4f& separatorColor)
 	{
 		auto& backgroundQuad = actor.CreateComponent<ModelComponent>("BackgroundQuad", Transform(Vec2f(0.0f, pos.y), Vec2f(30.0f, 1.0f)));
-		backgroundQuad.AddMeshInst(actor.GetGameHandle()->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD));
+		backgroundQuad.AddMeshInst(actor.GetGameHandle()->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::Quad));
 
 		auto backgroundMaterial = MakeShared<Material>("BackgroundMaterial");
 		backgroundMaterial->SetColor(backgroundColor);
@@ -410,7 +413,7 @@ void UIMultipleListActor::NestList(UIListActor& list)
 		actor.CreateComponent<TextComponent>("ElementText", Transform(Vec2f(-2.0f, pos.y), Vec2f(0.75f)), actor.GetName(), "", Alignment2D::RightCenter());
 		
 		auto& separatorLine = actor.CreateComponent<ModelComponent>("SeparatorLine", Transform(Vec2f(-1.5f, pos.y), Vec2f(0.08f, 0.8f)));
-		separatorLine.AddMeshInst(actor.GetGameHandle()->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD));
+		separatorLine.AddMeshInst(actor.GetGameHandle()->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::Quad));
 
 		auto separatorMaterial = MakeShared<Material>("SeparatorColor");
 		separatorMaterial->SetColor(separatorColor);

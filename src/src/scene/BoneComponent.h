@@ -35,7 +35,7 @@ namespace GEE
 		unsigned int GetID() const;
 		const Mat4f& GetFinalMatrix();
 
-		virtual MaterialInstance LoadDebugMatInst(EditorButtonState) override;
+		virtual	MaterialInstance GetDebugMatInst(ButtonMaterialType) override;
 
 		void SetBoneOffset(const Mat4f&);
 		void SetID(unsigned int id);

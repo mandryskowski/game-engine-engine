@@ -168,7 +168,7 @@ namespace GEE
 		if (CanvasBackground)
 			CanvasBackground->MarkAsKilled();
 		CanvasBackground = &CreateComponent<ModelComponent>("WindowBackground");
-		CanvasBackground->AddMeshInst(GameHandle->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD));
+		CanvasBackground->AddMeshInst(GameHandle->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::Quad));
 
 		if (color == Vec3f(-1.0f))
 			CanvasBackground->OverrideInstancesMaterial(GameHandle->GetRenderEngineHandle()->FindMaterial("GEE_E_Canvas_Background_Material"));
@@ -272,7 +272,7 @@ namespace GEE
 					auto& searchIcon = searchBar.GetRoot()->CreateComponent<ModelComponent>("SearchIcon");
 					auto& renderHandle = *GameHandle->GetRenderEngineHandle();
 					auto iconsMaterial = renderHandle.FindMaterial<AtlasMaterial>("GEE_E_Icons");
-					searchIcon.AddMeshInst(MeshInstance(renderHandle.GetBasicShapeMesh(EngineBasicShape::QUAD), MakeShared<MaterialInstance>(iconsMaterial, iconsMaterial->GetTextureIDInterpolatorTemplate(9.0f))));
+					searchIcon.AddMeshInst(MeshInstance(renderHandle.GetBasicShapeMesh(EngineBasicShape::Quad), MakeShared<MaterialInstance>(iconsMaterial, iconsMaterial->GetTextureIDInterpolatorTemplate(9.0f))));
 					AddTopLevelUIElement(searchIcon);
 					searchIcon.DetachFromCanvas();
 					searchIcon.SetTransform(Transform(Vec2f(-0.75f, 0.0f), Vec2f(1.0f / 4.0f, 1.0f)));
@@ -356,8 +356,8 @@ namespace GEE
 			});
 
 		BothScrollBarsButton = &CreateChild<UIScrollBarActor>("BothScrollBarsButton", nullptr, [this]() {
-			if (ScrollBarX->GetState() == EditorButtonState::Idle)	ScrollBarX->OnBeingClicked();
-			if (ScrollBarY->GetState() == EditorButtonState::Idle)	ScrollBarY->OnBeingClicked();
+			if (ScrollBarX->GetStateBits() == 0)	ScrollBarX->OnBeingClicked();
+			if (ScrollBarY->GetStateBits() == 0)	ScrollBarY->OnBeingClicked();
 
 			ScrollBarX->WhileBeingClicked();
 			ScrollBarY->WhileBeingClicked();
@@ -449,7 +449,7 @@ namespace GEE
 	}
 
 	EditorDescriptionBuilder::EditorDescriptionBuilder(Editor::EditorManager& editorHandle, Actor& descriptionParent, UICanvas& canvas) :
-		EditorHandle(editorHandle), EditorScene(descriptionParent.GetScene()), DescriptionParent(descriptionParent), CanvasRef(canvas), OptionalCategory(nullptr)
+		EditorHandle(editorHandle), EditorScene(descriptionParent.GetScene()), DescriptionParent(descriptionParent), CanvasRef(canvas), OptionalCategory(nullptr), DeleteFunction(nullptr)
 	{
 	}
 

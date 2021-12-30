@@ -52,10 +52,10 @@ namespace GEE
 		return FinalMatrix;
 	}
 
-	MaterialInstance BoneComponent::LoadDebugMatInst(EditorButtonState state)
+	MaterialInstance BoneComponent::GetDebugMatInst(ButtonMaterialType type)
 	{
 		LoadDebugRenderMaterial("GEE_Mat_Default_Debug_BoneComponent", "Assets/Editor/bonecomponent_icon.png");
-		return Component::LoadDebugMatInst(state);
+		return Component::GetDebugMatInst(type);
 	}
 
 	void BoneComponent::SetBoneOffset(const Mat4f& boneOffset)

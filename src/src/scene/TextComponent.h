@@ -52,7 +52,7 @@ namespace GEE
 		virtual void Unstretch(UISpace space = UISpace::Window);
 
 		virtual void GetEditorDescription(ComponentDescriptionBuilder) override;
-		virtual MaterialInstance LoadDebugMatInst(EditorButtonState) override;
+		virtual	MaterialInstance GetDebugMatInst(ButtonMaterialType) override;
 
 		virtual unsigned int GetUIDepth() const override;
 
@@ -146,6 +146,7 @@ namespace GEE
 
 		Boxf<Vec2f> ComputeBBox(const std::string& str, const Transform& spaceTransform, const Font::Variation&, Alignment2D);
 
+		Vec2f ComputeScale(UISpace space, const Transform& ownedTextTransform, UICanvas* canvas, const WindowData* windowData, const Vec2f& optionalPreviouslyAppliedRatio = Vec2f(1.0f));
 		Vec2f ComputeScaleRatio(UISpace space, const Transform& ownedTextTransform, UICanvas* canvas, const WindowData* windowData, const Vec2f& optionalPreviouslyAppliedRatio = Vec2f(1.0f));
 
 		Transform OwnedToSpaceTransform(UISpace space, const Transform& ownedTransform, const UICanvas* canvas, const WindowData* windowData);

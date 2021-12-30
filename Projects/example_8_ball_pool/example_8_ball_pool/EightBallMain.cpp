@@ -12,6 +12,7 @@
 #include <scene/GunActor.h>
 #include <scene/Controller.h>
 #include <input/InputDevicesStateRetriever.h>
+#include <scene/UIButtonActor.h>
 
 using namespace GEE;
 Editor::EditorManager* Editor::EditorEventProcessor::EditorHandle = nullptr;

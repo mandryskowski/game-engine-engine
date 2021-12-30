@@ -376,7 +376,12 @@ namespace GEE
 					else
 						Actions->SelectActor(nullptr, editorScene);
 
-					});
+				});
+
+				UIActorDefault& controllerInfo = scenePreviewActor.CreateChild<UIActorDefault>("ControllerCameraInfoTextActor", Transform(Vec2f(-0.45f, -1.07f), Vec2f(0.5f, 0.025f)));
+				controllerInfo.CreateComponent<TextConstantSizeComponent>("ControllerInfoText", Transform(Vec2f(0.0f, 1.5f)), "", "", Alignment2D::Center()).Unstretch();
+				controllerInfo.CreateComponent<TextConstantSizeComponent>("CameraInfoText", Transform(Vec2f(0.0f, -1.5f)), "", "", Alignment2D::Center()).Unstretch();
+				UpdateControllerCameraInfo();
 
 
 
@@ -431,7 +436,7 @@ namespace GEE
 
 				auto mainButtonTheme = [&](UIButtonActor& button, float iconID) {
 					button.GetRoot()->GetComponent("ButtonText")->GetTransform().SetPosition(Vec2f(0.0f, -0.6f));
-					button.CreateComponent<ModelComponent>("SettingsIcon", Transform(Vec2f(0.0f, 0.3f), Vec2f(0.75f))).AddMeshInst(MeshInstance(RenderEng.GetBasicShapeMesh(EngineBasicShape::QUAD), MakeShared<MaterialInstance>(iconsMat, iconsMat->GetTextureIDInterpolatorTemplate(iconID))));
+					button.CreateComponent<ModelComponent>("SettingsIcon", Transform(Vec2f(0.0f, 0.3f), Vec2f(0.75f))).AddMeshInst(MeshInstance(RenderEng.GetBasicShapeMesh(EngineBasicShape::Quad), MakeShared<MaterialInstance>(iconsMat, iconsMat->GetTextureIDInterpolatorTemplate(iconID))));
 					button.GetRoot()->GetComponent<ModelComponent>("SettingsIcon")->OverrideInstancesMaterialInstances(MakeShared<MaterialInstance>(iconsMat, iconsMat->GetTextureIDInterpolatorTemplate(iconID)));
 				};
 			
@@ -514,20 +519,20 @@ namespace GEE
 					{
 						auto& shadowSelectionList = window.AddField("Shadow quality").CreateChild<UIAutomaticListActor>("ShadowSelectionList", Vec3f(2.0f, 0.0f, 0.0f));
 						std::function<void(SettingLevel, const std::string&)> addShadowButton = [this, &shadowSelectionList](SettingLevel setting, const std::string& caption)
-						{ 
+						{
 							shadowSelectionList.CreateChild<UIActivableButtonActor>("Button" + caption, caption,
-							[=]()
-							{
-								const_cast<GameSettings::VideoSettings&>(ViewportRenderCollection->GetSettings()).ShadowLevel = setting;
-								UpdateGameSettings();
-							});
+								[=]()
+								{
+									const_cast<GameSettings::VideoSettings&>(ViewportRenderCollection->GetSettings()).ShadowLevel = setting;
+									UpdateGameSettings();
+								});
 						};
 						addShadowButton(SettingLevel::SETTING_LOW, "Low");
 						addShadowButton(SettingLevel::SETTING_MEDIUM, "Medium");
 						addShadowButton(SettingLevel::SETTING_HIGH, "High");
 						addShadowButton(SettingLevel::SETTING_ULTRA, "Ultra");
 
-						shadowSelectionList.Refresh(); 
+						shadowSelectionList.Refresh();
 					}
 
 					{
@@ -542,7 +547,7 @@ namespace GEE
 							ModelComponent& texPreviewQuad = texPreviewWindow.CreateChild<UIActorDefault>("TexPreviewActor").CreateComponent<ModelComponent>("TexPreviewQuad");
 							auto mat = MakeShared<Material>("TexturePreviewMat");
 							mat->AddTexture(MakeShared<NamedTexture>(Texture::FromGeneratedGlId(Vec2u(0), GL_TEXTURE_2D, *texID, Texture::Format::RGBA()), "albedo1"));
-							texPreviewQuad.AddMeshInst(MeshInstance(GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD), mat));
+							texPreviewQuad.AddMeshInst(MeshInstance(GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::Quad), mat));
 
 							texPreviewWindow.AutoClampView();
 
@@ -556,6 +561,11 @@ namespace GEE
 					ssaoSamplesIB.SetOnInputFunc([this](float sampleCount) { GetGameSettings()->Video.AmbientOcclusionSamples = sampleCount; UpdateGameSettings(); }, [this]() { return GetGameSettings()->Video.AmbientOcclusionSamples; });
 
 					window.AddField("Parallax Occlusion Mapping").GetTemplates().TickBox([this](bool val) { GetGameSettings()->Video.POMLevel = (val) ? (SettingLevel::SETTING_LOW) : (SettingLevel::SETTING_NONE); UpdateGameSettings(); }, [this]() { return GetGameSettings()->Video.POMLevel != SettingLevel::SETTING_NONE; });
+
+
+					auto& physicsCat = window.AddCategory("Physics");
+					physicsCat.AddField("Connect to PVD").CreateChild<UIButtonActor>("PVDConnectButton", "Connect", [this]() { PhysicsEng.ConnectToPVD(); });
+					physicsCat.AddField("Bounce threshold").GetTemplates().SliderRawInterval(0.0f, 2.0f, [this](float threshold) { GetMainScene()->GetPhysicsData()->GetPxScene()->setBounceThresholdVelocity(threshold); }, GetMainScene()->GetPhysicsData()->GetPxScene()->getBounceThresholdVelocity());
 
 					window.FieldsList->Refresh();
 					window.AutoClampView();
@@ -650,13 +660,15 @@ namespace GEE
 
 			EditorScene = &editorScene;
 
-			EditorScene->FindActor("SceneViewportActor")->GetRoot()->GetComponent<ModelComponent>("SceneViewportQuad")->AddMeshInst(GetGameHandle()->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD));
+			EditorScene->FindActor("SceneViewportActor")->GetRoot()->GetComponent<ModelComponent>("SceneViewportQuad")->AddMeshInst(GetGameHandle()->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::Quad));
 			//EditorScene->FindActor("SceneViewportActor")->GetRoot()->GetComponent<ModelComponent>("SceneViewportQuad")->SetTransform(Transform(Vec2f(0.0f, 0.4f), Vec2f(1.0f)));
 
 			SharedPtr<Material> scenePreviewMaterial = MakeShared<Material>("GEE_3D_SCENE_PREVIEW_MATERIAL");
 			RenderEng.AddMaterial(scenePreviewMaterial);
 			scenePreviewMaterial->AddTexture(MakeShared<NamedTexture>(ViewportRenderCollection->GetTb<FinalRenderTargetToolbox>()->GetFinalFramebuffer().GetColorTexture(0), "albedo1"));
 			EditorScene->FindActor("SceneViewportActor")->GetRoot()->GetComponent<ModelComponent>("SceneViewportQuad")->OverrideInstancesMaterial(scenePreviewMaterial);
+
+			editorScene.MarkAsStarted();
 		}
 
 		void GameEngineEngineEditor::SetupMainMenu()
@@ -743,6 +755,7 @@ namespace GEE
 
 			mainMenuScene.BindActiveCamera(&orthoCameraComp);
 			SetActiveScene(&mainMenuScene);
+			mainMenuScene.MarkAsStarted();
 		}
 
 		void GameEngineEngineEditor::Update(float deltaTime)
@@ -764,6 +777,8 @@ namespace GEE
 			}
 			else
 				TestTranslateLastPos = Vec2f(-1.0f);
+
+			UpdateControllerCameraInfo();
 
 			Game::Update(deltaTime);
 		}
@@ -818,6 +833,8 @@ namespace GEE
 						if (sceneChanged)
 							for (auto& it : Scenes)
 								it->RootActor->HandleEventAll(Event(EventType::FocusSwitched));
+
+						UpdateControllerCameraInfo();
 					}
 					else if (keyEventCast.GetKeyCode() == Key::F10)
 					{
@@ -872,7 +889,7 @@ namespace GEE
 			std::function<void(HierarchyTemplate::HierarchyNodeBase&, UIAutomaticListActor&)> createNodeButtons = [&](HierarchyTemplate::HierarchyNodeBase& node, UIAutomaticListActor& listParent) {
 				auto& element = listParent.CreateChild<UIActivableButtonActor>("Button", node.GetCompBaseType().GetName(), nullptr);
 				buttons.push_back(std::pair<HierarchyTemplate::HierarchyNodeBase&, UIActivableButtonActor*>(node, & element));
-				element.SetDeactivateOnClickAnywhere(false);
+				element.SetDeactivateOnClickingAnywhere(false);
 				element.OnClick();
 				element.DeduceMaterial();
 				element.SetTransform(Transform(Vec2f(1.5f, 0.0f), Vec2f(3.0f, 1.0f)));
@@ -934,6 +951,8 @@ namespace GEE
 				GameController = controller;
 			else
 				Game::PassMouseControl(controller);
+
+			UpdateControllerCameraInfo();
 		}
 
 		void GameEngineEngineEditor::Render()
@@ -963,11 +982,14 @@ namespace GEE
 
 				////
 				auto& sphereActor = scene->CreateActorAtRoot<Actor>("Default sphere", Transform(Vec3f(0.0f, 0.0f, -3.0f)));
-				sphereActor.CreateComponent<ModelComponent>("A ModelComponent").AddMeshInst(RenderEng.GetBasicShapeMesh(EngineBasicShape::SPHERE));
+				sphereActor.CreateComponent<ModelComponent>("A ModelComponent").AddMeshInst(RenderEng.GetBasicShapeMesh(EngineBasicShape::Sphere));
 				sphereActor.CreateComponent<LightComponent>("A LightComponent").GetTransform().SetPosition(Vec3f(0.0f, 0.0f, 2.0f));
 			}
 			SetMainScene(GetScene("GEE_Main"));
 			SetActiveScene(EditorScene);
+
+			GetScene("GEE_Main")->MarkAsStarted();
+
 			Actions->SelectScene(GetMainScene(), *EditorScene);
 		
 			SceneRenderer(RenderEng, 0).PreRenderLoopPassStatic(0, GetSceneRenderDatas());
@@ -1064,6 +1086,18 @@ namespace GEE
 
 		UpdateGameSettings();
 		bViewportMaximized = !bViewportMaximized;
+	}
+
+	void GameEngineEngineEditor::UpdateControllerCameraInfo()
+	{
+		if (EditorScene)
+			if (auto foundActor = EditorScene->FindActor("ControllerCameraInfoTextActor"))
+			{
+				if (auto foundText = foundActor->GetRoot()->GetComponent<TextComponent>("ControllerInfoText"))
+					foundText->SetContent((GameController) ? ((ActiveScene == &GameController->GetScene()) ? (GameController->GetName()) : ("Editor control")) : ("No controller"));
+				if (auto foundText = foundActor->GetRoot()->GetComponent<TextComponent>("CameraInfoText"))
+					foundText->SetContent((GetMainScene() && GetMainScene()->GetActiveCamera()) ? (GetMainScene()->GetActiveCamera()->GetName()) : ("No camera"));
+			}
 	}
 
 	EditorMessageLogger& GameEngineEngineEditor::GetEditorLogger(GameScene& scene)

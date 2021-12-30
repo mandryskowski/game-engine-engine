@@ -33,6 +33,9 @@ namespace GEE
 		GameScene(const GameScene&) = delete;
 		GameScene(GameScene&&);
 
+		bool HasStarted() const { return bHasStarted; }
+		void MarkAsStarted();
+
 		const std::string& GetName() const;
 		Actor* GetRootActor();
 		const Actor* GetRootActor() const;
@@ -110,6 +113,8 @@ namespace GEE
 		UniquePtr<Physics::GameScenePhysicsData> PhysicsData;
 		UniquePtr<Audio::GameSceneAudioData> AudioData;
 		UniquePtr<GameSceneUIData> UIData;
+
+		bool bHasStarted;
 
 	public:
 		std::vector<UniquePtr<HierarchyTemplate::HierarchyTreeT>> HierarchyTrees;
@@ -301,6 +306,7 @@ namespace GEE
 			void AddCollisionObject(CollisionObject&, Transform& t);
 			void EraseCollisionObject(CollisionObject&);
 			Physics::PhysicsEngineManager* GetPhysicsHandle();
+			physx::PxScene* GetPxScene() { return PhysXScene; }
 
 			friend class PhysicsEngine;
 			friend class PhysicsDebugRenderer;

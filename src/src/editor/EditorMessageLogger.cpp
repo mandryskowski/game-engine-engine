@@ -44,7 +44,7 @@ namespace GEE
 
 			AddMessageToSlot(logWindow);
 
-			Interpolation interp(0.0f, 2.0f, InterpolationType::LINEAR);
+			Interpolation interp(0.0f, 2.0f, InterpolationType::Linear);
 			interp.SetOnUpdateFunc([&](float T) { if (T == 1.0f) KillMessage(logWindow); return T == 1.0f; });
 			EditorHandle.GetGameHandle()->AddInterpolation(interp);
 
@@ -59,7 +59,7 @@ namespace GEE
 	
 
 			auto& iconModel = content.CreateComponent<ModelComponent>("GEE_E_LogIcon", Transform(Vec2f(-1.4f, 0.0f), Vec2f(0.5f)));
-			iconModel.AddMeshInst(EditorHandle.GetGameHandle()->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD));
+			iconModel.AddMeshInst(EditorHandle.GetGameHandle()->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::Quad));
 			iconModel.OverrideInstancesMaterialInstances(MakeShared<MaterialInstance>(IconsMaterial, IconsMaterial->GetTextureIDInterpolatorTemplate(5.0f + static_cast<float>(type))));
 		}
 		void EditorMessageLogger::AddMessageToSlot(UIWindowActor& message)

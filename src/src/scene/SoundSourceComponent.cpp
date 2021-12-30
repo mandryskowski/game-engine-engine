@@ -95,10 +95,10 @@ namespace GEE
 				alSourcefv(ALIndex, AL_POSITION, Math::GetDataPtr(ComponentTransform.GetWorldTransform().GetPos()));
 		}
 
-		MaterialInstance SoundSourceComponent::LoadDebugMatInst(EditorButtonState state)
+		MaterialInstance SoundSourceComponent::GetDebugMatInst(ButtonMaterialType type)
 		{
 			LoadDebugRenderMaterial("GEE_Mat_Default_Debug_SoundSourceComponent", "Assets/Editor/soundsourcecomponent_debug.png");
-			return Component::LoadDebugMatInst(state);
+			return Component::GetDebugMatInst(type);
 		}
 
 		void SoundSourceComponent::GetEditorDescription(ComponentDescriptionBuilder descBuilder)

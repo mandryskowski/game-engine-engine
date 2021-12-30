@@ -237,6 +237,9 @@
     <ClCompile Include="src\src\utility\Alignment.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\src\physics\PhysicsObjects.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\src\animation\Animation.h">
@@ -462,6 +465,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\src\utility\Alignment.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\src\physics\PhysicsObjects.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

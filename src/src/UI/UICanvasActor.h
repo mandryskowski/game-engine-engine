@@ -130,12 +130,16 @@ namespace GEE
 		GameScene& GetEditorScene();
 		UICanvas& GetCanvas();
 		Actor& GetDescriptionParent();
+		GameManager& GetGameHandle() { return *EditorHandle.GetGameHandle(); }
 		Editor::EditorManager& GetEditorHandle();
 
 		UICanvasField& AddField(const std::string& name, std::function<Vec3f()> getFieldOffsetFunc = nullptr);	//equivalent to GetCanvasActor().AddField(...). I put it here for easier access.
 		UICanvasFieldCategory& AddCategory(const std::string& name);
 
 		template <typename ChildClass, typename... Args> ChildClass& CreateActor(Args&&...);
+
+		void SetDeleteFunction(std::function<void()> deleteFunction) { DeleteFunction = deleteFunction; }
+		void CallDeleteFunction() { if (DeleteFunction) DeleteFunction(); }
 
 		void SelectComponent(Component*);
 		void SelectActor(Actor*);
@@ -150,6 +154,8 @@ namespace GEE
 		UICanvas& CanvasRef;
 
 		UICanvasFieldCategory* OptionalCategory;
+
+		std::function<void()> DeleteFunction;
 	};
 
 	class ComponentDescriptionBuilder : public EditorDescriptionBuilder

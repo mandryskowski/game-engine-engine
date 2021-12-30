@@ -43,10 +43,10 @@ namespace GEE
 		Component::Update(deltaTime);
 	}
 
-	MaterialInstance CameraComponent::LoadDebugMatInst(EditorButtonState state)
+	MaterialInstance CameraComponent::GetDebugMatInst(ButtonMaterialType type)
 	{
 		LoadDebugRenderMaterial("GEE_Mat_Default_Debug_CameraComponent", "Assets/Editor/cameracomponent_icon.png");
-		return Component::LoadDebugMatInst(state);
+		return Component::GetDebugMatInst(type);
 	}
 
 	void CameraComponent::GetEditorDescription(ComponentDescriptionBuilder descBuilder)

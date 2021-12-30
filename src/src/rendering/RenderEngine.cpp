@@ -108,10 +108,10 @@ namespace GEE
 
 		GameScene& engineObjScene = GameHandle->CreateScene("GEE_Engine_Objects");
 
-		BasicShapes[EngineBasicShape::QUAD] = EngineDataLoader::LoadHierarchyTree(engineObjScene, "Assets/EngineObjects/quad.obj", &engineObjScene.CreateHierarchyTree("ENG_QUAD"))->FindMesh("Quad");
-		BasicShapes[EngineBasicShape::CUBE] = EngineDataLoader::LoadHierarchyTree(engineObjScene, "Assets/EngineObjects/cube.obj", &engineObjScene.CreateHierarchyTree("ENG_CUBE"))->FindMesh("Cube");
-		BasicShapes[EngineBasicShape::SPHERE] = EngineDataLoader::LoadHierarchyTree(engineObjScene, "Assets/EngineObjects/sphere.obj", &engineObjScene.CreateHierarchyTree("ENG_SPHERE"))->FindMesh("Sphere");
-		BasicShapes[EngineBasicShape::CONE] = EngineDataLoader::LoadHierarchyTree(engineObjScene, "Assets/EngineObjects/cone.obj", &engineObjScene.CreateHierarchyTree("ENG_CONE"))->FindMesh("Cone");
+		BasicShapes[EngineBasicShape::Quad] = EngineDataLoader::LoadHierarchyTree(engineObjScene, "Assets/EngineObjects/quad.obj", &engineObjScene.CreateHierarchyTree("ENG_QUAD"))->FindMesh("Quad");
+		BasicShapes[EngineBasicShape::Cube] = EngineDataLoader::LoadHierarchyTree(engineObjScene, "Assets/EngineObjects/cube.obj", &engineObjScene.CreateHierarchyTree("ENG_CUBE"))->FindMesh("Cube");
+		BasicShapes[EngineBasicShape::Sphere] = EngineDataLoader::LoadHierarchyTree(engineObjScene, "Assets/EngineObjects/sphere.obj", &engineObjScene.CreateHierarchyTree("ENG_SPHERE"))->FindMesh("Sphere");
+		BasicShapes[EngineBasicShape::Cone] = EngineDataLoader::LoadHierarchyTree(engineObjScene, "Assets/EngineObjects/cone.obj", &engineObjScene.CreateHierarchyTree("ENG_CONE"))->FindMesh("Cone");
 
 		//GameHandle->FindHierarchyTree("ENG_QUAD")->FindMesh("Quad")->Localization.HierarchyTreePath = "ENG_QUAD";
 		GameHandle->FindHierarchyTree("ENG_QUAD")->FindMesh("Quad")->Localization.SpecificName = "Quad_NoShadow";

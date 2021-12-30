@@ -58,16 +58,18 @@ namespace GEE
 
 		if (AfterBehaviour == STOP && CurrentTime > End)
 			CurrentTime = End;
+		if (CurrentTime < 0.0f && -CurrentTime > Begin)
+			CurrentTime = -Begin;
 		else if ((BeforeBehaviour == REPEAT && CurrentTime < 0.0f) || (AfterBehaviour == REPEAT && CurrentTime > End))
 			CurrentTime = fmod(CurrentTime, End);
 
 		////////////////////////////////////////////////////////////////////
 
-		if (Type == CONSTANT && CurrentTime >= End)
+		if (Type == Constant && CurrentTime >= End)
 			T = 1.0f;
 		else
 		{
-			float exponent = static_cast<float>(Type);	//LINEAR = 1, QUADRATIC = 2, CUBIC = 3, etc.
+			float exponent = static_cast<float>(Type);	//Linear = 1, Quadratic = 2, Cubic = 3, etc.
 			T = (FadeAway) ? (1.0f - pow(1.0f - CurrentTime / End, exponent)) : (pow(CurrentTime / End, exponent));
 		}
 

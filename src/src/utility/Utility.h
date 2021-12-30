@@ -94,12 +94,12 @@ namespace GEE
 
 	enum InterpolationType
 	{
-		CONSTANT,
-		LINEAR,
-		QUADRATIC,
-		CUBIC,
-		QUARTIC,
-		QUINTIC
+		Constant,
+		Linear,
+		Quadratic,
+		Cubic,
+		Quartic,
+		Quintic
 	};
 
 	/*
@@ -110,10 +110,10 @@ namespace GEE
 
 	enum class EngineBasicShape
 	{
-		QUAD,
-		CUBE,
-		SPHERE,
-		CONE
+		Quad,
+		Cube,
+		Sphere,
+		Cone
 	};
 
 	/*

@@ -387,7 +387,7 @@ namespace GEE
 			else
 			{
 				filestr >> path;
-				LightProbeComponent& probe = scene.GetRootActor()->CreateComponent<LightProbeComponent>("A LightProbeComponent", EngineBasicShape::QUAD);
+				LightProbeComponent& probe = scene.GetRootActor()->CreateComponent<LightProbeComponent>("A LightProbeComponent", EngineBasicShape::Quad);
 				LightProbeLoader::LoadLightProbeFromFile(probe, path);
 			}
 		}

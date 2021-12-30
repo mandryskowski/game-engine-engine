@@ -43,7 +43,7 @@ namespace GEE
 		virtual void OnBeingClicked();
 		virtual void WhileBeingClicked();
 
-		EditorButtonState GetState();
+		int GetStateBits();
 
 
 		bool ContainsMouse(Vec2f cursorNDC);
@@ -61,7 +61,7 @@ namespace GEE
 		SharedPtr<MaterialInstance> MatIdle, MatHover, MatClick, MatActive, MatDisabled;
 		MaterialInstance* PrevDeducedMaterial;
 
-		EditorButtonState State;
+		int StateBits;
 
 		bool bInputDisabled;
 	};
@@ -86,11 +86,13 @@ namespace GEE
 		UIActivableButtonActor(GameScene& scene, Actor* parentActor, const std::string& name, std::function<void()> onClickFunc = nullptr, std::function<void()> onDeactivationFunc = nullptr, const Transform& = Transform());
 		UIActivableButtonActor(GameScene& scene, Actor* parentActor, const std::string& name, const std::string& buttonTextContent, std::function<void()> onClickFunc = nullptr, std::function<void()> onDeactivationFunc = nullptr, const Transform& = Transform());
 
-		void SetDeactivateOnClickAnywhere(bool deactivateOnClick);
+		void SetActivateOnClicking(bool activateOnClick);
+		void SetDeactivateOnClickingAnywhere(bool deactivateOnClick);
+		void SetDeactivateOnClickingAgain(bool deactivateOnClick);
 		void SetMatActive(MaterialInstance&&);
 		void SetOnDeactivationFunc(std::function<void()> onDeactivationFunc);
 
-		void SetActive(bool active);
+		virtual void SetActive(bool active);
 
 		virtual void HandleEvent(const Event& ev) override;
 		virtual void OnClick() override;	//On activation
@@ -100,7 +102,7 @@ namespace GEE
 
 		std::function<void()> OnDeactivationFunc;
 		SharedPtr<MaterialInstance> MatActive;
-		bool bDeactivateOnClickAnywhere, bDeactivateOnClickingAgain;
+		bool bActivateOnClicking, bDeactivateOnClickingAnywhere, bDeactivateOnClickingAgain, bDeactivateOnPressingEnter;
 	};
 
 	class UIScrollBarActor : public UIButtonActor

@@ -3,6 +3,8 @@
 #include <scene/hierarchy/HierarchyTree.h>
 #include <PhysX/PxPhysicsAPI.h>
 #include <assetload/FileLoader.h>
+#include <UI/UICanvasActor.h>
+#include <UI/UICanvasField.h>
 
 using namespace physx;
 
@@ -38,6 +40,54 @@ namespace GEE
 		void CollisionShape::SetOptionalLocalization(ColShapeLoc loc)
 		{
 			OptionalLocalization = MakeUnique<ColShapeLoc>(loc);
+		}
+
+		void CollisionShape::GetEditorDescription(EditorDescriptionBuilder descBuilder, CollisionObject& thisColObj)
+		{
+			auto& transformCategory = descBuilder.AddCategory("Transform");
+			EditorDescriptionBuilder shapeDescBuilder(descBuilder.GetEditorHandle(), transformCategory);
+			ShapeTransform.GetEditorDescription(shapeDescBuilder);
+
+			if (thisColObj.ActorPtr && ShapePtr)
+			{
+				auto& propertiesCategory = descBuilder.AddCategory("Physical properties");
+
+				auto updateMatFunc = [this, &thisColObj, descBuilder](float staticFriction, float dynamicFriction, float restitution) mutable
+				{
+					physx::PxMaterial* prevMat = nullptr;
+					ShapePtr->getMaterials(&prevMat, 1);
+
+					thisColObj.ActorPtr->detachShape(*ShapePtr);
+
+					if (staticFriction < 0.0f) staticFriction = prevMat->getStaticFriction();
+					if (dynamicFriction < 0.0f) dynamicFriction = prevMat->getDynamicFriction();
+					if (restitution < 0.0f) restitution = prevMat->getRestitution();
+					auto mat = descBuilder.GetGameHandle().GetPhysicsHandle()->CreateMaterial(staticFriction, dynamicFriction, restitution);
+					ShapePtr->setMaterials(&mat, 1);
+
+					thisColObj.ActorPtr->attachShape(*ShapePtr);
+
+					if (prevMat)
+						prevMat->release();
+				};
+
+				float staticFriction, dynamicFriction, restitution;
+				{
+					physx::PxMaterial* matBeforeChanges = nullptr;	// get material as it is now
+					ShapePtr->getMaterials(&matBeforeChanges, 1);
+
+					staticFriction = matBeforeChanges->getStaticFriction();
+					dynamicFriction = matBeforeChanges->getDynamicFriction();
+					restitution = matBeforeChanges->getRestitution();
+				}
+
+				propertiesCategory.AddField("Static friction").GetTemplates().SliderUnitInterval([this, updateMatFunc](float coeff) mutable {	updateMatFunc(coeff, -1.0f, -1.0f); }, staticFriction);
+				propertiesCategory.AddField("Dynamic friction").GetTemplates().SliderUnitInterval([this, updateMatFunc](float coeff) mutable { updateMatFunc(-1.0f, coeff, -1.0f); }, dynamicFriction);
+				propertiesCategory.AddField("Restitution").GetTemplates().SliderUnitInterval([this, updateMatFunc](float coeff) mutable { updateMatFunc(-1.0f, -1.0f, coeff); }, restitution);
+			}
+
+			descBuilder.AddField("Delete").CreateChild<UIButtonActor>("DeleteButton", "Delete", [this, &thisColObj, descBuilder]() mutable { thisColObj.DetachShape(*this); descBuilder.CallDeleteFunction(); descBuilder.RefreshComponent(); });
+
 		}
 
 		template <typename Archive> void CollisionShape::Save(Archive& archive) const

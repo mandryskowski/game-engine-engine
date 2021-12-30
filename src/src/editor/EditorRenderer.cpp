@@ -73,7 +73,7 @@ namespace GEE
 								OutlineRenderer(*EditorHandle.GetGameHandle()->GetRenderEngineHandle()).RenderOutlineSilhouette(mainSceneRenderInfo, EditorHandle.GetActions().GetSelectedComponent(), mainFramebuffer);
 
 								// Gizmos
-								Impl.RenderHandle.GetBasicShapeMesh(EngineBasicShape::CONE);
+								Impl.RenderHandle.GetBasicShapeMesh(EngineBasicShape::Cone);
 							}
 
 							if (EditorHandle.GetGameHandle()->GetInputRetriever().IsKeyPressed(Key::F2))
@@ -114,7 +114,7 @@ namespace GEE
 				glClear(GL_COLOR_BUFFER_BIT);
 
 				Impl.RenderHandle.GetSimpleShader()->Use();
-				Renderer(Impl.RenderHandle).StaticMeshInstances(SceneMatrixInfo(*MainSceneCollection, *mainScene->GetRenderData()), { MeshInstance(Impl.RenderHandle.GetBasicShapeMesh(EngineBasicShape::QUAD), Impl.RenderHandle.FindMaterial("GEE_No_Camera_Icon")) }, Transform(), *Impl.RenderHandle.GetSimpleShader());
+				Renderer(Impl.RenderHandle).StaticMeshInstances(SceneMatrixInfo(*MainSceneCollection, *mainScene->GetRenderData()), { MeshInstance(Impl.RenderHandle.GetBasicShapeMesh(EngineBasicShape::Quad), Impl.RenderHandle.FindMaterial("GEE_No_Camera_Icon")) }, Transform(), *Impl.RenderHandle.GetSimpleShader());
 
 				TextRenderer(Impl.RenderHandle).RenderText(SceneMatrixInfo(*MainSceneCollection, *mainScene->GetRenderData()), *EditorHandle.GetGameHandle()->GetDefaultFont(), "No camera", Transform(Vec2f(0.0f, -0.8f), Vec2f(0.1f)), Vec3f(1.0f, 0.0f, 0.0f), nullptr, false, Alignment2D::Center());
 
@@ -129,7 +129,7 @@ namespace GEE
 
 				Impl.RenderHandle.GetSimpleShader()->Use();
 				Impl.RenderHandle.GetSimpleShader()->Uniform2fv("atlasData", Vec2f(0.0f));
-				Renderer(Impl.RenderHandle).StaticMeshInstances(MatrixInfoExt(), { MeshInstance(Impl.RenderHandle.GetBasicShapeMesh(EngineBasicShape::QUAD), Impl.RenderHandle.FindMaterial("GEE_3D_SCENE_PREVIEW_MATERIAL")) }, editorScene->FindActor("SceneViewportActor")->GetTransform()->GetWorldTransform(), *Impl.RenderHandle.GetSimpleShader());
+				Renderer(Impl.RenderHandle).StaticMeshInstances(MatrixInfoExt(), { MeshInstance(Impl.RenderHandle.GetBasicShapeMesh(EngineBasicShape::Quad), Impl.RenderHandle.FindMaterial("GEE_3D_SCENE_PREVIEW_MATERIAL")) }, editorScene->FindActor("SceneViewportActor")->GetTransform()->GetWorldTransform(), *Impl.RenderHandle.GetSimpleShader());
 			}
 			else
 			{
@@ -174,7 +174,7 @@ namespace GEE
 				Impl.RenderHandle.GetSimpleShader()->Use();
 				mat.UpdateWholeUBOData(Impl.RenderHandle.GetSimpleShader(), Impl.RenderHandle.GetEmptyTexture());
 
-				Impl.RenderHandle.GetBasicShapeMesh(EngineBasicShape::QUAD).Bind(popup.ID);
+				Impl.RenderHandle.GetBasicShapeMesh(EngineBasicShape::Quad).Bind(popup.ID);
 				SceneRenderer(Impl.RenderHandle).RawUIScene(info);
 
 				glfwSwapBuffers(&popup.Window.get());

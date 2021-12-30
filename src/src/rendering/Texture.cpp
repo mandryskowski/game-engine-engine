@@ -159,6 +159,8 @@ namespace GEE
 		if (!data)
 		{
 			std::cerr << "Can't load texture from " << filepath << '\n';
+			if (stbi_failure_reason())
+				std::cout << "Stbi failure: " << stbi_failure_reason() << "\n";
 			Texture tex = Texture::Loader<float>::FromBuffer2D(Vec2u(1, 1), Math::GetDataPtr(Vec3f(1.0f, 0.0f, 1.0f)), Format::RGB(), 3);	//set the texture's color to pink so its obvious that this texture is missing
 			tex.SetMinFilter(MinFilter::Nearest(), true, true);	//disable mipmaps
 			return tex;

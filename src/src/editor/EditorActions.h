@@ -8,6 +8,7 @@
 namespace GEE
 {
 	class UIButtonActor;
+	class UIActivableButtonActor;
 	class UIAutomaticListActor;
 
 	class IconData
@@ -106,7 +107,7 @@ namespace GEE
 		{
 		public:
 			ContextMenusFactory(RenderEngineManager&);
-			void AddComponent(PopupDescription, Component& contextComp, std::function<void()> onCreation);
+			void AddComponent(PopupDescription, Component& contextComp, std::function<void(Component&)> onCreation);
 			template <typename TFunctor>
 			void AddComponent(PopupDescription, TFunctor&&, std::function<void()> onCreation);
 		private:
@@ -119,9 +120,12 @@ namespace GEE
 			if (obj.IsBeingKilled())
 				return;
 
-			UIButtonActor& element = listParent.CreateChild<UIButtonActor>(obj.GetName() + "'s Button", [this, &obj, &editorScene]() {this->Select(&obj, editorScene); });//*this, obj, &EditorManager::Select<T>));
+			auto& element = listParent.CreateChild<UIActivableButtonActor>(obj.GetName(), [this, &obj, &editorScene]() {this->Select(&obj, editorScene); });//*this, obj, &EditorManager::Select<T>));
+			element.SetActivateOnClicking(false);
+			element.SetDeactivateOnClickingAnywhere(false);
+			element.SetDeactivateOnClickingAgain(false);
 			element.SetTransform(Transform(Vec2f(1.5f, 0.0f), Vec2f(3.0f, 1.0f)));
-			TextConstantSizeComponent& elementText = element.CreateComponent<TextConstantSizeComponent>(obj.GetName() + "'s Text", Transform(Vec2f(0.0f), Vec2f(1.0f, 1.0f)), "", "", Alignment2D::Center());
+			TextConstantSizeComponent& elementText = element.CreateComponent<TextConstantSizeComponent>("ButtonText", Transform(Vec2f(0.0f), Vec2f(1.0f, 1.0f)), "", "", Alignment2D::Center());
 			elementText.SetFontStyle(FontStyle::Italic);
 			elementText.SetMaxSize(Vec2f(0.9f));
 			elementText.SetContent(obj.GetName());

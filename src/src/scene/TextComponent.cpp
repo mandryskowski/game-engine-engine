@@ -179,10 +179,10 @@ namespace GEE
 		}
 	}
 
-	MaterialInstance TextComponent::LoadDebugMatInst(EditorButtonState state)
+	MaterialInstance TextComponent::GetDebugMatInst(ButtonMaterialType type)
 	{
 		LoadDebugRenderMaterial("GEE_Mat_Default_Debug_TextComponent", "Assets/Editor/textcomponent_icon.png");
-		return Component::LoadDebugMatInst(state);
+		return Component::GetDebugMatInst(type);
 	}
 
 	unsigned int TextComponent::GetUIDepth() const
@@ -389,7 +389,7 @@ namespace GEE
 		return Boxf<Vec2f>(Vec2f(spaceTransform.GetPos()) + alignmentOffset, Vec2f(halfTextLength, GetTextHeight(str, spaceTransform.GetScale2D(), fontVariation)));
 	}
 
-	Vec2f textUtil::ComputeScaleRatio(UISpace space, const Transform& textTransform, UICanvas* canvas, const WindowData* windowData, const Vec2f& optionalPreviouslyAppliedRatio)
+	Vec2f textUtil::ComputeScale(UISpace space, const Transform& textTransform, UICanvas* canvas, const WindowData* windowData, const Vec2f& optionalPreviouslyAppliedRatio)
 	{
 		Vec2f scale(1.0f);
 
@@ -414,7 +414,11 @@ namespace GEE
 		default: break;
 		}
 
-		return Math::GetRatioOfComponents(scale);
+		return scale;
+	}
+	Vec2f textUtil::ComputeScaleRatio(UISpace space, const Transform& ownedTextTransform, UICanvas* canvas, const WindowData* windowData, const Vec2f& optionalPreviouslyAppliedRatio)
+	{
+		return Math::GetRatioOfComponents(ComputeScale(space, ownedTextTransform, canvas, windowData, optionalPreviouslyAppliedRatio));
 	}
 	Transform textUtil::OwnedToSpaceTransform(UISpace space, const Transform& ownedTransform, const UICanvas* canvas, const WindowData* windowData)
 	{

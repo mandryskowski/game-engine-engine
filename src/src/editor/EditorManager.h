@@ -30,13 +30,19 @@ namespace GEE
 		W_Axis
 	};
 
-	enum class EditorButtonState
+	enum ButtonStateFlags
+	{
+		Hover = 1,
+		BeingClicked = 2,
+		Active = 4
+	};
+
+	enum class ButtonMaterialType
 	{
 		Idle,
 		Hover,
-		BeingClickedInside,
-		BeingClickedOutside,
-		Activated
+		BeingClicked,
+		Active
 	};
 
 	class UICanvasActor;

@@ -13,6 +13,7 @@ namespace physx
 	class PxScene;
 	class PxController;
 	class PxControllerManager;
+	class PxMaterial;
 }
 
 namespace GEE
@@ -149,6 +150,7 @@ namespace GEE
 			virtual void AddCollisionObjectToPxPipeline(GameScenePhysicsData& scenePhysicsData, CollisionObject&) = 0;
 
 			virtual physx::PxController* CreateController(GameScenePhysicsData& scenePhysicsData, const Transform& t) = 0;
+			virtual physx::PxMaterial* CreateMaterial(float staticFriction, float dynamicFriction, float restitutionCoeff) = 0;
 
 			virtual ~PhysicsEngineManager() = default;
 		protected:

@@ -56,7 +56,7 @@ namespace GEE
 			if (!Cooking)
 				std::cerr << "ERROR! Can't initialize cooking.\n";
 
-			DefaultMaterial = Physics->createMaterial(1.0f, 0.5f, 0.5f);
+			DefaultMaterial = Physics->createMaterial(1.0f, 0.5f, 1.0f);
 		}
 
 		PxShape* PhysicsEngine::CreateTriangleMeshShape(CollisionShape* colShape, Vec3f scale)
@@ -199,6 +199,19 @@ namespace GEE
 			return controller;
 		}
 
+		physx::PxMaterial* PhysicsEngine::CreateMaterial(float staticFriction, float dynamicFriction, float restitutionCoeff)
+		{
+			return Physics->createMaterial(staticFriction, dynamicFriction, restitutionCoeff);
+		}
+
+		PxFilterFlags testCCDFilterShader(PxFilterObjectAttributes attributes0, PxFilterData filterData0, PxFilterObjectAttributes attributes1, PxFilterData filterData1, PxPairFlags& pairFlags, const void* constantBlock, PxU32 constantBlockSize)
+		{
+			pairFlags = PxPairFlag::eSOLVE_CONTACT;
+			pairFlags |= PxPairFlag::eDETECT_DISCRETE_CONTACT;
+			pairFlags |= PxPairFlag::eDETECT_CCD_CONTACT;
+			return PxFilterFlags();
+		}
+
 		void PhysicsEngine::SetupScene(GameScenePhysicsData& scenePhysicsData)
 		{
 			if (!Physics)
@@ -208,7 +221,10 @@ namespace GEE
 
 			sceneDesc.gravity = PxVec3(0.0f, -9.81f, 0.0f);
 			sceneDesc.cpuDispatcher = Dispatcher;
-			sceneDesc.filterShader = PxDefaultSimulationFilterShader;
+			sceneDesc.filterShader = testCCDFilterShader;
+			//sceneDesc.filterShader = testCCD;
+			sceneDesc.flags |= PxSceneFlag::eENABLE_CCD;
+			sceneDesc.bounceThresholdVelocity = 0.5f;
 			scenePhysicsData.PhysXScene = Physics->createScene(sceneDesc);
 
 			PxPvdSceneClient* pvdClient = scenePhysicsData.PhysXScene->getScenePvdClient();
@@ -264,10 +280,16 @@ namespace GEE
 					if (!obj->ActorPtr || !obj->TransformPtr)
 						continue;
 
+					// Make sure that we do not change the flag which corresponds to updating px transforms
+					bool flagBefore = obj->TransformPtr->GetDirtyFlag(obj->TransformDirtyFlag, false);
+
 					PxTransform& pxTransform = obj->ActorPtr->getGlobalPose();
 					obj->TransformPtr->SetPositionWorld(toGlm(pxTransform.p));
 					if (!obj->IgnoreRotation)
 						obj->TransformPtr->SetRotationWorld(toGlm(pxTransform.q));
+
+					if (!flagBefore)
+						obj->TransformPtr->SetDirtyFlag(obj->TransformDirtyFlag, false);
 
 					//obj->TransformPtr->SetMatrix(t.Matrix);
 				}
@@ -302,6 +324,8 @@ namespace GEE
 						Transform* shapeTransform = (Transform*)shapes[j]->userData;
 						if (!shapeTransform)
 							continue;
+
+						std::cout << "Updating shape of scale" << shapeTransform->GetScale().x << "...\n";
 
 						switch (shapes[j]->getGeometryType())
 						{
@@ -348,8 +372,17 @@ namespace GEE
 					}
 
 					obj->ActorPtr->setGlobalPose(pxTransform);
+
+					//delete[] shapes;
 				}
 			}
+		}
+
+		void PhysicsEngine::ConnectToPVD()
+		{
+			PxPvdTransport* transport = PxDefaultPvdSocketTransportCreate("localhost", 5425, 1000);
+			Pvd->disconnect();
+			Pvd->connect(*transport, PxPvdInstrumentationFlag::eDEBUG);
 		}
 
 		PhysicsEngine::~PhysicsEngine()

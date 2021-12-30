@@ -216,8 +216,7 @@ namespace GEE
 
 		descBuilder.AddField("Render as billboard").GetTemplates().TickBox(RenderAsBillboard);
 
-		UICanvasFieldCategory& cat = descBuilder.GetCanvas().AddCategory("Mesh instances");
-		cat.GetExpandButton()->CreateComponent<TextConstantSizeComponent>("NrMeshInstancesText", Transform(), std::to_string(MeshInstances.size()), "", Alignment2D::Center());
+		UICanvasFieldCategory& cat = descBuilder.GetCanvas().AddCategory("Mesh instances (" + std::to_string(MeshInstances.size()) + ")");
 		cat.GetTemplates().ListSelection<UniquePtr<MeshInstance>>(MeshInstances.begin(), MeshInstances.end(), [this, descBuilder](UIAutomaticListActor& listActor, UniquePtr<MeshInstance>& meshInst)
 			{
 				std::string name = meshInst->GetMesh().GetLocalization().NodeName + " (" + meshInst->GetMesh().GetLocalization().SpecificName + ")";

@@ -8,7 +8,7 @@ namespace GEE
 	class LightProbeComponent : public Component
 	{
 	public:
-		LightProbeComponent(Actor&, Component* parentComp, const std::string& name, EngineBasicShape = EngineBasicShape::CUBE);
+		LightProbeComponent(Actor&, Component* parentComp, const std::string& name, EngineBasicShape = EngineBasicShape::Cube);
 		LightProbeComponent(LightProbeComponent&&);
 		EngineBasicShape GetShape() const;
 		Texture GetEnvironmentMap() const;
@@ -20,7 +20,7 @@ namespace GEE
 
 		void SetProbeIndex(unsigned int);
 
-		virtual	MaterialInstance LoadDebugMatInst(EditorButtonState) override;
+		virtual	MaterialInstance GetDebugMatInst(ButtonMaterialType) override;
 		virtual void GetEditorDescription(ComponentDescriptionBuilder) override;
 		template <typename Archive> void Save(Archive& archive) const
 		{

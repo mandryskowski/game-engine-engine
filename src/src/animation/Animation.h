@@ -39,7 +39,7 @@ namespace GEE
 		std::function<bool(float)> OnUpdateFunc;
 
 	public:
-		Interpolation(Time begin, Time end, InterpolationType type = InterpolationType::LINEAR, bool fadeAway = false, AnimBehaviour before = AnimBehaviour::STOP, AnimBehaviour after = AnimBehaviour::STOP);
+		Interpolation(Time begin, Time end, InterpolationType type = InterpolationType::Linear, bool fadeAway = false, AnimBehaviour before = AnimBehaviour::STOP, AnimBehaviour after = AnimBehaviour::STOP);
 		bool IsChanging();
 		float GetT();
 		Time GetDuration();
