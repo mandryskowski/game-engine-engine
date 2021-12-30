@@ -43,8 +43,9 @@ namespace GEE
 		std::string GetName() const;
 		Transform* GetTransform() const;
 		std::vector<Actor*> GetChildren();
-		GameScene& GetScene();
-		GameManager* GetGameHandle();
+		GameScene& GetScene() { return Scene; }
+		const GameScene& GetScene() const { return Scene; }
+		GameManager* GetGameHandle() { return GameHandle; }
 
 		/**
 		 * @brief Get a pointer to an Actor further in the hierarchy (kids, kids' kids, ...). Limit the use of this function at runtime, as dynamic_cast has a significant overhead.

@@ -79,6 +79,7 @@ namespace GEE
 	protected:
 		virtual void GetExternalButtons(std::vector<UIButtonActor*>&) const override;
 		std::string GetFullCanvasName() const;
+		virtual void PushCanvasViewChangeEvent() override;
 	private:
 
 		void CreateScrollBars();

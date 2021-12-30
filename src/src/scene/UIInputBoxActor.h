@@ -35,15 +35,15 @@ namespace GEE
 		virtual void OnUnhover() override;
 		virtual void OnDeactivation() override;
 	private:
-		void UpdateCaretModel();
-		void UpdateCaretModel(unsigned int changeCaretPos);
+		void UpdateCaretModel(bool refreshAnim = true);
+		void SetCaretPosAndUpdateModel(unsigned int changeCaretPos);
 
 		std::function<void()> ValueGetter;
 		TextComponent* ContentTextComp;
 		bool RetrieveContentEachFrame;
 
 		ModelComponent* CaretComponent;	//SetHide() every x seconds
-		unsigned int CaretPosition;
+		unsigned int CaretPosition, CaretDirtyFlag;
 		Interpolation CaretAnim;
 
 	};

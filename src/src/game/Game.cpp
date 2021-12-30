@@ -15,8 +15,8 @@ namespace GEE
 	bool PrimitiveDebugger::bDebugFramebuffers = false;
 	bool PrimitiveDebugger::bDebugHierarchy = false;
 
-	Controller* mouseController = nullptr;  //there are 2 similiar camera variables: ActiveCamera and global MouseController. the first one is basically the camera we use to see the world (view mat); the second one is updated by mouse controls.
-											//this is a shitty comment that doesnt fit since a few months ago but i dont want to erase it
+	Controller* mouseController = nullptr; 
+											
 	EventHolder* WindowEventProcessor::TargetHolder = nullptr;
 
 	Game::Game(const ShadingAlgorithm& shading, const GameSettings& settings) :
@@ -346,10 +346,15 @@ namespace GEE
 
 	void Game::HandleEvents()
 	{
-		while (SharedPtr<Event> polledEvent = EventHolderObj.PollEvent(*Window))
+		for (auto& scene : Scenes)
 		{
-			for (int i = 0; i < static_cast<int>(Scenes.size()); i++)
-				Scenes[i]->RootActor->HandleEventAll(*polledEvent);
+			while (SharedPtr<Event> polledEvent = EventHolderObj.PollEvent(*scene))
+			{
+				if (polledEvent->GetEventRoot() && &polledEvent->GetEventRoot()->GetScene() == scene.get())
+					polledEvent->GetEventRoot()->HandleEventAll(*polledEvent);
+				else
+					scene->RootActor->HandleEventAll(*polledEvent);
+			}
 		}
 	}
 
@@ -365,15 +370,23 @@ namespace GEE
 
 		Interpolations.erase(std::remove_if(Interpolations.begin(), Interpolations.end(), [deltaTime](UniquePtr<Interpolation>& interp) { return interp->UpdateT(deltaTime); }), Interpolations.end());
 	}
+
 	void Game::TerminateGame()
 	{
 		bGameTerminated = true;
 	}
+
 	void Game::SetMainScene(GameScene* scene)
 	{
 		MainScene = scene;
 		GameManager::DefaultScene = MainScene;
 	}
+
+	EventPusher Game::GetEventPusher(GameScene& scene)
+	{
+		return EventPusher(scene, EventHolderObj);
+	}
+
 	void Game::DeleteScene(GameScene& scene)
 	{
 		std::cout << "Deleting scene " << scene.GetName() << '\n';
@@ -397,7 +410,9 @@ namespace GEE
 		Vec2i windowSize(0);
 		glfwGetWindowSize(window, &windowSize.x, &windowSize.y);
 
-		TargetHolder->PushEvent(*window, CursorMoveEvent(EventType::MouseMoved, Vec2f(xpos, ypos), windowSize));
+		GameManager& gameHandle = *static_cast<GameManager*>(glfwGetWindowUserPointer(window));
+
+		TargetHolder->PushEventInActiveScene(gameHandle, CursorMoveEvent(EventType::MouseMoved, Vec2f(xpos, ypos), windowSize));
 
 		if (!mouseController || !TargetHolder)
 			return;
@@ -410,29 +425,33 @@ namespace GEE
 
 	void WindowEventProcessor::MouseButtonCallback(SystemWindow* window, int button, int action, int mods)
 	{
-		TargetHolder->PushEvent(*window, MouseButtonEvent((action == GLFW_PRESS) ? (EventType::MousePressed) : (EventType::MouseReleased), static_cast<MouseButton>(button), mods));
+		GameManager& gameHandle = *static_cast<GameManager*>(glfwGetWindowUserPointer(window));
+		TargetHolder->PushEventInActiveScene(gameHandle, MouseButtonEvent((action == GLFW_PRESS) ? (EventType::MousePressed) : (EventType::MouseReleased), static_cast<MouseButton>(button), mods));
 	}
 
 	void WindowEventProcessor::KeyPressedCallback(SystemWindow* window, int key, int scancode, int action, int mods)
 	{
-		TargetHolder->PushEvent(*window, KeyEvent((action == GLFW_PRESS) ? (EventType::KeyPressed) : ((action == GLFW_REPEAT) ? (EventType::KeyRepeated) : (EventType::KeyReleased)), static_cast<Key>(key), mods));
+		GameManager& gameHandle = *static_cast<GameManager*>(glfwGetWindowUserPointer(window));
+		TargetHolder->PushEventInActiveScene(gameHandle, KeyEvent((action == GLFW_PRESS) ? (EventType::KeyPressed) : ((action == GLFW_REPEAT) ? (EventType::KeyRepeated) : (EventType::KeyReleased)), static_cast<Key>(key), mods));
 	}
 
 	void WindowEventProcessor::CharEnteredCallback(SystemWindow* window, unsigned int codepoint)
 	{
-		TargetHolder->PushEvent(*window, CharEnteredEvent(EventType::CharacterEntered, codepoint));
+		GameManager& gameHandle = *static_cast<GameManager*>(glfwGetWindowUserPointer(window));
+		TargetHolder->PushEventInActiveScene(gameHandle, CharEnteredEvent(EventType::CharacterEntered, codepoint));
 	}
 
 	void WindowEventProcessor::ScrollCallback(SystemWindow* window, double offsetX, double offsetY)
 	{
+		GameManager& gameHandle = *static_cast<GameManager*>(glfwGetWindowUserPointer(window));
 		Vec2d cursorPos(0.0);
 		glfwGetCursorPos(window, &cursorPos.x, &cursorPos.y);
 
 		Vec2i windowSize(0);
 		glfwGetWindowSize(window, &windowSize.x, &windowSize.y);
 
-		TargetHolder->PushEvent(*window, MouseScrollEvent(EventType::MouseScrolled, Vec2f(static_cast<float>(-offsetX), static_cast<float>(offsetY))));
-		TargetHolder->PushEvent(*window, CursorMoveEvent(EventType::MouseMoved, static_cast<Vec2f>(cursorPos), windowSize));	//When we scroll (e.g. a canvas), it is possible that some buttons or other objects relying on cursor position might be scrolled (moved) as well, so we need to create a CursorMoveEvent.
+		TargetHolder->PushEventInActiveScene(gameHandle, MouseScrollEvent(EventType::MouseScrolled, Vec2f(static_cast<float>(-offsetX), static_cast<float>(offsetY))));
+		TargetHolder->PushEventInActiveScene(gameHandle, CursorMoveEvent(EventType::MouseMoved, static_cast<Vec2f>(cursorPos), windowSize));	//When we scroll (e.g. a canvas), it is possible that some buttons or other objects relying on cursor position might be scrolled (moved) as well, so we need to create a CursorMoveEvent.
 	}
 
 	void WindowEventProcessor::FileDropCallback(SystemWindow* window, int count, const char** paths)

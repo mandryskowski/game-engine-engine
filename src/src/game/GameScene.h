@@ -46,6 +46,7 @@ namespace GEE
 		Audio::GameSceneAudioData* GetAudioData();
 		GameSceneUIData* GetUIData();
 		GameManager* GetGameHandle();
+		EventPusher GetEventPusher();
 		/**
 		 * @brief Use the function to check if this is a valid scene. If it returns true, you should remove all references to the scene and avoid processing it at all. The root actor, its children and their components become invalid along with the scene.
 		 * @return a boolean indicating whether the GameScene is about to be destroyed
@@ -86,7 +87,7 @@ namespace GEE
 		HierarchyTemplate::HierarchyTreeT* FindHierarchyTree(const std::string& name,
 			HierarchyTemplate::HierarchyTreeT* treeToIgnore = nullptr);
 
-		void HandleEventAll(const Event&);
+		void HandleEventAll(Event&);
 		void Update(float deltaTime);
 
 		void BindActiveCamera(CameraComponent*);

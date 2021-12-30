@@ -115,6 +115,11 @@ namespace GEE
 		return GameHandle;
 	}
 
+	EventPusher GameScene::GetEventPusher()
+	{
+		return GameHandle->GetEventPusher(*this);
+	}
+
 	bool GameScene::IsBeingKilled() const
 	{
 		return KillingProcessFrame != 0;
@@ -178,12 +183,18 @@ namespace GEE
 		return nullptr;
 	}
 
-	void GameScene::HandleEventAll(const Event& ev)
+	void GameScene::HandleEventAll(Event& ev)
 	{
+		if (ev.GetEventRoot() && &ev.GetEventRoot()->GetScene() != this)
+			return;
+
 		if (UIData)
 			UIData->HandleEventAll(ev);
 
-		RootActor->HandleEventAll(ev);
+		if (ev.GetEventRoot())
+			ev.GetEventRoot()->HandleEventAll(ev);
+		else
+			RootActor->HandleEventAll(ev);
 	}
 
 	void GameScene::Update(float deltaTime)

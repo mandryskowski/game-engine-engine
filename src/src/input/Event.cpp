@@ -2,8 +2,9 @@
 
 namespace GEE
 {
-	Event::Event(EventType type) :
-		Type(type)
+	Event::Event(EventType type, Actor* eventRoot) :
+		Type(type),
+		EventRoot(eventRoot)
 	{
 	}
 
@@ -12,14 +13,15 @@ namespace GEE
 		return Type;
 	}
 
-	CursorMoveEvent::CursorMoveEvent(EventType type, Vec2f newPositionPx, Vec2u windowSizePx) :
-		CursorMoveEvent(type, Vec2f(newPositionPx.x, windowSizePx.y - newPositionPx.y) / static_cast<Vec2f>(windowSizePx) * 2.0f - 1.0f)
+	CursorMoveEvent::CursorMoveEvent(EventType type, Vec2f newPositionPx, Vec2u windowSizePx, Actor* eventRoot) :
+		CursorMoveEvent(type, Vec2f(newPositionPx.x, windowSizePx.y - newPositionPx.y) / static_cast<Vec2f>(windowSizePx) * 2.0f - 1.0f, eventRoot)
 	{
 
 	}
 
-	CursorMoveEvent::CursorMoveEvent(EventType type, Vec2f newPositionNDC) :
-		Event(type), NewPositionNDC(newPositionNDC)
+	CursorMoveEvent::CursorMoveEvent(EventType type, Vec2f newPositionNDC, Actor* eventRoot) :
+		Event(type, eventRoot),
+		NewPositionNDC(newPositionNDC)
 	{
 	}
 
@@ -28,7 +30,7 @@ namespace GEE
 		return NewPositionNDC;
 	}
 
-	MouseButtonEvent::MouseButtonEvent(EventType type, MouseButton button, int modifierBits) :
+	MouseButtonEvent::MouseButtonEvent(EventType type, MouseButton button, int modifierBits, Actor* eventRoot) :
 		Event(type), Button(button), ModifierBits(modifierBits)
 	{
 	}
@@ -43,7 +45,7 @@ namespace GEE
 		return ModifierBits;
 	}
 
-	MouseScrollEvent::MouseScrollEvent(EventType type, Vec2f offset) :
+	MouseScrollEvent::MouseScrollEvent(EventType type, Vec2f offset, Actor* eventRoot) :
 		Event(type),
 		Offset(offset)
 	{
@@ -54,8 +56,10 @@ namespace GEE
 		return Offset;
 	}
 
-	KeyEvent::KeyEvent(EventType type, Key keyCode, int modifierBits) :
-		Event(type), KeyCode(keyCode), ModifierBits(modifierBits)
+	KeyEvent::KeyEvent(EventType type, Key keyCode, int modifierBits, Actor* eventRoot) :
+		Event(type, eventRoot),
+		KeyCode(keyCode),
+		ModifierBits(modifierBits)
 	{
 	}
 
@@ -69,8 +73,8 @@ namespace GEE
 		return ModifierBits;
 	}
 
-	CharEnteredEvent::CharEnteredEvent(EventType type, unsigned int unicode) :
-		Event(type),
+	CharEnteredEvent::CharEnteredEvent(EventType type, unsigned int unicode, Actor* eventRoot) :
+		Event(type, eventRoot),
 		Unicode(unicode)
 	{
 	}
@@ -80,13 +84,13 @@ namespace GEE
 		return std::string(1, static_cast<unsigned char>(Unicode));
 	}
 
-	SharedPtr<Event> EventHolder::PollEvent(SystemWindow& window)
+	SharedPtr<Event> EventHolder::PollEvent(GameScene& scene)
 	{
-		if (Events[&window].empty())
+		if (Events[&scene].empty())
 			return nullptr;
 
-		auto polledEvent = Events[&window].front();
-		Events[&window].pop();
+		auto polledEvent = Events[&scene].front();
+		Events[&scene].pop();
 
 		return polledEvent;
 	}

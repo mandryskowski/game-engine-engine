@@ -45,6 +45,7 @@ namespace GEE
 	struct Animation;
 
 	class Event;
+	class EventPusher;
 	class GameScene;
 	class GameSceneRenderData;
 
@@ -277,6 +278,7 @@ namespace GEE
 
 		virtual ~GameManager() = default;
 	protected:
+		virtual EventPusher GetEventPusher(GameScene&) = 0;
 		virtual void DeleteScene(GameScene&) = 0;
 	private:
 		static GameManager* GamePtr;

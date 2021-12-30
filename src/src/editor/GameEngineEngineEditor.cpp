@@ -791,83 +791,100 @@ namespace GEE
 				return;
 			}
 
-			while (SharedPtr<Event> polledEvent = EventHolderObj.PollEvent(*Window))
+			for (auto& scene : Scenes)
 			{
-				LastRenderPopupRequest = nullptr;
-				if (polledEvent->GetType() == EventType::KeyPressed)
+				while (SharedPtr<Event> polledEvent = EventHolderObj.PollEvent(*scene))
 				{
-					KeyEvent& keyEventCast = dynamic_cast<KeyEvent&>(*polledEvent);
-					if (ActiveScene == EditorScene && keyEventCast.GetKeyCode() == Key::Escape)
+					LastRenderPopupRequest = nullptr;	// last popup request generated from this event; if it stays at nullptr, we know that no such request has been made.
+
+					if (polledEvent->GetType() == EventType::KeyPressed)
 					{
-						GenericUITemplates(*EditorScene).ConfirmationBox([=]() { SaveProject(); TerminateGame(); }, [=]() { TerminateGame(); }, "Save the project?");
-					}
-					else if (keyEventCast.GetKeyCode() == Key::Tab)
-					{
-						std::cout << "Pressed TAB!\n";
-						bool sceneChanged = false;
-						// If the editor is currently active, set the active scene to the main one and pass control to a game controller.
-						if (ActiveScene == EditorScene && GetMainScene())
+						KeyEvent& keyEventCast = dynamic_cast<KeyEvent&>(*polledEvent);
+						if (scene.get() == EditorScene)
 						{
-							if (!GameController)
+							switch (keyEventCast.GetKeyCode())
 							{
-								std::vector<Controller*> controllers;
-								GetMainScene()->GetRootActor()->GetAllActors(&controllers);
-								if (!controllers.empty())
-									GameController = controllers[0];
-							}
-							if (GameController)
-							{
-								ActiveScene = GetMainScene();
-								PassMouseControl(GameController);
-								sceneChanged = true;
+								case Key::Tab:
+								{
+									// If the editor is currently active, set the active scene to the main one and pass control to a game controller.
+									if (GetMainScene())
+									{
+										if (!GameController)
+										{
+											std::vector<Controller*> controllers;
+											GetMainScene()->GetRootActor()->GetAllActors(&controllers);
+											if (!controllers.empty())
+												GameController = controllers[0];
+										}
+										if (GameController)
+										{
+											ActiveScene = GetMainScene();
+											PassMouseControl(GameController);
+
+											for (auto& it : Scenes)	// Scene has changed; push this event to all scenes
+												it->RootActor->HandleEventAll(Event(EventType::FocusSwitched));
+										}
+									}
+
+									UpdateControllerCameraInfo();
+									break;
+								}
+
+								case Key::S:
+									if (keyEventCast.GetModifierBits() & KeyModifierFlags::Control)
+										SaveProject();
+									break;
+
+								case Key::Escape: GenericUITemplates(*EditorScene).ConfirmationBox([=]() { SaveProject(); TerminateGame(); }, [=]() { TerminateGame(); }, "Save the project?"); break;
+
+								case Key::F10: MaximizeViewport(); break;
+
+								case Key::F12:
+								{
+									if (!Profiler.HasBeenStarted())
+									{
+										Profiler.StartProfiling(GetProgramRuntime());
+										GEE_LOG("Started profiling.");
+									}
+									else
+									{
+										Profiler.StopAndSaveToFile(GetProgramRuntime());
+										GEE_LOG("Stopped profiling.");
+									}
+									break;
+								}
 							}
 						}
-						// Otherwise, set the active scene to the editor scene and release control.
-						else if (EditorScene)
+						else if (scene.get() == GetScene("GEE_Main"))
 						{
-							PassMouseControl(nullptr);
-							sceneChanged = true;
-							ActiveScene = EditorScene;
+							if (keyEventCast.GetKeyCode() == Key::Tab)
+							{
+								// Set the active scene to the editor scene and release control.
+								if (EditorScene)
+								{
+									PassMouseControl(nullptr);
+									ActiveScene = EditorScene;
+
+									for (auto& it : Scenes)
+										it->RootActor->HandleEventAll(Event(EventType::FocusSwitched));
+								}
+
+								UpdateControllerCameraInfo();
+							}
 						}
-
-						if (sceneChanged)
-							for (auto& it : Scenes)
-								it->RootActor->HandleEventAll(Event(EventType::FocusSwitched));
-
-						UpdateControllerCameraInfo();
 					}
-					else if (keyEventCast.GetKeyCode() == Key::F10)
-					{
-						MaximizeViewport();
-					}
-					else if (keyEventCast.GetKeyCode() == Key::F12)
-					{
-							if (!Profiler.HasBeenStarted())
-							{
-								Profiler.StartProfiling(GetProgramRuntime());
-								GEE_LOG("Started profiling.");
-							}
-							else
-							{
-								Profiler.StopAndSaveToFile(GetProgramRuntime());
-								GEE_LOG("Stopped profiling.");
-							}
-					}
-					else if (ActiveScene == EditorScene && keyEventCast.GetKeyCode() == Key::S && keyEventCast.GetModifierBits() & KeyModifierFlags::Control)
-						SaveProject();
-			}
 
-				if (ActiveScene)
-					ActiveScene->HandleEventAll(*polledEvent);
+					scene->HandleEventAll(*polledEvent);
 
-				if (LastRenderPopupRequest)
-					LastRenderPopupRequest();
+					if (LastRenderPopupRequest)
+						LastRenderPopupRequest();
+				}
 			}
 
 
 			for (auto& popup : OpenPopups)
 			{
-				while (SharedPtr<Event> polledEvent = EventHolderObj.PollEvent(popup.Window))
+				while (SharedPtr<Event> polledEvent = EventHolderObj.PollEvent(popup.Scene))
 				{
 					popup.Scene.get().HandleEventAll(*polledEvent);
 				}

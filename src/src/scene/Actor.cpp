@@ -77,16 +77,6 @@ namespace GEE
 		return children;
 	}
 
-	GameScene& Actor::GetScene()
-	{
-		return Scene;
-	}
-
-	GameManager* Actor::GetGameHandle()
-	{
-		return GameHandle;
-	}
-
 	bool Actor::IsBeingKilled() const
 	{
 		return KillingProcessFrame != 0;

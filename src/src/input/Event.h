@@ -6,6 +6,7 @@
 
 namespace GEE
 {
+	class GameManager;
 
 	enum class MouseButton
 	{
@@ -174,20 +175,30 @@ namespace GEE
 		MouseScrolled,
 		MousePressed,
 		MouseReleased,
-		FocusSwitched
+		FocusSwitched,
+
+		CanvasViewChanged
 	};
 
 
 	class Event
 	{
 	public:
-		Event(EventType);
+		/**
+		 * @param type - an enum indicating the type of this Event. Should match the class of this Event.
+		 * @param eventRoot - an optional Actor that will be the first to receive this Event, if it is in the active Scene. If it's not, or if eventRoot is nullptr, active scene's root will be used.
+		*/
+		Event(EventType type, Actor* eventRoot = nullptr);
 		EventType GetType() const;
+		Actor* GetEventRoot() { return EventRoot; }
+		const Actor* GetEventRoot() const { return EventRoot; }
 
 		virtual ~Event() {}
 	private:
 		EventType Type;
-
+		
+		// The actor which will be used as the first recipient of this Event, and which will pass this Event to its children. Can be used for optimisation.
+		Actor* EventRoot;
 	};
 
 
@@ -195,8 +206,8 @@ namespace GEE
 	class CursorMoveEvent : public Event
 	{
 	public:
-		CursorMoveEvent(EventType, Vec2f newPositionPx, Vec2u windowSizePx);
-		CursorMoveEvent(EventType, Vec2f newPositionNDC);
+		CursorMoveEvent(EventType, Vec2f newPositionPx, Vec2u windowSizePx, Actor* eventRoot = nullptr);
+		CursorMoveEvent(EventType, Vec2f newPositionNDC, Actor* eventRoot = nullptr);
 		Vec2f GetNewPositionNDC() const;
 
 	private:
@@ -206,7 +217,7 @@ namespace GEE
 	class MouseButtonEvent : public Event
 	{
 	public:
-		MouseButtonEvent(EventType, MouseButton, int modifierBits);
+		MouseButtonEvent(EventType, MouseButton, int modifierBits, Actor* eventRoot = nullptr);
 		MouseButton GetButton() const;
 		int GetModifierBits() const;
 
@@ -218,7 +229,7 @@ namespace GEE
 	class MouseScrollEvent : public Event
 	{
 	public:
-		MouseScrollEvent(EventType, Vec2f offset);
+		MouseScrollEvent(EventType, Vec2f offset, Actor* eventRoot = nullptr);
 		Vec2f GetOffset() const;
 
 	private:
@@ -228,7 +239,7 @@ namespace GEE
 	class KeyEvent : public Event
 	{
 	public:
-		KeyEvent(EventType, Key, int modifierFlags);
+		KeyEvent(EventType, Key, int modifierFlags, Actor* eventRoot = nullptr);
 		Key GetKeyCode() const;
 		int GetModifierBits() const;
 
@@ -240,27 +251,58 @@ namespace GEE
 	class CharEnteredEvent : public Event
 	{
 	public:
-		CharEnteredEvent(EventType, unsigned int unicode);
+		CharEnteredEvent(EventType, unsigned int unicode, Actor* eventRoot = nullptr);
 		std::string GetUTF8() const;
 
 	private:
 		unsigned int Unicode;
 	};
 
+	/**
+	 * @brief General class for holding all events in a Game.
+	*/
 	class EventHolder
 	{
 	public:
-		SharedPtr<Event> PollEvent(SystemWindow&);
+		SharedPtr<Event> PollEvent(GameScene&);
 		template <typename EventClass>
-		void PushEvent(SystemWindow&, const EventClass&);
+		void PushEvent(GameScene&, const EventClass& _event);
+		template <typename EventClass>
+		void PushEventInActiveScene(GameManager&, const EventClass& _event);
 
 	private:
-		std::map<SystemWindow*, std::queue<SharedPtr<Event>>> Events;
+		std::map<GameScene*, std::queue<SharedPtr<Event>>> Events;
+	};
+
+	/**
+	 * @brief Class for pushing Events by clients of the engine.
+	*/
+	class EventPusher
+	{
+	public:
+		template <typename EventClass>
+		void PushEvent(const EventClass& _event)
+		{
+			_EventHolder.PushEvent<EventClass>(Scene, _event);
+		}
+	private:
+		EventPusher(GameScene& scene, EventHolder& evHolder) : Scene(scene), _EventHolder(evHolder) {}
+
+		friend class Game;
+
+		GameScene& Scene;
+		EventHolder& _EventHolder;
 	};
 
 	template<typename EventClass>
-	inline void EventHolder::PushEvent(SystemWindow& window, const EventClass& event)
+	inline void EventHolder::PushEvent(GameScene& scene, const EventClass& _event)
 	{
-		Events[&window].push(MakeShared<EventClass>(event));
+		Events[&scene].push(MakeShared<EventClass>(_event));
+	}
+	template<typename EventClass>
+	inline void EventHolder::PushEventInActiveScene(GameManager& gameHandle, const EventClass& _event)
+	{
+		GEE_CORE_ASSERT(gameHandle.GetActiveScene());
+		PushEvent<EventClass>(*gameHandle.GetActiveScene(), _event);
 	}
 }

@@ -87,6 +87,8 @@ namespace GEE
 		if (clampView) ClampViewToElements();
 		if (ScrollBarX) UpdateScrollBarT<VecAxis::X>();
 		if (ScrollBarY) UpdateScrollBarT<VecAxis::Y>();
+
+		PushCanvasViewChangeEvent();
 	}
 
 	ModelComponent* UICanvasActor::GetCanvasBackground()
@@ -335,6 +337,11 @@ namespace GEE
 		if (CanvasParent)
 			return CanvasParent->GetFullCanvasName() + ">" + Name;
 		return Name;
+	}
+
+	void UICanvasActor::PushCanvasViewChangeEvent()
+	{
+		Scene.GetEventPusher().PushEvent(Event(EventType::CanvasViewChanged, this));
 	}
 
 	void UICanvasActor::CreateScrollBars()

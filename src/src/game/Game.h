@@ -82,6 +82,7 @@ namespace GEE
 	protected:
 		void TerminateGame();
 		void SetMainScene(GameScene*);
+		virtual EventPusher GetEventPusher(GameScene&) override;
 		virtual void DeleteScene(GameScene&) override;
 		std::vector<GameSceneRenderData*> GetSceneRenderDatas();
 
