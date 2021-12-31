@@ -33,6 +33,10 @@
 
 #include <rendering/Renderer.h>
 
+#ifdef GEE_OS_WINDOWS
+#include <Windows.h>
+#endif
+
 namespace GEE
 {
 	namespace Editor
@@ -687,6 +691,16 @@ namespace GEE
 				RenderEng.AddMaterial(titleMaterial);
 				titleMaterial->SetColor(hsvToRgb(Vec3f(300.0f, 1.0f, 1.0f)));
 
+				Interpolation titleColorInterpolation(0.0f, 10.0f, InterpolationType::Linear, false, AnimBehaviour::STOP, AnimBehaviour::REPEAT);
+				titleColorInterpolation.SetOnUpdateFunc([this, titleMaterial](float T) -> bool
+				{
+					titleMaterial->SetColor(hsvToRgb(Vec3f(T * 360.0f, 0.6f, 0.6f)));
+
+					if (!GetScene("GEE_Main_Menu"))
+						return true;
+					return false;
+				});
+
 				engineTitleTextComp.SetMaterialInst(MaterialInstance(titleMaterial));
 
 				TextComponent& engineSubtitleTextComp = engineTitleActor.CreateComponent<TextComponent>("EngineSubtitleTextComp", Transform(), "made by swetroniusz", "", Alignment2D::Center());
@@ -710,7 +724,7 @@ namespace GEE
 				ProjectName = "Project1";
 				projectNameInputBox.SetOnInputFunc([this](const std::string& input) { ProjectName = input; }, [this]() { return ProjectName; });
 
-				UIButtonActor& okButton = window.AddField("").CreateChild<UIButtonActor>("OKButton", "OK", [this, &window]() { window.MarkAsKilled(); LoadProject(ProjectFilepath + ProjectName + ".json"); });
+				UIButtonActor& okButton = window.AddField("").CreateChild<UIButtonActor>("OKButton", "OK", [this, &window]() { window.MarkAsKilled(); NewProject(ProjectFilepath + ProjectName + ".json"); });
 
 				window.RefreshFieldsList();
 				window.AutoClampView();
@@ -975,6 +989,36 @@ namespace GEE
 		void GameEngineEngineEditor::Render()
 		{
 			EditorRenderer(*this, *ViewportRenderCollection, *HUDRenderCollection, *Window).RenderPass(GetMainScene(), EditorScene, GetScene("GEE_Main_Menu"), GetScene("GEE_Mesh_Preview_Scene"));
+		}
+
+		void GameEngineEngineEditor::NewProject(const std::string& filepath)
+		{
+			LoadProject(filepath);
+
+			/*#ifdef GEE_OS_WINDOWS
+
+
+
+			// Open new .sln/.vcxproj
+			STARTUPINFO startupInfo;
+			PROCESS_INFORMATION processInformation;
+
+			ZeroMemory(&startupInfo, sizeof(startupInfo));
+			startupInfo.cb = sizeof(startupInfo);
+			ZeroMemory(&processInformation, sizeof(processInformation));
+
+			std::string path;// = "C:/Program Files/Microsoft Visual Studio/2022/Community/Common7/IDE/devenv.exe";
+
+			if (!path.empty())
+				CreateProcess(path.c_str(), "", nullptr, nullptr, false, 0, nullptr, nullptr, &startupInfo, &processInformation);
+			else
+				system("start devenv");
+			//CreateProcess("devenv.exe", "", nullptr, nullptr, false, 0, nullptr, nullptr, &startupInfo, &processInformation);
+
+			CloseHandle(processInformation.hProcess);
+			CloseHandle(processInformation.hThread);
+
+			#endif	//GEE_OS_WINDOWS*/
 		}
 
 		void GameEngineEngineEditor::LoadProject(const std::string& filepath)

@@ -102,6 +102,9 @@ namespace GEE
 
 		AudioEngine::~AudioEngine()
 		{
+			if (Device)
+				alcCloseDevice(Device);
+
 			if (Context)
 				alcDestroyContext(Context);
 		}

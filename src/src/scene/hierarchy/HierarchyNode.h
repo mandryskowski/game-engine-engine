@@ -60,6 +60,12 @@ namespace GEE
 
 			//UniquePtr<CompType> Instantiate(Component& parent, const std::string& name) const;
 			virtual	void InstantiateToComp(Component& comp) const override; 
+
+			/**
+			 * @brief Creates a new Component of type CompType. To add it to the specified actor, pass the returned value to AddComponent of one of the actor's existing components (or replace its root).
+			 * @param compActor: a reference to the Actor this generated component will belong to. Note that the generated component will NOT be added to this actor; do it manually.
+			 * @return a unique pointer to the generated component. You can use std::dynamic_pointer_cast to cast it to CompType.
+			*/
 			virtual UniquePtr<Component> GenerateComp(Actor& compActor) const override;
 
 			virtual HierarchyNodeBase* GetChild(unsigned int index) const;

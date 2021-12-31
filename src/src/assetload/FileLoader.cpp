@@ -781,20 +781,9 @@ namespace GEE
 
 	void EngineDataLoader::LoadComponentsFromHierarchyTree(Component& comp, const HierarchyTemplate::HierarchyTreeT& tree, const HierarchyTemplate::HierarchyNodeBase& node, SkeletonInfo& skeletonInfo, const std::vector<HierarchyTemplate::HierarchyNodeBase*>& selectedComponents, Material* overrideMaterial)
 	{
-		if (PrimitiveDebugger::bDebugMeshTrees)
-		{
-			const HierarchyTemplate::HierarchyNode<ModelComponent>* meshNodeCast = dynamic_cast<const HierarchyTemplate::HierarchyNode<ModelComponent>*>(&node);
-			if (meshNodeCast)
-			{
-				std::cout << comp.GetName() << ":::::" << meshNodeCast->GetCompT().GetMeshInstanceCount() << "\n";
-			}
-			else
-				std::cout << comp.GetName() << "\n";
-		}
-
 		node.InstantiateToComp(comp);
 
-		for (int i = 0; i < node.GetChildCount(); i++)	//WAZNE!!!! zmien meshNodeCast na node jak naprawisz childow
+		for (int i = 0; i < node.GetChildCount(); i++)
 		{
 			if (!selectedComponents.empty() && std::find(selectedComponents.begin(), selectedComponents.end(), node.GetChild(i)) == selectedComponents.end())
 				continue;

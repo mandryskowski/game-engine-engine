@@ -101,9 +101,6 @@ int main(int argc, char** argv)
 		deltaTime = glfwGetTime() - lastUpdateTime;
 		lastUpdateTime = glfwGetTime();
 
-		if (Material* found = editor.GetRenderEngineHandle()->FindMaterial("GEE_Engine_Title").get())	//dalem tu na chama; da sie to zrobic duzo ladniej ale musialbym zmodyfikowac klase Interpolator zeby obslugiwala lambdy ale mi sie nie chce
-			found->SetColor(hsvToRgb(Vec3f(glm::mod((float)glfwGetTime() * 10.0f, 360.0f), 0.6f, 0.6f)));
-
 		endGame = editor.GameLoopIteration(1.0f / 60.0f, deltaTime);
 	} while (!endGame);
 

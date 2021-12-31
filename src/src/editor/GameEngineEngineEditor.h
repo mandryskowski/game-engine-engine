@@ -71,6 +71,7 @@ namespace GEE
 			virtual void PassMouseControl(Controller* controller) override;
 
 			virtual void Render() override;
+			void NewProject(const std::string& filepath);
 			void LoadProject(const std::string& filepath);
 			void SaveProject();
 

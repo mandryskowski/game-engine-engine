@@ -1,16 +1,23 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.29123.88
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.32014.148
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "game-engine-engine", "game-engine-engine.vcxproj", "{9668F435-E15D-4455-A81B-25723122AB8F}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "example_8_ball_pool", "Projects\example_8_ball_pool\example_8_ball_pool\example_8_ball_pool.vcxproj", "{6DE9C00E-5D26-4FBB-9F72-D382252E5E8D}"
+	ProjectSection(ProjectDependencies) = postProject
+		{9668F435-E15D-4455-A81B-25723122AB8F} = {9668F435-E15D-4455-A81B-25723122AB8F}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
 		Debug|x86 = Debug|x86
+		LibraryDebug|x64 = LibraryDebug|x64
+		LibraryDebug|x86 = LibraryDebug|x86
+		LibraryRelease|x64 = LibraryRelease|x64
+		LibraryRelease|x86 = LibraryRelease|x86
 		Release|x64 = Release|x64
 		Release|x86 = Release|x86
 	EndGlobalSection
@@ -19,6 +26,14 @@ Global
 		{9668F435-E15D-4455-A81B-25723122AB8F}.Debug|x64.Build.0 = Debug|x64
 		{9668F435-E15D-4455-A81B-25723122AB8F}.Debug|x86.ActiveCfg = Debug|Win32
 		{9668F435-E15D-4455-A81B-25723122AB8F}.Debug|x86.Build.0 = Debug|Win32
+		{9668F435-E15D-4455-A81B-25723122AB8F}.LibraryDebug|x64.ActiveCfg = LibraryDebug|x64
+		{9668F435-E15D-4455-A81B-25723122AB8F}.LibraryDebug|x64.Build.0 = LibraryDebug|x64
+		{9668F435-E15D-4455-A81B-25723122AB8F}.LibraryDebug|x86.ActiveCfg = LibraryDebug|Win32
+		{9668F435-E15D-4455-A81B-25723122AB8F}.LibraryDebug|x86.Build.0 = LibraryDebug|Win32
+		{9668F435-E15D-4455-A81B-25723122AB8F}.LibraryRelease|x64.ActiveCfg = LibraryRelease|x64
+		{9668F435-E15D-4455-A81B-25723122AB8F}.LibraryRelease|x64.Build.0 = LibraryRelease|x64
+		{9668F435-E15D-4455-A81B-25723122AB8F}.LibraryRelease|x86.ActiveCfg = LibraryRelease|Win32
+		{9668F435-E15D-4455-A81B-25723122AB8F}.LibraryRelease|x86.Build.0 = LibraryRelease|Win32
 		{9668F435-E15D-4455-A81B-25723122AB8F}.Release|x64.ActiveCfg = Release|x64
 		{9668F435-E15D-4455-A81B-25723122AB8F}.Release|x64.Build.0 = Release|x64
 		{9668F435-E15D-4455-A81B-25723122AB8F}.Release|x86.ActiveCfg = Release|Win32
@@ -27,6 +42,14 @@ Global
 		{6DE9C00E-5D26-4FBB-9F72-D382252E5E8D}.Debug|x64.Build.0 = Debug|x64
 		{6DE9C00E-5D26-4FBB-9F72-D382252E5E8D}.Debug|x86.ActiveCfg = Debug|Win32
 		{6DE9C00E-5D26-4FBB-9F72-D382252E5E8D}.Debug|x86.Build.0 = Debug|Win32
+		{6DE9C00E-5D26-4FBB-9F72-D382252E5E8D}.LibraryDebug|x64.ActiveCfg = LibraryDebug|x64
+		{6DE9C00E-5D26-4FBB-9F72-D382252E5E8D}.LibraryDebug|x64.Build.0 = LibraryDebug|x64
+		{6DE9C00E-5D26-4FBB-9F72-D382252E5E8D}.LibraryDebug|x86.ActiveCfg = LibraryDebug|Win32
+		{6DE9C00E-5D26-4FBB-9F72-D382252E5E8D}.LibraryDebug|x86.Build.0 = LibraryDebug|Win32
+		{6DE9C00E-5D26-4FBB-9F72-D382252E5E8D}.LibraryRelease|x64.ActiveCfg = LibraryRelease|x64
+		{6DE9C00E-5D26-4FBB-9F72-D382252E5E8D}.LibraryRelease|x64.Build.0 = LibraryRelease|x64
+		{6DE9C00E-5D26-4FBB-9F72-D382252E5E8D}.LibraryRelease|x86.ActiveCfg = LibraryRelease|Win32
+		{6DE9C00E-5D26-4FBB-9F72-D382252E5E8D}.LibraryRelease|x86.Build.0 = LibraryRelease|Win32
 		{6DE9C00E-5D26-4FBB-9F72-D382252E5E8D}.Release|x64.ActiveCfg = Release|x64
 		{6DE9C00E-5D26-4FBB-9F72-D382252E5E8D}.Release|x64.Build.0 = Release|x64
 		{6DE9C00E-5D26-4FBB-9F72-D382252E5E8D}.Release|x86.ActiveCfg = Release|Win32

@@ -520,7 +520,16 @@ namespace GEE
 
 				// Refresh
 				SelectActor(GetSelectedActor(), editorScene);
+			});
+
+			instantiateButton.SetPopupCreationFunc([](PopupDescription desc)
+			{
+				desc.AddSubmenu("Instantiate to Actors", [](PopupDescription submenuDesc)
+				{
+					submenuDesc.AddOption("Nodes as roots", []() {});
+					submenuDesc.AddOption("Nodes as roots' children", []() {});
 				});
+			});
 
 			list.CreateChild<UIButtonActor>("SelectAllButton", "Select all", [this, buttons]() {
 				for (auto it : buttons)

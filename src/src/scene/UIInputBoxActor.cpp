@@ -111,7 +111,7 @@ namespace GEE
 		if (!ContentTextComp)
 			return;
 
-		SetOnDeactivationFunc([=]() { inputFunc(ContentTextComp->GetContent()); if (ValueGetter) ValueGetter();/*valuegetter*/  UpdateCaretModel(); });
+		SetOnDeactivationFunc([=]() { inputFunc(ContentTextComp->GetContent()); if (ValueGetter) ValueGetter();/*valuegetter*/ });
 
 		if (valueGetter)
 		{
@@ -217,7 +217,7 @@ namespace GEE
 		{
 			const CharEnteredEvent& charEv = dynamic_cast<const CharEnteredEvent&>(ev);
 			ContentTextComp->SetContent(content.insert(CaretPosition, charEv.GetUTF8()));
-			SetCaretPosAndUpdateModel(CaretPosition++);
+			SetCaretPosAndUpdateModel(++CaretPosition);
 		}
 		else if (ev.GetType() == EventType::KeyPressed || ev.GetType() == EventType::KeyRepeated)
 		{
