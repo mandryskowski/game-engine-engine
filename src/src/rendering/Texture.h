@@ -112,6 +112,7 @@ namespace GEE
 			{
 				static Texture GenerateEmpty(GLenum texType, Format internalFormat);
 				static GLenum GetChannelTypeEnum();
+				static Format AssertCorrectChannelsForInternalFormat(Format internalFormat, unsigned int nrChannels);
 			};
 		};
 		static Texture FromGeneratedGlId(const Vec2u& size, GLenum type, unsigned int glID, Format internalFormat);

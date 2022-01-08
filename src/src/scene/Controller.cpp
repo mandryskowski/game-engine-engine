@@ -12,6 +12,7 @@
 
 #include <scene/hierarchy/HierarchyTree.h>
 #include <scene/hierarchy/HierarchyNode.h>
+#include <scene/hierarchy/HierarchyNodeInstantiation.h>
 
 #include <input/Event.h>
 #include <UI/UICanvasActor.h>
@@ -302,7 +303,7 @@ namespace GEE
 		CueDistanceAnim(0.0f, 1.0f),
 		PowerInversed(false)
 	{
-		CueDistanceAnim.SetOnUpdateFunc([](float T) { return T == 1.0f;  });
+		CueDistanceAnim.SetOnUpdateFunc([](float CompType) { return CompType == 1.0f;  });
 	}
 	void CueController::OnStart()
 	{
@@ -491,7 +492,7 @@ namespace GEE
 					std::transform(stringName.begin(), stringName.end(), stringName.begin(), [](unsigned char ch) { return std::tolower(ch); });
 					if (stringName.find("ball") != std::string::npos)
 					{
-						auto rigidDynamicPtr = (stringName.find("white") == std::string::npos) ? (poolBallsActor->AddComponent(std::move(child->GenerateComp(*poolBallsActor))).GetCollisionObj()->ActorPtr->is<physx::PxRigidDynamic>()) : (WhiteBallActor->GetRoot()->GetCollisionObj()->ActorPtr->is<physx::PxRigidDynamic>());
+						auto rigidDynamicPtr = (stringName.find("white") == std::string::npos) ? (poolBallsActor->AddComponent(std::move(child->GenerateComp(MakeShared<HierarchyTemplate::NodeInstantiation::Data>(*tableHierarchyTree), *poolBallsActor))).GetCollisionObj()->ActorPtr->is<physx::PxRigidDynamic>()) : (WhiteBallActor->GetRoot()->GetCollisionObj()->ActorPtr->is<physx::PxRigidDynamic>());
 
 						// Set ball material
 						physx::PxShape* shapePtr;

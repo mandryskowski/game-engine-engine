@@ -470,5 +470,8 @@
     <ClInclude Include="src\src\physics\PhysicsObjects.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\src\scene\hierarchy\HierarchyNodeInstantiation.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

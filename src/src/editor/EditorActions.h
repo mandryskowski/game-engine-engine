@@ -120,7 +120,7 @@ namespace GEE
 			if (obj.IsBeingKilled())
 				return;
 
-			auto& element = listParent.CreateChild<UIActivableButtonActor>(obj.GetName(), [this, &obj, &editorScene]() {this->Select(&obj, editorScene); });//*this, obj, &EditorManager::Select<T>));
+			auto& element = listParent.CreateChild<UIActivableButtonActor>(obj.GetName(), [this, &obj, &editorScene]() {this->Select(&obj, editorScene); });//*this, obj, &EditorManager::Select<CompType>));
 			element.SetActivateOnClicking(false);
 			element.SetDeactivateOnClickingAnywhere(false);
 			element.SetDeactivateOnClickingAgain(false);

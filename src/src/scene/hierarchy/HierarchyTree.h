@@ -69,12 +69,22 @@ namespace GEE
 
 			const HierarchyLocalization& GetName() const;
 			HierarchyNodeBase& GetRoot();
-			BoneMapping& GetBoneMapping() const;
+			BoneMapping* GetBoneMapping() const;
 			Animation& GetAnimation(unsigned int index);
 			unsigned int GetAnimationCount();
 			Actor& GetTempActor();
+			GameScene& GetScene() { return Scene; }
+			const GameScene& GetScene() const { return Scene; }
+			bool ContainsBones() const { return TreeBoneMapping != nullptr; }
 
 			void SetRoot(UniquePtr<HierarchyNodeBase> root);
+
+			/**
+			 * @brief Destroys (clears) the current BoneMapping and allows to create a new one.
+			 * @param createNewMapping: if true, a new BoneMapping is created for this tree.
+			*/
+			
+			void ResetBoneMapping(bool createNewMapping = true);
 
 			void AddAnimation(const Animation& anim);
 			Mesh* FindMesh(const std::string& nodeName, const std::string& specificMeshName = std::string());

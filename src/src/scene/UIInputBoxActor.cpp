@@ -35,7 +35,7 @@ namespace GEE
 		CaretComponent->OverrideInstancesMaterial(caretMaterial);
 		CaretComponent->SetHide(true);
 
-		CaretAnim.SetOnUpdateFunc([this](float T) { return T >= 1.0f; });
+		CaretAnim.SetOnUpdateFunc([this](float CompType) { return CompType >= 1.0f; });
 
 		bDeactivateOnClickingAgain = false;
 		bDeactivateOnPressingEnter = true;
@@ -65,7 +65,7 @@ namespace GEE
 		CaretDirtyFlag(GetTransform()->AddDirtyFlag()),
 		CaretAnim(inputBox.CaretAnim)
 	{
-		CaretAnim.SetOnUpdateFunc([](float T) { return T >= 1.0f;  });
+		CaretAnim.SetOnUpdateFunc([](float CompType) { return CompType >= 1.0f;  });
 	}
 
 	/*UIInputBoxActor::UIInputBoxActor(UIInputBoxActor&& inputBox):

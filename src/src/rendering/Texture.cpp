@@ -208,7 +208,7 @@ namespace GEE
 	template<typename PixelChannelType>
 	Texture Texture::Loader<PixelChannelType>::FromBuffer2D(const Vec2u& size, const void* buffer, Format internalFormat, int nrChannels)
 	{
-		return FromBuffer2D(size, buffer, internalFormat, Format::FromNrChannels(nrChannels));
+		return FromBuffer2D(size, buffer, Impl::AssertCorrectChannelsForInternalFormat(internalFormat, nrChannels), Format::FromNrChannels(nrChannels));
 	}
 
 	template<typename PixelChannelType>
@@ -295,6 +295,20 @@ namespace GEE
 	}
 
 	template <> GLenum Texture::Loader<unsigned char>::Impl::GetChannelTypeEnum() { return GL_UNSIGNED_BYTE; }
+
+	template<typename PixelChannelType>
+	Texture::Format Texture::Loader<PixelChannelType>::Impl::AssertCorrectChannelsForInternalFormat(Format internalFormat, unsigned int nrChannels)
+	{
+		switch (internalFormat.GetEnumGL())
+		{
+			case GL_RGBA: if (nrChannels < 4) return Format::FromNrChannels(nrChannels); break;
+			case GL_RGB: if (nrChannels < 3) return Format::FromNrChannels(nrChannels); break;
+			case GL_RG: if (nrChannels < 2) return Format::FromNrChannels(nrChannels); break;
+		}
+
+		return internalFormat;
+
+	}
 	template <> GLenum Texture::Loader<unsigned int>::Impl::GetChannelTypeEnum() { return GL_UNSIGNED_INT; }
 	template <> GLenum Texture::Loader<float>::Impl::GetChannelTypeEnum() { return GL_FLOAT; }
 	template <> GLenum Texture::Loader<Texture::LoaderArtificialType::Uint24_8>::Impl::GetChannelTypeEnum() { return GL_UNSIGNED_INT_24_8; }

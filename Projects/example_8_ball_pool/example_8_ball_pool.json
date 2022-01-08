@@ -4232,7 +4232,7 @@
                                                             "data": {
                                                                 "MeshTreePath": "ENG_QUAD",
                                                                 "MeshNodeName": "Quad",
-                                                                "MeshSpecificName": "Quad_NoShadow",
+                                                                "MeshSpecificName": "Quad",
                                                                 "MaterialInst": {
                                                                     "ptr_wrapper": {
                                                                         "id": 2147483676,

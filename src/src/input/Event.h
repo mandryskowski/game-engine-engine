@@ -66,7 +66,7 @@ namespace GEE
 		Q = GLFW_KEY_Q,
 		R = GLFW_KEY_R,
 		S = GLFW_KEY_S,
-		T = GLFW_KEY_T,
+		CompType = GLFW_KEY_T,
 		U = GLFW_KEY_U,
 		V = GLFW_KEY_V,
 		W = GLFW_KEY_W,

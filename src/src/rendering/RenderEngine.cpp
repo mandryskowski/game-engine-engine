@@ -104,7 +104,6 @@ namespace GEE
 	void RenderEngine::GenerateEngineObjects()
 	{
 		//Add the engine objects to the tree collection. This way models loaded from the level file can simply use the internal engine meshes for stuff like particles
-		//Preferably, the engine objects should be added to the tree collection first, so searching for them takes less time as they'll possibly be used often.
 
 		GameScene& engineObjScene = GameHandle->CreateScene("GEE_Engine_Objects");
 
@@ -113,9 +112,8 @@ namespace GEE
 		BasicShapes[EngineBasicShape::Sphere] = EngineDataLoader::LoadHierarchyTree(engineObjScene, "Assets/EngineObjects/sphere.obj", &engineObjScene.CreateHierarchyTree("ENG_SPHERE"))->FindMesh("Sphere");
 		BasicShapes[EngineBasicShape::Cone] = EngineDataLoader::LoadHierarchyTree(engineObjScene, "Assets/EngineObjects/cone.obj", &engineObjScene.CreateHierarchyTree("ENG_CONE"))->FindMesh("Cone");
 
-		//GameHandle->FindHierarchyTree("ENG_QUAD")->FindMesh("Quad")->Localization.HierarchyTreePath = "ENG_QUAD";
-		GameHandle->FindHierarchyTree("ENG_QUAD")->FindMesh("Quad")->Localization.SpecificName = "Quad_NoShadow";
-		//GameHandle->FindHierarchyTree("ENG_QUAD")->FindMesh("Quad")->Localization.HierarchyTreePath = "ENG_QUAD";
+		for (auto it : BasicShapes)
+			GEE_CORE_ASSERT(it.second != nullptr, "One of the basic shapes could not be located on the disk. Engine files have likely been corrupted.");
 	}
 
 	void RenderEngine::LoadInternalShaders()

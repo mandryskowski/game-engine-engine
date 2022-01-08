@@ -18,6 +18,7 @@
 #include <assetload/FileLoader.h>
 
 #include <scene/hierarchy/HierarchyTree.h>
+#include <scene/hierarchy/HierarchyNodeInstantiation.h> 
 #include <scene/hierarchy/HierarchyNode.h>
 
 #include <scene/ModelComponent.h>
@@ -452,7 +453,7 @@ namespace GEE
 				element.GetRoot()->GetComponent<TextConstantSizeComponent>("ButtonText")->Unstretch();
 				element.SetPopupCreationFunc([&](PopupDescription desc)
 				{
-					desc.AddOption("Instantiate to selected", [this, &node, &editorScene]()
+					desc.AddOption("Instantiate to selected", [this, &node, &editorScene, &tree]()
 					{
 						if (!GetContextComp())
 							return;
@@ -461,12 +462,12 @@ namespace GEE
 						Component* createdComp = nullptr;
 						if (GetContextComp() == actor.GetRoot())
 						{
-							actor.ReplaceRoot(node.GenerateComp(actor));
+							actor.ReplaceRoot(node.GenerateComp(MakeShared<HierarchyTemplate::NodeInstantiation::Data>(tree, true), actor));
 							createdComp = actor.GetRoot();
 						}
 						else
 						{
-							createdComp = &GetContextComp()->ParentComponent->AddComponent(node.GenerateComp(actor));
+							createdComp = &GetContextComp()->ParentComponent->AddComponent(node.GenerateComp(MakeShared<HierarchyTemplate::NodeInstantiation::Data>(tree, true), actor));
 							GetContextComp()->MarkAsKilled();
 						}
 

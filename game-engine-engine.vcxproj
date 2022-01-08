@@ -415,6 +415,7 @@
     <ClInclude Include="src\src\scene\Controller.h" />
     <ClInclude Include="src\src\scene\GunActor.h" />
     <ClInclude Include="src\src\scene\hierarchy\HierarchyNode.h" />
+    <ClInclude Include="src\src\scene\hierarchy\HierarchyNodeInstantiation.h" />
     <ClInclude Include="src\src\scene\hierarchy\HierarchyTree.h" />
     <ClInclude Include="src\src\scene\LightComponent.h" />
     <ClInclude Include="src\src\scene\LightProbeComponent.h" />

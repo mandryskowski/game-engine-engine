@@ -260,8 +260,6 @@ namespace GEE
 		shaderStream << shaderFile.rdbuf();
 
 		std::string shaderSourceStr = additionalData + shaderStream.str();
-		if (shaderPath == "Shaders/depth.fs")
-			std::cout << shaderSourceStr << '\n';	
 		if (shaderSourcePtr)
 			*shaderSourcePtr = shaderSourceStr;
 

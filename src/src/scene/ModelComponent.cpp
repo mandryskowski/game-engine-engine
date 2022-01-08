@@ -27,23 +27,21 @@ namespace GEE
 		RenderableComponent(actor, parentComp, name, transform),
 		UIComponent(actor, parentComp),
 		LastFrameMVP(Mat4f(1.0f)),
-		SkelInfo(info),
+		SkelInfo(nullptr),
 		RenderAsBillboard(false)
 	{
-		if (SkelInfo)
-			SkelInfo->AddModelCompRef(*this);
+		SetSkeletonInfo(info);
 	}
 
 	ModelComponent::ModelComponent(ModelComponent&& model) :
 		RenderableComponent(std::move(model)),
 		UIComponent(std::move(model)),
 		MeshInstances(std::move(model.MeshInstances)),
-		SkelInfo(model.SkelInfo),
+		SkelInfo(nullptr),
 		RenderAsBillboard(model.RenderAsBillboard),
 		LastFrameMVP(model.LastFrameMVP)
 	{
-		if (SkelInfo)
-			SkelInfo->AddModelCompRef(*this);
+		SetSkeletonInfo(model.SkelInfo);
 	}
 
 	ModelComponent& ModelComponent::operator=(const ModelComponent& compT)

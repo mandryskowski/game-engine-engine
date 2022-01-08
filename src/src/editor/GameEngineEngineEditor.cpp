@@ -692,9 +692,9 @@ namespace GEE
 				titleMaterial->SetColor(hsvToRgb(Vec3f(300.0f, 1.0f, 1.0f)));
 
 				Interpolation titleColorInterpolation(0.0f, 10.0f, InterpolationType::Linear, false, AnimBehaviour::STOP, AnimBehaviour::REPEAT);
-				titleColorInterpolation.SetOnUpdateFunc([this, titleMaterial](float T) -> bool
+				titleColorInterpolation.SetOnUpdateFunc([this, titleMaterial](float CompType) -> bool
 				{
-					titleMaterial->SetColor(hsvToRgb(Vec3f(T * 360.0f, 0.6f, 0.6f)));
+					titleMaterial->SetColor(hsvToRgb(Vec3f(CompType * 360.0f, 0.6f, 0.6f)));
 
 					if (!GetScene("GEE_Main_Menu"))
 						return true;

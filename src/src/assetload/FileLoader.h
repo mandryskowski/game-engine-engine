@@ -32,6 +32,7 @@ namespace GEE
 	};
 
 
+	// This code is absolutely horrendous and should be rewritten; some of it is redundant.
 	class EngineDataLoader
 	{
 	public:
@@ -64,7 +65,7 @@ namespace GEE
 
 		static void LoadCustomHierarchyNode(GameScene&, std::stringstream&, HierarchyTemplate::HierarchyNodeBase* parent = nullptr, HierarchyTemplate::HierarchyTreeT* treeToEdit = nullptr);
 
-		static void LoadHierarchyNodeFromAi(GameManager&, const aiScene*, const std::string& directory, MaterialLoadingData* matLoadingData, const HTreeObjectLoc& treeObjLoc, HierarchyTemplate::HierarchyNodeBase& hierarchyNode, aiNode* node, BoneMapping& boneMapping, aiBone* bone = nullptr, const Transform& parentTransform = Transform(), bool keepVertsData = false);
+		static void LoadHierarchyNodeFromAi(GameManager&, const aiScene*, const std::string& directory, MaterialLoadingData* matLoadingData, const HTreeObjectLoc& treeObjLoc, HierarchyTemplate::HierarchyNodeBase& hierarchyNode, aiNode* node, BoneMapping* boneMapping = nullptr, aiBone* bone = nullptr, const Transform& parentTransform = Transform(), bool keepVertsData = false);
 
 		static void LoadComponentsFromHierarchyTree(Component& comp, const HierarchyTemplate::HierarchyTreeT&, const HierarchyTemplate::HierarchyNodeBase&, SkeletonInfo& skeletonInfo, const std::vector<HierarchyTemplate::HierarchyNodeBase*>& selectedComponents = {}, Material* overrideMaterial = nullptr);
 

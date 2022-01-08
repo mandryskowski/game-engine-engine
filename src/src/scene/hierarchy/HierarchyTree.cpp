@@ -60,11 +60,9 @@ namespace GEE
 		return *Root;
 	}
 
-	BoneMapping& HierarchyTreeT::GetBoneMapping() const
+	BoneMapping* HierarchyTreeT::GetBoneMapping() const
 	{
-		if (!TreeBoneMapping)
-			TreeBoneMapping = MakeUnique<BoneMapping>();
-		return *TreeBoneMapping;
+		return TreeBoneMapping.get();
 	}
 
 	Animation& HierarchyTreeT::GetAnimation(unsigned int index)
@@ -85,6 +83,11 @@ namespace GEE
 	void HierarchyTreeT::SetRoot(UniquePtr<HierarchyNodeBase> root)
 	{
 		Root = std::move(root);
+	}
+
+	void HierarchyTemplate::HierarchyTreeT::ResetBoneMapping(bool createNewMapping)
+	{
+		TreeBoneMapping = (createNewMapping) ? (MakeUnique<BoneMapping>()) : (nullptr);
 	}
 
 	void HierarchyTreeT::AddAnimation(const Animation& anim)

@@ -1,4 +1,5 @@
 #include <scene/hierarchy/HierarchyNode.h>
+#include <scene/hierarchy/HierarchyNodeInstantiation.h>
 #include <game/GameScene.h>
 #include <scene/Actor.h>
 #include <scene/LightComponent.h>
@@ -41,7 +42,7 @@ namespace GEE
 	}*/
 
 	template<typename CompType>
-	void HierarchyTemplate::HierarchyNode<CompType>::InstantiateToComp(Component& comp) const
+	void HierarchyTemplate::HierarchyNode<CompType>::InstantiateToComp(SharedPtr<NodeInstantiation::Data> instData, Component& comp) const
 	{
 		CompType* compCast = dynamic_cast<CompType*>(&comp);
 
@@ -50,15 +51,14 @@ namespace GEE
 		else
 			comp = CompT;
 
-		if (CollisionObj)
-			comp.SetCollisionObject(MakeUnique<Physics::CollisionObject>(*CollisionObj));
+		NodeInstantiation::Impl<CompType>::InstantiateToComp(instData, *this, *compCast);
 	}
 
 	template<typename CompType>
-	UniquePtr<Component> HierarchyTemplate::HierarchyNode<CompType>::GenerateComp(Actor& compActor) const
+	UniquePtr<Component> HierarchyTemplate::HierarchyNode<CompType>::GenerateComp(SharedPtr<NodeInstantiation::Data> instData, Actor& compActor) const
 	{
-		UniquePtr<CompType> comp = MakeUnique<CompType>(compActor, nullptr, "generated");
-		InstantiateToComp(*comp);
+		UniquePtr<CompType> comp = NodeInstantiation::Impl<CompType>::ConstructComp(compActor);
+		InstantiateToComp(instData, *comp);
 
 		return static_unique_pointer_cast<Component, CompType>(std::move(comp));
 	}
@@ -104,6 +104,12 @@ namespace GEE
 
 	template<typename CompType>
 	Physics::CollisionObject* HierarchyTemplate::HierarchyNode<CompType>::GetCollisionObject()
+	{
+		return CollisionObj.get();
+	}
+
+	template<typename CompType>
+	const Physics::CollisionObject* HierarchyTemplate::HierarchyNode<CompType>::GetCollisionObject() const
 	{
 		return CollisionObj.get();
 	}

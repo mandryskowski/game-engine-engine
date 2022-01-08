@@ -45,7 +45,7 @@ namespace GEE
 			AddMessageToSlot(logWindow);
 
 			Interpolation interp(0.0f, 2.0f, InterpolationType::Linear);
-			interp.SetOnUpdateFunc([&](float T) { if (T == 1.0f) KillMessage(logWindow); return T == 1.0f; });
+			interp.SetOnUpdateFunc([&](float CompType) { if (CompType == 1.0f) KillMessage(logWindow); return CompType == 1.0f; });
 			EditorHandle.GetGameHandle()->AddInterpolation(interp);
 
 
