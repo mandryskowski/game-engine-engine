@@ -59,6 +59,7 @@ namespace GEE
 			SettingLevel AALevel;
 			SettingLevel POMLevel;
 			SettingLevel ShadowLevel;
+			unsigned int Max2DShadows, Max3DShadows;
 			ToneMappingType TMType;
 
 			float MonitorGamma;

@@ -14,6 +14,7 @@ namespace GEE
 		unsigned int NextLightProbeNr;
 
 		LightProbeTextureArrays();
+		~LightProbeTextureArrays();
 	};
 
 	/*class LightProbe		//DEPRECATED

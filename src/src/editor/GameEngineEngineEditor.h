@@ -38,6 +38,8 @@ namespace GEE
 
 			virtual GameManager* GetGameHandle() override;
 			virtual std::vector<GameScene*> GetScenes() override;
+			GameScene* GetEditorScene() { return EditorScene; }
+
 			GameSettings* GetEditorSettings() override;
 			virtual AtlasMaterial* GetDefaultEditorMaterial(EditorDefaultMaterial) override;
 			virtual EditorActions& GetActions() override;
@@ -45,6 +47,7 @@ namespace GEE
 			virtual bool GetViewportMaximized() const override { return bViewportMaximized; }
 			virtual bool GetDebugRenderComponents() const override { return bDebugRenderComponents; }
 			virtual bool GetDebugRenderPhysicsMeshes() const override { return bDebugRenderPhysicsMeshes; }
+			Profiling& GetProfilerRef() { return Profiler; }
 
 			virtual void RequestPopupMenu(const Vec2f& posWindowSpace, SystemWindow& relativeWindow, std::function<void(PopupDescription)> popupCreation) override;
 
@@ -60,12 +63,12 @@ namespace GEE
 			virtual void UpdateGameSettings() override;
 			virtual void UpdateEditorSettings() override;
 
-			void SetupEditorScene();
+			virtual void SetupEditorScene();
 			void SetupMainMenu();
 			virtual void Update(float deltaTime) override;
 			virtual void HandleEvents() override;
 
-			//virtual void PreviewHierarchyTree(HierarchyTemplate::HierarchyTreeT& tree) override;
+			//virtual void PreviewHierarchyTree(Hierarchy::Tree& tree) override;
 			template <typename T> void AddActorToList(GameScene& editorScene, T& obj, UIAutomaticListActor& listParent, UICanvas& canvas);
 
 			virtual void PassMouseControl(Controller* controller) override;
@@ -73,17 +76,24 @@ namespace GEE
 			virtual void Render() override;
 			void NewProject(const std::string& filepath);
 			void LoadProject(const std::string& filepath);
-			void SaveProject();
+			void SaveProject(std::string optionalFilepath = std::string());
 
 		virtual void SetDebugRenderComponents(bool) override;
+	protected:
+		virtual void StartProfiler();
+		virtual void StopProfiler();
+		std::string GetProjectFilepath() { return ProjectFilepath; }
+		void SetProjectFilepath(const std::string& filepath);
 	private:
 		virtual const std::vector<EditorPopup>& GetPopupsForRendering() override;
 		void UpdateRecentProjects();
 		void MaximizeViewport();
 		void UpdateControllerCameraInfo();
 
-		RenderToolboxCollection* ViewportRenderCollection, * HUDRenderCollection;
 		GameScene* EditorScene;
+
+		// Which Controller should be set after we switch from editor to game control
+		Controller* GameController;
 
 		std::unordered_map<GameScene*, EditorMessageLogger> Logs;
 
@@ -107,10 +117,9 @@ namespace GEE
 
 		UniquePtr<EditorActions> Actions;
 
+	protected:
+		RenderToolboxCollection* ViewportRenderCollection, * HUDRenderCollection;
 		bool EEForceForwardShading;
-
-		// Which Controller should be set after we switch from editor to game control
-		Controller* GameController;
 		};
 	}
 }

@@ -341,16 +341,16 @@ void UIMultipleListActor::NestList(UIListActor& list)
 		//sliderBackground.SetOnClickFunc(sliderProcessClick);
 	}
 
-	void UIElementTemplates::HierarchyTreeInput(UIAutomaticListActor& list, GameScene& scene, std::function<void(HierarchyTemplate::HierarchyTreeT&)> setFunc)
+	void UIElementTemplates::HierarchyTreeInput(UIAutomaticListActor& list, GameScene& scene, std::function<void(Hierarchy::Tree&)> setFunc)
 	{
 		for (int i = 0; i < scene.GetHierarchyTreeCount(); i++)
 		{
-			HierarchyTemplate::HierarchyTreeT* tree = scene.GetHierarchyTree(i);
+			Hierarchy::Tree* tree = scene.GetHierarchyTree(i);
 			UIButtonActor& treeButton = list.CreateChild<UIButtonActor>("TreeButton" + std::to_string(i), tree->GetName().GetPath(), [tree, setFunc]() { setFunc(*tree); });
 		}
 
 	}
-	void UIElementTemplates::HierarchyTreeInput(GameScene& scene, std::function<void(HierarchyTemplate::HierarchyTreeT&)> setFunc)
+	void UIElementTemplates::HierarchyTreeInput(GameScene& scene, std::function<void(Hierarchy::Tree&)> setFunc)
 	{
 		UIAutomaticListActor& treesList = TemplateParent.CreateChild<UIAutomaticListActor>("HierarchyTreesList");
 		HierarchyTreeInput(treesList, scene, setFunc);
@@ -358,7 +358,7 @@ void UIMultipleListActor::NestList(UIListActor& list)
 		treesList.Refresh();
 	}
 
-	void UIElementTemplates::HierarchyTreeInput(GameManager& gameHandle, std::function<void(HierarchyTemplate::HierarchyTreeT&)> setFunc)
+	void UIElementTemplates::HierarchyTreeInput(GameManager& gameHandle, std::function<void(Hierarchy::Tree&)> setFunc)
 	{
 		UIAutomaticListActor& treesList = TemplateParent.CreateChild<UIAutomaticListActor>("HierarchyTreesList");
 		for (GameScene* scene : gameHandle.GetScenes())
@@ -385,7 +385,7 @@ void UIMultipleListActor::NestList(UIListActor& list)
 		selectFileActor.SetOnClickFunc([&pathInputBox, extensions]() { const char* path = tinyfd_openFileDialog("Select file", "C:\\", extensions.size(), (extensions.empty()) ? (nullptr) : (&extensions[0]), nullptr, 0); if (path) pathInputBox.PutString(path); });
 	}
 
-	void UIElementTemplates::FolderInput(std::function<void(const std::string&)> setFunc, std::function<std::string()> getFunc)
+	void UIElementTemplates::FolderInput(std::function<void(const std::string&)> setFunc, std::function<std::string()> getFunc, const std::string& defaultPath)
 	{
 		UIInputBoxActor& pathInputBox = TemplateParent.CreateChild<UIInputBoxActor>("PathInputBox");
 		pathInputBox.SetTransform(Transform(Vec2f(2.0f, 0.0f), Vec2f(3.0f, 1.0f)));
@@ -398,7 +398,7 @@ void UIMultipleListActor::NestList(UIListActor& list)
 		selectFileActor.SetMatClick(MaterialInstance(moreMat, moreMat->GetTextureIDInterpolatorTemplate(2.0f)));
 
 		selectFileActor.SetTransform(Transform(Vec2f(6.0f, 0.0f), Vec2f(1.0f, 1.0f)));
-		selectFileActor.SetOnClickFunc([&pathInputBox]() { const char* path = tinyfd_selectFolderDialog("Select folder", "C:\\"); if (path) pathInputBox.PutString(path); });
+		selectFileActor.SetOnClickFunc([&pathInputBox, defaultPath]() { const char* path = tinyfd_selectFolderDialog("Select folder", defaultPath.c_str()); if (path) pathInputBox.PutString(path); });
 	}
 
 	void uiCanvasFieldUtil::SetupComponents(Actor& actor, const Vec2f& pos, const Vec4f& backgroundColor, const Vec4f& separatorColor)

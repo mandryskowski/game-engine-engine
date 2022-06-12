@@ -67,6 +67,7 @@ namespace GEE
 		virtual void GetEditorDescription(EditorDescriptionBuilder) override;
 	private:
 		Vec3f RotationEuler;
+		float ControllerSpeed;
 	};
 
 	class FPSController : public FreeRoamingController

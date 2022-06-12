@@ -11,14 +11,12 @@ namespace GEE
 {
 	CameraComponent::CameraComponent(Actor& actor, Component* parentComp, std::string name, const Mat4f& projectionMatrix) :
 		Component(actor, parentComp, name, Transform(Vec3f(0.0f), Vec3f(0.0f), Vec3f(1.0f))),
-		RotationEuler(0.0f),
 		Projection(projectionMatrix)
 	{
 	}
 
 	CameraComponent::CameraComponent(CameraComponent&& comp) :
 		Component(std::move(comp)),
-		RotationEuler(comp.RotationEuler),
 		Projection(comp.Projection)
 	{
 	}
@@ -54,7 +52,10 @@ namespace GEE
 		Component::GetEditorDescription(descBuilder);
 
 		UIInputBoxActor& fovInputBox = descBuilder.AddField("Field of view").CreateChild<UIInputBoxActor>("FovButton");
-		fovInputBox.SetOnInputFunc([this](float fov) { Projection = glm::perspective(glm::radians(fov), 1.0f, 0.01f, 100.0f); }, []() { return 0.0f; });
+		fovInputBox.SetOnInputFunc([this, descBuilder](float fov) mutable { Vec2f viewportSize = static_cast<Vec2f>(GameHandle->GetGameSettings()->Video.Resolution); Projection = glm::perspective(glm::radians(fov), viewportSize.x / viewportSize.y, 0.01f, 100.0f); }, []() { return 0.0f; });
+
+		UIInputBoxActor& renderDistBox = descBuilder.AddField("Render distance").CreateChild<UIInputBoxActor>("RenderDistanceButton");
+		renderDistBox.SetOnInputFunc([this, descBuilder](float dist) mutable { Vec2f viewportSize = static_cast<Vec2f>(GameHandle->GetGameSettings()->Video.Resolution); Projection = glm::perspective(glm::radians(90.0f), viewportSize.x / viewportSize.y, 0.01f, dist); }, []() { return 100.0f; });
 
 		descBuilder.AddField("Active").GetTemplates().TickBox([this](bool val) {
 			if (val) {

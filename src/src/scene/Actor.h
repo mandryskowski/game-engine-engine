@@ -18,7 +18,12 @@ namespace GEE
 	{
 	public:
 		Actor(GameScene&, Actor* parentActor, const std::string& name, const Transform& t = Transform());
-		Actor(const Actor&) = delete;
+	/*private:
+		/**
+		 * @brief Copy constructor only to be used in Actor::CopyChild. The constructor won't copy its children and won't add itself as a child of the original copied Actor.
+		* /
+		Actor(const Actor&);
+	public: */
 		Actor(Actor&&);
 
 		void PassToDifferentParent(Actor& newParent)
@@ -46,6 +51,7 @@ namespace GEE
 		GameScene& GetScene() { return Scene; }
 		const GameScene& GetScene() const { return Scene; }
 		GameManager* GetGameHandle() { return GameHandle; }
+		const Actor* GetParentActor() const { return ParentActor; }
 
 		/**
 		 * @brief Get a pointer to an Actor further in the hierarchy (kids, kids' kids, ...). Limit the use of this function at runtime, as dynamic_cast has a significant overhead.

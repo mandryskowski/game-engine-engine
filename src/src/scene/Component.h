@@ -52,7 +52,7 @@ namespace GEE
 		//Component(Actor&, Component&&);
 
 	protected:
-		template <typename CompClass> friend class HierarchyTemplate::HierarchyNode;
+		template <typename CompClass> friend class Hierarchy::Node;
 		Component& operator=(const Component&);
 
 		template <typename FieldType> void AddToGarbageCollector(FieldType*& field);

@@ -420,7 +420,11 @@ namespace GEE
 			uiButtonActorUtil::ButtonMatsFromAtlas(addActorButton, addActorMat, 0.0f, 1.0f, 2.0f);
 
 			UIAutomaticListActor& listActor = canvas.CreateChild<UIAutomaticListActor>("ListActor");
-			AddActorToList<Actor>(editorScene, *selectedScene->GetRootActor(), listActor, canvas);
+			AddActorToList<Actor>(editorScene, *selectedScene->GetRootActor(), listActor, canvas,
+			[this, &editorScene](PopupDescription desc, Actor& actor){
+				desc.AddOption("Copy", [](){  });
+				desc.AddOption("Delete", [this, &actor, &editorScene]() { actor.MarkAsKilled(); SelectScene(GetSelectedScene(), editorScene); });
+			});
 
 			listActor.Refresh();
 
@@ -430,7 +434,7 @@ namespace GEE
 			canvas.SetViewScale(static_cast<Vec2f>(canvas.CanvasView.GetScale()) * Vec2f(1.0f, glm::sqrt(0.32f / 0.32f)));
 		}
 
-		void EditorActions::PreviewHierarchyTree(HierarchyTemplate::HierarchyTreeT& tree)
+		void EditorActions::PreviewHierarchyTree(Hierarchy::Tree& tree)
 		{
 			GameScene& editorScene = *EditorHandle.GetGameHandle()->GetScene("GEE_Editor");
 			UIWindowActor& previewWindow = editorScene.CreateActorAtRoot<UIWindowActor>("Mesh node preview window");
@@ -441,11 +445,11 @@ namespace GEE
 			auto& list = previewWindow.AddField("Mesh nodes list").CreateChild<UIAutomaticListActor>("MeshNodesList");
 
 
-			std::vector<std::pair<HierarchyTemplate::HierarchyNodeBase&, UIActivableButtonActor*>> buttons;
+			std::vector<std::pair<Hierarchy::NodeBase&, UIActivableButtonActor*>> buttons;
 
-			std::function<void(HierarchyTemplate::HierarchyNodeBase&, UIAutomaticListActor&)> createNodeButtons = [&](HierarchyTemplate::HierarchyNodeBase& node, UIAutomaticListActor& listParent) {
+			std::function<void(Hierarchy::NodeBase&, UIAutomaticListActor&)> createNodeButtons = [&](Hierarchy::NodeBase& node, UIAutomaticListActor& listParent) {
 				auto& element = listParent.CreateChild<UIActivableButtonActor>("Button", node.GetCompBaseType().GetName(), nullptr);
-				buttons.push_back(std::pair<HierarchyTemplate::HierarchyNodeBase&, UIActivableButtonActor*>(node, &element));
+				buttons.push_back(std::pair<Hierarchy::NodeBase&, UIActivableButtonActor*>(node, &element));
 				element.SetDeactivateOnClickingAnywhere(false);
 				element.OnClick();
 				element.DeduceMaterial();
@@ -462,12 +466,12 @@ namespace GEE
 						Component* createdComp = nullptr;
 						if (GetContextComp() == actor.GetRoot())
 						{
-							actor.ReplaceRoot(node.GenerateComp(MakeShared<HierarchyTemplate::NodeInstantiation::Data>(tree, true), actor));
+							actor.ReplaceRoot(node.GenerateComp(MakeShared<Hierarchy::Instantiation::Data>(tree), actor));
 							createdComp = actor.GetRoot();
 						}
 						else
 						{
-							createdComp = &GetContextComp()->ParentComponent->AddComponent(node.GenerateComp(MakeShared<HierarchyTemplate::NodeInstantiation::Data>(tree, true), actor));
+							createdComp = &GetContextComp()->ParentComponent->AddComponent(node.GenerateComp(MakeShared<Hierarchy::Instantiation::Data>(tree), actor));
 							GetContextComp()->MarkAsKilled();
 						}
 
@@ -497,7 +501,7 @@ namespace GEE
 
 				for (int i = 0; i < static_cast<int>(node.GetChildCount()); i++)
 				{
-					HierarchyTemplate::HierarchyNodeBase& child = *node.GetChild(i);
+					Hierarchy::NodeBase& child = *node.GetChild(i);
 					UIAutomaticListActor& nestedList = listParent.CreateChild<UIAutomaticListActor>(child.GetCompBaseType().GetName() + "'s nestedlist");
 					createNodeButtons(child, nestedList);
 				}
@@ -510,7 +514,7 @@ namespace GEE
 				std::function<Component* ()> getSelectedComp = [this]() -> Component* { return ((GetSelectedComponent()) ? (GetSelectedComponent()) : ((GetSelectedActor()) ? (GetSelectedActor()->GetRoot()) : (nullptr))); };
 
 				// Get selected nodes
-				std::vector<HierarchyTemplate::HierarchyNodeBase*> selectedNodes;
+				std::vector<Hierarchy::NodeBase*> selectedNodes;
 				for (auto& it : buttons)
 					if (it.second->GetStateBits() & ButtonStateFlags::Active)
 						selectedNodes.push_back(&it.first);
@@ -554,10 +558,14 @@ namespace GEE
 			previewWindow.AutoClampView();
 		}
 
-		void EditorActions::PreviewHierarchyNode(HierarchyTemplate::HierarchyNodeBase& node, GameScene& editorScene)
+		void EditorActions::PreviewHierarchyNode(Hierarchy::NodeBase& node, GameScene& editorScene)
 		{
+			Transform previousCanvasView;
 			if (Actor* foundWindow = editorScene.FindActor("GEE_E_Node_Preview_Window"))
+			{
+				previousCanvasView = dynamic_cast<UICanvasActor*>(const_cast<Actor*>(foundWindow))->CanvasView;
 				foundWindow->MarkAsKilled();
+			}
 			auto& nodeWindow = editorScene.CreateActorAtRoot<UIWindowActor>("GEE_E_Node_Preview_Window");
 			nodeWindow.CreateCanvasBackgroundModel(Vec3f(0.6f, 0.3f, 0.6f));
 
@@ -566,7 +574,11 @@ namespace GEE
 			node.GetCompBaseType().GetEditorDescription(nodeCompDesc);
 
 			nodeWindow.RefreshFieldsList();
-			nodeWindow.AutoClampView();
+
+			if (!previousCanvasView.IsEmpty())
+				nodeWindow.SetCanvasView(previousCanvasView);
+			else
+				nodeWindow.AutoClampView();
 		}
 
 		Component* EditorActions::GetContextComp()

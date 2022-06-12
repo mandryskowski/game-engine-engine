@@ -79,7 +79,7 @@ namespace GEE
 	{
 	}
 
-	TextComponent* UIInputBoxActor::GetContentTextComp()
+	TextConstantSizeComponent* UIInputBoxActor::GetContentTextComp()
 	{
 		return ContentTextComp;
 	}
@@ -242,6 +242,11 @@ namespace GEE
 				ContentTextComp->SetContent((GameHandle->GetInputRetriever().IsKeyPressed(Key::LeftControl)) ? (content.erase(0, CaretPosition)) : (content.erase(CaretPosition - 1, 1))); //erase the last letter
 				SetCaretPosAndUpdateModel((GameHandle->GetInputRetriever().IsKeyPressed(Key::LeftControl)) ? (0) : (CaretPosition - 1));
 			}
+			else if (key == Key::Escape)
+			{
+				ValueGetter();
+				OnDeactivation();
+			}
 			else if (key == Key::Delete && !content.empty() && CaretPosition != content.length())
 			{
 				ContentTextComp->SetContent((GameHandle->GetInputRetriever().IsKeyPressed(Key::LeftControl)) ? (content.erase(CaretPosition)) : (content.erase(CaretPosition, 1))); //erase the last letter
@@ -293,14 +298,15 @@ namespace GEE
 		Vec2f mousePos = static_cast<Vec2f>(Scene.GetUIData()->GetWindowData().GetMousePositionNDC());
 		mousePos = Vec2f(textUtil::OwnedToSpaceTransform(UISpace::Canvas, *GetTransform(), GetCanvasPtr(), &Scene.GetUIData()->GetWindowData()).GetInverse().GetMatrix() * Vec4f(mousePos, 0.0f, 1.0f));
 
-		auto textBB = textUtil::ComputeBBox(GetContentTextComp()->GetContent(), GetContentTextComp()->GetTransform(), *GetContentTextComp()->GetFontVariation(), GetContentTextComp()->GetAlignment());
+		Transform contentTextT = GetContentTextComp()->GetTransformCorrectedForSize(false);
+		auto textBB = textUtil::ComputeBBox(GetContentTextComp()->GetContent(), contentTextT, *GetContentTextComp()->GetFontVariation(), GetContentTextComp()->GetAlignment());
 		float currPos = -textBB.Size.x;
 		auto contentStr = ContentTextComp->GetContent();
 		auto ch = contentStr.begin();
 
 		for (; ch != contentStr.end(); ch++)
 		{
-			float advance = ContentTextComp->GetFontVariation()->GetCharacter(*ch).Advance * ContentTextComp->GetTransform().GetScale().x * 2.0f;
+			float advance = ContentTextComp->GetFontVariation()->GetCharacter(*ch).Advance * contentTextT.GetScale().x * 2.0f;
 			if (currPos + advance / 2.0f > mousePos.x)  break; // round (advance / 2.0)
 			currPos += advance;
 		}
@@ -333,14 +339,21 @@ namespace GEE
 		if (!CaretComponent)
 			return;
 
-		auto wholeTextBB = textUtil::ComputeBBox(GetContentTextComp()->GetContent().substr(0, CaretPosition), GetContentTextComp()->GetTransform(), *GetContentTextComp()->GetFontVariation(), GetContentTextComp()->GetAlignment());
-		auto notIncludedText = textUtil::ComputeBBox(GetContentTextComp()->GetContent().substr(CaretPosition), GetContentTextComp()->GetTransform(), *GetContentTextComp()->GetFontVariation(), GetContentTextComp()->GetAlignment());
+		auto wholeTextBB = textUtil::ComputeBBox(GetContentTextComp()->GetContent().substr(0, CaretPosition), GetContentTextComp()->GetTransformCorrectedForSize(false), *GetContentTextComp()->GetFontVariation(), GetContentTextComp()->GetAlignment());
+		auto notIncludedText = textUtil::ComputeBBox(GetContentTextComp()->GetContent().substr(CaretPosition), GetContentTextComp()->GetTransformCorrectedForSize(false), *GetContentTextComp()->GetFontVariation(), GetContentTextComp()->GetAlignment());
 
 		const float caretWidthPx = 5.0f;
 		float caretWidthNDC = (caretWidthPx / static_cast<float>(Scene.GetUIData()->GetWindowData().GetWindowSize().x) / textUtil::ComputeScale(UISpace::Canvas, *GetTransform(), GetCanvasPtr(), &Scene.GetUIData()->GetWindowData()).x);
 		CaretComponent->GetTransform().SetScale(Vec2f(caretWidthNDC / 2.0f, 1.0f));
 		CaretComponent->GetTransform().SetPosition(Vec2f(wholeTextBB.Position.x + (wholeTextBB.Size.x - notIncludedText.Size.x) + CaretComponent->GetTransform().GetScale2D().x, 0.0f));
 		
+		std::cout << "====Caret====\n";
+		std::cout << "$$$ Whole text pos: " << wholeTextBB.Position << "\n";
+		std::cout << "$$$ Whole text size: " << wholeTextBB.Size << "\n";
+		std::cout << "$$$ Whole text size: " << wholeTextBB.Size << "\n";
+		std::cout << "\n";
+
+
 		if (refreshAnim)
 		{
 			CaretAnim.Reset();

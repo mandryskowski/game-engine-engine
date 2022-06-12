@@ -34,6 +34,7 @@ namespace GEE
 		GLenum GetType() const;
 		unsigned int GetID() const;
 		std::string GetPath() const;
+		bool IsSRGB() const;
 
 		/**
 		 * @brief Returns the 2D size of this Texture. For 2D textures and texture arrays it returns the size of a single texture, for cubemaps and cubemap arrays the size of a single side.

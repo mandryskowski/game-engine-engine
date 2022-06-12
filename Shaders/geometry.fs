@@ -34,6 +34,8 @@ in VS_OUT
 	vec2 texCoord;
 	
 	mat3 TBN;
+	bool bHasTangents;
+	vec3 normalWithoutNormalMap;
 }	frag;
 
 //out
@@ -114,11 +116,15 @@ void main()
 	texCoord = ParallaxOcclusion(frag.texCoord);
 	#endif
 	
-	vec3 normal = texture(material.normal1, texCoord).rgb;
-	if (normal == vec3(0.0))
-		normal = vec3(0.5, 0.5, 1.0);
-	normal = normal * 2.0 - 1.0;
-	normal = normalize(frag.TBN * normal);
+	vec3 normal = frag.normalWithoutNormalMap;
+	//if (frag.bHasTangents)	// Note: This "if" is not an optimisation; the code inside it will run anyways, due to the parallel nature of GPUs.
+	{
+		normal = texture(material.normal1, texCoord).rgb;
+		if (normal == vec3(0.0))
+			normal = vec3(0.5, 0.5, 1.0);
+		normal = normal * 2.0 - 1.0;
+		normal = normalize(frag.TBN * normal);
+	}
 	
 
 	gPosition = frag.worldPosition;

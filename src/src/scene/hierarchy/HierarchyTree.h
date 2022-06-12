@@ -15,7 +15,7 @@ namespace GEE
 		struct CollisionShape;
 	}
 
-	namespace HierarchyTemplate
+	namespace Hierarchy
 	{
 		/*
 			Meshes loaded from files are placed in a tree structure - 1 tree per 1 file.
@@ -29,7 +29,7 @@ namespace GEE
 			In the future you will be able to create your own MeshTree from existing MeshNodes and create your own MeshNodes for the MeshTree from existing Meshes.
 		*/
 
-		class HierarchyNodeBase;
+		class NodeBase;
 
 		class HierarchyLocalization
 		{
@@ -53,31 +53,31 @@ namespace GEE
 		private:
 			HierarchyLocalization(const std::string& path, bool bLocalResource) : Path(path), bLocalResource(bLocalResource) {}
 
-			friend class HierarchyTreeT;
+			friend class Tree;
 			std::string Path;
 			bool bLocalResource;
 		};
 
 		
 
-		class HierarchyTreeT
+		class Tree
 		{
 		public:
-			HierarchyTreeT(GameScene& scene, const HierarchyLocalization& name);
-			HierarchyTreeT(const HierarchyTreeT& tree);
-			HierarchyTreeT(HierarchyTreeT&& tree);
+			Tree(GameScene& scene, const HierarchyLocalization& name);
+			Tree(const Tree& tree);
+			Tree(Tree&& tree);
 
 			const HierarchyLocalization& GetName() const;
-			HierarchyNodeBase& GetRoot();
+			NodeBase& GetRoot();
 			BoneMapping* GetBoneMapping() const;
 			Animation& GetAnimation(unsigned int index);
-			unsigned int GetAnimationCount();
+			unsigned int GetAnimationCount() const;
 			Actor& GetTempActor();
 			GameScene& GetScene() { return Scene; }
 			const GameScene& GetScene() const { return Scene; }
 			bool ContainsBones() const { return TreeBoneMapping != nullptr; }
 
-			void SetRoot(UniquePtr<HierarchyNodeBase> root);
+			void SetRoot(UniquePtr<NodeBase> root);
 
 			/**
 			 * @brief Destroys (clears) the current BoneMapping and allows to create a new one.
@@ -97,10 +97,10 @@ namespace GEE
 			template <typename Archive> void Save(Archive& archive) const;
 			template <typename Archive> void Load(Archive& archive);
 
-			HierarchyTreeT& operator=(const HierarchyTreeT&) = delete;
-			HierarchyTreeT& operator=(HierarchyTreeT&&) = delete;
+			Tree& operator=(const Tree&) = delete;
+			Tree& operator=(Tree&&) = delete;
 
-			~HierarchyTreeT();
+			~Tree();
 
 			void SetName(const std::string& filepath);
 		private:
@@ -108,7 +108,7 @@ namespace GEE
 
 			HierarchyLocalization Name;	//(this can also be referred to as the path)
 			GameScene& Scene;
-			UniquePtr<HierarchyNodeBase> Root;
+			UniquePtr<NodeBase> Root;
 			UniquePtr<Actor> TempActor;
 
 			std::vector<UniquePtr<Animation>> TreeAnimations;
@@ -119,16 +119,16 @@ namespace GEE
 
 namespace cereal
 {
-	template <> struct LoadAndConstruct<GEE::HierarchyTemplate::HierarchyTreeT>
+	template <> struct LoadAndConstruct<GEE::Hierarchy::Tree>
 	{
 		template <class Archive>
-		static void load_and_construct(Archive& ar, cereal::construct<GEE::HierarchyTemplate::HierarchyTreeT>& construct)
+		static void load_and_construct(Archive& ar, cereal::construct<GEE::Hierarchy::Tree>& construct)
 		{
 			if (!GEE::CerealTreeSerializationData::TreeScene)
 				return;
 			
 			/* We set the name to serialization-error since it will be replaced by its original name anyways. */
-			construct(*GEE::CerealTreeSerializationData::TreeScene, GEE::HierarchyTemplate::HierarchyLocalization::LocalResourceName("serialization-error"));
+			construct(*GEE::CerealTreeSerializationData::TreeScene, GEE::Hierarchy::HierarchyLocalization::LocalResourceName("serialization-error"));
 			construct->Load(ar);
 		}
 	};																							 													 																			

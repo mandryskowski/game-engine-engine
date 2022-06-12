@@ -323,10 +323,6 @@ namespace GEE
 		auto& text = CreateComponent<TextConstantSizeComponent>("ButtonText", Transform(Vec2f(0.0f), Vec2f(1.0f)), content, "", Alignment2D::Center());
 		text.SetMaxSize(Vec2f(0.8f));
 		text.Unstretch();
-		text.Unstretch();
-		text.Unstretch();
-		text.Unstretch();
-		text.Unstretch();
 		return text;
 	}
 

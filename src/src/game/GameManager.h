@@ -90,11 +90,11 @@ namespace GEE
 		class FramebufferAttachment;
 	}
 
-	namespace HierarchyTemplate
+	namespace Hierarchy
 	{
-		class HierarchyNodeBase;
-		template <typename CompType> class HierarchyNode;
-		class HierarchyTreeT;
+		class NodeBase;
+		template <typename CompType> class Node;
+		class Tree;
 	}
 
 	enum class MaterialShaderHint
@@ -188,6 +188,7 @@ namespace GEE
 		virtual Texture GetEmptyTexture() = 0;
 		virtual SkeletonBatch* GetBoundSkeletonBatch() = 0;
 
+
 		//TODO: THIS SHOULD NOT BE HERE
 		virtual std::vector<Shader*> GetCustomShaders() = 0;
 		virtual std::vector<SharedPtr<Material>> GetMaterials() = 0;
@@ -273,7 +274,7 @@ namespace GEE
 
 		virtual void SetCursorIcon(DefaultCursorIcon) = 0;
 
-		virtual HierarchyTemplate::HierarchyTreeT* FindHierarchyTree(const std::string& name, HierarchyTemplate::HierarchyTreeT* treeToIgnore = nullptr) = 0;
+		virtual Hierarchy::Tree* FindHierarchyTree(const std::string& name, Hierarchy::Tree* treeToIgnore = nullptr) = 0;
 		virtual SharedPtr<Font> FindFont(const std::string& path) = 0;
 
 		virtual ~GameManager() = default;
@@ -297,11 +298,11 @@ namespace GEE
 
 	class HTreeObjectLoc
 	{
-		const HierarchyTemplate::HierarchyTreeT* TreePtr;
+		const Hierarchy::Tree* TreePtr;
 	protected:
 		HTreeObjectLoc() : TreePtr(nullptr) {}
 	public:
-		HTreeObjectLoc(const HierarchyTemplate::HierarchyTreeT& tree) : TreePtr(&tree) {}
+		HTreeObjectLoc(const Hierarchy::Tree& tree) : TreePtr(&tree) {}
 		bool IsValidTreeElement() const;
 		std::string GetTreeName() const;	//get path
 	};

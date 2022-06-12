@@ -29,7 +29,7 @@ namespace GEE
 	}
 
 	UICanvasActor::UICanvasActor(GameScene& scene, Actor* parentActor, const std::string& name, const Transform& t) :
-		UICanvasActor(scene, parentActor, nullptr, name, t)
+		UICanvasActor(scene, parentActor, nullptr, name, t) 
 	{}
 
 	UICanvasActor::UICanvasActor(UICanvasActor&& canvasActor) :
@@ -548,12 +548,12 @@ namespace GEE
 		return OptionalBuiltNode != nullptr;
 	}
 
-	void ComponentDescriptionBuilder::SetNodeBeingBuilt(HierarchyTemplate::HierarchyNodeBase* node)
+	void ComponentDescriptionBuilder::SetNodeBeingBuilt(Hierarchy::NodeBase* node)
 	{
 		OptionalBuiltNode = node;
 	}
 
-	HierarchyTemplate::HierarchyNodeBase* ComponentDescriptionBuilder::GetNodeBeingBuilt()
+	Hierarchy::NodeBase* ComponentDescriptionBuilder::GetNodeBeingBuilt()
 	{
 		return OptionalBuiltNode;
 	}

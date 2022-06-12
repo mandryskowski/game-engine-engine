@@ -154,7 +154,7 @@ namespace GEE
 		} Localization;
 		float Duration;
 
-		Animation(const HierarchyTemplate::HierarchyTreeT& tree, aiAnimation*);
+		Animation(const Hierarchy::Tree& tree, aiAnimation*);
 	};
 
 	Vec3f aiToGlm(const aiVector3D&);

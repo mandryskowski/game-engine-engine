@@ -231,11 +231,12 @@ namespace GEE
 					model.AddMeshInst(*meshInst);
 
 					Actor& camActor = meshPreviewScene.CreateActorAtRoot<Actor>("MeshPreviewCameraActor");
-					CameraComponent& cam = camActor.CreateComponent<CameraComponent>("MeshPreviewCamera", glm::perspective(glm::radians(90.0f), 1.0f, 0.01f, 100.0f));
+					CameraComponent& cam = camActor.CreateComponent<CameraComponent>("MeshPreviewCamera");
 					{
 						auto meshBB = meshInst->GetMesh().GetBoundingBox();
 						camActor.GetTransform()->SetPosition(meshBB.Position + glm::normalize(Vec3f(1.0f, 1.0f, 1.0f)) * glm::length(meshBB.Size) * 1.5f);
 						camActor.GetTransform()->SetRotation(quatFromDirectionVec(glm::normalize(meshBB.Position - camActor.GetTransform()->GetPos())));
+						cam.SetProjectionMat(glm::perspective(glm::radians(90.0f), 1.0f, 0.01f, glm::length(meshBB.Size) * 3.0f));
 						meshPreviewScene.BindActiveCamera(&cam);
 					}
 					auto& camController = camActor.CreateChild<FreeRoamingController>("MeshPreviewCameraController");
@@ -264,9 +265,35 @@ namespace GEE
 					}
 
 					window.SetOnCloseFunc([&meshPreviewScene, &renderHandle, viewportMaterial, &renderTbCollection]() { meshPreviewScene.MarkAsKilled();  renderHandle.EraseMaterial(*viewportMaterial); renderHandle.EraseRenderTbCollection(renderTbCollection); });
-				});
+				});	//meshButton
 
 				meshButton.SetPopupCreationFunc([this, descBuilder, treePtr = GameHandle->FindHierarchyTree(meshInst->GetMesh().GetLocalization().GetTreeName())](PopupDescription popupDesc) { popupDesc.AddOption("Open hierarchy tree", [this, descBuilder, treePtr]() mutable { descBuilder.GetEditorHandle().GetActions().PreviewHierarchyTree(*treePtr); }); });
+
+				// Create button that moves this mesh instance down in hierarchy
+				if (meshInst.get() != MeshInstances.front().get())
+				{
+					meshButton.CreateChild<UIButtonActor>("MoveDownB", "DOWN",
+						[this, descBuilder, meshInstPtr = meshInst.get()]() mutable
+					{
+						auto found = std::find_if(MeshInstances.begin(), MeshInstances.end(), [meshInstPtr](const UniquePtr<MeshInstance>& meshVec) { return meshInstPtr == meshVec.get(); });
+						std::iter_swap(found, found - 1);
+
+						descBuilder.Refresh();
+					}, Transform(Vec2f(-2.0f, 0.0f)));
+				}
+
+				// Create button that moves this mesh instance up in hierarchy
+				if (meshInst.get() != MeshInstances.back().get())
+				{
+					meshButton.CreateChild<UIButtonActor>("MoveUpB", "UP",
+						[this, descBuilder, meshInstPtr = meshInst.get()]() mutable
+					{
+						auto found = std::find_if(MeshInstances.begin(), MeshInstances.end(), [meshInstPtr](const UniquePtr<MeshInstance>& meshVec) { return meshInstPtr == meshVec.get(); });
+						std::iter_swap(found, found + 1);
+
+						descBuilder.Refresh();
+					}, Transform(Vec2f(2.0f, 0.0f)));
+				}
 
 				auto& materialButton = listActor.CreateChild<UIButtonActor>("EditMaterialButton", (meshInst->GetMaterialPtr()) ? (meshInst->GetMaterialPtr()->GetName()) : ("No material"), nullptr, Transform(Vec2f(2.5f, 0.0f), Vec2f(3.0f, 1.0f)));
 

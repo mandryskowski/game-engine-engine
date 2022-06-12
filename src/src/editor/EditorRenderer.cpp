@@ -175,7 +175,7 @@ namespace GEE
 				mat.UpdateWholeUBOData(Impl.RenderHandle.GetSimpleShader(), Impl.RenderHandle.GetEmptyTexture());
 
 				Impl.RenderHandle.GetBasicShapeMesh(EngineBasicShape::Quad).Bind(popup.ID);
-				SceneRenderer(Impl.RenderHandle).RawUIScene(info);
+				SceneRenderer(Impl.RenderHandle).RawUIRender(info);
 
 				glfwSwapBuffers(&popup.Window.get());
 			}

@@ -468,3 +468,6 @@ Source/Release
 /LibraryDebug/game-eng.9668F435.tlog/CL.command.1.tlog
 /src/lib/GEE/Assimp32.dll
 /src/lib/GEE/game-engine-engine.lib
+/deferred-shading-profiling.exp
+/deferred-shading-profiling.lib
+/deferred-shading-profiling.exe

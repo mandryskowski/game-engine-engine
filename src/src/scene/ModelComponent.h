@@ -4,6 +4,7 @@
 #include "physics/CollisionObject.h"
 #include <UI/UIComponent.h>
 #include <animation/SkeletonInfo.h>
+#include <scene/hierarchy/HierarchyNodeInstantiation.h>
 
 namespace GEE
 {
@@ -26,7 +27,7 @@ namespace GEE
 		ModelComponent(ModelComponent&&);
 
 	protected:
-		friend class HierarchyTemplate::HierarchyNode<ModelComponent>;
+		friend class Hierarchy::Node<ModelComponent>;
 		ModelComponent& operator=(const ModelComponent&);
 	public:
 		ModelComponent& operator=(ModelComponent&&) = delete;	//TODO: de-delete this, it should be written but i am too lazy
@@ -87,7 +88,14 @@ namespace GEE
 		bool RenderAsBillboard;
 
 		mutable Mat4f LastFrameMVP;	//for velocity buffer; this field is only updated when velocity buffer is needed (for temporal AA/motion blur), in any other case it will be set to an identity matrix
-
 	};
+
+	template <> inline void Hierarchy::Instantiation::Impl<ModelComponent>::InstantiateToComp(SharedPtr<Instantiation::Data> data, const NodeBase& instantiatedNode, ModelComponent& targetComp)
+	{
+		Impl<Component>::InstantiateToComp(data, instantiatedNode, targetComp);
+
+		if (data->GetSkeletonInfo())
+			targetComp.SetSkeletonInfo(data->GetSkeletonInfo());
+	}
 }
 GEE_POLYMORPHIC_SERIALIZABLE_COMPONENT(GEE::Component, GEE::ModelComponent)

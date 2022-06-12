@@ -61,7 +61,7 @@ namespace GEE
 		if (CanvasPtr && world)
 			transform = CanvasPtr->ToCanvasSpace(transform);
 
-		return textUtil::ComputeBBox(Content, transform, *_Font->GetVariation(_FontStyle), _Alignment);
+		return textUtil::ComputeBBox(Content, transform, *GetFontVariation(), _Alignment);
 	}
 
 	float TextComponent::GetTextLength(bool world) const
@@ -70,7 +70,7 @@ namespace GEE
 		if (CanvasPtr && world)
 			transform = CanvasPtr->ToCanvasSpace(transform);
 
-		return textUtil::GetTextLength(Content, transform.GetScale(), *_Font->GetVariation(_FontStyle));
+		return textUtil::GetTextLength(Content, transform.GetScale(), *GetFontVariation());
 	}
 
 	float TextComponent::GetTextHeight(bool world) const
@@ -79,7 +79,16 @@ namespace GEE
 		if (CanvasPtr && world)
 			transform = CanvasPtr->ToCanvasSpace(transform);
 
-		return textUtil::GetTextHeight(Content, transform.GetScale(), *_Font->GetVariation(_FontStyle));
+		return textUtil::GetTextHeight(Content, transform.GetScale(), *GetFontVariation());
+	}
+
+	Vec2f TextComponent::GetTextMaxVerticalExtents(bool world) const
+	{
+		Transform transform = (world) ? (GetTransform().GetWorldTransform()) : (GetTransform());
+		if (CanvasPtr && world)
+			transform = CanvasPtr->ToCanvasSpace(transform);
+
+		return textUtil::GetTextMaxVerticalExtents(Content, transform.GetScale(), *GetFontVariation());
 	}
 
 	std::vector<const Material*> TextComponent::GetMaterials() const
@@ -95,7 +104,17 @@ namespace GEE
 		return _Font.get();
 	}
 
+	FontStyle TextComponent::GetFontStyle() const
+	{
+		return _FontStyle;
+	}
+
 	Font::Variation* TextComponent::GetFontVariation()
+	{
+		return _Font->GetVariation(_FontStyle);
+	}
+
+	const Font::Variation* TextComponent::GetFontVariation() const
 	{
 		return _Font->GetVariation(_FontStyle);
 	}
@@ -239,20 +258,41 @@ namespace GEE
 		float textHeight = glm::max((GetTextHeight(false)) / (GetTransform().GetScale().y / PreviouslyAppliedScaleRatio.y), 0.001f);
 		float scale = glm::min(MaxSize.x / textLength, MaxSize.y / textHeight);
 		
-		GetTransform().SetScale(Vec2f(scale) * ScaleRatio);
-		PreviouslyAppliedScaleRatio = ScaleRatio;
+		//GetTransform().SetScale(Vec2f(scale) * ScaleRatio);
+		PreviouslyAppliedScaleRatio = Vec3f(1.0f);
+	}
+
+	Boxf<Vec2f> TextConstantSizeComponent::GetBoundingBox(bool world) const
+	{
+		Transform transform = GetTransformCorrectedForSize(world);
+		if (CanvasPtr && world)
+			transform = CanvasPtr->ToCanvasSpace(transform);
+
+		return textUtil::ComputeBBox(GetContent(), transform, *GetFontVariation(), GetAlignment());
 	}
 
 	void TextConstantSizeComponent::RecalculateScaleRatio(UISpace space)
 	{
-		ScaleRatio = textUtil::ComputeScaleRatio(space, ComponentTransform, GetCanvasPtr(), ((Scene.GetUIData()) ? (&Scene.GetUIData()->GetWindowData()) : (nullptr)), PreviouslyAppliedScaleRatio);
+		ScaleRatio = textUtil::ComputeScaleRatio(space, ComponentTransform, GetCanvasPtr(), ((Scene.GetUIData()) ? (&Scene.GetUIData()->GetWindowData()) : (nullptr)), Vec3f(1.0f));
 	}
 
 	void TextConstantSizeComponent::Unstretch(UISpace space)
 	{
 		RecalculateScaleRatio(space);
 		UpdateSize();
-		UpdateSize();
+	}
+
+	Transform TextConstantSizeComponent::GetTransformCorrectedForSize(bool world) const
+	{
+		float textLength = glm::max(GetTextLength(false) / 2.0f, 0.001f);
+		Vec2f verticalExtents = GetTextMaxVerticalExtents(false);
+		float textHeight = glm::max(glm::max(glm::abs(verticalExtents.x), glm::abs(verticalExtents.y)), 0.001f) * 2.0f;
+		Vec2f scaleRatioInverse = 1.0f / ScaleRatio;
+		float scale = glm::min(scaleRatioInverse.x * MaxSize.x / textLength, scaleRatioInverse.y * MaxSize.y / textHeight);
+
+		Transform t = GetTransform();
+		t.SetScale(Vec2f(scale) * ScaleRatio * t.GetScale2D());
+		return (world) ? (GetTransform().GetParentTransform()->GetWorldTransform() * t) : (t);
 	}
 
 	void TextConstantSizeComponent::HandleEvent(const Event& ev)
@@ -261,6 +301,19 @@ namespace GEE
 
 		if (ev.GetType() == EventType::WindowResized)
 			Unstretch();
+	}
+
+	void TextConstantSizeComponent::Render(const SceneMatrixInfo& info, Shader* shader)
+	{
+		if (!GetFont() || GetHide() || IsBeingKilled())
+			return;
+
+		if (!Material::ShaderInfo(MaterialShaderHint::None).MatchesRequiredInfo(info.GetRequiredShaderInfo()) && shader && shader->GetName() != "TextShader")
+			return;
+
+		TextRenderer(*GameHandle->GetRenderEngineHandle()).RenderText((CanvasPtr) ? (CanvasPtr->BindForRender(info)) : (info), *GetFont()->GetVariation(GetFontStyle()), GetContent(), GetTransformCorrectedForSize(true), GetTextMatInst()->GetMaterialRef().GetColor(), shader, false, GetAlignment());
+		if (CanvasPtr)
+			CanvasPtr->UnbindForRender();
 	}
 
 	ScrollingTextComponent::ScrollingTextComponent(Actor& actorRef, Component* parentComp, const std::string& name, const Transform& transform, std::string content, SharedPtr<Font> font, Alignment2D alignment):
@@ -380,6 +433,26 @@ namespace GEE
 		return (textHeight + thisLineMaxHeight) * textScale.y;
 	}
 
+	Vec2f textUtil::GetTextMaxVerticalExtents(const std::string& str, const Vec2f& textScale, const Font::Variation& fontVariation)
+	{
+		Vec2f extents(std::numeric_limits<float>::max(), std::numeric_limits<float>::min());
+		for (auto it : str)
+		{
+			if (it == '\n')
+			{
+				continue;
+			}
+
+			const auto& c = fontVariation.GetCharacter(it);
+			if (float max = c.Bearing.y; max > extents.y)
+				extents.y = max;
+			if (float min = c.Size.y - c.Bearing.y; min < extents.x)
+				extents.x = min;
+		}
+
+		return extents * textScale.y;
+	}
+
 	Boxf<Vec2f> textUtil::ComputeBBox(const std::string& str, const Transform& spaceTransform, const Font::Variation& fontVariation, Alignment2D alignment)
 	{
 		float halfTextLength = GetTextLength(str, spaceTransform.GetScale2D(), fontVariation) / 2.0f;
@@ -406,7 +479,7 @@ namespace GEE
 		case UISpace::Window:
 		{
 			if (canvas)
-				scale *= canvas->ScaleFromCanvasSpace((Mat2f)canvas->GetViewMatrix() * canvas->ToCanvasSpace(textTransform.GetWorldTransform()).GetScale2D());
+				scale *= canvas->GetCanvasT()->GetWorldTransform().GetScale2D() * canvas->ScaleFromCanvasSpace((Mat2f)canvas->GetViewMatrix() * canvas->ToCanvasSpace(textTransform.GetWorldTransform()).GetScale2D());
 			else
 				scale *= textTransform.GetWorldTransform().GetScale2D();
 			break;

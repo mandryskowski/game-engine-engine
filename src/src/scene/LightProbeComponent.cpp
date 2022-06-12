@@ -89,6 +89,7 @@ namespace GEE
 	LightProbeComponent::~LightProbeComponent()
 	{
 		Scene.GetRenderData()->EraseLightProbe(*this);
+		EnvironmentMap.Dispose();
 	}
 
 }

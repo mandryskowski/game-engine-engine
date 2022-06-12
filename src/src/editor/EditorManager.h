@@ -11,9 +11,9 @@ namespace GEE
 	struct GameSettings;
 	class AtlasMaterial;
 	
-	namespace HierarchyTemplate
+	namespace Hierarchy
 	{
-		class HierarchyTreeT;
+		class Tree;
 	}
 
 	enum class EditorDefaultMaterial
@@ -77,7 +77,7 @@ namespace GEE
 
 			virtual std::string ToRelativePath(const std::string&) = 0;
 
-			//virtual void PreviewHierarchyTree(HierarchyTemplate::HierarchyTreeT& tree) = 0;
+			//virtual void PreviewHierarchyTree(Hierarchy::Tree& tree) = 0;
 
 			virtual ~EditorManager() = default;
 

@@ -169,10 +169,10 @@ namespace GEE
 		void Refresh();
 
 		bool IsNodeBeingBuilt() const;
-		void SetNodeBeingBuilt(HierarchyTemplate::HierarchyNodeBase*);
-		HierarchyTemplate::HierarchyNodeBase* GetNodeBeingBuilt();
+		void SetNodeBeingBuilt(Hierarchy::NodeBase*);
+		Hierarchy::NodeBase* GetNodeBeingBuilt();
 	private:
-		HierarchyTemplate::HierarchyNodeBase* OptionalBuiltNode;
+		Hierarchy::NodeBase* OptionalBuiltNode;
 	};
 
 	template <typename ChildClass, typename... Args>
