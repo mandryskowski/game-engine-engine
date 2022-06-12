@@ -81,7 +81,7 @@ namespace GEE
 
 
 
-						}, EditorHandle.GetGameHandle()->CheckEEForceForwardShading());
+						}, EditorHandle.GetGameHandle()->CheckForceForwardShading());
 
 				}
 				else // Only debug render physics engine

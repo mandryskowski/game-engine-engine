@@ -81,7 +81,7 @@ namespace GEE
 			bDebugRenderComponents(true),
 			bDebugRenderPhysicsMeshes(true),
 			GameController(nullptr),
-			EEForceForwardShading(false),
+			bForceForwardShading(false),
 			LastRenderPopupRequest(nullptr),
 			bViewportMaximized(false),
 			Actions(MakeUnique<EditorActions>(*this)),
@@ -453,7 +453,7 @@ namespace GEE
 					selectPreviewButton.GetButtonModel()->SetHide(val);
 					selectPreviewButtonText->SetHide(val);
 
-					 EEForceForwardShading = val; }, [this]() { return EEForceForwardShading; });
+					 bForceForwardShading = val; }, [this]() { return bForceForwardShading; });
 			}
 
 			UIActorDefault& scaleActor = editorScene.CreateActorAtRoot<UIActorDefault>("TextTestButton", Transform(Vec2f(0.0f, 0.0f), Vec2f(0.1f, 0.1f)));

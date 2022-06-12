@@ -251,7 +251,7 @@ namespace GEE
 		virtual InputDevicesStateRetriever GetInputRetriever() = 0;
 		virtual SharedPtr<Font> GetDefaultFont() = 0;
 		
-		virtual bool CheckEEForceForwardShading() = 0;
+		virtual bool CheckForceForwardShading() = 0;
 
 		virtual bool HasStarted() const = 0;
 

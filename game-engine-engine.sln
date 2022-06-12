@@ -10,11 +10,6 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "example_8_ball_pool", "Proj
 		{9668F435-E15D-4455-A81B-25723122AB8F} = {9668F435-E15D-4455-A81B-25723122AB8F}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "deferred-shading-profiling", "..\deferred-shading-profiling\deferred-shading-profiling.vcxproj", "{EB4C52EC-6703-4F01-922C-39FD6E774CD0}"
-	ProjectSection(ProjectDependencies) = postProject
-		{9668F435-E15D-4455-A81B-25723122AB8F} = {9668F435-E15D-4455-A81B-25723122AB8F}
-	EndProjectSection
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -59,22 +54,6 @@ Global
 		{6DE9C00E-5D26-4FBB-9F72-D382252E5E8D}.Release|x64.Build.0 = Release|x64
 		{6DE9C00E-5D26-4FBB-9F72-D382252E5E8D}.Release|x86.ActiveCfg = Release|Win32
 		{6DE9C00E-5D26-4FBB-9F72-D382252E5E8D}.Release|x86.Build.0 = Release|Win32
-		{EB4C52EC-6703-4F01-922C-39FD6E774CD0}.Debug|x64.ActiveCfg = Debug|x64
-		{EB4C52EC-6703-4F01-922C-39FD6E774CD0}.Debug|x64.Build.0 = Debug|x64
-		{EB4C52EC-6703-4F01-922C-39FD6E774CD0}.Debug|x86.ActiveCfg = Debug|Win32
-		{EB4C52EC-6703-4F01-922C-39FD6E774CD0}.Debug|x86.Build.0 = Debug|Win32
-		{EB4C52EC-6703-4F01-922C-39FD6E774CD0}.LibraryDebug|x64.ActiveCfg = LibraryDebug|x64
-		{EB4C52EC-6703-4F01-922C-39FD6E774CD0}.LibraryDebug|x64.Build.0 = LibraryDebug|x64
-		{EB4C52EC-6703-4F01-922C-39FD6E774CD0}.LibraryDebug|x86.ActiveCfg = LibraryDebug|Win32
-		{EB4C52EC-6703-4F01-922C-39FD6E774CD0}.LibraryDebug|x86.Build.0 = LibraryDebug|Win32
-		{EB4C52EC-6703-4F01-922C-39FD6E774CD0}.LibraryRelease|x64.ActiveCfg = LibraryRelease|x64
-		{EB4C52EC-6703-4F01-922C-39FD6E774CD0}.LibraryRelease|x64.Build.0 = LibraryRelease|x64
-		{EB4C52EC-6703-4F01-922C-39FD6E774CD0}.LibraryRelease|x86.ActiveCfg = LibraryRelease|Win32
-		{EB4C52EC-6703-4F01-922C-39FD6E774CD0}.LibraryRelease|x86.Build.0 = LibraryRelease|Win32
-		{EB4C52EC-6703-4F01-922C-39FD6E774CD0}.Release|x64.ActiveCfg = Release|x64
-		{EB4C52EC-6703-4F01-922C-39FD6E774CD0}.Release|x64.Build.0 = Release|x64
-		{EB4C52EC-6703-4F01-922C-39FD6E774CD0}.Release|x86.ActiveCfg = Release|Win32
-		{EB4C52EC-6703-4F01-922C-39FD6E774CD0}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

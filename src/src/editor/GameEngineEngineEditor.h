@@ -52,9 +52,9 @@ namespace GEE
 			virtual void RequestPopupMenu(const Vec2f& posWindowSpace, SystemWindow& relativeWindow, std::function<void(PopupDescription)> popupCreation) override;
 
 			virtual std::string ToRelativePath(const std::string&) override;
-			virtual bool CheckEEForceForwardShading() override
+			virtual bool CheckForceForwardShading() override
 			{
-				return EEForceForwardShading;
+				return bForceForwardShading;
 			}
 			virtual void Init(SystemWindow* window, const Vec2u& windowSize) override;
 
@@ -119,7 +119,7 @@ namespace GEE
 
 	protected:
 		RenderToolboxCollection* ViewportRenderCollection, * HUDRenderCollection;
-		bool EEForceForwardShading;
+		bool bForceForwardShading;
 		};
 	}
 }
