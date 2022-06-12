@@ -54,7 +54,7 @@ namespace GEE
 		bool IsBeingKilled() const;
 
 		int GetHierarchyTreeCount() const;
-		HierarchyTemplate::HierarchyTreeT* GetHierarchyTree(int index);
+		Hierarchy::Tree* GetHierarchyTree(int index);
 
 		/**
 		* @brief Pass a function that you want to be called after this GameScene has been loaded. **Warning: Using Archive in the lambda will not work unless you really know what you're doing.**
@@ -79,13 +79,13 @@ namespace GEE
 		 * @param name: the name of the tree.
 		 * @return: a reference to the newly created tree.
 		*/
-		HierarchyTemplate::HierarchyTreeT& CreateHierarchyTree(const std::string& name);
+		Hierarchy::Tree& CreateHierarchyTree(const std::string& name);
 		
 		
-		HierarchyTemplate::HierarchyTreeT& CopyHierarchyTree(const HierarchyTemplate::HierarchyTreeT& tree);
+		Hierarchy::Tree& CopyHierarchyTree(const Hierarchy::Tree& tree);
 
-		HierarchyTemplate::HierarchyTreeT* FindHierarchyTree(const std::string& name,
-			HierarchyTemplate::HierarchyTreeT* treeToIgnore = nullptr);
+		Hierarchy::Tree* FindHierarchyTree(const std::string& name,
+			Hierarchy::Tree* treeToIgnore = nullptr);
 
 		void HandleEventAll(Event&);
 		void Update(float deltaTime);
@@ -118,7 +118,7 @@ namespace GEE
 		bool bHasStarted;
 
 	public:
-		std::vector<UniquePtr<HierarchyTemplate::HierarchyTreeT>> HierarchyTrees;
+		std::vector<UniquePtr<Hierarchy::Tree>> HierarchyTrees;
 	private:
 
 		std::vector<std::function<void()>> PostLoadLambdas;
@@ -214,10 +214,13 @@ namespace GEE
 		RenderEngineManager* GetRenderHandle();
 		LightProbeTextureArrays* GetProbeTexArrays();
 		int GetAvailableLightIndex();
+		unsigned int GetMaxShadowedLightCount() const { return 16; }
 
 		bool ContainsLights() const;
 		bool ContainsLightProbes() const;
 		bool HasLightWithoutShadowMap() const;
+
+		void InvalidateAllShadowmaps();
 
 		void AddRenderable(Renderable&);
 		void AddLight(LightComponent& light);

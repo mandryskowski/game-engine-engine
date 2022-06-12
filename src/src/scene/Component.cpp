@@ -348,7 +348,7 @@ namespace GEE
 			case Physics::CollisionShapeType::COLLISION_BOX:	default: mesh = &renderEngHandle.GetBasicShapeMesh(EngineBasicShape::Cube); break;
 			case Physics::CollisionShapeType::COLLISION_SPHERE: mesh = &renderEngHandle.GetBasicShapeMesh(EngineBasicShape::Sphere); break;
 			case Physics::CollisionShapeType::COLLISION_CAPSULE:	continue;
-			case Physics::CollisionShapeType::COLLISION_TRIANGLE_MESH: if (auto loc = shape->GetOptionalLocalization()) { HierarchyTemplate::HierarchyTreeT* tree = gameHandle.FindHierarchyTree(loc->GetTreeName()); mesh = tree->FindMesh(loc->ShapeMeshLoc.NodeName, loc->ShapeMeshLoc.SpecificName); if (!mesh) mesh = &loc->OptionalCorrespondingMesh; } break;
+			case Physics::CollisionShapeType::COLLISION_TRIANGLE_MESH: if (auto loc = shape->GetOptionalLocalization()) { Hierarchy::Tree* tree = gameHandle.FindHierarchyTree(loc->GetTreeName()); mesh = tree->FindMesh(loc->ShapeMeshLoc.NodeName, loc->ShapeMeshLoc.SpecificName); if (!mesh) mesh = &loc->OptionalCorrespondingMesh; } break;
 			}
 
 			if (!mesh)
@@ -505,7 +505,7 @@ namespace GEE
 					pathInputWindow.GetTransform()->SetScale(Vec2f(0.5f));
 
 
-					UIElementTemplates(pathInputWindow).HierarchyTreeInput(*GameHandle, [this, &pathInputWindow, addShapeFunc](HierarchyTemplate::HierarchyTreeT& tree) {
+					UIElementTemplates(pathInputWindow).HierarchyTreeInput(*GameHandle, [this, &pathInputWindow, addShapeFunc](Hierarchy::Tree& tree) {
 						pathInputWindow.MarkAsKilled();
 
 						SharedPtr<Physics::CollisionShape> shape = EngineDataLoader::LoadTriangleMeshCollisionShape(GameHandle->GetPhysicsHandle(), tree.GetMeshes()[0]);
@@ -514,7 +514,7 @@ namespace GEE
 
 					/*UIInputBoxActor& treeNameInputBox = pathInputWindow.CreateChild<UIInputBoxActor>("TreeNameInputBox");
 					treeNameInputBox.SetOnInputFunc([this, &pathInputWindow, addShapeFunc](const std::string& path) {
-							HierarchyTemplate::HierarchyTreeT* tree = GameHandle->FindHierarchyTree(path);
+							Hierarchy::Tree* tree = GameHandle->FindHierarchyTree(path);
 							if (!tree)
 								return;
 
@@ -550,7 +550,7 @@ namespace GEE
 			return false;
 		});
 
-		if (colObj && !colObj->IsStatic)
+		if (colObj && !colObj->IsStatic && colObj->ActorPtr)
 		{
 			auto& propertiesCategory = shapesListCategory.AddCategory("Physical properties");
 			

@@ -248,7 +248,7 @@
     <Lib>
       <AdditionalLibraryDirectories>
       </AdditionalLibraryDirectories>
-      <AdditionalDependencies>opengl32.lib;glfw32/glfw3_32.lib;AL32/debug/OpenAL32.lib;PhysX32/debug/PhysX_32.lib;PhysX32/debug/PhysXCommon_32.lib;PhysX32/debug/PhysXFoundation_32.lib;PhysX32/debug/PhysXPvdSDK_static_32.lib;PhysX32/debug/PhysXExtensions_static_32.lib;PhysX32/debug/PhysXCharacterKinematic_static_32.lib;PhysX32/debug/PhysXCooking_32.lib;assimp/assimp-vc142-mt.lib;freetype32/freetype.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opengl32.lib;glfw32/glfw3_32.lib;AL32/OpenAL32.lib;PhysX32/PhysX_32.lib;PhysX32/PhysXCommon_32.lib;PhysX32/PhysXFoundation_32.lib;PhysX32/PhysXPvdSDK_static_32.lib;PhysX32/PhysXExtensions_static_32.lib;PhysX32/PhysXCharacterKinematic_static_32.lib;PhysX32/PhysXCooking_32.lib;assimp/assimp-vc142-mt.lib;freetype32/freetype.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -337,6 +337,7 @@
     <ClCompile Include="src\src\scene\Controller.cpp" />
     <ClCompile Include="src\src\scene\GunActor.cpp" />
     <ClCompile Include="src\src\scene\hierarchy\HierarchyNode.cpp" />
+    <ClCompile Include="src\src\scene\hierarchy\HierarchyNodeInstantiation.cpp" />
     <ClCompile Include="src\src\scene\hierarchy\HierarchyTree.cpp" />
     <ClCompile Include="src\src\scene\LightComponent.cpp" />
     <ClCompile Include="src\src\scene\LightProbeComponent.cpp" />
@@ -415,6 +416,7 @@
     <ClInclude Include="src\src\scene\Controller.h" />
     <ClInclude Include="src\src\scene\GunActor.h" />
     <ClInclude Include="src\src\scene\hierarchy\HierarchyNode.h" />
+    <ClInclude Include="src\src\scene\hierarchy\HierarchyNodeBase.h" />
     <ClInclude Include="src\src\scene\hierarchy\HierarchyNodeInstantiation.h" />
     <ClInclude Include="src\src\scene\hierarchy\HierarchyTree.h" />
     <ClInclude Include="src\src\scene\LightComponent.h" />

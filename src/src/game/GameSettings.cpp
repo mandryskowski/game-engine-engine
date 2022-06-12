@@ -8,11 +8,11 @@ namespace GEE
 	GameSettings::GameSettings()
 	{
 		bWindowFullscreen = false;
-		WindowTitle = "kulki";
+		WindowTitle = "GEE Window";
 	}
 
 	GameSettings::GameSettings(std::string path) :
-		GameSettings()	//zainicjalizuj wszystkie zmienne - plik moze byc uszkodzony
+		GameSettings()
 	{
 		LoadFromFile(path);
 	}
@@ -71,19 +71,22 @@ namespace GEE
 	template void GameSettings::Serialize<cereal::JSONOutputArchive>(cereal::JSONOutputArchive&);
 	template void GameSettings::Serialize<cereal::JSONInputArchive>(cereal::JSONInputArchive&);
 
-	GameSettings::VideoSettings::VideoSettings()
+	GameSettings::VideoSettings::VideoSettings():
+		AmbientOcclusionSamples(0),
+		bVSync(false),
+		bBloom(true),
+		DrawToWindowFBO(false),
+		AAType(AntiAliasingType::AA_NONE),
+		AALevel(SettingLevel::SETTING_NONE),
+		MonitorGamma(2.2f),
+		POMLevel(SettingLevel::SETTING_NONE),
+		ShadowLevel(SettingLevel::SETTING_LOW),
+		Max2DShadows(16),
+		Max3DShadows(16),
+		Shading(ShadingAlgorithm::SHADING_FULL_LIT),
+		TMType(ToneMappingType::TM_REINHARD)
 	{
-		AmbientOcclusionSamples = 0;
-		bVSync = false;
-		bBloom = true;
-		DrawToWindowFBO = false;
-		AAType = AntiAliasingType::AA_NONE;
-		AALevel = SettingLevel::SETTING_NONE;
-		MonitorGamma = 2.2f;
-		POMLevel = SettingLevel::SETTING_NONE;
-		ShadowLevel = SettingLevel::SETTING_LOW;
-		Shading = ShadingAlgorithm::SHADING_FULL_LIT;
-		TMType = ToneMappingType::TM_REINHARD;
+
 	}
 
 	std::string GameSettings::VideoSettings::GetShaderDefines(Vec2u resolution) const
@@ -163,7 +166,9 @@ namespace GEE
 	template<typename Archive>
 	void GameSettings::VideoSettings::Serialize(Archive& archive)
 	{
-		archive(CEREAL_NVP(AmbientOcclusionSamples), CEREAL_NVP(bVSync), CEREAL_NVP(bBloom), CEREAL_NVP(AAType), CEREAL_NVP(AALevel), CEREAL_NVP(MonitorGamma), CEREAL_NVP(POMLevel), CEREAL_NVP(ShadowLevel), CEREAL_NVP(TMType));
+		archive(CEREAL_NVP(AmbientOcclusionSamples), CEREAL_NVP(bVSync), CEREAL_NVP(bBloom), CEREAL_NVP(AAType), CEREAL_NVP(AALevel),
+				CEREAL_NVP(MonitorGamma), CEREAL_NVP(POMLevel), CEREAL_NVP(ShadowLevel), CEREAL_NVP(TMType),
+				CEREAL_NVP(Max2DShadows), CEREAL_NVP(Max3DShadows));
 	}
 	template void GameSettings::VideoSettings::Serialize<cereal::JSONOutputArchive>(cereal::JSONOutputArchive&);
 	template void GameSettings::VideoSettings::Serialize<cereal::JSONInputArchive>(cereal::JSONInputArchive&);

@@ -68,7 +68,7 @@ namespace GEE
 
 		virtual void SetCursorIcon(DefaultCursorIcon) override;
 
-		virtual HierarchyTemplate::HierarchyTreeT* FindHierarchyTree(const std::string& name, HierarchyTemplate::HierarchyTreeT* treeToIgnore = nullptr) override;
+		virtual Hierarchy::Tree* FindHierarchyTree(const std::string& name, Hierarchy::Tree* treeToIgnore = nullptr) override;
 		virtual SharedPtr<Font> FindFont(const std::string& path) override;
 
 		virtual void PreGameLoop();
@@ -125,6 +125,8 @@ namespace GEE
 		static void ScrollCallback(SystemWindow*, double xoffset, double yoffset);
 		static void FileDropCallback(SystemWindow*, int count, const char** paths);
 		static void CursorLeaveEnterCallback(SystemWindow*, int enter);
+
+		static GameScene* GetGameSceneFromWindow(SystemWindow&);
 
 		static EventHolder* TargetHolder;
 	};

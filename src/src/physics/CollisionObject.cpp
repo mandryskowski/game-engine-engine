@@ -110,7 +110,7 @@ namespace GEE
 			archive(CEREAL_NVP(Type), CEREAL_NVP(ShapeTransform), cereal::make_nvp("OptionalTreeName", treeName), cereal::make_nvp("OptionalMeshNodeName", meshNodeName), cereal::make_nvp("OptionalMeshSpecificName", meshSpecificName));
 			if (Type == CollisionShapeType::COLLISION_TRIANGLE_MESH)
 			{
-				HierarchyTemplate::HierarchyTreeT* tree = EngineDataLoader::LoadHierarchyTree(*GameManager::DefaultScene, treeName);
+				Hierarchy::Tree* tree = EngineDataLoader::LoadHierarchyTree(*GameManager::DefaultScene, treeName);
 				if (treeName.empty() || (meshNodeName.empty() && meshSpecificName.empty()))
 				{
 					std::cout << "ERROR: While serializing Triangle Mesh CollisionShape - No file path or no mesh name detected. Shape will not be added to the physics scene. Nr of verts: " << VertData.size() << "\n";

@@ -13,7 +13,7 @@
 #include <scene/Controller.h>
 #include <input/InputDevicesStateRetriever.h>
 #include <scene/UIButtonActor.h>
-
+ 
 using namespace GEE;
 Editor::EditorManager* Editor::EditorEventProcessor::EditorHandle = nullptr;
 
@@ -64,9 +64,6 @@ int main()
 	{
 		deltaTime = glfwGetTime() - lastUpdateTime;
 		lastUpdateTime = glfwGetTime();
-
-		if (Material* found = game.GetRenderEngineHandle()->FindMaterial("GEE_Engine_Title").get())
-			found->SetColor(hsvToRgb(Vec3f(glm::mod((float)glfwGetTime() * 10.0f, 360.0f), 0.6f, 0.6f)));
 
 		endGame = game.GameLoopIteration(1.0f / 60.0f, deltaTime);
 	} while (!endGame);

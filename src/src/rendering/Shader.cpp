@@ -235,13 +235,10 @@ namespace GEE
 
 	GLint Shader::FindLocation(std::string name) const
 	{
-		auto loc = std::find_if(Locations.begin(), Locations.end(), [name](const UniformLocation& location) { return location.Name == name; });
+		if (Locations[name] == 0)
+			Locations[name] = glGetUniformLocation(Program, name.c_str());
 
-		if (loc != Locations.end())
-			return loc->Location;
-
-		Locations.push_back(UniformLocation(name, glGetUniformLocation(Program, name.c_str())));
-		return Locations.back().Location;
+		return Locations[name];
 	}
 
 

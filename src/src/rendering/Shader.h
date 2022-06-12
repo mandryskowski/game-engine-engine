@@ -28,18 +28,6 @@ namespace GEE
 
 	class Shader
 	{
-		struct UniformLocation
-		{
-			std::string Name;
-			GLint Location;
-
-			UniformLocation(std::string name, GLint loc)
-			{
-				Name = name;
-				Location = loc;
-			}
-		};
-
 		friend struct ShaderLoader;
 	public:
 		Shader(std::string name = "undefinedShader");
@@ -110,7 +98,7 @@ namespace GEE
 
 		std::function<void()> PreRenderFunc;
 
-		mutable std::vector <UniformLocation> Locations;
+		mutable std::unordered_map<std::string, GLenum> Locations;
 		std::array<std::string, 3> ShadersSource;
 
 		std::function<void(Shader&, const Material&)> OnMaterialWholeDataUpdateFunc;

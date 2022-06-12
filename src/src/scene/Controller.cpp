@@ -62,7 +62,8 @@ namespace GEE
 
 	FreeRoamingController::FreeRoamingController(GameScene& scene, Actor* parentActor, const std::string& name) :
 		Controller(scene, parentActor, name),
-		RotationEuler(Vec3f(0.0f))
+		RotationEuler(Vec3f(0.0f)),
+		ControllerSpeed(1.0f)
 	{
 		SetHideCursor(true);
 		SetLockMouseAtCenter(true);
@@ -99,7 +100,7 @@ namespace GEE
 	{
 		Controller::Update(deltaTime);
 
-		if (!PossessedActor || &Scene != GameHandle->GetActiveScene())
+		if (!PossessedActor || GameHandle->GetCurrentMouseController() != this)
 			return;
 
 		const Vec3i& movementDir = GetMovementDirFromPressedKeys();
@@ -108,7 +109,7 @@ namespace GEE
 		if (rotatedMovementDir == Vec3f(0.0f))
 			return;
 
-		PossessedActor->GetTransform()->Move(glm::normalize(rotatedMovementDir) * deltaTime);
+		PossessedActor->GetTransform()->Move(glm::normalize(rotatedMovementDir) * deltaTime * ControllerSpeed);
 	}
 
 	void FreeRoamingController::OnMouseMovement(const Vec2f& previousPosPx, const Vec2f& currentPosPx, const Vec2u& windowSize)
@@ -136,6 +137,7 @@ namespace GEE
 		descBuilder.AddField("Target camera").GetTemplates().ObjectInput<Actor>(
 			[this]() { std::vector<Actor*> actors; Scene.GetRootActor()->GetAllActors(&actors); return actors; },
 			[this](Actor* actor) { SetPossessedActor(actor); });
+		descBuilder.AddField("Controller speed").GetTemplates().SliderRawInterval(0.0f, 10.0f, [this](float speed) { ControllerSpeed = speed; }, ControllerSpeed);
 	}
 
 	FPSController::FPSController(GameScene& scene, Actor* parentActor, const std::string& name) :
@@ -458,7 +460,7 @@ namespace GEE
 				ResetBalls();
 		}
 
-		if (&Scene != GameHandle->GetActiveScene())
+		if (GameHandle->GetCurrentMouseController() != this)
 			return;
 
 		if (GameHandle->GetInputRetriever().IsMouseButtonPressed(MouseButton::Right))
@@ -475,6 +477,9 @@ namespace GEE
 	}
 	void CueController::ResetBalls()
 	{
+		if (!WhiteBallActor)
+			return;
+
 		if (auto poolBallsActor = Scene.FindActor("Poolballs"))
 		{
 			std::vector<Component*> components;
@@ -492,9 +497,14 @@ namespace GEE
 					std::transform(stringName.begin(), stringName.end(), stringName.begin(), [](unsigned char ch) { return std::tolower(ch); });
 					if (stringName.find("ball") != std::string::npos)
 					{
-						auto rigidDynamicPtr = (stringName.find("white") == std::string::npos) ? (poolBallsActor->AddComponent(std::move(child->GenerateComp(MakeShared<HierarchyTemplate::NodeInstantiation::Data>(*tableHierarchyTree), *poolBallsActor))).GetCollisionObj()->ActorPtr->is<physx::PxRigidDynamic>()) : (WhiteBallActor->GetRoot()->GetCollisionObj()->ActorPtr->is<physx::PxRigidDynamic>());
+						auto colObj = (stringName.find("white") == std::string::npos) ? ( poolBallsActor->AddComponent(std::move(child->GenerateComp(MakeShared<Hierarchy::Instantiation::Data>(*tableHierarchyTree), *poolBallsActor))).GetCollisionObj()) : (WhiteBallActor->GetRoot()->GetCollisionObj());
+						if (!colObj)
+							continue;
+
+						auto rigidDynamicPtr = colObj->ActorPtr->is<physx::PxRigidDynamic>();
 
 						// Set ball material
+						GEE_CORE_ASSERT(GameHandle->GetPhysicsHandle());
 						physx::PxShape* shapePtr;
 						physx::PxMaterial* mat = GameHandle->GetPhysicsHandle()->CreateMaterial(BallStaticFriction, BallDynamicFriction, BallRestitution);
 

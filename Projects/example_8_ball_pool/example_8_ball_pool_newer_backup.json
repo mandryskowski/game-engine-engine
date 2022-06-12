@@ -84,7 +84,7 @@
                     "LocalResourcePath": "Pooltable",
                     "Root": {
                         "polymorphic_id": 2147483649,
-                        "polymorphic_name": "GEE::HierarchyTemplate::HierarchyNode<GEE::Component>",
+                        "polymorphic_name": "GEE::Hierarchy::Node<GEE::Component>",
                         "ptr_wrapper": {
                             "valid": 1,
                             "data": {
@@ -123,7 +123,7 @@
                                 "Children": [
                                     {
                                         "polymorphic_id": 2147483650,
-                                        "polymorphic_name": "GEE::HierarchyTemplate::HierarchyNode<GEE::ModelComponent>",
+                                        "polymorphic_name": "GEE::Hierarchy::Node<GEE::ModelComponent>",
                                         "ptr_wrapper": {
                                             "valid": 1,
                                             "data": {
@@ -4029,7 +4029,7 @@
                                                             "data": {
                                                                 "MeshTreePath": "ENG_QUAD",
                                                                 "MeshNodeName": "Quad",
-                                                                "MeshSpecificName": "Quad_NoShadow",
+                                                                "MeshSpecificName": "Quad",
                                                                 "MaterialInst": {
                                                                     "ptr_wrapper": {
                                                                         "id": 2147483674,

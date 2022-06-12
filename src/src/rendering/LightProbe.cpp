@@ -24,6 +24,7 @@ namespace GEE
 		glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
 
 		ConvoluteLightProbe(probe, probe.GetEnvironmentMap());
+		erTexture.Dispose();
 	}
 
 	void LightProbeLoader::ConvoluteLightProbe(const LightProbeComponent& probe, const Texture& envMap)
@@ -122,6 +123,13 @@ namespace GEE
 	LightProbeTextureArrays::LightProbeTextureArrays() :
 		NextLightProbeNr(0)
 	{
+	}
+
+	LightProbeTextureArrays::~LightProbeTextureArrays()
+	{
+		IrradianceMapArr.Dispose();
+		PrefilterMapArr.Dispose();
+		BRDFLut.Dispose();
 	}
 
 }

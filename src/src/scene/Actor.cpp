@@ -24,6 +24,16 @@ namespace GEE
 		RootComponent = MakeUnique<Component>(*this, nullptr, Name + "'s root", t);
 	}
 
+	/*Actor::Actor(const Actor& rhs) :
+		RootComponent(MakeUnique<Component>(*rhs.RootComponent)),
+		ParentActor(nullptr),
+		Name(rhs.Name),
+		SetupStream(rhs.SetupStream),
+		Scene(rhs.Scene),
+		GameHandle(rhs.GameHandle)
+	{
+	}*/
+
 	Actor::Actor(Actor&& moved) :
 		RootComponent(std::move(moved.RootComponent)),
 		Children(std::move(moved.Children)),

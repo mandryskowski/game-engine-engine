@@ -27,9 +27,12 @@ namespace GEE
 		virtual Boxf<Vec2f> GetBoundingBox(bool world = true) const override;	//Canvas space
 		float GetTextLength(bool world = true) const;
 		float GetTextHeight(bool world = true) const;
+		Vec2f GetTextMaxVerticalExtents(bool world = true) const;
 		virtual std::vector<const Material*> GetMaterials() const override;
 		Font* GetFont();
+		FontStyle GetFontStyle() const;
 		Font::Variation* GetFontVariation();
+		const Font::Variation* GetFontVariation() const;
 		MaterialInstance* GetTextMatInst();
 		Alignment2D GetAlignment() const;
 
@@ -101,6 +104,9 @@ namespace GEE
 		void SetMaxSize(const Vec2f&);
 		virtual void SetContent(const std::string&) override;
 		void UpdateSize();
+
+		virtual Boxf<Vec2f> GetBoundingBox(bool world = true) const override;	//Canvas space
+
 		/**
 		 * @brief Recalculates the ScaleRatio based on the scale of this Component's Transform.
 		 * @param space: The space to be used in order to compute ScaleRatio. You can use local/world transform, canvas and window space.
@@ -112,7 +118,11 @@ namespace GEE
 		*/
 		virtual void Unstretch(UISpace space = UISpace::Window) override;
 
+		Transform GetTransformCorrectedForSize(bool world = true) const;
+
 		virtual void HandleEvent(const Event& ev) override;
+
+		virtual void Render(const SceneMatrixInfo& info, Shader* shader) override;
 
 	private:
 		Vec2f MaxSize, ScaleRatio;
@@ -143,6 +153,7 @@ namespace GEE
 	{
 		float GetTextLength(const std::string& str, const Vec2f& textScale, const Font::Variation&);
 		float GetTextHeight(const std::string& str, const Vec2f& textScale, const Font::Variation&);
+		Vec2f GetTextMaxVerticalExtents(const std::string& str, const Vec2f& textScale, const Font::Variation&);
 
 		Boxf<Vec2f> ComputeBBox(const std::string& str, const Transform& spaceTransform, const Font::Variation&, Alignment2D);
 

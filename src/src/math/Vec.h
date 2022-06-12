@@ -80,6 +80,16 @@ std::ostream& operator<<(std::ostream& os, const GEE::Vec<length, T>& vec)
 	return (os << vec[length - 1]);	//add the last component
 }
 
+template <typename T>
+std::ostream& operator<<(std::ostream& os, const GEE::Quat<T>& q)
+{
+	for (int i = 0; i < 3; i++) //add commas after all components except the last one
+		os << q[i] << ", ";
+
+
+	return (os << q[3]);	//add the last component
+}
+
 template <unsigned int C, unsigned int R, typename T>
 std::ostream& operator<<(std::ostream& os, const GEE::Mat<C, R, T>& mat)
 {
@@ -90,7 +100,7 @@ std::ostream& operator<<(std::ostream& os, const GEE::Mat<C, R, T>& mat)
 	{
 		for (int x = 0; x < C; x++)
 		{
-			os << std::fixed << mat[y][x];
+			os << std::fixed << mat[x][y];
 			if (!(x == C - 1 && y == R - 1))	// do not add a comma after the last value.
 				os << ", ";
 		}

@@ -214,7 +214,7 @@ namespace GEE
 			*InterpolatedValPtr = Interp->InterpolateValues(MinVal, MaxVal);
 	}
 
-	Animation::Animation(const HierarchyTemplate::HierarchyTreeT& tree, aiAnimation* anim) :
+	Animation::Animation(const Hierarchy::Tree& tree, aiAnimation* anim) :
 		Localization(tree, anim->mName.C_Str()), Duration(anim->mDuration / ((anim->mTicksPerSecond != 0.0f) ? (anim->mTicksPerSecond) : (1.0f)))
 	{
 		for (int i = 0; i < static_cast<int>(anim->mNumChannels); i++)

@@ -309,6 +309,8 @@ namespace GEE
 			if (!dynamicShadowRender && light.HasValidShadowMap())
 				continue;
 
+			//std::cout << "Rerendering light " << light.GetName() <<". Dyamic shadow render: " << dynamicShadowRender << ". Valid shadow map: " <<light.HasValidShadowMap() << "\n";
+
 			if (light.ShouldCullFrontsForShadowMap())
 			{
 				glEnable(GL_CULL_FACE);
@@ -530,6 +532,9 @@ namespace GEE
 		}
 		else
 		{
+			glEnable(GL_DEPTH_TEST);
+			glEnable(GL_CULL_FACE);
+			glDepthFunc(GL_LEQUAL);
 			MainFramebuffer.Bind(viewport.GetSize());
 
 			if (clearMainFB)
@@ -577,7 +582,7 @@ namespace GEE
 		info.SetMainPass(true);
 		
 		if (modifyForwardsDepthForUI)
-			RawUIScene(info);
+			RawUIRender(info);
 		else
 		{
 			info.SetRequiredShaderInfo(MaterialShaderHint::Simple);
@@ -630,7 +635,7 @@ namespace GEE
 		}
 	}
 
-	void SceneRenderer::RawUIScene(const SceneMatrixInfo& infoTemplate)
+	void SceneRenderer::RawUIRender(const SceneMatrixInfo& infoTemplate)
 	{
 		SceneMatrixInfo info = infoTemplate;
 		GameSceneRenderData& renderData = info.GetSceneRenderData();

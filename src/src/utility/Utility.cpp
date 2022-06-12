@@ -100,6 +100,11 @@ namespace GEE
 			glDeleteBuffers(1, &UBO);
 	}
 
+	std::string BoolToString(bool b)
+	{
+		return (b) ? ("true") : ("false");
+	}
+
 	std::string lookupNextWord(std::stringstream& str)
 	{
 		std::string word;

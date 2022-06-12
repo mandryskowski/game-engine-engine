@@ -16,7 +16,7 @@ namespace GEE
 
 		virtual void OnStart() override;
 
-		TextComponent* GetContentTextComp();
+		TextConstantSizeComponent* GetContentTextComp();
 		std::string GetContent();
 		void PutString(const std::string&);
 
@@ -39,7 +39,7 @@ namespace GEE
 		void SetCaretPosAndUpdateModel(unsigned int changeCaretPos);
 
 		std::function<void()> ValueGetter;
-		TextComponent* ContentTextComp;
+		TextConstantSizeComponent* ContentTextComp;
 		bool RetrieveContentEachFrame;
 
 		ModelComponent* CaretComponent;	//SetHide() every x seconds

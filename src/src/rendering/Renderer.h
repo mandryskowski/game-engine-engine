@@ -148,7 +148,7 @@ namespace GEE
 
 		void FullRender(SceneMatrixInfo& info, Viewport = Viewport(Vec2f(0.0f), Vec2f(0.0f)), bool clearMainFB = true, bool modifyForwardsDepthForUI = false, std::function<void(GEE_FB::Framebuffer&)>&& renderIconsFunc = nullptr, bool forceForwardShading = false);	//This method renders a scene with lighting and some postprocessing that improve the visual quality (e.g. SSAO, if enabled).
 		void RawRender(const SceneMatrixInfo& info, Shader& shader);
-		void RawUIScene(const SceneMatrixInfo& info);
+		void RawUIRender(const SceneMatrixInfo& info);
 	};
 
 

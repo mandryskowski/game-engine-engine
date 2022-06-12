@@ -1,27 +1,52 @@
 #pragma once
 #include <scene/hierarchy/HierarchyTree.h>
-#include <game/GameScene.h>
+#include <scene/hierarchy/HierarchyNodeBase.h>
+#include <scene/Component.h>
 
 namespace GEE
 {
-	namespace HierarchyTemplate
+	namespace Hierarchy
 	{
-		namespace NodeInstantiation
+		namespace Instantiation
 		{
 			struct Data
 			{
-				Data(HierarchyTreeT& tree, bool allowSkeletonsCreation = true) :
-					Tree(tree)
-				{
-					if (allowSkeletonsCreation && Tree.GetBoneMapping())
-						SkelInfo = tree.GetScene().GetRenderData()->AddSkeletonInfo().get();
-				}
-				const HierarchyTreeT& GetTree() { return Tree; }
-			private:
-				const HierarchyTreeT& Tree;
+				Data(Tree& tree);
+				const Tree& GetTree() { return _Tree; }
+				SkeletonInfo* GetSkeletonInfo() { return SkelInfo; }
 
+			private:
+				const Tree& _Tree;
 				SkeletonInfo* SkelInfo;
+
+				friend class TreeInstantiation;
 			};
+
+			/**
+			 * @brief Instantiate a Tree to another hierarchical structure (e.g. actor-component). This way the hierarchy is retained.
+			 * @param  
+			*/
+
+			struct TreeInstantiation
+			{
+				TreeInstantiation(Tree& tree, bool allowSkeletonsCreation);
+				void ToComponents(NodeBase&, Component& parentComp, const std::vector<Hierarchy::NodeBase*>& limitToComponents);
+				void ToComponentsAndRoot(NodeBase&, Actor& actorToReplaceRoot, const std::vector<Hierarchy::NodeBase*>& limitToComponents);
+
+
+				void ToActors(NodeBase&, Actor& parentActor, std::function<Actor& (Actor&)> constructChildActorFunc, const std::vector<Hierarchy::NodeBase*>& limitToComponents);
+
+				void PostInstantiation(Component& instantiationRoot);
+
+				struct Implementation
+				{
+					Component& ToComponentsImpl(SharedPtr<Data>, NodeBase&, Component& parentComp, const std::vector<Hierarchy::NodeBase*>& limitToComponents);
+					Actor& ToActorsImpl(SharedPtr<Data>, NodeBase&, Actor& parentActor, std::function<Actor& (Actor&)> constructChildActorFunc, const std::vector<Hierarchy::NodeBase*>& limitToComponents);
+				} Impl;
+			private:
+				SharedPtr<Data> TreeData;
+			};
+
 
 			template <typename CompType = Component> struct Impl
 			{
@@ -29,7 +54,7 @@ namespace GEE
 				{
 					return MakeUnique<CompType>(actor, nullptr, name);
 				}
-				static void InstantiateToComp(SharedPtr<NodeInstantiation::Data> data, const HierarchyNode<CompType>& instantiatedNode, CompType& targetComp)
+				static void InstantiateToComp(SharedPtr<Instantiation::Data> data, const NodeBase& instantiatedNode, CompType& targetComp)
 				{
 					if (instantiatedNode.GetCollisionObject())
 						targetComp.SetCollisionObject(MakeUnique<Physics::CollisionObject>(*instantiatedNode.GetCollisionObject()));
@@ -37,14 +62,6 @@ namespace GEE
 
 			
 			};
-
-			/*template <> UniquePtr<ModelComponent> Impl<ModelComponent>::ConstructComp(Actor& tempActor, const std::string& name)
-			{
-				auto created = MakeUnique<ModelComponent>(tempActor, nullptr, name);
-				tempActor.GetScene().GetRenderData()->EraseRenderable(*created);
-
-				return std::move(created);
-			}*/
 		}
 	}
 }

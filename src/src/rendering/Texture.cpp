@@ -52,6 +52,11 @@ namespace GEE
 		return Path;
 	}
 
+	bool Texture::IsSRGB() const
+	{
+		return InternalFormat == Format::SRGB() || InternalFormat == Format::SRGBA();
+	}
+
 	Vec2u Texture::GetSize2D() const
 	{
 		return Size;

@@ -77,6 +77,9 @@ in VS_OUT
 	vec2 texCoord;
 	
 	mat3 TBN;
+	
+	bool bHasTangents;
+	vec3 normalWithoutNormalMap;
 }	fragIn;
 
 //out
@@ -109,7 +112,7 @@ float CalcShadow3D(Light light, vec3 fragPosition)
 {
 	vec3 lightToFrag = fragPosition - light.position.xyz;
 
-	return ((length(lightToFrag) / light.far > texture(shadowCubemaps, vec4(lightToFrag, light.shadowMapNr)).r + light.ambientAndShadowBias.a) ? (1.0) : (0.0));
+	return ((length(lightToFrag) / light.far > texture(shadowCubemaps, vec4(lightToFrag, light.shadowMapNr)).r /*+ light.ambientAndShadowBias.a*/) ? (1.0) : (0.0));
 }
 //#else
 float CalcShadow2D(Light light, vec3 fragPosition)
@@ -118,7 +121,7 @@ float CalcShadow2D(Light light, vec3 fragPosition)
 	vec3 lightCoords = lightProj.xyz /= lightProj.w;
 	lightCoords = lightCoords * 0.5 + 0.5;
 	
-	return (lightCoords.z > texture(shadowMaps, vec3(lightCoords.xy, light.shadowMapNr)).r + light.ambientAndShadowBias.a) ? (1.0) : (0.0);
+	return (lightCoords.z > texture(shadowMaps, vec3(lightCoords.xy, light.shadowMapNr)).r /*+ light.ambientAndShadowBias.a*/) ? (1.0) : (0.0);
 }
 //#endif
 
@@ -211,11 +214,15 @@ Fragment getFragment()
 	Fragment frag;
 	vec2 texCoord = fragIn.texCoord;
 	
-	vec3 normal = texture(material.normal1, texCoord).rgb;
-	if (normal == vec3(0.0))
-		normal = vec3(0.5, 0.5, 1.0);
-	normal = normal * 2.0 - 1.0;
-	normal = normalize(fragIn.TBN * normal);
+	vec3 normal = fragIn.normalWithoutNormalMap;
+	//if (fragIn.bHasTangents)	// Note: This "if" is not an optimisation; the code inside it will run anyways, due to the parallel nature of GPUs.
+	{
+		normal = texture(material.normal1, texCoord).rgb;
+		if (normal == vec3(0.0))
+			normal = vec3(0.5, 0.5, 1.0);
+		normal = normal * 2.0 - 1.0;
+		normal = normalize(fragIn.TBN * normal);
+	}
 	
 
 	frag.position = fragIn.worldPosition;

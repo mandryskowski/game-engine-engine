@@ -261,7 +261,7 @@ namespace GEE
 		std::string meshTreePath, meshNodeName, meshSpecificName;
 		archive(cereal::make_nvp("MeshTreePath", meshTreePath), cereal::make_nvp("MeshNodeName", meshNodeName), cereal::make_nvp("MeshSpecificName", meshSpecificName));
 
-		HierarchyTemplate::HierarchyTreeT* tree = EngineDataLoader::LoadHierarchyTree(*GameManager::DefaultScene, meshTreePath);
+		Hierarchy::Tree* tree = EngineDataLoader::LoadHierarchyTree(*GameManager::DefaultScene, meshTreePath);
 		Mesh* mesh = nullptr;
 
 		if (auto found = tree->FindMesh(meshNodeName, meshSpecificName))
