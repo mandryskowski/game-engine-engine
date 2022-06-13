@@ -7,8 +7,8 @@
 
 namespace GEE
 {
-	UIInputBoxActor::UIInputBoxActor(GameScene& scene, Actor* parentActor, const std::string& name) :
-		UIActivableButtonActor(scene, parentActor, name),
+	UIInputBoxActor::UIInputBoxActor(GameScene& scene, Actor* parentActor, const std::string& name, const Transform& transform) :
+		UIActivableButtonActor(scene, parentActor, name, nullptr, nullptr, transform),
 		ValueGetter(nullptr),
 		ContentTextComp(nullptr),
 		RetrieveContentEachFrame(false),
@@ -43,14 +43,14 @@ namespace GEE
 
 	}
 
-	UIInputBoxActor::UIInputBoxActor(GameScene& scene, Actor* parentActor, const std::string& name, std::function<void(const std::string&)> inputFunc, std::function<std::string()> valueGetter) :
-		UIInputBoxActor(scene, parentActor, name)
+	UIInputBoxActor::UIInputBoxActor(GameScene& scene, Actor* parentActor, const std::string& name, std::function<void(const std::string&)> inputFunc, std::function<std::string()> valueGetter, const Transform& transform) :
+		UIInputBoxActor(scene, parentActor, name, transform)
 	{
 		SetOnInputFunc(inputFunc, valueGetter);
 	}
 
-	UIInputBoxActor::UIInputBoxActor(GameScene& scene, Actor* parentActor, const std::string& name, std::function<void(float)> inputFunc, std::function<float()> valueGetter, bool fixNumberStr) :
-		UIInputBoxActor(scene, parentActor, name)
+	UIInputBoxActor::UIInputBoxActor(GameScene& scene, Actor* parentActor, const std::string& name, std::function<void(float)> inputFunc, std::function<float()> valueGetter, bool fixNumberStr, const Transform& transform) :
+		UIInputBoxActor(scene, parentActor, name, transform)
 	{
 		SetOnInputFunc(inputFunc, valueGetter, fixNumberStr);
 	}
@@ -79,7 +79,7 @@ namespace GEE
 	{
 	}
 
-	TextConstantSizeComponent* UIInputBoxActor::GetContentTextComp()
+	ScrollingTextComponent* UIInputBoxActor::GetContentTextComp()
 	{
 		return ContentTextComp;
 	}
@@ -298,7 +298,8 @@ namespace GEE
 		Vec2f mousePos = static_cast<Vec2f>(Scene.GetUIData()->GetWindowData().GetMousePositionNDC());
 		mousePos = Vec2f(textUtil::OwnedToSpaceTransform(UISpace::Canvas, *GetTransform(), GetCanvasPtr(), &Scene.GetUIData()->GetWindowData()).GetInverse().GetMatrix() * Vec4f(mousePos, 0.0f, 1.0f));
 
-		Transform contentTextT = GetContentTextComp()->GetTransformCorrectedForSize(false);
+		//Transform contentTextT = GetContentTextComp()->GetTransformCorrectedForSize(false);
+		Transform contentTextT = GetContentTextComp()->GetTransform();
 		auto textBB = textUtil::ComputeBBox(GetContentTextComp()->GetContent(), contentTextT, *GetContentTextComp()->GetFontVariation(), GetContentTextComp()->GetAlignment());
 		float currPos = -textBB.Size.x;
 		auto contentStr = ContentTextComp->GetContent();
@@ -339,8 +340,10 @@ namespace GEE
 		if (!CaretComponent)
 			return;
 
-		auto wholeTextBB = textUtil::ComputeBBox(GetContentTextComp()->GetContent().substr(0, CaretPosition), GetContentTextComp()->GetTransformCorrectedForSize(false), *GetContentTextComp()->GetFontVariation(), GetContentTextComp()->GetAlignment());
-		auto notIncludedText = textUtil::ComputeBBox(GetContentTextComp()->GetContent().substr(CaretPosition), GetContentTextComp()->GetTransformCorrectedForSize(false), *GetContentTextComp()->GetFontVariation(), GetContentTextComp()->GetAlignment());
+		//auto wholeTextBB = textUtil::ComputeBBox(GetContentTextComp()->GetContent().substr(0, CaretPosition), GetContentTextComp()->GetTransformCorrectedForSize(false), *GetContentTextComp()->GetFontVariation(), GetContentTextComp()->GetAlignment());
+		//auto notIncludedText = textUtil::ComputeBBox(GetContentTextComp()->GetContent().substr(CaretPosition), GetContentTextComp()->GetTransformCorrectedForSize(false), *GetContentTextComp()->GetFontVariation(), GetContentTextComp()->GetAlignment());
+		auto wholeTextBB = textUtil::ComputeBBox(GetContentTextComp()->GetContent().substr(0, CaretPosition), GetContentTextComp()->GetTransform(), *GetContentTextComp()->GetFontVariation(), GetContentTextComp()->GetAlignment());
+		auto notIncludedText = textUtil::ComputeBBox(GetContentTextComp()->GetContent().substr(CaretPosition), GetContentTextComp()->GetTransform(), *GetContentTextComp()->GetFontVariation(), GetContentTextComp()->GetAlignment());
 
 		const float caretWidthPx = 5.0f;
 		float caretWidthNDC = (caretWidthPx / static_cast<float>(Scene.GetUIData()->GetWindowData().GetWindowSize().x) / textUtil::ComputeScale(UISpace::Canvas, *GetTransform(), GetCanvasPtr(), &Scene.GetUIData()->GetWindowData()).x);

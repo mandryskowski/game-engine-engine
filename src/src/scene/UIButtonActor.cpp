@@ -318,10 +318,10 @@ namespace GEE
 		}
 	}
 
-	TextConstantSizeComponent& UIButtonActor::CreateButtonText(const std::string& content)
+	ScrollingTextComponent& UIButtonActor::CreateButtonText(const std::string& content)
 	{
-		auto& text = CreateComponent<TextConstantSizeComponent>("ButtonText", Transform(Vec2f(0.0f), Vec2f(1.0f)), content, "", Alignment2D::Center());
-		text.SetMaxSize(Vec2f(0.8f));
+		auto& text = CreateComponent<ScrollingTextComponent>("ButtonText", Transform(Vec2f(0.0f), Vec2f(1.0f)), content, "", Alignment2D::Center());
+		//text.SetMaxSize(Vec2f(0.8f));
 		text.Unstretch();
 		return text;
 	}

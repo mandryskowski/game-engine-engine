@@ -5,6 +5,8 @@
 #include <functional>
 namespace GEE
 {
+	class ScrollingTextComponent;
+
 	class UIButtonActor : public UIActorDefault
 	{
 	public:
@@ -49,7 +51,7 @@ namespace GEE
 		bool ContainsMouse(Vec2f cursorNDC);
 		virtual void DeduceMaterial();
 	protected:
-		TextConstantSizeComponent& CreateButtonText(const std::string& content);
+		ScrollingTextComponent& CreateButtonText(const std::string& content);
 
 		std::function<void()> OnClickFunc, OnDoubleClickFunc, OnHoverFunc, OnUnhoverFunc, OnBeingClickedFunc, WhileBeingClickedFunc;
 		std::function<void(PopupDescription)> PopupCreationFunc;

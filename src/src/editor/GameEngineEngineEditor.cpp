@@ -739,6 +739,7 @@ namespace GEE
 			{
 				auto& uifix = mainMenuScene.CreateActorAtRoot<UIActorDefault>("uifix", Transform(Vec2f(0.5f, 0.0f), Vec2f(0.1f)));
 				UIElementTemplates(uifix).ObjectInput<Actor, Actor>(*mainMenuScene.GetRootActor(), aauifix);
+				uifix.CreateChild<UIInputBoxActor>("fixinput", Transform(Vec2f(0.0f, 3.0f)));
 			}
 
 			{
@@ -771,7 +772,7 @@ namespace GEE
 				engineSubtitleTextComp.SetMaterialInst(subtitleMaterial);
 			}
 
-			mainMenuScene.CreateActorAtRoot<UIButtonActor>("NewProjectButton", "New project", [this, &mainMenuScene]() {
+			mainMenuScene.CreateActorAtRoot<UIButtonActor>("NewProjectButton", "OK", [this, &mainMenuScene]() {
 				UIWindowActor& window = mainMenuScene.CreateActorAtRoot<UIWindowActor>("ProjectCreatorWindow");
 				window.SetTransform(Transform(Vec2f(0.0f), Vec2f(0.5f)));
 
@@ -821,7 +822,7 @@ namespace GEE
 				{
 					UIActorDefault& recentProjectsActor = mainMenuScene.CreateActorAtRoot<UIActorDefault>("Recent", Transform(Vec2f(0.0f, -0.5f), Vec2f(0.1f)));
 					recentProjectsActor.CreateComponent<TextComponent>("RecentsText", Transform(Vec2f(0.0f, 1.6f), Vec2f(0.5f)), "Recent projects", "", Alignment2D::Center()).SetFontStyle(FontStyle::Bold);
-					UIElementTemplates(recentProjectsActor).ListSelection<std::string>(filepaths.begin(), filepaths.end(), [this](UIAutomaticListActor& listActor, std::string& filepath) { listActor.CreateChild<UIButtonActor>("RecentFilepathButton", getFileName(filepath), [this, filepath]() { LoadProject(filepath); }, Transform(Vec2f(0.0f), Vec2f(9.0f, 1.0f))).GetRoot()->GetComponent<TextConstantSizeComponent>("ButtonText")->Unstretch(); });
+					UIElementTemplates(recentProjectsActor).ListSelection<std::string>(filepaths.begin(), filepaths.end(), [this](UIAutomaticListActor& listActor, std::string& filepath) { listActor.CreateChild<UIButtonActor>("RecentFilepathButton", getFileName(filepath), [this, filepath]() { LoadProject(filepath); }, Transform(Vec2f(0.0f), Vec2f(9.0f, 1.0f))).GetRoot();/* ->GetComponent<TextConstantSizeComponent>("ButtonText")->Unstretch();*/ });
 				}
 			}
 

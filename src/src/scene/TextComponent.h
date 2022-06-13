@@ -140,6 +140,8 @@ namespace GEE
 
 		virtual Boxf<Vec2f> GetBoundingBox(bool world = true) const override;	//Canvas space
 
+		Transform GetCorrectedTransform(bool world = true);
+
 		virtual void Update(float deltaTime);
 		virtual void Render(const SceneMatrixInfo& info, Shader* shader) override;
 

@@ -9,14 +9,14 @@ namespace GEE
 	class UIInputBoxActor : public UIActivableButtonActor
 	{
 	public:
-		UIInputBoxActor(GameScene&, Actor* parentActor, const std::string& name);
-		UIInputBoxActor(GameScene&, Actor* parentActor, const std::string& name, std::function<void(const std::string&)> inputFunc, std::function<std::string()> valueGetter);
-		UIInputBoxActor(GameScene&, Actor* parentActor, const std::string& name, std::function<void(float)> inputFunc, std::function<float()> valueGetter, bool fixNumberStr = true);
+		UIInputBoxActor(GameScene&, Actor* parentActor, const std::string& name, const Transform& transform = Transform());
+		UIInputBoxActor(GameScene&, Actor* parentActor, const std::string& name, std::function<void(const std::string&)> inputFunc, std::function<std::string()> valueGetter, const Transform& transform = Transform());
+		UIInputBoxActor(GameScene&, Actor* parentActor, const std::string& name, std::function<void(float)> inputFunc, std::function<float()> valueGetter, bool fixNumberStr = true, const Transform& transform = Transform());
 		UIInputBoxActor(UIInputBoxActor&&);
 
 		virtual void OnStart() override;
 
-		TextConstantSizeComponent* GetContentTextComp();
+		ScrollingTextComponent* GetContentTextComp();
 		std::string GetContent();
 		void PutString(const std::string&);
 
@@ -39,7 +39,7 @@ namespace GEE
 		void SetCaretPosAndUpdateModel(unsigned int changeCaretPos);
 
 		std::function<void()> ValueGetter;
-		TextConstantSizeComponent* ContentTextComp;
+		ScrollingTextComponent* ContentTextComp;
 		bool RetrieveContentEachFrame;
 
 		ModelComponent* CaretComponent;	//SetHide() every x seconds
