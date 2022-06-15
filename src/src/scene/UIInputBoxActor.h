@@ -46,5 +46,6 @@ namespace GEE
 		unsigned int CaretPosition, CaretDirtyFlag;
 		Interpolation CaretAnim;
 
+		Vec2i TextSelectionRange;	//-1, -1 is no selection
 	};
 }

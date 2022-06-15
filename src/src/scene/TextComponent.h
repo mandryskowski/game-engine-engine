@@ -34,7 +34,7 @@ namespace GEE
 		Font::Variation* GetFontVariation();
 		const Font::Variation* GetFontVariation() const;
 		MaterialInstance* GetTextMatInst();
-		Alignment2D GetAlignment() const;
+		virtual Alignment2D GetAlignment() const;
 
 		virtual void SetContent(const std::string&);
 		void SetMaterialInst(MaterialInstance&&);
@@ -138,7 +138,10 @@ namespace GEE
 		ScrollingTextComponent(Actor&, Component* parentComp, const std::string& name = std::string(), const Transform& transform = Transform(), std::string content = std::string(), SharedPtr<Font> font = nullptr, Alignment2D = Alignment2D::LeftCenter());
 		ScrollingTextComponent(Actor&, Component* parentComp, const std::string& name = std::string(), const Transform& transform = Transform(), std::string content = std::string(), std::string fontPath = std::string(), Alignment2D = Alignment2D::LeftCenter());
 
+		bool IsScrollable() const;
+
 		virtual Boxf<Vec2f> GetBoundingBox(bool world = true) const override;	//Canvas space
+		virtual Alignment2D GetAlignment() const override;
 
 		Transform GetCorrectedTransform(bool world = true);
 

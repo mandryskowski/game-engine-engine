@@ -739,7 +739,7 @@ namespace GEE
 			{
 				auto& uifix = mainMenuScene.CreateActorAtRoot<UIActorDefault>("uifix", Transform(Vec2f(0.5f, 0.0f), Vec2f(0.1f)));
 				UIElementTemplates(uifix).ObjectInput<Actor, Actor>(*mainMenuScene.GetRootActor(), aauifix);
-				uifix.CreateChild<UIInputBoxActor>("fixinput", Transform(Vec2f(0.0f, 3.0f)));
+				uifix.CreateChild<UIInputBoxActor>("fixinput", Transform(Vec2f(0.0f, 3.0f), Vec2f(2.0f, 0.5f)));
 			}
 
 			{

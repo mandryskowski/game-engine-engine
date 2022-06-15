@@ -15,7 +15,8 @@ namespace GEE
 		CaretComponent(nullptr),
 		CaretPosition(0),
 		CaretDirtyFlag(GetTransform()->AddDirtyFlag()),
-		CaretAnim(0.0f, 0.5f)
+		CaretAnim(0.0f, 0.5f),
+		TextSelectionRange(-1)
 	{
 		//if (name == "VecBox0")
 			//ContentTextComp = &CreateComponent<ScrollingTextComponent>("ButtonText", Transform(Vec2f(0.0f), Vec2f(1.0f)), "0", "", Alignment2D::Center());
@@ -185,6 +186,7 @@ namespace GEE
 	{
 		UIActivableButtonActor::Update(deltaTime);
 
+		UpdateCaretModel(false);
 		// Caret anim
 
 		if (!(GetStateBits() & ButtonStateFlags::Active))
@@ -236,50 +238,74 @@ namespace GEE
 				}
 			}
 
+			switch (key)
+			{
 
-			if (key == Key::Backspace && CaretPosition != 0)
-			{
-				ContentTextComp->SetContent((GameHandle->GetInputRetriever().IsKeyPressed(Key::LeftControl)) ? (content.erase(0, CaretPosition)) : (content.erase(CaretPosition - 1, 1))); //erase the last letter
-				SetCaretPosAndUpdateModel((GameHandle->GetInputRetriever().IsKeyPressed(Key::LeftControl)) ? (0) : (CaretPosition - 1));
-			}
-			else if (key == Key::Escape)
-			{
+			case Key::Backspace:
+				if (CaretPosition != 0)
+				{
+					ContentTextComp->SetContent((GameHandle->GetInputRetriever().IsKeyPressed(Key::LeftControl)) ? (content.erase(0, CaretPosition)) : (content.erase(CaretPosition - 1, 1))); //erase the last letter
+					SetCaretPosAndUpdateModel((GameHandle->GetInputRetriever().IsKeyPressed(Key::LeftControl)) ? (0) : (CaretPosition - 1));
+				}
+				break;
+
+			case Key::Escape:
 				ValueGetter();
 				OnDeactivation();
-			}
-			else if (key == Key::Delete && !content.empty() && CaretPosition != content.length())
-			{
-				ContentTextComp->SetContent((GameHandle->GetInputRetriever().IsKeyPressed(Key::LeftControl)) ? (content.erase(CaretPosition)) : (content.erase(CaretPosition, 1))); //erase the last letter
+				break;
 
-				/*
-				* Note: do not change the following line. By passing the unchanged CaretPosition, we still update the model.
-				* Even though CaretPosition doesn't change (as the nb of letters before the caret is the same), the actual caret model's position does since letters might have different widths.
-				*/
+			case Key::Delete:
+				if (!content.empty() && CaretPosition != content.length())
+				{
+					ContentTextComp->SetContent((GameHandle->GetInputRetriever().IsKeyPressed(Key::LeftControl)) ? (content.erase(CaretPosition)) : (content.erase(CaretPosition, 1))); //erase the last letter
 
-				SetCaretPosAndUpdateModel((GameHandle->GetInputRetriever().IsKeyPressed(Key::LeftControl)) ? (GetContentTextComp()->GetContent().length()) : (CaretPosition));
-			}
-			else if ((key == Key::LeftArrow && keyEv.GetModifierBits() & KeyModifierFlags::Control) || (key == Key::Home) || (key == Key::Keypad7 && ~keyEv.GetModifierBits() & KeyModifierFlags::NumLock))
-			{
-				SetCaretPosAndUpdateModel(0);
-			}
-			else if (CaretPosition != 0 && key == Key::LeftArrow)
-			{
-				SetCaretPosAndUpdateModel(CaretPosition - 1);
-			}
-			else if ((keyEv.GetModifierBits() & KeyModifierFlags::Control && key == Key::RightArrow) || (key == Key::End))
-			{
-				SetCaretPosAndUpdateModel(GetContentTextComp()->GetContent().length());
-			}
-			else if (CaretPosition != GetContentTextComp()->GetContent().length() && key == Key::RightArrow)
-			{
-				SetCaretPosAndUpdateModel(CaretPosition + 1);
-			}
-			else if (key == Key::V && keyEv.GetModifierBits() & KeyModifierFlags::Control)
-			{
-				auto clipboardContent = glfwGetClipboardString(Scene.GetUIData()->GetWindow());
-				ContentTextComp->SetContent(content.insert(CaretPosition, clipboardContent));
-				SetCaretPosAndUpdateModel(CaretPosition + strlen(clipboardContent));
-			}
+					/*
+					* Note: do not change the following line. By passing the unchanged CaretPosition, we still update the model.
+					* Even though CaretPosition doesn't change (as the nb of letters before the caret is the same), the actual caret model's position does since letters might have different widths.
+					*/
+
+					SetCaretPosAndUpdateModel((GameHandle->GetInputRetriever().IsKeyPressed(Key::LeftControl)) ? (GetContentTextComp()->GetContent().length()) : (CaretPosition));
+				}
+				break;
+
+			case Key::LeftArrow:
+				if (keyEv.GetModifierBits() & KeyModifierFlags::Control)
+				{
+					case Key::Home:
+					SetCaretPosAndUpdateModel(0);
+					break;
+				}
+				else if (CaretPosition != 0)
+				{
+					SetCaretPosAndUpdateModel(CaretPosition - 1);
+				}
+				break;
+
+			case Key::Keypad7:
+				if ((~keyEv.GetModifierBits() & KeyModifierFlags::NumLock))
+					SetCaretPosAndUpdateModel(0);
+				break;
+
+			case Key::RightArrow:
+				if (keyEv.GetModifierBits() & KeyModifierFlags::Control && key == Key::RightArrow)
+				{
+					case Key::End:
+					SetCaretPosAndUpdateModel(GetContentTextComp()->GetContent().length());
+					break;
+				}
+				else if (CaretPosition != GetContentTextComp()->GetContent().length())
+					SetCaretPosAndUpdateModel(CaretPosition + 1);
+				break;
+
+			case Key::V:
+				if (keyEv.GetModifierBits() & KeyModifierFlags::Control)
+				{
+					auto clipboardContent = glfwGetClipboardString(Scene.GetUIData()->GetWindow());
+					ContentTextComp->SetContent(content.insert(CaretPosition, clipboardContent));
+					SetCaretPosAndUpdateModel(CaretPosition + strlen(clipboardContent));
+				}
+				break;
+			};
 		}
 		else if (ev.GetType() == EventType::CanvasViewChanged)
 			UpdateCaretModel(false);
@@ -299,9 +325,10 @@ namespace GEE
 		mousePos = Vec2f(textUtil::OwnedToSpaceTransform(UISpace::Canvas, *GetTransform(), GetCanvasPtr(), &Scene.GetUIData()->GetWindowData()).GetInverse().GetMatrix() * Vec4f(mousePos, 0.0f, 1.0f));
 
 		//Transform contentTextT = GetContentTextComp()->GetTransformCorrectedForSize(false);
-		Transform contentTextT = GetContentTextComp()->GetTransform();
+		Transform contentTextT = GetContentTextComp()->GetCorrectedTransform(false);
+		//Transform contentTextT = GetContentTextComp()->GetTransform();
 		auto textBB = textUtil::ComputeBBox(GetContentTextComp()->GetContent(), contentTextT, *GetContentTextComp()->GetFontVariation(), GetContentTextComp()->GetAlignment());
-		float currPos = -textBB.Size.x;
+		float currPos = textBB.Position.x - textBB.Size.x;
 		auto contentStr = ContentTextComp->GetContent();
 		auto ch = contentStr.begin();
 
@@ -340,22 +367,38 @@ namespace GEE
 		if (!CaretComponent)
 			return;
 
+		auto text = GetContentTextComp();
 		//auto wholeTextBB = textUtil::ComputeBBox(GetContentTextComp()->GetContent().substr(0, CaretPosition), GetContentTextComp()->GetTransformCorrectedForSize(false), *GetContentTextComp()->GetFontVariation(), GetContentTextComp()->GetAlignment());
 		//auto notIncludedText = textUtil::ComputeBBox(GetContentTextComp()->GetContent().substr(CaretPosition), GetContentTextComp()->GetTransformCorrectedForSize(false), *GetContentTextComp()->GetFontVariation(), GetContentTextComp()->GetAlignment());
-		auto wholeTextBB = textUtil::ComputeBBox(GetContentTextComp()->GetContent().substr(0, CaretPosition), GetContentTextComp()->GetTransform(), *GetContentTextComp()->GetFontVariation(), GetContentTextComp()->GetAlignment());
-		auto notIncludedText = textUtil::ComputeBBox(GetContentTextComp()->GetContent().substr(CaretPosition), GetContentTextComp()->GetTransform(), *GetContentTextComp()->GetFontVariation(), GetContentTextComp()->GetAlignment());
+		//auto wholeTextBB = textUtil::ComputeBBox(GetContentTextComp()->GetContent().substr(0, CaretPosition), GetContentTextComp()->GetTransform(), *GetContentTextComp()->GetFontVariation(), GetContentTextComp()->GetAlignment());
+		//auto notIncludedText = textUtil::ComputeBBox(GetContentTextComp()->GetContent().substr(CaretPosition), GetContentTextComp()->GetTransform(), *GetContentTextComp()->GetFontVariation(), GetContentTextComp()->GetAlignment());
+		auto wholeTextBB = textUtil::ComputeBBox(text->GetContent().substr(0, CaretPosition), text->GetCorrectedTransform(false), *text->GetFontVariation(), text->GetAlignment());
+		auto notIncludedBB = textUtil::ComputeBBox(text->GetContent().substr(CaretPosition), text->GetCorrectedTransform(false), *text->GetFontVariation(), text->GetAlignment());
 
-		const float caretWidthPx = 5.0f;
-		float caretWidthNDC = (caretWidthPx / static_cast<float>(Scene.GetUIData()->GetWindowData().GetWindowSize().x) / textUtil::ComputeScale(UISpace::Canvas, *GetTransform(), GetCanvasPtr(), &Scene.GetUIData()->GetWindowData()).x);
-		CaretComponent->GetTransform().SetScale(Vec2f(caretWidthNDC / 2.0f, 1.0f));
-		CaretComponent->GetTransform().SetPosition(Vec2f(wholeTextBB.Position.x + (wholeTextBB.Size.x - notIncludedText.Size.x) + CaretComponent->GetTransform().GetScale2D().x, 0.0f));
+		/*ModelComponent* wholeTextQuad = GetRoot()->GetComponent<ModelComponent>("wholeTextQuad"), * notIncludedQuad = GetRoot()->GetComponent<ModelComponent>("notIncludedQuad");
+		if (!wholeTextQuad || !notIncludedQuad)
+		{
+			wholeTextQuad = &CreateComponent<ModelComponent>("wholeTextQuad");
+			wholeTextQuad->AddMeshInst(MeshInstance(GameHandle->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::Quad), MakeShared<Material>("testmaerial", Vec4f(1.0f, 0.3f, 0.3f, 0.5f))));
+			notIncludedQuad = &CreateComponent<ModelComponent>("notIncludedQuad");
+			notIncludedQuad->AddMeshInst(MeshInstance(GameHandle->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::Quad), MakeShared<Material>("asdsad", Vec4f(0.3f, 0.3f, 1.0f, 0.5f))));
+		}*/
+
+		if (text->GetAlignment().GetHorizontal() == Alignment::Left)
+			notIncludedBB.Position.x += wholeTextBB.Size.x * 2.0f;
+		else if (text->GetAlignment().GetHorizontal() == Alignment::Center)
+		{
+			wholeTextBB.Position.x -= notIncludedBB.Size.x;
+			notIncludedBB.Position.x += wholeTextBB.Size.x;
+		}
+
+	//	wholeTextQuad->SetTransform(Transform(wholeTextBB.Position, wholeTextBB.Size));
+	//	notIncludedQuad->SetTransform(Transform(notIncludedBB.Position, notIncludedBB.Size));
 		
-		std::cout << "====Caret====\n";
-		std::cout << "$$$ Whole text pos: " << wholeTextBB.Position << "\n";
-		std::cout << "$$$ Whole text size: " << wholeTextBB.Size << "\n";
-		std::cout << "$$$ Whole text size: " << wholeTextBB.Size << "\n";
-		std::cout << "\n";
-
+		const float caretWidthPx = 5.0f;
+		float caretWidthNDC = (caretWidthPx / static_cast<float>(Scene.GetUIData()->GetWindowData().GetWindowSize().x) / textUtil::ComputeScale(UISpace::Window, *GetTransform(), GetCanvasPtr(), &Scene.GetUIData()->GetWindowData()).x);
+		CaretComponent->GetTransform().SetScale(Vec2f(caretWidthNDC / 2.0f, 1.0f));
+		CaretComponent->GetTransform().SetPosition(Vec2f(wholeTextBB.Position.x + (wholeTextBB.Size.x) + CaretComponent->GetTransform().GetScale2D().x, 0.0f));
 
 		if (refreshAnim)
 		{

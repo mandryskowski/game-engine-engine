@@ -17,7 +17,7 @@ namespace GEE
 		AfterBehaviour = after;
 	}
 
-	bool Interpolation::IsChanging()
+	bool Interpolation::IsChanging() const
 	{
 		if (CompType == 0.0f || CompType == 1.0f)
 			return false;
@@ -25,12 +25,12 @@ namespace GEE
 		return true;
 	}
 
-	float Interpolation::GetT()
+	float Interpolation::GetT() const
 	{
 		return CompType;
 	}
 
-	Time Interpolation::GetDuration()
+	Time Interpolation::GetDuration() const
 	{
 		return End;
 	}

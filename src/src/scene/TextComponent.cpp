@@ -334,6 +334,17 @@ namespace GEE
 	{
 	}
 
+	bool ScrollingTextComponent::IsScrollable() const
+	{
+		Transform parentRenderTransform = GetTransform().GetParentTransform()->GetWorldTransform();
+		float scroll = ScrollingInterp.GetT();
+
+		if (CanvasPtr) scroll *= CanvasPtr->GetCanvasT()->GetScale().x;
+		const float scrollLength = (GetTextLength(true) - Vec4f(parentRenderTransform.GetMatrix() * Vec4f(2.0f, 0.0f, 0.0f, 0.0f)).x);
+
+		return scrollLength > 0.0f;
+	}
+
 	Boxf<Vec2f> ScrollingTextComponent::GetBoundingBox(bool world) const
 	{
 		Transform transform = (world) ? (GetTransform().GetWorldTransform()) : (GetTransform());
@@ -343,9 +354,44 @@ namespace GEE
 		return Boxf<Vec2f>(transform.GetPos(), transform.GetScale());
 	}
 
+	Alignment2D ScrollingTextComponent::GetAlignment() const
+	{
+		if (IsScrollable())
+			return Alignment::Left;
+
+		return TextComponent::GetAlignment();
+	}
+
 	Transform ScrollingTextComponent::GetCorrectedTransform(bool world)
 	{
-		return Transform();
+		Transform renderTransform = (world) ? (GetTransform().GetWorldTransform()) : (GetTransform());
+		Transform parentRenderTransform = (world) ? (GetTransform().GetParentTransform()->GetWorldTransform()) : (Transform());
+
+		// Generate scroll matrix
+		float scroll = ScrollingInterp.GetT();
+
+		if (CanvasPtr) scroll *= CanvasPtr->GetCanvasT()->GetScale().x;
+		const float scrollLength = (GetTextLength(world) - Vec4f(parentRenderTransform.GetMatrix() * Vec4f(2.0f, 0.0f, 0.0f, 0.0f)).x);
+		//if (!world) std::cout << "!scroll length: " << scrollLength << '\n';
+		//if (!world) std::cout << "!value of T: " << scroll << '\n';
+		if (scrollLength <= 0.0f)
+			return renderTransform;
+
+		const float posX = scroll * scrollLength;
+
+
+		if (GetContent() == "UIFix.json")
+		{
+			std::cout << "====Scrolling text: " << GetContent() << "====\n";
+			std::cout << "@@@ PosX: " << posX << '\n';
+			std::cout << "@@@ AlignmentH: " << (int)GetAlignment().GetHorizontal() << '\n';
+			std::cout << "@@@ Render transform scale: " << renderTransform.GetScale2D() << '\n';
+			std::cout << "@@@ Local length: " << GetTextLength(false) << "\n";
+			std::cout << "@@@ World length: " << GetTextLength(true) << "\n";
+			std::cout << "\n";
+		}
+
+		return Transform(-Vec2f(posX + parentRenderTransform.GetScale2D().x, 0.0f), Vec2f(1.0f)) * renderTransform;
 	}
 
 
@@ -364,54 +410,28 @@ namespace GEE
 		if (!GetFont() || GetHide() || IsBeingKilled())
 			return;
 
-		bool testNow = int(glfwGetTime()) % 2;
-
 		// Copy info
-		Transform renderTransform = GetTransform().GetWorldTransform();
-		Transform parentRenderTransform = GetTransform().GetParentTransform()->GetWorldTransform();
 		SceneMatrixInfo info = infoBeforeChange;
 
-		// Set view matrix
-		float scroll = ScrollingInterp.GetT();
-		
-		if (CanvasPtr) scroll *= CanvasPtr->GetCanvasT()->GetScale().x;
-		//scroll = 0.0f;
-		//const float scrollLength = (GetTextLength(true) - Vec4f(((CanvasPtr) ? (CanvasPtr->ToCanvasSpace(renderTransform)) : (renderTransform)).GetMatrix() * Vec4f(2.0f, 0.0f, 0.0f, 0.0f)).x);
-		const float scrollLength = (GetTextLength(true) - Vec4f(parentRenderTransform.GetMatrix() * Vec4f(2.0f, 0.0f, 0.0f, 0.0f)).x);
-		if (scrollLength <= 0.0f)
+		// Check if can be scrolled. If not, render as normal text.
+		if (!IsScrollable())
 		{
 			TextComponent::Render(info, shader);
 			return;
 		}
-		const float posX = scroll * scrollLength;
-		const Mat4f scrollMat = Transform(Vec2f(posX + parentRenderTransform.GetScale2D().x, 0.0f), Vec2f(1.0f)).GetViewMatrix();
 
-		if (GetContent() == "UIFix.json")
-		{
-			std::cout << "====Scrolling text: " << GetContent() << "====\n";
-			std::cout << "@@@ PosX: " << posX << '\n';
-			std::cout << "@@@ AlignmentH: " << (int)GetAlignment().GetHorizontal() << '\n';
-		//	std::cout << "@@@ Scroll mat:\n " << scrollMat << '\n';
-		//	std::cout << "@@@ View mat:\n " << info.GetView() << '\n';
-			std::cout << "@@@ Render transform scale: " << renderTransform.GetScale2D() << '\n';
-			std::cout << "@@@ Local length: " << GetTextLength(false) << "\n";
-			std::cout << "@@@ World length: " << GetTextLength(true) << "\n";
-			std::cout << "@@@ testnow: " << testNow << '\n';
-			std::cout << "\n";
-		}
-
-		info.SetView(info.GetView() * scrollMat);
-		info.CalculateVP();
+		// Otherwise generate scrolled transform
+		const Transform scrolledT = GetCorrectedTransform(true);
 
 		// Set viewport
-		glEnable(GL_SCISSOR_TEST);
+		//glEnable(GL_SCISSOR_TEST);
 		auto parentWorldT = GetTransform().GetParentTransform()->GetWorldTransform();
 		if (CanvasPtr) parentWorldT = CanvasPtr->FromCanvasSpace(CanvasPtr->GetViewT().GetInverse() * CanvasPtr->ToCanvasSpace(parentWorldT));
 		auto viewport = NDCViewport(parentWorldT.GetPos() - parentWorldT.GetScale(), parentWorldT.GetScale());
 		viewport.ToPxViewport(infoBeforeChange.GetTbCollection().GetSettings().Resolution).SetScissor();
 
 		// Render - force left alignment if scrolling
-		TextRenderer(*GameHandle->GetRenderEngineHandle()).RenderText((CanvasPtr) ? (CanvasPtr->BindForRender(info)) : (info), *GetFont(), GetContent(), renderTransform, GetTextMatInst()->GetMaterialRef().GetColor(), shader, false, Alignment::Left);
+		TextRenderer(*GameHandle->GetRenderEngineHandle()).RenderText((CanvasPtr) ? (CanvasPtr->BindForRender(info)) : (info), *GetFont(), GetContent(), scrolledT, GetTextMatInst()->GetMaterialRef().GetColor(), shader, false, Alignment::Left);
 
 		// Clean up after everything
 		if (CanvasPtr)

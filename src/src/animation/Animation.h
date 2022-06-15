@@ -40,9 +40,9 @@ namespace GEE
 
 	public:
 		Interpolation(Time begin, Time end, InterpolationType type = InterpolationType::Linear, bool fadeAway = false, AnimBehaviour before = AnimBehaviour::STOP, AnimBehaviour after = AnimBehaviour::STOP);
-		bool IsChanging();
-		float GetT();
-		Time GetDuration();
+		bool IsChanging() const;
+		float GetT() const;
+		Time GetDuration() const;
 
 		void SetOnUpdateFunc(std::function<bool(Time)> func)
 		{
