@@ -39,6 +39,7 @@ namespace GEE
 		void UpdateCaretModel(bool refreshAnim = true);
 		void SetCaretPosAndUpdateModel(unsigned int changeCaretPos);
 		bool IsCaretInsideInputBox();
+		void NormalizeCaretPosition();
 
 		std::function<void()> ValueGetter;
 		ScrollingTextComponent* ContentTextComp;

@@ -224,6 +224,8 @@ namespace GEE
 
 		std::string content = ContentTextComp->GetContent();
 
+		NormalizeCaretPosition();
+
 		if (ev.GetType() == EventType::CharacterEntered)
 		{
 			const CharEnteredEvent& charEv = dynamic_cast<const CharEnteredEvent&>(ev);
@@ -376,6 +378,8 @@ namespace GEE
 		if (!CaretComponent)
 			return;
 
+		NormalizeCaretPosition();
+
 		auto text = GetContentTextComp();
 		auto leftBB = textUtil::ComputeBBox(text->GetContent().substr(0, CaretPosition), text->GetCorrectedTransform(false), *text->GetFontVariation(), text->GetAlignment());
 		auto rightBB = textUtil::ComputeBBox(text->GetContent().substr(CaretPosition), text->GetCorrectedTransform(false), *text->GetFontVariation(), text->GetAlignment());
@@ -414,6 +418,10 @@ namespace GEE
 	bool UIInputBoxActor::IsCaretInsideInputBox()
 	{
 		// 1.0 is the right side of the input box in the caret's local space
-		return glm::abs(CaretComponent->GetTransform().GetPos2D().x) < 1.0f + CaretNDCWidth / 2.0f;
+		return glm::abs(CaretComponent->GetTransform().GetPos2D().x) <= 1.0f + CaretNDCWidth;
+	}
+	void UIInputBoxActor::NormalizeCaretPosition()
+	{
+		CaretPosition = glm::clamp(CaretPosition, static_cast<unsigned int>(0), static_cast<unsigned int>(ContentTextComp->GetContent().length()));
 	}
 }
