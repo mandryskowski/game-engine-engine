@@ -49,6 +49,8 @@ namespace GEE
 			OnUpdateFunc = std::move(func);
 		}
 
+		void SetT(float t);
+
 		void Reset(Time begin = -1.0f, Time end = -1.0f);
 		void Inverse();	//this method essentially changes the direction of the interpolation. When you inverse an Interpolation, the interpolation function and time become inversed, so CompType increases at the same pace
 		/**

@@ -17,7 +17,7 @@ namespace GEE
 		CaretDirtyFlag(GetTransform()->AddDirtyFlag()),
 		CaretAnim(0.0f, 0.5f),
 		TextSelectionRange(-1),
-		CaretNDCWidth(0.01f)
+		CaretNDCWidth(0.0f)
 	{
 		//if (name == "VecBox0")
 			//ContentTextComp = &CreateComponent<ScrollingTextComponent>("ButtonText", Transform(Vec2f(0.0f), Vec2f(1.0f)), "0", "", Alignment2D::Center());
@@ -78,6 +78,8 @@ namespace GEE
 
 	void UIInputBoxActor::OnStart()
 	{
+		if (CaretNDCWidth == 0.0f)
+			SetCaretWidthPx(5.0f);
 	}
 
 	ScrollingTextComponent* UIInputBoxActor::GetContentTextComp()
@@ -204,7 +206,7 @@ namespace GEE
 			{
 				CaretAnim.Reset();
 
-				// If caret outside input box, always hide.
+				// If caret outside input box, always hide. Otherwise, flip the flag.
 				CaretComponent->SetHide(!CaretComponent->GetHide() || !IsCaretInsideInputBox());
 			}
 		}
@@ -301,7 +303,9 @@ namespace GEE
 					break;
 				}
 				else if (CaretPosition != GetContentTextComp()->GetContent().length())
+				{
 					SetCaretPosAndUpdateModel(CaretPosition + 1);
+				}
 				break;
 
 			case Key::V:
@@ -373,23 +377,29 @@ namespace GEE
 			return;
 
 		auto text = GetContentTextComp();
-		auto wholeTextBB = textUtil::ComputeBBox(text->GetContent().substr(0, CaretPosition), text->GetCorrectedTransform(false), *text->GetFontVariation(), text->GetAlignment());
-		auto notIncludedBB = textUtil::ComputeBBox(text->GetContent().substr(CaretPosition), text->GetCorrectedTransform(false), *text->GetFontVariation(), text->GetAlignment());
+		auto leftBB = textUtil::ComputeBBox(text->GetContent().substr(0, CaretPosition), text->GetCorrectedTransform(false), *text->GetFontVariation(), text->GetAlignment());
+		auto rightBB = textUtil::ComputeBBox(text->GetContent().substr(CaretPosition), text->GetCorrectedTransform(false), *text->GetFontVariation(), text->GetAlignment());
 
 
 		if (text->GetAlignment().GetHorizontal() == Alignment::Left)
-			notIncludedBB.Position.x += wholeTextBB.Size.x * 2.0f;
+			rightBB.Position.x += leftBB.Size.x * 2.0f;
 		else if (text->GetAlignment().GetHorizontal() == Alignment::Center)
 		{
-			wholeTextBB.Position.x -= notIncludedBB.Size.x;
-			notIncludedBB.Position.x += wholeTextBB.Size.x;
+			leftBB.Position.x -= rightBB.Size.x;
+			rightBB.Position.x += leftBB.Size.x;
 		}
 
 		CaretComponent->GetTransform().SetScale(Vec2f(CaretNDCWidth / 2.0f, 1.0f));
-		CaretComponent->GetTransform().SetPosition(Vec2f(wholeTextBB.Position.x + (wholeTextBB.Size.x) + CaretComponent->GetTransform().GetScale2D().x, 0.0f));
+		CaretComponent->GetTransform().SetPosition(Vec2f(leftBB.Position.x + (leftBB.Size.x) + CaretComponent->GetTransform().GetScale2D().x, 0.0f));
 
 		if (!IsCaretInsideInputBox())
+		{
 			CaretComponent->SetHide(true);
+			
+			// If we are scrolling left, scroll to next letter after caret to make it more readable.
+			bool caretOnLeftSide = CaretComponent->GetTransform().GetPos2D().x < 0.0f;
+			ContentTextComp->ScrollToLetter((caretOnLeftSide) ? (CaretPosition + 1) : (CaretPosition));
+		}
 		else if (refreshAnim)
 		{
 			CaretAnim.Reset();

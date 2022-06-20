@@ -340,10 +340,26 @@ namespace GEE
 		if (CanvasPtr)
 			parentRenderTransform = CanvasPtr->ToCanvasSpace(parentRenderTransform);
 
-		float scroll = ScrollingInterp.GetT();
 		const float scrollLength = (GetTextLength(true) - Vec4f(parentRenderTransform.GetMatrix() * Vec4f(2.0f, 0.0f, 0.0f, 0.0f)).x);
 
 		return scrollLength > 0.0f;
+	}
+
+	void ScrollingTextComponent::ScrollToLetter(unsigned int letterIndex)
+	{
+		Transform transform = GetTransform().GetWorldTransform();
+		Transform parentRenderTransform = GetTransform().GetParentTransform()->GetWorldTransform();
+
+		if (CanvasPtr)
+		{
+			transform = CanvasPtr->ToCanvasSpace(transform);
+			parentRenderTransform = CanvasPtr->ToCanvasSpace(parentRenderTransform);
+		}
+
+		const float fullLength = (GetTextLength(true) - Vec4f(parentRenderTransform.GetMatrix() * Vec4f(2.0f, 0.0f, 0.0f, 0.0f)).x);
+		const float partialLength = (textUtil::GetTextLength(GetContent().substr(0, letterIndex), transform.GetScale2D(), *GetFontVariation()) - Vec4f(parentRenderTransform.GetMatrix() * Vec4f(2.0f, 0.0f, 0.0f, 0.0f)).x);
+
+		ScrollingInterp.SetT(glm::clamp(partialLength / fullLength, 0.0f, 1.0f));
 	}
 
 	Boxf<Vec2f> ScrollingTextComponent::GetBoundingBox(bool world) const
@@ -388,7 +404,8 @@ namespace GEE
 
 	void ScrollingTextComponent::Update(float deltaTime)
 	{
-		ScrollingInterp.UpdateT(deltaTime);
+		return;
+		ScrollingInterp.UpdateT(0.0f);
 		if (ScrollingInterp.GetT() >= 1.0f)
 			ScrollingInterp.Reset();
 		//TimeSinceScrollReset += deltaTime;

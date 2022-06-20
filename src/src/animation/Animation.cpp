@@ -35,6 +35,13 @@ namespace GEE
 		return End;
 	}
 
+	void Interpolation::SetT(float t)
+	{
+		CompType = t;
+		if (OnUpdateFunc)
+			OnUpdateFunc(CompType);
+	}
+
 	void Interpolation::Reset(Time begin, Time end)
 	{
 		if (begin != -1.0f)

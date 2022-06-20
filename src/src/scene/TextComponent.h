@@ -140,6 +140,8 @@ namespace GEE
 
 		bool IsScrollable() const;
 
+		void ScrollToLetter(unsigned int letterIndex);
+
 		virtual Boxf<Vec2f> GetBoundingBox(bool world = true) const override;	//Canvas space
 		virtual Alignment2D GetAlignment() const override;
 
