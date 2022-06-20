@@ -36,6 +36,16 @@ namespace GEE
 		MaterialInstance* GetTextMatInst();
 		virtual Alignment2D GetAlignment() const;
 
+		Transform GetTransformCorrectedForSize(bool world = true) const;
+		void SetMaxSize(const Vec2f& maxSize) { MaxSize = maxSize; Unstretch(); }
+		/**
+		 * @brief Recalculates the ScaleRatio based on the scale of this Component's Transform.
+	 	 * @param space: The space to be used in order to compute ScaleRatio. You can use local/world transform, canvas and window space.
+		*/
+		void RecalculateScaleRatio(UISpace space = UISpace::Window);
+		
+
+
 		virtual void SetContent(const std::string&);
 		void SetMaterialInst(MaterialInstance&&);
 		void SetFont(SharedPtr<Font> font) { _Font = font; }
@@ -48,6 +58,7 @@ namespace GEE
 		void SetVerticalAlignment(Alignment);
 		void SetAlignment(Alignment2D);
 
+		virtual void HandleEvent(const Event& ev) override;
 		/**
 		 * @brief Unstretch the text (make the scale uniform) based on this Component's Transform. The scale X and Y will be set to the smallest component of the two.
 		 * @param space: The space to be used in order to compute ScaleRatio. You can use local/world transform, canvas and window space.
@@ -89,47 +100,12 @@ namespace GEE
 		  Note that Component::ComponentTransform::Position is not always at the bottom-left corner of the text.
 		  Use a function (that DOES NOT EXIST YET. TODO) to get the bottom-left corner of the text.
 		*/
-		Alignment2D _Alignment;								
+		Alignment2D _Alignment;					
+
+		Vec2f MinSize, MaxSize;
+		Vec2f ScaleRatio;
 
 		FontStyle _FontStyle;
-	};
-
-	class TextConstantSizeComponent : public TextComponent
-	{
-	public:
-		TextConstantSizeComponent(Actor&, Component* parentComp, const std::string& name = std::string(), const Transform& transform = Transform(), std::string content = std::string(), SharedPtr<Font> font = nullptr, Alignment2D = Alignment2D::LeftCenter());
-		TextConstantSizeComponent(Actor&, Component* parentComp, const std::string& name = std::string(), const Transform& transform = Transform(), std::string content = std::string(), std::string fontPath = std::string(), Alignment2D = Alignment2D::LeftCenter());
-		TextConstantSizeComponent(const TextConstantSizeComponent&) = delete;
-		TextConstantSizeComponent(TextConstantSizeComponent&&);
-		void SetMaxSize(const Vec2f&);
-		virtual void SetContent(const std::string&) override;
-		void UpdateSize();
-
-		virtual Boxf<Vec2f> GetBoundingBox(bool world = true) const override;	//Canvas space
-
-		/**
-		 * @brief Recalculates the ScaleRatio based on the scale of this Component's Transform.
-		 * @param space: The space to be used in order to compute ScaleRatio. You can use local/world transform, canvas and window space.
-		*/
-		void RecalculateScaleRatio(UISpace space);
-		/**
-		 * @brief Unstretch the text (make the scale uniform) based on this Component's Transform. The scale X and Y will be set to the smallest component of the two.
-		 * @param space: The space to be used in order to compute ScaleRatio. You can use local/world transform, canvas and window space.
-		*/
-		virtual void Unstretch(UISpace space = UISpace::Window) override;
-
-		Transform GetTransformCorrectedForSize(bool world = true) const;
-
-		virtual void HandleEvent(const Event& ev) override;
-
-		virtual void Render(const SceneMatrixInfo& info, Shader* shader) override;
-
-	private:
-		Vec2f MaxSize, ScaleRatio;
-		/**
-		 * @brief The UpdateSize method multiplies the text's scale by ScaleRatio. This multiplication must be undone before UpdateSize modifies scale again.
-		*/
-		Vec2f PreviouslyAppliedScaleRatio;
 	};
 
 	class ScrollingTextComponent : public TextComponent

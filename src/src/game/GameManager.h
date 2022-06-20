@@ -35,7 +35,6 @@ namespace GEE
 	class LightProbeComponent;
 	class ModelComponent;
 	class TextComponent;
-	class TextConstantSizeComponent;
 	class CameraComponent;
 	class BoneComponent;
 

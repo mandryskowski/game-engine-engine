@@ -262,7 +262,7 @@ namespace GEE
 					searchBar.CallOnClickFunc();
 
 					{
-						auto searchBarText = dynamic_cast<TextConstantSizeComponent*>(searchBar.GetContentTextComp());
+						auto searchBarText = dynamic_cast<TextComponent*>(searchBar.GetContentTextComp());
 						searchBarText->GetTransform().Move(Vec2f(0.25f, 0.0f));
 						searchBarText->SetMaxSize(Vec2f(0.75f, 1.0f) * 0.6f);
 						searchBarText->Unstretch();

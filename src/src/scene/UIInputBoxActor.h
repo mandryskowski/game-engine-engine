@@ -4,7 +4,6 @@
 namespace GEE
 {
 	class TextComponent;
-	class TextConstantSizeComponent;
 
 	class UIInputBoxActor : public UIActivableButtonActor
 	{
@@ -35,6 +34,8 @@ namespace GEE
 		virtual void OnHover() override;
 		virtual void OnUnhover() override;
 		virtual void OnDeactivation() override;
+	protected:
+		virtual void CreateButtonText(const std::string& content) override;
 	private:
 		void UpdateCaretModel(bool refreshAnim = true);
 		void SetCaretPosAndUpdateModel(unsigned int changeCaretPos);

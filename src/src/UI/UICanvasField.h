@@ -156,7 +156,6 @@ namespace GEE
 	{
 		GameScene* scenePtr = &Scene;
 		auto& compNameButton = TemplateParent.CreateChild<UIButtonActor>("CompNameBox", currentObjName, nullptr, Transform(Vec2f(2.0f, 0.0f), Vec2f(3.0f, 1.0f)));
-		//compNameButton.GetRoot()->GetComponent<TextConstantSizeComponent>("ButtonText")->Unstretch();
 
 		compNameButton.SetOnClickFunc([scenePtr, getObjectsFunc, setFunc, &compNameButton]() {
 			UIWindowActor& window = scenePtr->CreateActorAtRoot<UIWindowActor>("CompInputWindow");
@@ -187,15 +186,11 @@ namespace GEE
 			std::vector<ObjectType*> availableObjects = getObjectsFunc();
 
 			
-			auto& deleteMe123 = list.CreateChild<UIButtonActor>("Nullptr object button", "nullptr", [&window, setFunc, &compNameButton]() { setFunc(nullptr); window.MarkAsKilled(); if (auto buttonText = compNameButton.GetRoot()->GetComponent<TextConstantSizeComponent>("ButtonText")) buttonText->SetContent("nullptr"); });
+			auto& deleteMe123 = list.CreateChild<UIButtonActor>("Nullptr object button", "nullptr", [&window, setFunc, &compNameButton]() { setFunc(nullptr); window.MarkAsKilled(); if (auto buttonText = compNameButton.GetRoot()->GetComponent<TextComponent>("ButtonText")) buttonText->SetContent("nullptr"); });
 			//deleteMe123.CreateComponent<ScrollingTextComponent>("ButtonText", Transform(Vec2f(0.0f), Vec2f(0.25f, 1.0f)), "Nullptr", "", Alignment2D::LeftCenter());
-			//deleteMe123.GetRoot()->GetComponent<TextConstantSizeComponent>("ButtonText")->Unstretch();
 			for (auto& it : availableObjects)
 			{
-				auto& a = list.CreateChild<UIButtonActor>(it->GetName() + ", Matching object button", it->GetName(), [&window, setFunc, it, &compNameButton]() { setFunc(it); window.MarkAsKilled(); if (auto buttonText = compNameButton.GetRoot()->GetComponent<TextConstantSizeComponent>("ButtonText")) { buttonText->SetContent(it->GetName()); buttonText->Unstretch(); } });
-				//a.GetRoot()->GetComponent<TextConstantSizeComponent>("ButtonText")->Unstretch();
-			
-				//a.CreateComponent<TextConstantSizeComponent>("ButtonText", Transform(Vec2f(0.0f), Vec2f(0.25f, 1.0f)), it->GetName(), "", Alignment2D::Center()).SetMaxSize(Vec2f(0.8f));
+				auto& a = list.CreateChild<UIButtonActor>(it->GetName() + ", Matching object button", it->GetName(), [&window, setFunc, it, &compNameButton]() { setFunc(it); window.MarkAsKilled(); if (auto buttonText = compNameButton.GetRoot()->GetComponent<TextComponent>("ButtonText")) { buttonText->SetContent(it->GetName()); buttonText->Unstretch(); } });
 			}
 			list.Refresh();
 
@@ -246,7 +241,7 @@ namespace GEE
 		confirmationWindow.KillResizeBars();
 
 		auto& textActor = confirmationWindow.CreateChild<UIActorDefault>("TextActor", Transform(Vec2f(0.0f, 1.0f), Vec2f(0.9f)));
-		textActor.CreateComponent<TextConstantSizeComponent>("TextComponent", Transform(), promptText, "", Alignment2D::Top());
+		textActor.CreateComponent<TextComponent>("TextComponent", Transform(), promptText, "", Alignment2D::Top()).SetMaxSize(Vec2f(1.0f));
 
 		auto& declineButton = confirmationWindow.CreateChild<UIButtonActor>("DeclineButton", "No", [=, &confirmationWindow]() { onDenial(); confirmationWindow.MarkAsKilled(); }, Transform(Vec2f(-0.5f, -0.8f), Vec2f(0.2f)));
 		auto& confirmButton = confirmationWindow.CreateChild<UIButtonActor>("ConfirmButton", "Yes", [=, &confirmationWindow]() {  onConfirmation(); confirmationWindow.MarkAsKilled(); }, Transform(Vec2f(0.5f, -0.8f), Vec2f(0.2f)));

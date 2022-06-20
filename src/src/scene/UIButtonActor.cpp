@@ -80,7 +80,7 @@ namespace GEE
 	UIButtonActor::UIButtonActor(GameScene& scene, Actor* parentActor, const std::string& name, const std::string& buttonTextContent, std::function<void()> onClickFunc, const Transform& t) :
 		UIButtonActor(scene, parentActor, name, onClickFunc, t)
 	{
-		CreateButtonText(buttonTextContent).Unstretch();
+		CreateButtonText(buttonTextContent);
 	}
 
 	ModelComponent* UIButtonActor::GetButtonModel()
@@ -318,12 +318,11 @@ namespace GEE
 		}
 	}
 
-	ScrollingTextComponent& UIButtonActor::CreateButtonText(const std::string& content)
+	void UIButtonActor::CreateButtonText(const std::string& content)
 	{
-		auto& text = CreateComponent<ScrollingTextComponent>("ButtonText", Transform(Vec2f(0.0f), Vec2f(1.0f)), content, "", Alignment2D::Center());
-		//text.SetMaxSize(Vec2f(0.8f));
+		auto& text = CreateComponent<TextComponent>("ButtonText", Transform(Vec2f(0.0f), Vec2f(1.0f)), content, "", Alignment2D::Center());
+		text.SetMaxSize(Vec2f(0.8f));
 		text.Unstretch();
-		return text;
 	}
 
 	bool CollisionTests::AlignedRectContainsPoint(const Transform& rect, const Vec2f& point)

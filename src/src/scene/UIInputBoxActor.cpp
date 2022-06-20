@@ -19,7 +19,7 @@ namespace GEE
 		TextSelectionRange(-1),
 		CaretNDCWidth(0.0f)
 	{
-		ContentTextComp = &CreateButtonText("0");
+		CreateButtonText("0");
 
 		CaretComponent = &CreateComponent<ModelComponent>("CaretQuad", Transform(Vec2f(0.0f), Vec2f(0.03f, 1.0f)));
 
@@ -115,7 +115,7 @@ namespace GEE
 
 		if (valueGetter)
 		{
-			auto textConstantSizeCast = dynamic_cast<TextConstantSizeComponent*>(ContentTextComp);
+			auto textConstantSizeCast = dynamic_cast<TextComponent*>(ContentTextComp);
 			ValueGetter = [=]() {
 				ContentTextComp->SetContent(valueGetter());
 				if (textConstantSizeCast)
@@ -370,6 +370,13 @@ namespace GEE
 		if (ValueGetter)
 			ValueGetter();
 	}
+
+	void UIInputBoxActor::CreateButtonText(const std::string& content)
+	{
+		ContentTextComp = &CreateComponent<ScrollingTextComponent>("ButtonText", Transform(Vec2f(0.0f), Vec2f(1.0f)), content, "", Alignment2D::Center());
+		ContentTextComp->Unstretch();
+	}
+
 	void UIInputBoxActor::UpdateCaretModel(bool refreshAnim)
 	{
 		if (!CaretComponent)

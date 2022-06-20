@@ -413,14 +413,15 @@ namespace GEE
 				});
 
 				UIActorDefault& controllerInfo = scenePreviewActor.CreateChild<UIActorDefault>("ControllerCameraInfoTextActor", Transform(Vec2f(-0.45f, -1.07f), Vec2f(0.5f, 0.025f)));
-				controllerInfo.CreateComponent<TextConstantSizeComponent>("ControllerInfoText", Transform(Vec2f(0.0f, 1.5f)), "", "", Alignment2D::Center()).Unstretch();
-				controllerInfo.CreateComponent<TextConstantSizeComponent>("CameraInfoText", Transform(Vec2f(0.0f, -1.5f)), "", "", Alignment2D::Center()).Unstretch();
+				controllerInfo.CreateComponent<TextComponent>("ControllerInfoText", Transform(Vec2f(0.0f, 1.5f)), "", "", Alignment2D::Center()).SetMaxSize(Vec2f(1.0f));
+				controllerInfo.CreateComponent<TextComponent>("CameraInfoText", Transform(Vec2f(0.0f, -1.5f)), "", "", Alignment2D::Center()).SetMaxSize(Vec2f(1.0f));
 				UpdateControllerCameraInfo();
 
 
 
 				UIButtonActor& selectPreviewButton = scenePreviewActor.CreateChild<UIButtonActor>("SelectPreview_Empty", "Final", nullptr, Transform(Vec2f(0.6f, -1.07f), Vec2f(0.4f, 0.05f)));
-				auto selectPreviewButtonText = selectPreviewButton.GetRoot()->GetComponent<TextConstantSizeComponent>("ButtonText");
+				auto selectPreviewButtonText = selectPreviewButton.GetRoot()->GetComponent<TextComponent>("ButtonText");
+				selectPreviewButtonText->SetMaxSize(Vec2f(1.0f));
 				selectPreviewButtonText->Unstretch();
 				//selectPreviewButtonText->SetMaxSize(Vec2f(1.0f, 1.0f / 8.0f));
 				selectPreviewButton.SetOnClickFunc([&, selectPreviewButtonText]() {
@@ -447,7 +448,7 @@ namespace GEE
 				});
 
 				UIActorDefault& forwardShadingSwitch = scenePreviewActor.CreateChild<UIActorDefault>("Extended_Essay_ForwardShadingSwitch", Transform(Vec2f(0.1f, -1.07f), Vec2f(0.05f)));
-				forwardShadingSwitch.CreateComponent<TextConstantSizeComponent>("SwitchForwardText", Transform(Vec2f(0.0f, -1.4f), Vec2f(1.0f, 0.4f)), "Forward", "", Alignment2D::Center()).Unstretch();
+				forwardShadingSwitch.CreateComponent<TextComponent>("SwitchForwardText", Transform(Vec2f(0.0f, -1.4f), Vec2f(1.0f, 0.4f)), "Forward", "", Alignment2D::Center()).SetMaxSize(Vec2f(1.0f));
 				UIElementTemplates(forwardShadingSwitch).TickBox([this, &selectPreviewButton, selectPreviewButtonText, &scenePreviewQuad](bool val) {
 					selectPreviewButton.SetDisableInput(val); 
 					selectPreviewButton.GetButtonModel()->SetHide(val);
@@ -825,7 +826,7 @@ namespace GEE
 				{
 					UIActorDefault& recentProjectsActor = mainMenuScene.CreateActorAtRoot<UIActorDefault>("Recent", Transform(Vec2f(0.0f, -0.5f), Vec2f(0.1f)));
 					recentProjectsActor.CreateComponent<TextComponent>("RecentsText", Transform(Vec2f(0.0f, 1.6f), Vec2f(0.5f)), "Recent projects", "", Alignment2D::Center()).SetFontStyle(FontStyle::Bold);
-					UIElementTemplates(recentProjectsActor).ListSelection<std::string>(filepaths.begin(), filepaths.end(), [this](UIAutomaticListActor& listActor, std::string& filepath) { listActor.CreateChild<UIButtonActor>("RecentFilepathButton", getFileName(filepath), [this, filepath]() { LoadProject(filepath); }, Transform(Vec2f(0.0f), Vec2f(9.0f, 1.0f))).GetRoot();/* ->GetComponent<TextConstantSizeComponent>("ButtonText")->Unstretch();*/ });
+					UIElementTemplates(recentProjectsActor).ListSelection<std::string>(filepaths.begin(), filepaths.end(), [this](UIAutomaticListActor& listActor, std::string& filepath) { listActor.CreateChild<UIButtonActor>("RecentFilepathButton", getFileName(filepath), [this, filepath]() { LoadProject(filepath); }, Transform(Vec2f(0.0f), Vec2f(9.0f, 1.0f))).GetRoot(); });
 				}
 			}
 

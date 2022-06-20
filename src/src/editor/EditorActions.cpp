@@ -64,7 +64,6 @@ namespace GEE
 		DescriptionRoot->Refresh();
 		PopupCanvas->AutoClampView(true, true);
 		return button;
-		//button.GetRoot()->GetComponent<TextConstantSizeComponent>("ButtonText")->Unstretch(UISpace::Window);
 	}
 	PopupDescription PopupDescription::AddSubmenu(const std::string& buttonContent, std::function<void(PopupDescription)> prepareSubmenuFunc, const IconData& optionalIconData)
 	{
@@ -454,7 +453,6 @@ namespace GEE
 				element.OnClick();
 				element.DeduceMaterial();
 				element.SetTransform(Transform(Vec2f(1.5f, 0.0f), Vec2f(3.0f, 1.0f)));
-				element.GetRoot()->GetComponent<TextConstantSizeComponent>("ButtonText")->Unstretch();
 				element.SetPopupCreationFunc([&](PopupDescription desc)
 				{
 					desc.AddOption("Instantiate to selected", [this, &node, &editorScene, &tree]()

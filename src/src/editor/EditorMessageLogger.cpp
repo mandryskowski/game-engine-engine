@@ -19,7 +19,8 @@ namespace GEE
 			IconsMaterial = EditorHandle.GetGameHandle()->GetRenderEngineHandle()->FindMaterial<AtlasMaterial>("GEE_E_Icons");
 			
 			auto& moreMessagesActor = EditorScene.CreateActorAtRoot<UIActorDefault>("GEE_E_More_Messages_Actor", Transform(Vec2f(0.8f, -0.9f + static_cast<float>(MessageSlots.size()) * 0.2f - 0.1f), Vec2f(0.1f, 0.01f)));
-			auto& moreMessagesText = moreMessagesActor.CreateComponent<TextConstantSizeComponent>("GEE_E_More_Messages_Text", Transform(), "0 more...", "", Alignment2D::Bottom());
+			auto& moreMessagesText = moreMessagesActor.CreateComponent<TextComponent>("GEE_E_More_Messages_Text", Transform(), "0 more...", "", Alignment2D::Bottom());
+			moreMessagesText.SetMaxSize(Vec2f(1.0f));
 
 			moreMessagesText.Unstretch();
 			QueuedMessagesText = &moreMessagesText;
@@ -54,7 +55,8 @@ namespace GEE
 			closeButton->GetTransform()->SetPosition(Vec2f(1.0f) - static_cast<Vec2f>(closeButton->GetTransform()->GetScale()));
 
 			auto& content = logWindow.CreateChild<UIActorDefault>("GEE_E_LogWindowContent");
-			auto& messageText = content.CreateComponent<TextConstantSizeComponent>("GEE_E_LogText", Transform(Vec2f(-0.8f, 0.0f), Vec2f(1.6f, 2.0f)), message, "", Alignment2D::LeftCenter());// .Unstretch();
+			auto& messageText = content.CreateComponent<TextComponent>("GEE_E_LogText", Transform(Vec2f(-0.8f, 0.0f), Vec2f(1.6f, 2.0f)), message, "", Alignment2D::LeftCenter());// .Unstretch();
+			messageText.SetMaxSize(Vec2f(1.0f));
 			messageText.Unstretch(UISpace::Local);
 	
 

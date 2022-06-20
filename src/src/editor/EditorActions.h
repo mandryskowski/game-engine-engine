@@ -125,7 +125,7 @@ namespace GEE
 			element.SetDeactivateOnClickingAnywhere(false);
 			element.SetDeactivateOnClickingAgain(false);
 			element.SetTransform(Transform(Vec2f(1.5f, 0.0f), Vec2f(3.0f, 1.0f)));
-			TextConstantSizeComponent& elementText = element.CreateComponent<TextConstantSizeComponent>("ButtonText", Transform(Vec2f(0.0f), Vec2f(1.0f, 1.0f)), "", "", Alignment2D::Center());
+			TextComponent& elementText = element.CreateComponent<TextComponent>("ButtonText", Transform(Vec2f(0.0f), Vec2f(1.0f, 1.0f)), "", "", Alignment2D::Center());
 			elementText.SetFontStyle(FontStyle::Italic);
 			elementText.SetMaxSize(Vec2f(0.9f));
 			elementText.SetContent(obj.GetName());

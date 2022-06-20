@@ -51,7 +51,7 @@ namespace GEE
 		bool ContainsMouse(Vec2f cursorNDC);
 		virtual void DeduceMaterial();
 	protected:
-		ScrollingTextComponent& CreateButtonText(const std::string& content);
+		virtual void CreateButtonText(const std::string& content);
 
 		std::function<void()> OnClickFunc, OnDoubleClickFunc, OnHoverFunc, OnUnhoverFunc, OnBeingClickedFunc, WhileBeingClickedFunc;
 		std::function<void(PopupDescription)> PopupCreationFunc;

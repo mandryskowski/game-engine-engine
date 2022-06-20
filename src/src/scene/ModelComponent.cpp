@@ -261,7 +261,7 @@ namespace GEE
 					{
 						std::stringstream boxSizeStream;
 						boxSizeStream << meshInst->GetMesh().GetBoundingBox().Size;
-						window.CreateChild<UIActorDefault>("MeshSizeTextActor").CreateComponent<TextConstantSizeComponent>("MeshSizeText", Transform(Vec2f(1.0f, -1.0f), Vec2f(0.2f)), "Size: " + boxSizeStream.str(), "", Alignment2D::RightBottom());
+						window.CreateChild<UIActorDefault>("MeshSizeTextActor").CreateComponent<TextComponent>("MeshSizeText", Transform(Vec2f(1.0f, -1.0f), Vec2f(0.2f)), "Size: " + boxSizeStream.str(), "", Alignment2D::RightBottom()).SetMaxSize(Vec2f(1.0f));
 					}
 
 					window.SetOnCloseFunc([&meshPreviewScene, &renderHandle, viewportMaterial, &renderTbCollection]() { meshPreviewScene.MarkAsKilled();  renderHandle.EraseMaterial(*viewportMaterial); renderHandle.EraseRenderTbCollection(renderTbCollection); });

@@ -24,7 +24,10 @@ namespace GEE
 		_Font(font),
 		_FontStyle(FontStyle::Regular),
 		TextMatInst(nullptr),
-		_Alignment(alignment)
+		_Alignment(alignment),
+		MinSize(Vec2f(0.0f)),
+		MaxSize(Vec2f(std::numeric_limits<float>::max())),
+		ScaleRatio(Vec2f(1.0f))
 	{
 		auto mat = GameHandle->GetRenderEngineHandle()->FindMaterial("GEE_Default_Text_Material");
 
@@ -56,11 +59,11 @@ namespace GEE
 
 	Boxf<Vec2f> TextComponent::GetBoundingBox(bool world) const
 	{
-		Transform transform = (world) ? (GetTransform().GetWorldTransform()) : (GetTransform());
+		Transform transform = GetTransformCorrectedForSize(world);
 		if (CanvasPtr && world)
 			transform = CanvasPtr->ToCanvasSpace(transform);
 
-		return textUtil::ComputeBBox(Content, transform, *GetFontVariation(), _Alignment);
+		return textUtil::ComputeBBox(GetContent(), transform, *GetFontVariation(), GetAlignment());
 	}
 
 	float TextComponent::GetTextLength(bool world) const
@@ -128,6 +131,27 @@ namespace GEE
 		return _Alignment;
 	}
 
+	Transform TextComponent::GetTransformCorrectedForSize(bool world) const
+	{
+		if (MinSize == Vec2f(0.0f) && MaxSize == Vec2f(std::numeric_limits<float>::max()))
+			return (world) ? (GetTransform().GetWorldTransform()) : (GetTransform());
+
+		float textLength = glm::max(GetTextLength(false) / 2.0f, 0.001f);
+		Vec2f verticalExtents = GetTextMaxVerticalExtents(false);
+		float textHeight = glm::max(glm::max(glm::abs(verticalExtents.x), glm::abs(verticalExtents.y)), 0.001f) * 2.0f;
+		Vec2f scaleRatioInverse = 1.0f / ScaleRatio;
+		float scale = glm::min(scaleRatioInverse.x * MaxSize.x / textLength, scaleRatioInverse.y * MaxSize.y / textHeight);
+
+		Transform t = GetTransform();
+		t.SetScale(Vec2f(scale) * ScaleRatio * t.GetScale2D());
+		return (world) ? (GetTransform().GetParentTransform()->GetWorldTransform() * t) : (t);
+	}
+
+	void TextComponent::RecalculateScaleRatio(UISpace space)
+	{
+		ScaleRatio = textUtil::ComputeScaleRatio(space, ComponentTransform, GetCanvasPtr(), ((Scene.GetUIData()) ? (&Scene.GetUIData()->GetWindowData()) : (nullptr)), Vec3f(1.0f));
+	}
+
 	void TextComponent::SetContent(const std::string& content)
 	{
 		Content = content;
@@ -151,10 +175,11 @@ namespace GEE
 		if (!Material::ShaderInfo(MaterialShaderHint::None).MatchesRequiredInfo(info.GetRequiredShaderInfo()) && shader && shader->GetName() != "TextShader")
 			return;
 
-		TextRenderer(*GameHandle->GetRenderEngineHandle()).RenderText((CanvasPtr) ? (CanvasPtr->BindForRender(info)) : (info), *_Font->GetVariation(_FontStyle), Content, GetTransform().GetWorldTransform(), TextMatInst->GetMaterialRef().GetColor(), shader, false, _Alignment);
+		TextRenderer(*GameHandle->GetRenderEngineHandle()).RenderText((CanvasPtr) ? (CanvasPtr->BindForRender(info)) : (info), *_Font->GetVariation(_FontStyle), Content, GetTransformCorrectedForSize(true), TextMatInst->GetMaterialRef().GetColor(), shader, false, _Alignment);
 		if (CanvasPtr)
 			CanvasPtr->UnbindForRender();
 	}
+
 
 	void TextComponent::SetHorizontalAlignment(Alignment horizontal)
 	{
@@ -169,6 +194,14 @@ namespace GEE
 	void TextComponent::SetAlignment(Alignment2D alignment)
 	{
 		_Alignment = alignment;
+	}
+
+	void TextComponent::HandleEvent(const Event& ev)
+	{
+		RenderableComponent::HandleEvent(ev);
+
+		if (ev.GetType() == EventType::WindowResized)
+			RecalculateScaleRatio();
 	}
 
 	void TextComponent::Unstretch(UISpace space)
@@ -206,113 +239,6 @@ namespace GEE
 	unsigned int TextComponent::GetUIDepth() const
 	{
 		return GetElementDepth();
-	}
-
-	TextConstantSizeComponent::TextConstantSizeComponent(Actor& actor, Component* parentComp, const std::string& name, const Transform& transform, std::string content, SharedPtr<Font> font, Alignment2D alignment) :
-		TextComponent(actor, parentComp, name, transform, content, font, alignment),
-		MaxSize(Vec2f(1.0f)),
-		ScaleRatio(Vec2f(1.0f)),
-		PreviouslyAppliedScaleRatio(Vec2f(1.0f))
-	{
-		Unstretch();
-	}
-
-	TextConstantSizeComponent::TextConstantSizeComponent(Actor& actor, Component* parentComp, const std::string& name, const Transform& transform, std::string content, std::string fontPath, Alignment2D alignment) :
-		TextComponent(actor, parentComp, name, transform, content, fontPath, alignment),
-		MaxSize(Vec2f(1.0f)),
-		ScaleRatio(Vec2f(1.0f)),
-		PreviouslyAppliedScaleRatio(Vec2f(1.0f))
-	{
-		Unstretch();
-	}
-
-	TextConstantSizeComponent::TextConstantSizeComponent(TextConstantSizeComponent&& textComp) :
-		TextComponent(std::move(textComp)),
-		MaxSize(textComp.MaxSize),
-		ScaleRatio(textComp.ScaleRatio),
-		PreviouslyAppliedScaleRatio(textComp.PreviouslyAppliedScaleRatio)
-	{
-	}
-
-	void TextConstantSizeComponent::SetMaxSize(const Vec2f& maxSize)
-	{
-		if (MaxSize == maxSize)
-			return;
-		MaxSize = maxSize;
-		UpdateSize();
-	}
-
-	void TextConstantSizeComponent::SetContent(const std::string& content)
-	{
-		if (GetContent() == content)
-			return;
-
-		TextComponent::SetContent(content);
-		UpdateSize();
-	}
-
-	void TextConstantSizeComponent::UpdateSize()
-	{
-		float textLength = glm::max((GetTextLength(false) / 2.0f) / (GetTransform().GetScale().x / PreviouslyAppliedScaleRatio.x), 0.001f);
-		float textHeight = glm::max((GetTextHeight(false)) / (GetTransform().GetScale().y / PreviouslyAppliedScaleRatio.y), 0.001f);
-		float scale = glm::min(MaxSize.x / textLength, MaxSize.y / textHeight);
-		
-		//GetTransform().SetScale(Vec2f(scale) * ScaleRatio);
-		PreviouslyAppliedScaleRatio = Vec3f(1.0f);
-	}
-
-	Boxf<Vec2f> TextConstantSizeComponent::GetBoundingBox(bool world) const
-	{
-		Transform transform = GetTransformCorrectedForSize(world);
-		if (CanvasPtr && world)
-			transform = CanvasPtr->ToCanvasSpace(transform);
-
-		return textUtil::ComputeBBox(GetContent(), transform, *GetFontVariation(), GetAlignment());
-	}
-
-	void TextConstantSizeComponent::RecalculateScaleRatio(UISpace space)
-	{
-		ScaleRatio = textUtil::ComputeScaleRatio(space, ComponentTransform, GetCanvasPtr(), ((Scene.GetUIData()) ? (&Scene.GetUIData()->GetWindowData()) : (nullptr)), Vec3f(1.0f));
-	}
-
-	void TextConstantSizeComponent::Unstretch(UISpace space)
-	{
-		RecalculateScaleRatio(space);
-		UpdateSize();
-	}
-
-	Transform TextConstantSizeComponent::GetTransformCorrectedForSize(bool world) const
-	{
-		float textLength = glm::max(GetTextLength(false) / 2.0f, 0.001f);
-		Vec2f verticalExtents = GetTextMaxVerticalExtents(false);
-		float textHeight = glm::max(glm::max(glm::abs(verticalExtents.x), glm::abs(verticalExtents.y)), 0.001f) * 2.0f;
-		Vec2f scaleRatioInverse = 1.0f / ScaleRatio;
-		float scale = glm::min(scaleRatioInverse.x * MaxSize.x / textLength, scaleRatioInverse.y * MaxSize.y / textHeight);
-
-		Transform t = GetTransform();
-		t.SetScale(Vec2f(scale) * ScaleRatio * t.GetScale2D());
-		return (world) ? (GetTransform().GetParentTransform()->GetWorldTransform() * t) : (t);
-	}
-
-	void TextConstantSizeComponent::HandleEvent(const Event& ev)
-	{
-		TextComponent::HandleEvent(ev);
-
-		if (ev.GetType() == EventType::WindowResized)
-			Unstretch();
-	}
-
-	void TextConstantSizeComponent::Render(const SceneMatrixInfo& info, Shader* shader)
-	{
-		if (!GetFont() || GetHide() || IsBeingKilled())
-			return;
-
-		if (!Material::ShaderInfo(MaterialShaderHint::None).MatchesRequiredInfo(info.GetRequiredShaderInfo()) && shader && shader->GetName() != "TextShader")
-			return;
-
-		TextRenderer(*GameHandle->GetRenderEngineHandle()).RenderText((CanvasPtr) ? (CanvasPtr->BindForRender(info)) : (info), *GetFont()->GetVariation(GetFontStyle()), GetContent(), GetTransformCorrectedForSize(true), GetTextMatInst()->GetMaterialRef().GetColor(), shader, false, GetAlignment());
-		if (CanvasPtr)
-			CanvasPtr->UnbindForRender();
 	}
 
 	ScrollingTextComponent::ScrollingTextComponent(Actor& actorRef, Component* parentComp, const std::string& name, const Transform& transform, std::string content, SharedPtr<Font> font, Alignment2D alignment):

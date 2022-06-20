@@ -312,7 +312,7 @@ void UIMultipleListActor::NestList(UIListActor& list)
 		sliderBackground.SetMatIdle(*sliderBackgroundMaterial);*/
 
 
-		auto& valueText = TemplateParent.CreateChild<UIActorDefault>("SliderValueTextActor").CreateComponent<TextConstantSizeComponent>("SliderValueText", Transform(), ToStringPrecision(defaultValue, 3), "", Alignment2D::Center());
+		auto& valueText = TemplateParent.CreateChild<UIActorDefault>("SliderValueTextActor").CreateComponent<TextComponent>("SliderValueText", Transform(), ToStringPrecision(defaultValue, 3), "", Alignment2D::Center());
 		auto& slider = TemplateParent.CreateChild<UIScrollBarActor>("Slider");
 		slider.GetTransform()->SetScale(Vec2f(0.1f, 1.0f));
 		float scaleX = slider.GetTransform()->GetScale().x;
