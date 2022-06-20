@@ -19,10 +19,7 @@ namespace GEE
 		TextSelectionRange(-1),
 		CaretNDCWidth(0.0f)
 	{
-		//if (name == "VecBox0")
-			//ContentTextComp = &CreateComponent<ScrollingTextComponent>("ButtonText", Transform(Vec2f(0.0f), Vec2f(1.0f)), "0", "", Alignment2D::Center());
-		//else
-			ContentTextComp = &CreateButtonText("0");
+		ContentTextComp = &CreateButtonText("0");
 
 		CaretComponent = &CreateComponent<ModelComponent>("CaretQuad", Transform(Vec2f(0.0f), Vec2f(0.03f, 1.0f)));
 
