@@ -24,6 +24,7 @@ namespace GEE
 		void SetOnInputFunc(std::function<void(float)> inputFunc, std::function<float()> valueGetter, bool fixNumberStr = true);
 		void SetRetrieveContentEachFrame(bool);
 		virtual void SetActive(bool active) override;
+		void SetCaretWidthPx(unsigned int pixelWidth);
 
 		void UpdateValue();
 
@@ -37,6 +38,7 @@ namespace GEE
 	private:
 		void UpdateCaretModel(bool refreshAnim = true);
 		void SetCaretPosAndUpdateModel(unsigned int changeCaretPos);
+		bool IsCaretInsideInputBox();
 
 		std::function<void()> ValueGetter;
 		ScrollingTextComponent* ContentTextComp;
@@ -44,6 +46,7 @@ namespace GEE
 
 		ModelComponent* CaretComponent;	//SetHide() every x seconds
 		unsigned int CaretPosition, CaretDirtyFlag;
+		float CaretNDCWidth;
 		Interpolation CaretAnim;
 
 		Vec2i TextSelectionRange;	//-1, -1 is no selection

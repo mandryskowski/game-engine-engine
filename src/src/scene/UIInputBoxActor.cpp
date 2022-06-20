@@ -16,7 +16,8 @@ namespace GEE
 		CaretPosition(0),
 		CaretDirtyFlag(GetTransform()->AddDirtyFlag()),
 		CaretAnim(0.0f, 0.5f),
-		TextSelectionRange(-1)
+		TextSelectionRange(-1),
+		CaretNDCWidth(0.01f)
 	{
 		//if (name == "VecBox0")
 			//ContentTextComp = &CreateComponent<ScrollingTextComponent>("ButtonText", Transform(Vec2f(0.0f), Vec2f(1.0f)), "0", "", Alignment2D::Center());
@@ -40,8 +41,6 @@ namespace GEE
 
 		bDeactivateOnClickingAgain = false;
 		bDeactivateOnPressingEnter = true;
-
-
 	}
 
 	UIInputBoxActor::UIInputBoxActor(GameScene& scene, Actor* parentActor, const std::string& name, std::function<void(const std::string&)> inputFunc, std::function<std::string()> valueGetter, const Transform& transform) :
@@ -64,7 +63,8 @@ namespace GEE
 		CaretComponent(nullptr),
 		CaretPosition(inputBox.CaretPosition),
 		CaretDirtyFlag(GetTransform()->AddDirtyFlag()),
-		CaretAnim(inputBox.CaretAnim)
+		CaretAnim(inputBox.CaretAnim),
+		CaretNDCWidth(inputBox.CaretNDCWidth)
 	{
 		CaretAnim.SetOnUpdateFunc([](float CompType) { return CompType >= 1.0f;  });
 	}
@@ -176,6 +176,11 @@ namespace GEE
 		}
 	}
 
+	void UIInputBoxActor::SetCaretWidthPx(unsigned int pixelWidth)
+	{
+		CaretNDCWidth = (pixelWidth / static_cast<float>(Scene.GetUIData()->GetWindowData().GetWindowSize().x) / textUtil::ComputeScale(UISpace::Window, *GetTransform(), GetCanvasPtr(), &Scene.GetUIData()->GetWindowData()).x);
+	}
+
 	void UIInputBoxActor::UpdateValue()
 	{
 		if (ValueGetter)
@@ -198,7 +203,9 @@ namespace GEE
 			if (CaretAnim.UpdateT(deltaTime))
 			{
 				CaretAnim.Reset();
-				CaretComponent->SetHide(!CaretComponent->GetHide());
+
+				// If caret outside input box, always hide.
+				CaretComponent->SetHide(!CaretComponent->GetHide() || !IsCaretInsideInputBox());
 			}
 		}
 
@@ -324,9 +331,7 @@ namespace GEE
 		Vec2f mousePos = static_cast<Vec2f>(Scene.GetUIData()->GetWindowData().GetMousePositionNDC());
 		mousePos = Vec2f(textUtil::OwnedToSpaceTransform(UISpace::Canvas, *GetTransform(), GetCanvasPtr(), &Scene.GetUIData()->GetWindowData()).GetInverse().GetMatrix() * Vec4f(mousePos, 0.0f, 1.0f));
 
-		//Transform contentTextT = GetContentTextComp()->GetTransformCorrectedForSize(false);
 		Transform contentTextT = GetContentTextComp()->GetCorrectedTransform(false);
-		//Transform contentTextT = GetContentTextComp()->GetTransform();
 		auto textBB = textUtil::ComputeBBox(GetContentTextComp()->GetContent(), contentTextT, *GetContentTextComp()->GetFontVariation(), GetContentTextComp()->GetAlignment());
 		float currPos = textBB.Position.x - textBB.Size.x;
 		auto contentStr = ContentTextComp->GetContent();
@@ -368,21 +373,9 @@ namespace GEE
 			return;
 
 		auto text = GetContentTextComp();
-		//auto wholeTextBB = textUtil::ComputeBBox(GetContentTextComp()->GetContent().substr(0, CaretPosition), GetContentTextComp()->GetTransformCorrectedForSize(false), *GetContentTextComp()->GetFontVariation(), GetContentTextComp()->GetAlignment());
-		//auto notIncludedText = textUtil::ComputeBBox(GetContentTextComp()->GetContent().substr(CaretPosition), GetContentTextComp()->GetTransformCorrectedForSize(false), *GetContentTextComp()->GetFontVariation(), GetContentTextComp()->GetAlignment());
-		//auto wholeTextBB = textUtil::ComputeBBox(GetContentTextComp()->GetContent().substr(0, CaretPosition), GetContentTextComp()->GetTransform(), *GetContentTextComp()->GetFontVariation(), GetContentTextComp()->GetAlignment());
-		//auto notIncludedText = textUtil::ComputeBBox(GetContentTextComp()->GetContent().substr(CaretPosition), GetContentTextComp()->GetTransform(), *GetContentTextComp()->GetFontVariation(), GetContentTextComp()->GetAlignment());
 		auto wholeTextBB = textUtil::ComputeBBox(text->GetContent().substr(0, CaretPosition), text->GetCorrectedTransform(false), *text->GetFontVariation(), text->GetAlignment());
 		auto notIncludedBB = textUtil::ComputeBBox(text->GetContent().substr(CaretPosition), text->GetCorrectedTransform(false), *text->GetFontVariation(), text->GetAlignment());
 
-		ModelComponent* wholeTextQuad = GetRoot()->GetComponent<ModelComponent>("wholeTextQuad"), * notIncludedQuad = GetRoot()->GetComponent<ModelComponent>("notIncludedQuad");
-		if (!wholeTextQuad || !notIncludedQuad)
-		{
-			//wholeTextQuad = &CreateComponent<ModelComponent>("wholeTextQuad");
-			//wholeTextQuad->AddMeshInst(MeshInstance(GameHandle->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::Quad), MakeShared<Material>("testmaerial", Vec4f(1.0f, 0.3f, 0.3f, 0.5f))));
-			//notIncludedQuad = &CreateComponent<ModelComponent>("notIncludedQuad");
-			//notIncludedQuad->AddMeshInst(MeshInstance(GameHandle->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::Quad), MakeShared<Material>("asdsad", Vec4f(0.3f, 0.3f, 1.0f, 0.5f))));
-		}
 
 		if (text->GetAlignment().GetHorizontal() == Alignment::Left)
 			notIncludedBB.Position.x += wholeTextBB.Size.x * 2.0f;
@@ -392,15 +385,12 @@ namespace GEE
 			notIncludedBB.Position.x += wholeTextBB.Size.x;
 		}
 
-	//	wholeTextQuad->SetTransform(Transform(wholeTextBB.Position, wholeTextBB.Size));
-		//notIncludedQuad->SetTransform(Transform(notIncludedBB.Position, notIncludedBB.Size));
-		
-		const float caretWidthPx = 5.0f;
-		float caretWidthNDC = (caretWidthPx / static_cast<float>(Scene.GetUIData()->GetWindowData().GetWindowSize().x) / textUtil::ComputeScale(UISpace::Window, *GetTransform(), GetCanvasPtr(), &Scene.GetUIData()->GetWindowData()).x);
-		CaretComponent->GetTransform().SetScale(Vec2f(caretWidthNDC / 2.0f, 1.0f));
+		CaretComponent->GetTransform().SetScale(Vec2f(CaretNDCWidth / 2.0f, 1.0f));
 		CaretComponent->GetTransform().SetPosition(Vec2f(wholeTextBB.Position.x + (wholeTextBB.Size.x) + CaretComponent->GetTransform().GetScale2D().x, 0.0f));
 
-		if (refreshAnim)
+		if (!IsCaretInsideInputBox())
+			CaretComponent->SetHide(true);
+		else if (refreshAnim)
 		{
 			CaretAnim.Reset();
 			CaretComponent->SetHide(false);
@@ -410,5 +400,10 @@ namespace GEE
 	{
 		CaretPosition = changeCaretPos;
 		UpdateCaretModel(true);
+	}
+	bool UIInputBoxActor::IsCaretInsideInputBox()
+	{
+		// 1.0 is the right side of the input box in the caret's local space
+		return glm::abs(CaretComponent->GetTransform().GetPos2D().x) < 1.0f + CaretNDCWidth / 2.0f;
 	}
 }
