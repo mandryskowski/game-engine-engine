@@ -337,9 +337,11 @@ namespace GEE
 	bool ScrollingTextComponent::IsScrollable() const
 	{
 		Transform parentRenderTransform = GetTransform().GetParentTransform()->GetWorldTransform();
+		if (CanvasPtr)
+			parentRenderTransform = CanvasPtr->ToCanvasSpace(parentRenderTransform);
 		float scroll = ScrollingInterp.GetT();
 
-		if (CanvasPtr) scroll *= CanvasPtr->GetCanvasT()->GetScale().x;
+		//if (CanvasPtr) scroll *= CanvasPtr->GetCanvasT()->GetScale().x;
 		const float scrollLength = (GetTextLength(true) - Vec4f(parentRenderTransform.GetMatrix() * Vec4f(2.0f, 0.0f, 0.0f, 0.0f)).x);
 
 		return scrollLength > 0.0f;
@@ -366,30 +368,39 @@ namespace GEE
 	{
 		Transform renderTransform = (world) ? (GetTransform().GetWorldTransform()) : (GetTransform());
 		Transform parentRenderTransform = (world) ? (GetTransform().GetParentTransform()->GetWorldTransform()) : (Transform());
+		Transform dupa = parentRenderTransform;
+
+		if (GetCanvasPtr() && world)
+		{
+			auto canvas = GetCanvasPtr();
+			//renderTransform = CanvasPtr->ToCanvasSpace(renderTransform);
+			dupa = CanvasPtr->ToCanvasSpace(parentRenderTransform);
+			
+		}
+
+
+		/*if (world && GetCanvasPtr())
+		{
+			auto canvas = GetCanvasPtr();
+			parentRenderTransform = canvas->GetCanvasT()->GetWorldTransform() * canvas->FromCanvasSpace(canvas->GetViewT() * canvas->ToCanvasSpace(parentRenderTransform));
+		}*/
 
 		// Generate scroll matrix
 		float scroll = ScrollingInterp.GetT();
 
-		if (CanvasPtr) scroll *= CanvasPtr->GetCanvasT()->GetScale().x;
-		const float scrollLength = (GetTextLength(world) - Vec4f(parentRenderTransform.GetMatrix() * Vec4f(2.0f, 0.0f, 0.0f, 0.0f)).x);
+		//if (CanvasPtr) scroll *= CanvasPtr->GetCanvasT()->GetScale().x;
+
+
+		/*const*/ float scrollLength = (GetTextLength(world) - Vec4f(parentRenderTransform.GetMatrix() * Vec4f(2.0f, 0.0f, 0.0f, 0.0f)).x);
+		if (CanvasPtr && world)
+			scrollLength = CanvasPtr->FromCanvasSpace(Vec2f((GetTextLength(world) - Vec4f(CanvasPtr->ToCanvasSpace(parentRenderTransform).GetMatrix() * Vec4f(2.0f, 0.0f, 0.0f, 0.0f)).x))).x;
+		
 		//if (!world) std::cout << "!scroll length: " << scrollLength << '\n';
 		//if (!world) std::cout << "!value of T: " << scroll << '\n';
 		if (scrollLength <= 0.0f)
 			return renderTransform;
 
 		const float posX = scroll * scrollLength;
-
-
-		if (GetContent() == "UIFix.json")
-		{
-			std::cout << "====Scrolling text: " << GetContent() << "====\n";
-			std::cout << "@@@ PosX: " << posX << '\n';
-			std::cout << "@@@ AlignmentH: " << (int)GetAlignment().GetHorizontal() << '\n';
-			std::cout << "@@@ Render transform scale: " << renderTransform.GetScale2D() << '\n';
-			std::cout << "@@@ Local length: " << GetTextLength(false) << "\n";
-			std::cout << "@@@ World length: " << GetTextLength(true) << "\n";
-			std::cout << "\n";
-		}
 
 		return Transform(-Vec2f(posX + parentRenderTransform.GetScale2D().x, 0.0f), Vec2f(1.0f)) * renderTransform;
 	}
@@ -424,7 +435,7 @@ namespace GEE
 		const Transform scrolledT = GetCorrectedTransform(true);
 
 		// Set viewport
-		//glEnable(GL_SCISSOR_TEST);
+		glEnable(GL_SCISSOR_TEST);
 		auto parentWorldT = GetTransform().GetParentTransform()->GetWorldTransform();
 		if (CanvasPtr) parentWorldT = CanvasPtr->FromCanvasSpace(CanvasPtr->GetViewT().GetInverse() * CanvasPtr->ToCanvasSpace(parentWorldT));
 		auto viewport = NDCViewport(parentWorldT.GetPos() - parentWorldT.GetScale(), parentWorldT.GetScale());

@@ -375,14 +375,14 @@ namespace GEE
 		auto wholeTextBB = textUtil::ComputeBBox(text->GetContent().substr(0, CaretPosition), text->GetCorrectedTransform(false), *text->GetFontVariation(), text->GetAlignment());
 		auto notIncludedBB = textUtil::ComputeBBox(text->GetContent().substr(CaretPosition), text->GetCorrectedTransform(false), *text->GetFontVariation(), text->GetAlignment());
 
-		/*ModelComponent* wholeTextQuad = GetRoot()->GetComponent<ModelComponent>("wholeTextQuad"), * notIncludedQuad = GetRoot()->GetComponent<ModelComponent>("notIncludedQuad");
+		ModelComponent* wholeTextQuad = GetRoot()->GetComponent<ModelComponent>("wholeTextQuad"), * notIncludedQuad = GetRoot()->GetComponent<ModelComponent>("notIncludedQuad");
 		if (!wholeTextQuad || !notIncludedQuad)
 		{
-			wholeTextQuad = &CreateComponent<ModelComponent>("wholeTextQuad");
-			wholeTextQuad->AddMeshInst(MeshInstance(GameHandle->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::Quad), MakeShared<Material>("testmaerial", Vec4f(1.0f, 0.3f, 0.3f, 0.5f))));
-			notIncludedQuad = &CreateComponent<ModelComponent>("notIncludedQuad");
-			notIncludedQuad->AddMeshInst(MeshInstance(GameHandle->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::Quad), MakeShared<Material>("asdsad", Vec4f(0.3f, 0.3f, 1.0f, 0.5f))));
-		}*/
+			//wholeTextQuad = &CreateComponent<ModelComponent>("wholeTextQuad");
+			//wholeTextQuad->AddMeshInst(MeshInstance(GameHandle->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::Quad), MakeShared<Material>("testmaerial", Vec4f(1.0f, 0.3f, 0.3f, 0.5f))));
+			//notIncludedQuad = &CreateComponent<ModelComponent>("notIncludedQuad");
+			//notIncludedQuad->AddMeshInst(MeshInstance(GameHandle->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::Quad), MakeShared<Material>("asdsad", Vec4f(0.3f, 0.3f, 1.0f, 0.5f))));
+		}
 
 		if (text->GetAlignment().GetHorizontal() == Alignment::Left)
 			notIncludedBB.Position.x += wholeTextBB.Size.x * 2.0f;
@@ -393,7 +393,7 @@ namespace GEE
 		}
 
 	//	wholeTextQuad->SetTransform(Transform(wholeTextBB.Position, wholeTextBB.Size));
-	//	notIncludedQuad->SetTransform(Transform(notIncludedBB.Position, notIncludedBB.Size));
+		//notIncludedQuad->SetTransform(Transform(notIncludedBB.Position, notIncludedBB.Size));
 		
 		const float caretWidthPx = 5.0f;
 		float caretWidthNDC = (caretWidthPx / static_cast<float>(Scene.GetUIData()->GetWindowData().GetWindowSize().x) / textUtil::ComputeScale(UISpace::Window, *GetTransform(), GetCanvasPtr(), &Scene.GetUIData()->GetWindowData()).x);
