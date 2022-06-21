@@ -265,7 +265,7 @@ namespace GEE
 		if (CanvasPtr)
 			parentRenderTransform = CanvasPtr->ToCanvasSpace(parentRenderTransform);
 
-		const float scrollLength = (GetTextLength(true) - Vec4f(parentRenderTransform.GetMatrix() * Vec4f(2.0f, 0.0f, 0.0f, 0.0f)).x);
+		const float scrollLength = GetTextLength(true) - parentRenderTransform.GetScale2D().x * 2.0f;
 
 		return scrollLength > 0.0f;
 	}
@@ -281,8 +281,8 @@ namespace GEE
 			parentRenderTransform = CanvasPtr->ToCanvasSpace(parentRenderTransform);
 		}
 
-		const float fullLength = (GetTextLength(true) - Vec4f(parentRenderTransform.GetMatrix() * Vec4f(2.0f, 0.0f, 0.0f, 0.0f)).x);
-		const float partialLength = (textUtil::GetTextLength(GetContent().substr(0, letterIndex), transform.GetScale2D(), *GetFontVariation()) - Vec4f(parentRenderTransform.GetMatrix() * Vec4f(2.0f, 0.0f, 0.0f, 0.0f)).x);
+		const float fullLength = GetTextLength(true) - parentRenderTransform.GetScale2D().x * 2.0f;
+		const float partialLength = textUtil::GetTextLength(GetContent().substr(0, letterIndex), transform.GetScale2D(), *GetFontVariation()) - parentRenderTransform.GetScale2D().x * 2.0f;
 
 		ScrollingInterp.SetT(glm::clamp(partialLength / fullLength, 0.0f, 1.0f));
 	}
@@ -314,9 +314,9 @@ namespace GEE
 		float scrollLength = 0.0f;
 
 		if (CanvasPtr && world)
-			scrollLength = CanvasPtr->FromCanvasSpace(Vec2f((GetTextLength(world) - Vec4f(CanvasPtr->ToCanvasSpace(parentRenderTransform).GetMatrix() * Vec4f(2.0f, 0.0f, 0.0f, 0.0f)).x))).x;
+			scrollLength = CanvasPtr->ScaleFromCanvasSpace(Vec2f((GetTextLength(world) - Vec4f(CanvasPtr->ToCanvasSpace(parentRenderTransform).GetScale2D().x * 2.0f)))).x;
 		else
-			scrollLength = GetTextLength(world) - Vec4f(parentRenderTransform.GetMatrix() * Vec4f(2.0f, 0.0f, 0.0f, 0.0f)).x;
+			scrollLength = GetTextLength(world) - parentRenderTransform.GetScale2D().x * 2.0f;
 		
 		if (scrollLength <= 0.0f)
 			return renderTransform;
@@ -364,7 +364,7 @@ namespace GEE
 		viewport.ToPxViewport(infoBeforeChange.GetTbCollection().GetSettings().Resolution).SetScissor();
 
 		// Render - force left alignment if scrolling
-		TextRenderer(*GameHandle->GetRenderEngineHandle()).RenderText((CanvasPtr) ? (CanvasPtr->BindForRender(info)) : (info), *GetFont(), GetContent(), scrolledT, GetTextMatInst()->GetMaterialRef().GetColor(), shader, false, Alignment::Left);
+		TextRenderer(*GameHandle->GetRenderEngineHandle()).RenderText((CanvasPtr) ? (CanvasPtr->BindForRender(info)) : (info), *GetFontVariation(), GetContent(), scrolledT, GetTextMatInst()->GetMaterialRef().GetColor(), shader, false, Alignment::Left);
 
 		// Clean up after everything
 		if (CanvasPtr)
