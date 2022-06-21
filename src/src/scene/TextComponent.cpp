@@ -131,9 +131,14 @@ namespace GEE
 		return _Alignment;
 	}
 
+	bool TextComponent::IsScrollable() const
+	{
+		return false;
+	}
+
 	Transform TextComponent::GetTransformCorrectedForSize(bool world) const
 	{
-		if (MinSize == Vec2f(0.0f) && MaxSize == Vec2f(std::numeric_limits<float>::max()))
+		if (MaxSize == Vec2f(std::numeric_limits<float>::max()))
 			return (world) ? (GetTransform().GetWorldTransform()) : (GetTransform());
 
 		float textLength = glm::max(GetTextLength(false) / 2.0f, 0.001f);
@@ -333,9 +338,6 @@ namespace GEE
 		ScrollingInterp.UpdateT(0.0f);
 		if (ScrollingInterp.GetT() >= 1.0f)
 			ScrollingInterp.Reset();
-		//TimeSinceScrollReset += deltaTime;
-		//if (TimeSinceScrollReset > ScrollResetTime + ScrollCooldownTime)
-		//	TimeSinceScrollReset -= (ScrollResetTime + ScrollCooldownTime) + ScrollCooldownTime;	// Two cooldowns: one after the text has been fully scrolled and one before scrolling. That's why we substract two cooldowns
 	}
 
 	void ScrollingTextComponent::Render(const SceneMatrixInfo& infoBeforeChange, Shader* shader)

@@ -36,6 +36,7 @@ namespace GEE
 		MaterialInstance* GetTextMatInst();
 		virtual Alignment2D GetAlignment() const;
 
+		bool IsScrollable() const;
 		Transform GetTransformCorrectedForSize(bool world = true) const;
 		void SetMaxSize(const Vec2f& maxSize) { MaxSize = maxSize; Unstretch(); }
 		/**
@@ -45,7 +46,7 @@ namespace GEE
 		void RecalculateScaleRatio(UISpace space = UISpace::Window);
 		
 
-
+		
 		virtual void SetContent(const std::string&);
 		void SetMaterialInst(MaterialInstance&&);
 		void SetFont(SharedPtr<Font> font) { _Font = font; }

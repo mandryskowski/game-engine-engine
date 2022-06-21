@@ -367,6 +367,11 @@ namespace GEE
 	void UIInputBoxActor::OnDeactivation()
 	{
 		UIActivableButtonActor::OnDeactivation();
+		if (!GetContent().empty())
+		{
+			CaretPosition = 0;
+			ContentTextComp->ScrollToLetter(0);
+		}
 		if (ValueGetter)
 			ValueGetter();
 	}
