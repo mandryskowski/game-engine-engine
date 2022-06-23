@@ -2,7 +2,7 @@
 
 ![GEE logo](https://user-images.githubusercontent.com/19364312/120382376-db924500-c323-11eb-8ba4-eaeccd562eef.png)
 
-![Sample pool game]https://github.com/swetroniusz/game-engine-engine/blob/master/gee_pool_sample.gif
+![Sample pool game](https://github.com/swetroniusz/game-engine-engine/blob/master/gee_pool_sample.gif)
 
 #### Features
 - Actor & Component hierarchy
