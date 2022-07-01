@@ -52,10 +52,6 @@ namespace GEE
 			virtual void RequestPopupMenu(const Vec2f& posWindowSpace, SystemWindow& relativeWindow, std::function<void(PopupDescription)> popupCreation) override;
 
 			virtual std::string ToRelativePath(const std::string&) override;
-			virtual bool CheckForceForwardShading() override
-			{
-				return bForceForwardShading;
-			}
 			virtual void Init(SystemWindow* window, const Vec2u& windowSize) override;
 
 			virtual PopupDescription CreatePopupMenu(const Vec2f& posWindowSpace, SystemWindow& relativeWindow) override;
@@ -85,7 +81,7 @@ namespace GEE
 		std::string GetProjectFilepath() { return ProjectFilepath; }
 		void SetProjectFilepath(const std::string& filepath);
 	private:
-		virtual const std::vector<EditorPopup>& GetPopupsForRendering() override;
+		virtual const std::deque<EditorPopup>& GetPopupsForRendering() override;
 		void UpdateRecentProjects();
 		void MaximizeViewport();
 		void UpdateControllerCameraInfo();
@@ -97,7 +93,7 @@ namespace GEE
 
 		std::unordered_map<GameScene*, EditorMessageLogger> Logs;
 
-		std::vector<EditorPopup> OpenPopups;
+		std::deque<EditorPopup> OpenPopups;
 		std::function<void()> LastRenderPopupRequest;
 
 
@@ -119,7 +115,7 @@ namespace GEE
 
 	protected:
 		RenderToolboxCollection* ViewportRenderCollection, * HUDRenderCollection;
-		bool bForceForwardShading;
+		//std::vector<RenderToolboxCollection*>
 		};
 	}
 }

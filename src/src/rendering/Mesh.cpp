@@ -87,7 +87,7 @@ namespace GEE
 	{
 		if (!GetVAO(VAOcontext))
 			const_cast<Mesh*>(this)->GenerateVAO(VAOcontext);
-		//GEE_CORE_ASSERT(VAOs.at(VAOcontext));
+		GEE_CORE_ASSERT(VAOs.at(VAOcontext));
 		glBindVertexArray(VAOs.at(VAOcontext));
 	}
 

@@ -232,7 +232,7 @@ namespace GEE
 			{
 				const MouseScrollEvent& scrolledEv = dynamic_cast<const MouseScrollEvent&>(ev);
 
-				if (GameHandle->GetInputRetriever().IsKeyPressed(Key::LeftControl))
+				if (GameHandle->GetDefInputRetriever().IsKeyPressed(Key::LeftControl))
 				{
 					Vec2f newScale = static_cast<Vec2f>(CanvasView.GetScale()) * glm::pow(Vec2f(0.5f), Vec2f(scrolledEv.GetOffset().y));
 					printVector(newScale, "new scale");
@@ -287,7 +287,7 @@ namespace GEE
 	{
 		Actor::HandleEventAll(ev);
 
-		/*bool bContainsMouse = ContainsMouse(GameHandle->GetInputRetriever().GetMousePositionNDC());
+		/*bool bContainsMouse = ContainsMouse(GameHandle->GetDefInputRetriever().GetMousePositionNDC());
 		bool focusedOnThis = bContainsMouse;
 		if (bContainsMouse)
 			Actor::HandleEventAll(ev);

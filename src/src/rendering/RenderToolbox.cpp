@@ -607,7 +607,7 @@ namespace GEE
 		if (Settings.ShadowLevel > SettingLevel::SETTING_NONE)
 			AddTb<ShadowMappingToolbox>();
 
-		if (!Settings.DrawToWindowFBO)
+		if (!Settings.bDrawToWindowFBO)
 			AddTb<FinalRenderTargetToolbox>();
 
 		AddTb<ForwardShadingToolbox>();

@@ -23,14 +23,15 @@
 
 #include <scene/ModelComponent.h>
 #include <editor/EditorManager.h>
+
+#include <rendering/RenderToolbox.h> // usun to natychmiast 1.07.2022
+
 namespace GEE
 {
-	PopupDescription::PopupDescription(SystemWindow& window, UIAutomaticListActor* actor, UICanvasActor* canvas):
-		Window(window),
+	PopupDescription::PopupDescription(Editor::EditorPopup& popup, UIAutomaticListActor* actor, UICanvasActor* canvas):
+		Popup(popup),
 		DescriptionRoot(actor),
 		PopupCanvas(canvas),
-		bViewComputed(false),
-		LastComputedView(Transform()),
 		PopupOptionSizePx(Vec2i(240, 30))
 	{
 		SharedPtr<Material> secondaryMat;
@@ -45,7 +46,7 @@ namespace GEE
 	UIButtonActor& PopupDescription::AddOption(const std::string& buttonContent, std::function<void()> buttonFunc, const IconData& optionalIconData)
 	{
 		auto& button = DescriptionRoot->CreateChild<UIButtonActor>("Button_" + buttonContent, buttonContent, 
-		[window = &Window, buttonFunc]()
+		[window = &Popup.Window.get(), buttonFunc]()
 		{
 			glfwSetWindowShouldClose(window, GLFW_TRUE);
 			if (buttonFunc)
@@ -65,11 +66,28 @@ namespace GEE
 		PopupCanvas->AutoClampView(true, true);
 		return button;
 	}
+	UIInputBoxActor& PopupDescription::AddInputBox(std::function<void(std::string)> onInputFunc, const std::string& defaultContent)
+	{
+		auto& inputbox = DescriptionRoot->CreateChild<UIInputBoxActor>("InputBox_" + defaultContent,
+			[window = &Popup.Window.get(), onInputFunc](std::string input)
+			{
+				glfwSetWindowShouldClose(window, GLFW_TRUE);
+				if (onInputFunc)
+					onInputFunc(input);
+			}, [defaultContent]() { return defaultContent; }, Transform(Vec2f(0.0f), Vec2f(0.9f)));
+
+		if (!onInputFunc)
+			inputbox.SetDisableInput(true);
+
+		DescriptionRoot->Refresh();
+		PopupCanvas->AutoClampView(true, true);
+		return inputbox;
+	}
 	PopupDescription PopupDescription::AddSubmenu(const std::string& buttonContent, std::function<void(PopupDescription)> prepareSubmenuFunc, const IconData& optionalIconData)
 	{
 		int optionIndex = DescriptionRoot->GetListElementCount();
 
-		auto createSubPopup = [gameHandle = DescriptionRoot->GetGameHandle(), optionIndex, *this, prepareSubmenuFunc, window = &Window]() mutable
+		auto createSubPopup = [gameHandle = DescriptionRoot->GetGameHandle(), optionIndex, *this, prepareSubmenuFunc, window = &Popup.Window.get()]() mutable
 		{
 
 			Vec2f submenuPos(1.0f, 1.0f);
@@ -86,12 +104,12 @@ namespace GEE
 		if (!prepareSubmenuFunc)
 			button.SetDisableInput(true);
 
-		button.SetOnHoverFunc([window = &Window, createSubPopup]() mutable
+		button.SetOnHoverFunc([window = &Popup.Window.get(), createSubPopup]() mutable
 		{
 			createSubPopup();
 			glfwSetWindowShouldClose(window, false);	// do not close the parent popup
 		});
-		button.SetOnUnhoverFunc([buttonPtr = &button, window = &Window]() { if (GeomTests::NDCContains(buttonPtr->GetScene().GetUIData()->GetWindowData().GetMousePositionNDC())) glfwFocusWindow(window); });
+		button.SetOnUnhoverFunc([buttonPtr = &button, window = &Popup.Window.get()]() { if (GeomTests::NDCContains(buttonPtr->GetScene().GetUIData()->GetWindowData().GetMousePositionNDC())) glfwFocusWindow(window); });
 
 		auto& visualCue = button.GetRoot()->CreateComponent<ModelComponent>("GEE_E_Submenu_Triangle", Transform(Vec2f(0.9f, 0.0f), Vec2f(0.1f, 0.8f)));
 		visualCue.AddMeshInst(visualCue.GetScene().GetGameHandle()->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::Quad));
@@ -110,13 +128,11 @@ namespace GEE
 	}
 	void PopupDescription::RefreshPopup()
 	{
-		ComputeView();
-		glfwSetWindowSize(&Window, PopupOptionSizePx.x, static_cast<int>(static_cast<float>(PopupOptionSizePx.y) * DescriptionRoot->GetBoundingBoxIncludingChildren().Size.y));
+		Vec2i windowSize(PopupOptionSizePx.x, static_cast<int>(static_cast<float>(PopupOptionSizePx.y) * DescriptionRoot->GetBoundingBoxIncludingChildren().Size.y));
+		glfwSetWindowSize(&Popup.Window.get(), windowSize.x, windowSize.y);
+		Popup.Settings->Resolution = windowSize;
+
 		DescriptionRoot->HandleEventAll(Event(EventType::WindowResized));
-	}
-	void PopupDescription::ComputeView()
-	{
-		
 	}
 	IconData::IconData(RenderEngineManager& renderHandle, const std::string& texFilepath, Vec2i iconAtlasSize, float iconAtlasID):
 		IconMaterial(nullptr),

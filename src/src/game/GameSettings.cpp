@@ -72,10 +72,12 @@ namespace GEE
 	template void GameSettings::Serialize<cereal::JSONInputArchive>(cereal::JSONInputArchive&);
 
 	GameSettings::VideoSettings::VideoSettings():
+		Resolution(0.0f),
 		AmbientOcclusionSamples(0),
 		bVSync(false),
 		bBloom(true),
-		DrawToWindowFBO(false),
+		bForceForwardRendering(false),
+		bDrawToWindowFBO(false),
 		AAType(AntiAliasingType::AA_NONE),
 		AALevel(SettingLevel::SETTING_NONE),
 		MonitorGamma(2.2f),

@@ -76,7 +76,7 @@ namespace GEE
 	void UIInputBoxActor::OnStart()
 	{
 		if (CaretNDCWidth == 0.0f)
-			SetCaretWidthPx(5.0f);
+			SetCaretWidthPx(5);
 	}
 
 	ScrollingTextComponent* UIInputBoxActor::GetContentTextComp()
@@ -177,7 +177,18 @@ namespace GEE
 
 	void UIInputBoxActor::SetCaretWidthPx(unsigned int pixelWidth)
 	{
-		CaretNDCWidth = (pixelWidth / static_cast<float>(Scene.GetUIData()->GetWindowData().GetWindowSize().x) / textUtil::ComputeScale(UISpace::Window, *GetTransform(), GetCanvasPtr(), &Scene.GetUIData()->GetWindowData()).x);
+		auto windowData = Scene.GetUIData()->GetWindowData();
+		CaretNDCWidth = (static_cast<float>(pixelWidth) / static_cast<float>(windowData.GetWindowSize().x) / textUtil::ComputeScale(UISpace::Canvas, *GetTransform(), GetCanvasPtr(), &windowData).x);
+
+		/*std::cout << "POP| Calculating caret width.\n";
+		std::cout << "POP| NDC: " << CaretNDCWidth << "\n";
+		std::cout << "POP| NDCWORLD: " << GetTransform()->GetWorldTransform().GetScale2D().x * CaretNDCWidth << "\n";
+		std::cout << "POP| RES: " << Scene.GetUIData()->GetWindowData().GetWindowSize().x << "\n";
+		std::cout << "POP| COMPUTESCALE(WORLD): " << textUtil::ComputeScale(UISpace::World, *GetTransform(), GetCanvasPtr(), &windowData) << "\n";
+		std::cout << "POP| COMPUTESCALE(CANVAS): " << textUtil::ComputeScale(UISpace::Canvas, *GetTransform(), GetCanvasPtr(), &windowData) << "\n";
+		if (GetCanvasPtr()) std::cout << "POP| Canvas view scale: " << GetCanvasPtr()->GetViewT().GetScale2D() << "\n";
+		std::cout << "POP| COMPUTESCALE: " << textUtil::ComputeScale(UISpace::Window, *GetTransform(), GetCanvasPtr(), &windowData) << "\n";*/
+
 	}
 
 	void UIInputBoxActor::UpdateValue()
@@ -216,6 +227,8 @@ namespace GEE
 	{
 		UIActivableButtonActor::HandleEvent(ev);
 
+		auto inputRetriever = Scene.GetUIData()->GetInputRetriever();
+
 		if (!ContentTextComp || !(GetStateBits() & ButtonStateFlags::Active))
 			return;
 
@@ -252,8 +265,8 @@ namespace GEE
 			case Key::Backspace:
 				if (CaretPosition != 0)
 				{
-					ContentTextComp->SetContent((GameHandle->GetInputRetriever().IsKeyPressed(Key::LeftControl)) ? (content.erase(0, CaretPosition)) : (content.erase(CaretPosition - 1, 1))); //erase the last letter
-					SetCaretPosAndUpdateModel((GameHandle->GetInputRetriever().IsKeyPressed(Key::LeftControl)) ? (0) : (CaretPosition - 1));
+					ContentTextComp->SetContent((inputRetriever.IsKeyPressed(Key::LeftControl)) ? (content.erase(0, CaretPosition)) : (content.erase(CaretPosition - 1, 1))); //erase the last letter
+					SetCaretPosAndUpdateModel((inputRetriever.IsKeyPressed(Key::LeftControl)) ? (0) : (CaretPosition - 1));
 				}
 				break;
 
@@ -265,14 +278,14 @@ namespace GEE
 			case Key::Delete:
 				if (!content.empty() && CaretPosition != content.length())
 				{
-					ContentTextComp->SetContent((GameHandle->GetInputRetriever().IsKeyPressed(Key::LeftControl)) ? (content.erase(CaretPosition)) : (content.erase(CaretPosition, 1))); //erase the last letter
+					ContentTextComp->SetContent((inputRetriever.IsKeyPressed(Key::LeftControl)) ? (content.erase(CaretPosition)) : (content.erase(CaretPosition, 1))); //erase the last letter
 
 					/*
 					* Note: do not change the following line. By passing the unchanged CaretPosition, we still update the model.
 					* Even though CaretPosition doesn't change (as the nb of letters before the caret is the same), the actual caret model's position does since letters might have different widths.
 					*/
 
-					SetCaretPosAndUpdateModel((GameHandle->GetInputRetriever().IsKeyPressed(Key::LeftControl)) ? (GetContentTextComp()->GetContent().length()) : (CaretPosition));
+					SetCaretPosAndUpdateModel((inputRetriever.IsKeyPressed(Key::LeftControl)) ? (GetContentTextComp()->GetContent().length()) : (CaretPosition));
 				}
 				break;
 
@@ -318,7 +331,10 @@ namespace GEE
 			};
 		}
 		else if (ev.GetType() == EventType::CanvasViewChanged)
+		{
+			SetCaretWidthPx(5);
 			UpdateCaretModel(false);
+		}
 	}
 
 	void UIInputBoxActor::OnClick()		
@@ -404,6 +420,18 @@ namespace GEE
 
 		CaretComponent->GetTransform().SetScale(Vec2f(CaretNDCWidth / 2.0f, 1.0f));
 		CaretComponent->GetTransform().SetPosition(Vec2f(leftBB.Position.x + (leftBB.Size.x) + CaretComponent->GetTransform().GetScale2D().x, 0.0f));
+
+		/*ModelComponent* wholeTextQuad = GetRoot()->GetComponent<ModelComponent>("wholeTextQuad"), * notIncludedQuad = GetRoot()->GetComponent<ModelComponent>("notIncludedQuad");
+		if (!wholeTextQuad || !notIncludedQuad)
+		{
+			wholeTextQuad = &CreateComponent<ModelComponent>("wholeTextQuad");
+			wholeTextQuad->AddMeshInst(MeshInstance(GameHandle->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::Quad), MakeShared<Material>("testmaerial", Vec4f(1.0f, 0.3f, 0.3f, 0.5f))));
+			notIncludedQuad = &CreateComponent<ModelComponent>("notIncludedQuad");
+			notIncludedQuad->AddMeshInst(MeshInstance(GameHandle->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::Quad), MakeShared<Material>("asdsad", Vec4f(0.3f, 0.3f, 1.0f, 0.5f))));
+		}
+
+		wholeTextQuad->SetTransform(Transform(leftBB.Position, leftBB.Size));
+		notIncludedQuad->SetTransform(Transform(rightBB.Position, rightBB.Size));*/
 
 		if (!IsCaretInsideInputBox())
 		{

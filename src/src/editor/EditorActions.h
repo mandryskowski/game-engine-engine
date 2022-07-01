@@ -8,8 +8,13 @@
 namespace GEE
 {
 	class UIButtonActor;
+	class UIInputBoxActor;
 	class UIActivableButtonActor;
 	class UIAutomaticListActor;
+	namespace Editor
+	{
+		struct EditorPopup;
+	}
 
 	class IconData
 	{
@@ -30,22 +35,19 @@ namespace GEE
 	class PopupDescription
 	{
 	public:
-		PopupDescription(SystemWindow& window, UIAutomaticListActor*, UICanvasActor* canvas);
+		PopupDescription(Editor::EditorPopup& popup, UIAutomaticListActor*, UICanvasActor* canvas);
 		UIButtonActor& AddOption(const std::string&, std::function<void()>, const IconData& = IconData());
+		UIInputBoxActor& AddInputBox(std::function<void(std::string)>, const std::string& defaultContent = "0");
 		PopupDescription AddSubmenu(const std::string&, std::function<void(PopupDescription)> prepareSubmenu, const IconData& = IconData());
-		Transform GetView() { if (!bViewComputed) ComputeView(); return LastComputedView; }
 		/**
 		 * @brief Should be called after adding all the options and submenus.
 		*/
 		void RefreshPopup();
+		 
 	private:
-		void ComputeView();
-
-		SystemWindow& Window;
+		Editor::EditorPopup& Popup;
 		UIAutomaticListActor* DescriptionRoot;
 		UICanvasActor* PopupCanvas;
-		bool bViewComputed;
-		Transform LastComputedView;
 		Vec2i PopupOptionSizePx;
 	};
 
@@ -53,9 +55,28 @@ namespace GEE
 	{
 		struct EditorPopup
 		{
-			EditorPopup(unsigned int id, SystemWindow& window, GameScene& scene) : Window(window), Scene(scene), ID(id) {}
+			EditorPopup(unsigned int id, SystemWindow& window, GameScene& scene, RenderToolboxCollection& tbCol, SharedPtr<GameSettings::VideoSettings> settings) : Window(window), Scene(scene), ID(id), TbCol(tbCol), Settings(std::move(settings)) { std::cout << "tb collll adress: " << &TbCol.get() << '\n'; }
+			EditorPopup(EditorPopup&& rhs) :
+				Window(rhs.Window),
+				Scene(rhs.Scene),
+				TbCol(rhs.TbCol),
+				Settings(rhs.Settings),
+				ID(rhs.ID)
+			{}
+			EditorPopup& operator=(EditorPopup&& rhs)
+			{
+				Window = rhs.Window;
+				Scene = rhs.Scene;
+				TbCol = rhs.TbCol;
+				Settings = rhs.Settings;
+				ID = rhs.ID;
+
+				return *this;
+			}
 			std::reference_wrapper<SystemWindow> Window;
 			std::reference_wrapper<GameScene> Scene;
+			std::reference_wrapper<RenderToolboxCollection> TbCol;
+			SharedPtr<GameSettings::VideoSettings> Settings;
 			unsigned int ID;
 		};
 

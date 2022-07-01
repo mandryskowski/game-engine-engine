@@ -367,7 +367,7 @@ namespace GEE
 
 	void Component::DebugRender(SceneMatrixInfo info, Shader& shader, const Vec3f& debugIconScale) const
 	{
-		if (GameHandle->GetInputRetriever().IsKeyPressed(Key::F2))
+		if (GameHandle->GetDefInputRetriever().IsKeyPressed(Key::F2))
 			return;
 		if (!DebugRenderMatInst)
 			return;

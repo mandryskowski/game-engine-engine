@@ -160,6 +160,8 @@ namespace GEE
 		GameSceneUIData(GameScene&, SystemWindow&);
 		GameSceneUIData(const GameSceneUIData&) = delete;
 
+		InputDevicesStateRetriever GetInputRetriever() const;
+
 		WindowData GetWindowData();
 		SystemWindow* GetWindow();
 		/**

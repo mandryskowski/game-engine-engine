@@ -607,6 +607,11 @@ namespace GEE
 	{
 	}
 
+	InputDevicesStateRetriever GameSceneUIData::GetInputRetriever() const
+	{
+		return InputDevicesStateRetriever(*AssociatedWindow);
+	}
+
 	WindowData GameSceneUIData::GetWindowData()
 	{
 		return WindowData(*AssociatedWindow);

@@ -85,7 +85,7 @@ namespace GEE
 
 		SkeletonBatch* BoundSkeletonBatch;
 
-		std::vector <UniquePtr <RenderToolboxCollection>> RenderTbCollections;
+		std::deque <UniquePtr <RenderToolboxCollection>> RenderTbCollections;
 		RenderToolboxCollection* CurrentTbCollection;
 
 		Mat4f PreviousFrameView;

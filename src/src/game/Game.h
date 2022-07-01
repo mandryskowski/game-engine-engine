@@ -45,7 +45,10 @@ namespace GEE
 		virtual const Controller* GetCurrentMouseController() const override;
 		virtual SharedPtr<Font> GetDefaultFont() override;
 		virtual bool HasStarted() const override;
-		InputDevicesStateRetriever GetInputRetriever() override;
+		/**
+		 * @return The default input retriever (for the default game window)
+		*/
+		InputDevicesStateRetriever GetDefInputRetriever() override;
 		/**
 		 * @return Amount of time (in seconds) which passed since the start of the program.
 		*/
@@ -89,7 +92,7 @@ namespace GEE
 		// If bGameTerminated is true, no more GameLoopIterations will occur.
 		bool bGameTerminated;
 
-		SystemWindow* Window;
+		SystemWindow* GameWindow;
 
 		std::vector <UniquePtr <GameScene>> Scenes;	//The first scene (Scenes[0]) is referred to as the Main Scene. If you only use 1 scene in your application, don't bother with passing arround GameScene pointers - the Main Scene will be chosen automatically.
 		std::deque <UniquePtr<Interpolation>> Interpolations;

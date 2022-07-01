@@ -1,6 +1,7 @@
 #pragma once
 #include <math/Vec.h>
 #include <utility/Utility.h>
+#include <deque>
 
 namespace GEE
 {
@@ -84,7 +85,7 @@ namespace GEE
 			virtual void SetDebugRenderComponents(bool) = 0;
 
 		private:
-			virtual const std::vector<EditorPopup>& GetPopupsForRendering() = 0;
+			virtual const std::deque<EditorPopup>& GetPopupsForRendering() = 0;
 			friend class EditorRenderer;
 		};
 	}

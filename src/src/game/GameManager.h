@@ -247,10 +247,8 @@ namespace GEE
 		virtual void PassMouseControl(Controller* controller) = 0;
 		virtual const Controller* GetCurrentMouseController() const = 0;
 		virtual double GetProgramRuntime() const = 0;
-		virtual InputDevicesStateRetriever GetInputRetriever() = 0;
+		virtual InputDevicesStateRetriever GetDefInputRetriever() = 0;
 		virtual SharedPtr<Font> GetDefaultFont() = 0;
-		
-		virtual bool CheckForceForwardShading() = 0;
 
 		virtual bool HasStarted() const = 0;
 

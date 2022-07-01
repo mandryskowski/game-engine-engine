@@ -54,7 +54,8 @@ namespace GEE
 			unsigned int AmbientOcclusionSamples;
 			bool bVSync;
 			bool bBloom;
-			bool DrawToWindowFBO;
+			bool bForceForwardRendering;
+			bool bDrawToWindowFBO;
 			AntiAliasingType AAType;
 			SettingLevel AALevel;
 			SettingLevel POMLevel;

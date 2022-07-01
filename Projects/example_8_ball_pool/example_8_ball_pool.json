@@ -4,73 +4,7 @@
             "ptr_wrapper": {
                 "id": 2147483649,
                 "data": {
-                    "Skeletons": [
-                        {
-                            "ptr_wrapper": {
-                                "id": 2147483650,
-                                "data": {
-                                    "BonesActorsNames": [],
-                                    "BoneNames": [],
-                                    "GlobalInverseTransformCompPtrActorName": "Pooltable",
-                                    "GlobalInverseTransformCompPtrName": "Projects\\example_8_ball_pool\\models\\pooltable.glb",
-                                    "BatchID": 0,
-                                    "BoneIDOffset": 0
-                                }
-                            }
-                        },
-                        {
-                            "ptr_wrapper": {
-                                "id": 2147483651,
-                                "data": {
-                                    "BonesActorsNames": [],
-                                    "BoneNames": [],
-                                    "GlobalInverseTransformCompPtrActorName": "Pooltable",
-                                    "GlobalInverseTransformCompPtrName": "Projects\\example_8_ball_pool\\models\\pooltable.glb",
-                                    "BatchID": 0,
-                                    "BoneIDOffset": 0
-                                }
-                            }
-                        },
-                        {
-                            "ptr_wrapper": {
-                                "id": 2147483652,
-                                "data": {
-                                    "BonesActorsNames": [],
-                                    "BoneNames": [],
-                                    "GlobalInverseTransformCompPtrActorName": "Pooltable",
-                                    "GlobalInverseTransformCompPtrName": "Projects\\example_8_ball_pool\\models\\pooltable.glb",
-                                    "BatchID": 0,
-                                    "BoneIDOffset": 0
-                                }
-                            }
-                        },
-                        {
-                            "ptr_wrapper": {
-                                "id": 2147483653,
-                                "data": {
-                                    "BonesActorsNames": [],
-                                    "BoneNames": [],
-                                    "GlobalInverseTransformCompPtrActorName": "Poolballs",
-                                    "GlobalInverseTransformCompPtrName": "Projects\\example_8_ball_pool\\models\\pooltable.glb",
-                                    "BatchID": 0,
-                                    "BoneIDOffset": 0
-                                }
-                            }
-                        },
-                        {
-                            "ptr_wrapper": {
-                                "id": 2147483654,
-                                "data": {
-                                    "BonesActorsNames": [],
-                                    "BoneNames": [],
-                                    "GlobalInverseTransformCompPtrActorName": "Floor",
-                                    "GlobalInverseTransformCompPtrName": "Floor's root",
-                                    "BatchID": 0,
-                                    "BoneIDOffset": 0
-                                }
-                            }
-                        }
-                    ],
+                    "Skeletons": [],
                     "BoneCount": 0
                 }
             }
@@ -219,7 +153,7 @@
                                                             "Shapes": [
                                                                 {
                                                                     "ptr_wrapper": {
-                                                                        "id": 2147483655,
+                                                                        "id": 2147483650,
                                                                         "data": {
                                                                             "Type": 3,
                                                                             "ShapeTransform": {
@@ -248,7 +182,7 @@
                                                                 },
                                                                 {
                                                                     "ptr_wrapper": {
-                                                                        "id": 2147483656,
+                                                                        "id": 2147483651,
                                                                         "data": {
                                                                             "Type": 3,
                                                                             "ShapeTransform": {
@@ -484,7 +418,7 @@
                                                             "Shapes": [
                                                                 {
                                                                     "ptr_wrapper": {
-                                                                        "id": 2147483657,
+                                                                        "id": 2147483652,
                                                                         "data": {
                                                                             "Type": 1,
                                                                             "ShapeTransform": {
@@ -586,7 +520,7 @@
                                                             "Shapes": [
                                                                 {
                                                                     "ptr_wrapper": {
-                                                                        "id": 2147483658,
+                                                                        "id": 2147483653,
                                                                         "data": {
                                                                             "Type": 1,
                                                                             "ShapeTransform": {
@@ -688,7 +622,7 @@
                                                             "Shapes": [
                                                                 {
                                                                     "ptr_wrapper": {
-                                                                        "id": 2147483659,
+                                                                        "id": 2147483654,
                                                                         "data": {
                                                                             "Type": 1,
                                                                             "ShapeTransform": {
@@ -790,7 +724,7 @@
                                                             "Shapes": [
                                                                 {
                                                                     "ptr_wrapper": {
-                                                                        "id": 2147483660,
+                                                                        "id": 2147483655,
                                                                         "data": {
                                                                             "Type": 1,
                                                                             "ShapeTransform": {
@@ -892,7 +826,7 @@
                                                             "Shapes": [
                                                                 {
                                                                     "ptr_wrapper": {
-                                                                        "id": 2147483661,
+                                                                        "id": 2147483656,
                                                                         "data": {
                                                                             "Type": 1,
                                                                             "ShapeTransform": {
@@ -994,7 +928,7 @@
                                                             "Shapes": [
                                                                 {
                                                                     "ptr_wrapper": {
-                                                                        "id": 2147483662,
+                                                                        "id": 2147483657,
                                                                         "data": {
                                                                             "Type": 1,
                                                                             "ShapeTransform": {
@@ -1096,7 +1030,7 @@
                                                             "Shapes": [
                                                                 {
                                                                     "ptr_wrapper": {
-                                                                        "id": 2147483663,
+                                                                        "id": 2147483658,
                                                                         "data": {
                                                                             "Type": 1,
                                                                             "ShapeTransform": {
@@ -1198,7 +1132,7 @@
                                                             "Shapes": [
                                                                 {
                                                                     "ptr_wrapper": {
-                                                                        "id": 2147483664,
+                                                                        "id": 2147483659,
                                                                         "data": {
                                                                             "Type": 1,
                                                                             "ShapeTransform": {
@@ -1300,7 +1234,7 @@
                                                             "Shapes": [
                                                                 {
                                                                     "ptr_wrapper": {
-                                                                        "id": 2147483665,
+                                                                        "id": 2147483660,
                                                                         "data": {
                                                                             "Type": 1,
                                                                             "ShapeTransform": {
@@ -1402,7 +1336,7 @@
                                                             "Shapes": [
                                                                 {
                                                                     "ptr_wrapper": {
-                                                                        "id": 2147483666,
+                                                                        "id": 2147483661,
                                                                         "data": {
                                                                             "Type": 1,
                                                                             "ShapeTransform": {
@@ -1504,7 +1438,7 @@
                                                             "Shapes": [
                                                                 {
                                                                     "ptr_wrapper": {
-                                                                        "id": 2147483667,
+                                                                        "id": 2147483662,
                                                                         "data": {
                                                                             "Type": 1,
                                                                             "ShapeTransform": {
@@ -1606,7 +1540,7 @@
                                                             "Shapes": [
                                                                 {
                                                                     "ptr_wrapper": {
-                                                                        "id": 2147483668,
+                                                                        "id": 2147483663,
                                                                         "data": {
                                                                             "Type": 1,
                                                                             "ShapeTransform": {
@@ -1708,7 +1642,7 @@
                                                             "Shapes": [
                                                                 {
                                                                     "ptr_wrapper": {
-                                                                        "id": 2147483669,
+                                                                        "id": 2147483664,
                                                                         "data": {
                                                                             "Type": 1,
                                                                             "ShapeTransform": {
@@ -1810,7 +1744,7 @@
                                                             "Shapes": [
                                                                 {
                                                                     "ptr_wrapper": {
-                                                                        "id": 2147483670,
+                                                                        "id": 2147483665,
                                                                         "data": {
                                                                             "Type": 1,
                                                                             "ShapeTransform": {
@@ -1912,7 +1846,7 @@
                                                             "Shapes": [
                                                                 {
                                                                     "ptr_wrapper": {
-                                                                        "id": 2147483671,
+                                                                        "id": 2147483666,
                                                                         "data": {
                                                                             "Type": 1,
                                                                             "ShapeTransform": {
@@ -2014,7 +1948,7 @@
                                                             "Shapes": [
                                                                 {
                                                                     "ptr_wrapper": {
-                                                                        "id": 2147483672,
+                                                                        "id": 2147483667,
                                                                         "data": {
                                                                             "Type": 1,
                                                                             "ShapeTransform": {
@@ -2174,11 +2108,6 @@
                                         "ptr_wrapper": {
                                             "valid": 1,
                                             "data": {
-                                                "RotationEuler": {
-                                                    "x": 0.0,
-                                                    "y": 0.0,
-                                                    "z": 0.0
-                                                },
                                                 "Projection": {
                                                     "row0": {
                                                         "x": 1.0,
@@ -2247,7 +2176,7 @@
                             "ptr_wrapper": {
                                 "valid": 1,
                                 "data": {
-                                    "PossessedActorName": "A Camera",
+                                    "PossessedActorName": "",
                                     "bHideCursor": true,
                                     "bLockMouseAtCenter": true,
                                     "Actor": {
@@ -2297,7 +2226,7 @@
                                 "valid": 1,
                                 "data": {
                                     "Controller": {
-                                        "PossessedActorName": "Poolcue",
+                                        "PossessedActorName": "",
                                         "bHideCursor": false,
                                         "bLockMouseAtCenter": false,
                                         "Actor": {
@@ -2338,7 +2267,7 @@
                                             "Children": []
                                         }
                                     },
-                                    "WhiteBallActorName": "Whiteball",
+                                    "WhiteBallActorName": "",
                                     "CueHitPower": 0.20000000298023225
                                 }
                             }
@@ -2437,8 +2366,8 @@
                                                         }
                                                     }
                                                 ],
-                                                "SkelInfoBatchID": 0,
-                                                "SkelInfoID": 0,
+                                                "SkelInfoBatchID": -1,
+                                                "SkelInfoID": -1,
                                                 "RenderableComponent": {
                                                     "Hide": false,
                                                     "CastsShadow": true,
@@ -2471,17 +2400,17 @@
                                                                     "Shapes": [
                                                                         {
                                                                             "ptr_wrapper": {
-                                                                                "id": 7
+                                                                                "id": 2
                                                                             }
                                                                         },
                                                                         {
                                                                             "ptr_wrapper": {
-                                                                                "id": 8
+                                                                                "id": 3
                                                                             }
                                                                         },
                                                                         {
                                                                             "ptr_wrapper": {
-                                                                                "id": 2147483673,
+                                                                                "id": 2147483668,
                                                                                 "data": {
                                                                                     "Type": 0,
                                                                                     "ShapeTransform": {
@@ -2510,7 +2439,7 @@
                                                                         },
                                                                         {
                                                                             "ptr_wrapper": {
-                                                                                "id": 2147483674,
+                                                                                "id": 2147483669,
                                                                                 "data": {
                                                                                     "Type": 0,
                                                                                     "ShapeTransform": {
@@ -2539,7 +2468,7 @@
                                                                         },
                                                                         {
                                                                             "ptr_wrapper": {
-                                                                                "id": 2147483675,
+                                                                                "id": 2147483670,
                                                                                 "data": {
                                                                                     "Type": 0,
                                                                                     "ShapeTransform": {
@@ -2599,8 +2528,8 @@
                                                         }
                                                     }
                                                 ],
-                                                "SkelInfoBatchID": 0,
-                                                "SkelInfoID": 0,
+                                                "SkelInfoBatchID": -1,
+                                                "SkelInfoID": -1,
                                                 "RenderableComponent": {
                                                     "Hide": true,
                                                     "CastsShadow": true,
@@ -2658,8 +2587,8 @@
                                                         }
                                                     }
                                                 ],
-                                                "SkelInfoBatchID": 0,
-                                                "SkelInfoID": 0,
+                                                "SkelInfoBatchID": -1,
+                                                "SkelInfoID": -1,
                                                 "RenderableComponent": {
                                                     "Hide": false,
                                                     "CastsShadow": true,
@@ -2923,7 +2852,7 @@
                                                                                     "Shapes": [
                                                                                         {
                                                                                             "ptr_wrapper": {
-                                                                                                "id": 9
+                                                                                                "id": 4
                                                                                             }
                                                                                         }
                                                                                     ]
@@ -2993,7 +2922,7 @@
                                                                                     "Shapes": [
                                                                                         {
                                                                                             "ptr_wrapper": {
-                                                                                                "id": 10
+                                                                                                "id": 5
                                                                                             }
                                                                                         }
                                                                                     ]
@@ -3063,7 +2992,7 @@
                                                                                     "Shapes": [
                                                                                         {
                                                                                             "ptr_wrapper": {
-                                                                                                "id": 11
+                                                                                                "id": 6
                                                                                             }
                                                                                         }
                                                                                     ]
@@ -3133,7 +3062,7 @@
                                                                                     "Shapes": [
                                                                                         {
                                                                                             "ptr_wrapper": {
-                                                                                                "id": 12
+                                                                                                "id": 7
                                                                                             }
                                                                                         }
                                                                                     ]
@@ -3203,7 +3132,7 @@
                                                                                     "Shapes": [
                                                                                         {
                                                                                             "ptr_wrapper": {
-                                                                                                "id": 13
+                                                                                                "id": 8
                                                                                             }
                                                                                         }
                                                                                     ]
@@ -3273,7 +3202,7 @@
                                                                                     "Shapes": [
                                                                                         {
                                                                                             "ptr_wrapper": {
-                                                                                                "id": 14
+                                                                                                "id": 9
                                                                                             }
                                                                                         }
                                                                                     ]
@@ -3343,7 +3272,7 @@
                                                                                     "Shapes": [
                                                                                         {
                                                                                             "ptr_wrapper": {
-                                                                                                "id": 15
+                                                                                                "id": 10
                                                                                             }
                                                                                         }
                                                                                     ]
@@ -3413,7 +3342,7 @@
                                                                                     "Shapes": [
                                                                                         {
                                                                                             "ptr_wrapper": {
-                                                                                                "id": 16
+                                                                                                "id": 11
                                                                                             }
                                                                                         }
                                                                                     ]
@@ -3483,7 +3412,7 @@
                                                                                     "Shapes": [
                                                                                         {
                                                                                             "ptr_wrapper": {
-                                                                                                "id": 17
+                                                                                                "id": 12
                                                                                             }
                                                                                         }
                                                                                     ]
@@ -3553,7 +3482,7 @@
                                                                                     "Shapes": [
                                                                                         {
                                                                                             "ptr_wrapper": {
-                                                                                                "id": 18
+                                                                                                "id": 13
                                                                                             }
                                                                                         }
                                                                                     ]
@@ -3623,7 +3552,7 @@
                                                                                     "Shapes": [
                                                                                         {
                                                                                             "ptr_wrapper": {
-                                                                                                "id": 19
+                                                                                                "id": 14
                                                                                             }
                                                                                         }
                                                                                     ]
@@ -3693,7 +3622,7 @@
                                                                                     "Shapes": [
                                                                                         {
                                                                                             "ptr_wrapper": {
-                                                                                                "id": 20
+                                                                                                "id": 15
                                                                                             }
                                                                                         }
                                                                                     ]
@@ -3763,7 +3692,7 @@
                                                                                     "Shapes": [
                                                                                         {
                                                                                             "ptr_wrapper": {
-                                                                                                "id": 21
+                                                                                                "id": 16
                                                                                             }
                                                                                         }
                                                                                     ]
@@ -3833,7 +3762,7 @@
                                                                                     "Shapes": [
                                                                                         {
                                                                                             "ptr_wrapper": {
-                                                                                                "id": 22
+                                                                                                "id": 17
                                                                                             }
                                                                                         }
                                                                                     ]
@@ -3903,7 +3832,7 @@
                                                                                     "Shapes": [
                                                                                         {
                                                                                             "ptr_wrapper": {
-                                                                                                "id": 23
+                                                                                                "id": 18
                                                                                             }
                                                                                         }
                                                                                     ]
@@ -3991,7 +3920,7 @@
                                                     "Shapes": [
                                                         {
                                                             "ptr_wrapper": {
-                                                                "id": 24
+                                                                "id": 19
                                                             }
                                                         }
                                                     ]
@@ -4111,11 +4040,6 @@
                                                 "ptr_wrapper": {
                                                     "valid": 1,
                                                     "data": {
-                                                        "RotationEuler": {
-                                                            "x": 0.0,
-                                                            "y": 0.0,
-                                                            "z": 0.0
-                                                        },
                                                         "Projection": {
                                                             "row0": {
                                                                 "x": 1.0,
@@ -4235,7 +4159,7 @@
                                                                 "MeshSpecificName": "Quad",
                                                                 "MaterialInst": {
                                                                     "ptr_wrapper": {
-                                                                        "id": 2147483676,
+                                                                        "id": 2147483671,
                                                                         "data": {
                                                                             "MaterialName": "Carpet",
                                                                             "MaterialOptionalPath": "",
@@ -4243,7 +4167,7 @@
                                                                                 "polymorphic_id": 2147483659,
                                                                                 "polymorphic_name": "GEE::AtlasMaterial",
                                                                                 "ptr_wrapper": {
-                                                                                    "id": 2147483677,
+                                                                                    "id": 2147483672,
                                                                                     "data": {
                                                                                         "AtlasSize": {
                                                                                             "x": 0.0,
@@ -4255,7 +4179,7 @@
                                                                                             "Textures": [
                                                                                                 {
                                                                                                     "ptr_wrapper": {
-                                                                                                        "id": 2147483678,
+                                                                                                        "id": 2147483673,
                                                                                                         "data": {
                                                                                                             "ShaderName": "albedo1",
                                                                                                             "Texture": {
@@ -4268,12 +4192,12 @@
                                                                                                 },
                                                                                                 {
                                                                                                     "ptr_wrapper": {
-                                                                                                        "id": 2147483679,
+                                                                                                        "id": 2147483674,
                                                                                                         "data": {
                                                                                                             "ShaderName": "normal1",
                                                                                                             "Texture": {
                                                                                                                 "Type": 3553,
-                                                                                                                "InternalFormat": 6408,
+                                                                                                                "InternalFormat": 6407,
                                                                                                                 "Path": "C:\\Users\\48511\\source\\repos\\swetroniusz\\game-engine-engine\\Assets\\External\\Materials\\carpet\\Fabric023_1K_NormalGL.png"
                                                                                                             }
                                                                                                         }
@@ -4281,12 +4205,12 @@
                                                                                                 },
                                                                                                 {
                                                                                                     "ptr_wrapper": {
-                                                                                                        "id": 2147483680,
+                                                                                                        "id": 2147483675,
                                                                                                         "data": {
                                                                                                             "ShaderName": "roughness1",
                                                                                                             "Texture": {
                                                                                                                 "Type": 3553,
-                                                                                                                "InternalFormat": 6408,
+                                                                                                                "InternalFormat": 6403,
                                                                                                                 "Path": "C:\\Users\\48511\\source\\repos\\swetroniusz\\game-engine-engine\\Assets\\External\\Materials\\carpet\\Fabric023_1K_Roughness.png"
                                                                                                             }
                                                                                                         }
@@ -4321,8 +4245,8 @@
                                                         }
                                                     }
                                                 ],
-                                                "SkelInfoBatchID": 0,
-                                                "SkelInfoID": 4,
+                                                "SkelInfoBatchID": -1,
+                                                "SkelInfoID": -1,
                                                 "RenderableComponent": {
                                                     "Hide": false,
                                                     "CastsShadow": true,
@@ -4377,33 +4301,11 @@
         "MonitorGamma": 2.200000047683716,
         "POMLevel": 1,
         "ShadowLevel": 3,
-        "TMType": 1
+        "TMType": 1,
+        "Max2DShadows": 16,
+        "Max3DShadows": 16
     },
-    "bDebugRenderComponents": false,
-    "value0": [
-        {
-            "ptr_wrapper": {
-                "valid": 1,
-                "data": {
-                    "AnimHierarchyTreePath": "Projects\\example_8_ball_pool\\models\\pooltable.glb",
-                    "AnimName": "TriangleAction",
-                    "RootCompName": "Projects\\example_8_ball_pool\\models\\pooltable.glb",
-                    "RootCompActorName": "Pooltable"
-                }
-            }
-        }
-    ],
-    "value1": [
-        {
-            "ptr_wrapper": {
-                "valid": 1,
-                "data": {
-                    "AnimHierarchyTreePath": "Projects\\example_8_ball_pool\\models\\pooltable.glb",
-                    "AnimName": "TriangleAction",
-                    "RootCompName": "Projects\\example_8_ball_pool\\models\\pooltable.glb",
-                    "RootCompActorName": "Pooltable"
-                }
-            }
-        }
-    ]
+    "bDebugRenderComponents": true,
+    "value0": [],
+    "value1": []
 }

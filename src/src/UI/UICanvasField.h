@@ -136,7 +136,7 @@ namespace GEE
 			desc.VecInputBoxes[axis]->SetOnClickFunc([*this, allBoxes = desc.VecInputBoxes]()
 			{
 			std::cout << "all boxes size: " << allBoxes.size() << '\n';
-			if (GameHandle.GetInputRetriever().IsKeyPressed(Key::LeftAlt))
+			if (GameHandle.GetDefInputRetriever().IsKeyPressed(Key::LeftAlt))
 				for (auto box : allBoxes)
 					box->SetActive(true);
 			});
@@ -168,9 +168,9 @@ namespace GEE
 			Mat4f optionalCanvasMatrix(1.0f);
 			if (canvas)
 				optionalCanvasMatrix = dynamic_cast<UICanvasActor*>(canvas)->GetTransform()->GetWorldTransformMatrix() * canvas->GetProjection() * canvas->GetViewMatrix();
-
+			
 			windowT.SetPosition(Vec2f(optionalCanvasMatrix * Vec4f(windowT.GetPos(), 1.0f)));
-			windowT.SetScale(Vec2f(optionalCanvasMatrix * Vec4f(windowT.GetScale(), 0.0f)));
+			windowT.SetScale(Vec2f(optionalCanvasMatrix * Vec4f(windowT.GetScale(), 0.0f)) * Vec2f(1.0f, 3.0f));
 			
 			window.SetTransform(windowT);
 			window.SetCanvasView(Transform(Vec2f(0.0f), Vec2f(1.0f, 3.0f)));
@@ -223,7 +223,7 @@ namespace GEE
 	template<typename T, typename InputIt>
 	inline void UIElementTemplates::ListSelection(InputIt first, InputIt last, std::function<void(UIButtonActor&, T&)> buttonFunc)
 	{
-		ListSelection<T, InputIt>(first, last, [](UIAutomaticListActor& listActor, T& object) { buttonFunc(listActor.CreateChild<UIButtonActor>("ListElementActor"), object); });
+		ListSelection<T, InputIt>(first, last, [buttonFunc](UIAutomaticListActor& listActor, T& object) { buttonFunc(listActor.CreateChild<UIButtonActor>("ListElementActor"), object); });
 	}
 	template<typename T, typename InputIt>
 	inline void UIElementTemplates::ListSelection(InputIt first, InputIt last, std::function<void(UIAutomaticListActor&, T&)> buttonFunc)

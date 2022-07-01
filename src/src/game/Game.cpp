@@ -50,29 +50,29 @@ namespace GEE
 
 	void Game::Init(SystemWindow* window, const Vec2u& windowSize)
 	{
-		Window = window;
-		glfwSetWindowUserPointer(Window, nullptr);
-		glfwSetWindowSize(Window, windowSize.x, windowSize.y);
+		GameWindow = window;
+		glfwSetWindowUserPointer(GameWindow, nullptr);
+		glfwSetWindowSize(GameWindow, windowSize.x, windowSize.y);
 
 		if (Settings->bWindowFullscreen)
-			glfwSetWindowMonitor(Window, glfwGetPrimaryMonitor(), 0, 0, windowSize.x, windowSize.y, 60);
+			glfwSetWindowMonitor(GameWindow, glfwGetPrimaryMonitor(), 0, 0, windowSize.x, windowSize.y, 60);
 
 		if (!Settings->Video.bVSync)
 			glfwSwapInterval(0);
 
 		WindowEventProcessor::TargetHolder = &EventHolderObj;
 
-		glfwSetInputMode(Window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-		glfwSetCursorPos(Window, (double)windowSize.x / 2.0, (double)windowSize.y / 2.0);
+		glfwSetInputMode(GameWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+		glfwSetCursorPos(GameWindow, (double)windowSize.x / 2.0, (double)windowSize.y / 2.0);
 
-		glfwSetCursorPosCallback(Window, WindowEventProcessor::CursorPosCallback);
+		glfwSetCursorPosCallback(GameWindow, WindowEventProcessor::CursorPosCallback);
 		glfwSetCursorEnterCallback(window, WindowEventProcessor::CursorLeaveEnterCallback);
-		glfwSetMouseButtonCallback(Window, WindowEventProcessor::MouseButtonCallback);
-		glfwSetKeyCallback(Window, WindowEventProcessor::KeyPressedCallback);
-		glfwSetCharCallback(Window, WindowEventProcessor::CharEnteredCallback);
-		glfwSetScrollCallback(Window, WindowEventProcessor::ScrollCallback);
-		glfwSetDropCallback(Window, WindowEventProcessor::FileDropCallback);
-		glfwSetWindowCloseCallback(Window, [](GLFWwindow* window) { static_cast<Game*>(glfwGetWindowUserPointer(window))->TerminateGame(); });
+		glfwSetMouseButtonCallback(GameWindow, WindowEventProcessor::MouseButtonCallback);
+		glfwSetKeyCallback(GameWindow, WindowEventProcessor::KeyPressedCallback);
+		glfwSetCharCallback(GameWindow, WindowEventProcessor::CharEnteredCallback);
+		glfwSetScrollCallback(GameWindow, WindowEventProcessor::ScrollCallback);
+		glfwSetDropCallback(GameWindow, WindowEventProcessor::FileDropCallback);
+		glfwSetWindowCloseCallback(GameWindow, [](GLFWwindow* window) { static_cast<Game*>(glfwGetWindowUserPointer(window))->TerminateGame(); });
 
 		RenderEng.Init(Vec2u(Settings->Video.Resolution.x, Settings->Video.Resolution.y));
 		PhysicsEng.Init();
@@ -150,14 +150,14 @@ namespace GEE
 		mouseController = controller;
 
 		if (!mouseController)
-			glfwSetInputMode(Window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+			glfwSetInputMode(GameWindow, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 		else
 		{
 			if (controller->GetHideCursor())
-				glfwSetInputMode(Window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+				glfwSetInputMode(GameWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
-			Vec2i windowSize = WindowData(*Window).GetWindowSize();
-			glfwSetCursorPos(Window, (double)windowSize.x / 2.0, (double)windowSize.y / 2.0);
+			Vec2i windowSize = WindowData(*GameWindow).GetWindowSize();
+			glfwSetCursorPos(GameWindow, (double)windowSize.x / 2.0, (double)windowSize.y / 2.0);
 		}
 	}
 
@@ -176,9 +176,9 @@ namespace GEE
 		return GameStarted;
 	}
 
-	InputDevicesStateRetriever Game::GetInputRetriever()
+	InputDevicesStateRetriever Game::GetDefInputRetriever()
 	{
-		return InputDevicesStateRetriever(*Window);
+		return InputDevicesStateRetriever(*GameWindow);
 	}
 
 	double Game::GetProgramRuntime() const
@@ -247,12 +247,12 @@ namespace GEE
 	void Game::SetActiveScene(GameScene* scene)
 	{
 		ActiveScene = scene;
-		glfwSetWindowUserPointer(Window, scene);
+		glfwSetWindowUserPointer(GameWindow, scene);
 	}
 
 	void Game::SetCursorIcon(DefaultCursorIcon icon)
 	{
-		glfwSetCursor(Window, glfwCreateStandardCursor(static_cast<int>(icon)));
+		glfwSetCursor(GameWindow, glfwCreateStandardCursor(static_cast<int>(icon)));
 	}
 
 	Hierarchy::Tree* Game::FindHierarchyTree(const std::string& name, Hierarchy::Tree* treeToIgnore)

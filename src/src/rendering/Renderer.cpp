@@ -406,12 +406,12 @@ namespace GEE
 			ShadowMapRenderer(Impl).ShadowMaps(contextID, tbCollection, sceneRenderData, sceneRenderData.Lights);
 	}
 
-	void SceneRenderer::FullRender(SceneMatrixInfo& info, Viewport viewport, bool clearMainFB, bool modifyForwardsDepthForUI, std::function<void(GEE_FB::Framebuffer&)>&& renderIconsFunc, bool forceForwardShading)
+	void SceneRenderer::FullRender(SceneMatrixInfo& info, Viewport viewport, bool clearMainFB, bool modifyForwardsDepthForUI, std::function<void(GEE_FB::Framebuffer&)>&& renderIconsFunc)
 	{
 		auto& tbCollection = info.GetTbCollection();
 		auto& sceneRenderData = info.GetSceneRenderData();
 		const GameSettings::VideoSettings& settings = tbCollection.GetSettings();
-		bool debugPhysics = false;//GameHandle->GetInputRetriever().IsKeyPressed(Key::F2);
+		bool debugPhysics = false;//GameHandle->GetDefInputRetriever().IsKeyPressed(Key::F2);
 		bool debugComponents = true;
 		bool useLightingAlgorithms = sceneRenderData.ContainsLights() || sceneRenderData.ContainsLightProbes();
 		Mat4f currentFrameView = info.GetView();
@@ -428,7 +428,7 @@ namespace GEE
 
 		glDepthFunc(GL_LEQUAL);
 
-		if (!forceForwardShading)
+		if (!settings.bForceForwardRendering)
 		{
 			////////////////////2. Deferred Shading
 			if (useLightingAlgorithms)
@@ -1153,11 +1153,10 @@ namespace GEE
 			shader->Uniform4fv("material.color", Vec4f(color, 1.0f));
 		fontVariation.GetBitmapsArray().Bind(0);
 
-		Vec2f resolution(infoPreConvert.GetTbCollection().GetSettings().Resolution);
-
 		SceneMatrixInfo info = infoPreConvert;
 		if (convertFromPx)
 		{
+			Vec2f resolution(infoPreConvert.GetTbCollection().GetSettings().Resolution);
 			Mat4f pxConvertMatrix = glm::ortho(0.0f, resolution.x, 0.0f, resolution.y);
 			const Mat4f& proj = info.GetProjection();
 			info.CalculateVP();

@@ -13,6 +13,8 @@
 
 #include <game/IDSystem.h>
 
+#include <editor/EditorActions.h>
+
 namespace GEE
 {
 	Material::Material(MaterialLoc loc, ShaderInfo shaderInfo):
@@ -354,7 +356,20 @@ namespace GEE
 			texWindowDescBuilder.AddField("Tex path").GetTemplates().PathInput([this, path](const std::string& str) {
 				*path = str;
 				}, [path]() { return *path; }, { "*.png", "*.jpg" });
-			texWindowDescBuilder.AddField("Shader name").CreateChild<UIInputBoxActor>("ShaderNameInputBox").SetOnInputFunc([shaderName](const std::string& input) { *shaderName = input; }, [shaderName]() { return *shaderName; });
+			//texWindowDescBuilder.AddField("Shader name").CreateChild<UIInputBoxActor>("ShaderNameInputBox").SetOnInputFunc([shaderName](const std::string& input) { *shaderName = input; }, [shaderName]() { return *shaderName; });
+			
+			auto &shaderNameButton = texWindowDescBuilder.AddField("Shader name").CreateChild<UIButtonActor>("ShaderNameButton", "albedo");
+			shaderNameButton.SetOnClickFunc([descBuilder, shaderName, &shaderNameButton]() mutable {
+				auto popupDesc = descBuilder.GetEditorHandle().CreatePopupMenu(descBuilder.GetEditorScene().GetUIData()->GetWindowData().GetMousePositionNDC(), *descBuilder.GetEditorScene().GetUIData()->GetWindow());
+				std::vector<std::string> shaderNames = { "albedo", "normal", "roughness" };
+
+				popupDesc.AddInputBox([shaderName, &shaderNameButton](std::string input) { *shaderName = input; shaderNameButton.GetRoot()->GetComponent<TextComponent>("ButtonText")->SetContent(input); }, "input here");
+				for (auto& name : shaderNames)
+					popupDesc.AddOption(name, [shaderName, name, &shaderNameButton]() { *shaderName = name + "1"; shaderNameButton.GetRoot()->GetComponent<TextComponent>("ButtonText")->SetContent(name); });
+
+				popupDesc.RefreshPopup();
+			});
+		//	texWindowDescBuilder.AddField("Shader name").GetTemplates().ObjectInput<std::string>(,shaderNames.begin(), shaderNames.end(), [shaderName](UIButtonActor& button, std::string& str) { button.CreateButtonText(str); button.SetOnClickFunc([shaderName, str]() { *shaderName = str + "1"; }); });
 			texWindowDescBuilder.AddField("sRGB").GetTemplates().TickBox([sRGB]() { return *sRGB = !(*sRGB); });
 			texWindowDescBuilder.AddField("Add texture").CreateChild<UIButtonActor>("OKButton", "OK", [this, path, shaderName, sRGB, &addTextureButtonFunc, &list, &addTexWindow, descBuilder]() mutable {
 				auto tex = MakeShared<NamedTexture>(Texture::Loader<>::FromFile2D(*path, (*sRGB) ? (Texture::Format::SRGBA()) : (Texture::Format::RGBA())), *shaderName);

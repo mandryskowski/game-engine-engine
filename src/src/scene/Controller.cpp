@@ -72,6 +72,8 @@ namespace GEE
 	void FreeRoamingController::SetPossessedActor(Actor* actor)
 	{
 		Controller::SetPossessedActor(actor);
+		if (!actor)
+			return;
 		RotationEuler = toEuler(actor->GetTransform()->GetRot());
 		RotationEuler.z = 0.0f;
 		std::cout << "Possessed actor rot euler " << RotationEuler << "\n";
@@ -80,17 +82,17 @@ namespace GEE
 	Vec3i FreeRoamingController::GetMovementDirFromPressedKeys()
 	{
 		Vec3i movementDir(0);
-		if (GameHandle->GetInputRetriever().IsKeyPressed(Key::W))
+		if (GameHandle->GetDefInputRetriever().IsKeyPressed(Key::W))
 			movementDir.z -= 1;
-		if (GameHandle->GetInputRetriever().IsKeyPressed(Key::S))
+		if (GameHandle->GetDefInputRetriever().IsKeyPressed(Key::S))
 			movementDir.z += 1;
-		if (GameHandle->GetInputRetriever().IsKeyPressed(Key::A))
+		if (GameHandle->GetDefInputRetriever().IsKeyPressed(Key::A))
 			movementDir.x -= 1;
-		if (GameHandle->GetInputRetriever().IsKeyPressed(Key::D))
+		if (GameHandle->GetDefInputRetriever().IsKeyPressed(Key::D))
 			movementDir.x += 1;
-		if (GameHandle->GetInputRetriever().IsKeyPressed(Key::Space))
+		if (GameHandle->GetDefInputRetriever().IsKeyPressed(Key::Space))
 			movementDir.y += 1;
-		if (GameHandle->GetInputRetriever().IsKeyPressed(Key::LeftControl))
+		if (GameHandle->GetDefInputRetriever().IsKeyPressed(Key::LeftControl))
 			movementDir.y -= 1;
 
 		return movementDir;
@@ -173,7 +175,7 @@ namespace GEE
 		const Vec3i& movementDir = FreeRoamingController::GetMovementDirFromPressedKeys();
 
 		// Cancel out the alteration of movementDir due to pressing LeftControl.
-		if (GameHandle->GetInputRetriever().IsKeyPressed(Key::LeftControl))
+		if (GameHandle->GetDefInputRetriever().IsKeyPressed(Key::LeftControl))
 			return movementDir + Vec3i(0, 1, 0);
 
 		// If LeftControl is not pressed, there is no need to change anything.
@@ -353,6 +355,7 @@ namespace GEE
 				}
 
 				CueDistanceAnim.Reset();
+				dynamic_cast<ModelComponent*>(PossessedActor->GetRoot())->SetHide(true);
 			}
 	}
 	void CueController::GetEditorDescription(EditorDescriptionBuilder descBuilder)
@@ -463,12 +466,12 @@ namespace GEE
 		if (GameHandle->GetCurrentMouseController() != this)
 			return;
 
-		if (GameHandle->GetInputRetriever().IsMouseButtonPressed(MouseButton::Right))
+		if (GameHandle->GetDefInputRetriever().IsMouseButtonPressed(MouseButton::Right))
 		{
 			CueDistanceAnim.UpdateT(-deltaTime);
 			ResetCue();
 		}
-		else if (GameHandle->GetInputRetriever().IsMouseButtonPressed(MouseButton::Left))
+		else if (GameHandle->GetDefInputRetriever().IsMouseButtonPressed(MouseButton::Left))
 		{
 			CueDistanceAnim.UpdateT(deltaTime);
 			ResetCue();
@@ -546,7 +549,8 @@ namespace GEE
 		float cueDistance = MinCueDistance + (MaxCueDistance - MinCueDistance) * CueDistanceAnim.GetT();
 		Mat4f cueTransform = glm::translate(Mat4f(1.0f), WhiteBallActor->GetTransform()->GetWorldTransform().GetPos()) * static_cast<Mat4f>(rotation);
 
-		PossessedActor->GetTransform()->SetPosition(Vec3f(cueTransform * Vec4f(0.0f, 0.0f, -cueDistance, 1.0f)));
+		PossessedActor->GetTransform()->SetPosition(Vec3f(cueTransform * Vec4f(0.0f, 0.0f, -cueDistance, 1.0f)) + Vec3f(0.0f, 0.03f, 0.0f));
 		PossessedActor->GetTransform()->SetRotation(rotation * toQuat(Vec3f(0.0f, -90.0f, 0.0f)));
+		dynamic_cast<ModelComponent*>(PossessedActor->GetRoot())->SetHide(false);
 	}
 }

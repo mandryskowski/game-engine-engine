@@ -81,7 +81,6 @@ namespace GEE
 			bDebugRenderComponents(true),
 			bDebugRenderPhysicsMeshes(true),
 			GameController(nullptr),
-			bForceForwardShading(false),
 			LastRenderPopupRequest(nullptr),
 			bViewportMaximized(false),
 			Actions(MakeUnique<EditorActions>(*this)),
@@ -110,7 +109,7 @@ namespace GEE
 			bool returnVal = Game::GameLoopIteration(timeStep, deltaTime);
 
 			//////////////////////POPUPS
-			OpenPopups.erase(std::remove_if(OpenPopups.begin(), OpenPopups.end(), [](EditorPopup& popup) { if (glfwWindowShouldClose(&popup.Window.get())) { glfwDestroyWindow(&popup.Window.get()); return true; } return false; }), OpenPopups.end());
+			OpenPopups.erase(std::remove_if(OpenPopups.begin(), OpenPopups.end(), [this](EditorPopup& popup) { if (glfwWindowShouldClose(&popup.Window.get())) { glfwDestroyWindow(&popup.Window.get()); RenderEng.EraseRenderTbCollection(popup.TbCol); return true; } return false; }), OpenPopups.end());
 
 			if (Profiler.HasBeenStarted())
 				Profiler.AddTime(deltaTime);
@@ -183,10 +182,10 @@ namespace GEE
 			stbi_image_free(image.pixels);
 
 			EditorEventProcessor::EditorHandle = this;
-			glfwSetDropCallback(Window, EditorEventProcessor::FileDropCallback);
-			glfwSetFramebufferSizeCallback(Window, EditorEventProcessor::Resize);
+			glfwSetDropCallback(GameWindow, EditorEventProcessor::FileDropCallback);
+			glfwSetFramebufferSizeCallback(GameWindow, EditorEventProcessor::Resize);
 
-			glfwSetWindowCloseCallback(Window, [](SystemWindow* window) { GameScene* scene = static_cast<GameScene*>(glfwGetWindowUserPointer(window)); GameEngineEngineEditor* thisPtr = dynamic_cast<GameEngineEngineEditor*>(scene->GetGameHandle()); GenericUITemplates(*scene).ConfirmationBox([scene, thisPtr]() { thisPtr->SaveProject(); thisPtr->TerminateGame(); }, [thisPtr]() { thisPtr->TerminateGame(); }, "Save the project?"); });
+			glfwSetWindowCloseCallback(GameWindow, [](SystemWindow* window) { GameScene* scene = static_cast<GameScene*>(glfwGetWindowUserPointer(window)); GameEngineEngineEditor* thisPtr = dynamic_cast<GameEngineEngineEditor*>(scene->GetGameHandle()); GenericUITemplates(*scene).ConfirmationBox([scene, thisPtr]() { thisPtr->SaveProject(); thisPtr->TerminateGame(); }, [thisPtr]() { thisPtr->TerminateGame(); }, "Save the project?"); });
 
 
 			SharedPtr<AtlasMaterial> addIconMat = MakeShared<AtlasMaterial>("GEE_E_Add_Icon_Mat", glm::ivec2(3, 1));
@@ -228,9 +227,9 @@ namespace GEE
 			uiSettings.AAType = AA_SMAA1X;
 			uiSettings.AmbientOcclusionSamples = 0;
 			uiSettings.bBloom = false;
-			uiSettings.DrawToWindowFBO = true;
+			uiSettings.bDrawToWindowFBO = true;
 			uiSettings.POMLevel = SettingLevel::SETTING_NONE;
-			uiSettings.Resolution = WindowData(*Window).GetWindowSize();
+			uiSettings.Resolution = WindowData(*GameWindow).GetWindowSize();
 			uiSettings.Shading = ShadingAlgorithm::SHADING_FULL_LIT;
 			uiSettings.ShadowLevel = SettingLevel::SETTING_NONE;
 			uiSettings.TMType = ToneMappingType::TM_NONE;
@@ -244,7 +243,7 @@ namespace GEE
 			SetActiveScene(GetMainScene());
 
 			//SelectScene(ActiveScene, *EditorScene);
-		}
+		} 
 
 		PopupDescription GameEngineEngineEditor::CreatePopupMenu(const Vec2f& posWindowSpace, SystemWindow& relativeWindow)
 		{
@@ -254,13 +253,13 @@ namespace GEE
 				Vec2i mainWindowPos, mainWindowSize;
 				glfwGetWindowPos(&relativeWindow, &mainWindowPos.x, &mainWindowPos.y);
 				glfwGetWindowSize(&relativeWindow, &mainWindowSize.x, &mainWindowSize.y);
-			
+
 				posScreenSpace = static_cast<Vec2f>(mainWindowSize) * (posWindowSpace * Vec2f(0.5f, -0.5f) + 0.5f) + static_cast<Vec2f>(mainWindowPos);
 			}
-		
+
 			glfwWindowHint(GLFW_RESIZABLE, false);
 			glfwWindowHint(GLFW_DECORATED, false);
-			SystemWindow* window = glfwCreateWindow(240, 30, "popup", nullptr, Window);
+			SystemWindow* window = glfwCreateWindow(240, 30, "popup", nullptr, GameWindow);
 			glfwSetWindowPos(window, posScreenSpace.x, posScreenSpace.y);
 
 			glfwWindowHint(GLFW_RESIZABLE, true);
@@ -269,22 +268,30 @@ namespace GEE
 			glfwSetCursorPosCallback(window, WindowEventProcessor::CursorPosCallback);
 			glfwSetMouseButtonCallback(window, WindowEventProcessor::MouseButtonCallback);
 			glfwSetCursorEnterCallback(window, WindowEventProcessor::CursorLeaveEnterCallback);
+			glfwSetCharCallback(window, WindowEventProcessor::CharEnteredCallback);
+			glfwSetKeyCallback(window, WindowEventProcessor::KeyPressedCallback);
+			glfwSetScrollCallback(window, WindowEventProcessor::ScrollCallback);
+			glfwSetDropCallback(window, WindowEventProcessor::FileDropCallback);
 			glfwSetWindowFocusCallback(window, [](SystemWindow* window, int focused) { if (!focused) glfwSetWindowShouldClose(window, GLFW_TRUE); });
-		
+
 			GameScene& popupScene = CreateUIScene("GEE_E_Popup_Window", *window, false);
 
 			glfwSetWindowUserPointer(window, &popupScene);
 
-			//popupScene.CreateActorAtRoot<UIButtonActor>("CreateComponentButton", "Create component", [=]() { glfwSetWindowShouldClose(window, GLFW_TRUE); }, Transform(Vec2f(0.0f), Vec2f(1.0f)));
-			OpenPopups.push_back(EditorPopup(IDSystem<EditorPopup>::GenerateID(), *window, popupScene));
+			{
+				auto settings = MakeShared<GameSettings::VideoSettings>();
+				auto& tbCol = RenderEng.AddRenderTbCollection(RenderToolboxCollection("PopupTbCol", *settings, RenderEng), false);
+				OpenPopups.push_back(EditorPopup(IDSystem<EditorPopup>::GenerateID(), *window, popupScene, tbCol, settings));
+
+			}
+			auto& editorPopup = OpenPopups.back();
 
 			auto& popupCanvas = popupScene.CreateActorAtRoot<UICanvasActor>("GEE_E_Popup_Canvas", Transform(Vec2f(0.0f), Vec2f(1.0f)));
 
 			auto& buttonList = popupCanvas.CreateChild<UIAutomaticListActor>("PopupButtonList");
 			buttonList.Refresh();
-			popupCanvas.AutoClampView(); 
-			//PopupDescription(&buttonList).AddOption("dziala", [=]() { glfwSetWindowShouldClose(window, GLFW_TRUE); });
-			return PopupDescription(*window, &buttonList, &popupCanvas);
+
+			return PopupDescription(editorPopup, &buttonList, &popupCanvas);
 		}
 
 		void GameEngineEngineEditor::UpdateGameSettings()
@@ -338,7 +345,7 @@ namespace GEE
 
 		void GameEngineEngineEditor::SetupEditorScene()
 		{
-			GameScene& editorScene = CreateUIScene("GEE_Editor", *Window);
+			GameScene& editorScene = CreateUIScene("GEE_Editor", *GameWindow);
 
 			//settings.ViewportData = glm::uvec4(res.x * 0.3f, res.y * 0.4f, res.x * 0.4, res.y * 0.6f);
 
@@ -399,7 +406,7 @@ namespace GEE
 					SceneMatrixInfo info = scene.GetActiveCamera()->GetRenderInfo(0, *ViewportRenderCollection);
 					Component* pickedComponent = renderer.PickComponent(info, scene, GetGameSettings()->Video.Resolution, static_cast<Vec2u>((localMousePos * 0.5f + 0.5f) * static_cast<Vec2f>(GetGameSettings()->Video.Resolution)), allComponents);
 
-					if (pickedComponent && GetInputRetriever().IsKeyPressed(Key::LeftAlt)) // Pick the root component if left alt is pressed
+					if (pickedComponent && GetDefInputRetriever().IsKeyPressed(Key::LeftAlt)) // Pick the root component if left alt is pressed
 						pickedComponent = pickedComponent->GetActor().GetRoot();
 
 					if (pickedComponent && pickedComponent != Actions->GetSelectedComponent())
@@ -447,14 +454,16 @@ namespace GEE
 						desc.RefreshPopup();
 				});
 
-				UIActorDefault& forwardShadingSwitch = scenePreviewActor.CreateChild<UIActorDefault>("Extended_Essay_ForwardShadingSwitch", Transform(Vec2f(0.1f, -1.07f), Vec2f(0.05f)));
+				UIActorDefault& forwardShadingSwitch = scenePreviewActor.CreateChild<UIActorDefault>("ForwardShadingSwitch", Transform(Vec2f(0.1f, -1.07f), Vec2f(0.05f)));
 				forwardShadingSwitch.CreateComponent<TextComponent>("SwitchForwardText", Transform(Vec2f(0.0f, -1.4f), Vec2f(1.0f, 0.4f)), "Forward", "", Alignment2D::Center()).SetMaxSize(Vec2f(1.0f));
-				UIElementTemplates(forwardShadingSwitch).TickBox([this, &selectPreviewButton, selectPreviewButtonText, &scenePreviewQuad](bool val) {
-					selectPreviewButton.SetDisableInput(val); 
+
+				UIElementTemplates(forwardShadingSwitch).TickBox([this, &selectPreviewButton, selectPreviewButtonText, &scenePreviewQuad](bool val)
+				{
+					selectPreviewButton.SetDisableInput(val);
 					selectPreviewButton.GetButtonModel()->SetHide(val);
 					selectPreviewButtonText->SetHide(val);
-
-					 bForceForwardShading = val; }, [this]() { return bForceForwardShading; });
+					GetGameSettings()->Video.bForceForwardRendering = val; }, [this]() { return GetGameSettings()->Video.bForceForwardRendering;
+				});
 			}
 
 			UIActorDefault& scaleActor = editorScene.CreateActorAtRoot<UIActorDefault>("TextTestButton", Transform(Vec2f(0.0f, 0.0f), Vec2f(0.1f, 0.1f)));
@@ -732,7 +741,7 @@ namespace GEE
 
 		void GameEngineEngineEditor::SetupMainMenu()
 		{
-			GameScene& mainMenuScene = CreateUIScene("GEE_Main_Menu", *Window);
+			GameScene& mainMenuScene = CreateUIScene("GEE_Main_Menu", *GameWindow);
 
 			//SetCanvasContext(&mainMenuScene.CreateActorAtRoot<UICanvasActor>("GEE_E_Canvas_Context"));
 			Actor* aauifix = nullptr;
@@ -843,7 +852,7 @@ namespace GEE
 			if (GameController && GameController->IsBeingKilled())
 				GameController = nullptr;
 
-			if (EditorScene && GetMainScene() && GetMainScene()->GetActiveCamera() && GetInputRetriever().IsKeyPressed(Key::G) && Actions->GetSelectedComponent())
+			if (EditorScene && GetMainScene() && GetMainScene()->GetActiveCamera() && GetDefInputRetriever().IsKeyPressed(Key::G) && Actions->GetSelectedComponent())
 			{
 				if (TestTranslateLastPos != Vec2f(-1.0f))
 				{
@@ -1053,7 +1062,7 @@ namespace GEE
 
 		void GameEngineEngineEditor::Render()
 		{
-			EditorRenderer(*this, *ViewportRenderCollection, *HUDRenderCollection, *Window).RenderPass(GetMainScene(), EditorScene, GetScene("GEE_Main_Menu"), GetScene("GEE_Mesh_Preview_Scene"));
+			EditorRenderer(*this, *ViewportRenderCollection, *HUDRenderCollection, *GameWindow).RenderPass(GetMainScene(), EditorScene, GetScene("GEE_Main_Menu"), GetScene("GEE_Mesh_Preview_Scene"));
 		}
 
 		void GameEngineEngineEditor::NewProject(const std::string& filepath)
@@ -1123,7 +1132,7 @@ namespace GEE
 			UpdateRecentProjects();
 
 			UpdateGameSettings();
-			glfwRequestWindowAttention(Window);
+			glfwRequestWindowAttention(GameWindow);
 		}
 
 		void GameEngineEngineEditor::SaveProject(std::string filepath)
@@ -1183,10 +1192,10 @@ namespace GEE
 		void GameEngineEngineEditor::SetProjectFilepath(const std::string& filepath)
 		{
 			ProjectFilepath = filepath;
-			glfwSetWindowTitle(Window, filepath.c_str());
+			glfwSetWindowTitle(GameWindow, filepath.c_str());
 		}
 
-		const std::vector<EditorPopup>& GameEngineEngineEditor::GetPopupsForRendering()
+		const std::deque<EditorPopup>& GameEngineEngineEditor::GetPopupsForRendering()
 		{
 			return OpenPopups;
 		}
@@ -1219,7 +1228,7 @@ namespace GEE
 	void GameEngineEngineEditor::MaximizeViewport()
 	{
 		glm::ivec2 windowSize;
-		glfwGetWindowSize(Window, &windowSize.x, &windowSize.y);
+		glfwGetWindowSize(GameWindow, &windowSize.x, &windowSize.y);
 		if (!bViewportMaximized)
 		{
 			GetGameSettings()->Video.Resolution = windowSize;
