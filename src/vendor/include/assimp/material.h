@@ -3,7 +3,7 @@
 Open Asset Import Library (assimp)
 ---------------------------------------------------------------------------
 
-Copyright (c) 2006-2021, assimp team
+Copyright (c) 2006-2022, assimp team
 
 All rights reserved.
 
@@ -194,8 +194,8 @@ enum aiTextureType {
      */
     aiTextureType_NONE = 0,
 
-    /** LEGACY API MATERIALS 
-     * Legacy refers to materials which 
+    /** LEGACY API MATERIALS
+     * Legacy refers to materials which
      * Were originally implemented in the specifications around 2000.
      * These must never be removed, as most engines support them.
      */
@@ -339,9 +339,9 @@ ASSIMP_API const char *TextureTypeToString(enum aiTextureType in);
 
 // ---------------------------------------------------------------------------
 /** @brief Defines all shading models supported by the library
- * 
+ *
  *  Property: #AI_MATKEY_SHADING_MODEL
- * 
+ *
  *  The list of shading modes has been taken from Blender.
  *  See Blender documentation for more information. The API does
  *  not distinguish between "specular" and "diffuse" shaders (thus the
@@ -989,6 +989,9 @@ extern "C" {
 // Roughness factor. 0.0 = Perfectly Smooth, 1.0 = Completely Rough
 #define AI_MATKEY_ROUGHNESS_FACTOR "$mat.roughnessFactor", 0, 0
 #define AI_MATKEY_ROUGHNESS_TEXTURE aiTextureType_DIFFUSE_ROUGHNESS, 0
+// Anisotropy factor. 0.0 = isotropic, 1.0 = anisotropy along tangent direction,
+// -1.0 = anisotropy along bitangent direction
+#define AI_MATKEY_ANISOTROPY_FACTOR "$mat.anisotropyFactor", 0, 0
 
 // Specular/Glossiness Workflow
 // ---------------------------
@@ -1027,6 +1030,19 @@ extern "C" {
 // Texture defining percentage of light transmitted through the surface.
 // Multiplied by AI_MATKEY_TRANSMISSION_FACTOR
 #define AI_MATKEY_TRANSMISSION_TEXTURE aiTextureType_TRANSMISSION, 0
+
+// Volume
+// ------------
+// https://github.com/KhronosGroup/glTF/tree/main/extensions/2.0/Khronos/KHR_materials_volume
+// The thickness of the volume beneath the surface. If the value is 0 the material is thin-walled. Otherwise the material is a volume boundary.
+#define AI_MATKEY_VOLUME_THICKNESS_FACTOR "$mat.volume.thicknessFactor", 0, 0
+// Texture that defines the thickness.
+// Multiplied by AI_MATKEY_THICKNESS_FACTOR
+#define AI_MATKEY_VOLUME_THICKNESS_TEXTURE aiTextureType_TRANSMISSION, 1
+// Density of the medium given as the average distance that light travels in the medium before interacting with a particle.
+#define AI_MATKEY_VOLUME_ATTENUATION_DISTANCE "$mat.volume.attenuationDistance", 0, 0
+// The color that white light turns into due to absorption when reaching the attenuation distance.
+#define AI_MATKEY_VOLUME_ATTENUATION_COLOR "$mat.volume.attenuationColor", 0, 0
 
 // Emissive
 // --------
@@ -1499,8 +1515,6 @@ ASSIMP_API C_ENUM aiReturn aiGetMaterialFloatArray(
         ai_real *pOut,
         unsigned int *pMax);
 
-#ifdef __cplusplus
-
 // ---------------------------------------------------------------------------
 /** @brief Retrieve a single float property with a specific key from the material.
 *
@@ -1520,21 +1534,13 @@ ASSIMP_API C_ENUM aiReturn aiGetMaterialFloatArray(
 * @return Specifies whether the key has been found. If not, the output
 *   float remains unmodified.*/
 // ---------------------------------------------------------------------------
-inline aiReturn aiGetMaterialFloat(const aiMaterial *pMat,
+inline aiReturn aiGetMaterialFloat(const C_STRUCT aiMaterial *pMat,
         const char *pKey,
         unsigned int type,
         unsigned int index,
         ai_real *pOut) {
     return aiGetMaterialFloatArray(pMat, pKey, type, index, pOut, (unsigned int *)0x0);
 }
-
-#else
-
-// Use our friend, the C preprocessor
-#define aiGetMaterialFloat (pMat, type, index, pKey, pOut) \
-        aiGetMaterialFloatArray(pMat, type, index, pKey, pOut, NULL)
-
-#endif //!__cplusplus
 
 // ---------------------------------------------------------------------------
 /** @brief Retrieve an array of integer values with a specific key
@@ -1548,8 +1554,6 @@ ASSIMP_API C_ENUM aiReturn aiGetMaterialIntegerArray(const C_STRUCT aiMaterial *
         int *pOut,
         unsigned int *pMax);
 
-#ifdef __cplusplus
-
 // ---------------------------------------------------------------------------
 /** @brief Retrieve an integer property with a specific key from a material
  *
@@ -1562,14 +1566,6 @@ inline aiReturn aiGetMaterialInteger(const C_STRUCT aiMaterial *pMat,
         int *pOut) {
     return aiGetMaterialIntegerArray(pMat, pKey, type, index, pOut, (unsigned int *)0x0);
 }
-
-#else
-
-// use our friend, the C preprocessor
-#define aiGetMaterialInteger (pMat, type, index, pKey, pOut) \
-        aiGetMaterialIntegerArray(pMat, type, index, pKey, pOut, NULL)
-
-#endif //!__cplusplus
 
 // ---------------------------------------------------------------------------
 /** @brief Retrieve a color value from the material property table

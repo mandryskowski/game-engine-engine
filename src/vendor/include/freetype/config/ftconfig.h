@@ -4,7 +4,7 @@
  *
  *   ANSI-specific configuration file (specification only).
  *
- * Copyright (C) 1996-2020 by
+ * Copyright (C) 1996-2022 by
  * David Turner, Robert Wilhelm, and Werner Lemberg.
  *
  * This file is part of the FreeType project, and may only be used,
@@ -37,13 +37,13 @@
 #ifndef FTCONFIG_H_
 #define FTCONFIG_H_
 
-#include <freetype/ft2build.h>
+#include "ft2build.h"
 #include FT_CONFIG_OPTIONS_H
 #include FT_CONFIG_STANDARD_LIBRARY_H
 
-#include <freetype/config/integer-types.h>
-#include <freetype/config/public-macros.h>
-#include <freetype/config/mac-support.h>
+#include "freetype/config/integer-types.h"
+#include "freetype/config/public-macros.h"
+#include "freetype/config/mac-support.h"
 
 #endif /* FTCONFIG_H_ */
 

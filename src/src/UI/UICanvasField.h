@@ -139,7 +139,7 @@ namespace GEE
 			if (GameHandle.GetDefInputRetriever().IsKeyPressed(Key::LeftAlt))
 				for (auto box : allBoxes)
 					box->SetActive(true);
-			});
+			}); 
 
 		return desc;
 	}

@@ -3,7 +3,7 @@
 Open Asset Import Library (assimp)
 ---------------------------------------------------------------------------
 
-Copyright (c) 2006-2021, assimp team
+Copyright (c) 2006-2022, assimp team
 
 All rights reserved.
 
@@ -432,7 +432,7 @@ struct aiMetadata {
 
     /// Check whether there is a metadata entry for the given key.
     /// \param [in] Key - the key value value to check for.
-    inline bool HasKey(const char *key) {
+    inline bool HasKey(const char *key) const {
         if (nullptr == key) {
             return false;
         }

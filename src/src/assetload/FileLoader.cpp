@@ -5,6 +5,8 @@
 #include <assimp/scene.h>
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
+#include <assimp/DefaultLogger.hpp>
+#include <assimp/LogStream.hpp>
 #include <scene/GunActor.h>
 #include <scene/CameraComponent.h>
 #include <scene/BoneComponent.h>
@@ -33,6 +35,7 @@
 namespace GEE
 {
 	FT_Library* EngineDataLoader::FTLib = nullptr;
+	auto assimpDebugStream = Assimp::LogStream::createDefaultStream(aiDefaultLogStream::aiDefaultLogStream_STDOUT);
 
 
 	void EngineDataLoader::LoadMaterials(RenderEngineManager* renderHandle, std::string path, std::string directory)
@@ -403,11 +406,14 @@ namespace GEE
 		Vec3f minCorner(std::numeric_limits<float>::max()), maxCorner(std::numeric_limits<float>::min());
 
 		vertices.reserve(mesh->mNumVertices);
-		indices.reserve(mesh->mNumFaces * 3);
+		if (mesh->mFaces)
+			indices.reserve(mesh->mNumFaces * 3);
 
 		bool bNormals = mesh->HasNormals();
 		bool bTexCoords = mesh->mTextureCoords[0];
 		bool bTangentsBitangents = mesh->HasTangentsAndBitangents();
+
+		
 
 		for (int i = 0; i < static_cast<int>(mesh->mNumVertices); i++)
 		{
@@ -454,16 +460,20 @@ namespace GEE
 		}
 
 		meshPtr->SetBoundingBox(Boxf<Vec3f>::FromMinMaxCorners(minCorner, maxCorner));
-		
 
-		for (int i = 0; i < static_cast<int>(mesh->mNumFaces); i++)
+		if (mesh->HasFaces())
 		{
-			const aiFace& face = mesh->mFaces[i];
-			for (unsigned int j = 0; j < face.mNumIndices; j++)
-				indices.push_back(face.mIndices[j]);
+			for (int i = 0; i < static_cast<int>(mesh->mNumFaces); i++)
+			{
+				const aiFace& face = mesh->mFaces[i];
+
+				for (unsigned int j = 0; j < face.mNumIndices; j++)
+					indices.push_back(face.mIndices[j]);
+			}
 		}
 
-		if (boneMapping)
+
+		if (boneMapping && mesh->HasBones())
 		{
 			for (int i = 0; i < static_cast<int>(mesh->mNumBones); i++)
 			{
@@ -482,7 +492,7 @@ namespace GEE
 			meshPtr->Generate(vertices, indices, keepVertsData);
 
 			std::cout << meshPtr->GetLocalization().NodeName + "   Vertices:" << vertices.size() << "    Indices:" << indices.size() << "    Bones: " << mesh->mNumBones;
-			if (mesh->mNumBones > 0)
+			if (mesh->HasBones())
 			{
 				std::cout << " (";
 				for (int i = 0; i < mesh->mNumBones; i++)
@@ -730,6 +740,7 @@ namespace GEE
 		for (unsigned int i = 0; i < node->mNumMeshes; i++)
 		{
 			const aiMesh* assimpMesh = assimpScene->mMeshes[node->mMeshes[i]];
+			std::cout << "loading mesh " << node->mName.C_Str() << '\n';
 			Mesh* mesh = new Mesh(Mesh::MeshLoc(treeObjLoc, node->mName.C_Str(), assimpScene->mMeshes[node->mMeshes[i]]->mName.C_Str()));
 
 			LoadMeshFromAi(mesh, assimpScene, assimpMesh, treeObjLoc, directory, true, matLoadingData, boneMapping, keepVertsData);
@@ -1009,6 +1020,12 @@ namespace GEE
 		}
 		if (!treePtr)
 			treePtr = &scene.CreateHierarchyTree(path);
+
+		if (Assimp::DefaultLogger::isNullLogger())
+		{
+			auto log = Assimp::DefaultLogger::create();
+			log->attachStream(assimpDebugStream);
+		}
 
 		Assimp::Importer importer;
 		const aiScene* assimpScene;

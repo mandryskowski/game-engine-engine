@@ -1,7 +1,4 @@
 #pragma once
-#if !defined(NDEBUG) && !defined(_DEBUG)
-#define NDEBUG
-#endif
 #include <PhysX/PxPhysicsAPI.h>
 
 #include <math/Vec.h>
