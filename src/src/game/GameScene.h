@@ -33,6 +33,9 @@ namespace GEE
 		GameScene(const GameScene&) = delete;
 		GameScene(GameScene&&);
 
+		bool HasStarted() const { return bHasStarted; }
+		void MarkAsStarted();
+
 		const std::string& GetName() const;
 		Actor* GetRootActor();
 		const Actor* GetRootActor() const;
@@ -43,6 +46,7 @@ namespace GEE
 		Audio::GameSceneAudioData* GetAudioData();
 		GameSceneUIData* GetUIData();
 		GameManager* GetGameHandle();
+		EventPusher GetEventPusher();
 		/**
 		 * @brief Use the function to check if this is a valid scene. If it returns true, you should remove all references to the scene and avoid processing it at all. The root actor, its children and their components become invalid along with the scene.
 		 * @return a boolean indicating whether the GameScene is about to be destroyed
@@ -50,7 +54,7 @@ namespace GEE
 		bool IsBeingKilled() const;
 
 		int GetHierarchyTreeCount() const;
-		HierarchyTemplate::HierarchyTreeT* GetHierarchyTree(int index);
+		Hierarchy::Tree* GetHierarchyTree(int index);
 
 		/**
 		* @brief Pass a function that you want to be called after this GameScene has been loaded. **Warning: Using Archive in the lambda will not work unless you really know what you're doing.**
@@ -75,15 +79,15 @@ namespace GEE
 		 * @param name: the name of the tree.
 		 * @return: a reference to the newly created tree.
 		*/
-		HierarchyTemplate::HierarchyTreeT& CreateHierarchyTree(const std::string& name);
+		Hierarchy::Tree& CreateHierarchyTree(const std::string& name);
 		
 		
-		HierarchyTemplate::HierarchyTreeT& CopyHierarchyTree(const HierarchyTemplate::HierarchyTreeT& tree);
+		Hierarchy::Tree& CopyHierarchyTree(const Hierarchy::Tree& tree);
 
-		HierarchyTemplate::HierarchyTreeT* FindHierarchyTree(const std::string& name,
-			HierarchyTemplate::HierarchyTreeT* treeToIgnore = nullptr);
+		Hierarchy::Tree* FindHierarchyTree(const std::string& name,
+			Hierarchy::Tree* treeToIgnore = nullptr);
 
-		void HandleEventAll(const Event&);
+		void HandleEventAll(Event&);
 		void Update(float deltaTime);
 
 		void BindActiveCamera(CameraComponent*);
@@ -111,8 +115,10 @@ namespace GEE
 		UniquePtr<Audio::GameSceneAudioData> AudioData;
 		UniquePtr<GameSceneUIData> UIData;
 
+		bool bHasStarted;
+
 	public:
-		std::vector<UniquePtr<HierarchyTemplate::HierarchyTreeT>> HierarchyTrees;
+		std::vector<UniquePtr<Hierarchy::Tree>> HierarchyTrees;
 	private:
 
 		std::vector<std::function<void()>> PostLoadLambdas;
@@ -153,6 +159,8 @@ namespace GEE
 	public:
 		GameSceneUIData(GameScene&, SystemWindow&);
 		GameSceneUIData(const GameSceneUIData&) = delete;
+
+		InputDevicesStateRetriever GetInputRetriever() const;
 
 		WindowData GetWindowData();
 		SystemWindow* GetWindow();
@@ -208,10 +216,13 @@ namespace GEE
 		RenderEngineManager* GetRenderHandle();
 		LightProbeTextureArrays* GetProbeTexArrays();
 		int GetAvailableLightIndex();
+		unsigned int GetMaxShadowedLightCount() const { return 16; }
 
 		bool ContainsLights() const;
 		bool ContainsLightProbes() const;
 		bool HasLightWithoutShadowMap() const;
+
+		void InvalidateAllShadowmaps();
 
 		void AddRenderable(Renderable&);
 		void AddLight(LightComponent& light);
@@ -301,6 +312,7 @@ namespace GEE
 			void AddCollisionObject(CollisionObject&, Transform& t);
 			void EraseCollisionObject(CollisionObject&);
 			Physics::PhysicsEngineManager* GetPhysicsHandle();
+			physx::PxScene* GetPxScene() { return PhysXScene; }
 
 			friend class PhysicsEngine;
 			friend class PhysicsDebugRenderer;

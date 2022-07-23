@@ -8,7 +8,13 @@
 namespace GEE
 {
 	class UIButtonActor;
+	class UIInputBoxActor;
+	class UIActivableButtonActor;
 	class UIAutomaticListActor;
+	namespace Editor
+	{
+		struct EditorPopup;
+	}
 
 	class IconData
 	{
@@ -29,22 +35,19 @@ namespace GEE
 	class PopupDescription
 	{
 	public:
-		PopupDescription(SystemWindow& window, UIAutomaticListActor*, UICanvasActor* canvas);
+		PopupDescription(Editor::EditorPopup& popup, UIAutomaticListActor*, UICanvasActor* canvas);
 		UIButtonActor& AddOption(const std::string&, std::function<void()>, const IconData& = IconData());
+		UIInputBoxActor& AddInputBox(std::function<void(std::string)>, const std::string& defaultContent = "0");
 		PopupDescription AddSubmenu(const std::string&, std::function<void(PopupDescription)> prepareSubmenu, const IconData& = IconData());
-		Transform GetView() { if (!bViewComputed) ComputeView(); return LastComputedView; }
 		/**
 		 * @brief Should be called after adding all the options and submenus.
 		*/
 		void RefreshPopup();
+		 
 	private:
-		void ComputeView();
-
-		SystemWindow& Window;
+		Editor::EditorPopup& Popup;
 		UIAutomaticListActor* DescriptionRoot;
 		UICanvasActor* PopupCanvas;
-		bool bViewComputed;
-		Transform LastComputedView;
 		Vec2i PopupOptionSizePx;
 	};
 
@@ -52,9 +55,28 @@ namespace GEE
 	{
 		struct EditorPopup
 		{
-			EditorPopup(unsigned int id, SystemWindow& window, GameScene& scene) : Window(window), Scene(scene), ID(id) {}
+			EditorPopup(unsigned int id, SystemWindow& window, GameScene& scene, RenderToolboxCollection& tbCol, SharedPtr<GameSettings::VideoSettings> settings) : Window(window), Scene(scene), ID(id), TbCol(tbCol), Settings(std::move(settings)) { std::cout << "tb collll adress: " << &TbCol.get() << '\n'; }
+			EditorPopup(EditorPopup&& rhs) :
+				Window(rhs.Window),
+				Scene(rhs.Scene),
+				TbCol(rhs.TbCol),
+				Settings(rhs.Settings),
+				ID(rhs.ID)
+			{}
+			EditorPopup& operator=(EditorPopup&& rhs)
+			{
+				Window = rhs.Window;
+				Scene = rhs.Scene;
+				TbCol = rhs.TbCol;
+				Settings = rhs.Settings;
+				ID = rhs.ID;
+
+				return *this;
+			}
 			std::reference_wrapper<SystemWindow> Window;
 			std::reference_wrapper<GameScene> Scene;
+			std::reference_wrapper<RenderToolboxCollection> TbCol;
+			SharedPtr<GameSettings::VideoSettings> Settings;
 			unsigned int ID;
 		};
 
@@ -72,10 +94,10 @@ namespace GEE
 			void SelectScene(GameScene* selectedScene, GameScene& editorScene);
 			template <typename T> void Select(T*, GameScene& editorScene);
 
-			void PreviewHierarchyTree(HierarchyTemplate::HierarchyTreeT& tree);
-			void PreviewHierarchyNode(HierarchyTemplate::HierarchyNodeBase& node, GameScene& editorScene);
+			void PreviewHierarchyTree(Hierarchy::Tree& tree);
+			void PreviewHierarchyNode(Hierarchy::NodeBase& node, GameScene& editorScene);
 
-			template <typename T> void AddActorToList(GameScene& editorScene, T& obj, UIAutomaticListActor& listParent, UICanvas& canvas);
+			template <typename T> void AddActorToList(GameScene& editorScene, T& obj, UIAutomaticListActor& listParent, UICanvas& canvas, std::function<void(PopupDescription, T&)> createPopupFunc = nullptr);
 
 		private:
 			Component* GetContextComp();
@@ -92,21 +114,21 @@ namespace GEE
 
 		struct FunctorHierarchyNodeCreator
 		{
-			FunctorHierarchyNodeCreator(HierarchyTemplate::HierarchyNodeBase& parent) : ParentNode(parent) {}
+			FunctorHierarchyNodeCreator(Hierarchy::NodeBase& parent) : ParentNode(parent) {}
 			template <typename T>
-			HierarchyTemplate::HierarchyNode<T>& Create(const std::string& name)
+			Hierarchy::Node<T>& Create(const std::string& name)
 			{
 				return ParentNode.CreateChild<T>(name);
 			}
 		private:
-			HierarchyTemplate::HierarchyNodeBase& ParentNode;
+			Hierarchy::NodeBase& ParentNode;
 		};
 
 		class ContextMenusFactory
 		{
 		public:
 			ContextMenusFactory(RenderEngineManager&);
-			void AddComponent(PopupDescription, Component& contextComp, std::function<void()> onCreation);
+			void AddComponent(PopupDescription, Component& contextComp, std::function<void(Component&)> onCreation);
 			template <typename TFunctor>
 			void AddComponent(PopupDescription, TFunctor&&, std::function<void()> onCreation);
 		private:
@@ -114,19 +136,23 @@ namespace GEE
 		};
 
 		template<typename T>
-		inline void EditorActions::AddActorToList(GameScene& editorScene, T& obj, UIAutomaticListActor& listParent, UICanvas& canvas)
+		inline void EditorActions::AddActorToList(GameScene& editorScene, T& obj, UIAutomaticListActor& listParent, UICanvas& canvas, std::function<void(PopupDescription, T&)> createPopupFunc)
 		{
 			if (obj.IsBeingKilled())
 				return;
 
-			UIButtonActor& element = listParent.CreateChild<UIButtonActor>(obj.GetName() + "'s Button", [this, &obj, &editorScene]() {this->Select(&obj, editorScene); });//*this, obj, &EditorManager::Select<T>));
+			auto& element = listParent.CreateChild<UIActivableButtonActor>(obj.GetName(), [this, &obj, &editorScene]() {this->Select(&obj, editorScene); });//*this, obj, &EditorManager::Select<CompType>));
+			element.SetActivateOnClicking(false);
+			element.SetDeactivateOnClickingAnywhere(false);
+			element.SetDeactivateOnClickingAgain(false);
 			element.SetTransform(Transform(Vec2f(1.5f, 0.0f), Vec2f(3.0f, 1.0f)));
-			TextConstantSizeComponent& elementText = element.CreateComponent<TextConstantSizeComponent>(obj.GetName() + "'s Text", Transform(Vec2f(0.0f), Vec2f(1.0f, 1.0f)), "", "", Alignment2D::Center());
+			TextComponent& elementText = element.CreateComponent<TextComponent>("ButtonText", Transform(Vec2f(0.0f), Vec2f(1.0f, 1.0f)), "", "", Alignment2D::Center());
 			elementText.SetFontStyle(FontStyle::Italic);
 			elementText.SetMaxSize(Vec2f(0.9f));
 			elementText.SetContent(obj.GetName());
 			elementText.Unstretch();
-			element.SetPopupCreationFunc([](PopupDescription desc) { desc.AddOption("Rename", nullptr); desc.AddOption("Delete", nullptr); });
+			if (createPopupFunc)
+				element.SetPopupCreationFunc([&obj, createPopupFunc](PopupDescription desc) { createPopupFunc(desc, obj); });
 			//elementText.UpdateSize();
 
 			std::vector<T*> children = obj.GetChildren();
@@ -134,7 +160,7 @@ namespace GEE
 			{
 				//AddActorToList(editorScene, *child, listParent.CreateChild(UIListActor(editorScene, "NextLevel")), canvas);
 				UIAutomaticListActor& nestedList = listParent.CreateChild<UIAutomaticListActor>(child->GetName() + "'s nestedlist");
-				AddActorToList(editorScene, *child, nestedList, canvas);
+				AddActorToList(editorScene, *child, nestedList, canvas, createPopupFunc);
 			}
 		}
 	}

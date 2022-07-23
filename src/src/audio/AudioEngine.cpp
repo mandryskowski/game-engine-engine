@@ -12,7 +12,9 @@ namespace GEE
 
 		void AudioEngine::Init()
 		{
+			std::cout << "Opening audio device.\n";
 			Device = alcOpenDevice(nullptr);
+		
 			if (!Device)
 			{
 				std::cerr << "ERROR! Couldn't configure audio device.\n";
@@ -32,6 +34,7 @@ namespace GEE
 				std::cerr << "ERROR! Couldn't make an OpenAL context current.\n";
 				return;
 			}
+			std::cout << "Succesfully initialised audio engine\n";
 
 			alListenerfv(AL_POSITION, Math::GetDataPtr(Vec3f(0.0f)));
 			alListenerfv(AL_VELOCITY, Math::GetDataPtr(Vec3f(0.0f)));
@@ -100,6 +103,9 @@ namespace GEE
 
 		AudioEngine::~AudioEngine()
 		{
+			if (Device)
+				alcCloseDevice(Device);
+
 			if (Context)
 				alcDestroyContext(Context);
 		}

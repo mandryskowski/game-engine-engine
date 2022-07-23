@@ -7,7 +7,8 @@ namespace GEE
 	{
 	public:
 		InputDevicesStateRetriever(SystemWindow&);
-		bool IsKeyPressed(const Key&) const;
+		bool IsKeyPressed(const Key) const;
+		bool IsMouseButtonPressed(MouseButton) const;
 
 		friend class Game;
 	private:

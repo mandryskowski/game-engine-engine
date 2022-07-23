@@ -25,7 +25,8 @@ namespace GEE
 		ActiveCamera(nullptr),
 		Name(name),
 		GameHandle(&gameHandle),
-		KillingProcessFrame(0)
+		KillingProcessFrame(0),
+		bHasStarted(false)
 	{
 		RootActor = MakeUnique<Actor>(*this, nullptr, "SceneRoot");
 	}
@@ -53,6 +54,15 @@ namespace GEE
 		KillingProcessFrame(scene.KillingProcessFrame)
 	{
 		RootActor = MakeUnique<Actor>(*this, nullptr, "SceneRoot");
+	}
+
+	void GameScene::MarkAsStarted()
+	{
+		if (bHasStarted)
+			return;
+
+		bHasStarted = true;
+		RootActor->OnStartAll();
 	}
 
 	const std::string& GameScene::GetName() const
@@ -105,6 +115,11 @@ namespace GEE
 		return GameHandle;
 	}
 
+	EventPusher GameScene::GetEventPusher()
+	{
+		return GameHandle->GetEventPusher(*this);
+	}
+
 	bool GameScene::IsBeingKilled() const
 	{
 		return KillingProcessFrame != 0;
@@ -115,7 +130,7 @@ namespace GEE
 		return static_cast<int>(HierarchyTrees.size());
 	}
 
-	HierarchyTemplate::HierarchyTreeT* GameScene::GetHierarchyTree(int index)
+	Hierarchy::Tree* GameScene::GetHierarchyTree(int index)
 	{
 		if (index > GetHierarchyTreeCount() - 1 || index < 0)
 			return nullptr;
@@ -146,34 +161,40 @@ namespace GEE
 		return RootActor->AddChild(std::move(actor));
 	}
 
-	HierarchyTemplate::HierarchyTreeT& GameScene::CreateHierarchyTree(const std::string& name)
+	Hierarchy::Tree& GameScene::CreateHierarchyTree(const std::string& name)
 	{
-		HierarchyTrees.push_back(MakeUnique<HierarchyTemplate::HierarchyTreeT>(HierarchyTemplate::HierarchyTreeT(*this, HierarchyTemplate::HierarchyLocalization::Filepath(name))));
+		HierarchyTrees.push_back(MakeUnique<Hierarchy::Tree>(Hierarchy::Tree(*this, Hierarchy::HierarchyLocalization::Filepath(name))));
 		std::cout << "Utworzono drzewo z root " << &HierarchyTrees.back()->GetRoot() << " - " << HierarchyTrees.back()->GetName().GetPath() << '\n';
 		return *HierarchyTrees.back();
 	}
 
-	HierarchyTemplate::HierarchyTreeT& GameScene::CopyHierarchyTree(const HierarchyTemplate::HierarchyTreeT& tree)
+	Hierarchy::Tree& GameScene::CopyHierarchyTree(const Hierarchy::Tree& tree)
 	{
-		HierarchyTrees.push_back(MakeUnique<HierarchyTemplate::HierarchyTreeT>(tree));
+		HierarchyTrees.push_back(MakeUnique<Hierarchy::Tree>(tree));
 		return *HierarchyTrees.back();
 	}
 
-	HierarchyTemplate::HierarchyTreeT* GameScene::FindHierarchyTree(const std::string& name, HierarchyTemplate::HierarchyTreeT* treeToIgnore)
+	Hierarchy::Tree* GameScene::FindHierarchyTree(const std::string& name, Hierarchy::Tree* treeToIgnore)
 	{
-		auto found = std::find_if(HierarchyTrees.begin(), HierarchyTrees.end(), [name, treeToIgnore](const UniquePtr<HierarchyTemplate::HierarchyTreeT>& tree) { return tree->GetName().GetPath() == name && tree.get() != treeToIgnore; });
+		auto found = std::find_if(HierarchyTrees.begin(), HierarchyTrees.end(), [name, treeToIgnore](const UniquePtr<Hierarchy::Tree>& tree) { return tree->GetName().GetPath() == name && tree.get() != treeToIgnore; });
 		if (found != HierarchyTrees.end())
 			return (*found).get();
 
 		return nullptr;
 	}
 
-	void GameScene::HandleEventAll(const Event& ev)
+	void GameScene::HandleEventAll(Event& ev)
 	{
+		if (ev.GetEventRoot() && &ev.GetEventRoot()->GetScene() != this)
+			return;
+
 		if (UIData)
 			UIData->HandleEventAll(ev);
 
-		RootActor->HandleEventAll(ev);
+		if (ev.GetEventRoot())
+			ev.GetEventRoot()->HandleEventAll(ev);
+		else
+			RootActor->HandleEventAll(ev);
 	}
 
 	void GameScene::Update(float deltaTime)
@@ -214,12 +235,12 @@ namespace GEE
 			*  This looks ugly, but no trees are destroyed since we release the pointers.
 			*/
 			{
-				std::vector<UniquePtr<HierarchyTemplate::HierarchyTreeT>> hierarchyTrees;
+				std::vector<UniquePtr<Hierarchy::Tree>> hierarchyTrees;
 				hierarchyTrees.reserve(HierarchyTrees.size());
 
 				for (auto& treePtr : HierarchyTrees)
 					if (treePtr->GetName().IsALocalResource())
-						hierarchyTrees.push_back(UniquePtr<HierarchyTemplate::HierarchyTreeT>(treePtr.get()));
+						hierarchyTrees.push_back(UniquePtr<Hierarchy::Tree>(treePtr.get()));
 
 				archive(cereal::make_nvp("HierarchyTrees", hierarchyTrees));
 
@@ -339,6 +360,12 @@ namespace GEE
 				return true;
 
 		return false;
+	}
+
+	void GameSceneRenderData::InvalidateAllShadowmaps()
+	{
+		for (auto light : Lights)
+			light.get().InvalidateCache();
 	}
 
 
@@ -464,7 +491,7 @@ namespace GEE
 		LightsBuffer.offsetCache = sizeof(Vec4f) * 2;
 		for (auto& light : Lights)
 		{
-			light.get().InvalidateCache();
+			light.get().InvalidateCache(false);
 			light.get().UpdateUBOData(&LightsBuffer);
 		}
 	}
@@ -524,6 +551,7 @@ namespace GEE
 			CollisionObjects.push_back(&object);
 			object.ScenePhysicsData = this;
 			object.TransformPtr = &t;
+			object.TransformDirtyFlag = t.AddDirtyFlag();
 
 			if (WasSetup)
 				PhysicsHandle->AddCollisionObjectToPxPipeline(*this, object);
@@ -577,6 +605,11 @@ namespace GEE
 		CurrentBlockingCanvas(nullptr),
 		AssociatedWindow(&window)
 	{
+	}
+
+	InputDevicesStateRetriever GameSceneUIData::GetInputRetriever() const
+	{
+		return InputDevicesStateRetriever(*AssociatedWindow);
 	}
 
 	WindowData GameSceneUIData::GetWindowData()

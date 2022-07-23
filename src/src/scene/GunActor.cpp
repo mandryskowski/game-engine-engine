@@ -83,7 +83,7 @@ namespace GEE
 		if (!fireMaterial)
 			return;
 
-		ParticleMeshInst->GetMaterialInst()->SetInterp(&fireMaterial->GetTextureIDInterpolatorTemplate(Interpolation(0.0f, 0.25f, InterpolationType::LINEAR), 0.0f, dynamic_cast<AtlasMaterial*>(&ParticleMeshInst->GetMaterialInst()->GetMaterialRef())->GetMaxTextureID()));
+		ParticleMeshInst->GetMaterialInst()->SetInterp(&fireMaterial->GetTextureIDInterpolatorTemplate(Interpolation(0.0f, 0.25f, InterpolationType::Linear), 0.0f, dynamic_cast<AtlasMaterial*>(&ParticleMeshInst->GetMaterialInst()->GetMaterialRef())->GetMaxTextureID()));
 		ParticleMeshInst->GetMaterialInst()->SetDrawBeforeAnim(false);
 		ParticleMeshInst->GetMaterialInst()->SetDrawAfterAnim(false);
 	}
@@ -107,8 +107,8 @@ namespace GEE
 		if (!pawnActors.empty())
 			pawnActors[0]->InflictDamage(50.0f, Math::CutYAxis(GetTransform()->GetWorldTransform().GetPos() - pawnActors[0]->GetTransform()->GetWorldTransform().GetPos()));
 
-		GetRoot()->GetTransform().AddInterpolator<Quatf>("rotation", 0.0f, 0.25f, Quatf(Vec3f(0.0f)), toQuat(Vec3f(30.0f, 0.0f, 0.0f)), InterpolationType::QUINTIC, true);
-		GetRoot()->GetTransform().AddInterpolator<Quatf>("rotation", 0.25f, 1.25f, Quatf(Vec3f(0.0f)), InterpolationType::QUADRATIC, true);
+		GetRoot()->GetTransform().AddInterpolator<Quatf>("rotation", 0.0f, 0.25f, Quatf(Vec3f(0.0f)), toQuat(Vec3f(30.0f, 0.0f, 0.0f)), InterpolationType::Quintic, true);
+		GetRoot()->GetTransform().AddInterpolator<Quatf>("rotation", 0.25f, 1.25f, Quatf(Vec3f(0.0f)), InterpolationType::Quadratic, true);
 
 		Actor& actor = Scene.CreateActorAtRoot<Actor>("Bullet");
 		//TODO: Change it so the bullet is fired at the barrel, not at the center

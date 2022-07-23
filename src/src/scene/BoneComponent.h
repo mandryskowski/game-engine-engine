@@ -1,6 +1,8 @@
 #pragma once
 
 #include <scene/Component.h>
+#include <scene/hierarchy/HierarchyNodeInstantiation.h>
+#include <animation/SkeletonInfo.h>
 #include <assimp/types.h>
 #include <map>
 
@@ -26,7 +28,7 @@ namespace GEE
 		BoneComponent(BoneComponent&&);
 
 	protected:
-		friend class HierarchyTemplate::HierarchyNode<BoneComponent>;
+		friend class Hierarchy::Node<BoneComponent>;
 		BoneComponent& operator=(const BoneComponent&);
 	public:
 		BoneComponent& operator=(BoneComponent&&) = delete;	//TODO: de-delete this, it should be written but i am too lazy
@@ -35,7 +37,7 @@ namespace GEE
 		unsigned int GetID() const;
 		const Mat4f& GetFinalMatrix();
 
-		virtual MaterialInstance LoadDebugMatInst(EditorButtonState) override;
+		virtual	MaterialInstance GetDebugMatInst(ButtonMaterialType) override;
 
 		void SetBoneOffset(const Mat4f&);
 		void SetID(unsigned int id);
@@ -65,6 +67,14 @@ namespace GEE
 
 	aiBone* FindAiBoneFromNode(const aiScene*, const aiNode*);
 
-	
+	template <> inline void Hierarchy::Instantiation::Impl<BoneComponent>::InstantiateToComp(SharedPtr<Instantiation::Data> data, const NodeBase& instantiatedNode, BoneComponent& targetComp)
+	{
+		Impl<Component>::InstantiateToComp(data, instantiatedNode, targetComp);
+
+		GEE_CORE_ASSERT(data->GetTree().ContainsBones());
+
+		if (data->GetSkeletonInfo())
+			data->GetSkeletonInfo()->AddBone(targetComp);
+	}
 }
 GEE_POLYMORPHIC_SERIALIZABLE_COMPONENT(GEE::Component, GEE::BoneComponent)

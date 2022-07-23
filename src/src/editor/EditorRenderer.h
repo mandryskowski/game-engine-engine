@@ -21,7 +21,7 @@ namespace GEE
 		private:
 			SystemWindow* MainWindow;
 			Editor::EditorManager& EditorHandle;
-			RenderToolboxCollection* MainSceneCollection, * UICollection;
+			RenderToolboxCollection* MainSceneCollection, *UICollection;
 		};
 	}
 }

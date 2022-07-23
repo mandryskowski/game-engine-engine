@@ -7,7 +7,12 @@ namespace GEE
 	{
 	}
 
-	bool InputDevicesStateRetriever::IsKeyPressed(const Key& k) const
+	bool InputDevicesStateRetriever::IsMouseButtonPressed(MouseButton button) const
+	{
+		return glfwGetMouseButton(&WindowRef, static_cast<int>(button));
+	}
+
+	bool InputDevicesStateRetriever::IsKeyPressed(const Key k) const
 	{
 		return glfwGetKey(&WindowRef, static_cast<int>(k)) == GLFW_PRESS;
 	}

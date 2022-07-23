@@ -45,7 +45,10 @@ namespace GEE
 		virtual const Controller* GetCurrentMouseController() const override;
 		virtual SharedPtr<Font> GetDefaultFont() override;
 		virtual bool HasStarted() const override;
-		InputDevicesStateRetriever GetInputRetriever() override;
+		/**
+		 * @return The default input retriever (for the default game window)
+		*/
+		InputDevicesStateRetriever GetDefInputRetriever() override;
 		/**
 		 * @return Amount of time (in seconds) which passed since the start of the program.
 		*/
@@ -68,7 +71,7 @@ namespace GEE
 
 		virtual void SetCursorIcon(DefaultCursorIcon) override;
 
-		virtual HierarchyTemplate::HierarchyTreeT* FindHierarchyTree(const std::string& name, HierarchyTemplate::HierarchyTreeT* treeToIgnore = nullptr) override;
+		virtual Hierarchy::Tree* FindHierarchyTree(const std::string& name, Hierarchy::Tree* treeToIgnore = nullptr) override;
 		virtual SharedPtr<Font> FindFont(const std::string& path) override;
 
 		virtual void PreGameLoop();
@@ -82,13 +85,14 @@ namespace GEE
 	protected:
 		void TerminateGame();
 		void SetMainScene(GameScene*);
+		virtual EventPusher GetEventPusher(GameScene&) override;
 		virtual void DeleteScene(GameScene&) override;
 		std::vector<GameSceneRenderData*> GetSceneRenderDatas();
 
 		// If bGameTerminated is true, no more GameLoopIterations will occur.
 		bool bGameTerminated;
 
-		SystemWindow* Window;
+		SystemWindow* GameWindow;
 
 		std::vector <UniquePtr <GameScene>> Scenes;	//The first scene (Scenes[0]) is referred to as the Main Scene. If you only use 1 scene in your application, don't bother with passing arround GameScene pointers - the Main Scene will be chosen automatically.
 		std::deque <UniquePtr<Interpolation>> Interpolations;
@@ -124,6 +128,8 @@ namespace GEE
 		static void ScrollCallback(SystemWindow*, double xoffset, double yoffset);
 		static void FileDropCallback(SystemWindow*, int count, const char** paths);
 		static void CursorLeaveEnterCallback(SystemWindow*, int enter);
+
+		static GameScene* GetGameSceneFromWindow(SystemWindow&);
 
 		static EventHolder* TargetHolder;
 	};

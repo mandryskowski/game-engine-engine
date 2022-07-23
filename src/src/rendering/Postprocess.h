@@ -69,7 +69,7 @@ namespace GEE
 		void RenderFullscreenQuad(TbInfo<MatrixInfoExt> info, Shader* shader = nullptr, bool useShader = true) const {
 			if (!shader) shader = RenderHandle->FindShader("Quad");
 			if (useShader)	shader->Use();
-			Renderer(*RenderHandle).StaticMeshInstances(info, { MeshInstance(RenderHandle->GetBasicShapeMesh(EngineBasicShape::QUAD) , nullptr) }, Transform(), *shader);
+			Renderer(*RenderHandle).StaticMeshInstances(info, { MeshInstance(RenderHandle->GetBasicShapeMesh(EngineBasicShape::Quad) , nullptr) }, Transform(), *shader);
 		}*/
 
 		static void Dispose();

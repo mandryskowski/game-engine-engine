@@ -95,7 +95,7 @@ namespace GEE
 		return defaultVPs[static_cast<unsigned int>(cubemapSide)];
 	}
 
-	Mesh Renderer::ImplUtil::GetBasicShapeMesh(EngineBasicShape shapeType)
+	Mesh& Renderer::ImplUtil::GetBasicShapeMesh(EngineBasicShape shapeType)
 	{
 		return RenderHandle.GetBasicShapeMesh(shapeType);
 	}
@@ -128,7 +128,7 @@ namespace GEE
 		glDisable(GL_DEPTH_TEST);
 
 		shader.Use();
-		Mesh& cubeMesh = Impl.GetBasicShapeMesh(EngineBasicShape::CUBE);
+		Mesh& cubeMesh = Impl.GetBasicShapeMesh(EngineBasicShape::Cube);
 		cubeMesh.Bind(contextID);
 		BindingsGL::BoundMesh = &cubeMesh;
 
@@ -211,7 +211,7 @@ namespace GEE
 
 	void VolumeRenderer::Volume(const MatrixInfoExt& info, EngineBasicShape shape, Shader& shader, const Transform& transform)
 	{
-		if (shape == EngineBasicShape::QUAD)
+		if (shape == EngineBasicShape::Quad)
 			glDisable(GL_CULL_FACE);
 
 		shader.Use();
@@ -219,7 +219,7 @@ namespace GEE
 		BindingsGL::BoundMesh = nullptr;
 		StaticMeshInstances(info, { Impl.GetBasicShapeMesh(shape) }, transform, shader);
 
-		if (shape == EngineBasicShape::QUAD)
+		if (shape == EngineBasicShape::Quad)
 			glEnable(GL_CULL_FACE);
 	}
 
@@ -240,7 +240,7 @@ namespace GEE
 		for (const UniquePtr<RenderableVolume>& volume : volumes)
 		{
 			//1st pass: stencil
-			if (volume->GetShape() != EngineBasicShape::QUAD)		//if this is a quad everything will be in range; don't waste time
+			if (volume->GetShape() != EngineBasicShape::Quad)		//if this is a quad everything will be in range; don't waste time
 			{
 				glStencilOpSeparate(GL_FRONT, GL_KEEP, GL_INVERT, GL_KEEP);
 				glStencilOpSeparate(GL_BACK, GL_KEEP, GL_KEEP, GL_INVERT);
@@ -254,12 +254,12 @@ namespace GEE
 
 			//2nd pass: lighting
 			glStencilOp(GL_INVERT, GL_INCR, GL_INCR);
-			if (volume->GetShape() == EngineBasicShape::QUAD)
+			if (volume->GetShape() == EngineBasicShape::Quad)
 				glStencilMask(0x00);
 			if (bIBLPass)
 				glStencilFunc(GL_EQUAL, 0, 0xFF);
 			else
-				glStencilFunc(((volume->GetShape() == EngineBasicShape::QUAD) ? (GL_ALWAYS) : (GL_GREATER)), 128, 0xFF);
+				glStencilFunc(((volume->GetShape() == EngineBasicShape::Quad) ? (GL_ALWAYS) : (GL_GREATER)), 128, 0xFF);
 
 			glEnable(GL_CULL_FACE);
 			glDepthFunc(GL_ALWAYS);
@@ -270,7 +270,7 @@ namespace GEE
 			Shader* shader = volume->GetRenderShader(info.GetTbCollection());
 			shader->Use();
 			volume->SetupRenderUniforms(*shader);
-			Volume((volume->GetShape() == EngineBasicShape::QUAD) ? (MatrixInfoExt()) : (info), volume->GetShape(), *shader, volume->GetRenderTransform());
+			Volume((volume->GetShape() == EngineBasicShape::Quad) ? (MatrixInfoExt()) : (info), volume->GetShape(), *shader, volume->GetRenderTransform());
 		}
 
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -308,6 +308,8 @@ namespace GEE
 			LightComponent& light = lights[i].get();
 			if (!dynamicShadowRender && light.HasValidShadowMap())
 				continue;
+
+			//std::cout << "Rerendering light " << light.GetName() <<". Dyamic shadow render: " << dynamicShadowRender << ". Valid shadow map: " <<light.HasValidShadowMap() << "\n";
 
 			if (light.ShouldCullFrontsForShadowMap())
 			{
@@ -404,12 +406,12 @@ namespace GEE
 			ShadowMapRenderer(Impl).ShadowMaps(contextID, tbCollection, sceneRenderData, sceneRenderData.Lights);
 	}
 
-	void SceneRenderer::FullRender(SceneMatrixInfo& info, Viewport viewport, bool clearMainFB, bool modifyForwardsDepthForUI, std::function<void(GEE_FB::Framebuffer&)>&& renderIconsFunc, bool forceForwardShading)
+	void SceneRenderer::FullRender(SceneMatrixInfo& info, Viewport viewport, bool clearMainFB, bool modifyForwardsDepthForUI, std::function<void(GEE_FB::Framebuffer&)>&& renderIconsFunc)
 	{
 		auto& tbCollection = info.GetTbCollection();
 		auto& sceneRenderData = info.GetSceneRenderData();
 		const GameSettings::VideoSettings& settings = tbCollection.GetSettings();
-		bool debugPhysics = false;//GameHandle->GetInputRetriever().IsKeyPressed(Key::F2);
+		bool debugPhysics = false;//GameHandle->GetDefInputRetriever().IsKeyPressed(Key::F2);
 		bool debugComponents = true;
 		bool useLightingAlgorithms = sceneRenderData.ContainsLights() || sceneRenderData.ContainsLightProbes();
 		Mat4f currentFrameView = info.GetView();
@@ -426,7 +428,7 @@ namespace GEE
 
 		glDepthFunc(GL_LEQUAL);
 
-		if (!forceForwardShading)
+		if (!settings.bForceForwardRendering)
 		{
 			////////////////////2. Deferred Shading
 			if (useLightingAlgorithms)
@@ -500,7 +502,7 @@ namespace GEE
 					Shader* shader = probe->GetRenderShader(tbCollection);
 					shader->Uniform1f("lightProbes[" + std::to_string(i) + "].intensity", probe->GetProbeIntensity());
 
-					if (probe->GetShape() == EngineBasicShape::QUAD)
+					if (probe->GetShape() == EngineBasicShape::Quad)
 						continue;
 
 					shader->Uniform3fv("lightProbes[" + std::to_string(i) + "].position", probe->GetTransform().GetWorldTransform().GetPos());
@@ -530,6 +532,9 @@ namespace GEE
 		}
 		else
 		{
+			glEnable(GL_DEPTH_TEST);
+			glEnable(GL_CULL_FACE);
+			glDepthFunc(GL_LEQUAL);
 			MainFramebuffer.Bind(viewport.GetSize());
 
 			if (clearMainFB)
@@ -566,7 +571,7 @@ namespace GEE
 			Impl.RenderHandle.FindShader("Cubemap")->Uniform1f("mipLevel", (float)std::fmod(glfwGetTime(), 4.0));
 
 
-			Renderer(Impl.RenderHandle, &MainFramebuffer).StaticMeshInstances(info, { Impl.GetBasicShapeMesh(EngineBasicShape::CUBE) }, Transform(), *Impl.RenderHandle.FindShader("Cubemap"));
+			Renderer(Impl.RenderHandle, &MainFramebuffer).StaticMeshInstances(info, { Impl.GetBasicShapeMesh(EngineBasicShape::Cube) }, Transform(), *Impl.RenderHandle.FindShader("Cubemap"));
 		}
 
 
@@ -577,7 +582,7 @@ namespace GEE
 		info.SetMainPass(true);
 		
 		if (modifyForwardsDepthForUI)
-			RawUIScene(info);
+			RawUIRender(info);
 		else
 		{
 			info.SetRequiredShaderInfo(MaterialShaderHint::Simple);
@@ -630,7 +635,7 @@ namespace GEE
 		}
 	}
 
-	void SceneRenderer::RawUIScene(const SceneMatrixInfo& infoTemplate)
+	void SceneRenderer::RawUIRender(const SceneMatrixInfo& infoTemplate)
 	{
 		SceneMatrixInfo info = infoTemplate;
 		GameSceneRenderData& renderData = info.GetSceneRenderData();
@@ -902,7 +907,7 @@ namespace GEE
 	{
 		if (!shader) shader = Impl.RenderHandle.FindShader("Quad");
 		if (useShader)	shader->Use();
-		StaticMeshInstances(info, { MeshInstance(Impl.GetBasicShapeMesh(EngineBasicShape::QUAD)) }, Transform(), *shader);
+		StaticMeshInstances(info, { MeshInstance(Impl.GetBasicShapeMesh(EngineBasicShape::Quad)) }, Transform(), *shader);
 	}
 	void LightProbeRenderer::AllSceneProbes(RenderingContextID contextID, GameSceneRenderData& sceneRenderData)
 	{
@@ -941,7 +946,7 @@ namespace GEE
 		std::cout << "*!* Po cieniach\n";
 		for (LightProbeComponent* probe : sceneRenderData.LightProbes)
 		{
-			if (probe->GetShape() == EngineBasicShape::QUAD)
+			if (probe->GetShape() == EngineBasicShape::Quad)
 				continue;
 			Vec3f camPos = probe->GetTransform().GetWorldTransform().GetPos();
 			Mat4f viewTranslation = glm::translate(Mat4f(1.0f), -camPos);
@@ -1126,7 +1131,7 @@ namespace GEE
 	}
 	void TextRenderer::RenderText(const SceneMatrixInfo& infoPreConvert, const Font::Variation& fontVariation, std::string content, Transform t, Vec3f color, Shader* shader, bool convertFromPx, Alignment2D alignment)
 	{
-		if (!Material::ShaderInfo(MaterialShaderHint::None).MatchesRequiredInfo(infoPreConvert.GetRequiredShaderInfo()) && shader && shader != Impl.RenderHandle.FindShader("TextShader"))	///TODO: CHANGE IT SO TEXTS USE MATERIALS SO THEY CAN BE RENDERED USING DIFFERENT SHADERS!!!!
+		if (!Material::ShaderInfo(MaterialShaderHint::None).MatchesRequiredInfo(infoPreConvert.GetRequiredShaderInfo()) && shader && shader->GetName() != "TextShader")	///TODO: CHANGE IT SO TEXTS USE MATERIALS SO THEY CAN BE RENDERED USING DIFFERENT SHADERS!!!!
 			return;
 
 
@@ -1148,11 +1153,10 @@ namespace GEE
 			shader->Uniform4fv("material.color", Vec4f(color, 1.0f));
 		fontVariation.GetBitmapsArray().Bind(0);
 
-		Vec2f resolution(infoPreConvert.GetTbCollection().GetSettings().Resolution);
-
 		SceneMatrixInfo info = infoPreConvert;
 		if (convertFromPx)
 		{
+			Vec2f resolution(infoPreConvert.GetTbCollection().GetSettings().Resolution);
 			Mat4f pxConvertMatrix = glm::ortho(0.0f, resolution.x, 0.0f, resolution.y);
 			const Mat4f& proj = info.GetProjection();
 			info.CalculateVP();
@@ -1186,7 +1190,7 @@ namespace GEE
 
 		const Mat3f& textRot = t.GetRotationMatrix();
 
-		auto textMaterial = MakeShared<Material>("TextMaterial", *Impl.RenderHandle.FindShader("TextShader"));
+		auto textMaterial = MakeShared<Material>("TextMaterial", *shader);
 
 		Transform initialT = t;
 
@@ -1207,7 +1211,7 @@ namespace GEE
 			t.SetScale(halfExtent);
 			//printVector(vp * t.GetWorldTransformMatrix() * Vec4f(0.0f, 0.0f, 0.0f, 1.0f), "Letter " + std::to_string(i));
 
-			Renderer(*this).StaticMeshInstances(info, { MeshInstance(Impl.GetBasicShapeMesh(EngineBasicShape::QUAD), textMaterial) }, t, *shader);
+			Renderer(*this).StaticMeshInstances(info, { MeshInstance(Impl.GetBasicShapeMesh(EngineBasicShape::Quad), textMaterial) }, t, *shader);
 			t.Move(textRot * -Vec3f(c.Bearing * halfExtent, 0.0f) * 2.0f);
 
 			t.Move(textRot * Vec3f(c.Advance * halfExtent.x, 0.0f, 0.0f) * 2.0f);

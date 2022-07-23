@@ -5,6 +5,22 @@
       <Configuration>Debug</Configuration>
       <Platform>Win32</Platform>
     </ProjectConfiguration>
+    <ProjectConfiguration Include="LibraryDebug|Win32">
+      <Configuration>LibraryDebug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="LibraryDebug|x64">
+      <Configuration>LibraryDebug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="LibraryRelease|Win32">
+      <Configuration>LibraryRelease</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="LibraryRelease|x64">
+      <Configuration>LibraryRelease</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
     <ProjectConfiguration Include="Release|Win32">
       <Configuration>Release</Configuration>
       <Platform>Win32</Platform>
@@ -32,7 +48,20 @@
     <PlatformToolset>v143</PlatformToolset>
     <CLRSupport>false</CLRSupport>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='LibraryDebug|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CLRSupport>false</CLRSupport>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CLRSupport>false</CLRSupport>
+    <WholeProgramOptimization>false</WholeProgramOptimization>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='LibraryRelease|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
@@ -40,11 +69,21 @@
     <WholeProgramOptimization>false</WholeProgramOptimization>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='LibraryDebug|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='LibraryRelease|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
@@ -57,13 +96,25 @@
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='LibraryDebug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='LibraryRelease|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='LibraryDebug|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='LibraryRelease|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
@@ -71,7 +122,13 @@
     <LinkIncremental>true</LinkIncremental>
     <IncludePath>$(SolutionDir)src\src\;$(SolutionDir)src\vendor\include\;$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)src\vendor\lib\;$(LibraryPath)</LibraryPath>
-    <OutDir>$(SolutionDir)</OutDir>
+    <OutDir>$(ProjectDir)</OutDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='LibraryDebug|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+    <IncludePath>$(SolutionDir)src\src\;$(SolutionDir)src\vendor\include\;$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)src\vendor\lib\;$(LibraryPath)</LibraryPath>
+    <OutDir>$(SolutionDir)src\lib\GEE\debug\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>true</LinkIncremental>
@@ -79,15 +136,50 @@
     <LibraryPath>$(SolutionDir)src\vendor\lib\;$(LibraryPath)</LibraryPath>
     <OutDir>$(SolutionDir)</OutDir>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='LibraryRelease|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+    <IncludePath>$(SolutionDir)src\src\;$(SolutionDir)src\vendor\include\;$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)src\vendor\lib\;$(LibraryPath)</LibraryPath>
+    <OutDir>$(SolutionDir)src\lib\GEE\</OutDir>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <IncludePath>$(SolutionDir)src\src\;$(SolutionDir)src\vendor\include\;$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)src\vendor\lib\;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='LibraryDebug|x64'">
     <IncludePath>C:\Dev\Include;$(IncludePath)</IncludePath>
     <LibraryPath>C:\Dev\Lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <IncludePath>$(SolutionDir)src\src\;$(SolutionDir)src\vendor\include\;$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)src\vendor\lib\;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='LibraryRelease|x64'">
     <IncludePath>C:\Dev\Include;$(IncludePath)</IncludePath>
     <LibraryPath>C:\Dev\Lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <Optimization>Disabled</Optimization>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <ExternalWarningLevel>Level1</ExternalWarningLevel>
+      <SuppressStartupBanner>false</SuppressStartupBanner>
+    </ClCompile>
+    <Link>
+      <TargetMachine>MachineX86</TargetMachine>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Console</SubSystem>
+      <AdditionalDependencies>opengl32.lib;x86/glfw/debug/glfw3.lib;x86/OpenAL/debug/OpenAL32.lib;x86/PhysX/debug/PhysX_32.lib;x86/PhysX/debug/PhysXCommon_32.lib;x86/PhysX/debug/PhysXFoundation_32.lib;x86/PhysX/debug/PhysXPvdSDK_static_32.lib;x86/PhysX/debug/PhysXExtensions_static_32.lib;x86/PhysX/debug/PhysXCharacterKinematic_static_32.lib;x86/PhysX/debug/PhysXCooking_32.lib;x86/assimp/debug/assimp-vc143-mtd.lib;x86/freetype/debug/freetyped.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+    <Lib>
+      <AdditionalDependencies>opengl32.lib;glfw32/glfw3_32.lib;AL32/debug/OpenAL32.lib;PhysX32/debug/PhysX_32.lib;PhysX32/debug/PhysXCommon_32.lib;PhysX32/debug/PhysXFoundation_32.lib;PhysX32/debug/PhysXPvdSDK_static_32.lib;PhysX32/debug/PhysXExtensions_static_32.lib;PhysX32/debug/PhysXCharacterKinematic_static_32.lib;PhysX32/debug/PhysXCooking_32.lib;assimp/assimp-vc142-mt.lib;freetype32/freetype.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='LibraryDebug|Win32'">
     <ClCompile>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
@@ -96,15 +188,42 @@
       <Optimization>Disabled</Optimization>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <ExternalWarningLevel>Level1</ExternalWarningLevel>
     </ClCompile>
     <Link>
       <TargetMachine>MachineX86</TargetMachine>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
-      <AdditionalDependencies>opengl32.lib;glfw32/glfw3_32.lib;AL32/OpenAL32.lib;PhysX32/debug/PhysX_32.lib;PhysX32/debug/PhysXCommon_32.lib;PhysX32/debug/PhysXFoundation_32.lib;PhysX32/debug/PhysXPvdSDK_static_32.lib;PhysX32/debug/PhysXExtensions_static_32.lib;PhysX32/debug/PhysXCharacterKinematic_static_32.lib;PhysX32/debug/PhysXCooking_32.lib;assimp/assimp-vc142-mt.lib;freetype32/freetype.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opengl32.lib;glfw32/glfw3_32.lib;AL32/debug/OpenAL32.lib;PhysX32/debug/PhysX_32.lib;PhysX32/debug/PhysXCommon_32.lib;PhysX32/debug/PhysXFoundation_32.lib;PhysX32/debug/PhysXPvdSDK_static_32.lib;PhysX32/debug/PhysXExtensions_static_32.lib;PhysX32/debug/PhysXCharacterKinematic_static_32.lib;PhysX32/debug/PhysXCooking_32.lib;assimp/assimp-vc142-mt.lib;freetype32/freetype.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <Lib>
+      <AdditionalDependencies>opengl32.lib;glfw32/glfw3_32.lib;AL32/debug/OpenAL32.lib;PhysX32/debug/PhysX_32.lib;PhysX32/debug/PhysXCommon_32.lib;PhysX32/debug/PhysXFoundation_32.lib;PhysX32/debug/PhysXPvdSDK_static_32.lib;PhysX32/debug/PhysXExtensions_static_32.lib;PhysX32/debug/PhysXCharacterKinematic_static_32.lib;PhysX32/debug/PhysXCooking_32.lib;assimp/assimp-vc142-mt.lib;freetype32/freetype.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <WarningLevel>Level1</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <CompileAs>Default</CompileAs>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+    </ClCompile>
+    <Link>
+      <TargetMachine>MachineX86</TargetMachine>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>opengl32.lib;x86/glfw/glfw3.lib;x86/OpenAL/OpenAL32.lib;x86/PhysX/checked/PhysX_32.lib;x86/PhysX/checked/PhysXCommon_32.lib;x86/PhysX/checked/PhysXFoundation_32.lib;x86/PhysX/checked/PhysXPvdSDK_static_32.lib;x86/PhysX/checked/PhysXExtensions_static_32.lib;x86/PhysX/checked/PhysXCharacterKinematic_static_32.lib;x86/PhysX/checked/PhysXCooking_32.lib;x86/assimp/assimp-vc143-mt.lib;x86/freetype/freetype.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <LinkTimeCodeGeneration>Default</LinkTimeCodeGeneration>
+    </Link>
+    <ProjectReference>
+      <LinkLibraryDependencies>true</LinkLibraryDependencies>
+    </ProjectReference>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='LibraryRelease|Win32'">
     <ClCompile>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
@@ -126,13 +245,43 @@
     <ProjectReference>
       <LinkLibraryDependencies>true</LinkLibraryDependencies>
     </ProjectReference>
+    <Lib>
+      <AdditionalLibraryDirectories>
+      </AdditionalLibraryDirectories>
+      <AdditionalDependencies>opengl32.lib;glfw32/glfw3_32.lib;AL32/OpenAL32.lib;PhysX32/PhysX_32.lib;PhysX32/PhysXCommon_32.lib;PhysX32/PhysXFoundation_32.lib;PhysX32/PhysXPvdSDK_static_32.lib;PhysX32/PhysXExtensions_static_32.lib;PhysX32/PhysXCharacterKinematic_static_32.lib;PhysX32/PhysXCooking_32.lib;assimp/assimp-vc142-mt.lib;freetype32/freetype.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Link>
+      <AdditionalDependencies>opengl32.lib;x64/glfw/debug/glfw3.lib;x64/OpenAL/debug/OpenAL64.lib;x64/PhysX/debug/PhysX_64.lib;x64/PhysX/debug/PhysXCommon_64.lib;x64/PhysX/debug/PhysXFoundation_64.lib;x64/PhysX/debug/PhysXPvdSDK_static_64.lib;x64/PhysX/debug/PhysXExtensions_static_64.lib;x64/PhysX/debug/PhysXCharacterKinematic_static_64.lib;x64/PhysX/debug/PhysXCooking_64.lib;x64/assimp/debug/assimp-vc143-mtd.lib;x64/freetype/debug/freetyped.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+    <ClCompile>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
+      <PreprocessorDefinitions>_DEBUG</PreprocessorDefinitions>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='LibraryDebug|x64'">
     <Link>
       <AdditionalDependencies>opengl32.lib;glfw/glfw3_64.lib;AL64/OpenAL32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Link>
+      <AdditionalDependencies>opengl32.lib;x64/glfw/glfw3.lib;x64/OpenAL/OpenAL64.lib;x64/PhysX/checked/PhysX_64.lib;x64/PhysX/checked/PhysXCommon_64.lib;x64/PhysX/checked/PhysXFoundation_64.lib;x64/PhysX/checked/PhysXPvdSDK_static_64.lib;x64/PhysX/checked/PhysXExtensions_static_64.lib;x64/PhysX/checked/PhysXCharacterKinematic_static_64.lib;x64/PhysX/checked/PhysXCooking_64.lib;x64/assimp/assimp-vc143-mt.lib;x64/freetype/freetype.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+    <ClCompile>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <PreprocessorDefinitions>NDEBUG</PreprocessorDefinitions>
+    </ClCompile>
+    <ProjectReference>
+      <LinkLibraryDependencies>true</LinkLibraryDependencies>
+    </ProjectReference>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='LibraryRelease|x64'">
     <Link>
       <AdditionalDependencies>opengl32.lib;glfw/glfw3_64.lib;AL64/OpenAL32.lib;PhysX64/PhysX_64.lib;PhysX64/PhysXCommon_64.lib;PhysX64/PhysXFoundation_64.lib;PhysX64/PhysXPvdSDK_static_64.lib;PhysX64/PhysXExtensions_static_64.lib;PhysX64/PhysXCooking_64.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
@@ -145,7 +294,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <None Include="ClassDiagram.cd" />
-    <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="icon.rc" />
@@ -176,6 +324,7 @@
     <ClCompile Include="src\src\physics\CollisionObject.cpp" />
     <ClCompile Include="src\src\physics\DynamicPhysicsObjects.cpp" />
     <ClCompile Include="src\src\physics\PhysicsEngine.cpp" />
+    <ClCompile Include="src\src\physics\PhysicsObjects.cpp" />
     <ClCompile Include="src\src\rendering\Framebuffer.cpp" />
     <ClCompile Include="src\src\rendering\LightProbe.cpp" />
     <ClCompile Include="src\src\rendering\Material.cpp" />
@@ -196,6 +345,7 @@
     <ClCompile Include="src\src\scene\Controller.cpp" />
     <ClCompile Include="src\src\scene\GunActor.cpp" />
     <ClCompile Include="src\src\scene\hierarchy\HierarchyNode.cpp" />
+    <ClCompile Include="src\src\scene\hierarchy\HierarchyNodeInstantiation.cpp" />
     <ClCompile Include="src\src\scene\hierarchy\HierarchyTree.cpp" />
     <ClCompile Include="src\src\scene\LightComponent.cpp" />
     <ClCompile Include="src\src\scene\LightProbeComponent.cpp" />
@@ -252,6 +402,7 @@
     <ClInclude Include="src\src\physics\CollisionObject.h" />
     <ClInclude Include="src\src\physics\DynamicPhysicsObjects.h" />
     <ClInclude Include="src\src\physics\PhysicsEngine.h" />
+    <ClInclude Include="src\src\physics\PhysicsObjects.h" />
     <ClInclude Include="src\src\rendering\Framebuffer.h" />
     <ClInclude Include="src\src\rendering\LightProbe.h" />
     <ClInclude Include="src\src\rendering\Material.h" />
@@ -273,6 +424,8 @@
     <ClInclude Include="src\src\scene\Controller.h" />
     <ClInclude Include="src\src\scene\GunActor.h" />
     <ClInclude Include="src\src\scene\hierarchy\HierarchyNode.h" />
+    <ClInclude Include="src\src\scene\hierarchy\HierarchyNodeBase.h" />
+    <ClInclude Include="src\src\scene\hierarchy\HierarchyNodeInstantiation.h" />
     <ClInclude Include="src\src\scene\hierarchy\HierarchyTree.h" />
     <ClInclude Include="src\src\scene\LightComponent.h" />
     <ClInclude Include="src\src\scene\LightProbeComponent.h" />
@@ -301,13 +454,5 @@
     <ClInclude Include="src\src\utility\Utility.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
-  <ImportGroup Label="ExtensionTargets">
-    <Import Project="packages\Assimp.redist.3.0.0\build\native\Assimp.redist.targets" Condition="Exists('packages\Assimp.redist.3.0.0\build\native\Assimp.redist.targets')" />
-  </ImportGroup>
-  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
-    <PropertyGroup>
-      <ErrorText>Ten projekt zawiera odwołania do pakietów NuGet, których nie ma na tym komputerze. Użyj przywracania pakietów NuGet, aby je pobrać. Aby uzyskać więcej informacji, zobacz http://go.microsoft.com/fwlink/?LinkID=322105. Brakujący plik: {0}.</ErrorText>
-    </PropertyGroup>
-    <Error Condition="!Exists('packages\Assimp.redist.3.0.0\build\native\Assimp.redist.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Assimp.redist.3.0.0\build\native\Assimp.redist.targets'))" />
-  </Target>
+  <ImportGroup Label="ExtensionTargets" />
 </Project>

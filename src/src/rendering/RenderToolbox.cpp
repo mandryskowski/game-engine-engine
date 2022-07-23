@@ -522,13 +522,13 @@ namespace GEE
 		ShadowFramebuffer->Generate();
 
 
-		ShadowMapArray = AddTexture(Texture::Loader<float>::ReserveEmpty2DArray(Vec3u(shadowMapSize.x, shadowMapSize.y, 16), Texture::Format::Depth(), Texture::Format::Depth()));
+		ShadowMapArray = AddTexture(Texture::Loader<float>::ReserveEmpty2DArray(Vec3u(shadowMapSize.x, shadowMapSize.y, settings.Max2DShadows), Texture::Format::Depth(), Texture::Format::Depth()));
 		ShadowMapArray->SetMagFilter(Texture::MagFilter::Nearest(), true);
 		ShadowMapArray->SetMinFilter(Texture::MinFilter::Nearest(), true, true);
 		ShadowMapArray->SetWrap(GL_CLAMP_TO_BORDER, GL_CLAMP_TO_BORDER, 0, true);
 		ShadowMapArray->SetBorderColor(Vec4f(1.0f));
 
-		ShadowCubemapArray = AddTexture(Texture::Loader<float>::ReserveEmptyCubemapArray(Vec3u(shadowMapSize.x, shadowMapSize.y, 16), Texture::Format::Depth(), Texture::Format::Depth()));
+		ShadowCubemapArray = AddTexture(Texture::Loader<float>::ReserveEmptyCubemapArray(Vec3u(shadowMapSize.x, shadowMapSize.y, settings.Max3DShadows), Texture::Format::Depth(), Texture::Format::Depth()));
 		ShadowCubemapArray->SetMagFilter(Texture::MagFilter::Nearest(), true);
 		ShadowCubemapArray->SetMinFilter(Texture::MinFilter::Nearest(), true, true);
 	}
@@ -607,7 +607,7 @@ namespace GEE
 		if (Settings.ShadowLevel > SettingLevel::SETTING_NONE)
 			AddTb<ShadowMappingToolbox>();
 
-		if (!Settings.DrawToWindowFBO)
+		if (!Settings.bDrawToWindowFBO)
 			AddTb<FinalRenderTargetToolbox>();
 
 		AddTb<ForwardShadingToolbox>();

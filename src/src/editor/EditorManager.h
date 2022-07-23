@@ -1,6 +1,7 @@
 #pragma once
 #include <math/Vec.h>
 #include <utility/Utility.h>
+#include <deque>
 
 namespace GEE
 {
@@ -11,9 +12,9 @@ namespace GEE
 	struct GameSettings;
 	class AtlasMaterial;
 	
-	namespace HierarchyTemplate
+	namespace Hierarchy
 	{
-		class HierarchyTreeT;
+		class Tree;
 	}
 
 	enum class EditorDefaultMaterial
@@ -30,13 +31,19 @@ namespace GEE
 		W_Axis
 	};
 
-	enum class EditorButtonState
+	enum ButtonStateFlags
+	{
+		Hover = 1,
+		BeingClicked = 2,
+		Active = 4
+	};
+
+	enum class ButtonMaterialType
 	{
 		Idle,
 		Hover,
-		BeingClickedInside,
-		BeingClickedOutside,
-		Activated
+		BeingClicked,
+		Active
 	};
 
 	class UICanvasActor;
@@ -71,14 +78,14 @@ namespace GEE
 
 			virtual std::string ToRelativePath(const std::string&) = 0;
 
-			//virtual void PreviewHierarchyTree(HierarchyTemplate::HierarchyTreeT& tree) = 0;
+			//virtual void PreviewHierarchyTree(Hierarchy::Tree& tree) = 0;
 
 			virtual ~EditorManager() = default;
 
 			virtual void SetDebugRenderComponents(bool) = 0;
 
 		private:
-			virtual const std::vector<EditorPopup>& GetPopupsForRendering() = 0;
+			virtual const std::deque<EditorPopup>& GetPopupsForRendering() = 0;
 			friend class EditorRenderer;
 		};
 	}

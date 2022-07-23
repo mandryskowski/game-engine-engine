@@ -14,6 +14,7 @@ namespace GEE
 		unsigned int NextLightProbeNr;
 
 		LightProbeTextureArrays();
+		~LightProbeTextureArrays();
 	};
 
 	/*class LightProbe		//DEPRECATED
@@ -37,7 +38,7 @@ namespace GEE
 		EngineBasicShape Shape;
 		Transform ProbeTransform;
 
-		LocalLightProbe(GameSceneRenderData* sceneRenderData, Transform = Transform(), EngineBasicShape = EngineBasicShape::CUBE);
+		LocalLightProbe(GameSceneRenderData* sceneRenderData, Transform = Transform(), EngineBasicShape = EngineBasicShape::Cube);
 		virtual EngineBasicShape GetShape() const override;
 		virtual Transform GetTransform() const override;
 	};*/

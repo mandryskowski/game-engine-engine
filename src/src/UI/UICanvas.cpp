@@ -3,6 +3,7 @@
 #include <scene/UIButtonActor.h>
 #include <scene/Component.h>
 
+
 namespace GEE
 {
 	UICanvas::UICanvas(const UICanvas& canvas) :
@@ -71,6 +72,7 @@ namespace GEE
 	void UICanvas::SetCanvasView(const Transform& canvasView, bool clampView)
 	{
 		CanvasView = canvasView;
+		PushCanvasViewChangeEvent();
 	}
 
 	void UICanvas::ClampViewToElements()
@@ -127,6 +129,7 @@ namespace GEE
 	{
 		CanvasView.SetScale(scale);
 		ClampViewToElements();
+		PushCanvasViewChangeEvent();
 	}
 
 	bool UICanvas::ContainsMouse() const

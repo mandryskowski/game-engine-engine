@@ -1,7 +1,4 @@
 #pragma once
-#if !defined(NDEBUG) && !defined(_DEBUG)
-#define NDEBUG
-#endif
 #include <PhysX/PxPhysicsAPI.h>
 
 #include <math/Vec.h>
@@ -34,12 +31,15 @@ namespace GEE
 			virtual void RemoveScenePhysicsDataPtr(GameScenePhysicsData& scenePhysicsData) override;
 
 			virtual physx::PxController* CreateController(GameScenePhysicsData& scenePhysicsData, const Transform& t) override;
+			virtual physx::PxMaterial* CreateMaterial(float staticFriction, float dynamicFriction, float restitutionCoeff) override;
 
 			void SetupScene(GameScenePhysicsData& scenePhysicsData);
 
 			void Update(float deltaTime);
 			void UpdateTransforms();
 			void UpdatePxTransforms();
+
+			void ConnectToPVD();
 
 			~PhysicsEngine();
 

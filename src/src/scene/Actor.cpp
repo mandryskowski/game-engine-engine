@@ -22,9 +22,17 @@ namespace GEE
 		SetupStream(nullptr)
 	{
 		RootComponent = MakeUnique<Component>(*this, nullptr, Name + "'s root", t);
-		if (GameHandle->HasStarted())
-			RootComponent->OnStartAll();
 	}
+
+	/*Actor::Actor(const Actor& rhs) :
+		RootComponent(MakeUnique<Component>(*rhs.RootComponent)),
+		ParentActor(nullptr),
+		Name(rhs.Name),
+		SetupStream(rhs.SetupStream),
+		Scene(rhs.Scene),
+		GameHandle(rhs.GameHandle)
+	{
+	}*/
 
 	Actor::Actor(Actor&& moved) :
 		RootComponent(std::move(moved.RootComponent)),
@@ -77,16 +85,6 @@ namespace GEE
 		std::transform(Children.begin(), Children.end(), std::back_inserter(children), [](UniquePtr<Actor>& child) -> Actor* { return child.get(); });
 
 		return children;
-	}
-
-	GameScene& Actor::GetScene()
-	{
-		return Scene;
-	}
-
-	GameManager* Actor::GetGameHandle()
-	{
-		return GameHandle;
 	}
 
 	bool Actor::IsBeingKilled() const
@@ -150,9 +148,9 @@ namespace GEE
 		RootComponent->SetTransform(transform);
 	}
 
-	void Actor::AddComponent(UniquePtr<Component> component)
+	Component& Actor::AddComponent(UniquePtr<Component> component)
 	{
-		RootComponent->AddComponent(std::move(component));
+		return RootComponent->AddComponent(std::move(component));
 	}
 
 	Actor& Actor::AddChild(UniquePtr<Actor> child)
@@ -160,6 +158,9 @@ namespace GEE
 		Children.push_back(std::move(child));
 		Children.back()->GetTransform()->SetParentTransform(&RootComponent->GetTransform());
 		Children.back()->ParentActor = this;
+
+		if (Scene.HasStarted())
+			Children.back()->OnStartAll();
 
 		return *Children.back();
 	}
@@ -275,7 +276,22 @@ namespace GEE
 	{
 		UIInputBoxActor& textActor = descBuilder.CreateActor<UIInputBoxActor>("ActorsNameActor");
 		textActor.SetTransform(Transform(Vec2f(0.0f, 1.5f), Vec2f(5.0f, 1.25f)));
-		textActor.SetOnInputFunc([this](const std::string& content) { if (Scene.GetUniqueActorName(content) == content) SetName(content);}, [this]() -> std::string { return GetName(); });
+		textActor.SetOnInputFunc([this, descBuilder](const std::string& content) mutable
+		{
+			auto prevName = GetName();
+
+			if (Scene.GetUniqueActorName(content) == content)
+				SetName(content);
+
+			if (Actor* foundSceneCanvas = descBuilder.GetEditorScene().GetRootActor()->FindActor("GEE_E_Scene_Actors_Canvas"))
+				if (UIActivableButtonActor* foundButtonActor = foundSceneCanvas->GetActor<UIActivableButtonActor>(prevName))
+				{
+					foundButtonActor->SetName(GetName());
+					if (auto foundTextComp = foundButtonActor->GetRoot()->GetComponent<TextComponent>("ButtonText"))
+						foundTextComp->SetContent(GetName());
+				}
+		}
+		, [this]() -> std::string { return GetName(); });
 		textActor.DeleteButtonModel();
 		textActor.GetContentTextComp()->SetFontStyle(FontStyle::Bold);
 
@@ -292,4 +308,31 @@ namespace GEE
 		descBuilder.AddField("Set parent to").GetTemplates().ObjectInput<Actor, Actor>(*Scene.GetRootActor(), [this](Actor* newParent) { if (newParent) PassToDifferentParent(*newParent); });
 	}
 
+	template <typename Archive> void Actor::Save(Archive& archive) const
+	{
+		archive(CEREAL_NVP(Name), CEREAL_NVP(RootComponent), CEREAL_NVP(Children));
+	}
+	template <typename Archive> void Actor::Load(Archive& archive)
+	{
+		CerealComponentSerializationData::ActorRef = this;	//For constructing the root component and its children
+		CerealComponentSerializationData::ParentComp = nullptr;	//The root component doesn't have a parent
+		RootComponent = nullptr;
+		archive(CEREAL_NVP(Name), CEREAL_NVP(RootComponent));
+		std::cout << "Serializing actor " << Name << '\n';
+
+		if (Scene.HasStarted())
+			OnStartAll();
+
+		Children.clear();
+		archive(CEREAL_NVP(Children));
+
+		for (auto& it : Children)
+		{
+			it->ParentActor = this;
+			it->GetTransform()->SetParentTransform(GetTransform());
+		}
+	}
+
+	template void Actor::Save<cereal::JSONOutputArchive>(cereal::JSONOutputArchive&) const;
+	template void Actor::Load<cereal::JSONInputArchive>(cereal::JSONInputArchive&);
 }

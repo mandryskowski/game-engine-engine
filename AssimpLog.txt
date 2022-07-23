@@ -1,0 +1,47 @@
+Info,  T224: Load Assets/EngineObjects/quad.obj
+Info,  T224: Found a matching importer for this file format: Wavefront Object Importer.
+Info,  T224: Import root directory is 'Assets/EngineObjects\'
+Info,  T224: Entering post processing pipeline
+Info,  T224: GenVertexNormalsProcess finished. Vertex normals have been calculated
+Info,  T224: CalcTangentsProcess finished. Tangents have been calculated
+Info,  T224: JoinVerticesProcess finished | Verts in: 6 out: 4 | ~33.3333
+Info,  T224: Leaving post processing pipeline
+Info,  T224: Load Assets/EngineObjects/cube.obj
+Info,  T224: Found a matching importer for this file format: Wavefront Object Importer.
+Info,  T224: Import root directory is 'Assets/EngineObjects\'
+Error, T224: OBJ: failed to locate material None, creating new material
+Info,  T224: Entering post processing pipeline
+Info,  T224: CalcTangentsProcess finished. Tangents have been calculated
+Info,  T224: JoinVerticesProcess finished | Verts in: 36 out: 24 | ~33.3333
+Info,  T224: Leaving post processing pipeline
+Info,  T224: Load Assets/EngineObjects/sphere.obj
+Info,  T224: Found a matching importer for this file format: Wavefront Object Importer.
+Info,  T224: Import root directory is 'Assets/EngineObjects\'
+Error, T224: OBJ: Unable to locate material file sphere.mtl
+Info,  T224: OBJ: Opening fallback material file Assets/EngineObjects/sphere.mtl
+Error, T224: OBJ: Unable to locate fallback material file Assets/EngineObjects/sphere.mtl
+Error, T224: OBJ: failed to locate material None, creating new material
+Info,  T224: Entering post processing pipeline
+Info,  T224: CalcTangentsProcess finished. Tangents have been calculated
+Info,  T224: JoinVerticesProcess finished | Verts in: 540 out: 378 | ~30
+Info,  T224: Leaving post processing pipeline
+Info,  T224: Load Assets/EngineObjects/cone.obj
+Info,  T224: Found a matching importer for this file format: Wavefront Object Importer.
+Info,  T224: Import root directory is 'Assets/EngineObjects\'
+Error, T224: OBJ: Unable to locate material file cone3.mtl
+Info,  T224: OBJ: Opening fallback material file Assets/EngineObjects/cone.mtl
+Error, T224: OBJ: Unable to locate fallback material file Assets/EngineObjects/cone.mtl
+Error, T224: OBJ: failed to locate material None, creating new material
+Info,  T224: Entering post processing pipeline
+Info,  T224: CalcTangentsProcess finished. Tangents have been calculated
+Info,  T224: JoinVerticesProcess finished | Verts in: 192 out: 172 | ~10.4167
+Info,  T224: Leaving post processing pipeline
+Info,  T224: Load Projects\example_8_ball_pool\models\pooltable.glb
+Info,  T224: Found a possible importer: glTF Importer; trying signature-based detection
+Info,  T224: Found a possible importer: glTF2 Importer; trying signature-based detection
+Info,  T224: Found a matching importer for this file format: glTF2 Importer.
+Info,  T224: Import root directory is 'Projects\example_8_ball_pool\models\'
+Info,  T224: Entering post processing pipeline
+Info,  T224: CalcTangentsProcess finished. Tangents have been calculated
+Info,  T224: JoinVerticesProcess finished | Verts in: 53641 out: 53618 | ~0.0428776
+Info,  T224: Leaving post processing pipeline

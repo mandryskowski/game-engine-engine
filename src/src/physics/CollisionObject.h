@@ -50,8 +50,11 @@ namespace GEE
 			CollisionShape(HTreeObjectLoc treeObjLoc, const std::string& meshName, CollisionShapeType type = CollisionShapeType::COLLISION_BOX);
 			ColShapeLoc* GetOptionalLocalization();	//NOTE: Can be nullptr
 			void SetOptionalLocalization(ColShapeLoc loc);
+
 			template <typename Archive> void Save(Archive& archive)	const;
 			template <typename Archive> void Load(Archive& archive);
+
+			void GetEditorDescription(EditorDescriptionBuilder descBuilder, CollisionObject& thisColObj);
 		};
 
 		struct CollisionObject

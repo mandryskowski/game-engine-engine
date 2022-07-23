@@ -52,7 +52,7 @@ namespace GEE
 		//Component(Actor&, Component&&);
 
 	protected:
-		template <typename CompClass> friend class HierarchyTemplate::HierarchyNode;
+		template <typename CompClass> friend class Hierarchy::Node;
 		Component& operator=(const Component&);
 
 		template <typename FieldType> void AddToGarbageCollector(FieldType*& field);
@@ -124,7 +124,9 @@ namespace GEE
 		virtual void DebugRender(SceneMatrixInfo info, Shader& shader, const Vec3f& debugIconScale = Vec3f(0.05f)) const; //this method should only be called to render the component as something (usually a textured billboard) to debug the project.
 		void DebugRenderAll(SceneMatrixInfo info, Shader& shader) const;
 
+	protected:
 		virtual SharedPtr<AtlasMaterial> LoadDebugRenderMaterial(const std::string& materialName, const std::string& path);
+	public:
 
 		Component* SearchForComponent(std::string name);
 
@@ -142,7 +144,7 @@ namespace GEE
 		void MoveChildren(Component& moveTo);
 		void Delete();
 
-		virtual MaterialInstance LoadDebugMatInst(EditorButtonState);
+		virtual	MaterialInstance GetDebugMatInst(ButtonMaterialType);
 
 		std::string Name;
 
@@ -180,9 +182,6 @@ namespace GEE
 		ChildClass& childRef = *createdChild;
 		AddComponent(std::move(createdChild));
 
-		if (GameHandle->HasStarted())
-			childRef.OnStartAll();
-
 		return (ChildClass&)childRef;
 	}
 
@@ -205,6 +204,9 @@ namespace GEE
 			return;
 		for (unsigned int i = 0; i < Children.size(); i++)
 		{
+			if (Children[i]->IsBeingKilled())
+				continue;
+
 			CompClass* c = dynamic_cast<CompClass*>(Children[i].get());
 			if (c)					//if dynamic cast was succesful - this children is of CompCLass type
 				comps->push_back(c);

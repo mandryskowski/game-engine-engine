@@ -12,7 +12,7 @@ namespace GEE
 	void LightProbeLoader::LoadLightProbeFromFile(LightProbeComponent& probe, std::string filepath)
 	{
 		RenderEngineManager* renderHandle = probe.GetScene().GetGameHandle()->GetRenderEngineHandle();
-		probe.Shape = EngineBasicShape::QUAD;
+		probe.Shape = EngineBasicShape::Quad;
 
 		Texture erTexture = Texture::Loader<float>::FromFile2D(filepath, Texture::Format::Float16::RGBA(), true, Texture::MinFilter::Bilinear(), Texture::MagFilter::Bilinear());	//load equirectangular hdr texture
 		int layer = probe.GetProbeIndex() * 6;
@@ -24,6 +24,7 @@ namespace GEE
 		glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
 
 		ConvoluteLightProbe(probe, probe.GetEnvironmentMap());
+		erTexture.Dispose();
 	}
 
 	void LightProbeLoader::ConvoluteLightProbe(const LightProbeComponent& probe, const Texture& envMap)
@@ -72,7 +73,7 @@ namespace GEE
 		framebuffer.AttachTextures(probeTexArrays->BRDFLut);
 		framebuffer.Bind(true);
 		renderHandle->FindShader("BRDFLutGeneration")->Use();
-		Renderer(*renderHandle).StaticMeshInstances(SceneMatrixInfo(*renderHandle->GetCurrentTbCollection(), *sceneRenderData), { renderHandle->GetBasicShapeMesh(EngineBasicShape::QUAD) }, Transform(), *renderHandle->FindShader("BRDFLutGeneration"));
+		Renderer(*renderHandle).StaticMeshInstances(SceneMatrixInfo(*renderHandle->GetCurrentTbCollection(), *sceneRenderData), { renderHandle->GetBasicShapeMesh(EngineBasicShape::Quad) }, Transform(), *renderHandle->FindShader("BRDFLutGeneration"));
 
 		framebuffer.Dispose();
 	}
@@ -122,6 +123,13 @@ namespace GEE
 	LightProbeTextureArrays::LightProbeTextureArrays() :
 		NextLightProbeNr(0)
 	{
+	}
+
+	LightProbeTextureArrays::~LightProbeTextureArrays()
+	{
+		IrradianceMapArr.Dispose();
+		PrefilterMapArr.Dispose();
+		BRDFLut.Dispose();
 	}
 
 }

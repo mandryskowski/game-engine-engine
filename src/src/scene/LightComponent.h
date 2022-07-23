@@ -18,7 +18,7 @@ namespace GEE
 		LightComponent(LightComponent&&);
 
 	protected:
-		friend class HierarchyTemplate::HierarchyNode<LightComponent>;
+		friend class Hierarchy::Node<LightComponent>;
 		LightComponent& operator=(const LightComponent&);
 	public:
 		LightComponent& operator=(LightComponent&&) = delete;	//TODO: de-delete this, it should be written but i am too lazy
@@ -37,7 +37,7 @@ namespace GEE
 		void MarkValidShadowMap();
 		bool ShouldCullFrontsForShadowMap() const;
 
-		void InvalidateCache();
+		void InvalidateCache(bool includingShadowMap = true);
 
 
 
@@ -52,8 +52,9 @@ namespace GEE
 		void UpdateUBOData(UniformBuffer*, size_t = -1);
 		Vec3f& operator[](unsigned int);
 
-		virtual	MaterialInstance LoadDebugMatInst(EditorButtonState) override;
+		virtual	MaterialInstance GetDebugMatInst(ButtonMaterialType) override;
 		virtual void GetEditorDescription(ComponentDescriptionBuilder) override;
+		virtual void DebugRender(SceneMatrixInfo info, Shader& shader, const Vec3f& debugIconScale = Vec3f(0.05f)) const override;
 
 		template <typename Archive> void Save(Archive& archive) const
 		{
@@ -115,6 +116,7 @@ namespace GEE
 	class LightVolume : public RenderableVolume
 	{
 		const LightComponent* LightCompPtr;
+		const Component* VolumeTransformTarget;
 	public:
 		LightVolume(const LightComponent&);
 		virtual EngineBasicShape GetShape() const override;

@@ -33,6 +33,10 @@
 
 #include <rendering/Renderer.h>
 
+#ifdef GEE_OS_WINDOWS
+#include <Windows.h>
+#endif
+
 namespace GEE
 {
 	namespace Editor
@@ -71,26 +75,25 @@ namespace GEE
 		}
 
 
-	GameEngineEngineEditor::GameEngineEngineEditor(SystemWindow* window, const GameSettings& settings) :
-		Game(settings.Video.Shading, settings),
-		EditorScene(nullptr),
-		bDebugRenderComponents(true),
-		bDebugRenderPhysicsMeshes(true),
-		GameController(nullptr),
-		EEForceForwardShading(false),
-		LastRenderPopupRequest(nullptr),
-		bViewportMaximized(false),
-		Actions(MakeUnique<EditorActions>(*this)),
-		TestTranslateLastPos(Vec2f(0.0f))
-	{
+		GameEngineEngineEditor::GameEngineEngineEditor(SystemWindow* window, const GameSettings& settings) :
+			Game(settings.Video.Shading, settings),
+			EditorScene(nullptr),
+			bDebugRenderComponents(true),
+			bDebugRenderPhysicsMeshes(true),
+			GameController(nullptr),
+			LastRenderPopupRequest(nullptr),
+			bViewportMaximized(false),
+			Actions(MakeUnique<EditorActions>(*this)),
+			TestTranslateLastPos(Vec2f(0.0f))
 		{
-			int length = wai_getExecutablePath(nullptr, 0, nullptr), dirnameLength = 0;
-			std::string path;
-			path.resize(length);
-			wai_getExecutablePath(&path[0], length, &dirnameLength);
-			ExecutableFolder = path.substr(0, dirnameLength);
-			std::cout << "Executable folder: " << ExecutableFolder << '\n';
-		}
+			{
+				int length = wai_getExecutablePath(nullptr, 0, nullptr), dirnameLength = 0;
+				std::string path;
+				path.resize(length);
+				wai_getExecutablePath(&path[0], length, &dirnameLength);
+				ExecutableFolder = path.substr(0, dirnameLength);
+				std::cout << "Executable folder: " << ExecutableFolder << '\n';
+			}
 
 			Settings = MakeUnique<GameSettings>(GameSettings(EngineDataLoader::LoadSettingsFromFile<GameSettings>("Settings.ini")));
 			Vec2f windowSize = Settings->Video.Resolution;
@@ -106,7 +109,7 @@ namespace GEE
 			bool returnVal = Game::GameLoopIteration(timeStep, deltaTime);
 
 			//////////////////////POPUPS
-			OpenPopups.erase(std::remove_if(OpenPopups.begin(), OpenPopups.end(), [](EditorPopup& popup) { if (glfwWindowShouldClose(&popup.Window.get())) { glfwDestroyWindow(&popup.Window.get()); return true; } return false; }), OpenPopups.end());
+			OpenPopups.erase(std::remove_if(OpenPopups.begin(), OpenPopups.end(), [this](EditorPopup& popup) { if (glfwWindowShouldClose(&popup.Window.get())) { glfwDestroyWindow(&popup.Window.get()); RenderEng.EraseRenderTbCollection(popup.TbCol); return true; } return false; }), OpenPopups.end());
 
 			if (Profiler.HasBeenStarted())
 				Profiler.AddTime(deltaTime);
@@ -179,10 +182,10 @@ namespace GEE
 			stbi_image_free(image.pixels);
 
 			EditorEventProcessor::EditorHandle = this;
-			glfwSetDropCallback(Window, EditorEventProcessor::FileDropCallback);
-			glfwSetFramebufferSizeCallback(Window, EditorEventProcessor::Resize);
+			glfwSetDropCallback(GameWindow, EditorEventProcessor::FileDropCallback);
+			glfwSetFramebufferSizeCallback(GameWindow, EditorEventProcessor::Resize);
 
-			glfwSetWindowCloseCallback(Window, [](SystemWindow* window) { GameEngineEngineEditor* thisPtr = static_cast<GameEngineEngineEditor*>(glfwGetWindowUserPointer(window)); GenericUITemplates(*thisPtr->EditorScene).ConfirmationBox([thisPtr]() { thisPtr->SaveProject(); thisPtr->TerminateGame(); }, [=]() { thisPtr->TerminateGame(); }, "Save the project?"); });
+			glfwSetWindowCloseCallback(GameWindow, [](SystemWindow* window) { GameScene* scene = static_cast<GameScene*>(glfwGetWindowUserPointer(window)); GameEngineEngineEditor* thisPtr = dynamic_cast<GameEngineEngineEditor*>(scene->GetGameHandle()); GenericUITemplates(*scene).ConfirmationBox([scene, thisPtr]() { thisPtr->SaveProject(); thisPtr->TerminateGame(); }, [thisPtr]() { thisPtr->TerminateGame(); }, "Save the project?"); });
 
 
 			SharedPtr<AtlasMaterial> addIconMat = MakeShared<AtlasMaterial>("GEE_E_Add_Icon_Mat", glm::ivec2(3, 1));
@@ -224,9 +227,9 @@ namespace GEE
 			uiSettings.AAType = AA_SMAA1X;
 			uiSettings.AmbientOcclusionSamples = 0;
 			uiSettings.bBloom = false;
-			uiSettings.DrawToWindowFBO = true;
+			uiSettings.bDrawToWindowFBO = true;
 			uiSettings.POMLevel = SettingLevel::SETTING_NONE;
-			uiSettings.Resolution = WindowData(*Window).GetWindowSize();
+			uiSettings.Resolution = WindowData(*GameWindow).GetWindowSize();
 			uiSettings.Shading = ShadingAlgorithm::SHADING_FULL_LIT;
 			uiSettings.ShadowLevel = SettingLevel::SETTING_NONE;
 			uiSettings.TMType = ToneMappingType::TM_NONE;
@@ -240,7 +243,7 @@ namespace GEE
 			SetActiveScene(GetMainScene());
 
 			//SelectScene(ActiveScene, *EditorScene);
-		}
+		} 
 
 		PopupDescription GameEngineEngineEditor::CreatePopupMenu(const Vec2f& posWindowSpace, SystemWindow& relativeWindow)
 		{
@@ -250,13 +253,13 @@ namespace GEE
 				Vec2i mainWindowPos, mainWindowSize;
 				glfwGetWindowPos(&relativeWindow, &mainWindowPos.x, &mainWindowPos.y);
 				glfwGetWindowSize(&relativeWindow, &mainWindowSize.x, &mainWindowSize.y);
-			
+
 				posScreenSpace = static_cast<Vec2f>(mainWindowSize) * (posWindowSpace * Vec2f(0.5f, -0.5f) + 0.5f) + static_cast<Vec2f>(mainWindowPos);
 			}
-		
+
 			glfwWindowHint(GLFW_RESIZABLE, false);
 			glfwWindowHint(GLFW_DECORATED, false);
-			SystemWindow* window = glfwCreateWindow(240, 30, "popup", nullptr, Window);
+			SystemWindow* window = glfwCreateWindow(240, 30, "popup", nullptr, GameWindow);
 			glfwSetWindowPos(window, posScreenSpace.x, posScreenSpace.y);
 
 			glfwWindowHint(GLFW_RESIZABLE, true);
@@ -265,36 +268,74 @@ namespace GEE
 			glfwSetCursorPosCallback(window, WindowEventProcessor::CursorPosCallback);
 			glfwSetMouseButtonCallback(window, WindowEventProcessor::MouseButtonCallback);
 			glfwSetCursorEnterCallback(window, WindowEventProcessor::CursorLeaveEnterCallback);
+			glfwSetCharCallback(window, WindowEventProcessor::CharEnteredCallback);
+			glfwSetKeyCallback(window, WindowEventProcessor::KeyPressedCallback);
+			glfwSetScrollCallback(window, WindowEventProcessor::ScrollCallback);
+			glfwSetDropCallback(window, WindowEventProcessor::FileDropCallback);
 			glfwSetWindowFocusCallback(window, [](SystemWindow* window, int focused) { if (!focused) glfwSetWindowShouldClose(window, GLFW_TRUE); });
 
-		
 			GameScene& popupScene = CreateUIScene("GEE_E_Popup_Window", *window, false);
 
-			//popupScene.CreateActorAtRoot<UIButtonActor>("CreateComponentButton", "Create component", [=]() { glfwSetWindowShouldClose(window, GLFW_TRUE); }, Transform(Vec2f(0.0f), Vec2f(1.0f)));
-			OpenPopups.push_back(EditorPopup(IDSystem<EditorPopup>::GenerateID(), *window, popupScene));
+			glfwSetWindowUserPointer(window, &popupScene);
+
+			{
+				auto settings = MakeShared<GameSettings::VideoSettings>();
+				auto& tbCol = RenderEng.AddRenderTbCollection(RenderToolboxCollection("PopupTbCol", *settings, RenderEng), false);
+				OpenPopups.push_back(EditorPopup(IDSystem<EditorPopup>::GenerateID(), *window, popupScene, tbCol, settings));
+
+			}
+			auto& editorPopup = OpenPopups.back();
 
 			auto& popupCanvas = popupScene.CreateActorAtRoot<UICanvasActor>("GEE_E_Popup_Canvas", Transform(Vec2f(0.0f), Vec2f(1.0f)));
 
 			auto& buttonList = popupCanvas.CreateChild<UIAutomaticListActor>("PopupButtonList");
 			buttonList.Refresh();
-			popupCanvas.AutoClampView(); 
-			//PopupDescription(&buttonList).AddOption("dziala", [=]() { glfwSetWindowShouldClose(window, GLFW_TRUE); });
-			return PopupDescription(*window, &buttonList, &popupCanvas);
+
+			return PopupDescription(editorPopup, &buttonList, &popupCanvas);
 		}
 
 		void GameEngineEngineEditor::UpdateGameSettings()
 		{
-			ViewportRenderCollection->AddTbsRequiredBySettings();
+			enum class CurrPreviewTexType
+			{
+				Position,
+				Normal,
+				Albedo,
+				Final
+			} previewTexType = CurrPreviewTexType::Final;
 
 			//Update scene preview texture, since we created a new one
 			Material* previewMaterial = RenderEng.FindMaterial("GEE_3D_SCENE_PREVIEW_MATERIAL").get();
-			if (!previewMaterial)
+			if (!previewMaterial || previewMaterial->GetTextureCount() == 0)
 			{
 				std::cout << "ERROR: No scene preview material detected.\n";
 				return;
 			}
-			previewMaterial->Textures.clear();
-			previewMaterial->AddTexture(MakeShared<NamedTexture>(ViewportRenderCollection->GetTb<FinalRenderTargetToolbox>()->GetFinalFramebuffer().GetColorTexture(0), "albedo1"));
+			else
+			{
+				auto tex = previewMaterial->GetTexture(0);
+				if (tex.GetID() == ViewportRenderCollection->GetTb<DeferredShadingToolbox>()->GetGeometryFramebuffer()->GetColorTexture(0).GetID())
+					previewTexType = CurrPreviewTexType::Albedo;
+			}			
+
+			ViewportRenderCollection->AddTbsRequiredBySettings();
+			for (auto& it : Scenes)
+				it->GetRenderData()->InvalidateAllShadowmaps();
+
+			if (previewMaterial)
+			{
+				previewMaterial->Textures.clear();
+
+				SharedPtr<NamedTexture> tex = nullptr;
+				switch (previewTexType)
+				{
+				case CurrPreviewTexType::Albedo: tex = MakeShared<NamedTexture>(ViewportRenderCollection->GetTb<DeferredShadingToolbox>()->GetGeometryFramebuffer()->GetColorTexture(0), "albedo1"); break;
+				case CurrPreviewTexType::Final:
+				default: tex = MakeShared<NamedTexture>(ViewportRenderCollection->GetTb<FinalRenderTargetToolbox>()->GetFinalFramebuffer().GetColorTexture(0), "albedo1"); break;
+				}
+
+				previewMaterial->AddTexture(tex);
+			}
 		}
 
 		void GameEngineEngineEditor::UpdateEditorSettings()
@@ -304,7 +345,7 @@ namespace GEE
 
 		void GameEngineEngineEditor::SetupEditorScene()
 		{
-			GameScene& editorScene = CreateUIScene("GEE_Editor", *Window);
+			GameScene& editorScene = CreateUIScene("GEE_Editor", *GameWindow);
 
 			//settings.ViewportData = glm::uvec4(res.x * 0.3f, res.y * 0.4f, res.x * 0.4, res.y * 0.6f);
 
@@ -365,7 +406,7 @@ namespace GEE
 					SceneMatrixInfo info = scene.GetActiveCamera()->GetRenderInfo(0, *ViewportRenderCollection);
 					Component* pickedComponent = renderer.PickComponent(info, scene, GetGameSettings()->Video.Resolution, static_cast<Vec2u>((localMousePos * 0.5f + 0.5f) * static_cast<Vec2f>(GetGameSettings()->Video.Resolution)), allComponents);
 
-					if (pickedComponent && GetInputRetriever().IsKeyPressed(Key::LeftAlt)) // Pick the root component if left alt is pressed
+					if (pickedComponent && GetDefInputRetriever().IsKeyPressed(Key::LeftAlt)) // Pick the root component if left alt is pressed
 						pickedComponent = pickedComponent->GetActor().GetRoot();
 
 					if (pickedComponent && pickedComponent != Actions->GetSelectedComponent())
@@ -376,12 +417,18 @@ namespace GEE
 					else
 						Actions->SelectActor(nullptr, editorScene);
 
-					});
+				});
+
+				UIActorDefault& controllerInfo = scenePreviewActor.CreateChild<UIActorDefault>("ControllerCameraInfoTextActor", Transform(Vec2f(-0.45f, -1.07f), Vec2f(0.5f, 0.025f)));
+				controllerInfo.CreateComponent<TextComponent>("ControllerInfoText", Transform(Vec2f(0.0f, 1.5f)), "", "", Alignment2D::Center()).SetMaxSize(Vec2f(1.0f));
+				controllerInfo.CreateComponent<TextComponent>("CameraInfoText", Transform(Vec2f(0.0f, -1.5f)), "", "", Alignment2D::Center()).SetMaxSize(Vec2f(1.0f));
+				UpdateControllerCameraInfo();
 
 
 
 				UIButtonActor& selectPreviewButton = scenePreviewActor.CreateChild<UIButtonActor>("SelectPreview_Empty", "Final", nullptr, Transform(Vec2f(0.6f, -1.07f), Vec2f(0.4f, 0.05f)));
-				auto selectPreviewButtonText = selectPreviewButton.GetRoot()->GetComponent<TextConstantSizeComponent>("ButtonText");
+				auto selectPreviewButtonText = selectPreviewButton.GetRoot()->GetComponent<TextComponent>("ButtonText");
+				selectPreviewButtonText->SetMaxSize(Vec2f(1.0f));
 				selectPreviewButtonText->Unstretch();
 				//selectPreviewButtonText->SetMaxSize(Vec2f(1.0f, 1.0f / 8.0f));
 				selectPreviewButton.SetOnClickFunc([&, selectPreviewButtonText]() {
@@ -407,14 +454,16 @@ namespace GEE
 						desc.RefreshPopup();
 				});
 
-				UIActorDefault& forwardShadingSwitch = scenePreviewActor.CreateChild<UIActorDefault>("Extended_Essay_ForwardShadingSwitch", Transform(Vec2f(0.1f, -1.07f), Vec2f(0.05f)));
-				forwardShadingSwitch.CreateComponent<TextConstantSizeComponent>("SwitchForwardText", Transform(Vec2f(0.0f, -1.4f), Vec2f(1.0f, 0.4f)), "Forward", "", Alignment2D::Center()).Unstretch();
-				UIElementTemplates(forwardShadingSwitch).TickBox([this, &selectPreviewButton, selectPreviewButtonText, &scenePreviewQuad](bool val) {
-					selectPreviewButton.SetDisableInput(val); 
+				UIActorDefault& forwardShadingSwitch = scenePreviewActor.CreateChild<UIActorDefault>("ForwardShadingSwitch", Transform(Vec2f(0.1f, -1.07f), Vec2f(0.05f)));
+				forwardShadingSwitch.CreateComponent<TextComponent>("SwitchForwardText", Transform(Vec2f(0.0f, -1.4f), Vec2f(1.0f, 0.4f)), "Forward", "", Alignment2D::Center()).SetMaxSize(Vec2f(1.0f));
+
+				UIElementTemplates(forwardShadingSwitch).TickBox([this, &selectPreviewButton, selectPreviewButtonText, &scenePreviewQuad](bool val)
+				{
+					selectPreviewButton.SetDisableInput(val);
 					selectPreviewButton.GetButtonModel()->SetHide(val);
 					selectPreviewButtonText->SetHide(val);
-
-					 EEForceForwardShading = val; }, [this]() { return EEForceForwardShading; });
+					GetGameSettings()->Video.bForceForwardRendering = val; }, [this]() { return GetGameSettings()->Video.bForceForwardRendering;
+				});
 			}
 
 			UIActorDefault& scaleActor = editorScene.CreateActorAtRoot<UIActorDefault>("TextTestButton", Transform(Vec2f(0.0f, 0.0f), Vec2f(0.1f, 0.1f)));
@@ -431,12 +480,12 @@ namespace GEE
 
 				auto mainButtonTheme = [&](UIButtonActor& button, float iconID) {
 					button.GetRoot()->GetComponent("ButtonText")->GetTransform().SetPosition(Vec2f(0.0f, -0.6f));
-					button.CreateComponent<ModelComponent>("SettingsIcon", Transform(Vec2f(0.0f, 0.3f), Vec2f(0.75f))).AddMeshInst(MeshInstance(RenderEng.GetBasicShapeMesh(EngineBasicShape::QUAD), MakeShared<MaterialInstance>(iconsMat, iconsMat->GetTextureIDInterpolatorTemplate(iconID))));
+					button.CreateComponent<ModelComponent>("SettingsIcon", Transform(Vec2f(0.0f, 0.3f), Vec2f(0.75f))).AddMeshInst(MeshInstance(RenderEng.GetBasicShapeMesh(EngineBasicShape::Quad), MakeShared<MaterialInstance>(iconsMat, iconsMat->GetTextureIDInterpolatorTemplate(iconID))));
 					button.GetRoot()->GetComponent<ModelComponent>("SettingsIcon")->OverrideInstancesMaterialInstances(MakeShared<MaterialInstance>(iconsMat, iconsMat->GetTextureIDInterpolatorTemplate(iconID)));
 				};
 			
 			
-				UIButtonActor& hierarchyTreesButton = editorScene.CreateActorAtRoot<UIButtonActor>("HierarchyTreesButton", "HierarchyTrees", nullptr, Transform(Vec2f(-0.8f, -0.8f), Vec2f(0.1f)));
+				UIButtonActor& hierarchyTreesButton = editorScene.CreateActorAtRoot<UIButtonActor>("HierarchyTreesButton", "Hierarchy trees", nullptr, Transform(Vec2f(-0.8f, -0.8f), Vec2f(0.1f)));
 				hierarchyTreesButton.SetOnClickFunc([this, &editorScene, &hierarchyTreesButton]() {
 					UIWindowActor& window = editorScene.CreateActorAtRoot<UIWindowActor>("MeshTreesWindow");
 					window.SetViewScale(Vec2f(1.0f, 6.0f));
@@ -514,20 +563,23 @@ namespace GEE
 					{
 						auto& shadowSelectionList = window.AddField("Shadow quality").CreateChild<UIAutomaticListActor>("ShadowSelectionList", Vec3f(2.0f, 0.0f, 0.0f));
 						std::function<void(SettingLevel, const std::string&)> addShadowButton = [this, &shadowSelectionList](SettingLevel setting, const std::string& caption)
-						{ 
+						{
 							shadowSelectionList.CreateChild<UIActivableButtonActor>("Button" + caption, caption,
-							[=]()
-							{
-								const_cast<GameSettings::VideoSettings&>(ViewportRenderCollection->GetSettings()).ShadowLevel = setting;
-								UpdateGameSettings();
-							});
+								[=]()
+								{
+									const_cast<GameSettings::VideoSettings&>(ViewportRenderCollection->GetSettings()).ShadowLevel = setting;
+									UpdateGameSettings();
+								});
 						};
 						addShadowButton(SettingLevel::SETTING_LOW, "Low");
 						addShadowButton(SettingLevel::SETTING_MEDIUM, "Medium");
 						addShadowButton(SettingLevel::SETTING_HIGH, "High");
 						addShadowButton(SettingLevel::SETTING_ULTRA, "Ultra");
 
-						shadowSelectionList.Refresh(); 
+						shadowSelectionList.Refresh();
+
+						window.AddField("Max 2D shadow lights").CreateChild<UIInputBoxActor>("Shadow2DCount", [this](float count) { GetGameSettings()->Video.Max2DShadows = count; UpdateGameSettings(); }, [this]() { return GetGameSettings()->Video.Max2DShadows; });
+						window.AddField("Max 3D shadow lights").CreateChild<UIInputBoxActor>("Shadow3DCount", [this](float count) { GetGameSettings()->Video.Max3DShadows = count; UpdateGameSettings(); }, [this]() { return GetGameSettings()->Video.Max3DShadows; });
 					}
 
 					{
@@ -542,7 +594,7 @@ namespace GEE
 							ModelComponent& texPreviewQuad = texPreviewWindow.CreateChild<UIActorDefault>("TexPreviewActor").CreateComponent<ModelComponent>("TexPreviewQuad");
 							auto mat = MakeShared<Material>("TexturePreviewMat");
 							mat->AddTexture(MakeShared<NamedTexture>(Texture::FromGeneratedGlId(Vec2u(0), GL_TEXTURE_2D, *texID, Texture::Format::RGBA()), "albedo1"));
-							texPreviewQuad.AddMeshInst(MeshInstance(GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD), mat));
+							texPreviewQuad.AddMeshInst(MeshInstance(GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::Quad), mat));
 
 							texPreviewWindow.AutoClampView();
 
@@ -556,6 +608,11 @@ namespace GEE
 					ssaoSamplesIB.SetOnInputFunc([this](float sampleCount) { GetGameSettings()->Video.AmbientOcclusionSamples = sampleCount; UpdateGameSettings(); }, [this]() { return GetGameSettings()->Video.AmbientOcclusionSamples; });
 
 					window.AddField("Parallax Occlusion Mapping").GetTemplates().TickBox([this](bool val) { GetGameSettings()->Video.POMLevel = (val) ? (SettingLevel::SETTING_LOW) : (SettingLevel::SETTING_NONE); UpdateGameSettings(); }, [this]() { return GetGameSettings()->Video.POMLevel != SettingLevel::SETTING_NONE; });
+
+
+					auto& physicsCat = window.AddCategory("Physics");
+					physicsCat.AddField("Connect to PVD").CreateChild<UIButtonActor>("PVDConnectButton", "Connect", [this]() { PhysicsEng.ConnectToPVD(); });
+					physicsCat.AddField("Bounce threshold").GetTemplates().SliderRawInterval(0.0f, 2.0f, [this](float threshold) { GetMainScene()->GetPhysicsData()->GetPxScene()->setBounceThresholdVelocity(threshold); }, GetMainScene()->GetPhysicsData()->GetPxScene()->getBounceThresholdVelocity());
 
 					window.FieldsList->Refresh();
 					window.AutoClampView();
@@ -639,6 +696,27 @@ namespace GEE
 					profilerWindow.AutoClampView();
 				});
 				mainButtonTheme(profilerButton, 4.0f);
+
+				editorScene.CreateActorAtRoot<UIButtonActor>("Save as button", "Save as",
+				[this, &editorScene]() {
+					UIWindowActor& window = editorScene.CreateActorAtRoot<UIWindowActor>("Save as window");
+					SharedPtr<std::string> folderpath = MakeUnique<std::string>(ExecutableFolder + "/");
+					if (auto foundSlash = GetProjectFilepath().find_last_of(static_cast<char>(92)); foundSlash != std::string::npos)
+						*folderpath = GetProjectFilepath().substr(0, foundSlash);
+					SharedPtr<std::string> projectName = MakeUnique<std::string>(ProjectName);
+
+					window.AddField("Project folder").GetTemplates().FolderInput([folderpath](const std::string& str) { *folderpath = str; }, [folderpath]() { return *folderpath; }, ExecutableFolder + std::string(1, char(92)) + *folderpath);
+
+					UIInputBoxActor& projectNameInputBox = window.AddField("Project name").CreateChild<UIInputBoxActor>("ProjectNameInputBox");
+					//UIInputBoxActor& projectNameInputBox
+
+					projectNameInputBox.SetOnInputFunc([projectName](const std::string& input) { *projectName = input; }, [projectName]() { return *projectName; });
+
+					UIButtonActor& okButton = window.AddField("").CreateChild<UIButtonActor>("OKButton", "OK", [this, folderpath, projectName, &window]() { window.MarkAsKilled(); std::string saveAsPath = *folderpath + "/" + *projectName + ".json"; SetProjectFilepath(saveAsPath); SaveProject(saveAsPath); });
+
+					window.RefreshFieldsList();
+					window.AutoClampView();
+				}, Transform(Vec2f(0.8f, -0.8f), Vec2f(0.1f)));
 			}
 		 
 
@@ -650,20 +728,32 @@ namespace GEE
 
 			EditorScene = &editorScene;
 
-			EditorScene->FindActor("SceneViewportActor")->GetRoot()->GetComponent<ModelComponent>("SceneViewportQuad")->AddMeshInst(GetGameHandle()->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD));
+			EditorScene->FindActor("SceneViewportActor")->GetRoot()->GetComponent<ModelComponent>("SceneViewportQuad")->AddMeshInst(GetGameHandle()->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::Quad));
 			//EditorScene->FindActor("SceneViewportActor")->GetRoot()->GetComponent<ModelComponent>("SceneViewportQuad")->SetTransform(Transform(Vec2f(0.0f, 0.4f), Vec2f(1.0f)));
 
 			SharedPtr<Material> scenePreviewMaterial = MakeShared<Material>("GEE_3D_SCENE_PREVIEW_MATERIAL");
 			RenderEng.AddMaterial(scenePreviewMaterial);
 			scenePreviewMaterial->AddTexture(MakeShared<NamedTexture>(ViewportRenderCollection->GetTb<FinalRenderTargetToolbox>()->GetFinalFramebuffer().GetColorTexture(0), "albedo1"));
 			EditorScene->FindActor("SceneViewportActor")->GetRoot()->GetComponent<ModelComponent>("SceneViewportQuad")->OverrideInstancesMaterial(scenePreviewMaterial);
+
+			editorScene.MarkAsStarted();
 		}
 
 		void GameEngineEngineEditor::SetupMainMenu()
 		{
-			GameScene& mainMenuScene = CreateUIScene("GEE_Main_Menu", *Window);
+			GameScene& mainMenuScene = CreateUIScene("GEE_Main_Menu", *GameWindow);
 
 			//SetCanvasContext(&mainMenuScene.CreateActorAtRoot<UICanvasActor>("GEE_E_Canvas_Context"));
+			Actor* aauifix = nullptr;
+			//UI Fix
+			{
+				auto& uifix = mainMenuScene.CreateActorAtRoot<UIActorDefault>("uifix", Transform(Vec2f(0.5f, 0.0f), Vec2f(0.1f)));
+				//UIElementTemplates(uifix).ObjectInput<Actor, Actor>(*mainMenuScene.GetRootActor(), aauifix);
+				uifix.CreateChild<UIButtonActor>("fixinput", [&mainMenuScene]() {
+					auto& window = mainMenuScene.CreateActorAtRoot<UIWindowActor>("uifixwindow", Transform(Vec2f(0.0f), Vec2f(0.5f, 0.3f)));
+					window.CreateChild<UIInputBoxActor>("inputboxfix", Transform(Vec2f(0.0f), Vec2f(0.5f)));
+				}, Transform(Vec2f(0.0f, 3.0f), Vec2f(2.0f, 0.5f)));
+			}
 
 			{
 				Actor& engineTitleActor = mainMenuScene.CreateActorAtRoot<Actor>("EngineTitleActor", Transform(Vec2f(0.0f, 0.6f)));
@@ -674,6 +764,16 @@ namespace GEE
 				SharedPtr<Material> titleMaterial = MakeShared<Material>("GEE_Engine_Title");
 				RenderEng.AddMaterial(titleMaterial);
 				titleMaterial->SetColor(hsvToRgb(Vec3f(300.0f, 1.0f, 1.0f)));
+
+				Interpolation titleColorInterpolation(0.0f, 10.0f, InterpolationType::Linear, false, AnimBehaviour::STOP, AnimBehaviour::REPEAT);
+				titleColorInterpolation.SetOnUpdateFunc([this, titleMaterial](float CompType) -> bool
+				{
+					titleMaterial->SetColor(hsvToRgb(Vec3f(CompType * 360.0f, 0.6f, 0.6f)));
+
+					if (!GetScene("GEE_Main_Menu"))
+						return true;
+					return false;
+				});
 
 				engineTitleTextComp.SetMaterialInst(MaterialInstance(titleMaterial));
 
@@ -690,7 +790,8 @@ namespace GEE
 				window.SetTransform(Transform(Vec2f(0.0f), Vec2f(0.5f)));
 
 				ProjectFilepath = "Projects/";
-				window.AddField("Project folder").GetTemplates().FolderInput([this](const std::string& str) { ProjectFilepath = str + "/"; }, [this]() { return ProjectFilepath; });
+				
+				window.AddField("Project folder").GetTemplates().FolderInput([this](const std::string& str) { ProjectFilepath = str + "/"; }, [this]() { return ProjectFilepath; }, ExecutableFolder);
 
 				UIInputBoxActor& projectNameInputBox = window.AddField("Project name").CreateChild<UIInputBoxActor>("ProjectNameInputBox");
 				//UIInputBoxActor& projectNameInputBox
@@ -698,7 +799,7 @@ namespace GEE
 				ProjectName = "Project1";
 				projectNameInputBox.SetOnInputFunc([this](const std::string& input) { ProjectName = input; }, [this]() { return ProjectName; });
 
-				UIButtonActor& okButton = window.AddField("").CreateChild<UIButtonActor>("OKButton", "OK", [this, &window]() { window.MarkAsKilled(); LoadProject(ProjectFilepath + ProjectName + ".json"); });
+				UIButtonActor& okButton = window.AddField("").CreateChild<UIButtonActor>("OKButton", "OK", [this, &window]() { window.MarkAsKilled(); NewProject(ProjectFilepath + ProjectName + ".json"); });
 
 				window.RefreshFieldsList();
 				window.AutoClampView();
@@ -734,7 +835,7 @@ namespace GEE
 				{
 					UIActorDefault& recentProjectsActor = mainMenuScene.CreateActorAtRoot<UIActorDefault>("Recent", Transform(Vec2f(0.0f, -0.5f), Vec2f(0.1f)));
 					recentProjectsActor.CreateComponent<TextComponent>("RecentsText", Transform(Vec2f(0.0f, 1.6f), Vec2f(0.5f)), "Recent projects", "", Alignment2D::Center()).SetFontStyle(FontStyle::Bold);
-					UIElementTemplates(recentProjectsActor).ListSelection<std::string>(filepaths.begin(), filepaths.end(), [this](UIAutomaticListActor& listActor, std::string& filepath) { listActor.CreateChild<UIButtonActor>("RecentFilepathButton", getFileName(filepath), [this, filepath]() { LoadProject(filepath); }, Transform(Vec2f(0.0f), Vec2f(9.0f, 1.0f))).GetRoot()->GetComponent<TextConstantSizeComponent>("ButtonText")->Unstretch(); });
+					UIElementTemplates(recentProjectsActor).ListSelection<std::string>(filepaths.begin(), filepaths.end(), [this](UIAutomaticListActor& listActor, std::string& filepath) { listActor.CreateChild<UIButtonActor>("RecentFilepathButton", getFileName(filepath), [this, filepath]() { LoadProject(filepath); }, Transform(Vec2f(0.0f), Vec2f(9.0f, 1.0f))).GetRoot(); });
 				}
 			}
 
@@ -743,6 +844,7 @@ namespace GEE
 
 			mainMenuScene.BindActiveCamera(&orthoCameraComp);
 			SetActiveScene(&mainMenuScene);
+			mainMenuScene.MarkAsStarted();
 		}
 
 		void GameEngineEngineEditor::Update(float deltaTime)
@@ -750,7 +852,7 @@ namespace GEE
 			if (GameController && GameController->IsBeingKilled())
 				GameController = nullptr;
 
-			if (EditorScene && GetMainScene() && GetMainScene()->GetActiveCamera() && GetInputRetriever().IsKeyPressed(Key::G))
+			if (EditorScene && GetMainScene() && GetMainScene()->GetActiveCamera() && GetDefInputRetriever().IsKeyPressed(Key::G) && Actions->GetSelectedComponent())
 			{
 				if (TestTranslateLastPos != Vec2f(-1.0f))
 				{
@@ -765,6 +867,8 @@ namespace GEE
 			else
 				TestTranslateLastPos = Vec2f(-1.0f);
 
+			UpdateControllerCameraInfo();
+
 			Game::Update(deltaTime);
 		}
 
@@ -776,88 +880,106 @@ namespace GEE
 				return;
 			}
 
-			while (SharedPtr<Event> polledEvent = EventHolderObj.PollEvent(*Window))
+			for (auto& scene : Scenes)
 			{
-				LastRenderPopupRequest = nullptr;
-				if (polledEvent->GetType() == EventType::KeyPressed)
+				while (SharedPtr<Event> polledEvent = EventHolderObj.PollEvent(*scene))
 				{
-					KeyEvent& keyEventCast = dynamic_cast<KeyEvent&>(*polledEvent);
-					if (ActiveScene == EditorScene && keyEventCast.GetKeyCode() == Key::Escape)
+					LastRenderPopupRequest = nullptr;	// last popup request generated from this event; if it stays at nullptr, we know that no such request has been made.
+
+					if (polledEvent->GetType() == EventType::KeyPressed)
 					{
-						GenericUITemplates(*EditorScene).ConfirmationBox([=]() { SaveProject(); TerminateGame(); }, [=]() { TerminateGame(); }, "Save the project?");
-					}
-					else if (keyEventCast.GetKeyCode() == Key::Tab)
-					{
-						std::cout << "Pressed TAB!\n";
-						bool sceneChanged = false;
-						// If the editor is currently active, set the active scene to the main one and pass control to a game controller.
-						if (ActiveScene == EditorScene && GetMainScene())
+						KeyEvent& keyEventCast = dynamic_cast<KeyEvent&>(*polledEvent);
+						if (scene.get() == EditorScene)
 						{
-							if (!GameController)
+							switch (keyEventCast.GetKeyCode())
 							{
-								std::vector<Controller*> controllers;
-								GetMainScene()->GetRootActor()->GetAllActors(&controllers);
-								if (!controllers.empty())
-									GameController = controllers[0];
-							}
-							if (GameController)
-							{
-								ActiveScene = GetMainScene();
-								PassMouseControl(GameController);
-								sceneChanged = true;
+								case Key::Tab:
+								{
+									// If the editor is currently active, set the active scene to the main one and pass control to a game controller.
+									if (GetMainScene())
+									{
+										if (!GameController)
+										{
+											std::vector<Controller*> controllers;
+											GetMainScene()->GetRootActor()->GetAllActors(&controllers);
+											if (!controllers.empty())
+												GameController = controllers[0];
+										}
+										if (GameController)
+										{
+											SetActiveScene(GetMainScene());
+											PassMouseControl(GameController);
+
+											for (auto& it : Scenes)	// Scene has changed; push this event to all scenes
+												it->RootActor->HandleEventAll(Event(EventType::FocusSwitched));
+										}
+									}
+
+									UpdateControllerCameraInfo();
+									break;
+								}
+
+								case Key::S:
+									if (keyEventCast.GetModifierBits() & KeyModifierFlags::Control)
+										SaveProject();
+									break;
+
+								case Key::F10: MaximizeViewport(); break;
+
+								case Key::F12:
+								{
+									if (!Profiler.HasBeenStarted())
+										StartProfiler();
+									else
+										StopProfiler();
+									break;
+								}
 							}
 						}
-						// Otherwise, set the active scene to the editor scene and release control.
-						else if (EditorScene)
+						else if (scene.get() == GetScene("GEE_Main"))
 						{
-							PassMouseControl(nullptr);
-							sceneChanged = true;
-							ActiveScene = EditorScene;
+							if (keyEventCast.GetKeyCode() == Key::Tab)
+							{
+								// Set the active scene to the editor scene and release control.
+								if (EditorScene)
+								{
+									PassMouseControl(nullptr);
+									SetActiveScene(EditorScene);
+
+									for (auto& it : Scenes)
+										it->RootActor->HandleEventAll(Event(EventType::FocusSwitched));
+								}
+
+								UpdateControllerCameraInfo();
+							}
+							else if (keyEventCast.GetKeyCode() == Key::F12)
+							{
+								if (!Profiler.HasBeenStarted())
+									StartProfiler();
+								else
+									StopProfiler();
+							}
 						}
-
-						if (sceneChanged)
-							for (auto& it : Scenes)
-								it->RootActor->HandleEventAll(Event(EventType::FocusSwitched));
 					}
-					else if (keyEventCast.GetKeyCode() == Key::F10)
-					{
-						MaximizeViewport();
-					}
-					else if (keyEventCast.GetKeyCode() == Key::F12)
-					{
-							if (!Profiler.HasBeenStarted())
-							{
-								Profiler.StartProfiling(GetProgramRuntime());
-								GEE_LOG("Started profiling.");
-							}
-							else
-							{
-								Profiler.StopAndSaveToFile(GetProgramRuntime());
-								GEE_LOG("Stopped profiling.");
-							}
-					}
-					else if (ActiveScene == EditorScene && keyEventCast.GetKeyCode() == Key::S && keyEventCast.GetModifierBits() & KeyModifierFlags::Control)
-						SaveProject();
-			}
 
-				if (ActiveScene)
-					ActiveScene->HandleEventAll(*polledEvent);
+					scene->HandleEventAll(*polledEvent);
 
-				if (LastRenderPopupRequest)
-					LastRenderPopupRequest();
+					if (LastRenderPopupRequest)
+						LastRenderPopupRequest();
+				}
 			}
 
 
 			for (auto& popup : OpenPopups)
 			{
-				while (SharedPtr<Event> polledEvent = EventHolderObj.PollEvent(popup.Window))
+				while (SharedPtr<Event> polledEvent = EventHolderObj.PollEvent(popup.Scene))
 				{
 					popup.Scene.get().HandleEventAll(*polledEvent);
 				}
 			}
 		}
 
-		/*void GameEngineEngineEditor::PreviewHierarchyTree(HierarchyTemplate::HierarchyTreeT& tree)
+		/*void GameEngineEngineEditor::PreviewHierarchyTree(Hierarchy::Tree& tree)
 		{
 			GameScene& editorScene = *EditorScene;
 			UIWindowActor& previewWindow = editorScene.CreateActorAtRoot<UIWindowActor>("Mesh node preview window");
@@ -867,12 +989,12 @@ namespace GEE
 			auto& list = previewWindow.AddField("Mesh nodes list").CreateChild<UIAutomaticListActor>("MeshNodesList");
 
 			
-			std::vector<std::pair<HierarchyTemplate::HierarchyNodeBase&, UIActivableButtonActor*>> buttons;
+			std::vector<std::pair<Hierarchy::NodeBase&, UIActivableButtonActor*>> buttons;
 
-			std::function<void(HierarchyTemplate::HierarchyNodeBase&, UIAutomaticListActor&)> createNodeButtons = [&](HierarchyTemplate::HierarchyNodeBase& node, UIAutomaticListActor& listParent) {
+			std::function<void(Hierarchy::NodeBase&, UIAutomaticListActor&)> createNodeButtons = [&](Hierarchy::NodeBase& node, UIAutomaticListActor& listParent) {
 				auto& element = listParent.CreateChild<UIActivableButtonActor>("Button", node.GetCompBaseType().GetName(), nullptr);
-				buttons.push_back(std::pair<HierarchyTemplate::HierarchyNodeBase&, UIActivableButtonActor*>(node, & element));
-				element.SetDeactivateOnClickAnywhere(false);
+				buttons.push_back(std::pair<Hierarchy::NodeBase&, UIActivableButtonActor*>(node, & element));
+				element.SetDeactivateOnClickingAnywhere(false);
 				element.OnClick();
 				element.DeduceMaterial();
 				element.SetTransform(Transform(Vec2f(1.5f, 0.0f), Vec2f(3.0f, 1.0f)));
@@ -888,7 +1010,7 @@ namespace GEE
 
 				for (int i = 0; i < static_cast<int>(node.GetChildCount()); i++)
 				{
-					HierarchyTemplate::HierarchyNodeBase& child = *node.GetChild(i);
+					Hierarchy::NodeBase& child = *node.GetChild(i);
 					UIAutomaticListActor& nestedList = listParent.CreateChild<UIAutomaticListActor>(child.GetCompBaseType().GetName() + "'s nestedlist");
 					createNodeButtons(child, nestedList);
 				}
@@ -934,16 +1056,48 @@ namespace GEE
 				GameController = controller;
 			else
 				Game::PassMouseControl(controller);
+
+			UpdateControllerCameraInfo();
 		}
 
 		void GameEngineEngineEditor::Render()
 		{
-			EditorRenderer(*this, *ViewportRenderCollection, *HUDRenderCollection, *Window).RenderPass(GetMainScene(), EditorScene, GetScene("GEE_Main_Menu"), GetScene("GEE_Mesh_Preview_Scene"));
+			EditorRenderer(*this, *ViewportRenderCollection, *HUDRenderCollection, *GameWindow).RenderPass(GetMainScene(), EditorScene, GetScene("GEE_Main_Menu"), GetScene("GEE_Mesh_Preview_Scene"));
+		}
+
+		void GameEngineEngineEditor::NewProject(const std::string& filepath)
+		{
+			LoadProject(filepath);
+
+			/*#ifdef GEE_OS_WINDOWS
+
+
+
+			// Open new .sln/.vcxproj
+			STARTUPINFO startupInfo;
+			PROCESS_INFORMATION processInformation;
+
+			ZeroMemory(&startupInfo, sizeof(startupInfo));
+			startupInfo.cb = sizeof(startupInfo);
+			ZeroMemory(&processInformation, sizeof(processInformation));
+
+			std::string path;// = "C:/Program Files/Microsoft Visual Studio/2022/Community/Common7/IDE/devenv.exe";
+
+			if (!path.empty())
+				CreateProcess(path.c_str(), "", nullptr, nullptr, false, 0, nullptr, nullptr, &startupInfo, &processInformation);
+			else
+				system("start devenv");
+			//CreateProcess("devenv.exe", "", nullptr, nullptr, false, 0, nullptr, nullptr, &startupInfo, &processInformation);
+
+			CloseHandle(processInformation.hProcess);
+			CloseHandle(processInformation.hThread);
+
+			#endif	//GEE_OS_WINDOWS*/
 		}
 
 		void GameEngineEngineEditor::LoadProject(const std::string& filepath)
 		{
-			ProjectFilepath = filepath;
+			SetProjectFilepath(filepath);
 
 			std::cout << "Opening project with filepath: " << filepath << '\n';
 			SetupEditorScene();
@@ -963,30 +1117,36 @@ namespace GEE
 
 				////
 				auto& sphereActor = scene->CreateActorAtRoot<Actor>("Default sphere", Transform(Vec3f(0.0f, 0.0f, -3.0f)));
-				sphereActor.CreateComponent<ModelComponent>("A ModelComponent").AddMeshInst(RenderEng.GetBasicShapeMesh(EngineBasicShape::SPHERE));
+				sphereActor.CreateComponent<ModelComponent>("A ModelComponent").AddMeshInst(RenderEng.GetBasicShapeMesh(EngineBasicShape::Sphere));
 				sphereActor.CreateComponent<LightComponent>("A LightComponent").GetTransform().SetPosition(Vec3f(0.0f, 0.0f, 2.0f));
 			}
 			SetMainScene(GetScene("GEE_Main"));
 			SetActiveScene(EditorScene);
+
+			GetScene("GEE_Main")->MarkAsStarted();
+
 			Actions->SelectScene(GetMainScene(), *EditorScene);
 		
 			SceneRenderer(RenderEng, 0).PreRenderLoopPassStatic(0, GetSceneRenderDatas());
 
 			UpdateRecentProjects();
 
-			glfwRequestWindowAttention(Window);
-			glfwSetWindowTitle(Window, filepath.c_str());
+			UpdateGameSettings();
+			glfwRequestWindowAttention(GameWindow);
 		}
 
-		void GameEngineEngineEditor::SaveProject()
+		void GameEngineEngineEditor::SaveProject(std::string filepath)
 		{
-			if (getFilepathExtension(ProjectFilepath) == ".geeprojectold")
-				ProjectFilepath = ProjectFilepath.substr(0, ProjectFilepath.find(".geeprojectold")) + ".json";
-			std::cout << "Saving project to path " << ProjectFilepath << "\n";
+			if (filepath.empty())
+				filepath = ProjectFilepath;
+
+			if (getFilepathExtension(filepath) == ".geeprojectold")
+				filepath = filepath.substr(0, filepath.find(".geeprojectold")) + ".json";
+			std::cout << "Saving project to path " << filepath << "\n";
 
 			GetEditorLogger(*EditorScene).Log("Saving project", EditorMessageLogger::MessageType::Information);
 
-			std::stringstream serializationStream(ProjectFilepath);
+			std::stringstream serializationStream(filepath);
 			try
 			{
 				cereal::JSONOutputArchive archive(serializationStream);
@@ -996,19 +1156,19 @@ namespace GEE
 			}
 			catch (cereal::Exception& exception)
 			{
-				std::ofstream brokenFileOutput(ProjectFilepath + "broken");	// Do not save to file if the process wasn't successful; we don't want to corrupt existing data.
+				std::ofstream brokenFileOutput(filepath + "broken");	// Do not save to file if the process wasn't successful; we don't want to corrupt existing data.
 				brokenFileOutput << serializationStream.rdbuf();
 				GetEditorLogger(*EditorScene).Log(exception.what(), EditorMessageLogger::MessageType::Error);
 				return;
 			}
 
-			std::ofstream workingFileOutput(ProjectFilepath);
+			std::ofstream workingFileOutput(filepath);
 			workingFileOutput << serializationStream.str();
 			workingFileOutput.close();	// serialization stream must be closed after destroying the archive
 
 			UpdateRecentProjects();
 
-			std::cout << "Project " + ProjectName + " (" + ProjectFilepath + ") saved successfully.\n";
+			std::cout << "Project " + ProjectName + " (" + filepath + ") saved successfully.\n";
 			GetEditorLogger(*EditorScene).Log("Project saved", EditorMessageLogger::MessageType::Success);
 		}
 
@@ -1017,7 +1177,25 @@ namespace GEE
 			bDebugRenderComponents = debugRenderComponents;
 		}
 
-		const std::vector<EditorPopup>& GameEngineEngineEditor::GetPopupsForRendering()
+		void GameEngineEngineEditor::StartProfiler()
+		{
+			GEE_LOG("Starting the profiler...");
+			Profiler.StartProfiling(GetProgramRuntime());
+		}
+
+		void GameEngineEngineEditor::StopProfiler()
+		{
+			GEE_LOG("Stopping the profiler...");
+			Profiler.StopAndSaveToFile(GetProgramRuntime());
+		}
+
+		void GameEngineEngineEditor::SetProjectFilepath(const std::string& filepath)
+		{
+			ProjectFilepath = filepath;
+			glfwSetWindowTitle(GameWindow, filepath.c_str());
+		}
+
+		const std::deque<EditorPopup>& GameEngineEngineEditor::GetPopupsForRendering()
 		{
 			return OpenPopups;
 		}
@@ -1043,14 +1221,14 @@ namespace GEE
 				for (auto& it : filepaths)
 					recentProjectsOutput << it << '\n';
 
-			recentProjectsOutput.close();
+				recentProjectsOutput.close();
+			}
 		}
-	}
 
 	void GameEngineEngineEditor::MaximizeViewport()
 	{
 		glm::ivec2 windowSize;
-		glfwGetWindowSize(Window, &windowSize.x, &windowSize.y);
+		glfwGetWindowSize(GameWindow, &windowSize.x, &windowSize.y);
 		if (!bViewportMaximized)
 		{
 			GetGameSettings()->Video.Resolution = windowSize;
@@ -1062,8 +1240,25 @@ namespace GEE
 			GetScene("GEE_Editor")->FindActor("SceneViewportActor")->SetTransform(Transform(Vec2f(0.0f, 0.4f), Vec2f(0.4f, 0.6f)));
 		}
 
+		Vec2f viewportSize = static_cast<Vec2f>(GetGameSettings()->Video.Resolution);
+
+		if (auto activeCamera = GetMainScene()->GetActiveCamera())
+			activeCamera->SetProjectionMat(glm::perspective(glm::radians(90.0f), viewportSize.x / viewportSize.y, 0.1f, 100.0f));
+
 		UpdateGameSettings();
 		bViewportMaximized = !bViewportMaximized;
+	}
+
+	void GameEngineEngineEditor::UpdateControllerCameraInfo()
+	{
+		if (EditorScene)
+			if (auto foundActor = EditorScene->FindActor("ControllerCameraInfoTextActor"))
+			{
+				if (auto foundText = foundActor->GetRoot()->GetComponent<TextComponent>("ControllerInfoText"))
+					foundText->SetContent((GameController) ? ((ActiveScene == &GameController->GetScene()) ? (GameController->GetName()) : ("Editor control")) : ("No controller"));
+				if (auto foundText = foundActor->GetRoot()->GetComponent<TextComponent>("CameraInfoText"))
+					foundText->SetContent((GetMainScene() && GetMainScene()->GetActiveCamera()) ? (GetMainScene()->GetActiveCamera()->GetName()) : ("No camera"));
+			}
 	}
 
 	EditorMessageLogger& GameEngineEngineEditor::GetEditorLogger(GameScene& scene)

@@ -15,7 +15,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <None Include="packages.config" />
     <None Include="ClassDiagram.cd" />
   </ItemGroup>
   <ItemGroup>
@@ -235,6 +234,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\src\utility\Alignment.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\src\physics\PhysicsObjects.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\src\scene\hierarchy\HierarchyNodeInstantiation.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -462,6 +467,15 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\src\utility\Alignment.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\src\physics\PhysicsObjects.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\src\scene\hierarchy\HierarchyNodeInstantiation.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\src\scene\hierarchy\HierarchyNodeBase.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

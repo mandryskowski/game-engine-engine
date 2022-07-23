@@ -17,22 +17,29 @@ namespace GEE
 		AfterBehaviour = after;
 	}
 
-	bool Interpolation::IsChanging()
+	bool Interpolation::IsChanging() const
 	{
-		if (T == 0.0f || T == 1.0f)
+		if (CompType == 0.0f || CompType == 1.0f)
 			return false;
 
 		return true;
 	}
 
-	float Interpolation::GetT()
+	float Interpolation::GetT() const
 	{
-		return T;
+		return CompType;
 	}
 
-	Time Interpolation::GetDuration()
+	Time Interpolation::GetDuration() const
 	{
 		return End;
+	}
+
+	void Interpolation::SetT(float t)
+	{
+		CompType = t;
+		if (OnUpdateFunc)
+			OnUpdateFunc(CompType);
 	}
 
 	void Interpolation::Reset(Time begin, Time end)
@@ -43,7 +50,7 @@ namespace GEE
 			End = end;
 
 		CurrentTime = -Begin;
-		T = 0.0f;
+		CompType = 0.0f;
 	}
 
 	void Interpolation::Inverse()
@@ -58,37 +65,39 @@ namespace GEE
 
 		if (AfterBehaviour == STOP && CurrentTime > End)
 			CurrentTime = End;
+		if (CurrentTime < 0.0f && -CurrentTime > Begin)
+			CurrentTime = -Begin;
 		else if ((BeforeBehaviour == REPEAT && CurrentTime < 0.0f) || (AfterBehaviour == REPEAT && CurrentTime > End))
 			CurrentTime = fmod(CurrentTime, End);
 
 		////////////////////////////////////////////////////////////////////
 
-		if (Type == CONSTANT && CurrentTime >= End)
-			T = 1.0f;
+		if (Type == Constant && CurrentTime >= End)
+			CompType = 1.0f;
 		else
 		{
-			float exponent = static_cast<float>(Type);	//LINEAR = 1, QUADRATIC = 2, CUBIC = 3, etc.
-			T = (FadeAway) ? (1.0f - pow(1.0f - CurrentTime / End, exponent)) : (pow(CurrentTime / End, exponent));
+			float exponent = static_cast<float>(Type);	//Linear = 1, Quadratic = 2, Cubic = 3, etc.
+			CompType = (FadeAway) ? (1.0f - pow(1.0f - CurrentTime / End, exponent)) : (pow(CurrentTime / End, exponent));
 		}
 
 		////////////////////////////////////////////////////////////////////
 
-		if (BeforeBehaviour == STOP && T < 0.0f)
-			T = 0.0f;
+		if (BeforeBehaviour == STOP && CompType < 0.0f)
+			CompType = 0.0f;
 
 		if (OnUpdateFunc)
-			return OnUpdateFunc(T);
+			return OnUpdateFunc(CompType);
 		return !IsChanging();
 	}
 
 	template<class ValType> ValType Interpolation::InterpolateValues(ValType y1, ValType y2)
 	{
-		return glm::mix(y1, y2, T);
+		return glm::mix(y1, y2, CompType);
 	}
 
 	template<> Quatf Interpolation::InterpolateValues<Quatf>(Quatf y1, Quatf y2)
 	{
-		return glm::slerp(y1, y2, T);
+		return glm::slerp(y1, y2, CompType);
 	}
 
 	/*
@@ -212,7 +221,7 @@ namespace GEE
 			*InterpolatedValPtr = Interp->InterpolateValues(MinVal, MaxVal);
 	}
 
-	Animation::Animation(const HierarchyTemplate::HierarchyTreeT& tree, aiAnimation* anim) :
+	Animation::Animation(const Hierarchy::Tree& tree, aiAnimation* anim) :
 		Localization(tree, anim->mName.C_Str()), Duration(anim->mDuration / ((anim->mTicksPerSecond != 0.0f) ? (anim->mTicksPerSecond) : (1.0f)))
 	{
 		for (int i = 0; i < static_cast<int>(anim->mNumChannels); i++)

@@ -70,6 +70,8 @@ namespace GEE
 		//protected:
 		bool ContainsMouseCheck(const Vec2f& mouseNDC) const;
 		virtual void GetExternalButtons(std::vector<UIButtonActor*>&) const = 0;
+	protected:
+		virtual void PushCanvasViewChangeEvent() = 0;
 	public:
 
 		std::vector<UICanvasElement*> TopLevelUIElements;

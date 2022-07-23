@@ -13,6 +13,7 @@ namespace physx
 	class PxScene;
 	class PxController;
 	class PxControllerManager;
+	class PxMaterial;
 }
 
 namespace GEE
@@ -34,7 +35,6 @@ namespace GEE
 	class LightProbeComponent;
 	class ModelComponent;
 	class TextComponent;
-	class TextConstantSizeComponent;
 	class CameraComponent;
 	class BoneComponent;
 
@@ -44,6 +44,7 @@ namespace GEE
 	struct Animation;
 
 	class Event;
+	class EventPusher;
 	class GameScene;
 	class GameSceneRenderData;
 
@@ -88,11 +89,11 @@ namespace GEE
 		class FramebufferAttachment;
 	}
 
-	namespace HierarchyTemplate
+	namespace Hierarchy
 	{
-		class HierarchyNodeBase;
-		template <typename CompType> class HierarchyNode;
-		class HierarchyTreeT;
+		class NodeBase;
+		template <typename CompType> class Node;
+		class Tree;
 	}
 
 	enum class MaterialShaderHint
@@ -149,6 +150,7 @@ namespace GEE
 			virtual void AddCollisionObjectToPxPipeline(GameScenePhysicsData& scenePhysicsData, CollisionObject&) = 0;
 
 			virtual physx::PxController* CreateController(GameScenePhysicsData& scenePhysicsData, const Transform& t) = 0;
+			virtual physx::PxMaterial* CreateMaterial(float staticFriction, float dynamicFriction, float restitutionCoeff) = 0;
 
 			virtual ~PhysicsEngineManager() = default;
 		protected:
@@ -184,6 +186,7 @@ namespace GEE
 		virtual RenderToolboxCollection* GetCurrentTbCollection() = 0;
 		virtual Texture GetEmptyTexture() = 0;
 		virtual SkeletonBatch* GetBoundSkeletonBatch() = 0;
+
 
 		//TODO: THIS SHOULD NOT BE HERE
 		virtual std::vector<Shader*> GetCustomShaders() = 0;
@@ -244,10 +247,8 @@ namespace GEE
 		virtual void PassMouseControl(Controller* controller) = 0;
 		virtual const Controller* GetCurrentMouseController() const = 0;
 		virtual double GetProgramRuntime() const = 0;
-		virtual InputDevicesStateRetriever GetInputRetriever() = 0;
+		virtual InputDevicesStateRetriever GetDefInputRetriever() = 0;
 		virtual SharedPtr<Font> GetDefaultFont() = 0;
-		
-		virtual bool CheckEEForceForwardShading() = 0;
 
 		virtual bool HasStarted() const = 0;
 
@@ -270,11 +271,12 @@ namespace GEE
 
 		virtual void SetCursorIcon(DefaultCursorIcon) = 0;
 
-		virtual HierarchyTemplate::HierarchyTreeT* FindHierarchyTree(const std::string& name, HierarchyTemplate::HierarchyTreeT* treeToIgnore = nullptr) = 0;
+		virtual Hierarchy::Tree* FindHierarchyTree(const std::string& name, Hierarchy::Tree* treeToIgnore = nullptr) = 0;
 		virtual SharedPtr<Font> FindFont(const std::string& path) = 0;
 
 		virtual ~GameManager() = default;
 	protected:
+		virtual EventPusher GetEventPusher(GameScene&) = 0;
 		virtual void DeleteScene(GameScene&) = 0;
 	private:
 		static GameManager* GamePtr;
@@ -293,11 +295,11 @@ namespace GEE
 
 	class HTreeObjectLoc
 	{
-		const HierarchyTemplate::HierarchyTreeT* TreePtr;
+		const Hierarchy::Tree* TreePtr;
 	protected:
 		HTreeObjectLoc() : TreePtr(nullptr) {}
 	public:
-		HTreeObjectLoc(const HierarchyTemplate::HierarchyTreeT& tree) : TreePtr(&tree) {}
+		HTreeObjectLoc(const Hierarchy::Tree& tree) : TreePtr(&tree) {}
 		bool IsValidTreeElement() const;
 		std::string GetTreeName() const;	//get path
 	};

@@ -5,6 +5,7 @@
 #include <glad/glad.h>
 #include <utility/Asserts.h>
 #include <utility>
+#include <iostream>
 
 struct GLFWwindow;
 
@@ -37,6 +38,8 @@ namespace GEE
 		str << std::fixed << val;
 		return str.str();
 	}
+
+	std::string BoolToString(bool b);
 
 	template <typename InputIt, typename UnaryFunction>
 	std::string GetUniqueName(InputIt first, InputIt last, UnaryFunction&& getNameOfObjectFunc, const std::string& name)
@@ -94,12 +97,12 @@ namespace GEE
 
 	enum InterpolationType
 	{
-		CONSTANT,
-		LINEAR,
-		QUADRATIC,
-		CUBIC,
-		QUARTIC,
-		QUINTIC
+		Constant,
+		Linear,
+		Quadratic,
+		Cubic,
+		Quartic,
+		Quintic
 	};
 
 	/*
@@ -110,10 +113,10 @@ namespace GEE
 
 	enum class EngineBasicShape
 	{
-		QUAD,
-		CUBE,
-		SPHERE,
-		CONE
+		Quad,
+		Cube,
+		Sphere,
+		Cone
 	};
 
 	/*

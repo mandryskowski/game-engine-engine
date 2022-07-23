@@ -6,6 +6,10 @@
 
 #include <UI/UICanvasField.h>
 
+#include <rendering/Renderer.h>
+
+#include <editor/EditorActions.h>
+
 namespace GEE
 {
 	LightComponent::LightComponent(Actor& actor, Component* parentComp, std::string name, LightType type, unsigned int index, unsigned int shadowNr, float far, Mat4f projection, Vec3f amb, Vec3f diff, Vec3f spec, Vec3f settings) :
@@ -117,14 +121,14 @@ namespace GEE
 		{
 		case SPOT:
 			if (Ambient == Vec3f(0.0f))
-				return EngineBasicShape::CONE;
+				return EngineBasicShape::Cone;
 		case POINT:
-			return EngineBasicShape::SPHERE;
+			return EngineBasicShape::Sphere;
 		case DIRECTIONAL:
-			return EngineBasicShape::QUAD;
+			return EngineBasicShape::Quad;
 		default:
 			std::cerr << "ERROR! Unknown light type: " << (int)Type << ".\n";
-			return EngineBasicShape::SPHERE;
+			return EngineBasicShape::Sphere;
 		}
 	}
 
@@ -148,10 +152,11 @@ namespace GEE
 		return bShadowMapCullFronts;
 	}
 
-	void LightComponent::InvalidateCache()
+	void LightComponent::InvalidateCache(bool includingShadowMap)
 	{
+		if (includingShadowMap) std::cout << "Invalidating cache\n";
 		DirtyFlag = true;
-		bHasValidShadowMap = false;
+		if (includingShadowMap) bHasValidShadowMap = false;
 		ComponentTransform.FlagMyDirtiness();
 	}
 
@@ -314,10 +319,10 @@ namespace GEE
 		return Ambient;
 	}
 
-	MaterialInstance LightComponent::LoadDebugMatInst(EditorButtonState state)
+	MaterialInstance LightComponent::GetDebugMatInst(ButtonMaterialType type)
 	{
 		LoadDebugRenderMaterial("GEE_Mat_Default_Debug_LightComponent", "Assets/Editor/lightcomponent_icon.png");
-		return Component::LoadDebugMatInst(state);
+		return Component::GetDebugMatInst(type);
 	}
 
 	void LightComponent::GetEditorDescription(ComponentDescriptionBuilder descBuilder)
@@ -336,6 +341,8 @@ namespace GEE
 		UIInputBoxActor& shadowBiasInputBox = descBuilder.AddField("Shadow bias").CreateChild<UIInputBoxActor>("ShadowBias");
 		shadowBiasInputBox.SetOnInputFunc([this](float val) { SetShadowBias(val); }, [this]() -> float { return ShadowBias; });
 		descBuilder.AddField("Cull fronts in shadow maps").GetTemplates().TickBox(bShadowMapCullFronts);
+		descBuilder.AddField("Light index").CreateChild<UIButtonActor>("LightIndexInfo",
+			std::to_string(LightIndex) + "/" + std::to_string(Scene.GetRenderData()->GetMaxShadowedLightCount())).SetDisableInput(true);
 
 
 		UICanvasField& typeField = descBuilder.AddField("Type");
@@ -344,23 +351,47 @@ namespace GEE
 			typeField.CreateChild<UIButtonActor>(types[i] + "TypeButton", types[i], [this, i]() {SetType(static_cast<LightType>(i)); CalculateLightRadius(); }).GetTransform()->Move(Vec2f(static_cast<float>(i) * 2.0f, 0.0f));
 	}
 
+	void LightComponent::DebugRender(SceneMatrixInfo info, Shader& shader, const Vec3f& debugIconScale) const
+	{
+		Component::DebugRender(info, shader, debugIconScale);
+
+		if (auto editorCast = dynamic_cast<Editor::EditorManager*>(GameHandle); editorCast && editorCast->GetActions().GetSelectedComponent() != this)
+			return;
+			
+
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		Renderer(*GameHandle->GetRenderEngineHandle()).StaticMeshInstances(info, { GameHandle->GetRenderEngineHandle()->GetBasicShapeMesh(LightVolume(*this).GetShape()) }, LightVolume(*this).GetRenderTransform(), shader);
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	}
+
 	LightComponent::~LightComponent()
 	{
 		Scene.GetRenderData()->EraseLight(*this);
 	}
 
 	LightVolume::LightVolume(const LightComponent& lightCompPtr) :
-		LightCompPtr(&lightCompPtr)
+		LightCompPtr(&lightCompPtr),
+		VolumeTransformTarget(nullptr)
 	{
+		if (LightCompPtr->GetActor().GetParentActor()->GetName().find("Castle") != std::string::npos)
+			VolumeTransformTarget = LightCompPtr->GetActor().GetParentActor()->GetRoot();
 	}
 
 	EngineBasicShape LightVolume::GetShape() const
 	{
+		if (VolumeTransformTarget)
+			return EngineBasicShape::Cube;
 		return LightCompPtr->GetVolumeType();
 	}
 
 	Transform LightVolume::GetRenderTransform() const
 	{
+		if (VolumeTransformTarget)
+		{
+			auto t = VolumeTransformTarget->GetTransform().GetWorldTransform();
+			t.SetScale(Vec3f(15.0f, 12.0f, 10.0f));
+			return t;
+		}
 		Transform lightTransform = LightCompPtr->GetTransform().GetWorldTransform();
 		lightTransform.SetScale(LightCompPtr->GetTransform().GetScale());
 

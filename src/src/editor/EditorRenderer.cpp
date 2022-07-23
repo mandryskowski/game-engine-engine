@@ -57,24 +57,31 @@ namespace GEE
 
 
 				// Main render
-				if (!EditorHandle.GetGameHandle()->GetInputRetriever().IsKeyPressed(Key::F3))
+				if (!EditorHandle.GetGameHandle()->GetDefInputRetriever().IsKeyPressed(Key::F3))
 				{
 					SceneRenderer(Impl.RenderHandle, &MainSceneCollection->GetTb<FinalRenderTargetToolbox>()->GetFinalFramebuffer()).FullRender(mainSceneRenderInfo, Viewport(Vec2f(0.0f)), true, false,
 						[&](GEE_FB::Framebuffer& mainFramebuffer) {
-							if (EditorHandle.GetDebugRenderComponents())
+							if (EditorHandle.GetDebugRenderComponents())	// Render debug icons
 							{
 								mainFramebuffer.SetDrawSlot(0);
 								Impl.RenderHandle.GetSimpleShader()->Use();
 								mainScene->GetRootActor()->DebugRenderAll(mainScene->GetActiveCamera()->GetRenderInfo(0, *MainSceneCollection), Impl.RenderHandle.GetSimpleShader());
 								mainFramebuffer.SetDrawSlots();
 							}
-							if (Component* selectedComponent = EditorHandle.GetActions().GetSelectedComponent(); selectedComponent && selectedComponent->GetScene().GetRenderData() == mainScene->GetRenderData())
+							if (Component* selectedComponent = EditorHandle.GetActions().GetSelectedComponent(); selectedComponent && selectedComponent->GetScene().GetRenderData() == mainScene->GetRenderData())	// Render selected component outline and gizmos
+							{
 								OutlineRenderer(*EditorHandle.GetGameHandle()->GetRenderEngineHandle()).RenderOutlineSilhouette(mainSceneRenderInfo, EditorHandle.GetActions().GetSelectedComponent(), mainFramebuffer);
 
-							if (EditorHandle.GetGameHandle()->GetInputRetriever().IsKeyPressed(Key::F2))
+								// Gizmos
+								Impl.RenderHandle.GetBasicShapeMesh(EngineBasicShape::Cone);
+							}
+
+							if (EditorHandle.GetGameHandle()->GetDefInputRetriever().IsKeyPressed(Key::F2))
 								PhysicsDebugRenderer(Impl).DebugRender(*mainScene->GetPhysicsData(), mainSceneRenderInfo);
 
-						}, EditorHandle.GetGameHandle()->CheckEEForceForwardShading());
+
+
+						});
 
 				}
 				else // Only debug render physics engine
@@ -88,7 +95,7 @@ namespace GEE
 					PhysicsDebugRenderer(Impl).DebugRender(*mainScene->GetPhysicsData(), mainSceneRenderInfo);
 					Viewport(Vec2f(0.0f), Vec2f(UICollection->GetSettings().Resolution)).SetOpenGLState();
 				}
-				if (EditorHandle.GetDebugRenderPhysicsMeshes() && EditorHandle.GetActions().GetSelectedActor() && !EditorHandle.GetGameHandle()->GetInputRetriever().IsKeyPressed(Key::F2))
+				if (EditorHandle.GetDebugRenderPhysicsMeshes() && EditorHandle.GetActions().GetSelectedActor() && !EditorHandle.GetGameHandle()->GetDefInputRetriever().IsKeyPressed(Key::F2))
 				{
 					std::function<void(Component&)> renderAllColObjs = [this, &renderAllColObjs, mainScene](Component& comp) {
 						if (comp.GetCollisionObj())
@@ -107,7 +114,7 @@ namespace GEE
 				glClear(GL_COLOR_BUFFER_BIT);
 
 				Impl.RenderHandle.GetSimpleShader()->Use();
-				Renderer(Impl.RenderHandle).StaticMeshInstances(SceneMatrixInfo(*MainSceneCollection, *mainScene->GetRenderData()), { MeshInstance(Impl.RenderHandle.GetBasicShapeMesh(EngineBasicShape::QUAD), Impl.RenderHandle.FindMaterial("GEE_No_Camera_Icon")) }, Transform(), *Impl.RenderHandle.GetSimpleShader());
+				Renderer(Impl.RenderHandle).StaticMeshInstances(SceneMatrixInfo(*MainSceneCollection, *mainScene->GetRenderData()), { MeshInstance(Impl.RenderHandle.GetBasicShapeMesh(EngineBasicShape::Quad), Impl.RenderHandle.FindMaterial("GEE_No_Camera_Icon")) }, Transform(), *Impl.RenderHandle.GetSimpleShader());
 
 				TextRenderer(Impl.RenderHandle).RenderText(SceneMatrixInfo(*MainSceneCollection, *mainScene->GetRenderData()), *EditorHandle.GetGameHandle()->GetDefaultFont(), "No camera", Transform(Vec2f(0.0f, -0.8f), Vec2f(0.1f)), Vec3f(1.0f, 0.0f, 0.0f), nullptr, false, Alignment2D::Center());
 
@@ -122,7 +129,7 @@ namespace GEE
 
 				Impl.RenderHandle.GetSimpleShader()->Use();
 				Impl.RenderHandle.GetSimpleShader()->Uniform2fv("atlasData", Vec2f(0.0f));
-				Renderer(Impl.RenderHandle).StaticMeshInstances(MatrixInfoExt(), { MeshInstance(Impl.RenderHandle.GetBasicShapeMesh(EngineBasicShape::QUAD), Impl.RenderHandle.FindMaterial("GEE_3D_SCENE_PREVIEW_MATERIAL")) }, editorScene->FindActor("SceneViewportActor")->GetTransform()->GetWorldTransform(), *Impl.RenderHandle.GetSimpleShader());
+				Renderer(Impl.RenderHandle).StaticMeshInstances(MatrixInfoExt(), { MeshInstance(Impl.RenderHandle.GetBasicShapeMesh(EngineBasicShape::Quad), Impl.RenderHandle.FindMaterial("GEE_3D_SCENE_PREVIEW_MATERIAL")) }, editorScene->FindActor("SceneViewportActor")->GetTransform()->GetWorldTransform(), *Impl.RenderHandle.GetSimpleShader());
 			}
 			else
 			{
@@ -154,12 +161,11 @@ namespace GEE
 				glEnable(GL_DEPTH_TEST);
 				glDisable(GL_CULL_FACE);
 				glBindFramebuffer(GL_FRAMEBUFFER, 0);
-				glViewport(0, 0, 400, 400);
 				glDrawBuffer(GL_BACK);
 				glClearColor(glm::abs(glm::cos((EditorHandle.GetGameHandle()->GetProgramRuntime()))), 0.3f, 0.8f, 1.0f);
 				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-				SceneMatrixInfo info(popup.ID, *MainSceneCollection, *popup.Scene.get().GetRenderData(), Mat4f(1.0f), glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, 1.0f, -2550.0f), Vec3f(0.0f));
+				SceneMatrixInfo info(popup.ID, popup.TbCol, *popup.Scene.get().GetRenderData(), Mat4f(1.0f), glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, 1.0f, -2550.0f), Vec3f(0.0f));
 				info.SetRequiredShaderInfo(MaterialShaderHint::Simple);
 				Material mat("");
 				mat.SetColor(Vec4f(1.0f, 0.0f, 0.2f, 1.0f));
@@ -167,8 +173,8 @@ namespace GEE
 				Impl.RenderHandle.GetSimpleShader()->Use();
 				mat.UpdateWholeUBOData(Impl.RenderHandle.GetSimpleShader(), Impl.RenderHandle.GetEmptyTexture());
 
-				Impl.RenderHandle.GetBasicShapeMesh(EngineBasicShape::QUAD).Bind(popup.ID);
-				SceneRenderer(Impl.RenderHandle).RawUIScene(info);
+				Impl.RenderHandle.GetBasicShapeMesh(EngineBasicShape::Quad).Bind(popup.ID);
+				SceneRenderer(Impl.RenderHandle).RawUIRender(info);
 
 				glfwSwapBuffers(&popup.Window.get());
 			}

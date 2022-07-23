@@ -67,6 +67,7 @@ namespace GEE
 		virtual void GetEditorDescription(EditorDescriptionBuilder) override;
 	private:
 		Vec3f RotationEuler;
+		float ControllerSpeed;
 	};
 
 	class FPSController : public FreeRoamingController
@@ -118,6 +119,8 @@ namespace GEE
 	public:
 		CueController(GameScene& scene, Actor* parentActor, const std::string& name);
 
+		virtual void OnStart() override;
+
 		virtual void HandleEvent(const Event& ev) override;
 
 		virtual void GetEditorDescription(EditorDescriptionBuilder) override;
@@ -136,8 +139,18 @@ namespace GEE
 			Scene.AddPostLoadLambda([this, whiteBallActorName]() { if (!whiteBallActorName.empty()) WhiteBallActor = Scene.FindActor(whiteBallActorName); });
 		}
 	private:
+		void ResetBalls();
+		void ResetCue(float rotationRad);
+		void ResetCue(Quatf rotation = Quatf());
+
 		Actor* WhiteBallActor;
-		float CueHitPower;
+		float CueHitPower, BallStaticFriction, BallDynamicFriction, BallRestitution, BallLinearDamping, BallAngularDamping;
+		bool ConstrainedBallMovement;
+
+		float MinCueDistance, MaxCueDistance;
+		bool PowerInversed;
+
+		Interpolation CueDistanceAnim;
 	};
 }
 GEE_POLYMORPHIC_SERIALIZABLE_ACTOR(GEE::Actor, GEE::Controller)

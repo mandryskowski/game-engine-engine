@@ -18,7 +18,12 @@ namespace GEE
 	{
 	public:
 		Actor(GameScene&, Actor* parentActor, const std::string& name, const Transform& t = Transform());
-		Actor(const Actor&) = delete;
+	/*private:
+		/**
+		 * @brief Copy constructor only to be used in Actor::CopyChild. The constructor won't copy its children and won't add itself as a child of the original copied Actor.
+		* /
+		Actor(const Actor&);
+	public: */
 		Actor(Actor&&);
 
 		void PassToDifferentParent(Actor& newParent)
@@ -43,8 +48,10 @@ namespace GEE
 		std::string GetName() const;
 		Transform* GetTransform() const;
 		std::vector<Actor*> GetChildren();
-		GameScene& GetScene();
-		GameManager* GetGameHandle();
+		GameScene& GetScene() { return Scene; }
+		const GameScene& GetScene() const { return Scene; }
+		GameManager* GetGameHandle() { return GameHandle; }
+		const Actor* GetParentActor() const { return ParentActor; }
 
 		/**
 		 * @brief Get a pointer to an Actor further in the hierarchy (kids, kids' kids, ...). Limit the use of this function at runtime, as dynamic_cast has a significant overhead.
@@ -64,7 +71,7 @@ namespace GEE
 		void ReplaceRoot(UniquePtr<Component>);
 		void MoveCompToRoot(Component&);
 		void SetTransform(Transform);
-		void AddComponent(UniquePtr<Component>);
+		Component& AddComponent(UniquePtr<Component>);
 		virtual Actor& AddChild(UniquePtr<Actor>);
 		template <typename ChildClass, typename... Args> ChildClass& CreateChild(Args&&...);
 		template <typename CompClass, typename... Args> CompClass& CreateComponent(Args&&...);	//Adds a new component that is a child of RootComponent.
@@ -109,30 +116,8 @@ namespace GEE
 				Children[i]->GetAllActors<ActorClass>(comps);	//do it reccurently in every child
 		}
 
-		template <typename Archive> void Save(Archive& archive) const
-		{
-			archive(CEREAL_NVP(Name), CEREAL_NVP(RootComponent), CEREAL_NVP(Children));
-		}
-		template <typename Archive> void Load(Archive& archive)
-		{
-			CerealComponentSerializationData::ActorRef = this;	//For constructing the root component and its children
-			CerealComponentSerializationData::ParentComp = nullptr;	//The root component doesn't have a parent
-			RootComponent = nullptr;
-			archive(CEREAL_NVP(Name), CEREAL_NVP(RootComponent));
-			std::cout << "Serializing actor " << Name << '\n';
-
-			if (GameHandle->HasStarted())
-				OnStartAll();
-
-			Children.clear();
-			archive(CEREAL_NVP(Children));
-
-			for (auto& it : Children)
-			{
-				it->ParentActor = this;
-				it->GetTransform()->SetParentTransform(GetTransform());
-			}
-		}
+		template <typename Archive> void Save(Archive& archive) const;
+		template <typename Archive> void Load(Archive& archive);
 
 		virtual ~Actor() {}
 
@@ -156,9 +141,6 @@ namespace GEE
 		UniquePtr<ChildClass> createdChild = MakeUnique<ChildClass>(Scene, this, std::forward<Args>(args)...);
 		ChildClass& childRef = *createdChild.get();
 		AddChild(std::move(createdChild));
-
-		if (GameHandle->HasStarted())
-			childRef.OnStartAll();
 
 		return childRef;
 	}

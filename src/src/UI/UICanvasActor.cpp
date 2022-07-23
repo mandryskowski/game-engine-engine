@@ -29,7 +29,7 @@ namespace GEE
 	}
 
 	UICanvasActor::UICanvasActor(GameScene& scene, Actor* parentActor, const std::string& name, const Transform& t) :
-		UICanvasActor(scene, parentActor, nullptr, name, t)
+		UICanvasActor(scene, parentActor, nullptr, name, t) 
 	{}
 
 	UICanvasActor::UICanvasActor(UICanvasActor&& canvasActor) :
@@ -87,6 +87,8 @@ namespace GEE
 		if (clampView) ClampViewToElements();
 		if (ScrollBarX) UpdateScrollBarT<VecAxis::X>();
 		if (ScrollBarY) UpdateScrollBarT<VecAxis::Y>();
+
+		PushCanvasViewChangeEvent();
 	}
 
 	ModelComponent* UICanvasActor::GetCanvasBackground()
@@ -168,7 +170,7 @@ namespace GEE
 		if (CanvasBackground)
 			CanvasBackground->MarkAsKilled();
 		CanvasBackground = &CreateComponent<ModelComponent>("WindowBackground");
-		CanvasBackground->AddMeshInst(GameHandle->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD));
+		CanvasBackground->AddMeshInst(GameHandle->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::Quad));
 
 		if (color == Vec3f(-1.0f))
 			CanvasBackground->OverrideInstancesMaterial(GameHandle->GetRenderEngineHandle()->FindMaterial("GEE_E_Canvas_Background_Material"));
@@ -230,7 +232,7 @@ namespace GEE
 			{
 				const MouseScrollEvent& scrolledEv = dynamic_cast<const MouseScrollEvent&>(ev);
 
-				if (GameHandle->GetInputRetriever().IsKeyPressed(Key::LeftControl))
+				if (GameHandle->GetDefInputRetriever().IsKeyPressed(Key::LeftControl))
 				{
 					Vec2f newScale = static_cast<Vec2f>(CanvasView.GetScale()) * glm::pow(Vec2f(0.5f), Vec2f(scrolledEv.GetOffset().y));
 					printVector(newScale, "new scale");
@@ -260,7 +262,7 @@ namespace GEE
 					searchBar.CallOnClickFunc();
 
 					{
-						auto searchBarText = dynamic_cast<TextConstantSizeComponent*>(searchBar.GetContentTextComp());
+						auto searchBarText = dynamic_cast<TextComponent*>(searchBar.GetContentTextComp());
 						searchBarText->GetTransform().Move(Vec2f(0.25f, 0.0f));
 						searchBarText->SetMaxSize(Vec2f(0.75f, 1.0f) * 0.6f);
 						searchBarText->Unstretch();
@@ -272,7 +274,7 @@ namespace GEE
 					auto& searchIcon = searchBar.GetRoot()->CreateComponent<ModelComponent>("SearchIcon");
 					auto& renderHandle = *GameHandle->GetRenderEngineHandle();
 					auto iconsMaterial = renderHandle.FindMaterial<AtlasMaterial>("GEE_E_Icons");
-					searchIcon.AddMeshInst(MeshInstance(renderHandle.GetBasicShapeMesh(EngineBasicShape::QUAD), MakeShared<MaterialInstance>(iconsMaterial, iconsMaterial->GetTextureIDInterpolatorTemplate(9.0f))));
+					searchIcon.AddMeshInst(MeshInstance(renderHandle.GetBasicShapeMesh(EngineBasicShape::Quad), MakeShared<MaterialInstance>(iconsMaterial, iconsMaterial->GetTextureIDInterpolatorTemplate(9.0f))));
 					AddTopLevelUIElement(searchIcon);
 					searchIcon.DetachFromCanvas();
 					searchIcon.SetTransform(Transform(Vec2f(-0.75f, 0.0f), Vec2f(1.0f / 4.0f, 1.0f)));
@@ -285,7 +287,7 @@ namespace GEE
 	{
 		Actor::HandleEventAll(ev);
 
-		/*bool bContainsMouse = ContainsMouse(GameHandle->GetInputRetriever().GetMousePositionNDC());
+		/*bool bContainsMouse = ContainsMouse(GameHandle->GetDefInputRetriever().GetMousePositionNDC());
 		bool focusedOnThis = bContainsMouse;
 		if (bContainsMouse)
 			Actor::HandleEventAll(ev);
@@ -337,6 +339,11 @@ namespace GEE
 		return Name;
 	}
 
+	void UICanvasActor::PushCanvasViewChangeEvent()
+	{
+		Scene.GetEventPusher().PushEvent(Event(EventType::CanvasViewChanged, this));
+	}
+
 	void UICanvasActor::CreateScrollBars()
 	{
 		ScrollBarX = &CreateChild<UIScrollBarActor>("ScrollBarX");
@@ -356,8 +363,8 @@ namespace GEE
 			});
 
 		BothScrollBarsButton = &CreateChild<UIScrollBarActor>("BothScrollBarsButton", nullptr, [this]() {
-			if (ScrollBarX->GetState() == EditorButtonState::Idle)	ScrollBarX->OnBeingClicked();
-			if (ScrollBarY->GetState() == EditorButtonState::Idle)	ScrollBarY->OnBeingClicked();
+			if (ScrollBarX->GetStateBits() == 0)	ScrollBarX->OnBeingClicked();
+			if (ScrollBarY->GetStateBits() == 0)	ScrollBarY->OnBeingClicked();
 
 			ScrollBarX->WhileBeingClicked();
 			ScrollBarY->WhileBeingClicked();
@@ -449,7 +456,7 @@ namespace GEE
 	}
 
 	EditorDescriptionBuilder::EditorDescriptionBuilder(Editor::EditorManager& editorHandle, Actor& descriptionParent, UICanvas& canvas) :
-		EditorHandle(editorHandle), EditorScene(descriptionParent.GetScene()), DescriptionParent(descriptionParent), CanvasRef(canvas), OptionalCategory(nullptr)
+		EditorHandle(editorHandle), EditorScene(descriptionParent.GetScene()), DescriptionParent(descriptionParent), CanvasRef(canvas), OptionalCategory(nullptr), DeleteFunction(nullptr)
 	{
 	}
 
@@ -541,12 +548,12 @@ namespace GEE
 		return OptionalBuiltNode != nullptr;
 	}
 
-	void ComponentDescriptionBuilder::SetNodeBeingBuilt(HierarchyTemplate::HierarchyNodeBase* node)
+	void ComponentDescriptionBuilder::SetNodeBeingBuilt(Hierarchy::NodeBase* node)
 	{
 		OptionalBuiltNode = node;
 	}
 
-	HierarchyTemplate::HierarchyNodeBase* ComponentDescriptionBuilder::GetNodeBeingBuilt()
+	Hierarchy::NodeBase* ComponentDescriptionBuilder::GetNodeBeingBuilt()
 	{
 		return OptionalBuiltNode;
 	}

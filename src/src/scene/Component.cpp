@@ -16,6 +16,8 @@
 
 #include <rendering/Renderer.h>
 
+#include <physics/DynamicPhysicsObjects.h>
+
 #include <input/InputDevicesStateRetriever.h>
 
 GEE::Actor* GEE::CerealComponentSerializationData::ActorRef = nullptr;
@@ -47,7 +49,6 @@ namespace GEE
 		ParentComponent(comp.ParentComponent),
 		GameHandle(comp.GameHandle),
 		DebugRenderMat(comp.DebugRenderMat),
-		DebugRenderMatInst(comp.DebugRenderMatInst),
 		DebugRenderLastFrameMVP(comp.DebugRenderLastFrameMVP),
 		KillingProcessFrame(comp.KillingProcessFrame)
 	{
@@ -61,7 +62,6 @@ namespace GEE
 		Children = std::move(comp.Children);
 		CollisionObj = std::move(comp.CollisionObj);
 		DebugRenderMat = comp.DebugRenderMat;
-		DebugRenderMatInst = comp.DebugRenderMatInst;
 		DebugRenderLastFrameMVP = DebugRenderLastFrameMVP;
 		return *this;
 	}
@@ -72,7 +72,6 @@ namespace GEE
 		ComponentTransform *= compT.ComponentTransform;
 		SetCollisionObject((compT.CollisionObj) ? (MakeUnique<Physics::CollisionObject>(*compT.CollisionObj)) : (nullptr));
 		DebugRenderMat = compT.DebugRenderMat;
-		DebugRenderMatInst = compT.DebugRenderMatInst;
 		DebugRenderLastFrameMVP = DebugRenderLastFrameMVP;
 
 		return *this;
@@ -81,7 +80,7 @@ namespace GEE
 	void Component::OnStart()
 	{
 		if (!DebugRenderMatInst)
-			DebugRenderMatInst = MakeShared<MaterialInstance>(LoadDebugMatInst(EditorButtonState::Idle));
+			DebugRenderMatInst = MakeShared<MaterialInstance>(GetDebugMatInst(ButtonMaterialType::Idle));
 	}
 
 	void Component::OnStartAll()
@@ -242,7 +241,12 @@ namespace GEE
 	Component& Component::AddComponent(UniquePtr<Component> component)
 	{
 		component->GetTransform().SetParentTransform(&this->ComponentTransform);
+		component->ParentComponent = this;
 		Children.push_back(std::move(component));
+
+		if (Scene.HasStarted())
+			Children.back()->OnStartAll();
+
 		return *Children.back();
 	}
 
@@ -341,10 +345,10 @@ namespace GEE
 			Mesh* mesh = nullptr;
 			switch (shape->Type)
 			{
-			case Physics::CollisionShapeType::COLLISION_BOX:	default: mesh = &renderEngHandle.GetBasicShapeMesh(EngineBasicShape::CUBE); break;
-			case Physics::CollisionShapeType::COLLISION_SPHERE: mesh = &renderEngHandle.GetBasicShapeMesh(EngineBasicShape::SPHERE); break;
+			case Physics::CollisionShapeType::COLLISION_BOX:	default: mesh = &renderEngHandle.GetBasicShapeMesh(EngineBasicShape::Cube); break;
+			case Physics::CollisionShapeType::COLLISION_SPHERE: mesh = &renderEngHandle.GetBasicShapeMesh(EngineBasicShape::Sphere); break;
 			case Physics::CollisionShapeType::COLLISION_CAPSULE:	continue;
-			case Physics::CollisionShapeType::COLLISION_TRIANGLE_MESH: if (auto loc = shape->GetOptionalLocalization()) { HierarchyTemplate::HierarchyTreeT* tree = gameHandle.FindHierarchyTree(loc->GetTreeName()); mesh = tree->FindMesh(loc->ShapeMeshLoc.NodeName, loc->ShapeMeshLoc.SpecificName); if (!mesh) mesh = &loc->OptionalCorrespondingMesh; } break;
+			case Physics::CollisionShapeType::COLLISION_TRIANGLE_MESH: if (auto loc = shape->GetOptionalLocalization()) { Hierarchy::Tree* tree = gameHandle.FindHierarchyTree(loc->GetTreeName()); mesh = tree->FindMesh(loc->ShapeMeshLoc.NodeName, loc->ShapeMeshLoc.SpecificName); if (!mesh) mesh = &loc->OptionalCorrespondingMesh; } break;
 			}
 
 			if (!mesh)
@@ -363,7 +367,7 @@ namespace GEE
 
 	void Component::DebugRender(SceneMatrixInfo info, Shader& shader, const Vec3f& debugIconScale) const
 	{
-		if (GameHandle->GetInputRetriever().IsKeyPressed(Key::F2))
+		if (GameHandle->GetDefInputRetriever().IsKeyPressed(Key::F2))
 			return;
 		if (!DebugRenderMatInst)
 			return;
@@ -374,7 +378,7 @@ namespace GEE
 		Transform transform = GetTransform().GetWorldTransform();
 		transform.SetScale(debugIconScale);
 		
-		Renderer(*GameHandle->GetRenderEngineHandle(), 0).StaticMeshInstances(info, { MeshInstance(GameHandle->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD), DebugRenderMatInst) }, transform, shader, true);
+		Renderer(*GameHandle->GetRenderEngineHandle(), 0).StaticMeshInstances(info, { MeshInstance(GameHandle->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::Quad), DebugRenderMatInst) }, transform, shader, true);
 	}
 
 	void Component::DebugRenderAll(SceneMatrixInfo info, Shader& shader) const
@@ -425,10 +429,26 @@ namespace GEE
 		textActor.GetButtonModel()->SetHide(true);
 		textActor.GetContentTextComp()->SetFontStyle(FontStyle::Bold);
 
+		textActor.SetOnInputFunc([this, descBuilder](const std::string& content) mutable
+			{
+				auto prevName = GetName();
+
+				if (Scene.GetUniqueActorName(content) == content)
+					SetName(content);
+
+				if (Actor* foundActorCanvas = descBuilder.GetEditorScene().GetRootActor()->FindActor("GEE_E_Actors_Components_Canvas"))
+					if (UIActivableButtonActor* foundButtonActor = foundActorCanvas->GetActor<UIActivableButtonActor>(prevName))
+					{
+						foundButtonActor->SetName(GetName());
+						if (auto foundTextComp = foundButtonActor->GetRoot()->GetComponent<TextComponent>("ButtonText"))
+							foundTextComp->SetContent(GetName());
+					}
+			}
+		, [this]() -> std::string { return GetName(); });
+
 		ModelComponent& prettyQuad = textActor.CreateComponent<ModelComponent>("PrettyQuad");
-		prettyQuad.AddMeshInst(MeshInstance(GameHandle->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD), textActor.GetButtonModel()->GetMeshInstance(0).GetMaterialPtr()));
+		prettyQuad.AddMeshInst(MeshInstance(GameHandle->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::Quad), textActor.GetButtonModel()->GetMeshInstance(0).GetMaterialPtr()));
 		prettyQuad.SetTransform(Transform(Vec2f(0.0f, -0.21f), Vec2f(1.0f, 0.01f)));
-		textActor.SetOnInputFunc([this, &prettyQuad, &textActor](const std::string& content) { SetName(content); /*prettyQuad.SetTransform(Transform(Vec2f(0.0f, -0.625f), Vec2f(textActor.GetRoot()->GetComponent<TextComponent>("ComponentsNameActorText")->GetTextLength(), 0.025f)));*/ }, [this]() -> std::string { return GetName(); });
 
 		//textActor.DeleteButtonModel();
 
@@ -485,7 +505,7 @@ namespace GEE
 					pathInputWindow.GetTransform()->SetScale(Vec2f(0.5f));
 
 
-					UIElementTemplates(pathInputWindow).HierarchyTreeInput(*GameHandle, [this, &pathInputWindow, addShapeFunc](HierarchyTemplate::HierarchyTreeT& tree) {
+					UIElementTemplates(pathInputWindow).HierarchyTreeInput(*GameHandle, [this, &pathInputWindow, addShapeFunc](Hierarchy::Tree& tree) {
 						pathInputWindow.MarkAsKilled();
 
 						SharedPtr<Physics::CollisionShape> shape = EngineDataLoader::LoadTriangleMeshCollisionShape(GameHandle->GetPhysicsHandle(), tree.GetMeshes()[0]);
@@ -494,7 +514,7 @@ namespace GEE
 
 					/*UIInputBoxActor& treeNameInputBox = pathInputWindow.CreateChild<UIInputBoxActor>("TreeNameInputBox");
 					treeNameInputBox.SetOnInputFunc([this, &pathInputWindow, addShapeFunc](const std::string& path) {
-							HierarchyTemplate::HierarchyTreeT* tree = GameHandle->FindHierarchyTree(path);
+							Hierarchy::Tree* tree = GameHandle->FindHierarchyTree(path);
 							if (!tree)
 								return;
 
@@ -528,7 +548,17 @@ namespace GEE
 				return colObj->ActorPtr->is<physx::PxRigidDynamic>() == nullptr;
 			else if (colObj) return colObj->IsStatic;
 			return false;
-			});
+		});
+
+		if (colObj && !colObj->IsStatic && colObj->ActorPtr)
+		{
+			auto& propertiesCategory = shapesListCategory.AddCategory("Physical properties");
+			
+			auto rigidDynamicPtr = colObj->ActorPtr->is<physx::PxRigidDynamic>();
+			propertiesCategory.AddField("Linear damping").GetTemplates().SliderUnitInterval([colObj](float coeff) { Physics::SetLinearDamping(*colObj, coeff); }, rigidDynamicPtr->getLinearDamping());
+			propertiesCategory.AddField("Angular damping").GetTemplates().SliderUnitInterval([colObj](float coeff) { Physics::SetAngularDamping(*colObj, coeff); }, rigidDynamicPtr->getAngularDamping());
+		}
+
 
 		// Collision shapes list
 		auto& shapesListField = shapesListCategory.AddField("List of shapes");
@@ -540,19 +570,20 @@ namespace GEE
 
 
 		if (colObj)
-			for (auto& it : colObj->Shapes)
+			for (auto& shape : colObj->Shapes)
 			{
-				std::string shapeTypeName = Physics::Util::collisionShapeTypeToString(it->Type);
-				UIButtonActor& shapeActor = shapesList.CreateChild<UIButtonActor>("ShapeSelectButton", shapeTypeName, [colObj , descBuilder, it]() mutable {
-					UIWindowActor& shapeTransformWindow = descBuilder.GetEditorScene().CreateActorAtRoot<UIWindowActor>("ShapeTransformWindow");
-					shapeTransformWindow.GetTransform()->SetScale(Vec2f(0.25f));
+				std::string shapeTypeName = Physics::Util::collisionShapeTypeToString(shape->Type);
+				UIButtonActor& shapeActor = shapesList.CreateChild<UIButtonActor>("ShapeSelectButton", shapeTypeName, [colObj , descBuilder, shape, shapeTypeName]() mutable {
+					UIWindowActor& shapeWindow = descBuilder.GetEditorScene().CreateActorAtRoot<UIWindowActor>(shapeTypeName + "ShapeWindow");
+					shapeWindow.GetTransform()->SetScale(Vec2f(0.25f));
 
-					EditorDescriptionBuilder shapeDescBuilder(descBuilder.GetEditorHandle(), *shapeTransformWindow.GetScaleActor());
-					it->ShapeTransform.GetEditorDescription(shapeDescBuilder);
-					shapeDescBuilder.AddField("Delete").CreateChild<UIButtonActor>("DeleteButton", "Delete", [colObj, it, descBuilder, &shapeTransformWindow]() mutable { colObj->DetachShape(*it); shapeTransformWindow.MarkAsKilled(); descBuilder.RefreshComponent(); });
 
-					shapeTransformWindow.RefreshFieldsList();
-					shapeTransformWindow.AutoClampView();
+					EditorDescriptionBuilder shapeDescBuilder(descBuilder.GetEditorHandle(), *shapeWindow.GetScaleActor());
+					shapeDescBuilder.SetDeleteFunction([&shapeWindow]() { shapeWindow.MarkAsKilled(); });
+					shape->GetEditorDescription(shapeDescBuilder, *colObj);
+
+					shapeWindow.RefreshFieldsList();
+					shapeWindow.AutoClampView();
 					});
 				shapeActor.GetButtonModel()->SetHide(true);
 
@@ -564,24 +595,26 @@ namespace GEE
 	void Component::MarkAsKilled()
 	{
 		KillingProcessFrame = GameHandle->GetTotalFrameCount();
+		if (CollisionObj && CollisionObj->ActorPtr && Scene.GetPhysicsData())
+			Scene.GetPhysicsData()->EraseCollisionObject(*CollisionObj);
+
 		if (!ParentComponent)	//If this is the root component of an Actor, kill the Actor as well.
 			ActorRef.MarkAsKilled();
 		for (auto& it : Children)
 			it->MarkAsKilled();
 	}
 
-	MaterialInstance Component::LoadDebugMatInst(EditorButtonState state)
+	MaterialInstance Component::GetDebugMatInst(ButtonMaterialType type)
 	{
-		DebugRenderMat = LoadDebugRenderMaterial("GEE_Mat_Default_Debug_Component", "Assets/Editor/component_icon.png");
-		switch (state)
+		LoadDebugRenderMaterial("GEE_Mat_Default_Debug_Component", "Assets/Editor/component_icon.png");
+		switch (type)
 		{
-		case EditorButtonState::Idle:
+		case ButtonMaterialType::Idle:
 		default:
 			return MaterialInstance(DebugRenderMat, DebugRenderMat->GetTextureIDInterpolatorTemplate(0.0f));
-		case EditorButtonState::Hover:
-		case EditorButtonState::BeingClickedOutside:
+		case ButtonMaterialType::Hover:
 			return MaterialInstance(DebugRenderMat, DebugRenderMat->GetTextureIDInterpolatorTemplate(1.0f));
-		case EditorButtonState::BeingClickedInside:
+		case ButtonMaterialType::BeingClicked:
 			return MaterialInstance(DebugRenderMat, DebugRenderMat->GetTextureIDInterpolatorTemplate(2.0f));
 		}
 	}
@@ -600,7 +633,7 @@ namespace GEE
 			Scene.GetPhysicsData()->AddCollisionObject(*CollisionObj, ComponentTransform);
 
 		std::cout << "Serializing comp " << Name << '\n';
-		if (GameHandle->HasStarted())
+		if (Scene.HasStarted())
 			OnStartAll();
 
 		/*

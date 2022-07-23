@@ -12,6 +12,7 @@
 
 #include <scene/hierarchy/HierarchyTree.h>
 #include <scene/hierarchy/HierarchyNode.h>
+#include <scene/hierarchy/HierarchyNodeInstantiation.h>
 
 #include <input/Event.h>
 #include <UI/UICanvasActor.h>
@@ -61,7 +62,8 @@ namespace GEE
 
 	FreeRoamingController::FreeRoamingController(GameScene& scene, Actor* parentActor, const std::string& name) :
 		Controller(scene, parentActor, name),
-		RotationEuler(Vec3f(0.0f))
+		RotationEuler(Vec3f(0.0f)),
+		ControllerSpeed(1.0f)
 	{
 		SetHideCursor(true);
 		SetLockMouseAtCenter(true);
@@ -70,23 +72,27 @@ namespace GEE
 	void FreeRoamingController::SetPossessedActor(Actor* actor)
 	{
 		Controller::SetPossessedActor(actor);
+		if (!actor)
+			return;
 		RotationEuler = toEuler(actor->GetTransform()->GetRot());
+		RotationEuler.z = 0.0f;
+		std::cout << "Possessed actor rot euler " << RotationEuler << "\n";
 	}
 
 	Vec3i FreeRoamingController::GetMovementDirFromPressedKeys()
 	{
 		Vec3i movementDir(0);
-		if (GameHandle->GetInputRetriever().IsKeyPressed(Key::W))
+		if (GameHandle->GetDefInputRetriever().IsKeyPressed(Key::W))
 			movementDir.z -= 1;
-		if (GameHandle->GetInputRetriever().IsKeyPressed(Key::S))
+		if (GameHandle->GetDefInputRetriever().IsKeyPressed(Key::S))
 			movementDir.z += 1;
-		if (GameHandle->GetInputRetriever().IsKeyPressed(Key::A))
+		if (GameHandle->GetDefInputRetriever().IsKeyPressed(Key::A))
 			movementDir.x -= 1;
-		if (GameHandle->GetInputRetriever().IsKeyPressed(Key::D))
+		if (GameHandle->GetDefInputRetriever().IsKeyPressed(Key::D))
 			movementDir.x += 1;
-		if (GameHandle->GetInputRetriever().IsKeyPressed(Key::Space))
+		if (GameHandle->GetDefInputRetriever().IsKeyPressed(Key::Space))
 			movementDir.y += 1;
-		if (GameHandle->GetInputRetriever().IsKeyPressed(Key::LeftControl))
+		if (GameHandle->GetDefInputRetriever().IsKeyPressed(Key::LeftControl))
 			movementDir.y -= 1;
 
 		return movementDir;
@@ -96,7 +102,7 @@ namespace GEE
 	{
 		Controller::Update(deltaTime);
 
-		if (!PossessedActor || &Scene != GameHandle->GetActiveScene())
+		if (!PossessedActor || GameHandle->GetCurrentMouseController() != this)
 			return;
 
 		const Vec3i& movementDir = GetMovementDirFromPressedKeys();
@@ -105,7 +111,7 @@ namespace GEE
 		if (rotatedMovementDir == Vec3f(0.0f))
 			return;
 
-		PossessedActor->GetTransform()->Move(glm::normalize(rotatedMovementDir) * deltaTime);
+		PossessedActor->GetTransform()->Move(glm::normalize(rotatedMovementDir) * deltaTime * ControllerSpeed);
 	}
 
 	void FreeRoamingController::OnMouseMovement(const Vec2f& previousPosPx, const Vec2f& currentPosPx, const Vec2u& windowSize)
@@ -133,6 +139,7 @@ namespace GEE
 		descBuilder.AddField("Target camera").GetTemplates().ObjectInput<Actor>(
 			[this]() { std::vector<Actor*> actors; Scene.GetRootActor()->GetAllActors(&actors); return actors; },
 			[this](Actor* actor) { SetPossessedActor(actor); });
+		descBuilder.AddField("Controller speed").GetTemplates().SliderRawInterval(0.0f, 10.0f, [this](float speed) { ControllerSpeed = speed; }, ControllerSpeed);
 	}
 
 	FPSController::FPSController(GameScene& scene, Actor* parentActor, const std::string& name) :
@@ -168,7 +175,7 @@ namespace GEE
 		const Vec3i& movementDir = FreeRoamingController::GetMovementDirFromPressedKeys();
 
 		// Cancel out the alteration of movementDir due to pressing LeftControl.
-		if (GameHandle->GetInputRetriever().IsKeyPressed(Key::LeftControl))
+		if (GameHandle->GetDefInputRetriever().IsKeyPressed(Key::LeftControl))
 			return movementDir + Vec3i(0, 1, 0);
 
 		// If LeftControl is not pressed, there is no need to change anything.
@@ -288,8 +295,24 @@ namespace GEE
 	CueController::CueController(GameScene& scene, Actor* parentActor, const std::string& name):
 		Controller(scene, parentActor, name),
 		WhiteBallActor(nullptr),
-		CueHitPower(0.01f)
+		CueHitPower(0.2f),
+		ConstrainedBallMovement(false),
+		BallStaticFriction(1.0f),
+		BallDynamicFriction(0.5f),
+		BallRestitution(1.0f),
+		BallLinearDamping(0.5f),
+		BallAngularDamping(0.5f),
+		MinCueDistance(2.0f),
+		MaxCueDistance(2.4f),
+		CueDistanceAnim(0.0f, 1.0f),
+		PowerInversed(false)
 	{
+		CueDistanceAnim.SetOnUpdateFunc([](float CompType) { return CompType == 1.0f;  });
+	}
+	void CueController::OnStart()
+	{
+		std::cout << "Started pool ball game\n";
+		ResetBalls();
 	}
 	void CueController::HandleEvent(const Event& ev)
 	{
@@ -299,22 +322,101 @@ namespace GEE
 			return;
 
 		if (auto cast = dynamic_cast<const MouseButtonEvent*>(&ev))
-			if (cast->GetButton() == MouseButton::Left)
+			if (cast->GetButton() == MouseButton::Left && CueDistanceAnim.GetT() > 0.0f)
 			{
 				Vec3f cueDir = PossessedActor->GetTransform()->GetWorldTransform().GetPos() - WhiteBallActor->GetTransform()->GetWorldTransform().GetPos();
 				cueDir.y = 0.0f;
 				cueDir = glm::normalize(cueDir);
-				Physics::SetLinearDamping(*WhiteBallActor->GetRoot()->GetCollisionObj(), 1.0f);
-				Physics::ApplyForce(*WhiteBallActor->GetRoot()->GetCollisionObj(), CueHitPower * -cueDir);
+
+				Vec3f force = (CueHitPower * CueDistanceAnim.GetT()) * -cueDir;
+				Vec3f torque = (CueHitPower * CueDistanceAnim.GetT()) * glm::cross(cueDir, -cueDir);
+				std::cout << "#POOL#> Launching cue ball with force " << force << " and torque" << torque << "\n";
+				
+				Physics::ApplyForce(*WhiteBallActor->GetRoot()->GetCollisionObj(), force);
+				//WhiteBallActor->GetRoot()->GetCollisionObj()->ActorPtr->is<physx::PxRigidDynamic>()->addTorque(Physics::Util::toPx(torque));
+
+				WhiteBallActor->GetRoot()->GetCollisionObj()->ActorPtr->is<physx::PxRigidDynamic>()->setStabilizationThreshold(0.0f);
+				WhiteBallActor->GetRoot()->GetCollisionObj()->ActorPtr->is<physx::PxRigidDynamic>()->setRigidBodyFlag(physx::PxRigidBodyFlag::eENABLE_CCD, true);
+				//WhiteBallActor->GetRoot()->GetCollisionObj()->ActorPtr->is<physx::PxRigidDynamic>()->setRigidDynamicLockFlags(physx::PxRigidDynamicLockFlag::eLOCK_LINEAR_Y);
+
+				if (auto poolBallsActor = Scene.FindActor("Poolballs"))
+				{
+					std::vector<Component*> components;
+					poolBallsActor->GetRoot()->GetAllComponents(&components);
+
+					for (auto comp : components)
+						if (comp->GetCollisionObj())
+						{
+						//	Physics::SetLinearDamping(*comp->GetCollisionObj(), 0.2f);
+						//	Physics::SetAngularDamping(*comp->GetCollisionObj(), 0.2f);
+							comp->GetCollisionObj()->ActorPtr->is<physx::PxRigidDynamic>()->setStabilizationThreshold(0.0f);
+							//comp->GetCollisionObj()->ActorPtr->is<physx::PxRigidDynamic>()->setRigidDynamicLockFlags(physx::PxRigidDynamicLockFlag::eLOCK_LINEAR_Y);
+						}
+				}
+
+				CueDistanceAnim.Reset();
+				dynamic_cast<ModelComponent*>(PossessedActor->GetRoot())->SetHide(true);
 			}
 	}
 	void CueController::GetEditorDescription(EditorDescriptionBuilder descBuilder)
 	{
 		Controller::GetEditorDescription(descBuilder);
 
+		auto forAllBallsFunc = [this](std::function<void(Component*)> iterationFunc)
+		{
+			if (auto poolBallsActor = Scene.FindActor("Poolballs"))
+			{
+				std::vector<Component*> components;
+				poolBallsActor->GetRoot()->GetAllComponents(&components);
+				if (WhiteBallActor) components.push_back(WhiteBallActor->GetRoot());
+
+				for (auto comp : components)
+					iterationFunc(comp);
+			}
+		};
+
 		descBuilder.AddField("White ball").GetTemplates().ObjectInput<Actor, Actor>(*Scene.GetRootActor(), WhiteBallActor);
 		descBuilder.AddField("Cue").GetTemplates().ObjectInput<Actor, Actor>(*Scene.GetRootActor(), [this](Actor* cue) { SetPossessedActor(cue); });
 		descBuilder.AddField("Cue hit power").CreateChild<UIInputBoxActor>("CueHitPowerInputBox", [this](float val) { CueHitPower = val; }, [this]() { return CueHitPower; });
+		descBuilder.AddField("Reset balls").CreateChild<UIButtonActor>("ResetBallsButton", "Reset", [this]() { ResetBalls(); });
+		descBuilder.AddField("Constrain Y axis").GetTemplates().TickBox([this, forAllBallsFunc](bool val)
+		{
+			forAllBallsFunc([val](Component* comp) { comp->GetCollisionObj()->ActorPtr->is<physx::PxRigidDynamic>()->setRigidDynamicLockFlags((val) ? (physx::PxRigidDynamicLockFlag::eLOCK_LINEAR_Y) : (static_cast<physx::PxRigidDynamicLockFlag::Enum>(0)));  });
+			ConstrainedBallMovement = val;
+		}, [this](){ return ConstrainedBallMovement;});
+
+		auto updateMatFunc = [this, forAllBallsFunc](physx::PxMaterial* mat)
+		{
+			if (auto poolBallsActor = Scene.FindActor("Poolballs"))
+			{
+				physx::PxMaterial* prevMat = nullptr;
+
+				forAllBallsFunc([this, mat, &prevMat](Component* comp)
+				{
+					physx::PxShape* shapePtr;
+
+					comp->GetCollisionObj()->ActorPtr->is<physx::PxRigidDynamic>()->getShapes(&shapePtr, 1);
+					shapePtr->getMaterials(&prevMat, 1);
+
+					std::cout << "Shape actor before: " << shapePtr->getReferenceCount() << '\n';
+					comp->GetCollisionObj()->ActorPtr->detachShape(*shapePtr);
+					std::cout << "Shape actor after: " << shapePtr->getReferenceCount() << '\n';
+					shapePtr->setMaterials(&mat, 1);
+					comp->GetCollisionObj()->ActorPtr->attachShape(*shapePtr);
+
+				});
+
+				if (prevMat)
+					prevMat->release();
+			}
+		};
+		descBuilder.AddField("Ball static friction").GetTemplates().SliderUnitInterval([this, updateMatFunc](float coeff) {	updateMatFunc(GameHandle->GetPhysicsHandle()->CreateMaterial(BallStaticFriction = coeff, BallDynamicFriction, BallRestitution));}, BallStaticFriction);
+		descBuilder.AddField("Ball dynamic friction").GetTemplates().SliderUnitInterval([this, updateMatFunc](float coeff) { updateMatFunc(GameHandle->GetPhysicsHandle()->CreateMaterial(BallStaticFriction, BallDynamicFriction = coeff, BallRestitution));}, BallDynamicFriction);
+		descBuilder.AddField("Ball restitution").GetTemplates().SliderUnitInterval([this, updateMatFunc](float coeff) {	updateMatFunc(GameHandle->GetPhysicsHandle()->CreateMaterial(BallStaticFriction, BallDynamicFriction, BallRestitution = coeff));}, BallRestitution);
+
+
+		descBuilder.AddField("Ball linear damping").GetTemplates().SliderUnitInterval([this, forAllBallsFunc](float coeff) { forAllBallsFunc([this, coeff](Component* comp) { Physics::SetLinearDamping(*comp->GetCollisionObj(), BallLinearDamping = coeff); });	}, BallLinearDamping);
+		descBuilder.AddField("Ball angular damping").GetTemplates().SliderUnitInterval([this, forAllBallsFunc](float coeff) { forAllBallsFunc([this, coeff](Component* comp) { Physics::SetAngularDamping(*comp->GetCollisionObj(), BallAngularDamping = coeff); });	}, BallAngularDamping);
 	}
 	void CueController::OnMouseMovement(const Vec2f&, const Vec2f& currentPosPx, const Vec2u& windowSize)
 	{
@@ -330,13 +432,16 @@ namespace GEE
 			return;
 
 		Vec2f mouseDir = glm::normalize(whiteBallViewportSpace - currentPosViewportSpace);
-		float cueRotation = glm::degrees(std::atan2(mouseDir.y, mouseDir.x));
+		float cueRotation = std::atan2(mouseDir.y, mouseDir.x);
 
-		WhiteBallActor->GetTransform()->SetRotation(Vec3f(0.0f, cueRotation + 90.0f, 0.0f));
+		ResetCue(cueRotation);
 	}
 	void CueController::Update(float deltaTime)
 	{
 		Controller::Update(deltaTime);
+
+		if (WhiteBallActor && WhiteBallActor->IsBeingKilled())
+			WhiteBallActor = nullptr;
 
 		if (WhiteBallActor && WhiteBallActor->GetRoot()->GetCollisionObj() && WhiteBallActor->GetTransform()->GetPos().y < 0.95f)
 		{
@@ -344,5 +449,108 @@ namespace GEE
 			Physics::SetLinearVelocity(*WhiteBallActor->GetRoot()->GetCollisionObj(), Vec3f(0.0f));
 			Physics::SetAngularVelocity(*WhiteBallActor->GetRoot()->GetCollisionObj(), Vec3f(0.0f));
 		}
+
+		if (auto poolBallsActor = Scene.FindActor("Poolballs"))
+		{
+			std::vector<Component*> components;
+			poolBallsActor->GetRoot()->GetAllComponents(&components);
+
+			for (auto comp : components)
+				if (comp->GetCollisionObj() && comp->GetTransform().GetWorldTransform().GetPos().y < 0.95f)
+					comp->MarkAsKilled();
+
+			if (components.empty())
+				ResetBalls();
+		}
+
+		if (GameHandle->GetCurrentMouseController() != this)
+			return;
+
+		if (GameHandle->GetDefInputRetriever().IsMouseButtonPressed(MouseButton::Right))
+		{
+			CueDistanceAnim.UpdateT(-deltaTime);
+			ResetCue();
+		}
+		else if (GameHandle->GetDefInputRetriever().IsMouseButtonPressed(MouseButton::Left))
+		{
+			CueDistanceAnim.UpdateT(deltaTime);
+			ResetCue();
+		}
+
+	}
+	void CueController::ResetBalls()
+	{
+		if (!WhiteBallActor)
+			return;
+
+		if (auto poolBallsActor = Scene.FindActor("Poolballs"))
+		{
+			std::vector<Component*> components;
+			poolBallsActor->GetRoot()->GetAllComponents(&components);
+
+			for (auto comp : components)
+				comp->MarkAsKilled();
+
+			if (auto tableHierarchyTree = Scene.FindHierarchyTree("Pooltable"))
+			{
+				for (int i = 0; i < static_cast<int>(tableHierarchyTree->GetRoot().GetChildCount()); i++)
+				{
+					auto child = tableHierarchyTree->GetRoot().GetChild(i);
+					std::string stringName = child->GetCompBaseType().GetName();
+					std::transform(stringName.begin(), stringName.end(), stringName.begin(), [](unsigned char ch) { return std::tolower(ch); });
+					if (stringName.find("ball") != std::string::npos)
+					{
+						auto colObj = (stringName.find("white") == std::string::npos) ? ( poolBallsActor->AddComponent(std::move(child->GenerateComp(MakeShared<Hierarchy::Instantiation::Data>(*tableHierarchyTree), *poolBallsActor))).GetCollisionObj()) : (WhiteBallActor->GetRoot()->GetCollisionObj());
+						if (!colObj)
+							continue;
+
+						auto rigidDynamicPtr = colObj->ActorPtr->is<physx::PxRigidDynamic>();
+
+						// Set ball material
+						GEE_CORE_ASSERT(GameHandle->GetPhysicsHandle());
+						physx::PxShape* shapePtr;
+						physx::PxMaterial* mat = GameHandle->GetPhysicsHandle()->CreateMaterial(BallStaticFriction, BallDynamicFriction, BallRestitution);
+
+						rigidDynamicPtr->getShapes(&shapePtr, 1);
+
+						rigidDynamicPtr->detachShape(*shapePtr);
+						shapePtr->setContactOffset(0.001f);
+						shapePtr->setMaterials(&mat, 1);
+						rigidDynamicPtr->attachShape(*shapePtr);
+
+						// Set damping
+						rigidDynamicPtr->setLinearDamping(BallLinearDamping);
+						rigidDynamicPtr->setAngularDamping(BallAngularDamping);
+
+						rigidDynamicPtr->setRigidBodyFlag(physx::PxRigidBodyFlag::eENABLE_CCD, true);
+						rigidDynamicPtr->setRigidDynamicLockFlags((ConstrainedBallMovement) ? (physx::PxRigidDynamicLockFlag::eLOCK_LINEAR_Y) : (static_cast<physx::PxRigidDynamicLockFlag::Enum>(0)));
+					}
+				}
+			}
+		}
+
+		WhiteBallActor->SetTransform(Scene.FindHierarchyTree("Pooltable")->GetRoot().FindNode("PoolBall_White")->GetCompBaseType().GetTransform());
+		Physics::SetLinearVelocity(*WhiteBallActor->GetRoot()->GetCollisionObj(), Vec3f(0.0f));
+		Physics::SetAngularVelocity(*WhiteBallActor->GetRoot()->GetCollisionObj(), Vec3f(0.0f));
+	}
+	void CueController::ResetCue(float rotationRad)
+	{
+		/*float cueDistance = MinCueDistance + (MaxCueDistance - MinCueDistance) * CueDistanceAnim.GetT();
+		Mat4f cueTransform = glm::translate(Mat4f(1.0f), WhiteBallActor->GetTransform()->GetWorldTransform().GetPos()) * glm::rotate(Mat4f(1.0f), rotationRad, Vec3f(0.0f, 1.0f, 0.0f));
+
+		PossessedActor->GetTransform()->SetPosition(Vec3f(cueTransform * Vec4f(0.0f, 0.0f, -cueDistance, 1.0f)));
+		PossessedActor->GetTransform()->SetRotation(Vec3f(0.0f, glm::degrees(rotationRad) - 90.0f, 0.0f));*/
+		ResetCue(toQuat(Vec3f(0.0f, glm::degrees(rotationRad), 0.0f)));
+	}
+	void CueController::ResetCue(Quatf rotation)
+	{
+		if (rotation == Quatf())
+			rotation = PossessedActor->GetTransform()->GetWorldTransform().GetRot() * toQuat(Vec3f(0.0f, 90.0f, 0.0f));
+		float cueDistance = MinCueDistance + (MaxCueDistance - MinCueDistance) * CueDistanceAnim.GetT();
+		Mat4f cueTransform = glm::translate(Mat4f(1.0f), WhiteBallActor->GetTransform()->GetWorldTransform().GetPos()) * static_cast<Mat4f>(rotation);
+
+		PossessedActor->GetTransform()->SetPosition(Vec3f(cueTransform * Vec4f(0.0f, 0.0f, -cueDistance, 1.0f)) + Vec3f(0.0f, 0.03f, 0.0f));
+		PossessedActor->GetTransform()->SetRotation(rotation * toQuat(Vec3f(0.0f, -90.0f, 0.0f)));
+		dynamic_cast<ModelComponent*>(PossessedActor->GetRoot())->SetHide(false);
 	}
 }

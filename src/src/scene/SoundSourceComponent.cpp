@@ -95,10 +95,10 @@ namespace GEE
 				alSourcefv(ALIndex, AL_POSITION, Math::GetDataPtr(ComponentTransform.GetWorldTransform().GetPos()));
 		}
 
-		MaterialInstance SoundSourceComponent::LoadDebugMatInst(EditorButtonState state)
+		MaterialInstance SoundSourceComponent::GetDebugMatInst(ButtonMaterialType type)
 		{
 			LoadDebugRenderMaterial("GEE_Mat_Default_Debug_SoundSourceComponent", "Assets/Editor/soundsourcecomponent_debug.png");
-			return Component::LoadDebugMatInst(state);
+			return Component::GetDebugMatInst(type);
 		}
 
 		void SoundSourceComponent::GetEditorDescription(ComponentDescriptionBuilder descBuilder)
@@ -139,6 +139,9 @@ namespace GEE
 		{
 			void LoadSoundFromFile(const std::string& path, SoundSourceComponent& soundComp)
 			{
+				if (path.empty())
+					std::cout << "Sound file format is empty; it won't be loaded to " << soundComp.GetName() << '\n';
+
 				////////////////// Check our current buffers; if one was loaded from the same path as passed to this function just return its address and don't waste time
 				SoundBuffer buffer = soundComp.GetScene().GetGameHandle()->GetAudioEngineHandle()->FindBuffer(path);
 				if (buffer.IsValid())

@@ -40,14 +40,23 @@ void main()
 
 #else	// OUTLINE_DISCARD_ALPHA
 
+//#define SOFT_SHADOWS 1
+
+#ifdef SOFT_SHADOWS
 #if __VERSION__ >= 420
 layout(depth_greater) out float gl_FragDepth;
-#endif
-
+#endif	// Version greater than 420
 uniform float lightBias;
 
 void main()
 {
 	gl_FragDepth = gl_FragCoord.z + ((gl_FrontFacing) ? (lightBias) : (0.0));
 }
+#else // Soft shadows on
+void main()
+{
+	
+}
+#endif // Soft shadows off
+
 #endif 

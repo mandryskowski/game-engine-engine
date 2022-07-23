@@ -19,12 +19,16 @@ out VS_OUT
 	vec2 texCoord;
 	
 	mat3 TBN;
+	
+	bool bHasTangents;
+	vec3 normalWithoutNormalMap;
 }	vs_out;
 
 //uniform
 uniform int boneIDOffset;
 uniform mat4 model;
 uniform mat4 MVP;
+uniform bool tangentless;
 #ifdef CALC_VELOCITY_BUFFER
 uniform mat4 prevMVP;
 #endif
@@ -61,6 +65,9 @@ void main()
 		 T = normalize(normalBoneMat * cross(B, N));	//idk if it should actually be there, does it do anything?
 	
 	vs_out.TBN = mat3(T, B, N);
+	
+	vs_out.normalWithoutNormalMap = N;
+	vs_out.bHasTangents = !tangentless;
 	
 	vec4 projCoords = MVP * bonePosition;
 

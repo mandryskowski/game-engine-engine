@@ -5,6 +5,8 @@
 #include <assimp/scene.h>
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
+#include <assimp/DefaultLogger.hpp>
+#include <assimp/LogStream.hpp>
 #include <scene/GunActor.h>
 #include <scene/CameraComponent.h>
 #include <scene/BoneComponent.h>
@@ -13,6 +15,7 @@
 #include <scene/LightProbeComponent.h>
 #include <scene/hierarchy/HierarchyTree.h>
 #include <scene/hierarchy/HierarchyNode.h>
+#include <scene/hierarchy/HierarchyNodeInstantiation.h>
 #include <assetload/FileLoader.h>
 #include <rendering/Texture.h>
 #include <rendering/LightProbe.h>
@@ -32,6 +35,7 @@
 namespace GEE
 {
 	FT_Library* EngineDataLoader::FTLib = nullptr;
+	auto assimpDebugStream = Assimp::LogStream::createDefaultStream(aiDefaultLogStream::aiDefaultLogStream_STDOUT);
 
 
 	void EngineDataLoader::LoadMaterials(RenderEngineManager* renderHandle, std::string path, std::string directory)
@@ -179,13 +183,13 @@ namespace GEE
 
 			ModelComponent& model = parent->CreateComponent<ModelComponent>(name, Transform());
 
-			HierarchyTemplate::HierarchyTreeT* tree = LoadHierarchyTree(scene, path);
+			Hierarchy::Tree* tree = LoadHierarchyTree(scene, path);
 			if (tree)
 			{
-				UniquePtr<HierarchyTemplate::HierarchyTreeT> tempTreeCopyForEdit = nullptr;
+				UniquePtr<Hierarchy::Tree> tempTreeCopyForEdit = nullptr;
 				if (isNextWordEqual(filestr, "edit"))
 				{
-					tempTreeCopyForEdit = MakeUnique<HierarchyTemplate::HierarchyTreeT>(*tree);
+					tempTreeCopyForEdit = MakeUnique<Hierarchy::Tree>(*tree);
 					tree = tempTreeCopyForEdit.get();
 					LoadCustomHierarchyNode(scene, filestr, nullptr, tree);
 				}
@@ -311,7 +315,7 @@ namespace GEE
 
 				//const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate);
 				std::cout << "PROBUJE ZALADOWAC STARY COLLISION OBJECT Z PATHA " + path << '\n';
-				HierarchyTemplate::HierarchyTreeT* tree = LoadHierarchyTree(scene, path, nullptr, true);
+				Hierarchy::Tree* tree = LoadHierarchyTree(scene, path, nullptr, true);
 
 				Transform shapesTransform;
 				LoadTransform(filestr, shapesTransform, transformLoadType);
@@ -387,7 +391,7 @@ namespace GEE
 			else
 			{
 				filestr >> path;
-				LightProbeComponent& probe = scene.GetRootActor()->CreateComponent<LightProbeComponent>("A LightProbeComponent", EngineBasicShape::QUAD);
+				LightProbeComponent& probe = scene.GetRootActor()->CreateComponent<LightProbeComponent>("A LightProbeComponent", EngineBasicShape::Quad);
 				LightProbeLoader::LoadLightProbeFromFile(probe, path);
 			}
 		}
@@ -402,11 +406,14 @@ namespace GEE
 		Vec3f minCorner(std::numeric_limits<float>::max()), maxCorner(std::numeric_limits<float>::min());
 
 		vertices.reserve(mesh->mNumVertices);
-		indices.reserve(mesh->mNumFaces * 3);
+		if (mesh->mFaces)
+			indices.reserve(mesh->mNumFaces * 3);
 
 		bool bNormals = mesh->HasNormals();
 		bool bTexCoords = mesh->mTextureCoords[0];
 		bool bTangentsBitangents = mesh->HasTangentsAndBitangents();
+
+		
 
 		for (int i = 0; i < static_cast<int>(mesh->mNumVertices); i++)
 		{
@@ -453,16 +460,20 @@ namespace GEE
 		}
 
 		meshPtr->SetBoundingBox(Boxf<Vec3f>::FromMinMaxCorners(minCorner, maxCorner));
-		
 
-		for (int i = 0; i < static_cast<int>(mesh->mNumFaces); i++)
+		if (mesh->HasFaces())
 		{
-			const aiFace& face = mesh->mFaces[i];
-			for (unsigned int j = 0; j < face.mNumIndices; j++)
-				indices.push_back(face.mIndices[j]);
+			for (int i = 0; i < static_cast<int>(mesh->mNumFaces); i++)
+			{
+				const aiFace& face = mesh->mFaces[i];
+
+				for (unsigned int j = 0; j < face.mNumIndices; j++)
+					indices.push_back(face.mIndices[j]);
+			}
 		}
 
-		if (boneMapping)
+
+		if (boneMapping && mesh->HasBones())
 		{
 			for (int i = 0; i < static_cast<int>(mesh->mNumBones); i++)
 			{
@@ -481,7 +492,7 @@ namespace GEE
 			meshPtr->Generate(vertices, indices, keepVertsData);
 
 			std::cout << meshPtr->GetLocalization().NodeName + "   Vertices:" << vertices.size() << "    Indices:" << indices.size() << "    Bones: " << mesh->mNumBones;
-			if (mesh->mNumBones > 0)
+			if (mesh->HasBones())
 			{
 				std::cout << " (";
 				for (int i = 0; i < mesh->mNumBones; i++)
@@ -601,18 +612,18 @@ namespace GEE
 		}
 	}
 
-	HierarchyTemplate::HierarchyTreeT* EngineDataLoader::LoadCustomHierarchyTree(GameScene& scene, std::stringstream& filestr, bool loadPath)
+	Hierarchy::Tree* EngineDataLoader::LoadCustomHierarchyTree(GameScene& scene, std::stringstream& filestr, bool loadPath)
 	{
 		std::string treeName;
 		filestr >> treeName;
 
-		HierarchyTemplate::HierarchyTreeT* tree = ((loadPath) ? (LoadHierarchyTree(scene, treeName)) : (&scene.CreateHierarchyTree(treeName)));
+		Hierarchy::Tree* tree = ((loadPath) ? (LoadHierarchyTree(scene, treeName)) : (&scene.CreateHierarchyTree(treeName)));
 		LoadCustomHierarchyNode(scene, filestr, &tree->GetRoot(), (loadPath) ? (tree) : (nullptr));
 
 		return nullptr;
 	}
 
-	void EngineDataLoader::LoadCustomHierarchyNode(GameScene& scene, std::stringstream& filestr, HierarchyTemplate::HierarchyNodeBase* parent, HierarchyTemplate::HierarchyTreeT* treeToEdit)
+	void EngineDataLoader::LoadCustomHierarchyNode(GameScene& scene, std::stringstream& filestr, Hierarchy::NodeBase* parent, Hierarchy::Tree* treeToEdit)
 	{
 		GameManager& gameHandle = *scene.GetGameHandle();
 		std::string input;
@@ -646,7 +657,7 @@ namespace GEE
 					std::cout << "Edytuje " << treeToEdit->GetName().GetPath() << ", a w nim " << nodeName << ".\n";
 			}
 
-			HierarchyTemplate::HierarchyNodeBase* foundNode = treeToEdit->GetRoot().FindNode(nodeName);
+			Hierarchy::NodeBase* foundNode = treeToEdit->GetRoot().FindNode(nodeName);
 			if (!foundNode)
 			{
 				std::cerr << "ERROR! Can't find " << input << " in tree " << treeToEdit->GetName().GetPath() << ".\n";
@@ -655,8 +666,8 @@ namespace GEE
 			if (PrimitiveDebugger::bDebugMeshTrees)
 				std::cout << "Znalazlem node " << foundNode->GetCompBaseType().GetName() << ".\n";
 
-			HierarchyTemplate::HierarchyNodeBase& targetNode = (bCreateNodes) ? (parent->AddChild(foundNode->Copy(parent->GetCompBaseType().ActorRef))) : (*foundNode);
-			HierarchyTemplate::HierarchyNode<ModelComponent>* modelNodeCast = dynamic_cast<HierarchyTemplate::HierarchyNode<ModelComponent>*>(&targetNode);
+			Hierarchy::NodeBase& targetNode = (bCreateNodes) ? (parent->AddChild(foundNode->Copy(parent->GetCompBaseType().ActorRef))) : (*foundNode);
+			Hierarchy::Node<ModelComponent>* modelNodeCast = dynamic_cast<Hierarchy::Node<ModelComponent>*>(&targetNode);
 
 			while (input != ":" && input != "," && input != "end")
 			{
@@ -676,8 +687,8 @@ namespace GEE
 							continue;
 						}
 
-						std::function<SharedPtr<Material> (HierarchyTemplate::HierarchyNodeBase&, const std::string&)> findMaterialFunc = [&findMaterialFunc](HierarchyTemplate::HierarchyNodeBase& node, const std::string& materialName) -> SharedPtr<Material> {
-							if (auto cast = dynamic_cast<HierarchyTemplate::HierarchyNode<ModelComponent>*>(&node))
+						std::function<SharedPtr<Material> (Hierarchy::NodeBase&, const std::string&)> findMaterialFunc = [&findMaterialFunc](Hierarchy::NodeBase& node, const std::string& materialName) -> SharedPtr<Material> {
+							if (auto cast = dynamic_cast<Hierarchy::Node<ModelComponent>*>(&node))
 							{
 								std::cout << cast->GetCompT().GetName() << " lolxd " << cast->GetCompT().GetMeshInstanceCount() << "\n";
 								for (int i = 0; i < cast->GetCompT().GetMeshInstanceCount(); i++)
@@ -723,24 +734,25 @@ namespace GEE
 		}
 	}
 
-	void EngineDataLoader::LoadHierarchyNodeFromAi(GameManager& gameHandle, const aiScene* assimpScene, const std::string& directory, MaterialLoadingData* matLoadingData, const HTreeObjectLoc& treeObjLoc, HierarchyTemplate::HierarchyNodeBase& hierarchyNode, aiNode* node, BoneMapping& boneMapping, aiBone* bone, const Transform& parentTransform, bool keepVertsData)
+	void EngineDataLoader::LoadHierarchyNodeFromAi(GameManager& gameHandle, const aiScene* assimpScene, const std::string& directory, MaterialLoadingData* matLoadingData, const HTreeObjectLoc& treeObjLoc, Hierarchy::NodeBase& hierarchyNode, aiNode* node, BoneMapping* boneMapping, aiBone* bone, const Transform& parentTransform, bool keepVertsData)
 	{
 		std::cout << "NUM MESHES: " << node->mNumMeshes << '\n';
 		for (unsigned int i = 0; i < node->mNumMeshes; i++)
 		{
 			const aiMesh* assimpMesh = assimpScene->mMeshes[node->mMeshes[i]];
+			std::cout << "loading mesh " << node->mName.C_Str() << '\n';
 			Mesh* mesh = new Mesh(Mesh::MeshLoc(treeObjLoc, node->mName.C_Str(), assimpScene->mMeshes[node->mMeshes[i]]->mName.C_Str()));
 
-			LoadMeshFromAi(mesh, assimpScene, assimpMesh, treeObjLoc, directory, true, matLoadingData, &boneMapping, keepVertsData);
-			dynamic_cast<HierarchyTemplate::HierarchyNode<ModelComponent>*>(&hierarchyNode)->GetCompT().AddMeshInst(*mesh);
+			LoadMeshFromAi(mesh, assimpScene, assimpMesh, treeObjLoc, directory, true, matLoadingData, boneMapping, keepVertsData);
+			dynamic_cast<Hierarchy::Node<ModelComponent>*>(&hierarchyNode)->GetCompT().AddMeshInst(*mesh);
 		}
 
 		if (bone)
 		{
 			std::cout << "Found bone " << bone->mName.C_Str() << '\n';
-			HierarchyTemplate::HierarchyNode<BoneComponent>* boneNode = dynamic_cast<HierarchyTemplate::HierarchyNode<BoneComponent>*>(&hierarchyNode);
+			Hierarchy::Node<BoneComponent>* boneNode = dynamic_cast<Hierarchy::Node<BoneComponent>*>(&hierarchyNode);
 			boneNode->GetCompT().SetBoneOffset(toGlm(bone->mOffsetMatrix));
-			boneNode->GetCompT().SetID(boneMapping.GetBoneID(bone->mName.C_Str()));
+			boneNode->GetCompT().SetID(boneMapping->GetBoneID(bone->mName.C_Str()));
 		}
 
 		aiMatrix4x4 nodeMatrix = node->mTransformation;
@@ -779,37 +791,27 @@ namespace GEE
 		}
 	}
 
-	void EngineDataLoader::LoadComponentsFromHierarchyTree(Component& comp, const HierarchyTemplate::HierarchyTreeT& tree, const HierarchyTemplate::HierarchyNodeBase& node, SkeletonInfo& skeletonInfo, const std::vector<HierarchyTemplate::HierarchyNodeBase*>& selectedComponents, Material* overrideMaterial)
+	void EngineDataLoader::LoadComponentsFromHierarchyTree(Component& comp, const Hierarchy::Tree& tree, const Hierarchy::NodeBase& node, SkeletonInfo& skeletonInfo, const std::vector<Hierarchy::NodeBase*>& selectedComponents, Material* overrideMaterial)
 	{
-		if (PrimitiveDebugger::bDebugMeshTrees)
-		{
-			const HierarchyTemplate::HierarchyNode<ModelComponent>* meshNodeCast = dynamic_cast<const HierarchyTemplate::HierarchyNode<ModelComponent>*>(&node);
-			if (meshNodeCast)
-			{
-				std::cout << comp.GetName() << ":::::" << meshNodeCast->GetCompT().GetMeshInstanceCount() << "\n";
-			}
-			else
-				std::cout << comp.GetName() << "\n";
-		}
+		node.InstantiateToComp(MakeShared<Hierarchy::Instantiation::Data>(const_cast<Hierarchy::Tree&>(tree)), comp);
 
-		node.InstantiateToComp(comp);
-
-		for (int i = 0; i < node.GetChildCount(); i++)	//WAZNE!!!! zmien meshNodeCast na node jak naprawisz childow
+		for (int i = 0; i < node.GetChildCount(); i++)
 		{
 			if (!selectedComponents.empty() && std::find(selectedComponents.begin(), selectedComponents.end(), node.GetChild(i)) == selectedComponents.end())
 				continue;
 
 			Component* child = nullptr;
 
-			if (dynamic_cast<const HierarchyTemplate::HierarchyNode<ModelComponent>*>(node.GetChild(i)))
+			if (dynamic_cast<const Hierarchy::Node<ModelComponent>*>(node.GetChild(i)))
 			{
 				ModelComponent& model = comp.CreateComponent<ModelComponent>(node.GetChild(i)->GetCompBaseType().GetName(), Transform(), &skeletonInfo);
 				model.SetSkeletonInfo(&skeletonInfo);
 				child = &model;
 			}
-			else if (dynamic_cast<const HierarchyTemplate::HierarchyNode<BoneComponent>*>(node.GetChild(i)))
+			else if (dynamic_cast<const Hierarchy::Node<BoneComponent>*>(node.GetChild(i)))
 			{
-				BoneComponent& bone = comp.CreateComponent<BoneComponent>(node.GetChild(i)->GetCompBaseType().GetName(), Transform(), tree.GetBoneMapping().GetBoneID(node.GetChild(i)->GetCompBaseType().GetName()));
+				GEE_CORE_ASSERT(tree.GetBoneMapping());
+				BoneComponent& bone = comp.CreateComponent<BoneComponent>(node.GetChild(i)->GetCompBaseType().GetName(), Transform(), tree.GetBoneMapping()->GetBoneID(node.GetChild(i)->GetCompBaseType().GetName()));
 				skeletonInfo.AddBone(bone);
 				child = &bone;
 			}
@@ -847,13 +849,13 @@ namespace GEE
 					CerealTreeSerializationData::TreeScene = &scene;
 
 					{
-						std::vector<UniquePtr<HierarchyTemplate::HierarchyTreeT>> localHierarchyTrees;
+						std::vector<UniquePtr<Hierarchy::Tree>> localHierarchyTrees;
 						archive(cereal::make_nvp("HierarchyTrees", localHierarchyTrees));
 						CerealTreeSerializationData::TreeScene = nullptr;
 						
 						std::cout << "Loaded " << localHierarchyTrees.size() << " trees.\n";
 						for (auto& smartPtr : localHierarchyTrees)
-							scene.HierarchyTrees.push_back(UniquePtr<HierarchyTemplate::HierarchyTreeT>(smartPtr.release()));
+							scene.HierarchyTrees.push_back(UniquePtr<Hierarchy::Tree>(smartPtr.release()));
 					}
 
 					LightProbeLoader::LoadLightProbeTextureArrays(scene.GetRenderData());
@@ -997,7 +999,7 @@ namespace GEE
 	}
 
 
-	HierarchyTemplate::HierarchyTreeT* EngineDataLoader::LoadHierarchyTree(GameScene& scene, std::string path, HierarchyTemplate::HierarchyTreeT* treePtr, bool keepVertsData)
+	Hierarchy::Tree* EngineDataLoader::LoadHierarchyTree(GameScene& scene, std::string path, Hierarchy::Tree* treePtr, bool keepVertsData)
 	{
 		GameManager& gameHandle = *scene.GetGameHandle();
 		if (path.empty())
@@ -1010,7 +1012,7 @@ namespace GEE
 
 		RenderEngineManager& renderHandle = *gameHandle.GetRenderEngineHandle();
 
-		if (HierarchyTemplate::HierarchyTreeT* found = gameHandle.FindHierarchyTree(path, treePtr))
+		if (Hierarchy::Tree* found = gameHandle.FindHierarchyTree(path, treePtr))
 		{
 			if (PrimitiveDebugger::bDebugMeshTrees)
 				std::cout << "Found " << path << ".\n";
@@ -1018,6 +1020,12 @@ namespace GEE
 		}
 		if (!treePtr)
 			treePtr = &scene.CreateHierarchyTree(path);
+
+		if (Assimp::DefaultLogger::isNullLogger())
+		{
+			auto log = Assimp::DefaultLogger::create();
+			log->attachStream(assimpDebugStream);
+		}
 
 		Assimp::Importer importer;
 		const aiScene* assimpScene;
@@ -1038,7 +1046,18 @@ namespace GEE
 		std::string directory = extractDirectory(path);
 		std::vector<ModelComponent*> modelsPtr;
 
-		std::cout << "ROOT: " << &treePtr->GetRoot() << '\n';
+		std::cout << "Loaded tree (" << path << ") root: " << &treePtr->GetRoot() << '\n';
+
+		{
+			treePtr->ResetBoneMapping(false);	// first, clear the bone mapping
+
+			for (int i = 0; i < static_cast<int>(assimpScene->mNumMeshes); i++)
+				if (assimpScene->mMeshes[i]->HasBones())
+				{
+					treePtr->ResetBoneMapping(true);	// if there are bones, create a new bone mapping
+					break;
+				}
+		}
 
 		LoadHierarchyNodeFromAi(gameHandle, assimpScene, directory, &matLoadingData, *treePtr, (assimpScene->mRootNode->mNumMeshes > 0) ? (treePtr->GetRoot().CreateChild<ModelComponent>(treePtr->GetRoot().GetCompBaseType().GetName() + "RootMeshes")) : (treePtr->GetRoot()), assimpScene->mRootNode, treePtr->GetBoneMapping(), nullptr, Transform(), keepVertsData);
 
@@ -1060,23 +1079,9 @@ namespace GEE
 		return treePtr;
 	}
 
-	void EngineDataLoader::InstantiateTree(Component& comp, HierarchyTemplate::HierarchyTreeT& tree, const std::vector<HierarchyTemplate::HierarchyNodeBase*>& selectedComponents, Material* overrideMaterial)
+	void EngineDataLoader::InstantiateTree(Component& comp, Hierarchy::Tree& tree, const std::vector<Hierarchy::NodeBase*>& selectedComponents, Material* overrideMaterial)
 	{
-		SkeletonInfo& skelInfo = *comp.GetScene().GetRenderData()->AddSkeletonInfo();
-		LoadComponentsFromHierarchyTree(comp, tree, tree.GetRoot(), skelInfo, selectedComponents, overrideMaterial);
-		skelInfo.SetGlobalInverseTransformCompPtr(&comp);
-		skelInfo.SortBones();
-		if (tree.GetAnimationCount() > 0)
-		{
-			AnimationManagerComponent& animManager = comp.CreateComponent<AnimationManagerComponent>("An AnimationManagerComponent");
-			for (int i = 0; i < tree.GetAnimationCount(); i++)
-				animManager.AddAnimationInstance(AnimationInstance(tree.GetAnimation(i), comp));
-
-			//comp.QueueAnimationAll(&tree.GetAnimation(0));
-			if (DUPA::AnimTime == 9999.0f)
-				DUPA::AnimTime = 0.0f;
-		}
-		skelInfo.GetBatchPtr()->RecalculateBoneCount();
+		Hierarchy::Instantiation::TreeInstantiation(tree, true).ToComponents(tree.GetRoot(), comp, selectedComponents);
 	}
 
 	SharedPtr<Font> EngineDataLoader::LoadFont(GameManager& gameHandle, const std::string& regularPath, const std::string& boldPath, const std::string& italicPath, const std::string& boldItalicPath)

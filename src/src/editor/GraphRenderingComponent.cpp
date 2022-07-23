@@ -100,7 +100,7 @@ namespace GEE
 		UpdateMarkerUniformData(*shader);
 		
 		
-		Renderer(*GameHandle->GetRenderEngineHandle()).StaticMeshInstances((CanvasPtr) ? (MatrixInfoExt(info.GetContextID(), CanvasPtr->BindForRender(info))) : (info), { MeshInstance(GameHandle->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::QUAD), GraphMaterialInst) }, GetTransform().GetWorldTransform(), *shader);
+		Renderer(*GameHandle->GetRenderEngineHandle()).StaticMeshInstances((CanvasPtr) ? (MatrixInfoExt(info.GetContextID(), CanvasPtr->BindForRender(info))) : (info), { MeshInstance(GameHandle->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::Quad), GraphMaterialInst) }, GetTransform().GetWorldTransform(), *shader);
 
 		if (CanvasPtr)
 			CanvasPtr->UnbindForRender();

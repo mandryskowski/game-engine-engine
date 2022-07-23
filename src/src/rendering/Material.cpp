@@ -13,6 +13,8 @@
 
 #include <game/IDSystem.h>
 
+#include <editor/EditorActions.h>
+
 namespace GEE
 {
 	Material::Material(MaterialLoc loc, ShaderInfo shaderInfo):
@@ -338,7 +340,10 @@ namespace GEE
 			texButton.SetMatDisabled(dummyMaterial);
 			texButton.SetDisableInput(true);
 			texButton.CreateChild<UIButtonActor>("DeleteTexture", "Delete", [this, &list, &tex, &texButton, descBuilder]() mutable { texButton.MarkAsKilled(); RemoveTexture(tex); dynamic_cast<UICanvasActor*>(&descBuilder.GetCanvas())->RefreshFieldsList(); }).GetTransform()->Move(Vec2f(2.0f, 0.0f));
-			texButton.CreateComponent<TextComponent>("TexShaderNameButton", Transform(Vec2f(3.0f, 0.0f)), tex.GetShaderName(), "");
+
+			std::string textureName = tex.GetShaderName();
+			if (tex.IsSRGB()) textureName + " (sRGB texture)";
+			texButton.CreateComponent<TextComponent>("TexShaderNameButton", Transform(Vec2f(3.0f, 0.0f)), textureName, "");
 		};
 
 		UIButtonActor& addTexToMaterialButton = list.CreateChild<UIButtonActor>("AddTextureToMaterialButton", [this, addTextureButtonFunc, &list, descBuilder]() mutable {
@@ -351,7 +356,20 @@ namespace GEE
 			texWindowDescBuilder.AddField("Tex path").GetTemplates().PathInput([this, path](const std::string& str) {
 				*path = str;
 				}, [path]() { return *path; }, { "*.png", "*.jpg" });
-			texWindowDescBuilder.AddField("Shader name").CreateChild<UIInputBoxActor>("ShaderNameInputBox").SetOnInputFunc([shaderName](const std::string& input) { *shaderName = input; }, [shaderName]() { return *shaderName; });
+			//texWindowDescBuilder.AddField("Shader name").CreateChild<UIInputBoxActor>("ShaderNameInputBox").SetOnInputFunc([shaderName](const std::string& input) { *shaderName = input; }, [shaderName]() { return *shaderName; });
+			
+			auto &shaderNameButton = texWindowDescBuilder.AddField("Shader name").CreateChild<UIButtonActor>("ShaderNameButton", "albedo");
+			shaderNameButton.SetOnClickFunc([descBuilder, shaderName, &shaderNameButton]() mutable {
+				auto popupDesc = descBuilder.GetEditorHandle().CreatePopupMenu(descBuilder.GetEditorScene().GetUIData()->GetWindowData().GetMousePositionNDC(), *descBuilder.GetEditorScene().GetUIData()->GetWindow());
+				std::vector<std::string> shaderNames = { "albedo", "normal", "roughness" };
+
+				popupDesc.AddInputBox([shaderName, &shaderNameButton](std::string input) { *shaderName = input; shaderNameButton.GetRoot()->GetComponent<TextComponent>("ButtonText")->SetContent(input); }, "input here");
+				for (auto& name : shaderNames)
+					popupDesc.AddOption(name, [shaderName, name, &shaderNameButton]() { *shaderName = name + "1"; shaderNameButton.GetRoot()->GetComponent<TextComponent>("ButtonText")->SetContent(name); });
+
+				popupDesc.RefreshPopup();
+			});
+		//	texWindowDescBuilder.AddField("Shader name").GetTemplates().ObjectInput<std::string>(,shaderNames.begin(), shaderNames.end(), [shaderName](UIButtonActor& button, std::string& str) { button.CreateButtonText(str); button.SetOnClickFunc([shaderName, str]() { *shaderName = str + "1"; }); });
 			texWindowDescBuilder.AddField("sRGB").GetTemplates().TickBox([sRGB]() { return *sRGB = !(*sRGB); });
 			texWindowDescBuilder.AddField("Add texture").CreateChild<UIButtonActor>("OKButton", "OK", [this, path, shaderName, sRGB, &addTextureButtonFunc, &list, &addTexWindow, descBuilder]() mutable {
 				auto tex = MakeShared<NamedTexture>(Texture::Loader<>::FromFile2D(*path, (*sRGB) ? (Texture::Format::SRGBA()) : (Texture::Format::RGBA())), *shaderName);
@@ -426,7 +444,7 @@ namespace GEE
 
 	Interpolator<float>& AtlasMaterial::GetTextureIDInterpolatorTemplate(float constantTextureID)
 	{
-		return GetTextureIDInterpolatorTemplate(Interpolation(0.0f, 0.0f, InterpolationType::CONSTANT), constantTextureID, constantTextureID);
+		return GetTextureIDInterpolatorTemplate(Interpolation(0.0f, 0.0f, InterpolationType::Constant), constantTextureID, constantTextureID);
 	}
 
 	Interpolator<float>& AtlasMaterial::GetTextureIDInterpolatorTemplate(const Interpolation& interp, float min, float max)

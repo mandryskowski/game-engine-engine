@@ -54,11 +54,13 @@ namespace GEE
 			unsigned int AmbientOcclusionSamples;
 			bool bVSync;
 			bool bBloom;
-			bool DrawToWindowFBO;
+			bool bForceForwardRendering;
+			bool bDrawToWindowFBO;
 			AntiAliasingType AAType;
 			SettingLevel AALevel;
 			SettingLevel POMLevel;
 			SettingLevel ShadowLevel;
+			unsigned int Max2DShadows, Max3DShadows;
 			ToneMappingType TMType;
 
 			float MonitorGamma;

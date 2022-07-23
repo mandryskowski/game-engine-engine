@@ -60,7 +60,7 @@ namespace GEE
 
 	bool LightProbeComponent::IsGlobalProbe() const
 	{
-		return Shape == EngineBasicShape::QUAD;
+		return Shape == EngineBasicShape::Quad;
 	}
 
 	void LightProbeComponent::SetProbeIndex(unsigned int index)
@@ -68,10 +68,10 @@ namespace GEE
 		ProbeIndex = index;
 	}
 
-	MaterialInstance LightProbeComponent::LoadDebugMatInst(EditorButtonState state)
+	MaterialInstance LightProbeComponent::GetDebugMatInst(ButtonMaterialType type)
 	{
 		LoadDebugRenderMaterial("GEE_Mat_Default_Debug_LightProbeComponent", "Assets/Editor/lightprobecomponent_icon.png");
-		return Component::LoadDebugMatInst(state);
+		return Component::GetDebugMatInst(type);
 	}
 
 	void LightProbeComponent::GetEditorDescription(ComponentDescriptionBuilder descBuilder)
@@ -79,7 +79,7 @@ namespace GEE
 		Component::GetEditorDescription(descBuilder);
 
 		UICanvasFieldCategory& cat = descBuilder.GetCanvas().AddCategory("Light probe");
-		cat.AddField("Global cubemap filepath").GetTemplates().PathInput([this](const std::string& path) { LightProbeLoader::LoadLightProbeFromFile(*this, path); }, [this]() {return OptionalFilepath; }, { "*.hdr" });
+		cat.AddField("Global cubemap filepath").GetTemplates().PathInput([this](const std::string& path) { LightProbeLoader::LoadLightProbeFromFile(*this, path); }, [this]() { return OptionalFilepath; }, { "*.hdr" });
 		cat.AddField("Probe intensity").CreateChild<UIInputBoxActor>("ProbeIntensityInputBox", [this](float value) { ProbeIntensity = value; }, [this]() { return ProbeIntensity; });
 
 		descBuilder.AddField("Dupa").CreateChild<UIButtonActor>("dupa1234");
@@ -89,6 +89,7 @@ namespace GEE
 	LightProbeComponent::~LightProbeComponent()
 	{
 		Scene.GetRenderData()->EraseLightProbe(*this);
+		EnvironmentMap.Dispose();
 	}
 
 }

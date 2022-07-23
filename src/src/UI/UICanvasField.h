@@ -64,13 +64,13 @@ namespace GEE
 
 
 	private:
-		void HierarchyTreeInput(UIAutomaticListActor& list, GameScene&, std::function<void(HierarchyTemplate::HierarchyTreeT&)> setFunc);
+		void HierarchyTreeInput(UIAutomaticListActor& list, GameScene&, std::function<void(Hierarchy::Tree&)> setFunc);
 	public:
-		void HierarchyTreeInput(GameScene&, std::function<void(HierarchyTemplate::HierarchyTreeT&)> setFunc);
-		void HierarchyTreeInput(GameManager&, std::function<void(HierarchyTemplate::HierarchyTreeT&)> setFunc);
+		void HierarchyTreeInput(GameScene&, std::function<void(Hierarchy::Tree&)> setFunc);
+		void HierarchyTreeInput(GameManager&, std::function<void(Hierarchy::Tree&)> setFunc);
 
 		void PathInput(std::function<void(const std::string&)> setFunc, std::function<std::string()> getFunc, std::vector<const char*> extensions);	//encapsulated
-		void FolderInput(std::function<void(const std::string&)> setFunc, std::function<std::string()> getFunc);	//encapsulated
+		void FolderInput(std::function<void(const std::string&)> setFunc, std::function<std::string()> getFunc, const std::string& defaultPath = "C:/");	//encapsulated
 
 	private:
 		Actor& TemplateParent;
@@ -136,10 +136,10 @@ namespace GEE
 			desc.VecInputBoxes[axis]->SetOnClickFunc([*this, allBoxes = desc.VecInputBoxes]()
 			{
 			std::cout << "all boxes size: " << allBoxes.size() << '\n';
-			if (GameHandle.GetInputRetriever().IsKeyPressed(Key::LeftAlt))
+			if (GameHandle.GetDefInputRetriever().IsKeyPressed(Key::LeftAlt))
 				for (auto box : allBoxes)
 					box->SetActive(true);
-			});
+			}); 
 
 		return desc;
 	}
@@ -156,21 +156,24 @@ namespace GEE
 	{
 		GameScene* scenePtr = &Scene;
 		auto& compNameButton = TemplateParent.CreateChild<UIButtonActor>("CompNameBox", currentObjName, nullptr, Transform(Vec2f(2.0f, 0.0f), Vec2f(3.0f, 1.0f)));
-		compNameButton.GetRoot()->GetComponent<TextConstantSizeComponent>("ButtonText")->Unstretch();
 
 		compNameButton.SetOnClickFunc([scenePtr, getObjectsFunc, setFunc, &compNameButton]() {
 			UIWindowActor& window = scenePtr->CreateActorAtRoot<UIWindowActor>("CompInputWindow");
-			auto lol = compNameButton.GetCanvasPtr();
+			auto canvas = compNameButton.GetCanvasPtr();
 			Transform windowT = *compNameButton.GetTransform();
-			windowT.Move(Vec2f(0.0f, -3.0f));
+			windowT.Move(Vec2f(0.0f, -2.0f));
 			windowT.ApplyScale(Vec2f(1.0f, 1.0f));
 			windowT = compNameButton.GetTransform()->GetParentTransform()->GetWorldTransform() * windowT;
-			windowT.SetPosition(Vec3f(dynamic_cast<UICanvasActor*>(lol)->GetTransform()->GetWorldTransformMatrix() *
-				Vec4f(Vec3f(lol->GetProjection() * lol->GetViewMatrix() * Vec4f(windowT.GetPos(), 1.0f)), 1.0f)));
-			windowT.SetScale(Vec2f(dynamic_cast<UICanvasActor*>(lol)->GetTransform()->GetWorldTransformMatrix() *
-				Vec4f(Vec3f(lol->GetProjection() * lol->GetViewMatrix() * Vec4f(windowT.GetScale(), 0.0f)), 0.0f)));
+
+			Mat4f optionalCanvasMatrix(1.0f);
+			if (canvas)
+				optionalCanvasMatrix = dynamic_cast<UICanvasActor*>(canvas)->GetTransform()->GetWorldTransformMatrix() * canvas->GetProjection() * canvas->GetViewMatrix();
+			
+			windowT.SetPosition(Vec2f(optionalCanvasMatrix * Vec4f(windowT.GetPos(), 1.0f)));
+			windowT.SetScale(Vec2f(optionalCanvasMatrix * Vec4f(windowT.GetScale(), 0.0f)) * Vec2f(1.0f, 3.0f));
 			
 			window.SetTransform(windowT);
+			window.SetCanvasView(Transform(Vec2f(0.0f), Vec2f(1.0f, 3.0f)));
 			window.SetCloseIfClickedOutside(true);
 			window.KillScrollBars();
 			window.KillResizeBars();
@@ -178,17 +181,16 @@ namespace GEE
 			window.KillCloseButton();
 
 			UIAutomaticListActor& list = window.CreateChild<UIAutomaticListActor>("Available comp list");
-			list.GetTransform()->SetScale(Vec2f(0.5f));
+			//list.GetTransform()->SetScale(Vec2f(1.0f, 1.0f/ 3.0f));
 
 			std::vector<ObjectType*> availableObjects = getObjectsFunc();
 
-			auto& deleteMe123 = list.CreateChild<UIButtonActor>("Nullptr object button", "nullptr", [&window, setFunc, &compNameButton]() { setFunc(nullptr); window.MarkAsKilled(); if (auto buttonText = compNameButton.GetRoot()->GetComponent<TextConstantSizeComponent>("ButtonText")) buttonText->SetContent("nullptr"); });
+			
+			auto& deleteMe123 = list.CreateChild<UIButtonActor>("Nullptr object button", "nullptr", [&window, setFunc, &compNameButton]() { setFunc(nullptr); window.MarkAsKilled(); if (auto buttonText = compNameButton.GetRoot()->GetComponent<TextComponent>("ButtonText")) buttonText->SetContent("nullptr"); });
 			//deleteMe123.CreateComponent<ScrollingTextComponent>("ButtonText", Transform(Vec2f(0.0f), Vec2f(0.25f, 1.0f)), "Nullptr", "", Alignment2D::LeftCenter());
 			for (auto& it : availableObjects)
 			{
-				auto& a = list.CreateChild<UIButtonActor>(it->GetName() + ", Matching object button", it->GetName(), [&window, setFunc, it, &compNameButton]() { setFunc(it); window.MarkAsKilled(); if (auto buttonText = compNameButton.GetRoot()->GetComponent<TextConstantSizeComponent>("ButtonText")) { buttonText->SetContent(it->GetName()); buttonText->Unstretch(); } });
-				a.GetRoot()->GetComponent<TextConstantSizeComponent>("ButtonText")->Unstretch();
-				//a.CreateComponent<TextConstantSizeComponent>("ButtonText", Transform(Vec2f(0.0f), Vec2f(0.25f, 1.0f)), it->GetName(), "", Alignment2D::Center()).SetMaxSize(Vec2f(0.8f));
+				auto& a = list.CreateChild<UIButtonActor>(it->GetName() + ", Matching object button", it->GetName(), [&window, setFunc, it, &compNameButton]() { setFunc(it); window.MarkAsKilled(); if (auto buttonText = compNameButton.GetRoot()->GetComponent<TextComponent>("ButtonText")) { buttonText->SetContent(it->GetName()); buttonText->Unstretch(); } });
 			}
 			list.Refresh();
 
@@ -221,7 +223,7 @@ namespace GEE
 	template<typename T, typename InputIt>
 	inline void UIElementTemplates::ListSelection(InputIt first, InputIt last, std::function<void(UIButtonActor&, T&)> buttonFunc)
 	{
-		ListSelection<T, InputIt>(first, last, [](UIAutomaticListActor& listActor, T& object) { buttonFunc(listActor.CreateChild<UIButtonActor>("ListElementActor"), object); });
+		ListSelection<T, InputIt>(first, last, [buttonFunc](UIAutomaticListActor& listActor, T& object) { buttonFunc(listActor.CreateChild<UIButtonActor>("ListElementActor"), object); });
 	}
 	template<typename T, typename InputIt>
 	inline void UIElementTemplates::ListSelection(InputIt first, InputIt last, std::function<void(UIAutomaticListActor&, T&)> buttonFunc)
@@ -239,9 +241,9 @@ namespace GEE
 		confirmationWindow.KillResizeBars();
 
 		auto& textActor = confirmationWindow.CreateChild<UIActorDefault>("TextActor", Transform(Vec2f(0.0f, 1.0f), Vec2f(0.9f)));
-		textActor.CreateComponent<TextConstantSizeComponent>("TextComponent", Transform(), promptText, "", Alignment2D::Top());
+		textActor.CreateComponent<TextComponent>("TextComponent", Transform(), promptText, "", Alignment2D::Top()).SetMaxSize(Vec2f(1.0f));
 
 		auto& declineButton = confirmationWindow.CreateChild<UIButtonActor>("DeclineButton", "No", [=, &confirmationWindow]() { onDenial(); confirmationWindow.MarkAsKilled(); }, Transform(Vec2f(-0.5f, -0.8f), Vec2f(0.2f)));
 		auto& confirmButton = confirmationWindow.CreateChild<UIButtonActor>("ConfirmButton", "Yes", [=, &confirmationWindow]() {  onConfirmation(); confirmationWindow.MarkAsKilled(); }, Transform(Vec2f(0.5f, -0.8f), Vec2f(0.2f)));
 	}
-}
+} 

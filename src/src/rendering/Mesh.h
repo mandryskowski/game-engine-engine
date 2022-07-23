@@ -23,9 +23,9 @@ namespace GEE
 		VertexBoneData BoneData;
 	};
 
-	namespace HierarchyTemplate
+	namespace Hierarchy
 	{
-		class HierarchyTreeT;
+		class Tree;
 	}
 
 	class Mesh
@@ -68,7 +68,7 @@ namespace GEE
 			
 			archive(cereal::make_nvp("HierarchyTreePath", Localization.HierarchyTreePath), cereal::make_nvp("NodeName", Localization.NodeName), cereal::make_nvp("SpecificName", Localization.SpecificName), cereal::make_nvp("CastsShadow", CastsShadow));
 
-			HierarchyTemplate::HierarchyTreeT* tree = EngineDataLoader::LoadHierarchyTree(*GameManager::DefaultScene, Localization.HierarchyTreePath);
+			Hierarchy::Tree* tree = EngineDataLoader::LoadHierarchyTree(*GameManager::DefaultScene, Localization.HierarchyTreePath);
 
 			if (auto found = tree->FindMesh(Localization))
 				*this = *found;
