@@ -1,7 +1,7 @@
 #define MAX_LIGHTS 16
 #define M_PI 3.14159265359
 #define MAX_PREFILTER_MIPMAP 4.0
-#define SOFT_SHADOWS 1
+//#define SOFT_SHADOWS 1
 
 #if !defined(POINT_LIGHT) && !defined(DIRECTIONAL_LIGHT) && !defined(SPOT_LIGHT) && !defined(IBL_PASS)
 #error Cannot compile Cook-Torrance shader without defining POINT_LIGHT, DIRECTIONAL_LIGHT, SPOT_LIGHT or IBL_PASS.

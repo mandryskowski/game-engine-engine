@@ -871,6 +871,8 @@ namespace GEE
 
 			UpdateControllerCameraInfo();
 
+			UpdateControllerCameraInfo();
+
 			Game::Update(deltaTime);
 		}
 
