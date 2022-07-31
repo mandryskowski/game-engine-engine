@@ -222,9 +222,9 @@ namespace GEE
 		return Materials;
 	}
 
-	RenderToolboxCollection& RenderEngine::AddRenderTbCollection(const RenderToolboxCollection& tbCollection, bool setupToolboxesAccordingToSettings)
+	RenderToolboxCollection& GEE::RenderEngine::AddRenderTbCollection(UniquePtr<RenderToolboxCollection> tbCollection, bool setupToolboxesAccordingToSettings)
 	{
-		RenderTbCollections.push_back(MakeUnique<RenderToolboxCollection>(tbCollection));
+		RenderTbCollections.push_back(std::move(tbCollection));
 		if (setupToolboxesAccordingToSettings)
 			RenderTbCollections.back()->AddTbsRequiredBySettings();
 

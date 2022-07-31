@@ -505,6 +505,11 @@ namespace GEE
 		SelectComponent(EditorHandle.GetActions().GetSelectedComponent());
 	}
 
+	void EditorDescriptionBuilder::RefreshActor()
+	{
+		SelectActor(EditorHandle.GetActions().GetSelectedActor());
+	}
+
 	void EditorDescriptionBuilder::RefreshScene()
 	{
 		EditorHandle.GetActions().SelectScene(EditorHandle.GetActions().GetSelectedScene(), EditorScene);

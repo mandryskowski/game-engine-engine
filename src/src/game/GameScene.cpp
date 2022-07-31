@@ -222,6 +222,11 @@ namespace GEE
 		return RootActor->FindActor(name);
 	}
 
+	Actor* GameScene::FindActor(GEEID geeid)
+	{
+		return RootActor->FindActor(geeid);
+	}
+
 	template<typename Archive>
 	inline void GameScene::Save(Archive& archive) const
 	{

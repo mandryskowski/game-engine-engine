@@ -145,6 +145,7 @@ namespace GEE
 		void SelectComponent(Component*);
 		void SelectActor(Actor*);
 		void RefreshComponent();
+		void RefreshActor();
 		void RefreshScene();
 
 		void DeleteDescription();

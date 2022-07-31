@@ -12,7 +12,7 @@ namespace GEE
 		FinalMatrix(Mat4f(1.0f)),
 		InfoPtr(nullptr)
 	{
-
+		std::cout << "BON| Setting boneid of " << GetName() << " to " << BoneID << '\n';
 	}
 
 	BoneComponent::BoneComponent(BoneComponent&& bone) :
@@ -22,13 +22,19 @@ namespace GEE
 		FinalMatrix(bone.FinalMatrix),
 		InfoPtr(bone.InfoPtr)
 	{
+		std::cout << "BON| Setting boneid of " << GetName() << " to " << BoneID << '\n';
 	}
 
 	BoneComponent& BoneComponent::operator=(const BoneComponent& compT)
 	{
 		Component::operator=(compT);
 
+		BoneID = compT.BoneID;
 		BoneOffset = compT.BoneOffset;
+		FinalMatrix = compT.FinalMatrix;
+		InfoPtr = compT.InfoPtr;
+
+		std::cout << "BON| Setting boneid of " << GetName() << " to " << BoneID << '\n';
 
 		return *this;
 	}

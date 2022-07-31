@@ -55,6 +55,7 @@ namespace GEE
 			bool bVSync;
 			bool bBloom;
 			bool bForceForwardRendering;
+			bool bForceWireframeRendering;
 			bool bDrawToWindowFBO;
 			AntiAliasingType AAType;
 			SettingLevel AALevel;

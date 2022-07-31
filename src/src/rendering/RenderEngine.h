@@ -37,7 +37,7 @@ namespace GEE
 		 * @param setupToolboxesAccordingToSettings: pass false as the second argument to disable loading any toolboxes
 		 * @return a reference to the added RenderToolboxCollection
 		*/
-		virtual RenderToolboxCollection& AddRenderTbCollection(const RenderToolboxCollection& tbCollection, bool setupToolboxesAccordingToSettings = true) override;
+		virtual RenderToolboxCollection& AddRenderTbCollection(UniquePtr<RenderToolboxCollection> tbCollection, bool setupToolboxesAccordingToSettings = true) override;
 		virtual SharedPtr<Material> AddMaterial(SharedPtr<Material> material) override;
 		virtual SharedPtr<Shader> AddShader(SharedPtr<Shader> shader) override;
 

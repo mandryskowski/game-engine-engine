@@ -1,5 +1,6 @@
 #include <scene/Component.h>
 #include <game/GameScene.h>
+#include <game/IDSystem.h>
 #include <assetload/FileLoader.h>
 #include <scene/ModelComponent.h>
 #include <physics/CollisionObject.h>
@@ -26,6 +27,7 @@ namespace GEE
 {
 	Component::Component(Actor& actor, Component* parentComp, const std::string& name, const Transform& t) :
 		Name(name),
+		ComponentGEEID(IDSystem<Component>::GenerateID()),
 		ComponentTransform(t),
 		Scene(actor.GetScene()),
 		ActorRef(actor),
@@ -41,6 +43,7 @@ namespace GEE
 
 	Component::Component(Component&& comp) :
 		Name(comp.Name),
+		ComponentGEEID(comp.ComponentGEEID),
 		ComponentTransform(comp.ComponentTransform),
 		Children(std::move(comp.Children)),
 		CollisionObj(std::move(comp.CollisionObj)),
@@ -58,6 +61,7 @@ namespace GEE
 	Component& Component::operator=(Component&& comp)
 	{
 		Name = comp.Name;
+		ComponentGEEID = comp.ComponentGEEID;
 		ComponentTransform = comp.ComponentTransform;
 		Children = std::move(comp.Children);
 		CollisionObj = std::move(comp.CollisionObj);
@@ -69,6 +73,7 @@ namespace GEE
 	Component& Component::operator=(const Component& compT)
 	{
 		Name = compT.Name;
+		ComponentGEEID = IDSystem<Component>::GenerateID();
 		ComponentTransform *= compT.ComponentTransform;
 		SetCollisionObject((compT.CollisionObj) ? (MakeUnique<Physics::CollisionObject>(*compT.CollisionObj)) : (nullptr));
 		DebugRenderMat = compT.DebugRenderMat;
@@ -88,6 +93,16 @@ namespace GEE
 		OnStart();
 		for (int i = 0; i < static_cast<int>(Children.size()); i++)
 			Children[i]->OnStartAll();
+	}
+
+	void Component::DebugHierarchy(int nrTabs)
+	{
+		std::string tabs;
+		for (int i = 0; i < nrTabs; i++)	tabs += "	";
+		std::cout << tabs + "-" + Name + "\n";
+
+		for (int i = 0; i < static_cast<int>(Children.size()); i++)
+			Children[i]->DebugHierarchy(nrTabs + 1);
 	}
 
 	/*void Component::Setup(std::stringstream& filestr, Actor* myActor)
@@ -146,10 +161,6 @@ namespace GEE
 		return ActorRef;
 	}
 
-	const std::string& Component::GetName() const
-	{
-		return Name;
-	}
 	Transform& Component::GetTransform()
 	{
 		return ComponentTransform;
@@ -622,13 +633,13 @@ namespace GEE
 	template<typename Archive>
 	void Component::Save(Archive& archive) const
 	{
-		archive(CEREAL_NVP(Name), CEREAL_NVP(ComponentTransform), CEREAL_NVP(CollisionObj));
+		archive(CEREAL_NVP(Name), CEREAL_NVP(ComponentGEEID), CEREAL_NVP(ComponentTransform), CEREAL_NVP(CollisionObj));
 		archive(CEREAL_NVP(Children));
 	}
 	template<typename Archive>
 	void Component::Load(Archive& archive)
 	{
-		archive(CEREAL_NVP(Name), CEREAL_NVP(ComponentTransform), CEREAL_NVP(CollisionObj));
+		archive(CEREAL_NVP(Name), CEREAL_NVP(ComponentGEEID), CEREAL_NVP(ComponentTransform), CEREAL_NVP(CollisionObj));
 		if (CollisionObj)
 			Scene.GetPhysicsData()->AddCollisionObject(*CollisionObj, ComponentTransform);
 

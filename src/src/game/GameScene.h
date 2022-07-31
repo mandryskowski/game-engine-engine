@@ -93,6 +93,7 @@ namespace GEE
 		void BindActiveCamera(CameraComponent*);
 
 		Actor* FindActor(std::string name);
+		Actor* FindActor(GEEID geeid);
 
 		template <typename Archive> void Save(Archive& archive) const;
 		template <typename Archive> void Load(Archive& archive);
@@ -142,13 +143,6 @@ namespace GEE
 		const GameScene& GetScene() const;
 
 		GameScene& Scene;
-	};
-
-	class GameSceneRenderDataRef
-	{
-	public:
-		GameSceneRenderDataRef(GameScene&);
-		GameSceneRenderDataRef(GameSceneRenderData&);
 	};
 
 	/**
@@ -284,6 +278,8 @@ namespace GEE
 		RenderEngineManager* RenderHandle;
 
 		std::vector<Renderable*> Renderables;
+
+		std::vector<WeakPtr<Material>> Materials;
 		/**
 		 * @brief If bIsAnUIScene is true, Renderables are sorted by UI depth upon insertion.
 		 * This allows to render UIElements with different depths correctly

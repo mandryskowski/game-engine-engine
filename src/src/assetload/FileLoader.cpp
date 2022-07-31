@@ -749,10 +749,11 @@ namespace GEE
 
 		if (bone)
 		{
-			std::cout << "Found bone " << bone->mName.C_Str() << '\n';
+			auto boneID = boneMapping->GetBoneID(bone->mName.C_Str());
+			std::cout << "Found bone " << bone->mName.C_Str() << ". ID: " << boneID << '\n';
 			Hierarchy::Node<BoneComponent>* boneNode = dynamic_cast<Hierarchy::Node<BoneComponent>*>(&hierarchyNode);
 			boneNode->GetCompT().SetBoneOffset(toGlm(bone->mOffsetMatrix));
-			boneNode->GetCompT().SetID(boneMapping->GetBoneID(bone->mName.C_Str()));
+			boneNode->GetCompT().SetID(boneID);
 		}
 
 		aiMatrix4x4 nodeMatrix = node->mTransformation;
@@ -841,9 +842,9 @@ namespace GEE
 			GameManager::DefaultScene = &scene;
 			if (filestr.good())
 			{
+				cereal::JSONInputArchive archive(filestr);
 				try
 				{
-					cereal::JSONInputArchive archive(filestr);
 					GEE::CerealActorSerializationData::ScenePtr = &scene;
 					scene.GetRenderData()->LoadSkeletonBatches(archive);
 					CerealTreeSerializationData::TreeScene = &scene;
@@ -852,54 +853,63 @@ namespace GEE
 						std::vector<UniquePtr<Hierarchy::Tree>> localHierarchyTrees;
 						archive(cereal::make_nvp("HierarchyTrees", localHierarchyTrees));
 						CerealTreeSerializationData::TreeScene = nullptr;
-						
+
 						std::cout << "Loaded " << localHierarchyTrees.size() << " trees.\n";
 						for (auto& smartPtr : localHierarchyTrees)
 							scene.HierarchyTrees.push_back(UniquePtr<Hierarchy::Tree>(smartPtr.release()));
 					}
 
 					LightProbeLoader::LoadLightProbeTextureArrays(scene.GetRenderData());
-					scene.GetRootActor()->Load(archive);
-
-					try
-					{
-						gameHandle->GetGameSettings()->Serialize(archive);
-					}
-					catch (cereal::Exception& exception)
-					{
-						std::cout << "ERROR: While loading game settings: " << exception.what() << '\n';
-					}
-
-					try
-					{
-						if (Editor::EditorManager* editorHandle = dynamic_cast<Editor::EditorManager*>(gameHandle))
-						{
-							bool bDebugRenderComponents;
-							archive(CEREAL_NVP(bDebugRenderComponents));
-							editorHandle->SetDebugRenderComponents(bDebugRenderComponents);
-						}
-					}
-					catch (cereal::Exception& exception)
-					{
-						std::cout << "ERROR: While loading editor settings: " << exception.what() << '\n';
-					}
-
-
-					try
-					{
-						archive.serializeDeferments();
-					}
-					catch (Exception& exception)
-					{
-						std::cout << "ERROR: While loading deferments: " << exception.what() << '\n';
-					}
-
-					scene.Load(archive);
 				}
-				catch (cereal::Exception& ex)
+				catch (cereal::Exception& exception)
 				{
-					std::cout << "ERROR: While loading scene: " << ex.what() << '\n';
+					std::cout << "ERROR: While loading skel batches and hierarchy trees: " << exception.what() << '\n';
 				}
+
+				try
+				{
+					scene.GetRootActor()->Load(archive);
+				}
+				catch (cereal::Exception& exception)
+				{
+					std::cout << "ERROR: While loading scene actors and components: " << exception.what() << '\n';
+				}
+
+				try
+				{
+					gameHandle->GetGameSettings()->Serialize(archive);
+				}
+				catch (cereal::Exception& exception)
+				{
+					std::cout << "ERROR: While loading game settings: " << exception.what() << '\n';
+				}
+
+				try
+				{
+					if (Editor::EditorManager* editorHandle = dynamic_cast<Editor::EditorManager*>(gameHandle))
+					{
+						bool bDebugRenderComponents;
+						archive(CEREAL_NVP(bDebugRenderComponents));
+						editorHandle->SetDebugRenderComponents(bDebugRenderComponents);
+					}
+				}
+				catch (cereal::Exception& exception)
+				{
+					std::cout << "ERROR: While loading editor settings: " << exception.what() << '\n';
+				}
+
+
+				try
+				{
+					archive.serializeDeferments();
+				}
+				catch (Exception& exception)
+				{
+					std::cout << "ERROR: While loading deferments: " << exception.what() << '\n';
+				}
+
+				scene.Load(archive);
+
 				scene.GetRootActor()->DebugHierarchy();
 			}
 			GameManager::DefaultScene = nullptr;
@@ -1031,7 +1041,7 @@ namespace GEE
 		const aiScene* assimpScene;
 		MaterialLoadingData matLoadingData;
 
-		assimpScene = importer.ReadFile(path, aiProcess_GenUVCoords | aiProcess_TransformUVCoords | aiProcess_OptimizeMeshes | aiProcess_SplitLargeMeshes | aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_GenSmoothNormals | aiProcess_CalcTangentSpace | aiProcess_LimitBoneWeights | aiProcess_JoinIdenticalVertices | aiProcess_ValidateDataStructure);
+		assimpScene = importer.ReadFile(path, aiProcess_GenUVCoords | aiProcess_TransformUVCoords | aiProcess_OptimizeMeshes | aiProcess_SplitLargeMeshes | aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_GenSmoothNormals | aiProcess_CalcTangentSpace | aiProcess_JoinIdenticalVertices | aiProcess_ValidateDataStructure);
 		if (!assimpScene || assimpScene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !assimpScene->mRootNode)
 		{
 			std::cerr << "Can't load mesh scene " << path << ".\n";
@@ -1042,7 +1052,7 @@ namespace GEE
 		if (assimpScene->mFlags & AI_SCENE_FLAGS_VALIDATION_WARNING)
 			std::cout << "WARNING! A validation problem occured while loading MeshTree " + path + "\n";
 
-
+		 
 		std::string directory = extractDirectory(path);
 		std::vector<ModelComponent*> modelsPtr;
 

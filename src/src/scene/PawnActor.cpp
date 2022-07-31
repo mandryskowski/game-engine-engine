@@ -18,8 +18,8 @@ namespace GEE
 		PawnSound(nullptr),
 		LastSoundTime(0.0f),
 		SoundCooldown(10.0f),
-		UpdateAnimsListInEditor(nullptr),
-		AnimIndex(0),
+		WalkingAnimIndex(0),
+		IdleAnimIndex(0),
 		SpeedPerSec(1.0f),
 		CurrentTargetPos(Vec3f(0.0f)),
 		PathIndex(0),
@@ -50,6 +50,7 @@ namespace GEE
 		if (IsBeingKilled() || !AnimManager || (State == PawnState::Dying || State == PawnState::Respawning))
 			return;
 
+		// Take care of dangling pointers
 		if (AnimManager->IsBeingKilled())
 		{
 			AnimManager = nullptr;
@@ -58,10 +59,45 @@ namespace GEE
 		if (Gun && Gun->IsBeingKilled())
 			Gun = nullptr;
 
+		if (PawnSound && State == PawnState::Walking)
+			PawnSound->Play();
 
-		/*		Vec3f velocity = RootBone->GetTransform().GetWorldTransform().RotationRef * glm::abs(RootBone->GetTransform().PositionRef - PreAnimBonePos);
-			velocity.y = 0.0f;
-			//velocity.x = 0.0f;*/
+		if (!AnimManager->GetCurrentAnim())
+		{
+			if (State == PawnState::Walking)
+				AnimManager->SelectAnimation(AnimManager->GetAnimInstance(WalkingAnimIndex));
+			else if (State == PawnState::Idle)
+				AnimManager->SelectAnimation(AnimManager->GetAnimInstance(IdleAnimIndex));
+		}
+		else
+		{
+			if ((State == PawnState::Walking && AnimManager->GetCurrentAnim() != AnimManager->GetAnimInstance(WalkingAnimIndex)) ||
+				(State == PawnState::Idle && AnimManager->GetCurrentAnim() != AnimManager->GetAnimInstance(IdleAnimIndex)))
+				AnimManager->GetCurrentAnim()->Stop();
+				
+		}
+
+		Vec3f rotDir(0.0f);
+		if (PlayerTarget)
+		{
+			Vec3f playerDir = glm::normalize(PlayerTarget->GetTransform()->GetWorldTransform().GetPos() - GetTransform()->GetWorldTransform().GetPos());
+			float distance = glm::distance(PlayerTarget->GetTransform()->GetWorldTransform().GetPos(), GetTransform()->GetWorldTransform().GetPos());
+
+			//std::cout << "REH| Dot value: " << glm::dot(playerDir, GetTransform()->GetRot() * Vec3f(0.0f, 0.0f, 1.0f)) << '\n';
+			//std::cout << "REH| Dist: " << distance << '\n';
+
+			if (Gun && glm::dot(playerDir, GetTransform()->GetRot() * Vec3f(0.0f, 0.0f, 1.0f)) > glm::cos(glm::radians(60.0f)) && distance < 3.0f)
+			{
+				//std::cout << "REH| Shot!\n";
+				Gun->FireWeapon();
+				//Gun->GetTransform()->SetRotationWorld(quatFromDirectionVec(-playerDir));
+				rotDir = -glm::normalize(Math::CutYAxis(playerDir));
+
+			}
+		}
+
+		if (rotDir != Vec3f(0.0f))
+			GetTransform()->SetRotation(quatFromDirectionVec(rotDir));
 
 		if (CurrentTargetPos != Vec3f(0.0f))
 		{
@@ -75,48 +111,26 @@ namespace GEE
 			}
 
 			if (!AnimManager->GetCurrentAnim())
-				AnimManager->SelectAnimation(AnimManager->GetAnimInstance(AnimIndex));
+				AnimManager->SelectAnimation(AnimManager->GetAnimInstance(WalkingAnimIndex));
 
 			Vec3f posDir = glm::normalize(Math::CutYAxis(CurrentTargetPos - GetTransform()->GetWorldTransform().GetPos()));
 
-			if (PlayerTarget)
-			{
-				Vec3f playerDir = glm::normalize(PlayerTarget->GetTransform()->GetWorldTransform().GetPos() - GetTransform()->GetWorldTransform().GetPos());
-				float distance = glm::distance(PlayerTarget->GetTransform()->GetWorldTransform().GetPos(), GetTransform()->GetWorldTransform().GetPos());
-	
-				if (Gun && glm::dot(playerDir, GetTransform()->GetRot() * Vec3f(0.0f, 0.0f, -1.0f)) > glm::cos(glm::radians(30.0f)) && distance < 3.0f)
-				{
-					Gun->FireWeapon();
-					//Gun->GetTransform()->SetRotationWorld(quatFromDirectionVec(-playerDir));
-					posDir = glm::normalize(Math::CutYAxis(playerDir));
 
-				}
-				if (PawnSound && !PawnSound->IsPlaying() && distance < 3.0f && (GameHandle->GetProgramRuntime() - LastSoundTime) > SoundCooldown)
-				{
-					PawnSound->Play();
-					LastSoundTime = GameHandle->GetProgramRuntime() + PawnSound->GetCurrentSoundBuffer().Duration;
-				}
-
-				if (distance < 1.0f)
-					InflictDamage(30.0f * deltaTime);
-
-			}
-
-			GetTransform()->SetRotation(quatFromDirectionVec(posDir));
+			//GetTransform()->SetRotation(quatFromDirectionVec(posDir));
 
 			Vec3f velocity = GetTransform()->GetWorldTransform().GetRot() * Vec3f(0.0f, 0.0f, -1.0f * SpeedPerSec * deltaTime);
 
 			GetTransform()->Move(velocity);
 		}
 
-		MoveAlongPath();
+		//MoveAlongPath();
 	}
 
 	void PawnActor::GetEditorDescription(EditorDescriptionBuilder descBuilder)
 	{
 		Actor::GetEditorDescription(descBuilder);
 
-		descBuilder.AddField("Anim Manager").GetTemplates().ObjectInput<Component, AnimationManagerComponent>(*GetRoot(), [this](AnimationManagerComponent* animManager) {AnimManager = animManager; UpdateAnimsListInEditor(animManager); });
+		descBuilder.AddField("Anim Manager").GetTemplates().ObjectInput<Component, AnimationManagerComponent>(*GetRoot(), [this, descBuilder](AnimationManagerComponent* animManager) mutable { AnimManager = animManager; descBuilder.RefreshActor(); });
 		descBuilder.AddField("Target position").GetTemplates().VecInput(CurrentTargetPos);
 
 		dynamic_cast<UIInputBoxActor*>(descBuilder.GetDescriptionParent().FindActor("VecBox0"))->SetRetrieveContentEachFrame(true);
@@ -133,21 +147,24 @@ namespace GEE
 
 		descBuilder.AddField("Speed").GetTemplates().SliderUnitInterval([](float) {});
 
-		UICanvasField& animsField = descBuilder.AddField("Anim List");
-		UIAutomaticListActor& animsList = animsField.CreateChild<UIAutomaticListActor>("Animations list", Vec3f(3.0f, 0.0f, 0.0f));
+		UICanvasField& walkingAnimField = descBuilder.AddField("Walking Anim List");
+		UICanvasField& idleAnimsField = descBuilder.AddField("Idle Anim List");
 
-		UpdateAnimsListInEditor = [this, &animsList, descBuilder](AnimationManagerComponent* animManager) mutable {
-			for (auto& it : animsList.GetChildren())
+		auto updateAnimsListFunc = [this, descBuilder](UIAutomaticListActor& animList, AnimationManagerComponent* animManager, int& indexRef) mutable {
+			for (auto& it : animList.GetChildren())
 				it->MarkAsKilled();
 
 			if (animManager)
 				for (int i = 0; i < animManager->GetAnimInstancesCount(); i++)
-					animsList.CreateChild<UIButtonActor>("Anim button", animManager->GetAnimInstance(i)->GetAnimation().Localization.Name, [this, i]() {AnimIndex = i; });
-			animsList.Refresh();
+					animList.CreateChild<UIButtonActor>("Anim button", animManager->GetAnimInstance(i)->GetAnimation().Localization.Name, [this, i, &indexRef]() { indexRef = i; });
+			animList.Refresh();
 		};
 
 		if (AnimManager)
-			UpdateAnimsListInEditor(AnimManager);
+		{
+			updateAnimsListFunc(walkingAnimField.CreateChild<UIAutomaticListActor>("Weird animations list", Vec3f(3.0f, 0.0f, 0.0f)), AnimManager, WalkingAnimIndex);
+			updateAnimsListFunc(idleAnimsField.CreateChild<UIAutomaticListActor>("Idle animations list", Vec3f(3.0f, 0.0f, 0.0f)), AnimManager, IdleAnimIndex);
+		}
 	}
 
 	void PawnActor::InflictDamage(float damage, const Vec3f& optionalDirection)
@@ -159,10 +176,14 @@ namespace GEE
 			DeathTime = GameHandle->GetProgramRuntime();
 			State = PawnState::Dying;
 
-			if (AnimManager->GetCurrentAnim())
-				AnimManager->GetCurrentAnim()->Stop();
+			if (AnimManager)
+			{
+				if (AnimManager->GetCurrentAnim())
+					AnimManager->GetCurrentAnim()->Stop();
 
-			AnimManager->SelectAnimation(AnimManager->GetAnimInstance(0));
+				AnimManager->SelectAnimation(AnimManager->GetAnimInstance(0));
+			}
+
 			if (PawnSound)
 			{
 				PawnSound->Play();

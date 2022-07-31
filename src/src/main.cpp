@@ -1,7 +1,10 @@
 #define STB_IMAGE_IMPLEMENTATION
 #define CEREAL_LOAD_FUNCTION_NAME Load
+#define CEREAL_LOAD_MINIMAL_FUNCTION_NAME LoadMinimal
 #define CEREAL_SAVE_FUNCTION_NAME Save
+#define CEREAL_SAVE_MINIMAL_FUNCTION_NAME SaveMinimal
 #define CEREAL_SERIALIZE_FUNCTION_NAME Serialize
+
 #include <editor/GameEngineEngineEditor.h>
 #include <scene/TextComponent.h>
 #include <scene/CameraComponent.h>
@@ -12,6 +15,7 @@
 #include <scene/Controller.h>
 #include <input/InputDevicesStateRetriever.h>
 #include <editor/EditorActions.h>
+
 
 using namespace GEE;
 
@@ -26,6 +30,7 @@ extern "C"
 }
 
 Editor::EditorManager* Editor::EditorEventProcessor::EditorHandle = nullptr;
+
 
 int main(int argc, char** argv)
 {
@@ -60,27 +65,17 @@ int main(int argc, char** argv)
 		std::cerr << "nie dziala glfw :('\n";
 		return -1;
 	}
-
+	
 	glfwMakeContextCurrent(programWindow);
 	
-	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))	//zaladuj glad (openGL); jesli sie nie udalo, to konczymy program
+	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
 	{
 		std::cerr << "zjebalo sie.";
 		return -1;
 	}
 
-	int max_v_uniforms;
-	glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, &max_v_uniforms);
-	std::cout << "max: " << max_v_uniforms << "\n";
-	glGetIntegerv(GL_MAX_VERTEX_UNIFORM_COMPONENTS, &max_v_uniforms);
-	std::cout << "max2: " << max_v_uniforms << "\n";
-
 	GameSettings settings;
 	
-	//Vec2f res = static_cast<Vec2f>(settings.WindowSize);
-	//settings.ViewportData = glm::uvec4(res.x * 0.3f, res.y * 0.4f, res.x * 0.4, res.y * 0.6f);
-	//settings.Video.Resolution = Vec2f(res.x * 0.4, res.y * 0.6f);
-
 	Editor::GameEngineEngineEditor editor(programWindow, settings);
 	editor.SetupMainMenu();
 

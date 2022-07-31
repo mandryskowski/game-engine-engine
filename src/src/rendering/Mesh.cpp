@@ -21,6 +21,9 @@ namespace GEE
 
 	unsigned int Mesh::GetVAO(unsigned int VAOcontext) const
 	{
+		if (VAOs.empty())
+			return 0;
+
 		if (auto found = VAOs.find(VAOcontext); found != VAOs.end())
 			return found->second;
 		return 0;

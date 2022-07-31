@@ -19,7 +19,7 @@ namespace GEE
 
 	bool Interpolation::IsChanging() const
 	{
-		if (CompType == 0.0f || CompType == 1.0f)
+		if (TValue == 0.0f || TValue == 1.0f)
 			return false;
 
 		return true;
@@ -27,7 +27,7 @@ namespace GEE
 
 	float Interpolation::GetT() const
 	{
-		return CompType;
+		return TValue;
 	}
 
 	Time Interpolation::GetDuration() const
@@ -37,9 +37,9 @@ namespace GEE
 
 	void Interpolation::SetT(float t)
 	{
-		CompType = t;
+		TValue = t;
 		if (OnUpdateFunc)
-			OnUpdateFunc(CompType);
+			OnUpdateFunc(TValue);
 	}
 
 	void Interpolation::Reset(Time begin, Time end)
@@ -50,7 +50,7 @@ namespace GEE
 			End = end;
 
 		CurrentTime = -Begin;
-		CompType = 0.0f;
+		TValue = 0.0f;
 	}
 
 	void Interpolation::Inverse()
@@ -73,31 +73,31 @@ namespace GEE
 		////////////////////////////////////////////////////////////////////
 
 		if (Type == Constant && CurrentTime >= End)
-			CompType = 1.0f;
+			TValue = 1.0f;
 		else
 		{
 			float exponent = static_cast<float>(Type);	//Linear = 1, Quadratic = 2, Cubic = 3, etc.
-			CompType = (FadeAway) ? (1.0f - pow(1.0f - CurrentTime / End, exponent)) : (pow(CurrentTime / End, exponent));
+			TValue = (FadeAway) ? (1.0f - pow(1.0f - CurrentTime / End, exponent)) : (pow(CurrentTime / End, exponent));
 		}
 
 		////////////////////////////////////////////////////////////////////
 
-		if (BeforeBehaviour == STOP && CompType < 0.0f)
-			CompType = 0.0f;
+		if (BeforeBehaviour == STOP && TValue < 0.0f)
+			TValue = 0.0f;
 
 		if (OnUpdateFunc)
-			return OnUpdateFunc(CompType);
+			return OnUpdateFunc(TValue);
 		return !IsChanging();
 	}
 
 	template<class ValType> ValType Interpolation::InterpolateValues(ValType y1, ValType y2)
 	{
-		return glm::mix(y1, y2, CompType);
+		return glm::mix(y1, y2, TValue);
 	}
 
 	template<> Quatf Interpolation::InterpolateValues<Quatf>(Quatf y1, Quatf y2)
 	{
-		return glm::slerp(y1, y2, CompType);
+		return glm::slerp(y1, y2, TValue);
 	}
 
 	/*

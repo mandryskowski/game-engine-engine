@@ -29,7 +29,7 @@ namespace GEE
 		Time CurrentTime;
 		Time Begin;
 		Time End;
-		float CompType;
+		float TValue;
 
 		InterpolationType Type;
 		bool FadeAway;	//used to inverse the interpolation function
@@ -52,9 +52,9 @@ namespace GEE
 		void SetT(float t);
 
 		void Reset(Time begin = -1.0f, Time end = -1.0f);
-		void Inverse();	//this method essentially changes the direction of the interpolation. When you inverse an Interpolation, the interpolation function and time become inversed, so CompType increases at the same pace
+		void Inverse();	//this method essentially changes the direction of the interpolation. When you inverse an Interpolation, the interpolation function and time become inversed, so TValue increases at the same pace
 		/**
-		 * @brief Updates the CompType value and calls OnUpdateFunc, if it exists.
+		 * @brief Updates the TValue value and calls OnUpdateFunc, if it exists.
 		 * @param deltaTime: The difference in time between the last update call and this one. This engine uses a constant time-step, so unless you change anything it should be safe to assume that deltaTime will always be constant.
 		 * @return: a boolean indicating whether this Interpolation has finished. If OnUpdateFunc exists, it returns the value of it. If it doesn't, it returns true if the interpolation is not changing.
 		*/

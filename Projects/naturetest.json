@@ -1,0 +1,1299 @@
+{
+    "SkeletonBatches": [],
+    "HierarchyTrees": [],
+    "Name": "SceneRoot",
+    "ActorGEEID": 60,
+    "RootComponent": {
+        "polymorphic_id": 1073741824,
+        "ptr_wrapper": {
+            "valid": 1,
+            "data": {
+                "Name": "SceneRoot's root",
+                "ComponentGEEID": 150,
+                "ComponentTransform": {
+                    "Position": {
+                        "x": 0.0,
+                        "y": 0.0,
+                        "z": 0.0
+                    },
+                    "Rotation": {
+                        "x": 0.0,
+                        "y": 0.0,
+                        "z": 0.0,
+                        "w": 1.0
+                    },
+                    "Scale": {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "z": 1.0
+                    }
+                },
+                "CollisionObj": {
+                    "ptr_wrapper": {
+                        "valid": 0
+                    }
+                },
+                "Children": [
+                    {
+                        "polymorphic_id": 2147483649,
+                        "polymorphic_name": "GEE::LightProbeComponent",
+                        "ptr_wrapper": {
+                            "valid": 1,
+                            "data": {
+                                "Shape": 0,
+                                "OptionalFilepath": "C:\\Users\\48511\\Desktop\\001.hdr",
+                                "ProbeIntensity": 1.0,
+                                "Component": {
+                                    "Name": "A LightProbeComponent",
+                                    "ComponentGEEID": 756,
+                                    "ComponentTransform": {
+                                        "Position": {
+                                            "x": 0.0,
+                                            "y": 0.0,
+                                            "z": 0.0
+                                        },
+                                        "Rotation": {
+                                            "x": 0.0,
+                                            "y": 0.0,
+                                            "z": 0.0,
+                                            "w": 1.0
+                                        },
+                                        "Scale": {
+                                            "x": 1.0,
+                                            "y": 1.0,
+                                            "z": 1.0
+                                        }
+                                    },
+                                    "CollisionObj": {
+                                        "ptr_wrapper": {
+                                            "valid": 0
+                                        }
+                                    },
+                                    "Children": []
+                                }
+                            }
+                        }
+                    }
+                ]
+            }
+        }
+    },
+    "Children": [
+        {
+            "polymorphic_id": 1073741824,
+            "ptr_wrapper": {
+                "valid": 1,
+                "data": {
+                    "Name": "A Camera",
+                    "ActorGEEID": 61,
+                    "RootComponent": {
+                        "polymorphic_id": 1073741824,
+                        "ptr_wrapper": {
+                            "valid": 1,
+                            "data": {
+                                "Name": "A Camera's root",
+                                "ComponentGEEID": 151,
+                                "ComponentTransform": {
+                                    "Position": {
+                                        "x": -3.4077939987182619,
+                                        "y": 1.4384498596191407,
+                                        "z": 1.330479383468628
+                                    },
+                                    "Rotation": {
+                                        "x": 0.015669841319322587,
+                                        "y": -0.6023960709571838,
+                                        "z": 0.011829541996121407,
+                                        "w": 0.7979558110237122
+                                    },
+                                    "Scale": {
+                                        "x": 1.0,
+                                        "y": 1.0,
+                                        "z": 1.0
+                                    }
+                                },
+                                "CollisionObj": {
+                                    "ptr_wrapper": {
+                                        "valid": 0
+                                    }
+                                },
+                                "Children": [
+                                    {
+                                        "polymorphic_id": 2147483650,
+                                        "polymorphic_name": "GEE::CameraComponent",
+                                        "ptr_wrapper": {
+                                            "valid": 1,
+                                            "data": {
+                                                "Projection": {
+                                                    "row0": {
+                                                        "x": 1.0,
+                                                        "y": 0.0,
+                                                        "z": 0.0,
+                                                        "w": 0.0
+                                                    },
+                                                    "row1": {
+                                                        "x": 0.0,
+                                                        "y": 1.0,
+                                                        "z": 0.0,
+                                                        "w": 0.0
+                                                    },
+                                                    "row2": {
+                                                        "x": 0.0,
+                                                        "y": 0.0,
+                                                        "z": -1.0002000331878663,
+                                                        "w": -1.0
+                                                    },
+                                                    "row3": {
+                                                        "x": 0.0,
+                                                        "y": 0.0,
+                                                        "z": -0.020002000033855439,
+                                                        "w": 0.0
+                                                    }
+                                                },
+                                                "Active": true,
+                                                "Component": {
+                                                    "Name": "A CameraComponent",
+                                                    "ComponentGEEID": 152,
+                                                    "ComponentTransform": {
+                                                        "Position": {
+                                                            "x": 0.0,
+                                                            "y": 0.0,
+                                                            "z": 0.0
+                                                        },
+                                                        "Rotation": {
+                                                            "x": 0.0,
+                                                            "y": 0.0,
+                                                            "z": 0.0,
+                                                            "w": 1.0
+                                                        },
+                                                        "Scale": {
+                                                            "x": 1.0,
+                                                            "y": 1.0,
+                                                            "z": 1.0
+                                                        }
+                                                    },
+                                                    "CollisionObj": {
+                                                        "ptr_wrapper": {
+                                                            "valid": 0
+                                                        }
+                                                    },
+                                                    "Children": []
+                                                }
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "Children": [
+                        {
+                            "polymorphic_id": 2147483651,
+                            "polymorphic_name": "GEE::FreeRoamingController",
+                            "ptr_wrapper": {
+                                "valid": 1,
+                                "data": {
+                                    "PossessedActorName": "A Camera",
+                                    "bHideCursor": true,
+                                    "bLockMouseAtCenter": true,
+                                    "Actor": {
+                                        "Name": "A FreeRoamingController",
+                                        "ActorGEEID": 62,
+                                        "RootComponent": {
+                                            "polymorphic_id": 1073741824,
+                                            "ptr_wrapper": {
+                                                "valid": 1,
+                                                "data": {
+                                                    "Name": "A FreeRoamingController's root",
+                                                    "ComponentGEEID": 153,
+                                                    "ComponentTransform": {
+                                                        "Position": {
+                                                            "x": 0.0,
+                                                            "y": 0.0,
+                                                            "z": 0.0
+                                                        },
+                                                        "Rotation": {
+                                                            "x": 0.0,
+                                                            "y": 0.0,
+                                                            "z": 0.0,
+                                                            "w": 1.0
+                                                        },
+                                                        "Scale": {
+                                                            "x": 1.0,
+                                                            "y": 1.0,
+                                                            "z": 1.0
+                                                        }
+                                                    },
+                                                    "CollisionObj": {
+                                                        "ptr_wrapper": {
+                                                            "valid": 0
+                                                        }
+                                                    },
+                                                    "Children": []
+                                                }
+                                            }
+                                        },
+                                        "Children": []
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "polymorphic_id": 1073741824,
+            "ptr_wrapper": {
+                "valid": 1,
+                "data": {
+                    "Name": "Default sphere",
+                    "ActorGEEID": 63,
+                    "RootComponent": {
+                        "polymorphic_id": 1073741824,
+                        "ptr_wrapper": {
+                            "valid": 1,
+                            "data": {
+                                "Name": "Default sphere's root",
+                                "ComponentGEEID": 154,
+                                "ComponentTransform": {
+                                    "Position": {
+                                        "x": 0.0,
+                                        "y": 0.0,
+                                        "z": -3.0
+                                    },
+                                    "Rotation": {
+                                        "x": 0.0,
+                                        "y": 0.0,
+                                        "z": 0.0,
+                                        "w": 1.0
+                                    },
+                                    "Scale": {
+                                        "x": 1.0,
+                                        "y": 1.0,
+                                        "z": 1.0
+                                    }
+                                },
+                                "CollisionObj": {
+                                    "ptr_wrapper": {
+                                        "valid": 0
+                                    }
+                                },
+                                "Children": [
+                                    {
+                                        "polymorphic_id": 2147483652,
+                                        "polymorphic_name": "GEE::LightComponent",
+                                        "ptr_wrapper": {
+                                            "valid": 1,
+                                            "data": {
+                                                "Lighttype": 1,
+                                                "Ambient": {
+                                                    "x": 0.0,
+                                                    "y": 0.0,
+                                                    "z": 0.0
+                                                },
+                                                "Diffuse": {
+                                                    "x": 1.0,
+                                                    "y": 1.0,
+                                                    "z": 1.0
+                                                },
+                                                "Specular": {
+                                                    "x": 0.5,
+                                                    "y": 0.5,
+                                                    "z": 0.5
+                                                },
+                                                "Attenuation": 1.0,
+                                                "CutOff": 1.0,
+                                                "OuterCutOff": 1.0,
+                                                "Far": 7.085196018218994,
+                                                "ShadowBias": 0.0010000000474974514,
+                                                "bShadowMapCullFronts": true,
+                                                "Component": {
+                                                    "Name": "A LightComponent",
+                                                    "ComponentGEEID": 156,
+                                                    "ComponentTransform": {
+                                                        "Position": {
+                                                            "x": 0.0,
+                                                            "y": 0.0,
+                                                            "z": 2.0
+                                                        },
+                                                        "Rotation": {
+                                                            "x": 0.0,
+                                                            "y": 0.0,
+                                                            "z": 0.0,
+                                                            "w": 1.0
+                                                        },
+                                                        "Scale": {
+                                                            "x": 7.085196018218994,
+                                                            "y": 7.085196018218994,
+                                                            "z": 7.085196018218994
+                                                        }
+                                                    },
+                                                    "CollisionObj": {
+                                                        "ptr_wrapper": {
+                                                            "valid": 0
+                                                        }
+                                                    },
+                                                    "Children": []
+                                                }
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "polymorphic_id": 1073741824,
+                                        "ptr_wrapper": {
+                                            "valid": 1,
+                                            "data": {
+                                                "Name": "Assets\\External\\hqSphere\\hqSphere.obj",
+                                                "ComponentGEEID": 556,
+                                                "ComponentTransform": {
+                                                    "Position": {
+                                                        "x": 0.0,
+                                                        "y": 0.0,
+                                                        "z": 0.0
+                                                    },
+                                                    "Rotation": {
+                                                        "x": 0.0,
+                                                        "y": 0.0,
+                                                        "z": 0.0,
+                                                        "w": 1.0
+                                                    },
+                                                    "Scale": {
+                                                        "x": 1.0,
+                                                        "y": 1.0,
+                                                        "z": 1.0
+                                                    }
+                                                },
+                                                "CollisionObj": {
+                                                    "ptr_wrapper": {
+                                                        "valid": 0
+                                                    }
+                                                },
+                                                "Children": [
+                                                    {
+                                                        "polymorphic_id": 2147483653,
+                                                        "polymorphic_name": "GEE::ModelComponent",
+                                                        "ptr_wrapper": {
+                                                            "valid": 1,
+                                                            "data": {
+                                                                "RenderAsBillboard": false,
+                                                                "MeshInstances": [
+                                                                    {
+                                                                        "ptr_wrapper": {
+                                                                            "valid": 1,
+                                                                            "data": {
+                                                                                "MeshTreePath": "Assets\\External\\hqSphere\\hqSphere.obj",
+                                                                                "MeshNodeName": "Sphere",
+                                                                                "MeshSpecificName": "Sphere",
+                                                                                "MaterialInst": {
+                                                                                    "ptr_wrapper": {
+                                                                                        "id": 0
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                ],
+                                                                "SkelInfoBatchID": -1,
+                                                                "SkelInfoID": -1,
+                                                                "RenderableComponent": {
+                                                                    "Hide": false,
+                                                                    "CastsShadow": true,
+                                                                    "Component": {
+                                                                        "Name": "Sphere",
+                                                                        "ComponentGEEID": 558,
+                                                                        "ComponentTransform": {
+                                                                            "Position": {
+                                                                                "x": 0.0,
+                                                                                "y": 0.0,
+                                                                                "z": 0.0
+                                                                            },
+                                                                            "Rotation": {
+                                                                                "x": 0.0,
+                                                                                "y": 0.0,
+                                                                                "z": 0.0,
+                                                                                "w": 1.0
+                                                                            },
+                                                                            "Scale": {
+                                                                                "x": 1.0,
+                                                                                "y": 1.0,
+                                                                                "z": 1.0
+                                                                            }
+                                                                        },
+                                                                        "CollisionObj": {
+                                                                            "ptr_wrapper": {
+                                                                                "valid": 0
+                                                                            }
+                                                                        },
+                                                                        "Children": []
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "Children": []
+                }
+            }
+        },
+        {
+            "polymorphic_id": 1073741824,
+            "ptr_wrapper": {
+                "valid": 1,
+                "data": {
+                    "Name": "Tree",
+                    "ActorGEEID": 542,
+                    "RootComponent": {
+                        "polymorphic_id": 1073741824,
+                        "ptr_wrapper": {
+                            "valid": 1,
+                            "data": {
+                                "Name": "An Actor's root",
+                                "ComponentGEEID": 1470,
+                                "ComponentTransform": {
+                                    "Position": {
+                                        "x": 0.0,
+                                        "y": 0.0,
+                                        "z": 0.0
+                                    },
+                                    "Rotation": {
+                                        "x": 0.0,
+                                        "y": 0.0,
+                                        "z": 0.0,
+                                        "w": 1.0
+                                    },
+                                    "Scale": {
+                                        "x": 1.0,
+                                        "y": 1.0,
+                                        "z": 1.0
+                                    }
+                                },
+                                "CollisionObj": {
+                                    "ptr_wrapper": {
+                                        "valid": 0
+                                    }
+                                },
+                                "Children": [
+                                    {
+                                        "polymorphic_id": 1073741824,
+                                        "ptr_wrapper": {
+                                            "valid": 1,
+                                            "data": {
+                                                "Name": "C:\\Users\\48511\\Desktop\\Ultimate Stylized Nature Pack-glb\\Palm Trees.glb",
+                                                "ComponentGEEID": 1555,
+                                                "ComponentTransform": {
+                                                    "Position": {
+                                                        "x": 0.0,
+                                                        "y": 0.0,
+                                                        "z": 0.0
+                                                    },
+                                                    "Rotation": {
+                                                        "x": 0.0,
+                                                        "y": 0.0,
+                                                        "z": 0.0,
+                                                        "w": 1.0
+                                                    },
+                                                    "Scale": {
+                                                        "x": 1.0,
+                                                        "y": 1.0,
+                                                        "z": 1.0
+                                                    }
+                                                },
+                                                "CollisionObj": {
+                                                    "ptr_wrapper": {
+                                                        "valid": 0
+                                                    }
+                                                },
+                                                "Children": [
+                                                    {
+                                                        "polymorphic_id": 5,
+                                                        "ptr_wrapper": {
+                                                            "valid": 1,
+                                                            "data": {
+                                                                "RenderAsBillboard": false,
+                                                                "MeshInstances": [
+                                                                    {
+                                                                        "ptr_wrapper": {
+                                                                            "valid": 1,
+                                                                            "data": {
+                                                                                "MeshTreePath": "C:\\Users\\48511\\Desktop\\Ultimate Stylized Nature Pack-glb\\Palm Trees.glb",
+                                                                                "MeshNodeName": "PalmTree_3",
+                                                                                "MeshSpecificName": "PalmTree_3-0",
+                                                                                "MaterialInst": {
+                                                                                    "ptr_wrapper": {
+                                                                                        "id": 0
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "ptr_wrapper": {
+                                                                            "valid": 1,
+                                                                            "data": {
+                                                                                "MeshTreePath": "C:\\Users\\48511\\Desktop\\Ultimate Stylized Nature Pack-glb\\Palm Trees.glb",
+                                                                                "MeshNodeName": "PalmTree_3",
+                                                                                "MeshSpecificName": "PalmTree_3-1",
+                                                                                "MaterialInst": {
+                                                                                    "ptr_wrapper": {
+                                                                                        "id": 0
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                ],
+                                                                "SkelInfoBatchID": -1,
+                                                                "SkelInfoID": -1,
+                                                                "RenderableComponent": {
+                                                                    "Hide": false,
+                                                                    "CastsShadow": true,
+                                                                    "Component": {
+                                                                        "Name": "PalmTree_3",
+                                                                        "ComponentGEEID": 1557,
+                                                                        "ComponentTransform": {
+                                                                            "Position": {
+                                                                                "x": 0.0,
+                                                                                "y": 0.0,
+                                                                                "z": 0.0
+                                                                            },
+                                                                            "Rotation": {
+                                                                                "x": -0.7071068286895752,
+                                                                                "y": 0.0,
+                                                                                "z": 0.0,
+                                                                                "w": 0.7071067094802856
+                                                                            },
+                                                                            "Scale": {
+                                                                                "x": 100.0,
+                                                                                "y": 99.99999237060547,
+                                                                                "z": 99.99999237060547
+                                                                            }
+                                                                        },
+                                                                        "CollisionObj": {
+                                                                            "ptr_wrapper": {
+                                                                                "valid": 0
+                                                                            }
+                                                                        },
+                                                                        "Children": []
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    },
+                                                    {
+                                                        "polymorphic_id": 5,
+                                                        "ptr_wrapper": {
+                                                            "valid": 1,
+                                                            "data": {
+                                                                "RenderAsBillboard": false,
+                                                                "MeshInstances": [
+                                                                    {
+                                                                        "ptr_wrapper": {
+                                                                            "valid": 1,
+                                                                            "data": {
+                                                                                "MeshTreePath": "C:\\Users\\48511\\Desktop\\Ultimate Stylized Nature Pack-glb\\Palm Trees.glb",
+                                                                                "MeshNodeName": "PalmTree_5",
+                                                                                "MeshSpecificName": "PalmTree_5-0",
+                                                                                "MaterialInst": {
+                                                                                    "ptr_wrapper": {
+                                                                                        "id": 0
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "ptr_wrapper": {
+                                                                            "valid": 1,
+                                                                            "data": {
+                                                                                "MeshTreePath": "C:\\Users\\48511\\Desktop\\Ultimate Stylized Nature Pack-glb\\Palm Trees.glb",
+                                                                                "MeshNodeName": "PalmTree_5",
+                                                                                "MeshSpecificName": "PalmTree_5-1",
+                                                                                "MaterialInst": {
+                                                                                    "ptr_wrapper": {
+                                                                                        "id": 0
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                ],
+                                                                "SkelInfoBatchID": -1,
+                                                                "SkelInfoID": -1,
+                                                                "RenderableComponent": {
+                                                                    "Hide": false,
+                                                                    "CastsShadow": true,
+                                                                    "Component": {
+                                                                        "Name": "PalmTree_5",
+                                                                        "ComponentGEEID": 1559,
+                                                                        "ComponentTransform": {
+                                                                            "Position": {
+                                                                                "x": 107.12470245361328,
+                                                                                "y": 0.0,
+                                                                                "z": 0.0
+                                                                            },
+                                                                            "Rotation": {
+                                                                                "x": -0.7071068286895752,
+                                                                                "y": 0.0,
+                                                                                "z": 0.0,
+                                                                                "w": 0.7071067094802856
+                                                                            },
+                                                                            "Scale": {
+                                                                                "x": 100.0,
+                                                                                "y": 99.99999237060547,
+                                                                                "z": 99.99999237060547
+                                                                            }
+                                                                        },
+                                                                        "CollisionObj": {
+                                                                            "ptr_wrapper": {
+                                                                                "valid": 0
+                                                                            }
+                                                                        },
+                                                                        "Children": []
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    },
+                                                    {
+                                                        "polymorphic_id": 5,
+                                                        "ptr_wrapper": {
+                                                            "valid": 1,
+                                                            "data": {
+                                                                "RenderAsBillboard": false,
+                                                                "MeshInstances": [
+                                                                    {
+                                                                        "ptr_wrapper": {
+                                                                            "valid": 1,
+                                                                            "data": {
+                                                                                "MeshTreePath": "C:\\Users\\48511\\Desktop\\Ultimate Stylized Nature Pack-glb\\Palm Trees.glb",
+                                                                                "MeshNodeName": "PalmTree_4",
+                                                                                "MeshSpecificName": "PalmTree_4-0",
+                                                                                "MaterialInst": {
+                                                                                    "ptr_wrapper": {
+                                                                                        "id": 0
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "ptr_wrapper": {
+                                                                            "valid": 1,
+                                                                            "data": {
+                                                                                "MeshTreePath": "C:\\Users\\48511\\Desktop\\Ultimate Stylized Nature Pack-glb\\Palm Trees.glb",
+                                                                                "MeshNodeName": "PalmTree_4",
+                                                                                "MeshSpecificName": "PalmTree_4-1",
+                                                                                "MaterialInst": {
+                                                                                    "ptr_wrapper": {
+                                                                                        "id": 0
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                ],
+                                                                "SkelInfoBatchID": -1,
+                                                                "SkelInfoID": -1,
+                                                                "RenderableComponent": {
+                                                                    "Hide": false,
+                                                                    "CastsShadow": true,
+                                                                    "Component": {
+                                                                        "Name": "PalmTree_4",
+                                                                        "ComponentGEEID": 1561,
+                                                                        "ComponentTransform": {
+                                                                            "Position": {
+                                                                                "x": 110.1065902709961,
+                                                                                "y": 0.0,
+                                                                                "z": 0.0
+                                                                            },
+                                                                            "Rotation": {
+                                                                                "x": -0.7071068286895752,
+                                                                                "y": 0.0,
+                                                                                "z": 0.0,
+                                                                                "w": 0.7071067094802856
+                                                                            },
+                                                                            "Scale": {
+                                                                                "x": 100.0,
+                                                                                "y": 99.99999237060547,
+                                                                                "z": 99.99999237060547
+                                                                            }
+                                                                        },
+                                                                        "CollisionObj": {
+                                                                            "ptr_wrapper": {
+                                                                                "valid": 0
+                                                                            }
+                                                                        },
+                                                                        "Children": []
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    },
+                                                    {
+                                                        "polymorphic_id": 5,
+                                                        "ptr_wrapper": {
+                                                            "valid": 1,
+                                                            "data": {
+                                                                "RenderAsBillboard": false,
+                                                                "MeshInstances": [
+                                                                    {
+                                                                        "ptr_wrapper": {
+                                                                            "valid": 1,
+                                                                            "data": {
+                                                                                "MeshTreePath": "C:\\Users\\48511\\Desktop\\Ultimate Stylized Nature Pack-glb\\Palm Trees.glb",
+                                                                                "MeshNodeName": "PalmTree_1",
+                                                                                "MeshSpecificName": "PalmTree_1-0",
+                                                                                "MaterialInst": {
+                                                                                    "ptr_wrapper": {
+                                                                                        "id": 0
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "ptr_wrapper": {
+                                                                            "valid": 1,
+                                                                            "data": {
+                                                                                "MeshTreePath": "C:\\Users\\48511\\Desktop\\Ultimate Stylized Nature Pack-glb\\Palm Trees.glb",
+                                                                                "MeshNodeName": "PalmTree_1",
+                                                                                "MeshSpecificName": "PalmTree_1-1",
+                                                                                "MaterialInst": {
+                                                                                    "ptr_wrapper": {
+                                                                                        "id": 0
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                ],
+                                                                "SkelInfoBatchID": -1,
+                                                                "SkelInfoID": -1,
+                                                                "RenderableComponent": {
+                                                                    "Hide": false,
+                                                                    "CastsShadow": true,
+                                                                    "Component": {
+                                                                        "Name": "PalmTree_1",
+                                                                        "ComponentGEEID": 1563,
+                                                                        "ComponentTransform": {
+                                                                            "Position": {
+                                                                                "x": 117.51256561279297,
+                                                                                "y": 0.0,
+                                                                                "z": 0.0
+                                                                            },
+                                                                            "Rotation": {
+                                                                                "x": -0.7071068286895752,
+                                                                                "y": 0.0,
+                                                                                "z": 0.0,
+                                                                                "w": 0.7071067094802856
+                                                                            },
+                                                                            "Scale": {
+                                                                                "x": 100.0,
+                                                                                "y": 99.99999237060547,
+                                                                                "z": 99.99999237060547
+                                                                            }
+                                                                        },
+                                                                        "CollisionObj": {
+                                                                            "ptr_wrapper": {
+                                                                                "valid": 0
+                                                                            }
+                                                                        },
+                                                                        "Children": []
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    },
+                                                    {
+                                                        "polymorphic_id": 5,
+                                                        "ptr_wrapper": {
+                                                            "valid": 1,
+                                                            "data": {
+                                                                "RenderAsBillboard": false,
+                                                                "MeshInstances": [
+                                                                    {
+                                                                        "ptr_wrapper": {
+                                                                            "valid": 1,
+                                                                            "data": {
+                                                                                "MeshTreePath": "C:\\Users\\48511\\Desktop\\Ultimate Stylized Nature Pack-glb\\Palm Trees.glb",
+                                                                                "MeshNodeName": "PalmTree_2",
+                                                                                "MeshSpecificName": "PalmTree_2-0",
+                                                                                "MaterialInst": {
+                                                                                    "ptr_wrapper": {
+                                                                                        "id": 0
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "ptr_wrapper": {
+                                                                            "valid": 1,
+                                                                            "data": {
+                                                                                "MeshTreePath": "C:\\Users\\48511\\Desktop\\Ultimate Stylized Nature Pack-glb\\Palm Trees.glb",
+                                                                                "MeshNodeName": "PalmTree_2",
+                                                                                "MeshSpecificName": "PalmTree_2-1",
+                                                                                "MaterialInst": {
+                                                                                    "ptr_wrapper": {
+                                                                                        "id": 0
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                ],
+                                                                "SkelInfoBatchID": -1,
+                                                                "SkelInfoID": -1,
+                                                                "RenderableComponent": {
+                                                                    "Hide": false,
+                                                                    "CastsShadow": true,
+                                                                    "Component": {
+                                                                        "Name": "PalmTree_2",
+                                                                        "ComponentGEEID": 1565,
+                                                                        "ComponentTransform": {
+                                                                            "Position": {
+                                                                                "x": 121.89962005615235,
+                                                                                "y": 0.0,
+                                                                                "z": 0.0
+                                                                            },
+                                                                            "Rotation": {
+                                                                                "x": -0.7071068286895752,
+                                                                                "y": 0.0,
+                                                                                "z": 0.0,
+                                                                                "w": 0.7071067094802856
+                                                                            },
+                                                                            "Scale": {
+                                                                                "x": 100.0,
+                                                                                "y": 99.99999237060547,
+                                                                                "z": 99.99999237060547
+                                                                            }
+                                                                        },
+                                                                        "CollisionObj": {
+                                                                            "ptr_wrapper": {
+                                                                                "valid": 0
+                                                                            }
+                                                                        },
+                                                                        "Children": []
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "Children": []
+                }
+            }
+        },
+        {
+            "polymorphic_id": 1073741824,
+            "ptr_wrapper": {
+                "valid": 1,
+                "data": {
+                    "Name": "Rock",
+                    "ActorGEEID": 1121,
+                    "RootComponent": {
+                        "polymorphic_id": 1073741824,
+                        "ptr_wrapper": {
+                            "valid": 1,
+                            "data": {
+                                "Name": "An Actor's root",
+                                "ComponentGEEID": 3194,
+                                "ComponentTransform": {
+                                    "Position": {
+                                        "x": 0.0,
+                                        "y": 0.0,
+                                        "z": 0.0
+                                    },
+                                    "Rotation": {
+                                        "x": 0.0,
+                                        "y": 0.0,
+                                        "z": 0.0,
+                                        "w": 1.0
+                                    },
+                                    "Scale": {
+                                        "x": 1.0,
+                                        "y": 1.0,
+                                        "z": 1.0
+                                    }
+                                },
+                                "CollisionObj": {
+                                    "ptr_wrapper": {
+                                        "valid": 0
+                                    }
+                                },
+                                "Children": [
+                                    {
+                                        "polymorphic_id": 1073741824,
+                                        "ptr_wrapper": {
+                                            "valid": 1,
+                                            "data": {
+                                                "Name": "C:\\Users\\48511\\Desktop\\Ultimate Stylized Nature Pack-glb\\Rocks.glb",
+                                                "ComponentGEEID": 3390,
+                                                "ComponentTransform": {
+                                                    "Position": {
+                                                        "x": 0.0,
+                                                        "y": 0.0,
+                                                        "z": 0.0
+                                                    },
+                                                    "Rotation": {
+                                                        "x": 0.0,
+                                                        "y": 0.0,
+                                                        "z": 0.0,
+                                                        "w": 1.0
+                                                    },
+                                                    "Scale": {
+                                                        "x": 1.0,
+                                                        "y": 1.0,
+                                                        "z": 1.0
+                                                    }
+                                                },
+                                                "CollisionObj": {
+                                                    "ptr_wrapper": {
+                                                        "valid": 0
+                                                    }
+                                                },
+                                                "Children": [
+                                                    {
+                                                        "polymorphic_id": 5,
+                                                        "ptr_wrapper": {
+                                                            "valid": 1,
+                                                            "data": {
+                                                                "RenderAsBillboard": false,
+                                                                "MeshInstances": [
+                                                                    {
+                                                                        "ptr_wrapper": {
+                                                                            "valid": 1,
+                                                                            "data": {
+                                                                                "MeshTreePath": "C:\\Users\\48511\\Desktop\\Ultimate Stylized Nature Pack-glb\\Rocks.glb",
+                                                                                "MeshNodeName": "Rock_4",
+                                                                                "MeshSpecificName": "Rock_4",
+                                                                                "MaterialInst": {
+                                                                                    "ptr_wrapper": {
+                                                                                        "id": 0
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                ],
+                                                                "SkelInfoBatchID": -1,
+                                                                "SkelInfoID": -1,
+                                                                "RenderableComponent": {
+                                                                    "Hide": false,
+                                                                    "CastsShadow": true,
+                                                                    "Component": {
+                                                                        "Name": "Rock_4",
+                                                                        "ComponentGEEID": 3392,
+                                                                        "ComponentTransform": {
+                                                                            "Position": {
+                                                                                "x": 190.8948516845703,
+                                                                                "y": 0.0,
+                                                                                "z": 0.0
+                                                                            },
+                                                                            "Rotation": {
+                                                                                "x": -0.7071068286895752,
+                                                                                "y": 0.0,
+                                                                                "z": 0.0,
+                                                                                "w": 0.7071067094802856
+                                                                            },
+                                                                            "Scale": {
+                                                                                "x": 100.0,
+                                                                                "y": 99.99999237060547,
+                                                                                "z": 99.99999237060547
+                                                                            }
+                                                                        },
+                                                                        "CollisionObj": {
+                                                                            "ptr_wrapper": {
+                                                                                "valid": 0
+                                                                            }
+                                                                        },
+                                                                        "Children": []
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    },
+                                                    {
+                                                        "polymorphic_id": 5,
+                                                        "ptr_wrapper": {
+                                                            "valid": 1,
+                                                            "data": {
+                                                                "RenderAsBillboard": false,
+                                                                "MeshInstances": [
+                                                                    {
+                                                                        "ptr_wrapper": {
+                                                                            "valid": 1,
+                                                                            "data": {
+                                                                                "MeshTreePath": "C:\\Users\\48511\\Desktop\\Ultimate Stylized Nature Pack-glb\\Rocks.glb",
+                                                                                "MeshNodeName": "Rock_1",
+                                                                                "MeshSpecificName": "Rock_1",
+                                                                                "MaterialInst": {
+                                                                                    "ptr_wrapper": {
+                                                                                        "id": 0
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                ],
+                                                                "SkelInfoBatchID": -1,
+                                                                "SkelInfoID": -1,
+                                                                "RenderableComponent": {
+                                                                    "Hide": false,
+                                                                    "CastsShadow": true,
+                                                                    "Component": {
+                                                                        "Name": "Rock_1",
+                                                                        "ComponentGEEID": 3394,
+                                                                        "ComponentTransform": {
+                                                                            "Position": {
+                                                                                "x": 0.0,
+                                                                                "y": 0.0,
+                                                                                "z": 0.7199999094009399
+                                                                            },
+                                                                            "Rotation": {
+                                                                                "x": -0.7071068286895752,
+                                                                                "y": 0.0,
+                                                                                "z": 0.0,
+                                                                                "w": 0.7071067094802856
+                                                                            },
+                                                                            "Scale": {
+                                                                                "x": 100.0,
+                                                                                "y": 99.99999237060547,
+                                                                                "z": 99.99999237060547
+                                                                            }
+                                                                        },
+                                                                        "CollisionObj": {
+                                                                            "ptr_wrapper": {
+                                                                                "valid": 0
+                                                                            }
+                                                                        },
+                                                                        "Children": []
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    },
+                                                    {
+                                                        "polymorphic_id": 5,
+                                                        "ptr_wrapper": {
+                                                            "valid": 1,
+                                                            "data": {
+                                                                "RenderAsBillboard": false,
+                                                                "MeshInstances": [
+                                                                    {
+                                                                        "ptr_wrapper": {
+                                                                            "valid": 1,
+                                                                            "data": {
+                                                                                "MeshTreePath": "C:\\Users\\48511\\Desktop\\Ultimate Stylized Nature Pack-glb\\Rocks.glb",
+                                                                                "MeshNodeName": "Rock_2",
+                                                                                "MeshSpecificName": "Rock_2",
+                                                                                "MaterialInst": {
+                                                                                    "ptr_wrapper": {
+                                                                                        "id": 0
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                ],
+                                                                "SkelInfoBatchID": -1,
+                                                                "SkelInfoID": -1,
+                                                                "RenderableComponent": {
+                                                                    "Hide": false,
+                                                                    "CastsShadow": true,
+                                                                    "Component": {
+                                                                        "Name": "Rock_2",
+                                                                        "ComponentGEEID": 3396,
+                                                                        "ComponentTransform": {
+                                                                            "Position": {
+                                                                                "x": 0.0,
+                                                                                "y": 0.0,
+                                                                                "z": 2.0
+                                                                            },
+                                                                            "Rotation": {
+                                                                                "x": -0.7071068286895752,
+                                                                                "y": 0.0,
+                                                                                "z": 0.0,
+                                                                                "w": 0.7071067094802856
+                                                                            },
+                                                                            "Scale": {
+                                                                                "x": 100.0,
+                                                                                "y": 99.99999237060547,
+                                                                                "z": 99.99999237060547
+                                                                            }
+                                                                        },
+                                                                        "CollisionObj": {
+                                                                            "ptr_wrapper": {
+                                                                                "valid": 0
+                                                                            }
+                                                                        },
+                                                                        "Children": []
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    },
+                                                    {
+                                                        "polymorphic_id": 5,
+                                                        "ptr_wrapper": {
+                                                            "valid": 1,
+                                                            "data": {
+                                                                "RenderAsBillboard": false,
+                                                                "MeshInstances": [
+                                                                    {
+                                                                        "ptr_wrapper": {
+                                                                            "valid": 1,
+                                                                            "data": {
+                                                                                "MeshTreePath": "C:\\Users\\48511\\Desktop\\Ultimate Stylized Nature Pack-glb\\Rocks.glb",
+                                                                                "MeshNodeName": "Rock_3",
+                                                                                "MeshSpecificName": "Rock_3",
+                                                                                "MaterialInst": {
+                                                                                    "ptr_wrapper": {
+                                                                                        "id": 0
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                ],
+                                                                "SkelInfoBatchID": -1,
+                                                                "SkelInfoID": -1,
+                                                                "RenderableComponent": {
+                                                                    "Hide": false,
+                                                                    "CastsShadow": true,
+                                                                    "Component": {
+                                                                        "Name": "Rock_3",
+                                                                        "ComponentGEEID": 3398,
+                                                                        "ComponentTransform": {
+                                                                            "Position": {
+                                                                                "x": 195.42068481445313,
+                                                                                "y": 0.0,
+                                                                                "z": 0.0
+                                                                            },
+                                                                            "Rotation": {
+                                                                                "x": -0.7071068286895752,
+                                                                                "y": 0.0,
+                                                                                "z": 0.0,
+                                                                                "w": 0.7071067094802856
+                                                                            },
+                                                                            "Scale": {
+                                                                                "x": 100.0,
+                                                                                "y": 99.99999237060547,
+                                                                                "z": 99.99999237060547
+                                                                            }
+                                                                        },
+                                                                        "CollisionObj": {
+                                                                            "ptr_wrapper": {
+                                                                                "valid": 0
+                                                                            }
+                                                                        },
+                                                                        "Children": []
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    },
+                                                    {
+                                                        "polymorphic_id": 5,
+                                                        "ptr_wrapper": {
+                                                            "valid": 1,
+                                                            "data": {
+                                                                "RenderAsBillboard": false,
+                                                                "MeshInstances": [
+                                                                    {
+                                                                        "ptr_wrapper": {
+                                                                            "valid": 1,
+                                                                            "data": {
+                                                                                "MeshTreePath": "C:\\Users\\48511\\Desktop\\Ultimate Stylized Nature Pack-glb\\Rocks.glb",
+                                                                                "MeshNodeName": "Rock_5",
+                                                                                "MeshSpecificName": "Rock_5",
+                                                                                "MaterialInst": {
+                                                                                    "ptr_wrapper": {
+                                                                                        "id": 0
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                ],
+                                                                "SkelInfoBatchID": -1,
+                                                                "SkelInfoID": -1,
+                                                                "RenderableComponent": {
+                                                                    "Hide": false,
+                                                                    "CastsShadow": true,
+                                                                    "Component": {
+                                                                        "Name": "Rock_5",
+                                                                        "ComponentGEEID": 3400,
+                                                                        "ComponentTransform": {
+                                                                            "Position": {
+                                                                                "x": 197.27455139160157,
+                                                                                "y": 0.0,
+                                                                                "z": 0.0
+                                                                            },
+                                                                            "Rotation": {
+                                                                                "x": -0.7071068286895752,
+                                                                                "y": 0.0,
+                                                                                "z": 0.0,
+                                                                                "w": 0.7071067094802856
+                                                                            },
+                                                                            "Scale": {
+                                                                                "x": 100.0,
+                                                                                "y": 99.99999237060547,
+                                                                                "z": 99.99999237060547
+                                                                            }
+                                                                        },
+                                                                        "CollisionObj": {
+                                                                            "ptr_wrapper": {
+                                                                                "valid": 0
+                                                                            }
+                                                                        },
+                                                                        "Children": []
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "Children": []
+                }
+            }
+        }
+    ],
+    "bWindowFullscreen": false,
+    "WindowTitle": "game-engine-engine",
+    "Video": {
+        "AmbientOcclusionSamples": 64,
+        "bVSync": false,
+        "bBloom": true,
+        "AAType": 1,
+        "AALevel": 4,
+        "MonitorGamma": 2.200000047683716,
+        "POMLevel": 1,
+        "ShadowLevel": 3,
+        "TMType": 1,
+        "Max2DShadows": 16,
+        "Max3DShadows": 16
+    },
+    "bDebugRenderComponents": true
+}

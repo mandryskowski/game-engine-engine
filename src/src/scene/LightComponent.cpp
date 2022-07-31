@@ -179,7 +179,7 @@ namespace GEE
 		if (Attenuation > 0.0f)
 			radius = (-linear + glm::sqrt(linear * linear - 4.0f * quadratic * (constant - lightMax * (256.0f / 5.0f)))) / (2.0f * quadratic);
 
-		radius = glm::min(radius, 50.0f);	// Limit radius to 50 units - the currently uesd projection matrix allows to render fragments up to 100 units away from the camera.
+		radius = glm::min(radius, 50.0f);	// Limit radius to 50 units - the currently used projection matrix allows to render fragments up to 100 units away from the camera.
 
 		Far = radius;
 		Projection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, Far);
@@ -253,6 +253,13 @@ namespace GEE
 		LightIndex = index;
 		ShadowMapNr = index;
 		DirtyFlag = true;
+	}
+
+	void LightComponent::SetDiffuse(const Vec3f& diffuse)
+	{
+		Diffuse = diffuse;
+		DirtyFlag = true;
+		CalculateLightRadius();
 	}
 
 	void LightComponent::UpdateUBOData(UniformBuffer* lightsUBO, size_t offset)

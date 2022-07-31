@@ -49,6 +49,7 @@ namespace GEE
 		void SetShadowBias(float);
 		void SetType(LightType);
 		void SetIndex(unsigned int);
+		void SetDiffuse(const Vec3f& diffuse);
 		void UpdateUBOData(UniformBuffer*, size_t = -1);
 		Vec3f& operator[](unsigned int);
 

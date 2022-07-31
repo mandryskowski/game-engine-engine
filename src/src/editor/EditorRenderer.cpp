@@ -8,6 +8,7 @@
 #include <scene/CameraComponent.h>
 #include <input/InputDevicesStateRetriever.h>
 #include <game/Game.h>
+#include <editor/DefaultEditorController.h>
 
 
 namespace GEE
@@ -60,17 +61,17 @@ namespace GEE
 				if (!EditorHandle.GetGameHandle()->GetDefInputRetriever().IsKeyPressed(Key::F3))
 				{
 					SceneRenderer(Impl.RenderHandle, &MainSceneCollection->GetTb<FinalRenderTargetToolbox>()->GetFinalFramebuffer()).FullRender(mainSceneRenderInfo, Viewport(Vec2f(0.0f)), true, false,
-						[&](GEE_FB::Framebuffer& mainFramebuffer) {
+						[&](GEE_FB::Framebuffer& targetFramebuffer) {
 							if (EditorHandle.GetDebugRenderComponents())	// Render debug icons
 							{
-								mainFramebuffer.SetDrawSlot(0);
+								targetFramebuffer.SetDrawSlot(0);
 								Impl.RenderHandle.GetSimpleShader()->Use();
 								mainScene->GetRootActor()->DebugRenderAll(mainScene->GetActiveCamera()->GetRenderInfo(0, *MainSceneCollection), Impl.RenderHandle.GetSimpleShader());
-								mainFramebuffer.SetDrawSlots();
+								targetFramebuffer.SetDrawSlots();
 							}
 							if (Component* selectedComponent = EditorHandle.GetActions().GetSelectedComponent(); selectedComponent && selectedComponent->GetScene().GetRenderData() == mainScene->GetRenderData())	// Render selected component outline and gizmos
 							{
-								OutlineRenderer(*EditorHandle.GetGameHandle()->GetRenderEngineHandle()).RenderOutlineSilhouette(mainSceneRenderInfo, EditorHandle.GetActions().GetSelectedComponent(), mainFramebuffer);
+								OutlineRenderer(*EditorHandle.GetGameHandle()->GetRenderEngineHandle()).RenderOutlineSilhouette(mainSceneRenderInfo, EditorHandle.GetActions().GetSelectedComponent(), targetFramebuffer);
 
 								// Gizmos
 								Impl.RenderHandle.GetBasicShapeMesh(EngineBasicShape::Cone);
@@ -79,7 +80,7 @@ namespace GEE
 							if (EditorHandle.GetGameHandle()->GetDefInputRetriever().IsKeyPressed(Key::F2))
 								PhysicsDebugRenderer(Impl).DebugRender(*mainScene->GetPhysicsData(), mainSceneRenderInfo);
 
-
+							RenderGrid(mainSceneRenderInfo);
 
 						});
 
@@ -180,6 +181,34 @@ namespace GEE
 			}
 
 			glfwMakeContextCurrent(MainWindow);
+		}
+		void EditorRenderer::RenderGrid(const MatrixInfo& info)
+		{
+			glEnable(GL_DEPTH_TEST);
+			glEnable(GL_BLEND);
+			auto& quad = Impl.GetBasicShapeMesh(EngineBasicShape::Quad);
+			quad.Bind(0);
+
+			auto gridShader = UICollection->GetTb<GEditorToolbox>()->GridShader;
+			gridShader->Use();
+			gridShader->Uniform("near", 0.01f);
+			gridShader->Uniform("far", 100.0f);
+			auto selectedComp = EditorHandle.GetActions().GetSelectedComponent();
+
+			auto axisBits = EditorHandle.GetEditorController()->GetAxisBits();
+			if (!selectedComp || axisBits == DefaultEditorController::AxisBits::All)
+				gridShader->Uniform("bExtraLinesAxis", Vec3b(false));
+			else
+			{
+				Vec3b axisBools(axisBits & DefaultEditorController::AxisBits::X, axisBits & DefaultEditorController::AxisBits::Y, axisBits & DefaultEditorController::AxisBits::Z);
+				gridShader->Uniform("bExtraLinesAxis", axisBools);
+				gridShader->Uniform("extraLinesPos", selectedComp->GetTransform().GetWorldTransform().GetPos());
+			}
+			gridShader->Uniform("VP", info.GetVP());
+			
+			quad.Render();
+			glDisable(GL_DEPTH_TEST);
+			glDisable(GL_BLEND);
 		}
 	}
 }

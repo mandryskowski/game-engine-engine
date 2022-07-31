@@ -471,3 +471,8 @@ Source/Release
 /deferred-shading-profiling.exp
 /deferred-shading-profiling.lib
 /deferred-shading-profiling.exe
+*.lib
+*.dll
+*.idb
+*.exp
+*.exe

@@ -249,7 +249,7 @@ namespace GEE
 					GameSettings* settings = new GameSettings(*GameHandle->GetGameSettings());
 
 					settings->Video.Resolution = Vec2u(1024);
-					RenderToolboxCollection& renderTbCollection = renderHandle.AddRenderTbCollection(RenderToolboxCollection("GEE_E_Mesh_Preview_Toolbox_Collection", settings->Video, *GameHandle->GetRenderEngineHandle()));
+					RenderToolboxCollection& renderTbCollection = renderHandle.AddRenderTbCollection(MakeUnique<RenderToolboxCollection>("GEE_E_Mesh_Preview_Toolbox_Collection", settings->Video, *GameHandle->GetRenderEngineHandle()));
 
 					SharedPtr<Material> viewportMaterial = MakeShared<Material>("GEE_E_Mesh_Preview_Viewport");
 					renderHandle.AddMaterial(viewportMaterial);

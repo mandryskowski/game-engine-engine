@@ -466,7 +466,8 @@ namespace GEE
 	void ComposedImageStorageToolbox::Setup(const GameSettings::VideoSettings& settings)
 	{
 		ComposedImageFb = AddFramebuffer();
-		ComposedImageFb->AttachTextures(NamedTexture(Texture::Loader<>::ReserveEmpty2D(settings.Resolution, Texture::Format::RGB()), "composedImageBuffer"));
+		ComposedImageFb->AttachTextures({ NamedTexture(Texture::Loader<>::ReserveEmpty2D(settings.Resolution, Texture::Format::RGB()), "composedImageBuffer1") });
+										// NamedTexture(Texture::Loader<>::ReserveEmpty2D(settings.Resolution, Texture::Format::RGB()), "composedImageBuffer2") });
 		TonemapGammaShader = AddShader(ShaderLoader::LoadShadersWithInclData("TonemapGamma", std::string((settings.TMType == ToneMappingType::TM_REINHARD) ? ("#define TM_REINHARD\n") : ("")) + settings.GetShaderDefines(settings.Resolution), "Shaders/tonemap_gamma.vs", "Shaders/tonemap_gamma.fs"));
 		TonemapGammaShader->Use();
 		TonemapGammaShader->Uniform1i("HDRbuffer", 0);
@@ -555,6 +556,17 @@ namespace GEE
 		return *FinalFramebuffer;
 	}
 
+	GEditorToolbox::GEditorToolbox(ShaderFromHintGetter& getter, const GameSettings::VideoSettings& settings) :
+		RenderToolbox(getter),
+		GridShader(nullptr)
+	{
+		Setup(settings);
+	}
+
+	void GEditorToolbox::Setup(const GameSettings::VideoSettings& settings)
+	{
+		GridShader = AddShader(ShaderLoader::LoadShaders("GEditor_Grid", "Shaders/UI/grid.vs", "Shaders/UI/grid.fs"));
+	}
 
 	/**
 	* @brief Constructor of RenderToolboxCollection.

@@ -38,7 +38,7 @@ namespace GEE
 		const Mat4f& GetFinalMatrix();
 
 		virtual	MaterialInstance GetDebugMatInst(ButtonMaterialType) override;
-
+		 
 		void SetBoneOffset(const Mat4f&);
 		void SetID(unsigned int id);
 		void SetInfoPtr(SkeletonInfo*);

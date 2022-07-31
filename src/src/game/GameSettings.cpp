@@ -77,6 +77,7 @@ namespace GEE
 		bVSync(false),
 		bBloom(true),
 		bForceForwardRendering(false),
+		bForceWireframeRendering(false),
 		bDrawToWindowFBO(false),
 		AAType(AntiAliasingType::AA_NONE),
 		AALevel(SettingLevel::SETTING_NONE),

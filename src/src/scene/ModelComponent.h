@@ -83,6 +83,7 @@ namespace GEE
 
 		friend class SkeletonInfo;
 
+	public: //navmesh
 		std::vector<UniquePtr<MeshInstance>> MeshInstances;
 		SkeletonInfo* SkelInfo;
 		bool RenderAsBillboard;
