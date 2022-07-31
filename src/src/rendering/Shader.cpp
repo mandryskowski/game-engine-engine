@@ -141,6 +141,10 @@ namespace GEE
 	template <> void Shader::Uniform<Vec3i>(const std::string& name, const Vec3i& val) { glUniform3iv(FindLocation(name), 1, Math::GetDataPtr(val)); }
 	template <> void Shader::Uniform<Vec4i>(const std::string& name, const Vec4i& val) { glUniform4iv(FindLocation(name), 1, Math::GetDataPtr(val)); }
 
+	template <> void Shader::Uniform<Vec2b>(const std::string& name, const Vec2b& val) { Uniform<Vec2i>(name, static_cast<Vec2i>(val)); }
+	template <> void Shader::Uniform<Vec3b>(const std::string& name, const Vec3b& val) { Uniform<Vec3i>(name, static_cast<Vec3i>(val)); }
+	template <> void Shader::Uniform<Vec4b>(const std::string& name, const Vec4b& val) { Uniform<Vec4i>(name, static_cast<Vec4i>(val)); }
+
 	template <> void Shader::Uniform<Mat3f>(const std::string& name, const Mat3f& val) { glUniformMatrix3fv(FindLocation(name), 1, GL_FALSE, Math::GetDataPtr(val)); }
 
 	template <> void Shader::Uniform<Mat4f>(const std::string& name, const Mat4f& val) { glUniformMatrix4fv(FindLocation(name), 1, GL_FALSE, Math::GetDataPtr(val)); }

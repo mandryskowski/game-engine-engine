@@ -132,6 +132,7 @@ namespace GEE
 		static GameScene* GetGameSceneFromWindow(SystemWindow&);
 
 		static EventHolder* TargetHolder;
+		static std::unordered_map<SystemWindow*, Vec2i> PrevCursorPositions;
 	};
 
 	namespace DebugCallbacks

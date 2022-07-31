@@ -26,6 +26,7 @@
 #include <utility/Log.h>
 #include <rendering/OutlineRenderer.h>
 #include <editor/EditorRenderer.h>
+#include <editor/DefaultEditorController.h>
 
 
 #include <editor/MousePicking.h>
@@ -81,6 +82,7 @@ namespace GEE
 			bDebugRenderComponents(true),
 			bDebugRenderPhysicsMeshes(true),
 			GameController(nullptr),
+			EditorController(nullptr),
 			LastRenderPopupRequest(nullptr),
 			bViewportMaximized(false),
 			Actions(MakeUnique<EditorActions>(*this)),
@@ -148,6 +150,18 @@ namespace GEE
 			return *Actions;
 		}
 
+		void GameEngineEngineEditor::GenerateActorList(PopupDescription desc, std::function<void(Actor&)> func)
+		{
+			auto& actor = *Actions->GetContextActor();
+			desc.AddOption("Actor", [&, func]() { func(actor.CreateChild<Actor>("An Actor")); }, IconData(RenderEng, "Assets/Editor/component_icon.png", Vec2i(3, 1), 0.0f));
+			desc.AddOption("Pawn", [&, func]() { func(actor.CreateChild<PawnActor>("A PawnActor")); }, IconData(RenderEng, "Assets/Editor/component_icon.png", Vec2i(3, 1), 0.0f));
+			desc.AddOption("Roaming Controller", [&, func]() { func(actor.CreateChild<FreeRoamingController>("A FreeRoamingController")); }, IconData(RenderEng, "Assets/Editor/component_icon.png", Vec2i(3, 1), 0.0f));
+			desc.AddOption("FPS Controller", [&, func]() { func(actor.CreateChild<FPSController>("A FPSController")); }, IconData(RenderEng, "Assets/Editor/component_icon.png", Vec2i(3, 1), 0.0f));
+			desc.AddOption("Shooting Controller", [&, func]() { func(actor.CreateChild<ShootingController>("A ShootingController")); }, IconData(RenderEng, "Assets/Editor/component_icon.png", Vec2i(3, 1), 0.0f));
+			desc.AddOption("Gun Actor", [&, func]() { func(actor.CreateChild<GunActor>("A GunActor")); }, IconData(RenderEng, "Assets/Editor/component_icon.png", Vec2i(3, 1), 0.0f));
+			desc.AddOption("Cue Controller", [&, func]() { func(actor.CreateChild<CueController>("A CueController")); }, IconData(RenderEng, "Assets/Editor/component_icon.png", Vec2i(3, 1), 0.0f));
+		}
+
 		void GameEngineEngineEditor::RequestPopupMenu(const Vec2f& posWindowSpace, SystemWindow& relativeWindow, std::function<void(PopupDescription)> creationFunc)
 		{
 			LastRenderPopupRequest = [=, &relativeWindow]()
@@ -160,7 +174,7 @@ namespace GEE
 
 		std::string GameEngineEngineEditor::ToRelativePath(const std::string& filepath)
 		{
-			std::cout << "Executable folder: " << ExecutableFolder;
+			std::cout << "Executable folder: " << ExecutableFolder << '\n';
 			if (auto foundPos = filepath.find(ExecutableFolder); foundPos != std::string::npos)
 				return filepath.substr(foundPos + ExecutableFolder.length() + 1);
 
@@ -235,9 +249,9 @@ namespace GEE
 			uiSettings.TMType = ToneMappingType::TM_NONE;
 			uiSettings.MonitorGamma = 1.0f;
 
-			ViewportRenderCollection = &RenderEng.AddRenderTbCollection(RenderToolboxCollection("GameSceneRenderCollection", Settings->Video, RenderEng));
+			ViewportRenderCollection = &RenderEng.AddRenderTbCollection(MakeUnique<RenderToolboxCollection>("GameSceneRenderCollection", Settings->Video, RenderEng));
 
-			HUDRenderCollection = &RenderEng.AddRenderTbCollection(RenderToolboxCollection("HUDRenderCollection", uiSettings, RenderEng));
+			HUDRenderCollection = &RenderEng.AddRenderTbCollection(MakeUnique<GEditorRenderToolboxCollection>("HUDRenderCollection", uiSettings, RenderEng));
 
 			GameManager::DefaultScene = GetMainScene();
 			SetActiveScene(GetMainScene());
@@ -280,7 +294,7 @@ namespace GEE
 
 			{
 				auto settings = MakeShared<GameSettings::VideoSettings>();
-				auto& tbCol = RenderEng.AddRenderTbCollection(RenderToolboxCollection("PopupTbCol", *settings, RenderEng), false);
+				auto& tbCol = RenderEng.AddRenderTbCollection(MakeUnique<RenderToolboxCollection>("PopupTbCol", *settings, RenderEng), false);
 				OpenPopups.push_back(EditorPopup(IDSystem<EditorPopup>::GenerateID(), *window, popupScene, tbCol, settings));
 
 			}
@@ -346,6 +360,8 @@ namespace GEE
 		void GameEngineEngineEditor::SetupEditorScene()
 		{
 			GameScene& editorScene = CreateUIScene("GEE_Editor", *GameWindow);
+
+			EditorController = &editorScene.CreateActorAtRoot<Editor::DefaultEditorController>("GEE_Default_Editor_Controller");
 
 			//settings.ViewportData = glm::uvec4(res.x * 0.3f, res.y * 0.4f, res.x * 0.4, res.y * 0.6f);
 
@@ -544,6 +560,7 @@ namespace GEE
 					UIWindowActor& window = editorScene.CreateActorAtRoot<UIWindowActor>("MainSceneSettingsWindow");
 					window.GetTransform()->SetScale(Vec2f(0.5f));
 					window.AddField("Bloom").GetTemplates().TickBox([this](bool bloom) { GetGameSettings()->Video.bBloom = bloom; UpdateGameSettings(); }, [this]() -> bool { return GetGameSettings()->Video.bBloom; });
+					window.AddField("Wireframe").GetTemplates().TickBox([this](bool wireframe) { GetGameSettings()->Video.bForceWireframeRendering = wireframe; UpdateGameSettings(); }, [this]() -> bool { return GetGameSettings()->Video.bForceWireframeRendering; });
 
 					UIInputBoxActor& gammaInputBox = window.AddField("Gamma").CreateChild<UIInputBoxActor>("GammaInputBox");
 					gammaInputBox.SetOnInputFunc([this](float val) { GetGameSettings()->Video.MonitorGamma = val; UpdateGameSettings(); }, [this]()->float { return GetGameSettings()->Video.MonitorGamma; });
@@ -707,7 +724,7 @@ namespace GEE
 
 					window.AddField("Project folder").GetTemplates().FolderInput([folderpath](const std::string& str) { *folderpath = str; }, [folderpath]() { return *folderpath; }, ExecutableFolder + std::string(1, char(92)) + *folderpath);
 
-					UIInputBoxActor& projectNameInputBox = window.AddField("Project name").CreateChild<UIInputBoxActor>("ProjectNameInputBox");
+					UIInputBoxActor& projectNameInputBox = window.AddField("Project name").CreateChild<UIInputBoxActor>("ProjectNameInputBox", Transform(Vec2f(2.0f, 0.0f), Vec2f(3.0f, 1.0f)));
 					//UIInputBoxActor& projectNameInputBox
 
 					projectNameInputBox.SetOnInputFunc([projectName](const std::string& input) { *projectName = input; }, [projectName]() { return *projectName; });
@@ -793,7 +810,7 @@ namespace GEE
 				
 				window.AddField("Project folder").GetTemplates().FolderInput([this](const std::string& str) { ProjectFilepath = str + "/"; }, [this]() { return ProjectFilepath; }, ExecutableFolder);
 
-				UIInputBoxActor& projectNameInputBox = window.AddField("Project name").CreateChild<UIInputBoxActor>("ProjectNameInputBox");
+				UIInputBoxActor& projectNameInputBox = window.AddField("Project name").CreateChild<UIInputBoxActor>("ProjectNameInputBox", Transform(Vec2f(2.0f, 0.0f), Vec2f(3.0f, 1.0f)));
 				//UIInputBoxActor& projectNameInputBox
 
 				ProjectName = "Project1";
@@ -851,21 +868,6 @@ namespace GEE
 		{
 			if (GameController && GameController->IsBeingKilled())
 				GameController = nullptr;
-
-			if (EditorScene && GetMainScene() && GetMainScene()->GetActiveCamera() && GetDefInputRetriever().IsKeyPressed(Key::G) && Actions->GetSelectedComponent())
-			{
-				if (TestTranslateLastPos != Vec2f(-1.0f))
-				{
-					Vec2f translationVec(((Vec2f)EditorScene->GetUIData()->GetWindowData().GetMousePositionPx() - TestTranslateLastPos) * 0.01f);
-					Vec3f rightVector = glm::normalize(glm::cross(GetMainScene()->GetActiveCamera()->GetTransform().GetWorldTransform().GetFrontVec(), Vec3f(0.0f, 1.0f, 0.0f)));
-					Vec3f upVector = glm::normalize(glm::cross(rightVector, GetMainScene()->GetActiveCamera()->GetTransform().GetWorldTransform().GetFrontVec()));
-					std::cout << "Right vector: " << rightVector << '\n';
-					Actions->GetContextComp()->GetTransform().Move(rightVector * translationVec.x + upVector * translationVec.y);
-				}
-				TestTranslateLastPos = EditorScene->GetUIData()->GetWindowData().GetMousePositionPx();
-			}
-			else
-				TestTranslateLastPos = Vec2f(-1.0f);
 
 			UpdateControllerCameraInfo();
 
@@ -925,6 +927,11 @@ namespace GEE
 									break;
 
 								case Key::F10: MaximizeViewport(); break;
+
+								case Key::F11:	// Also recompiles all shaders
+									UpdateGameSettings();
+									UpdateEditorSettings();
+									break;
 
 								case Key::F12:
 								{
@@ -1055,7 +1062,11 @@ namespace GEE
 			if (ActiveScene == EditorScene)
 				GameController = controller;
 			else
+			{
+				if (!controller)
+					controller = EditorController;
 				Game::PassMouseControl(controller);
+			}
 
 			UpdateControllerCameraInfo();
 		}
@@ -1254,6 +1265,7 @@ namespace GEE
 		if (EditorScene)
 			if (auto foundActor = EditorScene->FindActor("ControllerCameraInfoTextActor"))
 			{
+				
 				if (auto foundText = foundActor->GetRoot()->GetComponent<TextComponent>("ControllerInfoText"))
 					foundText->SetContent((GameController) ? ((ActiveScene == &GameController->GetScene()) ? (GameController->GetName()) : ("Editor control")) : ("No controller"));
 				if (auto foundText = foundActor->GetRoot()->GetComponent<TextComponent>("CameraInfoText"))

@@ -129,7 +129,8 @@ void main()
 
 	gPosition = frag.worldPosition;
 	gNormal = normal;
-	gAlbedoSpec.rgb = texture(material.albedo1, texCoord).rgb;
+	vec4 albedoColor = texture(material.albedo1, texCoord);
+	gAlbedoSpec.rgb = albedoColor.rgb;
 	if (!material.disableColor && gAlbedoSpec.rgb == vec3(0.0))
 		gAlbedoSpec.rgb = material.color.rgb;
 	//else if (texture(material.albedo1, texCoord).a < 0.5)

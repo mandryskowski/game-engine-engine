@@ -62,18 +62,12 @@ namespace GEE
 		virtual void OnStart();
 		virtual void OnStartAll();
 
-		void DebugHierarchy(int nrTabs = 0)
-		{
-			std::string tabs;
-			for (int i = 0; i < nrTabs; i++)	tabs += "	";
-			std::cout << tabs + "-" + Name + "\n";
+		std::string GetName() const { return Name; }
+		GEEID GetGEEID() const { return ComponentGEEID; }
 
-			for (int i = 0; i < static_cast<int>(Children.size()); i++)
-				Children[i]->DebugHierarchy(nrTabs + 1);
-		}
+		void DebugHierarchy(int nrTabs = 0);
 
 		Actor& GetActor() const;
-		const std::string& GetName() const;
 		Transform& GetTransform();
 		const Transform& GetTransform() const;
 		std::vector<Component*> GetChildren();
@@ -82,12 +76,21 @@ namespace GEE
 		MaterialInstance* GetDebugMatInst();
 
 		/**
-		 * @brief Get a pointer to a Component further in the hierarchy (kids, kids' kids, ...). Limit the use of this function at runtime, as dynamic_cast has a significant overhead.
+		 * @brief Find by name and get a pointer of type CompClass to a Component further in the hierarchy (kids, kids' kids, ...). Limit the use of this function at runtime, as dynamic_cast has a significant overhead.
 		 * @tparam CompClass: The sought Component must be dynamic_castable to CompClass. 
 		 * @param name: The name of the sought Component.
 		 * @return: A pointer to the sought Component.
 		*/
 		template <class CompClass = Component> CompClass* GetComponent(const std::string& name);
+
+		/**
+		 * @brief Find by GEEID and get a pointer of type CompClass to a Component further in the hierarchy (kids, kids' kids, ...). Limit the use of this function at runtime, as dynamic_cast has a significant overhead.
+		 * @tparam CompClass: The sought Component must be dynamic_castable to CompClass.
+		 * @param name: The GEEID of the sought Component.
+		 * @return: A pointer to the sought Component.
+		*/
+		template <class CompClass = Component> CompClass* GetComponent(GEEID geeid);
+
 		/**
 		 * @brief This function returns every element further in the hierarchy that is of CompClass type
 		*/
@@ -147,6 +150,7 @@ namespace GEE
 		virtual	MaterialInstance GetDebugMatInst(ButtonMaterialType);
 
 		std::string Name;
+		GEEID ComponentGEEID;
 
 		Transform ComponentTransform;
 		std::vector <UniquePtr<Component>> Children;
@@ -193,6 +197,18 @@ namespace GEE
 
 		for (const auto& it : Children)
 			if (auto found = it->GetComponent<CompClass>(name))
+				return found;
+
+		return nullptr;
+	}
+	template<class CompClass>
+	inline CompClass* Component::GetComponent(GEEID geeid)
+	{
+		if (ComponentGEEID == geeid)
+			return dynamic_cast<CompClass*>(this);
+
+		for (const auto& it : Children)
+			if (auto found = it->GetComponent<CompClass>(geeid))
 				return found;
 
 		return nullptr;

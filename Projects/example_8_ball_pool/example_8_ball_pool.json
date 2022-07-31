@@ -24,6 +24,7 @@
                             "data": {
                                 "CompT": {
                                     "Name": "Projects\\example_8_ball_pool\\models\\pooltable.glb",
+                                    "ComponentGEEID": 141,
                                     "ComponentTransform": {
                                         "Position": {
                                             "x": 0.0,
@@ -117,6 +118,7 @@
                                                         "CastsShadow": true,
                                                         "Component": {
                                                             "Name": "Pool table",
+                                                            "ComponentGEEID": 142,
                                                             "ComponentTransform": {
                                                                 "Position": {
                                                                     "x": 0.0,
@@ -248,6 +250,7 @@
                                                         "CastsShadow": true,
                                                         "Component": {
                                                             "Name": "Triangle",
+                                                            "ComponentGEEID": 164,
                                                             "ComponentTransform": {
                                                                 "Position": {
                                                                     "x": 0.0,
@@ -315,6 +318,7 @@
                                                         "CastsShadow": true,
                                                         "Component": {
                                                             "Name": "Pool_Cue",
+                                                            "ComponentGEEID": 165,
                                                             "ComponentTransform": {
                                                                 "Position": {
                                                                     "x": -0.2777147889137268,
@@ -382,6 +386,7 @@
                                                         "CastsShadow": true,
                                                         "Component": {
                                                             "Name": "PoolBall_1",
+                                                            "ComponentGEEID": 166,
                                                             "ComponentTransform": {
                                                                 "Position": {
                                                                     "x": 0.9864000082015991,
@@ -484,6 +489,7 @@
                                                         "CastsShadow": true,
                                                         "Component": {
                                                             "Name": "PoolBall_2",
+                                                            "ComponentGEEID": 167,
                                                             "ComponentTransform": {
                                                                 "Position": {
                                                                     "x": 0.7793999910354614,
@@ -586,6 +592,7 @@
                                                         "CastsShadow": true,
                                                         "Component": {
                                                             "Name": "PoolBall_3",
+                                                            "ComponentGEEID": 168,
                                                             "ComponentTransform": {
                                                                 "Position": {
                                                                     "x": 1.1172555685043336,
@@ -688,6 +695,7 @@
                                                         "CastsShadow": true,
                                                         "Component": {
                                                             "Name": "PoolBall_4",
+                                                            "ComponentGEEID": 169,
                                                             "ComponentTransform": {
                                                                 "Position": {
                                                                     "x": 1.2322500944137574,
@@ -790,6 +798,7 @@
                                                         "CastsShadow": true,
                                                         "Component": {
                                                             "Name": "PoolBall_5",
+                                                            "ComponentGEEID": 170,
                                                             "ComponentTransform": {
                                                                 "Position": {
                                                                     "x": 1.2364797592163087,
@@ -892,6 +901,7 @@
                                                         "CastsShadow": true,
                                                         "Component": {
                                                             "Name": "PoolBall_6",
+                                                            "ComponentGEEID": 171,
                                                             "ComponentTransform": {
                                                                 "Position": {
                                                                     "x": 1.110308289527893,
@@ -994,6 +1004,7 @@
                                                         "CastsShadow": true,
                                                         "Component": {
                                                             "Name": "PoolBall_7",
+                                                            "ComponentGEEID": 172,
                                                             "ComponentTransform": {
                                                                 "Position": {
                                                                     "x": 0.8802602887153626,
@@ -1096,6 +1107,7 @@
                                                         "CastsShadow": true,
                                                         "Component": {
                                                             "Name": "PoolBall_8",
+                                                            "ComponentGEEID": 173,
                                                             "ComponentTransform": {
                                                                 "Position": {
                                                                     "x": 0.9864000082015991,
@@ -1198,6 +1210,7 @@
                                                         "CastsShadow": true,
                                                         "Component": {
                                                             "Name": "PoolBall_9",
+                                                            "ComponentGEEID": 174,
                                                             "ComponentTransform": {
                                                                 "Position": {
                                                                     "x": 1.22517991065979,
@@ -1300,6 +1313,7 @@
                                                         "CastsShadow": true,
                                                         "Component": {
                                                             "Name": "PoolBall_10",
+                                                            "ComponentGEEID": 175,
                                                             "ComponentTransform": {
                                                                 "Position": {
                                                                     "x": 1.1134591102600098,
@@ -1402,6 +1416,7 @@
                                                         "CastsShadow": true,
                                                         "Component": {
                                                             "Name": "PoolBall_11",
+                                                            "ComponentGEEID": 176,
                                                             "ComponentTransform": {
                                                                 "Position": {
                                                                     "x": 1.2219165563583375,
@@ -1504,6 +1519,7 @@
                                                         "CastsShadow": true,
                                                         "Component": {
                                                             "Name": "PoolBall_12",
+                                                            "ComponentGEEID": 177,
                                                             "ComponentTransform": {
                                                                 "Position": {
                                                                     "x": 0.8832368850708008,
@@ -1606,6 +1622,7 @@
                                                         "CastsShadow": true,
                                                         "Component": {
                                                             "Name": "PoolBall_13",
+                                                            "ComponentGEEID": 178,
                                                             "ComponentTransform": {
                                                                 "Position": {
                                                                     "x": 1.2279282808303834,
@@ -1708,6 +1725,7 @@
                                                         "CastsShadow": true,
                                                         "Component": {
                                                             "Name": "PoolBall_14",
+                                                            "ComponentGEEID": 179,
                                                             "ComponentTransform": {
                                                                 "Position": {
                                                                     "x": 1.1215993165969849,
@@ -1810,6 +1828,7 @@
                                                         "CastsShadow": true,
                                                         "Component": {
                                                             "Name": "PoolBall_15",
+                                                            "ComponentGEEID": 180,
                                                             "ComponentTransform": {
                                                                 "Position": {
                                                                     "x": 0.9864000082015991,
@@ -1912,6 +1931,7 @@
                                                         "CastsShadow": true,
                                                         "Component": {
                                                             "Name": "PoolBall_White",
+                                                            "ComponentGEEID": 181,
                                                             "ComponentTransform": {
                                                                 "Position": {
                                                                     "x": -1.1733466386795045,
@@ -1992,12 +2012,14 @@
         }
     ],
     "Name": "SceneRoot",
+    "ActorGEEID": 56,
     "RootComponent": {
         "polymorphic_id": 1073741824,
         "ptr_wrapper": {
             "valid": 1,
             "data": {
                 "Name": "SceneRoot's root",
+                "ComponentGEEID": 182,
                 "ComponentTransform": {
                     "Position": {
                         "x": 0.0,
@@ -2033,6 +2055,7 @@
                                 "ProbeIntensity": 1.0,
                                 "Component": {
                                     "Name": "A LightProbeComponent",
+                                    "ComponentGEEID": 183,
                                     "ComponentTransform": {
                                         "Position": {
                                             "x": 0.0,
@@ -2072,12 +2095,14 @@
                 "valid": 1,
                 "data": {
                     "Name": "A Camera",
+                    "ActorGEEID": 59,
                     "RootComponent": {
                         "polymorphic_id": 1073741824,
                         "ptr_wrapper": {
                             "valid": 1,
                             "data": {
                                 "Name": "A Camera's root",
+                                "ComponentGEEID": 185,
                                 "ComponentTransform": {
                                     "Position": {
                                         "x": -0.2333642691373825,
@@ -2137,6 +2162,7 @@
                                                 "Active": true,
                                                 "Component": {
                                                     "Name": "A CameraComponent",
+                                                    "ComponentGEEID": 186,
                                                     "ComponentTransform": {
                                                         "Position": {
                                                             "x": 0.0,
@@ -2181,12 +2207,14 @@
                                     "bLockMouseAtCenter": true,
                                     "Actor": {
                                         "Name": "A FreeRoamingController",
+                                        "ActorGEEID": 60,
                                         "RootComponent": {
                                             "polymorphic_id": 1073741824,
                                             "ptr_wrapper": {
                                                 "valid": 1,
                                                 "data": {
                                                     "Name": "A FreeRoamingController's root",
+                                                    "ComponentGEEID": 188,
                                                     "ComponentTransform": {
                                                         "Position": {
                                                             "x": 0.0,
@@ -2231,12 +2259,14 @@
                                         "bLockMouseAtCenter": false,
                                         "Actor": {
                                             "Name": "A CueController",
+                                            "ActorGEEID": 61,
                                             "RootComponent": {
                                                 "polymorphic_id": 1073741824,
                                                 "ptr_wrapper": {
                                                     "valid": 1,
                                                     "data": {
                                                         "Name": "A CueController's root",
+                                                        "ComponentGEEID": 190,
                                                         "ComponentTransform": {
                                                             "Position": {
                                                                 "x": 0.0,
@@ -2282,12 +2312,14 @@
                 "valid": 1,
                 "data": {
                     "Name": "Pooltable",
+                    "ActorGEEID": 62,
                     "RootComponent": {
                         "polymorphic_id": 1073741824,
                         "ptr_wrapper": {
                             "valid": 1,
                             "data": {
                                 "Name": "Projects\\example_8_ball_pool\\models\\pooltable.glb",
+                                "ComponentGEEID": 192,
                                 "ComponentTransform": {
                                     "Position": {
                                         "x": 0.0,
@@ -2373,6 +2405,7 @@
                                                     "CastsShadow": true,
                                                     "Component": {
                                                         "Name": "Pool table",
+                                                        "ComponentGEEID": 193,
                                                         "ComponentTransform": {
                                                             "Position": {
                                                                 "x": 0.0,
@@ -2535,6 +2568,7 @@
                                                     "CastsShadow": true,
                                                     "Component": {
                                                         "Name": "Triangle",
+                                                        "ComponentGEEID": 194,
                                                         "ComponentTransform": {
                                                             "Position": {
                                                                 "x": 0.0,
@@ -2594,6 +2628,7 @@
                                                     "CastsShadow": true,
                                                     "Component": {
                                                         "Name": "Pool_Cue",
+                                                        "ComponentGEEID": 195,
                                                         "ComponentTransform": {
                                                             "Position": {
                                                                 "x": 0.0,
@@ -2632,6 +2667,7 @@
                                                 "CurrentAnimName": "",
                                                 "value0": {
                                                     "Name": "An AnimationManagerComponent",
+                                                    "ComponentGEEID": 196,
                                                     "ComponentTransform": {
                                                         "Position": {
                                                             "x": 0.0,
@@ -2690,6 +2726,7 @@
                                                 "bShadowMapCullFronts": false,
                                                 "Component": {
                                                     "Name": "A LightComponent",
+                                                    "ComponentGEEID": 197,
                                                     "ComponentTransform": {
                                                         "Position": {
                                                             "x": 0.0,
@@ -2726,6 +2763,7 @@
                                                 "CurrentAnimName": "",
                                                 "value0": {
                                                     "Name": "An AnimationManagerComponent",
+                                                    "ComponentGEEID": 198,
                                                     "ComponentTransform": {
                                                         "Position": {
                                                             "x": 0.0,
@@ -2765,12 +2803,14 @@
                                 "valid": 1,
                                 "data": {
                                     "Name": "Poolballs",
+                                    "ActorGEEID": 63,
                                     "RootComponent": {
                                         "polymorphic_id": 1073741824,
                                         "ptr_wrapper": {
                                             "valid": 1,
                                             "data": {
                                                 "Name": "Projects\\example_8_ball_pool\\models\\pooltable.glb",
+                                                "ComponentGEEID": 200,
                                                 "ComponentTransform": {
                                                     "Position": {
                                                         "x": 0.0,
@@ -2825,6 +2865,7 @@
                                                                     "CastsShadow": true,
                                                                     "Component": {
                                                                         "Name": "PoolBall_1",
+                                                                        "ComponentGEEID": 201,
                                                                         "ComponentTransform": {
                                                                             "Position": {
                                                                                 "x": 0.9864000082015991,
@@ -2895,6 +2936,7 @@
                                                                     "CastsShadow": true,
                                                                     "Component": {
                                                                         "Name": "PoolBall_2",
+                                                                        "ComponentGEEID": 202,
                                                                         "ComponentTransform": {
                                                                             "Position": {
                                                                                 "x": 0.7793999910354614,
@@ -2965,6 +3007,7 @@
                                                                     "CastsShadow": true,
                                                                     "Component": {
                                                                         "Name": "PoolBall_3",
+                                                                        "ComponentGEEID": 203,
                                                                         "ComponentTransform": {
                                                                             "Position": {
                                                                                 "x": 1.1172555685043336,
@@ -3035,6 +3078,7 @@
                                                                     "CastsShadow": true,
                                                                     "Component": {
                                                                         "Name": "PoolBall_4",
+                                                                        "ComponentGEEID": 204,
                                                                         "ComponentTransform": {
                                                                             "Position": {
                                                                                 "x": 1.2322500944137574,
@@ -3105,6 +3149,7 @@
                                                                     "CastsShadow": true,
                                                                     "Component": {
                                                                         "Name": "PoolBall_5",
+                                                                        "ComponentGEEID": 205,
                                                                         "ComponentTransform": {
                                                                             "Position": {
                                                                                 "x": 1.2364797592163087,
@@ -3175,6 +3220,7 @@
                                                                     "CastsShadow": true,
                                                                     "Component": {
                                                                         "Name": "PoolBall_6",
+                                                                        "ComponentGEEID": 206,
                                                                         "ComponentTransform": {
                                                                             "Position": {
                                                                                 "x": 1.110308289527893,
@@ -3245,6 +3291,7 @@
                                                                     "CastsShadow": true,
                                                                     "Component": {
                                                                         "Name": "PoolBall_7",
+                                                                        "ComponentGEEID": 207,
                                                                         "ComponentTransform": {
                                                                             "Position": {
                                                                                 "x": 0.8802602887153626,
@@ -3315,6 +3362,7 @@
                                                                     "CastsShadow": true,
                                                                     "Component": {
                                                                         "Name": "PoolBall_8",
+                                                                        "ComponentGEEID": 208,
                                                                         "ComponentTransform": {
                                                                             "Position": {
                                                                                 "x": 0.9864000082015991,
@@ -3385,6 +3433,7 @@
                                                                     "CastsShadow": true,
                                                                     "Component": {
                                                                         "Name": "PoolBall_9",
+                                                                        "ComponentGEEID": 209,
                                                                         "ComponentTransform": {
                                                                             "Position": {
                                                                                 "x": 1.22517991065979,
@@ -3455,6 +3504,7 @@
                                                                     "CastsShadow": true,
                                                                     "Component": {
                                                                         "Name": "PoolBall_10",
+                                                                        "ComponentGEEID": 210,
                                                                         "ComponentTransform": {
                                                                             "Position": {
                                                                                 "x": 1.1134591102600098,
@@ -3525,6 +3575,7 @@
                                                                     "CastsShadow": true,
                                                                     "Component": {
                                                                         "Name": "PoolBall_11",
+                                                                        "ComponentGEEID": 211,
                                                                         "ComponentTransform": {
                                                                             "Position": {
                                                                                 "x": 1.2219165563583375,
@@ -3595,6 +3646,7 @@
                                                                     "CastsShadow": true,
                                                                     "Component": {
                                                                         "Name": "PoolBall_12",
+                                                                        "ComponentGEEID": 212,
                                                                         "ComponentTransform": {
                                                                             "Position": {
                                                                                 "x": 0.8832368850708008,
@@ -3665,6 +3717,7 @@
                                                                     "CastsShadow": true,
                                                                     "Component": {
                                                                         "Name": "PoolBall_13",
+                                                                        "ComponentGEEID": 213,
                                                                         "ComponentTransform": {
                                                                             "Position": {
                                                                                 "x": 1.2279282808303834,
@@ -3735,6 +3788,7 @@
                                                                     "CastsShadow": true,
                                                                     "Component": {
                                                                         "Name": "PoolBall_14",
+                                                                        "ComponentGEEID": 214,
                                                                         "ComponentTransform": {
                                                                             "Position": {
                                                                                 "x": 1.1215993165969849,
@@ -3805,6 +3859,7 @@
                                                                     "CastsShadow": true,
                                                                     "Component": {
                                                                         "Name": "PoolBall_15",
+                                                                        "ComponentGEEID": 215,
                                                                         "ComponentTransform": {
                                                                             "Position": {
                                                                                 "x": 0.9864000082015991,
@@ -3863,6 +3918,7 @@
                 "valid": 1,
                 "data": {
                     "Name": "Whiteball",
+                    "ActorGEEID": 64,
                     "RootComponent": {
                         "polymorphic_id": 7,
                         "ptr_wrapper": {
@@ -3893,6 +3949,7 @@
                                     "CastsShadow": true,
                                     "Component": {
                                         "Name": "PoolBall_White",
+                                        "ComponentGEEID": 217,
                                         "ComponentTransform": {
                                             "Position": {
                                                 "x": -1.1733477115631104,
@@ -3937,6 +3994,7 @@
                                                         "Path": "",
                                                         "Component": {
                                                             "Name": "Poolsounds",
+                                                            "ComponentGEEID": 218,
                                                             "ComponentTransform": {
                                                                 "Position": {
                                                                     "x": 0.0,
@@ -3981,6 +4039,7 @@
                 "valid": 1,
                 "data": {
                     "Name": "Poolcue",
+                    "ActorGEEID": 65,
                     "RootComponent": {
                         "polymorphic_id": 7,
                         "ptr_wrapper": {
@@ -4011,6 +4070,7 @@
                                     "CastsShadow": true,
                                     "Component": {
                                         "Name": "Pool_Cue",
+                                        "ComponentGEEID": 220,
                                         "ComponentTransform": {
                                             "Position": {
                                                 "x": -3.172393321990967,
@@ -4069,6 +4129,7 @@
                                                         "Active": false,
                                                         "Component": {
                                                             "Name": "A CameraComponent",
+                                                            "ComponentGEEID": 221,
                                                             "ComponentTransform": {
                                                                 "Position": {
                                                                     "x": 0.699999988079071,
@@ -4113,12 +4174,14 @@
                 "valid": 1,
                 "data": {
                     "Name": "Floor",
+                    "ActorGEEID": 66,
                     "RootComponent": {
                         "polymorphic_id": 1073741824,
                         "ptr_wrapper": {
                             "valid": 1,
                             "data": {
                                 "Name": "Floor's root",
+                                "ComponentGEEID": 223,
                                 "ComponentTransform": {
                                     "Position": {
                                         "x": 0.0,
@@ -4252,6 +4315,7 @@
                                                     "CastsShadow": true,
                                                     "Component": {
                                                         "Name": "Quad",
+                                                        "ComponentGEEID": 224,
                                                         "ComponentTransform": {
                                                             "Position": {
                                                                 "x": 0.0,

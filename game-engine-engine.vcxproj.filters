@@ -242,6 +242,9 @@
     <ClCompile Include="src\src\scene\hierarchy\HierarchyNodeInstantiation.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\src\editor\DefaultEditorController.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\src\animation\Animation.h">
@@ -476,6 +479,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\src\scene\hierarchy\HierarchyNodeBase.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\src\editor\DefaultEditorController.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

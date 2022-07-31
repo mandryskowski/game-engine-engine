@@ -411,7 +411,6 @@ namespace GEE
 		auto& tbCollection = info.GetTbCollection();
 		auto& sceneRenderData = info.GetSceneRenderData();
 		const GameSettings::VideoSettings& settings = tbCollection.GetSettings();
-		bool debugPhysics = false;//GameHandle->GetDefInputRetriever().IsKeyPressed(Key::F2);
 		bool debugComponents = true;
 		bool useLightingAlgorithms = sceneRenderData.ContainsLights() || sceneRenderData.ContainsLightProbes();
 		Mat4f currentFrameView = info.GetView();
@@ -450,7 +449,7 @@ namespace GEE
 
 
 				////////////////////2.1 Geometry pass of Deferred Shading
-				if (debugPhysics)
+				if (settings.bForceWireframeRendering)
 					glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
 				Shader* gShader = deferredTb->GeometryShader;
@@ -463,7 +462,7 @@ namespace GEE
 				info.StopRequiringShaderInfo();
 
 
-				if (debugPhysics)
+				if (settings.bForceWireframeRendering)
 					glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 				////////////////////2.2 SSAO pass
@@ -478,9 +477,9 @@ namespace GEE
 				sceneRenderData.UpdateLightUniforms();
 
 				MainFramebuffer.Bind(); // Bind the "Main" framebuffer, where we output light information. 
-				glClearBufferfv(GL_COLOR, 0, Math::GetDataPtr(Vec3f(0.0f, 0.0f, 0.0f))); // Clear ONLY the color buffers. The depth information stays for the light pass (we need to know which light volumes actually contain any objects that are affected by the light)
+				glClearBufferfv(GL_COLOR, 0, Math::GetDataPtr(Vec4f(0.0f, 0.0f, 0.0f, 0.0f))); // Clear ONLY the color buffers. The depth information stays for the light pass (we need to know which light volumes actually contain any objects that are affected by the light)
 				if (tbCollection.GetSettings().bBloom)
-					glClearBufferfv(GL_COLOR, 1, Math::GetDataPtr(Vec3f(0.0f)));
+					glClearBufferfv(GL_COLOR, 1, Math::GetDataPtr(Vec4f(0.0f)));
 				else
 					Texture().Bind(1);
 				
@@ -607,7 +606,7 @@ namespace GEE
 		glDisable(GL_BLEND);
 
 		if (renderIconsFunc)
-			renderIconsFunc(MainFramebuffer);
+			;// renderIconsFunc(MainFramebuffer);
 
 		/*if (Component* selectedComponent = dynamic_cast<Editor::EditorManager*>()->GetSelectedComponent(); selectedComponent && selectedComponent->GetScene().GetRenderData() == sceneRenderData)
 			OutlineRenderer(Impl.RenderHandle, info.GetContextID()).RenderOutlineSilhouette(info, dynamic_cast<Editor::EditorManager*>(GameHandle)->GetSelectedComponent(), MainFramebuffer);
@@ -616,7 +615,9 @@ namespace GEE
 			GameHandle->GetPhysicsHandle()->DebugRender(*GameHandle->GetMainScene()->GetPhysicsData(), *this, info);*/
 
 		////////////////////4. Postprocessing pass (Blur + Tonemapping & Gamma Correction)
-		PostprocessRenderer(Impl.RenderHandle, target).Render(info.GetContextID(), tbCollection, &viewport, MainFramebuffer.GetColorTexture(0), (settings.bBloom) ? (MainFramebuffer.GetColorTexture(1)) : (Texture()), MainFramebuffer.GetAnyDepthAttachment(), (settings.IsVelocityBufferNeeded()) ? (MainFramebuffer.GetAttachment("velocityTex")) : (Texture()));
+
+		PostprocessRenderer(Impl.RenderHandle, target).Render(info.GetContextID(), tbCollection, &viewport, MainFramebuffer.GetColorTexture(0), (settings.bBloom) ? (MainFramebuffer.GetColorTexture(1)) : (Texture()),
+			MainFramebuffer.GetAnyDepthAttachment(), (settings.IsVelocityBufferNeeded()) ? (MainFramebuffer.GetAttachment("velocityTex")) : (Texture()), renderIconsFunc);
 
 	//	PreviousFrameView = currentFrameView;										AAAAAAAAAAA SMAA NAPRAW
 	}
@@ -857,7 +858,7 @@ namespace GEE
 		return framebuffer.GetColorTexture(0);
 	}
 
-	void PostprocessRenderer::Render(RenderingContextID contextID, RenderToolboxCollection& tbCollection, const Viewport* viewport, const Texture& colorTex, Texture blurTex, const Texture& depthTex, const Texture& velocityTex)
+	void PostprocessRenderer::Render(RenderingContextID contextID, RenderToolboxCollection& tbCollection, const Viewport* viewport, const Texture& colorTex, Texture blurTex, const Texture& depthTex, const Texture& velocityTex, std::function<void(GEE_FB::Framebuffer&)> renderIconsFunc)
 	{
 		GEE_CORE_ASSERT(Impl.OptionalFramebuffer != nullptr);
 		const GEE_FB::Framebuffer& finalFramebuffer = *Impl.OptionalFramebuffer;
@@ -872,15 +873,17 @@ namespace GEE
 
 		if (settings.AAType == AntiAliasingType::AA_SMAA1X)
 		{
-			const Texture& compositedTex = composedImageRenderer.TonemapGamma(GetPPToolbox<ComposedImageStorageToolbox>(contextID, tbCollection), nullptr, colorTex, blurTex);
-			SMAA(GetPPToolbox<SMAAToolbox>(contextID, tbCollection), viewport, compositedTex, depthTex);
+			const Texture& composedTex = composedImageRenderer.TonemapGamma(GetPPToolbox<ComposedImageStorageToolbox>(contextID, tbCollection), nullptr, colorTex, blurTex);
+			composedImageRenderer.RenderIconsPass(renderIconsFunc, depthTex);
+			SMAA(GetPPToolbox<SMAAToolbox>(contextID, tbCollection), viewport, composedTex, depthTex);
 		}
 		else if (settings.AAType == AntiAliasingType::AA_SMAAT2X && velocityTex.HasBeenGenerated())
 		{
 			const auto storageTb = tbCollection.GetTb<PrevFrameStorageToolbox>();
-			const Texture& compositedTex = composedImageRenderer.TonemapGamma(GetPPToolbox<ComposedImageStorageToolbox>(contextID, tbCollection), nullptr, colorTex, blurTex);
+			const Texture& composedTex = composedImageRenderer.TonemapGamma(GetPPToolbox<ComposedImageStorageToolbox>(contextID, tbCollection), nullptr, colorTex, blurTex);
+			composedImageRenderer.RenderIconsPass(renderIconsFunc, depthTex);
 			const unsigned int previousFrameIndex = 0;// (static_cast<int>(FrameIndex) - 1) % storageTb->StorageFb->GetColorTextureCount();
-			const Texture& SMAAresult = ToFramebuffer(*storageTb->StorageFb).SMAA(GetPPToolbox<SMAAToolbox>(contextID, tbCollection), nullptr, compositedTex, depthTex, storageTb->StorageFb->GetColorTexture(previousFrameIndex), velocityTex, /*FrameIndex*/0, true);
+			const Texture& SMAAresult = ToFramebuffer(*storageTb->StorageFb).SMAA(GetPPToolbox<SMAAToolbox>(contextID, tbCollection), nullptr, composedTex, depthTex, storageTb->StorageFb->GetColorTexture(previousFrameIndex), velocityTex, /*FrameIndex*/0, true);
 
 			if (viewport) finalFramebuffer.Bind(*viewport);
 			else finalFramebuffer.Bind(true);
@@ -908,6 +911,15 @@ namespace GEE
 		if (!shader) shader = Impl.RenderHandle.FindShader("Quad");
 		if (useShader)	shader->Use();
 		StaticMeshInstances(info, { MeshInstance(Impl.GetBasicShapeMesh(EngineBasicShape::Quad)) }, Transform(), *shader);
+	}
+	void PostprocessRenderer::RenderIconsPass(std::function<void(GEE_FB::Framebuffer&)> renderIconsFunc, const Texture& depthTex)
+	{
+		if (!renderIconsFunc)
+			return;
+
+		const_cast<GEE_FB::Framebuffer*>(Impl.OptionalFramebuffer)->Attach(GEE_FB::FramebufferAttachment(depthTex, GEE_FB::AttachmentSlot::DepthStencil()), true, false);
+		renderIconsFunc(*const_cast<GEE_FB::Framebuffer*>(Impl.OptionalFramebuffer));
+		const_cast<GEE_FB::Framebuffer*>(Impl.OptionalFramebuffer)->Detach(GEE_FB::AttachmentSlot::DepthStencil(), false);
 	}
 	void LightProbeRenderer::AllSceneProbes(RenderingContextID contextID, GameSceneRenderData& sceneRenderData)
 	{
@@ -981,6 +993,7 @@ namespace GEE
 		if (meshes.empty())
 			return;
 
+		//std::cout << "$$$REN| Size: " << meshes.size() << "\n";
 		bool handledShader = false;
 		for (const MeshInstance& meshInst : meshes)
 		{
@@ -988,10 +1001,13 @@ namespace GEE
 			MaterialInstance* materialInst = meshInst.GetMaterialInst();
 			const Material* material = meshInst.GetMaterialPtr().get();
 
-			if ((material && material->GetShaderInfo().MatchesRequiredInfo(info.GetRequiredShaderInfo())) ||
+			//std::cout << "$$$REN>" << meshInst.GetMesh().GetLocalization().SpecificName << " Matches shinfo?: " << material->GetShaderInfo().MatchesRequiredInfo(info.GetRequiredShaderInfo()) << "\n";
+			if ((material && !material->GetShaderInfo().MatchesRequiredInfo(info.GetRequiredShaderInfo())) ||
 				(info.GetOnlyShadowCasters() && !mesh.CanCastShadow()) ||
 				!materialInst->ShouldBeDrawn())
 				continue;
+
+			//std::cout << "$$$REN>" << meshInst.GetMesh().GetLocalization().SpecificName << " Handled shader?: " << handledShader << "\n";
 
 			if (!handledShader)
 			{
@@ -1083,6 +1099,8 @@ namespace GEE
 			verts[v++][1] = toVecColor(static_cast<physx::PxDebugColor::Enum>(triangle.color1));
 			verts[v][0] = toGlm(triangle.pos2);
 			verts[v++][1] = toVecColor(static_cast<physx::PxDebugColor::Enum>(triangle.color2));
+
+			std::cout << verts[v][0] << '\n';
 		}
 
 		glBindVertexArray(VAO);

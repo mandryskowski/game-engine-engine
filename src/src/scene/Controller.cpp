@@ -172,6 +172,8 @@ namespace GEE
 
 	Vec3i FPSController::GetMovementDirFromPressedKeys()
 	{
+		if (GameHandle->GetCurrentMouseController() != this)
+			return Vec3i(0);
 		const Vec3i& movementDir = FreeRoamingController::GetMovementDirFromPressedKeys();
 
 		// Cancel out the alteration of movementDir due to pressing LeftControl.
@@ -198,7 +200,6 @@ namespace GEE
 
 		const Vec3i& movementDir = GetMovementDirFromPressedKeys();
 
-		physx::PxRaycastBuffer dupa;
 		physx::PxSweepBuffer sweepBuffer;
 		physx::PxShape** shapes = new physx::PxShape * [16];
 		PxController->getActor()->getShapes(shapes, 16);
@@ -283,7 +284,11 @@ namespace GEE
 			printVector(PossessedGunActor->GetTransform()->GetWorldTransform().GetFrontVec(), "Front");
 		}
 		if (pressedEv.GetButton() == MouseButton::Left)
+		{
+
+			
 			PossessedGunActor->FireWeapon();
+		}
 	}
 
 	void ShootingController::GetEditorDescription(EditorDescriptionBuilder descBuilder)

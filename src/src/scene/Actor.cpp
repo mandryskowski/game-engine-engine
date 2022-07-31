@@ -7,6 +7,7 @@
 #include <UI/UICanvasActor.h>
 #include <scene/UIInputBoxActor.h>
 #include <UI/UICanvasField.h>
+#include <game/IDSystem.h>
 
 GEE::GameScene* GEE::CerealActorSerializationData::ScenePtr = nullptr;
 namespace GEE
@@ -19,7 +20,8 @@ namespace GEE
 		GameHandle(scene.GetGameHandle()),
 		ParentActor(parentActor),
 		KillingProcessFrame(0),
-		SetupStream(nullptr)
+		SetupStream(nullptr),
+		ActorGEEID(IDSystem<Actor>::GenerateID())
 	{
 		RootComponent = MakeUnique<Component>(*this, nullptr, Name + "'s root", t);
 	}
@@ -39,6 +41,7 @@ namespace GEE
 		Children(std::move(moved.Children)),
 		ParentActor(moved.ParentActor),
 		Name(moved.Name),
+		ActorGEEID(moved.ActorGEEID),
 		SetupStream(moved.SetupStream),
 		Scene(moved.Scene),
 		GameHandle(moved.GameHandle),
@@ -66,11 +69,6 @@ namespace GEE
 	Component* Actor::GetRoot() const
 	{
 		return RootComponent.get();
-	}
-
-	std::string Actor::GetName() const
-	{
-		return Name;
 	}
 
 	Transform* Actor::GetTransform() const
@@ -267,9 +265,17 @@ namespace GEE
 		return nullptr;
 	}
 
-	const Actor* Actor::FindActor(const std::string& name) const
+	Actor* Actor::FindActor(GEEID geeid)
 	{
-		return const_cast<Actor*>(this)->FindActor(name);
+		if (ActorGEEID == geeid)
+			return this;
+
+		for (int i = 0; i < static_cast<int>(Children.size()); i++)
+			if (Actor* found = Children[i]->FindActor(geeid))
+				if (!found->IsBeingKilled())
+					return found;
+
+		return nullptr;
 	}
 
 	void Actor::GetEditorDescription(EditorDescriptionBuilder descBuilder)
@@ -310,14 +316,14 @@ namespace GEE
 
 	template <typename Archive> void Actor::Save(Archive& archive) const
 	{
-		archive(CEREAL_NVP(Name), CEREAL_NVP(RootComponent), CEREAL_NVP(Children));
+		archive(CEREAL_NVP(Name), CEREAL_NVP(ActorGEEID), CEREAL_NVP(RootComponent), CEREAL_NVP(Children));
 	}
 	template <typename Archive> void Actor::Load(Archive& archive)
 	{
 		CerealComponentSerializationData::ActorRef = this;	//For constructing the root component and its children
 		CerealComponentSerializationData::ParentComp = nullptr;	//The root component doesn't have a parent
 		RootComponent = nullptr;
-		archive(CEREAL_NVP(Name), CEREAL_NVP(RootComponent));
+		archive(CEREAL_NVP(Name), CEREAL_NVP(ActorGEEID), CEREAL_NVP(RootComponent));
 		std::cout << "Serializing actor " << Name << '\n';
 
 		if (Scene.HasStarted())

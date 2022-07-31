@@ -191,7 +191,7 @@ namespace GEE
 
 					if (stereo)
 						std::cerr << "INFO: Audio file " << path << " is stereo - it won't work with a 3D sound source.\n";
-
+					
 					if (file.getBitDepth() == 8)
 						format = (stereo) ? (AL_FORMAT_STEREO8) : (AL_FORMAT_MONO8);
 					else if (file.getBitDepth() == 16)

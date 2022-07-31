@@ -23,8 +23,7 @@
 
 #include <scene/ModelComponent.h>
 #include <editor/EditorManager.h>
-
-#include <rendering/RenderToolbox.h> // usun to natychmiast 1.07.2022
+#include <editor/DefaultEditorController.h>
 
 namespace GEE
 {
@@ -232,6 +231,8 @@ namespace GEE
 				canvas.SetCanvasView(previousCanvasView);
 			else
 				canvas.AutoClampView();
+
+			EditorHandle.GetEditorController()->Reset((SelectedComp) ? (SelectedComp->GetTransform()) : (Transform()));
 		}
 
 		void EditorActions::SelectActor(Actor* actor, GameScene& editorScene)
@@ -377,6 +378,7 @@ namespace GEE
 			UICanvasActor& canvas = plswork.CreateChild<UICanvasActor>("GEE_E_Scene_Actors_Canvas", Transform(Vec2f(0.0f), Vec2f(10.0f)));
 			if (!previousCanvasView.IsEmpty() && sameScene)
 				canvas.CanvasView = previousCanvasView;
+	
 			canvas.SetPopupCreationFunc([&](PopupDescription desc)
 			{
 				auto& refreshButton = desc.AddOption("Refresh", [&]() { SelectScene(GetSelectedScene(), editorScene); }, IconData(renderHandle, "Assets/Editor/refresh_icon.png", Vec2i(3, 1), 0.0f));
@@ -387,19 +389,18 @@ namespace GEE
 					if (Actor* foundActorCanvas = editorScene.GetRootActor()->FindActor("GEE_E_Actors_Components_Canvas"))
 						if (UIInputBoxActor* foundNameBoxActor = foundActorCanvas->GetActor<UIInputBoxActor>("ActorsNameActor"))
 							foundNameBoxActor->SetActive(true);
-				};
-				desc.AddSubmenu("Create actor", [&, func](PopupDescription desc)
+				}; 
+				desc.AddOption("Transform", [this, &editorScene, &gameHandle, &canvas]() { auto& window = editorScene.CreateActorAtRoot<UIWindowActor>("Button transform"); ComponentDescriptionBuilder descBuilder(*dynamic_cast<Editor::EditorManager*>(&gameHandle), window, window); canvas.GetRoot()->GetEditorDescription(descBuilder); window.AutoClampView(); window.RefreshFieldsList(); });
+				desc.AddSubmenu("Create actor", [this, func](PopupDescription desc)
 				{
-					desc.AddOption("Actor", [&, func]() { func(GetContextActor()->CreateChild<Actor>("An Actor")); }, IconData(renderHandle, "Assets/Editor/component_icon.png", Vec2i(3, 1), 0.0f));
-					desc.AddOption("Pawn", [&, func]() { func(GetContextActor()->CreateChild<PawnActor>("A PawnActor")); }, IconData(renderHandle, "Assets/Editor/component_icon.png", Vec2i(3, 1), 0.0f));
-					desc.AddOption("Roaming Controller", [&, func]() { func(GetContextActor()->CreateChild<FreeRoamingController>("A FreeRoamingController")); }, IconData(renderHandle, "Assets/Editor/component_icon.png", Vec2i(3, 1), 0.0f));
-					desc.AddOption("FPS Controller", [&, func]() { func(GetContextActor()->CreateChild<FPSController>("A FPSController")); }, IconData(renderHandle, "Assets/Editor/component_icon.png", Vec2i(3, 1), 0.0f));
-					desc.AddOption("Shooting Controller", [&, func]() { func(GetContextActor()->CreateChild<ShootingController>("A ShootingController")); }, IconData(renderHandle, "Assets/Editor/component_icon.png", Vec2i(3, 1), 0.0f));
-					desc.AddOption("Gun Actor", [&, func]() { func(GetContextActor()->CreateChild<GunActor>("A GunActor")); }, IconData(renderHandle, "Assets/Editor/component_icon.png", Vec2i(3, 1), 0.0f));
-					desc.AddOption("Cue Controller", [&, func]() { func(GetContextActor()->CreateChild<CueController>("A CueController")); }, IconData(renderHandle, "Assets/Editor/component_icon.png", Vec2i(3, 1), 0.0f));
+					EditorHandle.GenerateActorList(desc, func);
 				});
 				desc.AddOption("Delete", nullptr);
 			});
+
+			// Change scene button
+			(canvas.CreateChild<UIButtonActor>("MainSceneButton", "Main", [this, &editorScene, &gameHandle]() { SelectScene(gameHandle.GetScene("GEE_Main"), editorScene); }, Transform(Vec2f(0.0f, -10.0f), Vec2f(1.0f))));
+			(canvas.CreateChild<UIButtonActor>("EditorSceneButton", "Editor", [this, &editorScene]() { SelectScene(&editorScene, editorScene); }, Transform(Vec2f(2.0f, -10.0f), Vec2f(1.0f))));
 
 			UIButtonActor& refreshButton = canvas.CreateChild<UIButtonActor>("GEE_E_Scene_Refresh_Button", [this, selectedScene, &editorScene]() { this->SelectScene(selectedScene, editorScene); }, Transform(Vec2f(6.0f, 0.0f), Vec2f(0.5f)));
 			uiButtonActorUtil::ButtonMatsFromAtlas(refreshButton, renderHandle.FindMaterial<AtlasMaterial>("GEE_E_Refresh_Icon_Mat"), 0.0f, 1.0f, 2.0f);
@@ -597,7 +598,7 @@ namespace GEE
 
 		Component* EditorActions::GetContextComp()
 		{
-			return ((SelectedComp) ? (SelectedComp) : (GetSelectedActor()->GetRoot()));
+			return ((SelectedComp) ? (SelectedComp) : (GetContextActor()->GetRoot()));
 		}
 
 		Actor* EditorActions::GetContextActor()

@@ -371,7 +371,7 @@ namespace GEE
 			});
 		//	texWindowDescBuilder.AddField("Shader name").GetTemplates().ObjectInput<std::string>(,shaderNames.begin(), shaderNames.end(), [shaderName](UIButtonActor& button, std::string& str) { button.CreateButtonText(str); button.SetOnClickFunc([shaderName, str]() { *shaderName = str + "1"; }); });
 			texWindowDescBuilder.AddField("sRGB").GetTemplates().TickBox([sRGB]() { return *sRGB = !(*sRGB); });
-			texWindowDescBuilder.AddField("Add texture").CreateChild<UIButtonActor>("OKButton", "OK", [this, path, shaderName, sRGB, &addTextureButtonFunc, &list, &addTexWindow, descBuilder]() mutable {
+			texWindowDescBuilder.AddField("Add texture").CreateChild<UIButtonActor>("OKButton", "OK", [this, path, shaderName, sRGB, addTextureButtonFunc, &list, &addTexWindow, descBuilder]() mutable {
 				auto tex = MakeShared<NamedTexture>(Texture::Loader<>::FromFile2D(*path, (*sRGB) ? (Texture::Format::SRGBA()) : (Texture::Format::RGBA())), *shaderName);
 				AddTexture(tex);
 				addTextureButtonFunc(list, *tex);
@@ -484,7 +484,7 @@ namespace GEE
 				}, [path]() { return *path; }, { "*.png", "*.jpg" });
 			texWindowDescBuilder.AddField("Shader name").CreateChild<UIInputBoxActor>("ShaderNameInputBox").SetOnInputFunc([shaderName](const std::string& input) { *shaderName = input; }, [shaderName]() { return *shaderName; });
 			texWindowDescBuilder.AddField("sRGB").GetTemplates().TickBox([sRGB]() { return *sRGB = !(*sRGB); });
-			texWindowDescBuilder.AddField("Add texture").CreateChild<UIButtonActor>("OKButton", "OK", [this, path, shaderName, sRGB, &addTextureButtonFunc, &list, &addTexWindow, descBuilder]() mutable {
+			texWindowDescBuilder.AddField("Add texture").CreateChild<UIButtonActor>("OKButton", "OK", [this, path, shaderName, sRGB, addTextureButtonFunc, &list, &addTexWindow, descBuilder]() mutable {
 				auto tex = MakeShared<NamedTexture>(Texture::Loader<>::FromFile2D(*path, (*sRGB) ? (Texture::Format::SRGBA()) : (Texture::Format::RGBA())), *shaderName);
 				AddTexture(tex);
 				addTextureButtonFunc(list, *tex);

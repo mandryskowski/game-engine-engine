@@ -197,13 +197,14 @@ namespace GEE
 		Texture TonemapGamma(PPToolbox<ComposedImageStorageToolbox> tbCollection,
 			const Viewport* viewport, const Texture& colorTex, const Texture& blurTex);	//converts from linear to gamma and from HDR data to LDR
 
-		void Render(RenderingContextID contextID, RenderToolboxCollection& tbCollection, const Viewport* viewport, const Texture& colorTex, Texture blurTex = Texture(), const Texture& depthTex = Texture(), const Texture& velocityTex = Texture());
+		void Render(RenderingContextID contextID, RenderToolboxCollection& tbCollection, const Viewport* viewport, const Texture& colorTex, Texture blurTex = Texture(), const Texture& depthTex = Texture(), const Texture& velocityTex = Texture(), std::function<void(GEE_FB::Framebuffer&)> renderIconsFunc = nullptr);
 
 		void RenderFullscreenQuad(RenderingContextID contextID, RenderToolboxCollection& tbCollection, Shader* shader = nullptr, bool useShader = true);
 		void RenderFullscreenQuad(TbInfo<MatrixInfoExt>& info, Shader* shader = nullptr, bool useShader = true);
 
 
 	private:
+		void RenderIconsPass(std::function<void(GEE_FB::Framebuffer&)>, const Texture& depthTex);
 		PostprocessRenderer ToFramebuffer(const GEE_FB::Framebuffer& framebuffer) const { return PostprocessRenderer(Impl.RenderHandle, framebuffer); }
 	};
 

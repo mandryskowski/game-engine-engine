@@ -99,11 +99,12 @@ namespace GEE
 
 			template <typename T> void AddActorToList(GameScene& editorScene, T& obj, UIAutomaticListActor& listParent, UICanvas& canvas, std::function<void(PopupDescription, T&)> createPopupFunc = nullptr);
 
-		private:
+//		private:
 			Component* GetContextComp();
 			Actor* GetContextActor();
 			void CreateComponentWindow(Actor&);
 			friend class GameEngineEngineEditor;
+		private:
 
 			EditorManager& EditorHandle;
 

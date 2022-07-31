@@ -14,7 +14,7 @@ namespace GEE
 	}
 
 	CursorMoveEvent::CursorMoveEvent(EventType type, Vec2f newPositionPx, Vec2u windowSizePx, Actor* eventRoot) :
-		CursorMoveEvent(type, Vec2f(newPositionPx.x, windowSizePx.y - newPositionPx.y) / static_cast<Vec2f>(windowSizePx) * 2.0f - 1.0f, eventRoot)
+		CursorMoveEvent(type, newPositionPx / static_cast<Vec2f>(windowSizePx) * 2.0f - 1.0f, eventRoot)
 	{
 
 	}

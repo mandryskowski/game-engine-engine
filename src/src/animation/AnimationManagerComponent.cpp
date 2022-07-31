@@ -325,6 +325,7 @@ namespace GEE
 		float posX = 0.0f;
 		for (auto& it : AnimInstances)
 		{
+			std::cout << "%%%: " << it.get() << '\n';
 			UIButtonActor& button = animField.CreateChild<UIButtonActor>(it->GetAnimation().Localization.Name, it->GetAnimation().Localization.Name, [this, &it]() { SelectAnimation(it.get()); });
 			button.GetTransform()->SetPosition(Vec2f(posX, 0.0f));
 			posX += 3.0f;

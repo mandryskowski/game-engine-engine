@@ -44,8 +44,11 @@ namespace GEE
 		virtual void OnStart();
 		virtual void OnStartAll();
 
+		std::string GetName() const { return Name; }
+		GEEID GetGEEID() const { return ActorGEEID; }
+
 		Component* GetRoot() const;
-		std::string GetName() const;
+		GEEID GetID() const { return ActorGEEID; }
 		Transform* GetTransform() const;
 		std::vector<Actor*> GetChildren();
 		GameScene& GetScene() { return Scene; }
@@ -94,7 +97,15 @@ namespace GEE
 		void DebugRenderAll(SceneMatrixInfo info, Shader* shader) const;
 
 		Actor* FindActor(const std::string& name);
-		const Actor* FindActor(const std::string& name) const;
+		Actor* FindActor(GEEID);
+		const Actor* FindActor(const std::string& name) const
+		{
+			return const_cast<Actor*>(this)->FindActor(name);
+		}
+		const Actor* FindActor(GEEID geeid) const
+		{
+			return const_cast<Actor*>(this)->FindActor(geeid);
+		}
 
 		/**
 		 * @brief Creates UI elements to edit the Actor in the editor
@@ -122,10 +133,12 @@ namespace GEE
 		virtual ~Actor() {}
 
 	protected:
+		std::string Name;
+		GEEID ActorGEEID;
+
 		UniquePtr<Component> RootComponent;
 		std::vector<UniquePtr<Actor>> Children;
 		Actor* ParentActor;
-		std::string Name;
 		std::stringstream* SetupStream;
 		GameScene& Scene;
 		GameManager* GameHandle;

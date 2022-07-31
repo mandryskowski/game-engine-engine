@@ -18,6 +18,7 @@ namespace GEE
 	Controller* mouseController = nullptr; 
 											
 	EventHolder* WindowEventProcessor::TargetHolder = nullptr;
+	std::unordered_map<SystemWindow*, Vec2i> WindowEventProcessor::PrevCursorPositions;
 
 	Game::Game(const ShadingAlgorithm& shading, const GameSettings& settings) :
 		bGameTerminated(false),
@@ -155,6 +156,8 @@ namespace GEE
 		{
 			if (controller->GetHideCursor())
 				glfwSetInputMode(GameWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+			else
+				glfwSetInputMode(GameWindow, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 
 			Vec2i windowSize = WindowData(*GameWindow).GetWindowSize();
 			glfwSetCursorPos(GameWindow, (double)windowSize.x / 2.0, (double)windowSize.y / 2.0);
@@ -403,13 +406,13 @@ namespace GEE
 		return renderDatas;
 	}
 
-	float pBegin = 0.0f;
-	bool DUPA = false;
-
 	void WindowEventProcessor::CursorPosCallback(SystemWindow* window, double xpos, double ypos)
 	{
 		Vec2i windowSize(0);
 		glfwGetWindowSize(window, &windowSize.x, &windowSize.y);
+
+		// ypos is measured from the top. We want to measure all positions from the bottom (so 0 is at the very bottom and windowSize.y is at the very top).
+		ypos = windowSize.y - ypos;
 
 		GameScene& gameScene = *GetGameSceneFromWindow(*window);
 
@@ -421,7 +424,8 @@ namespace GEE
 		if (mouseController->GetLockMouseAtCenter())
 			glfwSetCursorPos(window, windowSize.x / 2, windowSize.y / 2);
 
-		mouseController->OnMouseMovement(static_cast<Vec2f>(windowSize / 2), Vec2f(xpos, windowSize.y - ypos), windowSize); //Implement it as an Event instead! TODO
+		mouseController->OnMouseMovement((mouseController->GetLockMouseAtCenter()) ? (static_cast<Vec2i>(static_cast<Vec2f>(windowSize) / 2.0f)) : (PrevCursorPositions[window]), Vec2f(xpos, ypos), windowSize); //Implement it as an Event instead! TODO
+		PrevCursorPositions[window] = static_cast<Vec2i>(Vec2d(xpos, ypos));
 	}
 
 	void WindowEventProcessor::MouseButtonCallback(SystemWindow* window, int button, int action, int mods)

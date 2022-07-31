@@ -48,6 +48,8 @@ namespace GEE
 			virtual bool GetDebugRenderComponents() const override { return bDebugRenderComponents; }
 			virtual bool GetDebugRenderPhysicsMeshes() const override { return bDebugRenderPhysicsMeshes; }
 			Profiling& GetProfilerRef() { return Profiler; }
+			DefaultEditorController* GetEditorController() { return EditorController; }
+			virtual void GenerateActorList(PopupDescription, std::function<void(Actor&)>) override;
 
 			virtual void RequestPopupMenu(const Vec2f& posWindowSpace, SystemWindow& relativeWindow, std::function<void(PopupDescription)> popupCreation) override;
 
@@ -90,6 +92,9 @@ namespace GEE
 
 		// Which Controller should be set after we switch from editor to game control
 		Controller* GameController;
+
+		// Which Controller should be set after we switch from game to editor control
+		DefaultEditorController* EditorController;
 
 		std::unordered_map<GameScene*, EditorMessageLogger> Logs;
 

@@ -1,9 +1,9 @@
 #pragma once
 #include <atomic>
+#include <utility/Utility.h>
 
 namespace GEE
 {
-
 	typedef uint64_t GEEID;
 	template <typename T>
 	class IDSystem

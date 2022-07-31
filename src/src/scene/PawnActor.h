@@ -29,13 +29,13 @@ namespace GEE
 		{
 			std::string animManagerName = (AnimManager) ? (AnimManager->GetName()) : (std::string()), gunName = (Gun) ? (Gun->GetName()) : (std::string()), playerTargetName = (PlayerTarget) ? (PlayerTarget->GetName()) : (std::string());
 
-			archive(cereal::make_nvp("AnimManagerName", animManagerName), CEREAL_NVP(AnimIndex), cereal::make_nvp("GunName", gunName), CEREAL_NVP(SpeedPerSec), cereal::make_nvp("PlayerTargetName", playerTargetName), cereal::make_nvp("Actor", cereal::base_class<Actor>(this)));
+			archive(cereal::make_nvp("AnimManagerName", animManagerName), CEREAL_NVP(WalkingAnimIndex), cereal::make_nvp("GunName", gunName), CEREAL_NVP(SpeedPerSec), cereal::make_nvp("PlayerTargetName", playerTargetName), cereal::make_nvp("Actor", cereal::base_class<Actor>(this)));
 		}
 		template <typename Archive>
 		void Load(Archive& archive)
 		{
 			std::string animManagerName, gunName, playerTargetName;
-			archive(cereal::make_nvp("AnimManagerName", animManagerName), CEREAL_NVP(AnimIndex), cereal::make_nvp("GunName", gunName), CEREAL_NVP(SpeedPerSec), cereal::make_nvp("PlayerTargetName", playerTargetName), cereal::make_nvp("Actor", cereal::base_class<Actor>(this)));
+			archive(cereal::make_nvp("AnimManagerName", animManagerName), CEREAL_NVP(WalkingAnimIndex), cereal::make_nvp("GunName", gunName), CEREAL_NVP(SpeedPerSec), cereal::make_nvp("PlayerTargetName", playerTargetName), cereal::make_nvp("Actor", cereal::base_class<Actor>(this)));
 
 			Scene.AddPostLoadLambda([this, animManagerName, gunName, playerTargetName]() {
 					AnimManager = GetRoot()->GetComponent<AnimationManagerComponent>(animManagerName);
@@ -43,11 +43,11 @@ namespace GEE
 					PlayerTarget = GetScene().FindActor(playerTargetName);
 				});
 		}
-	private:
+	protected:
 		void Respawn();
 		//Component* RootBone;
 		AnimationManagerComponent* AnimManager;
-		int AnimIndex;
+		int WalkingAnimIndex, IdleAnimIndex;
 		Vec3f PreAnimBonePos;
 
 		PawnState State;
@@ -66,8 +66,6 @@ namespace GEE
 
 		GunActor* Gun;
 		Actor* PlayerTarget;
-
-		std::function<void(AnimationManagerComponent*)> UpdateAnimsListInEditor;
 	};
 }
 

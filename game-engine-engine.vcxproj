@@ -147,16 +147,20 @@
     <LibraryPath>$(SolutionDir)src\vendor\lib\;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='LibraryDebug|x64'">
-    <IncludePath>C:\Dev\Include;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\Dev\Lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(SolutionDir)src\src\;$(SolutionDir)src\vendor\include\;$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)src\vendor\lib\;$(LibraryPath)</LibraryPath>
+    <OutDir>$(SolutionDir)src\lib\GEE\</OutDir>
+    <TargetName>$(ProjectName)-d</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <IncludePath>$(SolutionDir)src\src\;$(SolutionDir)src\vendor\include\;$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)src\vendor\lib\;$(LibraryPath)</LibraryPath>
+    <OutDir>$(SolutionDir)</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='LibraryRelease|x64'">
-    <IncludePath>C:\Dev\Include;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\Dev\Lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(SolutionDir)src\src\;$(SolutionDir)src\vendor\include\;$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)src\vendor\lib\;$(LibraryPath)</LibraryPath>
+    <OutDir>$(SolutionDir)src\lib\GEE\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -267,6 +271,16 @@
     <Link>
       <AdditionalDependencies>opengl32.lib;glfw/glfw3_64.lib;AL64/OpenAL32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <ClCompile>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
+      <PreprocessorDefinitions>_DEBUG</PreprocessorDefinitions>
+    </ClCompile>
+    <Lib>
+      <AdditionalDependencies>opengl32.lib;x64/glfw/debug/glfw3.lib;x64/OpenAL/debug/OpenAL64.lib;x64/PhysX/debug/PhysX_64.lib;x64/PhysX/debug/PhysXCommon_64.lib;x64/PhysX/debug/PhysXFoundation_64.lib;x64/PhysX/debug/PhysXPvdSDK_static_64.lib;x64/PhysX/debug/PhysXExtensions_static_64.lib;x64/PhysX/debug/PhysXCharacterKinematic_static_64.lib;x64/PhysX/debug/PhysXCooking_64.lib;x64/assimp/debug/assimp-vc143-mtd.lib;x64/freetype/debug/freetyped.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <Link>
@@ -276,6 +290,7 @@
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <PreprocessorDefinitions>NDEBUG</PreprocessorDefinitions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <ProjectReference>
       <LinkLibraryDependencies>true</LinkLibraryDependencies>
@@ -286,11 +301,17 @@
       <AdditionalDependencies>opengl32.lib;glfw/glfw3_64.lib;AL64/OpenAL32.lib;PhysX64/PhysX_64.lib;PhysX64/PhysXCommon_64.lib;PhysX64/PhysXFoundation_64.lib;PhysX64/PhysXPvdSDK_static_64.lib;PhysX64/PhysXExtensions_static_64.lib;PhysX64/PhysXCooking_64.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <ClCompile>
-      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <PreprocessorDefinitions>NDEBUG</PreprocessorDefinitions>
+      <MultiProcessorCompilation>false</MultiProcessorCompilation>
     </ClCompile>
     <ProjectReference>
       <LinkLibraryDependencies>true</LinkLibraryDependencies>
     </ProjectReference>
+    <Lib>
+      <AdditionalDependencies>opengl32.lib;x64/glfw/glfw3.lib;x64/OpenAL/OpenAL64.lib;x64/PhysX/checked/PhysX_64.lib;x64/PhysX/checked/PhysXCommon_64.lib;x64/PhysX/checked/PhysXFoundation_64.lib;x64/PhysX/checked/PhysXPvdSDK_static_64.lib;x64/PhysX/checked/PhysXExtensions_static_64.lib;x64/PhysX/checked/PhysXCharacterKinematic_static_64.lib;x64/PhysX/checked/PhysXCooking_64.lib;x64/assimp/assimp-vc143-mt.lib;x64/freetype/freetype.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
     <None Include="ClassDiagram.cd" />
@@ -304,6 +325,7 @@
     <ClCompile Include="src\src\animation\SkeletonInfo.cpp" />
     <ClCompile Include="src\src\assetload\FileLoader.cpp" />
     <ClCompile Include="src\src\audio\AudioEngine.cpp" />
+    <ClCompile Include="src\src\editor\DefaultEditorController.cpp" />
     <ClCompile Include="src\src\editor\EditorActions.cpp" />
     <ClCompile Include="src\src\editor\EditorManager.cpp" />
     <ClCompile Include="src\src\editor\EditorMessageLogger.cpp" />
@@ -380,6 +402,7 @@
     <ClInclude Include="src\src\assetload\FileLoader.h" />
     <ClInclude Include="src\src\audio\AudioEngine.h" />
     <ClInclude Include="src\src\audio\AudioFile.h" />
+    <ClInclude Include="src\src\editor\DefaultEditorController.h" />
     <ClInclude Include="src\src\editor\EditorActions.h" />
     <ClInclude Include="src\src\editor\EditorManager.h" />
     <ClInclude Include="src\src\editor\EditorMessageLogger.h" />

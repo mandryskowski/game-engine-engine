@@ -6,6 +6,7 @@
 #include <utility/Asserts.h>
 #include <utility>
 #include <iostream>
+#include <cereal/access.hpp>
 
 struct GLFWwindow;
 
@@ -16,6 +17,18 @@ struct GLFWwindow;
 
 namespace GEE
 {
+	typedef uint64_t GEEID;
+
+	template <typename T>
+	GEEID GetGEEIDPtr(const T* obj)
+	{
+		return (obj) ? (obj->GetGEEID()) : (0);
+	}
+}
+
+namespace GEE
+{
+
 	template <typename T> using UniquePtr = std::unique_ptr<T>;
 	template <typename T, typename... Args>
 	constexpr UniquePtr<T> MakeUnique(Args&&... args)
@@ -29,6 +42,8 @@ namespace GEE
 	{
 		return std::make_shared<T>(std::forward<Args>(args)...);
 	}
+
+	template <typename T> using WeakPtr = std::weak_ptr<T>;
 
 	template <typename T>
 	std::string ToStringPrecision(const T& val, const unsigned int precision = 6)

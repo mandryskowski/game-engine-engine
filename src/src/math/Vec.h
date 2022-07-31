@@ -23,6 +23,10 @@ namespace GEE
 	using Vec3d = Vec<3, double>;
 	using Vec4d = Vec<4, double>;
 
+	using Vec2b = Vec<2, bool>;
+	using Vec3b = Vec<3, bool>;
+	using Vec4b = Vec<4, bool>;
+
 	template <typename T> using Quat = glm::qua<T>;
 	using Quatf = Quat<float>;
 

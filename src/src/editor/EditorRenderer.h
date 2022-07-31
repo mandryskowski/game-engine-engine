@@ -17,6 +17,7 @@ namespace GEE
 			void RenderMainMenu(GameScene*);
 			void RenderMeshPreview(GameScene*, RenderToolboxCollection&);
 			void RenderPopups();
+			void RenderGrid(const MatrixInfo&);
 
 		private:
 			SystemWindow* MainWindow;

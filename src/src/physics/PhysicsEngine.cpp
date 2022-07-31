@@ -179,7 +179,7 @@ namespace GEE
 		{
 			PxCapsuleControllerDesc desc;
 			desc.radius = 0.12f;
-			desc.height = 0.6f;
+			desc.height = (1.60f - 0.12f) * 2.0f;
 			desc.material = DefaultMaterial;
 			desc.position = PxExtendedVec3(0.0f, 0.0f, 0.0f);
 			desc.position = PxExtendedVec3(t.GetPos().x, t.GetPos().y, t.GetPos().z);
@@ -192,6 +192,7 @@ namespace GEE
 			PxController* controller = scenePhysicsData.PhysXControllerManager->createController(desc);
 
 			PxRigidDynamic* actor = controller->getActor();
+			actor->setName("controllercapsule");
 			PxShape* shapes[1]; //There is only one shape in this controller
 			actor->getShapes(shapes, 1, 0); //get that shape
 			PxShape* shape = shapes[0];
@@ -239,6 +240,7 @@ namespace GEE
 			scenePhysicsData.PhysXControllerManager = PxCreateControllerManager(*scenePhysicsData.PhysXScene);
 
 			PxRigidStatic* ground = PxCreatePlane(*Physics, PxPlane(0.0f, 1.0f, 0.0f, 0.0f), *DefaultMaterial);
+			ground->setName("ground");
 			scenePhysicsData.PhysXScene->addActor(*ground);
 
 			if (*DebugModePtr)
@@ -272,6 +274,12 @@ namespace GEE
 
 		void PhysicsEngine::UpdateTransforms()
 		{
+			/*physx::PxRaycastBuffer castBuffer;
+			physx::PxU32 maxHits = 1;
+			physx::PxHitFlags hitFlags = physx::PxHitFlag::ePOSITION | physx::PxHitFlag::eNORMAL | physx::PxHitFlag::eUV;
+
+			bool hit = ScenesPhysicsData[0]->GetPxScene()->raycast()*/
+
 			for (int sceneIndex = 0; sceneIndex < static_cast<int>(ScenesPhysicsData.size()); sceneIndex++)
 			{
 				for (int i = 0; i < static_cast<int>(ScenesPhysicsData[sceneIndex]->CollisionObjects.size()); i++)
@@ -325,7 +333,7 @@ namespace GEE
 						if (!shapeTransform)
 							continue;
 
-						std::cout << "Updating shape of scale" << shapeTransform->GetScale().x << "...\n";
+					//	std::cout << "Updating shape of scale" << shapeTransform->GetScale().x << "...\n";
 
 						switch (shapes[j]->getGeometryType())
 						{
