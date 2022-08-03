@@ -205,7 +205,7 @@ namespace GEE
 	{
 		RenderableComponent::HandleEvent(ev);
 
-		if (ev.GetType() == EventType::WindowResized)
+		if (ev.GetType() == EventType::WindowResized || ev.GetType() == EventType::CanvasViewChanged)
 			RecalculateScaleRatio();
 	}
 

@@ -62,7 +62,7 @@ namespace GEE
 			Vec2u newSize(width, height);
 			if (EditorHandle->GetGameHandle()->GetGameSettings()->Video.Resolution != static_cast<Vec2f>(newSize))
 			{
-				EditorHandle->GetGameHandle()->GetGameSettings()->Video.Resolution = static_cast<Vec2f>(newSize) * Vec2f(0.4f, 0.6f);
+				EditorHandle->GetGameHandle()->GetGameSettings()->Video.Resolution = static_cast<Vec2f>(newSize) * Vec2f(0.7f);
 				EditorHandle->UpdateGameSettings();
 			}
 
@@ -72,6 +72,7 @@ namespace GEE
 				EditorHandle->UpdateEditorSettings();
 			}
 
+			EditorHandle->GetGameHandle()->GetScene("GEE_Editor")->HandleEventAll(Event(EventType::WindowResized));
 			std::cout << "New res " << EditorHandle->GetGameHandle()->GetGameSettings()->Video.Resolution << '\n';
 		}
 
@@ -381,7 +382,7 @@ namespace GEE
 			}*/
 			// Viewport
 			{
-				auto& scenePreviewActor = editorScene.CreateActorAtRoot<UIButtonActor>("SceneViewportActor", nullptr, Transform(Vec2f(0.0f, 0.4f), Vec2f(0.4f, 0.6f)));
+				auto& scenePreviewActor = editorScene.CreateActorAtRoot<UIButtonActor>("SceneViewportActor", nullptr, Transform(Vec2f(0.0f, 0.25f), Vec2f(0.7f)));
 				scenePreviewActor.DeleteButtonModel();
 
 				ModelComponent& scenePreviewQuad = scenePreviewActor.CreateComponent<ModelComponent>("SceneViewportQuad");
@@ -1249,8 +1250,8 @@ namespace GEE
 		}
 		else
 		{
-			GetGameHandle()->GetGameSettings()->Video.Resolution = static_cast<Vec2f>(windowSize) * Vec2f(0.4f, 0.6f);
-			GetScene("GEE_Editor")->FindActor("SceneViewportActor")->SetTransform(Transform(Vec2f(0.0f, 0.4f), Vec2f(0.4f, 0.6f)));
+			GetGameHandle()->GetGameSettings()->Video.Resolution = static_cast<Vec2f>(windowSize) * Vec2f(0.7f);
+			GetScene("GEE_Editor")->FindActor("SceneViewportActor")->SetTransform(Transform(Vec2f(0.0f, 0.2f), Vec2f(0.7f)));
 		}
 
 		Vec2f viewportSize = static_cast<Vec2f>(GetGameSettings()->Video.Resolution);
