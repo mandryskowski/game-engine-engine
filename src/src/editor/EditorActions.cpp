@@ -303,8 +303,6 @@ namespace GEE
 
 			AddActorToList<Component>(editorScene, *actor->GetRoot(), listActor, canvas);
 
-			canvas.GetTransform()->SetScale(Vec2f(0.15f, 0.02f * (listActor.GetListElementCount() + 1)));
-
 			listActor.Refresh();
 			canvas.RefreshFieldsList();
 
@@ -313,12 +311,14 @@ namespace GEE
 			if (canvas.FieldsList)
 				canvas.FieldsList->Refresh();
 
+			canvas.GetTransform()->SetScale(Vec2f(0.15f, 0.3f));
+
 			if (!previousCanvasView.IsEmpty() && sameActor)
 				canvas.SetCanvasView(previousCanvasView);
 			else
 			{
 				canvas.AutoClampView();
-				canvas.SetViewScale(Vec2f(canvas.GetViewT().GetScale2D().x, listActor.GetListElementCount() + 1.0f));
+				//canvas.SetViewScale(Vec2f(canvas.GetViewT().GetScale2D().x, listActor.GetListElementCount() + 1.0f));
 			}
 		}
 

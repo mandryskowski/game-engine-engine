@@ -14,14 +14,43 @@ namespace GEE
 	class UICanvasField : public Actor, public UIActor
 	{
 	public:
-		UICanvasField(GameScene&, Actor* parentActor, const std::string& name);
+		UICanvasField(GameScene&, Actor* parentActor, const std::string& name, const BuilderStyle& defaultStyle = BuilderStyle());
 		virtual void OnStart() override;
 		UIElementTemplates GetTemplates();
 		TextComponent* GetTitleComp();
 
 	private:
 		TextComponent* TitleComp;
+		BuilderStyle DefaultStyle;
 	};
+
+	class UICanvasFieldCategory : public UIAutomaticListActor
+	{
+	public:
+		UICanvasFieldCategory(GameScene& scene, Actor* parentActor, const std::string& name, const BuilderStyle& defaultStyle = BuilderStyle());
+
+		virtual void OnStart() override;
+		UIButtonActor* GetExpandButton();
+
+		UIElementTemplates GetTemplates();
+
+		UICanvasField& AddField(const std::string& name, std::function<Vec3f()> getElementOffset = nullptr);
+		UICanvasFieldCategory& AddCategory(const std::string& name);
+
+		virtual Vec3f GetListOffset() override;
+		void SetOnExpansionFunc(std::function<void()> onExpansionFunc);
+
+		virtual void HandleEventAll(const Event& ev) override;
+
+		virtual void Refresh() override;
+
+	private:
+		std::function<void()> OnExpansionFunc;
+		UIButtonActor* ExpandButton;
+		ModelComponent* CategoryBackgroundQuad;
+		BuilderStyle DefaultStyle;
+	};
+
 
 	namespace uiCanvasFieldUtil
 	{
@@ -33,7 +62,7 @@ namespace GEE
 	class UIElementTemplates
 	{
 	public:
-		UIElementTemplates(Actor&);
+		UIElementTemplates(Actor&, const BuilderStyle& style = BuilderStyle());
 
 
 		void TickBox(bool& modifiedBool);
@@ -76,6 +105,8 @@ namespace GEE
 		Actor& TemplateParent;
 		GameScene& Scene;
 		GameManager& GameHandle;
+
+		BuilderStyle Style;
 	};
 
 	//s Tied to a scene
@@ -110,11 +141,14 @@ namespace GEE
 
 		VecInputDescription desc;
 		char axisChar[] = {'x', 'y', 'z', 'w'};
+		auto vecButtonT = Style.GetVecButtonT();
 		for (int axis = 0; axis < length; axis++)
 		{
 			UIInputBoxActor& inputBoxActor = TemplateParent.CreateChild<UIInputBoxActor>("VecBox" + std::to_string(axis));
 			desc.VecInputBoxes.push_back(&inputBoxActor);
-			inputBoxActor.SetTransform(Transform(Vec2f(float(axis) * 2.0f, 0.0f), Vec2f(1.0f, 0.6f)));
+
+			inputBoxActor.SetTransform(vecButtonT);
+			vecButtonT.Move(Vec2f(2.0f, 0.0f));
 
 			std::function<void(float)> input = nullptr;
 			std::function<float()> getter = nullptr;
@@ -155,7 +189,7 @@ namespace GEE
 	inline void UIElementTemplates::ObjectInput(std::function<std::vector<ObjectType*>()> getObjectsFunc, std::function<void(ObjectType*)> setFunc, const std::string& currentObjName)
 	{
 		GameScene* scenePtr = &Scene;
-		auto& compNameButton = TemplateParent.CreateChild<UIButtonActor>("CompNameBox", currentObjName, nullptr, Transform(Vec2f(2.0f, 0.0f), Vec2f(3.0f, 1.0f)));
+		auto& compNameButton = TemplateParent.CreateChild<UIButtonActor>("CompNameBox", currentObjName, nullptr, Style.GetLongButtonT());
 
 		compNameButton.SetOnClickFunc([scenePtr, getObjectsFunc, setFunc, &compNameButton]() {
 			UIWindowActor& window = scenePtr->CreateActorAtRoot<UIWindowActor>("CompInputWindow");

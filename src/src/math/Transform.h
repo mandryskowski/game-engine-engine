@@ -137,8 +137,19 @@ namespace GEE
 		Transform& operator*=(Transform&&);
 	};
 
+
+
 	namespace Math
 	{
+		namespace Extent
+		{
+			class Left;
+			class Right;
+			class Top;
+			class Bottom;
+		}
+		template <typename T>
+		float GetTransformExtent(const Transform& t);
 		Mat4f SafeInverseMatrix(const Mat4f& t);
 		Mat4f SafeInverseMatrix(const Transform& t);
 
@@ -154,4 +165,9 @@ namespace GEE
 	}*/
 
 	Transform decompose(const Mat4f&);
+
+	template <> inline float Math::GetTransformExtent<Math::Extent::Left>(const Transform& t) { return t.GetPos2D().x - t.GetScale2D().x; }
+	template <> inline float Math::GetTransformExtent<Math::Extent::Right>(const Transform& t) { return t.GetPos2D().x + t.GetScale2D().x; }
+	template <> inline float Math::GetTransformExtent<Math::Extent::Bottom>(const Transform& t) { return t.GetPos2D().y - t.GetScale2D().y; }
+	template <> inline float Math::GetTransformExtent<Math::Extent::Top>(const Transform& t) { return t.GetPos2D().y + t.GetScale2D().y; }
 }
