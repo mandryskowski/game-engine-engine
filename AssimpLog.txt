@@ -1,62 +1,47 @@
-Info,  T3596: Load Assets/EngineObjects/quad.obj
-Info,  T3596: Found a matching importer for this file format: Wavefront Object Importer.
-Info,  T3596: Import root directory is 'Assets/EngineObjects\'
-Info,  T3596: Entering post processing pipeline
-Info,  T3596: GenVertexNormalsProcess finished. Vertex normals have been calculated
-Info,  T3596: CalcTangentsProcess finished. Tangents have been calculated
-Info,  T3596: JoinVerticesProcess finished | Verts in: 6 out: 4 | ~33.3333
-Info,  T3596: Leaving post processing pipeline
-Info,  T3596: Load Assets/EngineObjects/cube.obj
-Info,  T3596: Found a matching importer for this file format: Wavefront Object Importer.
-Info,  T3596: Import root directory is 'Assets/EngineObjects\'
-Error, T3596: OBJ: failed to locate material None, creating new material
-Info,  T3596: Entering post processing pipeline
-Info,  T3596: CalcTangentsProcess finished. Tangents have been calculated
-Info,  T3596: JoinVerticesProcess finished | Verts in: 36 out: 24 | ~33.3333
-Info,  T3596: Leaving post processing pipeline
-Info,  T3596: Load Assets/EngineObjects/sphere.obj
-Info,  T3596: Found a matching importer for this file format: Wavefront Object Importer.
-Info,  T3596: Import root directory is 'Assets/EngineObjects\'
-Error, T3596: OBJ: Unable to locate material file sphere.mtl
-Info,  T3596: OBJ: Opening fallback material file Assets/EngineObjects/sphere.mtl
-Error, T3596: OBJ: Unable to locate fallback material file Assets/EngineObjects/sphere.mtl
-Error, T3596: OBJ: failed to locate material None, creating new material
-Info,  T3596: Entering post processing pipeline
-Info,  T3596: CalcTangentsProcess finished. Tangents have been calculated
-Info,  T3596: JoinVerticesProcess finished | Verts in: 540 out: 378 | ~30
-Info,  T3596: Leaving post processing pipeline
-Info,  T3596: Load Assets/EngineObjects/cone.obj
-Info,  T3596: Found a matching importer for this file format: Wavefront Object Importer.
-Info,  T3596: Import root directory is 'Assets/EngineObjects\'
-Error, T3596: OBJ: Unable to locate material file cone3.mtl
-Info,  T3596: OBJ: Opening fallback material file Assets/EngineObjects/cone.mtl
-Error, T3596: OBJ: Unable to locate fallback material file Assets/EngineObjects/cone.mtl
-Error, T3596: OBJ: failed to locate material None, creating new material
-Info,  T3596: Entering post processing pipeline
-Info,  T3596: CalcTangentsProcess finished. Tangents have been calculated
-Info,  T3596: JoinVerticesProcess finished | Verts in: 192 out: 172 | ~10.4167
-Info,  T3596: Leaving post processing pipeline
-Info,  T3596: Load Assets\External\hqSphere\hqSphere.obj
-Info,  T3596: Found a matching importer for this file format: Wavefront Object Importer.
-Info,  T3596: Import root directory is 'Assets\External\hqSphere\'
-Info,  T3596: Entering post processing pipeline
-Info,  T3596: CalcTangentsProcess finished. Tangents have been calculated
-Info,  T3596: JoinVerticesProcess finished | Verts in: 4104 out: 1615 | ~60.6481
-Info,  T3596: Leaving post processing pipeline
-Info,  T3596: Load C:\Users\48511\Desktop\Ultimate Stylized Nature Pack-glb\Palm Trees.glb
-Info,  T3596: Found a possible importer: glTF Importer; trying signature-based detection
-Info,  T3596: Found a possible importer: glTF2 Importer; trying signature-based detection
-Info,  T3596: Found a matching importer for this file format: glTF2 Importer.
-Info,  T3596: Import root directory is 'C:\Users\48511\Desktop\Ultimate Stylized Nature Pack-glb\'
-Info,  T3596: Entering post processing pipeline
-Info,  T3596: CalcTangentsProcess finished. Tangents have been calculated
-Info,  T3596: JoinVerticesProcess finished | Verts in: 1557 out: 1514 | ~2.76172
-Info,  T3596: Leaving post processing pipeline
-Info,  T3596: Load C:\Users\48511\Desktop\Ultimate Stylized Nature Pack-glb\Rocks.glb
-Info,  T3596: Found a possible importer: glTF Importer; trying signature-based detection
-Info,  T3596: Found a possible importer: glTF2 Importer; trying signature-based detection
-Info,  T3596: Found a matching importer for this file format: glTF2 Importer.
-Info,  T3596: Import root directory is 'C:\Users\48511\Desktop\Ultimate Stylized Nature Pack-glb\'
-Info,  T3596: Entering post processing pipeline
-Info,  T3596: CalcTangentsProcess finished. Tangents have been calculated
-Info,  T3596: Leaving post processing pipeline
+Info,  T13816: Load Assets/EngineObjects/quad.obj
+Info,  T13816: Found a matching importer for this file format: Wavefront Object Importer.
+Info,  T13816: Import root directory is 'Assets/EngineObjects\'
+Info,  T13816: Entering post processing pipeline
+Info,  T13816: GenVertexNormalsProcess finished. Vertex normals have been calculated
+Info,  T13816: CalcTangentsProcess finished. Tangents have been calculated
+Info,  T13816: JoinVerticesProcess finished | Verts in: 6 out: 4 | ~33.3333
+Info,  T13816: Leaving post processing pipeline
+Info,  T13816: Load Assets/EngineObjects/cube.obj
+Info,  T13816: Found a matching importer for this file format: Wavefront Object Importer.
+Info,  T13816: Import root directory is 'Assets/EngineObjects\'
+Error, T13816: OBJ: failed to locate material None, creating new material
+Info,  T13816: Entering post processing pipeline
+Info,  T13816: CalcTangentsProcess finished. Tangents have been calculated
+Info,  T13816: JoinVerticesProcess finished | Verts in: 36 out: 24 | ~33.3333
+Info,  T13816: Leaving post processing pipeline
+Info,  T13816: Load Assets/EngineObjects/sphere.obj
+Info,  T13816: Found a matching importer for this file format: Wavefront Object Importer.
+Info,  T13816: Import root directory is 'Assets/EngineObjects\'
+Error, T13816: OBJ: Unable to locate material file sphere.mtl
+Info,  T13816: OBJ: Opening fallback material file Assets/EngineObjects/sphere.mtl
+Error, T13816: OBJ: Unable to locate fallback material file Assets/EngineObjects/sphere.mtl
+Error, T13816: OBJ: failed to locate material None, creating new material
+Info,  T13816: Entering post processing pipeline
+Info,  T13816: CalcTangentsProcess finished. Tangents have been calculated
+Info,  T13816: JoinVerticesProcess finished | Verts in: 540 out: 378 | ~30
+Info,  T13816: Leaving post processing pipeline
+Info,  T13816: Load Assets/EngineObjects/cone.obj
+Info,  T13816: Found a matching importer for this file format: Wavefront Object Importer.
+Info,  T13816: Import root directory is 'Assets/EngineObjects\'
+Error, T13816: OBJ: Unable to locate material file cone3.mtl
+Info,  T13816: OBJ: Opening fallback material file Assets/EngineObjects/cone.mtl
+Error, T13816: OBJ: Unable to locate fallback material file Assets/EngineObjects/cone.mtl
+Error, T13816: OBJ: failed to locate material None, creating new material
+Info,  T13816: Entering post processing pipeline
+Info,  T13816: CalcTangentsProcess finished. Tangents have been calculated
+Info,  T13816: JoinVerticesProcess finished | Verts in: 192 out: 172 | ~10.4167
+Info,  T13816: Leaving post processing pipeline
+Info,  T13816: Load Projects\example_8_ball_pool\models\pooltable.glb
+Info,  T13816: Found a possible importer: glTF Importer; trying signature-based detection
+Info,  T13816: Found a possible importer: glTF2 Importer; trying signature-based detection
+Info,  T13816: Found a matching importer for this file format: glTF2 Importer.
+Info,  T13816: Import root directory is 'Projects\example_8_ball_pool\models\'
+Info,  T13816: Entering post processing pipeline
+Info,  T13816: CalcTangentsProcess finished. Tangents have been calculated
+Info,  T13816: JoinVerticesProcess finished | Verts in: 53641 out: 53618 | ~0.0428776
+Info,  T13816: Leaving post processing pipeline

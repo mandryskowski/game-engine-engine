@@ -363,7 +363,7 @@ namespace GEE
 		auto parentWorldT = GetTransform().GetParentTransform()->GetWorldTransform();
 		if (CanvasPtr) parentWorldT = CanvasPtr->FromCanvasSpace(CanvasPtr->GetViewT().GetInverse() * CanvasPtr->ToCanvasSpace(parentWorldT));
 		auto viewport = NDCViewport(parentWorldT.GetPos() - parentWorldT.GetScale(), parentWorldT.GetScale());
-		viewport.ToPxViewport(infoBeforeChange.GetTbCollection().GetSettings().Resolution).SetScissor();
+		viewport.ToPxViewport(infoBeforeChange.GetTbCollection().GetVideoSettings().Resolution).SetScissor();
 
 		// Render - force left alignment if scrolling
 		TextRenderer(*GameHandle->GetRenderEngineHandle()).RenderText((CanvasPtr) ? (CanvasPtr->BindForRender(info)) : (info), *GetFontVariation(), GetContent(), scrolledT, GetTextMatInst()->GetMaterialRef().GetColor(), shader, false, Alignment::Left);
@@ -371,7 +371,7 @@ namespace GEE
 		// Clean up after everything
 		if (CanvasPtr)
 			CanvasPtr->UnbindForRender();
-		Viewport(Vec2u(0), infoBeforeChange.GetTbCollection().GetSettings().Resolution).SetOpenGLState();
+		Viewport(Vec2u(0), infoBeforeChange.GetTbCollection().GetVideoSettings().Resolution).SetOpenGLState();
 		glDisable(GL_SCISSOR_TEST);
 	}
 

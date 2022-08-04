@@ -30,6 +30,7 @@
 #include <fstream>
 
 #include <editor/EditorManager.h>
+#include <editor/GEditorSettings.h>
 #include <animation/AnimationManagerComponent.h>
 
 namespace GEE
@@ -849,6 +850,16 @@ namespace GEE
 					scene.GetRenderData()->LoadSkeletonBatches(archive);
 					CerealTreeSerializationData::TreeScene = &scene;
 
+					auto& geditorSettings = *dynamic_cast<Editor::EditorManager*>(gameHandle)->GetEditorSettings();
+					try
+					{
+						archive(cereal::make_nvp("GEditorSettings", geditorSettings));
+					}
+					catch (cereal::Exception& exception)
+					{
+						std::cout << "INFO: No GEditor settings found: " << exception.what() << '\n';
+					}
+
 					{
 						std::vector<UniquePtr<Hierarchy::Tree>> localHierarchyTrees;
 						archive(cereal::make_nvp("HierarchyTrees", localHierarchyTrees));
@@ -884,26 +895,16 @@ namespace GEE
 					std::cout << "ERROR: While loading game settings: " << exception.what() << '\n';
 				}
 
-				try
-				{
-					if (Editor::EditorManager* editorHandle = dynamic_cast<Editor::EditorManager*>(gameHandle))
-					{
-						bool bDebugRenderComponents;
-						archive(CEREAL_NVP(bDebugRenderComponents));
-						editorHandle->SetDebugRenderComponents(bDebugRenderComponents);
-					}
-				}
-				catch (cereal::Exception& exception)
-				{
-					std::cout << "ERROR: While loading editor settings: " << exception.what() << '\n';
-				}
-
 
 				try
 				{
 					archive.serializeDeferments();
 				}
 				catch (Exception& exception)
+				{
+					std::cout << "ERROR: While loading deferments: " << exception.what() << '\n';
+				}
+				catch (cereal::Exception& exception)
 				{
 					std::cout << "ERROR: While loading deferments: " << exception.what() << '\n';
 				}

@@ -11,13 +11,13 @@ namespace GEE
 		WindowTitle = "GEE Window";
 	}
 
-	GameSettings::GameSettings(std::string path) :
+	GameSettings::GameSettings(const std::string& path) :
 		GameSettings()
 	{
 		LoadFromFile(path);
 	}
 
-	void GameSettings::LoadFromFile(std::string path)	//TODO: zangielszczyc
+	void GameSettings::LoadFromFile(const std::string& path)	//TODO: zangielszczyc
 	{
 		/* FORMAT PLIKOW:
 		rodzajdanych dane
@@ -40,7 +40,7 @@ namespace GEE
 		//prosta, lecz stosunkowo odporna na bledy i szybka implementacja; moze sie wywalic kiedy podamy zle dane do okreslonego rodzaju, np po zasygnalizowaniu windowsize podany zostaje string
 	}
 
-	bool GameSettings::LoadSetting(std::stringstream& filestr, std::string settingName)
+	bool GameSettings::LoadSetting(std::stringstream& filestr, const std::string& settingName)
 	{
 		if (settingName == "windowsize")
 			filestr >> Video.Resolution.x >> Video.Resolution.y;	//rozmiar okna jest dwuwymiarowy, wiec wczytaj 2 liczby (2 wymiary)

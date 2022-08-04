@@ -27,6 +27,7 @@
 #include <rendering/OutlineRenderer.h>
 #include <editor/EditorRenderer.h>
 #include <editor/DefaultEditorController.h>
+#include <editor/GEditorToolbox.h>
 
 
 #include <editor/MousePicking.h>
@@ -80,8 +81,6 @@ namespace GEE
 		GameEngineEngineEditor::GameEngineEngineEditor(SystemWindow* window, const GameSettings& settings) :
 			Game(settings.Video.Shading, settings),
 			EditorScene(nullptr),
-			bDebugRenderComponents(true),
-			bDebugRenderPhysicsMeshes(true),
 			GameController(nullptr),
 			EditorController(nullptr),
 			LastRenderPopupRequest(nullptr),
@@ -130,11 +129,6 @@ namespace GEE
 			std::vector<GameScene*> scenes(Scenes.size());
 			std::transform(Scenes.begin(), Scenes.end(), scenes.begin(), [](UniquePtr<GameScene>& sceneVec) {return sceneVec.get(); });
 			return scenes;
-		}
-
-		GameSettings* GameEngineEngineEditor::GetEditorSettings()
-		{
-			return &EditorSettings;
 		}
 
 		AtlasMaterial* GameEngineEngineEditor::GetDefaultEditorMaterial(EditorDefaultMaterial icon)
@@ -251,8 +245,12 @@ namespace GEE
 			uiSettings.MonitorGamma = 1.0f;
 
 			ViewportRenderCollection = &RenderEng.AddRenderTbCollection(MakeUnique<RenderToolboxCollection>("GameSceneRenderCollection", Settings->Video, RenderEng));
-
-			HUDRenderCollection = &RenderEng.AddRenderTbCollection(MakeUnique<GEditorRenderToolboxCollection>("HUDRenderCollection", uiSettings, RenderEng));
+			
+			{
+				auto hudCol = MakeUnique<GEditorRenderToolboxCollection>("HUDRenderCollection", uiSettings, RenderEng);
+				HUDRenderCollection = hudCol.get();
+				RenderEng.AddRenderTbCollection(static_unique_pointer_cast<RenderToolboxCollection, GEditorRenderToolboxCollection>(std::move(hudCol)));
+			}
 
 			GameManager::DefaultScene = GetMainScene();
 			SetActiveScene(GetMainScene());
@@ -405,7 +403,7 @@ namespace GEE
 
 						for (auto it : allActors)
 						{
-							if (bDebugRenderComponents)
+							if (EditorSettings.bDebugRenderComponents)
 							{
 								allComponents.push_back(it->GetRoot());
 								it->GetRoot()->GetAllComponents<Component>(&allComponents);
@@ -560,73 +558,82 @@ namespace GEE
 				auto& settingsButton = editorScene.CreateActorAtRoot<UIButtonActor>("SettingsButton", "Settings", [this, &editorScene]() {
 					UIWindowActor& window = editorScene.CreateActorAtRoot<UIWindowActor>("MainSceneSettingsWindow");
 					window.GetTransform()->SetScale(Vec2f(0.5f));
-					window.AddField("Bloom").GetTemplates().TickBox([this](bool bloom) { GetGameSettings()->Video.bBloom = bloom; UpdateGameSettings(); }, [this]() -> bool { return GetGameSettings()->Video.bBloom; });
-					window.AddField("Wireframe").GetTemplates().TickBox([this](bool wireframe) { GetGameSettings()->Video.bForceWireframeRendering = wireframe; UpdateGameSettings(); }, [this]() -> bool { return GetGameSettings()->Video.bForceWireframeRendering; });
 
-					UIInputBoxActor& gammaInputBox = window.AddField("Gamma").CreateChild<UIInputBoxActor>("GammaInputBox");
-					gammaInputBox.SetOnInputFunc([this](float val) { GetGameSettings()->Video.MonitorGamma = val; UpdateGameSettings(); }, [this]()->float { return GetGameSettings()->Video.MonitorGamma; });
-
-					window.AddField("Default font").GetTemplates().PathInput([this](const std::string& path) { Fonts.push_back(MakeShared<Font>(*DefaultFont)); *DefaultFont = *EngineDataLoader::LoadFont(*this, path); }, [this]() {return GetDefaultFont()->GetVariation(FontStyle::Regular)->GetPath(); }, { "*.ttf", "*.otf" });
-					window.AddField("Rebuild light probes").CreateChild<UIButtonActor>("RebuildProbesButton", "Rebuild", [this]() { SceneRenderer(RenderEng, 0).PreRenderLoopPassStatic(0, GetSceneRenderDatas()); });
-
+					// Editor
 					{
-						auto& aaSelectionList = window.AddField("Anti-aliasing").CreateChild<UIAutomaticListActor>("AASelectionList", Vec3f(2.0f, 0.0f, 0.0f));
-						std::function<void(AntiAliasingType)> setAAFunc = [this](AntiAliasingType type) { const_cast<GameSettings::VideoSettings&>(ViewportRenderCollection->GetSettings()).AAType = type; UpdateGameSettings(); };
-						aaSelectionList.CreateChild<UIButtonActor>("NoAAButton", "None", [=]() { setAAFunc(AntiAliasingType::AA_NONE); });
-						aaSelectionList.CreateChild<UIButtonActor>("SMAA1XButton", "SMAA1X", [=]() { setAAFunc(AntiAliasingType::AA_SMAA1X); });
-						aaSelectionList.CreateChild<UIButtonActor>("SMAAT2XButton", "SMAAT2X", [=]() { setAAFunc(AntiAliasingType::AA_SMAAT2X); });
-						aaSelectionList.Refresh();
+						auto& editorCat = window.AddCategory("GEditor");
+						editorCat.AddField("Render debug icons").GetTemplates().TickBox(EditorSettings.bDebugRenderComponents);
+						editorCat.AddField("Render grid").GetTemplates().TickBox(EditorSettings.bRenderGrid);
+						editorCat.AddField("Debug physics meshes").GetTemplates().TickBox(EditorSettings.bDebugRenderPhysicsMeshes);
 					}
 
+					// Video
 					{
-						auto& shadowSelectionList = window.AddField("Shadow quality").CreateChild<UIAutomaticListActor>("ShadowSelectionList", Vec3f(2.0f, 0.0f, 0.0f));
-						std::function<void(SettingLevel, const std::string&)> addShadowButton = [this, &shadowSelectionList](SettingLevel setting, const std::string& caption)
+						auto& videoCat = window.AddCategory("Video");
+						videoCat.AddField("Bloom").GetTemplates().TickBox([this](bool bloom) { GetGameSettings()->Video.bBloom = bloom; UpdateGameSettings(); }, [this]() -> bool { return GetGameSettings()->Video.bBloom; });
+						videoCat.AddField("Wireframe").GetTemplates().TickBox([this](bool wireframe) { GetGameSettings()->Video.bForceWireframeRendering = wireframe; UpdateGameSettings(); }, [this]() -> bool { return GetGameSettings()->Video.bForceWireframeRendering; });
+
+						UIInputBoxActor& gammaInputBox = videoCat.AddField("Gamma").CreateChild<UIInputBoxActor>("GammaInputBox");
+						gammaInputBox.SetOnInputFunc([this](float val) { GetGameSettings()->Video.MonitorGamma = val; UpdateGameSettings(); }, [this]()->float { return GetGameSettings()->Video.MonitorGamma; });
+
+						videoCat.AddField("Default font").GetTemplates().PathInput([this](const std::string& path) { Fonts.push_back(MakeShared<Font>(*DefaultFont)); *DefaultFont = *EngineDataLoader::LoadFont(*this, path); }, [this]() {return GetDefaultFont()->GetVariation(FontStyle::Regular)->GetPath(); }, { "*.ttf", "*.otf" });
+						videoCat.AddField("Rebuild light probes").CreateChild<UIButtonActor>("RebuildProbesButton", "Rebuild", [this]() { SceneRenderer(RenderEng, 0).PreRenderLoopPassStatic(0, GetSceneRenderDatas()); });
+
 						{
-							shadowSelectionList.CreateChild<UIActivableButtonActor>("Button" + caption, caption,
-								[=]()
-								{
-									const_cast<GameSettings::VideoSettings&>(ViewportRenderCollection->GetSettings()).ShadowLevel = setting;
-									UpdateGameSettings();
-								});
-						};
-						addShadowButton(SettingLevel::SETTING_LOW, "Low");
-						addShadowButton(SettingLevel::SETTING_MEDIUM, "Medium");
-						addShadowButton(SettingLevel::SETTING_HIGH, "High");
-						addShadowButton(SettingLevel::SETTING_ULTRA, "Ultra");
+							auto& aaSelectionList = videoCat.AddField("Anti-aliasing").CreateChild<UIAutomaticListActor>("AASelectionList", Vec3f(2.0f, 0.0f, 0.0f));
+							std::function<void(AntiAliasingType)> setAAFunc = [this](AntiAliasingType type) { const_cast<GameSettings::VideoSettings&>(ViewportRenderCollection->GetVideoSettings()).AAType = type; UpdateGameSettings(); };
+							aaSelectionList.CreateChild<UIButtonActor>("NoAAButton", "None", [=]() { setAAFunc(AntiAliasingType::AA_NONE); });
+							aaSelectionList.CreateChild<UIButtonActor>("SMAA1XButton", "SMAA1X", [=]() { setAAFunc(AntiAliasingType::AA_SMAA1X); });
+							aaSelectionList.CreateChild<UIButtonActor>("SMAAT2XButton", "SMAAT2X", [=]() { setAAFunc(AntiAliasingType::AA_SMAAT2X); });
+							aaSelectionList.Refresh();
+						}
 
-						shadowSelectionList.Refresh();
+						{
+							auto& shadowSelectionList = videoCat.AddField("Shadow quality").CreateChild<UIAutomaticListActor>("ShadowSelectionList", Vec3f(2.0f, 0.0f, 0.0f));
+							std::function<void(SettingLevel, const std::string&)> addShadowButton = [this, &shadowSelectionList](SettingLevel setting, const std::string& caption)
+							{
+								shadowSelectionList.CreateChild<UIActivableButtonActor>("Button" + caption, caption,
+									[=]()
+									{
+										const_cast<GameSettings::VideoSettings&>(ViewportRenderCollection->GetVideoSettings()).ShadowLevel = setting;
+										UpdateGameSettings();
+									});
+							};
+							addShadowButton(SettingLevel::SETTING_LOW, "Low");
+							addShadowButton(SettingLevel::SETTING_MEDIUM, "Medium");
+							addShadowButton(SettingLevel::SETTING_HIGH, "High");
+							addShadowButton(SettingLevel::SETTING_ULTRA, "Ultra");
 
-						window.AddField("Max 2D shadow lights").CreateChild<UIInputBoxActor>("Shadow2DCount", [this](float count) { GetGameSettings()->Video.Max2DShadows = count; UpdateGameSettings(); }, [this]() { return GetGameSettings()->Video.Max2DShadows; });
-						window.AddField("Max 3D shadow lights").CreateChild<UIInputBoxActor>("Shadow3DCount", [this](float count) { GetGameSettings()->Video.Max3DShadows = count; UpdateGameSettings(); }, [this]() { return GetGameSettings()->Video.Max3DShadows; });
+							shadowSelectionList.Refresh();
+
+							videoCat.AddField("Max 2D shadow lights").CreateChild<UIInputBoxActor>("Shadow2DCount", [this](float count) { GetGameSettings()->Video.Max2DShadows = count; UpdateGameSettings(); }, [this]() { return GetGameSettings()->Video.Max2DShadows; });
+							videoCat.AddField("Max 3D shadow lights").CreateChild<UIInputBoxActor>("Shadow3DCount", [this](float count) { GetGameSettings()->Video.Max3DShadows = count; UpdateGameSettings(); }, [this]() { return GetGameSettings()->Video.Max3DShadows; });
+						}
+
+						{
+							auto& viewTexField = videoCat.AddField("View texture");
+							SharedPtr<unsigned int> texID = MakeShared<unsigned int>(0);
+
+							viewTexField.CreateChild<UIInputBoxActor>("PreviewTexIDInputBox").SetOnInputFunc([texID](float val) { *texID = val; }, [texID]() { return *texID; });
+							viewTexField.CreateChild<UIButtonActor>("OKButton", "OK", [this, texID, &window]() {
+								if (!glIsTexture(*texID))
+									return;
+								UIWindowActor& texPreviewWindow = window.CreateChildCanvas<UIWindowActor>("PreviewTexWindow");
+								ModelComponent& texPreviewQuad = texPreviewWindow.CreateChild<UIActorDefault>("TexPreviewActor").CreateComponent<ModelComponent>("TexPreviewQuad");
+								auto mat = MakeShared<Material>("TexturePreviewMat");
+								mat->AddTexture(MakeShared<NamedTexture>(Texture::FromGeneratedGlId(Vec2u(0), GL_TEXTURE_2D, *texID, Texture::Format::RGBA()), "albedo1"));
+								texPreviewQuad.AddMeshInst(MeshInstance(GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::Quad), mat));
+
+								texPreviewWindow.AutoClampView();
+
+								}).GetTransform()->Move(Vec2f(2.0f, 0.0f));
+						}
+
+						auto& ssaoSamplesIB = videoCat.AddField("SSAO Samples").CreateChild<UIInputBoxActor>("SSAOSamplesInputBox");
+						ssaoSamplesIB.SetOnInputFunc([this](float sampleCount) { GetGameSettings()->Video.AmbientOcclusionSamples = sampleCount; UpdateGameSettings(); }, [this]() { return GetGameSettings()->Video.AmbientOcclusionSamples; });
+
+						videoCat.AddField("Parallax Occlusion Mapping").GetTemplates().TickBox([this](bool val) { GetGameSettings()->Video.POMLevel = (val) ? (SettingLevel::SETTING_LOW) : (SettingLevel::SETTING_NONE); UpdateGameSettings(); }, [this]() { return GetGameSettings()->Video.POMLevel != SettingLevel::SETTING_NONE; });
 					}
-
-					{
-						auto& viewTexField = window.AddField("View texture");
-						SharedPtr<unsigned int> texID = MakeShared<unsigned int>(0);
-
-						viewTexField.CreateChild<UIInputBoxActor>("PreviewTexIDInputBox").SetOnInputFunc([texID](float val) { *texID = val; }, [texID]() { return *texID; });
-						viewTexField.CreateChild<UIButtonActor>("OKButton", "OK", [this, texID, &window]() {
-							if (!glIsTexture(*texID))
-								return;
-							UIWindowActor& texPreviewWindow = window.CreateChildCanvas<UIWindowActor>("PreviewTexWindow");
-							ModelComponent& texPreviewQuad = texPreviewWindow.CreateChild<UIActorDefault>("TexPreviewActor").CreateComponent<ModelComponent>("TexPreviewQuad");
-							auto mat = MakeShared<Material>("TexturePreviewMat");
-							mat->AddTexture(MakeShared<NamedTexture>(Texture::FromGeneratedGlId(Vec2u(0), GL_TEXTURE_2D, *texID, Texture::Format::RGBA()), "albedo1"));
-							texPreviewQuad.AddMeshInst(MeshInstance(GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::Quad), mat));
-
-							texPreviewWindow.AutoClampView();
-
-							}).GetTransform()->Move(Vec2f(2.0f, 0.0f));
-					}
-
-					window.AddField("Render debug icons").GetTemplates().TickBox(bDebugRenderComponents);
-					window.AddField("Debug physics meshes").GetTemplates().TickBox(bDebugRenderPhysicsMeshes);
-
-					auto& ssaoSamplesIB = window.AddField("SSAO Samples").CreateChild<UIInputBoxActor>("SSAOSamplesInputBox");
-					ssaoSamplesIB.SetOnInputFunc([this](float sampleCount) { GetGameSettings()->Video.AmbientOcclusionSamples = sampleCount; UpdateGameSettings(); }, [this]() { return GetGameSettings()->Video.AmbientOcclusionSamples; });
-
-					window.AddField("Parallax Occlusion Mapping").GetTemplates().TickBox([this](bool val) { GetGameSettings()->Video.POMLevel = (val) ? (SettingLevel::SETTING_LOW) : (SettingLevel::SETTING_NONE); UpdateGameSettings(); }, [this]() { return GetGameSettings()->Video.POMLevel != SettingLevel::SETTING_NONE; });
-
 
 					auto& physicsCat = window.AddCategory("Physics");
 					physicsCat.AddField("Connect to PVD").CreateChild<UIButtonActor>("PVDConnectButton", "Connect", [this]() { PhysicsEng.ConnectToPVD(); });
@@ -1076,7 +1083,7 @@ namespace GEE
 
 		void GameEngineEngineEditor::Render()
 		{
-			EditorRenderer(*this, *ViewportRenderCollection, *HUDRenderCollection, *GameWindow).RenderPass(GetMainScene(), EditorScene, GetScene("GEE_Main_Menu"), GetScene("GEE_Mesh_Preview_Scene"));
+			EditorRenderer(*this, EditorSettings, *ViewportRenderCollection, *HUDRenderCollection, *GameWindow).RenderPass(GetMainScene(), EditorScene, GetScene("GEE_Main_Menu"), GetScene("GEE_Mesh_Preview_Scene"));
 		}
 
 		void GameEngineEngineEditor::NewProject(const std::string& filepath)
@@ -1164,8 +1171,8 @@ namespace GEE
 			try
 			{
 				cereal::JSONOutputArchive archive(serializationStream);
+				archive(cereal::make_nvp("GEditorSettings", EditorSettings));
 				GetMainScene()->Save(archive);
-				archive(CEREAL_NVP(bDebugRenderComponents));
 				archive.serializeDeferments();
 			}
 			catch (cereal::Exception& exception)
@@ -1184,11 +1191,6 @@ namespace GEE
 
 			std::cout << "Project " + ProjectName + " (" + filepath + ") saved successfully.\n";
 			GetEditorLogger(*EditorScene).Log("Project saved", EditorMessageLogger::MessageType::Success);
-		}
-
-		void GameEngineEngineEditor::SetDebugRenderComponents(bool debugRenderComponents)
-		{
-			bDebugRenderComponents = debugRenderComponents;
 		}
 
 		void GameEngineEngineEditor::StartProfiler()

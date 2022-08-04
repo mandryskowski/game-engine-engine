@@ -6,7 +6,7 @@
 #include <utility/Asserts.h>
 #include <utility>
 #include <iostream>
-#include <cereal/access.hpp>
+#include <cereal/types/polymorphic.hpp>
 
 struct GLFWwindow;
 
