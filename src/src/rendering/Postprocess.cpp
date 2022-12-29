@@ -230,7 +230,7 @@ namespace GEE
 
 	void Postprocess::Render(RenderToolboxCollection& tbCollection, const GEE_FB::Framebuffer& finalFramebuffer, const Viewport* viewport, const Texture& colorTex, Texture blurTex, const Texture& depthTex, const Texture& velocityTex) const
 	{
-		const GameSettings::VideoSettings& settings = tbCollection.GetSettings();
+		const GameSettings::VideoSettings& settings = tbCollection.GetVideoSettings();
 
 		if (settings.bBloom && blurTex.HasBeenGenerated())
 			blurTex = GaussianBlur(GetPPToolbox<GaussianBlurToolbox>(tbCollection), *tbCollection.GetTb<GaussianBlurToolbox>()->BlurFramebuffers[0], nullptr, blurTex, 10);

@@ -20,11 +20,11 @@ namespace GEE
 				if (allowSkeletonsCreation && tree.GetBoneMapping())
 					TreeData->SkelInfo = tree.GetScene().GetRenderData()->AddSkeletonInfo().get();
 			}
-			void TreeInstantiation::ToComponents(NodeBase& node, Component& parentComp, const std::vector<Hierarchy::NodeBase*>& limitToComponents)
+			void TreeInstantiation::ToComponents(NodeBase& node, Component& parentComp, const std::vector<Hierarchy::NodeBase*>& limitToComponents = std::vector<Hierarchy::NodeBase*>())
 			{
 				PostInstantiation(Impl.ToComponentsImpl(TreeData, node, parentComp, limitToComponents));
 			}
-			void TreeInstantiation::ToComponentsAndRoot(NodeBase& node, Actor& actorToReplaceRoot, const std::vector<Hierarchy::NodeBase*>& limitToComponents)
+			void TreeInstantiation::ToComponentsAndRoot(NodeBase& node, Actor& actorToReplaceRoot, const std::vector<Hierarchy::NodeBase*>& limitToComponents = std::vector<Hierarchy::NodeBase*>())
 			{
 				actorToReplaceRoot.ReplaceRoot(node.GenerateComp(TreeData, actorToReplaceRoot));
 				auto& generatedComp = *actorToReplaceRoot.GetRoot();
@@ -35,9 +35,9 @@ namespace GEE
 				PostInstantiation(generatedComp);
 
 			}
-			void TreeInstantiation::ToActors(NodeBase& node, Actor& parentActor, std::function<Actor& (Actor&)> constructChildActorFunc, const std::vector<Hierarchy::NodeBase*>& limitToComponents)
+			void TreeInstantiation::ToActors(NodeBase& node, Actor& parentActor, std::function<Actor& (Actor&)> constructChildActorFunc, const std::vector<Hierarchy::NodeBase*>& limitToActors = std::vector<Hierarchy::NodeBase*>())
 			{
-				PostInstantiation(*Impl.ToActorsImpl(TreeData, node, parentActor, constructChildActorFunc, limitToComponents).GetRoot());
+				PostInstantiation(*Impl.ToActorsImpl(TreeData, node, parentActor, constructChildActorFunc, limitToActors).GetRoot());
 			}
 			void TreeInstantiation::PostInstantiation(Component& instantiationRoot)
 			{
@@ -59,27 +59,49 @@ namespace GEE
 					skelInfo->GetBatchPtr()->RecalculateBoneCount();
 				}
 			}
-			Component& TreeInstantiation::Implementation::ToComponentsImpl(SharedPtr<Data> data, NodeBase& node, Component& parentComp, const std::vector<Hierarchy::NodeBase*>& limitToComponents)
+			Component& TreeInstantiation::Implementation::ToComponentsImpl(SharedPtr<Data> data, NodeBase& node, Component& parentComp, const std::vector<Hierarchy::NodeBase*>& limitToComponents = std::vector<Hierarchy::NodeBase*>())
 			{
-				auto& generatedComp = parentComp.AddComponent(node.GenerateComp(data, parentComp.GetActor()));
+				bool bGenComp = true;
+				if (!limitToComponents.empty())
+				{
+					auto found = std::find_if(limitToComponents.begin(), limitToComponents.end(), [&node](const Hierarchy::NodeBase* nodeVec) { return nodeVec == &node; });
+					if (found == limitToComponents.end())
+						bGenComp = false;
+				}
+
+				auto generatedComp = (bGenComp) ? (&parentComp.AddComponent(node.GenerateComp(data, parentComp.GetActor()))) : (nullptr);
 
 				for (int i = 0; i < static_cast<int>(node.GetChildCount()); i++)
 				{
-					ToComponentsImpl(data, *node.GetChild(i), generatedComp, limitToComponents);
+					auto childNode = node.GetChild(i);
+
+					ToComponentsImpl(data, *childNode, (generatedComp) ? (*generatedComp) : (parentComp), limitToComponents);
 				}
 
-				return generatedComp;
+				return (generatedComp) ? (*generatedComp) : (parentComp);
 			}
-			Actor& TreeInstantiation::Implementation::ToActorsImpl(SharedPtr<Data> data, NodeBase& node, Actor& parentActor, std::function<Actor& (Actor&)> constructChildActorFunc, const std::vector<Hierarchy::NodeBase*>& limitToComponents)
+			Actor& TreeInstantiation::Implementation::ToActorsImpl(SharedPtr<Data> data, NodeBase& node, Actor& parentActor, std::function<Actor& (Actor&)> constructChildActorFunc, const std::vector<Hierarchy::NodeBase*>& limitToActors = std::vector<Hierarchy::NodeBase*>())
 			{
-				auto& generatedActor = constructChildActorFunc(parentActor);
-				generatedActor.ReplaceRoot(node.GenerateComp(data, generatedActor));
-				auto& generatedComp = *generatedActor.GetRoot();
+				bool bGenActor = true;
+				if (!limitToActors.empty())
+				{
+					auto found = std::find_if(limitToActors.begin(), limitToActors.end(), [&node](const Hierarchy::NodeBase* nodeVec) { return nodeVec == &node; });
+					if (found == limitToActors.end())
+						bGenActor = false;
+				}
+
+				Actor* generatedActor = nullptr;
+				if (bGenActor)
+				{
+					generatedActor = &constructChildActorFunc(parentActor);
+					generatedActor->ReplaceRoot(node.GenerateComp(data, *generatedActor));
+					if (generatedActor->GetName().empty()) generatedActor->SetName(generatedActor->GetRoot()->GetName());
+				}
 
 				for (int i = 0; i < static_cast<int>(node.GetChildCount()); i++)
-					ToActorsImpl(data, *node.GetChild(i), generatedActor, constructChildActorFunc, limitToComponents);
+					ToActorsImpl(data, *node.GetChild(i), (generatedActor) ? (*generatedActor) : (parentActor), constructChildActorFunc, limitToActors);
 
-				return generatedActor;
+				return (generatedActor) ? (*generatedActor) : (parentActor);
 			}
 		}
 	}

@@ -96,30 +96,17 @@ namespace GEE
 		std::function<void(PopupDescription)> PopupCreationFunc;
 	};
 
-	class UICanvasFieldCategory : public UIAutomaticListActor
+	struct BuilderStyle
 	{
-	public:
-		UICanvasFieldCategory(GameScene& scene, Actor* parentActor, const std::string& name);
+		Vec2f NormalButtonSize, LongButtonSize, VecButtonSize;
 
-		virtual void OnStart() override;
-		UIButtonActor* GetExpandButton();
-
-		UIElementTemplates GetTemplates();
-
-		UICanvasField& AddField(const std::string& name, std::function<Vec3f()> getElementOffset = nullptr);
-		UICanvasFieldCategory& AddCategory(const std::string& name);
-
-		virtual Vec3f GetListOffset() override;
-		void SetOnExpansionFunc(std::function<void()> onExpansionFunc);
-
-		virtual void HandleEventAll(const Event& ev) override;
-
-		virtual void Refresh() override;
-
-	private:
-		std::function<void()> OnExpansionFunc;
-		UIButtonActor* ExpandButton;
-		ModelComponent* CategoryBackgroundQuad;
+		BuilderStyle() :
+			NormalButtonSize(1.0f), LongButtonSize(3.0f, 1.0f), VecButtonSize(1.0f, 0.6f) {}
+		
+		// Not cached
+		Transform GetNormalButtonT() const { return Transform(Vec2f(NormalButtonSize.x - 1.0f, 0.0f), NormalButtonSize); }
+		Transform GetLongButtonT() const { return Transform(Vec2f(LongButtonSize.x - 1.0f, 0.0f), LongButtonSize); }
+		Transform GetVecButtonT() const { return Transform(Vec2f(VecButtonSize.x - 1.0f, 0.0f), VecButtonSize); }
 	};
 
 	class EditorDescriptionBuilder
@@ -133,6 +120,7 @@ namespace GEE
 		Actor& GetDescriptionParent();
 		GameManager& GetGameHandle() { return *EditorHandle.GetGameHandle(); }
 		Editor::EditorManager& GetEditorHandle();
+		BuilderStyle GetStyle() const { return Style; }
 
 		UICanvasField& AddField(const std::string& name, std::function<Vec3f()> getFieldOffsetFunc = nullptr);	//equivalent to GetCanvasActor().AddField(...). I put it here for easier access.
 		UICanvasFieldCategory& AddCategory(const std::string& name);
@@ -158,7 +146,10 @@ namespace GEE
 		UICanvasFieldCategory* OptionalCategory;
 
 		std::function<void()> DeleteFunction;
+
+		BuilderStyle Style;
 	};
+		
 
 	class ComponentDescriptionBuilder : public EditorDescriptionBuilder
 	{

@@ -30,6 +30,7 @@
 #include <fstream>
 
 #include <editor/EditorManager.h>
+#include <editor/GEditorSettings.h>
 #include <animation/AnimationManagerComponent.h>
 
 namespace GEE
@@ -194,7 +195,8 @@ namespace GEE
 					LoadCustomHierarchyNode(scene, filestr, nullptr, tree);
 				}
 				std::cout << "tree loading ended\n";
-				InstantiateTree(model, *tree);
+				Hierarchy::Instantiation::TreeInstantiation(*tree, true).ToComponents(tree->GetRoot(), model, {});
+
 				model.SetName(name); //override the name, it is changed in InstantiateTree
 				std::cout << "instiantiating tree ended\n";
 			}
@@ -849,6 +851,16 @@ namespace GEE
 					scene.GetRenderData()->LoadSkeletonBatches(archive);
 					CerealTreeSerializationData::TreeScene = &scene;
 
+					auto& geditorSettings = *dynamic_cast<Editor::EditorManager*>(gameHandle)->GetEditorSettings();
+					try
+					{
+						archive(cereal::make_nvp("GEditorSettings", geditorSettings));
+					}
+					catch (cereal::Exception& exception)
+					{
+						std::cout << "INFO: No GEditor settings found: " << exception.what() << '\n';
+					}
+
 					{
 						std::vector<UniquePtr<Hierarchy::Tree>> localHierarchyTrees;
 						archive(cereal::make_nvp("HierarchyTrees", localHierarchyTrees));
@@ -884,26 +896,16 @@ namespace GEE
 					std::cout << "ERROR: While loading game settings: " << exception.what() << '\n';
 				}
 
-				try
-				{
-					if (Editor::EditorManager* editorHandle = dynamic_cast<Editor::EditorManager*>(gameHandle))
-					{
-						bool bDebugRenderComponents;
-						archive(CEREAL_NVP(bDebugRenderComponents));
-						editorHandle->SetDebugRenderComponents(bDebugRenderComponents);
-					}
-				}
-				catch (cereal::Exception& exception)
-				{
-					std::cout << "ERROR: While loading editor settings: " << exception.what() << '\n';
-				}
-
 
 				try
 				{
 					archive.serializeDeferments();
 				}
 				catch (Exception& exception)
+				{
+					std::cout << "ERROR: While loading deferments: " << exception.what() << '\n';
+				}
+				catch (cereal::Exception& exception)
 				{
 					std::cout << "ERROR: While loading deferments: " << exception.what() << '\n';
 				}
@@ -1005,7 +1007,8 @@ namespace GEE
 
 	void EngineDataLoader::LoadModel(std::string path, Component& comp, MeshTreeInstancingType type, Material* overrideMaterial)
 	{
-		InstantiateTree(comp, *LoadHierarchyTree(comp.GetScene(), path), {}, overrideMaterial);
+		auto& tree = *LoadHierarchyTree(comp.GetScene(), path);
+		Hierarchy::Instantiation::TreeInstantiation(tree, true).ToComponents(tree.GetRoot(), comp, {});
 	}
 
 
@@ -1089,11 +1092,6 @@ namespace GEE
 		return treePtr;
 	}
 
-	void EngineDataLoader::InstantiateTree(Component& comp, Hierarchy::Tree& tree, const std::vector<Hierarchy::NodeBase*>& selectedComponents, Material* overrideMaterial)
-	{
-		Hierarchy::Instantiation::TreeInstantiation(tree, true).ToComponents(tree.GetRoot(), comp, selectedComponents);
-	}
-
 	SharedPtr<Font> EngineDataLoader::LoadFont(GameManager& gameHandle, const std::string& regularPath, const std::string& boldPath, const std::string& italicPath, const std::string& boldItalicPath)
 	{
 		SharedPtr<Font> font = MakeShared<Font>(Font(regularPath, boldPath, italicPath, boldItalicPath));
@@ -1168,6 +1166,11 @@ namespace GEE
 		T settings = T();
 		std::fstream file;	//wczytaj plik inicjalizujacy
 		file.open(path);
+
+		if (!file.good())
+		{
+			std::cerr << "ERROR: Cannot open init file " << path << '\n';
+		}
 		std::stringstream filestr;
 		filestr << file.rdbuf();
 

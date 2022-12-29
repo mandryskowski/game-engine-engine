@@ -1,6 +1,80 @@
 {
+    "GEditorSettings": {
+        "bRenderGrid": true,
+        "bDebugRenderComponents": true,
+        "bDebugRenderPhysicsMeshes": true,
+        "GameSettings": {
+            "bWindowFullscreen": false,
+            "WindowTitle": "GEE Window",
+            "Video": {
+                "AmbientOcclusionSamples": 0,
+                "bVSync": false,
+                "bBloom": false,
+                "AAType": 1,
+                "AALevel": 0,
+                "MonitorGamma": 1.0,
+                "POMLevel": 0,
+                "ShadowLevel": 0,
+                "TMType": 0,
+                "Max2DShadows": 16,
+                "Max3DShadows": 16
+            }
+        }
+    },
     "SkeletonBatches": [],
-    "HierarchyTrees": [],
+    "HierarchyTrees": [
+        {
+            "ptr_wrapper": {
+                "valid": 1,
+                "data": {
+                    "LocalResourcePath": "CreatedTree",
+                    "Root": {
+                        "polymorphic_id": 2147483649,
+                        "polymorphic_name": "GEE::Hierarchy::Node<GEE::Component>",
+                        "ptr_wrapper": {
+                            "valid": 1,
+                            "data": {
+                                "CompT": {
+                                    "Name": "",
+                                    "ComponentGEEID": 181,
+                                    "ComponentTransform": {
+                                        "Position": {
+                                            "x": 0.0,
+                                            "y": 0.0,
+                                            "z": 0.0
+                                        },
+                                        "Rotation": {
+                                            "x": 0.0,
+                                            "y": 0.0,
+                                            "z": 0.0,
+                                            "w": 1.0
+                                        },
+                                        "Scale": {
+                                            "x": 1.0,
+                                            "y": 1.0,
+                                            "z": 1.0
+                                        }
+                                    },
+                                    "CollisionObj": {
+                                        "ptr_wrapper": {
+                                            "valid": 0
+                                        }
+                                    },
+                                    "Children": []
+                                },
+                                "CollisionObj": {
+                                    "ptr_wrapper": {
+                                        "valid": 0
+                                    }
+                                },
+                                "Children": []
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    ],
     "Name": "SceneRoot",
     "ActorGEEID": 44,
     "RootComponent": {
@@ -77,14 +151,14 @@
                                 },
                                 "Children": [
                                     {
-                                        "polymorphic_id": 2147483649,
+                                        "polymorphic_id": 2147483650,
                                         "polymorphic_name": "GEE::CameraComponent",
                                         "ptr_wrapper": {
                                             "valid": 1,
                                             "data": {
                                                 "Projection": {
                                                     "row0": {
-                                                        "x": 1.0,
+                                                        "x": 0.5296874642372131,
                                                         "y": 0.0,
                                                         "z": 0.0,
                                                         "w": 0.0
@@ -98,13 +172,13 @@
                                                     "row2": {
                                                         "x": 0.0,
                                                         "y": 0.0,
-                                                        "z": -1.0002000331878663,
+                                                        "z": -1.0020020008087159,
                                                         "w": -1.0
                                                     },
                                                     "row3": {
                                                         "x": 0.0,
                                                         "y": 0.0,
-                                                        "z": -0.020002000033855439,
+                                                        "z": -0.20020020008087159,
                                                         "w": 0.0
                                                     }
                                                 },
@@ -146,7 +220,7 @@
                     },
                     "Children": [
                         {
-                            "polymorphic_id": 2147483650,
+                            "polymorphic_id": 2147483651,
                             "polymorphic_name": "GEE::FreeRoamingController",
                             "ptr_wrapper": {
                                 "valid": 1,
@@ -239,7 +313,7 @@
                                 },
                                 "Children": [
                                     {
-                                        "polymorphic_id": 2147483651,
+                                        "polymorphic_id": 2147483652,
                                         "polymorphic_name": "GEE::ModelComponent",
                                         "ptr_wrapper": {
                                             "valid": 1,
@@ -300,7 +374,7 @@
                                         }
                                     },
                                     {
-                                        "polymorphic_id": 2147483652,
+                                        "polymorphic_id": 2147483653,
                                         "polymorphic_name": "GEE::LightComponent",
                                         "ptr_wrapper": {
                                             "valid": 1,
@@ -381,6 +455,5 @@
         "TMType": 1,
         "Max2DShadows": 16,
         "Max3DShadows": 16
-    },
-    "bDebugRenderComponents": true
+    }
 }

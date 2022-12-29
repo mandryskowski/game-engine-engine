@@ -9,14 +9,17 @@
 #include <input/InputDevicesStateRetriever.h>
 #include <game/Game.h>
 #include <editor/DefaultEditorController.h>
+#include <editor/GEditorToolbox.h>
+#include <editor/GEditorSettings.h>
 
 
 namespace GEE
 {
 	namespace Editor
 	{
-		EditorRenderer::EditorRenderer(Editor::EditorManager& editorHandle, RenderToolboxCollection& mainSceneCol, RenderToolboxCollection& uiCol, SystemWindow& mainWindow) :
+		EditorRenderer::EditorRenderer(EditorManager& editorHandle, GEditorSettings& editorSettings, RenderToolboxCollection& mainSceneCol, GEditorRenderToolboxCollection& uiCol, SystemWindow& mainWindow) :
 			GameRenderer(*editorHandle.GetGameHandle()->GetRenderEngineHandle(), nullptr),
+			EditorSettings(editorSettings),
 			MainWindow(&mainWindow),
 			EditorHandle(editorHandle),
 			MainSceneCollection(&mainSceneCol),
@@ -62,7 +65,7 @@ namespace GEE
 				{
 					SceneRenderer(Impl.RenderHandle, &MainSceneCollection->GetTb<FinalRenderTargetToolbox>()->GetFinalFramebuffer()).FullRender(mainSceneRenderInfo, Viewport(Vec2f(0.0f)), true, false,
 						[&](GEE_FB::Framebuffer& targetFramebuffer) {
-							if (EditorHandle.GetDebugRenderComponents())	// Render debug icons
+							if (EditorSettings.bDebugRenderComponents)	// Render debug icons
 							{
 								targetFramebuffer.SetDrawSlot(0);
 								Impl.RenderHandle.GetSimpleShader()->Use();
@@ -94,9 +97,9 @@ namespace GEE
 
 
 					PhysicsDebugRenderer(Impl).DebugRender(*mainScene->GetPhysicsData(), mainSceneRenderInfo);
-					Viewport(Vec2f(0.0f), Vec2f(UICollection->GetSettings().Resolution)).SetOpenGLState();
+					Viewport(Vec2f(0.0f), Vec2f(UICollection->GetVideoSettings().Resolution)).SetOpenGLState();
 				}
-				if (EditorHandle.GetDebugRenderPhysicsMeshes() && EditorHandle.GetActions().GetSelectedActor() && !EditorHandle.GetGameHandle()->GetDefInputRetriever().IsKeyPressed(Key::F2))
+				if (EditorSettings.bDebugRenderPhysicsMeshes && EditorHandle.GetActions().GetSelectedActor() && !EditorHandle.GetGameHandle()->GetDefInputRetriever().IsKeyPressed(Key::F2))
 				{
 					std::function<void(Component&)> renderAllColObjs = [this, &renderAllColObjs, mainScene](Component& comp) {
 						if (comp.GetCollisionObj())
@@ -135,14 +138,14 @@ namespace GEE
 			else
 			{
 				SceneMatrixInfo info = editorScene->GetActiveCamera()->GetRenderInfo(0, *UICollection);
-				SceneRenderer(Impl.RenderHandle).FullRender(info, Viewport(Vec2f(0.0f), Vec2f(UICollection->GetSettings().Resolution)), true, true, nullptr);
+				SceneRenderer(Impl.RenderHandle).FullRender(info, Viewport(Vec2f(0.0f), Vec2f(UICollection->GetVideoSettings().Resolution)), true, true, nullptr);
 			}
 			
 		}
 		void EditorRenderer::RenderMainMenu(GameScene* menuScene)
 		{
 			SceneMatrixInfo info = menuScene->GetActiveCamera()->GetRenderInfo(0, *UICollection);
-			SceneRenderer(Impl.RenderHandle).FullRender(info, Viewport(Vec2f(0.0f), Vec2f(UICollection->GetSettings().Resolution)), true, true);
+			SceneRenderer(Impl.RenderHandle).FullRender(info, Viewport(Vec2f(0.0f), Vec2f(UICollection->GetVideoSettings().Resolution)), true, true);
 		}
 		void EditorRenderer::RenderMeshPreview(GameScene* meshPreviewScene, RenderToolboxCollection& renderTbCollection)
 		{
@@ -184,6 +187,9 @@ namespace GEE
 		}
 		void EditorRenderer::RenderGrid(const MatrixInfo& info)
 		{
+			if (!EditorSettings.bRenderGrid)
+				return;
+
 			glEnable(GL_DEPTH_TEST);
 			glEnable(GL_BLEND);
 			auto& quad = Impl.GetBasicShapeMesh(EngineBasicShape::Quad);

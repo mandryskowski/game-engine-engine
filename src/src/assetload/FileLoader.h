@@ -41,8 +41,6 @@ namespace GEE
 
 		static Hierarchy::Tree* LoadHierarchyTree(GameScene&, std::string path, Hierarchy::Tree* treePtr = nullptr, bool keepVertsData = true);
 
-		static void InstantiateTree(Component& comp, Hierarchy::Tree&, const std::vector<Hierarchy::NodeBase*>& selectedComponents = {}, Material* overrideMaterial = nullptr);
-
 		static SharedPtr<Font> LoadFont(GameManager& gameHandle, const std::string& regularPath, const std::string& boldPath = "", const std::string& italicPath = "", const std::string& boldItalicPath = "");
 		template <class T = GameSettings> static T LoadSettingsFromFile(std::string path);
 

@@ -23,6 +23,7 @@ x86/
 [Aa][Rr][Mm]/
 [Aa][Rr][Mm]64/
 bld/
+build/
 [Bb]in/
 [Oo]bj/
 [Ll]og/
@@ -471,6 +472,7 @@ Source/Release
 /deferred-shading-profiling.exp
 /deferred-shading-profiling.lib
 /deferred-shading-profiling.exe
+recent.txt
 *.lib
 *.dll
 *.idb

@@ -221,7 +221,7 @@ namespace GEE
 
 	void UICanvasActor::HandleEvent(const Event& ev)
 	{
-		if (Scene.GetUIData()->GetCurrentBlockingCanvas() != this)
+		if (Scene.GetUIData()->GetCurrentBlockingCanvas() != this && (ev.GetType() != EventType::WindowResized))
 			return;
 
 		Actor::HandleEvent(ev);

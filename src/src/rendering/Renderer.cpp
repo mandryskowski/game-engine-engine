@@ -287,7 +287,7 @@ namespace GEE
 	{
 		ShadowMappingToolbox* shadowsTb = tbCollection.GetTb<ShadowMappingToolbox>();
 		shadowsTb->ShadowFramebuffer->Bind();
-		bool dynamicShadowRender = tbCollection.GetSettings().ShadowLevel > SettingLevel::SETTING_MEDIUM;
+		bool dynamicShadowRender = tbCollection.GetVideoSettings().ShadowLevel > SettingLevel::SETTING_MEDIUM;
 		{
 			if (shadowsTb->ShadowCubemapArray->GetSize2D() != shadowsTb->ShadowMapArray->GetSize2D())
 				std::cout << "INFO: 2D size of shadow cubemap array does not match the 2D size of shadow map array. This is not currently supported - shadow map array size will be picked.\n";
@@ -402,7 +402,7 @@ namespace GEE
 
 	void SceneRenderer::PreFramePass(RenderingContextID contextID, RenderToolboxCollection& tbCollection, GameSceneRenderData& sceneRenderData)
 	{
-		if (sceneRenderData.ContainsLights() && (tbCollection.GetSettings().ShadowLevel > SettingLevel::SETTING_MEDIUM || sceneRenderData.HasLightWithoutShadowMap()))
+		if (sceneRenderData.ContainsLights() && (tbCollection.GetVideoSettings().ShadowLevel > SettingLevel::SETTING_MEDIUM || sceneRenderData.HasLightWithoutShadowMap()))
 			ShadowMapRenderer(Impl).ShadowMaps(contextID, tbCollection, sceneRenderData, sceneRenderData.Lights);
 	}
 
@@ -410,7 +410,7 @@ namespace GEE
 	{
 		auto& tbCollection = info.GetTbCollection();
 		auto& sceneRenderData = info.GetSceneRenderData();
-		const GameSettings::VideoSettings& settings = tbCollection.GetSettings();
+		const GameSettings::VideoSettings& settings = tbCollection.GetVideoSettings();
 		bool debugComponents = true;
 		bool useLightingAlgorithms = sceneRenderData.ContainsLights() || sceneRenderData.ContainsLightProbes();
 		Mat4f currentFrameView = info.GetView();
@@ -478,7 +478,7 @@ namespace GEE
 
 				MainFramebuffer.Bind(); // Bind the "Main" framebuffer, where we output light information. 
 				glClearBufferfv(GL_COLOR, 0, Math::GetDataPtr(Vec4f(0.0f, 0.0f, 0.0f, 0.0f))); // Clear ONLY the color buffers. The depth information stays for the light pass (we need to know which light volumes actually contain any objects that are affected by the light)
-				if (tbCollection.GetSettings().bBloom)
+				if (tbCollection.GetVideoSettings().bBloom)
 					glClearBufferfv(GL_COLOR, 1, Math::GetDataPtr(Vec4f(0.0f)));
 				else
 					Texture().Bind(1);
@@ -862,7 +862,7 @@ namespace GEE
 	{
 		GEE_CORE_ASSERT(Impl.OptionalFramebuffer != nullptr);
 		const GEE_FB::Framebuffer& finalFramebuffer = *Impl.OptionalFramebuffer;
-		const GameSettings::VideoSettings& settings = tbCollection.GetSettings();
+		const GameSettings::VideoSettings& settings = tbCollection.GetVideoSettings();
 
 
 		if (settings.bBloom && blurTex.HasBeenGenerated())
@@ -1144,7 +1144,7 @@ namespace GEE
 	}
 	void GameRenderer::EnsureShadowMapCorectness(RenderingContextID contextID, RenderToolboxCollection& tbCollection, GameSceneRenderData* sceneRenderData)
 	{
-		if (sceneRenderData->ContainsLights() && (tbCollection.GetSettings().ShadowLevel > SettingLevel::SETTING_MEDIUM || sceneRenderData->HasLightWithoutShadowMap()))
+		if (sceneRenderData->ContainsLights() && (tbCollection.GetVideoSettings().ShadowLevel > SettingLevel::SETTING_MEDIUM || sceneRenderData->HasLightWithoutShadowMap()))
 			ShadowMapRenderer(Impl.RenderHandle).ShadowMaps(contextID, tbCollection, *sceneRenderData, sceneRenderData->Lights);
 	}
 	void TextRenderer::RenderText(const SceneMatrixInfo& infoPreConvert, const Font::Variation& fontVariation, std::string content, Transform t, Vec3f color, Shader* shader, bool convertFromPx, Alignment2D alignment)
@@ -1174,7 +1174,7 @@ namespace GEE
 		SceneMatrixInfo info = infoPreConvert;
 		if (convertFromPx)
 		{
-			Vec2f resolution(infoPreConvert.GetTbCollection().GetSettings().Resolution);
+			Vec2f resolution(infoPreConvert.GetTbCollection().GetVideoSettings().Resolution);
 			Mat4f pxConvertMatrix = glm::ortho(0.0f, resolution.x, 0.0f, resolution.y);
 			const Mat4f& proj = info.GetProjection();
 			info.CalculateVP();

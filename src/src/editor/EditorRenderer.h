@@ -6,10 +6,13 @@ namespace GEE
 {
 	namespace Editor
 	{
+		class GEditorRenderToolboxCollection;
+		class GEditorSettings;
+
 		class EditorRenderer : public GameRenderer
 		{
 		public:
-			EditorRenderer(Editor::EditorManager&, RenderToolboxCollection& mainSceneCol, RenderToolboxCollection& uiCol, SystemWindow& mainWindow);
+			EditorRenderer(EditorManager&, GEditorSettings& editorSettings, RenderToolboxCollection& mainSceneCol, GEditorRenderToolboxCollection& uiCol, SystemWindow& mainWindow);
 			virtual void RenderPass(GameScene* mainScene, GameScene* editorScene, GameScene* menuScene, GameScene* meshPreviewScene) override;
 
 			void RenderMainScene(GameScene*);
@@ -20,9 +23,11 @@ namespace GEE
 			void RenderGrid(const MatrixInfo&);
 
 		private:
+			GEditorSettings& EditorSettings;
 			SystemWindow* MainWindow;
 			Editor::EditorManager& EditorHandle;
-			RenderToolboxCollection* MainSceneCollection, *UICollection;
+			RenderToolboxCollection* MainSceneCollection;
+			GEditorRenderToolboxCollection* UICollection;
 		};
 	}
 }

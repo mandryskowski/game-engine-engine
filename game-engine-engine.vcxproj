@@ -314,9 +314,6 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <None Include="ClassDiagram.cd" />
-  </ItemGroup>
-  <ItemGroup>
     <ResourceCompile Include="icon.rc" />
   </ItemGroup>
   <ItemGroup>
@@ -331,6 +328,8 @@
     <ClCompile Include="src\src\editor\EditorMessageLogger.cpp" />
     <ClCompile Include="src\src\editor\EditorRenderer.cpp" />
     <ClCompile Include="src\src\editor\GameEngineEngineEditor.cpp" />
+    <ClCompile Include="src\src\editor\GEditorSettings.cpp" />
+    <ClCompile Include="src\src\editor\GEditorToolbox.cpp" />
     <ClCompile Include="src\src\editor\GraphRenderingComponent.cpp" />
     <ClCompile Include="src\src\editor\MousePicking.cpp" />
     <ClCompile Include="src\src\game\Game.cpp" />
@@ -409,6 +408,8 @@
     <ClInclude Include="src\src\editor\EditorRenderer.h" />
     <ClInclude Include="src\src\editor\FPSCounter.h" />
     <ClInclude Include="src\src\editor\GameEngineEngineEditor.h" />
+    <ClInclude Include="src\src\editor\GEditorSettings.h" />
+    <ClInclude Include="src\src\editor\GEditorToolbox.h" />
     <ClInclude Include="src\src\editor\GraphRenderingComponent.h" />
     <ClInclude Include="src\src\editor\MousePicking.h" />
     <ClInclude Include="src\src\editor\UIViewportWindow.h" />

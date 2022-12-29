@@ -1,0 +1,416 @@
+[33mcommit 881dd613423b33477adda60ba072a1e14e63073d[m[33m ([m[1;36mHEAD -> [m[1;32mUI-Rework[m[33m, [m[1;31morigin/master[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmaster[m[33m)[m
+Author: mandryskowski <nedesf@gmail.com>
+Date:   Sun Jul 31 19:57:28 2022 +0200
+
+    UI Text, editor improvements and navmesh generation (#14)
+    
+    * -Input box caret implemented. You can now paste text, enter it somewhere else than at the end, delete all text on the left or on the right of the caret.
+    -Slightly optimised basic shape rendering
+    
+    * -Connecting to PVD during runtime
+    -Started adding physics properties to settings
+    -Editing collision shape material and collision object damping
+    -Button state now works using modifier bits rather than enums to avoid having to list out all the posibilities.
+    -Passing negative deltaTime to Interpolations does not allow the T value to go negative anymore, which lets you play animations in reverse
+    
+    * -Adjusted the Event system so they are now grouped by Scene rather by window. You can now push an event to a single scene rather than to all scenes corresponding to a window. If you choose to push an event without specifying a scene, the active scene will be chosen.
+    -Fixed input box carets in canvases not resizing after zooming in/out of these canvases.
+    
+    * -Small project restructuration
+    -More instantiation options will be added soon (instantiate to different actors)
+    
+    * -Refactoring instantiation of hierarchy trees in progress
+    
+    * -This version contains files and profiling features using nvapi from testing that I did of Deferred Shading against Forward Shading for my Extended Essay. The branch serves as an archive. Perhaps my future self will look at this code one day and laugh out loud. (#12)
+    
+    -The features (mostly fixes) to be salvaged from this will hopefully be described in the master branch.
+    
+    Co-authored-by: Michał Andryskowski <swetroniusz1@gmail.com>
+    
+    * Back after 6 months - finally done with exams! Development will continue and lots of things will be done this summer.
+    -PBR shader can now be forward rendered
+    -Added textbox caret
+    -Added the ability to customize max number of 2D and 3D shadow maps
+    -Simplified some naming
+    
+    * In the process of fixing scrolling text components and merging the three text classes into one
+    
+    * Fixed ScrollingTextComponent. It now renders correctly, but only if it is not in a UICanvas. This will be fixed in the next commit.
+    UIInputBoxActor Carets now work with scrolling text - the caret can move along with it, and it is positioned correctly when a scrolling text is clicked
+    
+    * Scrolling text fixed for UICanvases. Carets are not hidden if they are outside input boxes, which must be fixed. Code will be cleaned up.
+    
+    * Caret is not visible beyond input boxes anymore.
+    Cleaned up code.
+    
+    * Moving the input box caret now scrolls text appropriately
+    
+    * Caret position is normalised before using it in case it is set beyond the text string
+    
+    * test commit
+    
+    * Merged TextConstantSizeComponent with TextComponent. Tomorrow I will work on merging TextComponent with ScrollingTextComponent to make a versatile class with all 3 options combined
+    
+    * Fixed a bug where scrolling text in UICanvases would not work properly when the canvas is moved from (0, 0). This was because in calculating scroll length we were converting from canvas space with FromCanvasSpace instead of ScaleFromCanvasSpace.
+    TextComponent and ScrollingTextComponent are still being merged.
+    
+    * QoL: input boxes scroll back to 0 after pressing enter
+    
+    * Fixed wrong window resolution read from tbcollection settings when rendering components in popup menus. This was caused by using the main tbcollection (with game settings, causing the bug) for popup rendering. Now each popup has its own tbcollection and settings can be read correctly.
+    
+    * Compiled libraries for Win32 and x64 debug and release.
+    Updated assimp to 5.2.0
+    Updated glfw to 3.3.7 stable and OpenAL to kcat's 1.22.2
+    Updated freetype
+    
+    * -Recast+Detour navmesh
+    -In-geditor grid and axis rendering
+    -Translate, rotate, resize actions in geditor
+    
+    Co-authored-by: Michał Andryskowski <swetroniusz1@gmail.com>
+
+[33mcommit 65cd9a6bb2f1a766888ddbedd0baad3018c77e7a[m
+Author: mandryskowski <nedesf@gmail.com>
+Date:   Sat Jul 23 19:45:53 2022 +0200
+
+    UI improvements, physics debugging, hierarchy tree refactor (#13)
+    
+    * -Input box caret implemented. You can now paste text, enter it somewhere else than at the end, delete all text on the left or on the right of the caret.
+    -Slightly optimised basic shape rendering
+    
+    * -Connecting to PVD during runtime
+    -Started adding physics properties to settings
+    -Editing collision shape material and collision object damping
+    -Button state now works using modifier bits rather than enums to avoid having to list out all the posibilities.
+    -Passing negative deltaTime to Interpolations does not allow the T value to go negative anymore, which lets you play animations in reverse
+    
+    * -Adjusted the Event system so they are now grouped by Scene rather by window. You can now push an event to a single scene rather than to all scenes corresponding to a window. If you choose to push an event without specifying a scene, the active scene will be chosen.
+    -Fixed input box carets in canvases not resizing after zooming in/out of these canvases.
+    
+    * -Small project restructuration
+    -More instantiation options will be added soon (instantiate to different actors)
+    
+    * -Refactoring instantiation of hierarchy trees in progress
+    
+    * -This version contains files and profiling features using nvapi from testing that I did of Deferred Shading against Forward Shading for my Extended Essay. The branch serves as an archive. Perhaps my future self will look at this code one day and laugh out loud. (#12)
+    
+    -The features (mostly fixes) to be salvaged from this will hopefully be described in the master branch.
+    
+    Co-authored-by: Michał Andryskowski <swetroniusz1@gmail.com>
+    
+    * Back after 6 months - finally done with exams! Development will continue and lots of things will be done this summer.
+    -PBR shader can now be forward rendered
+    -Added textbox caret
+    -Added the ability to customize max number of 2D and 3D shadow maps
+    -Simplified some naming
+    
+    * In the process of fixing scrolling text components and merging the three text classes into one
+    
+    * Fixed ScrollingTextComponent. It now renders correctly, but only if it is not in a UICanvas. This will be fixed in the next commit.
+    UIInputBoxActor Carets now work with scrolling text - the caret can move along with it, and it is positioned correctly when a scrolling text is clicked
+    
+    * Scrolling text fixed for UICanvases. Carets are not hidden if they are outside input boxes, which must be fixed. Code will be cleaned up.
+    
+    * Caret is not visible beyond input boxes anymore.
+    Cleaned up code.
+    
+    * Moving the input box caret now scrolls text appropriately
+    
+    * Caret position is normalised before using it in case it is set beyond the text string
+    
+    * test commit
+    
+    * Merged TextConstantSizeComponent with TextComponent. Tomorrow I will work on merging TextComponent with ScrollingTextComponent to make a versatile class with all 3 options combined
+    
+    * Fixed a bug where scrolling text in UICanvases would not work properly when the canvas is moved from (0, 0). This was because in calculating scroll length we were converting from canvas space with FromCanvasSpace instead of ScaleFromCanvasSpace.
+    TextComponent and ScrollingTextComponent are still being merged.
+    
+    * QoL: input boxes scroll back to 0 after pressing enter
+    
+    * Fixed wrong window resolution read from tbcollection settings when rendering components in popup menus. This was caused by using the main tbcollection (with game settings, causing the bug) for popup rendering. Now each popup has its own tbcollection and settings can be read correctly.
+    
+    * Compiled libraries for Win32 and x64 debug and release.
+    Updated assimp to 5.2.0
+    Updated glfw to 3.3.7 stable and OpenAL to kcat's 1.22.2
+    Updated freetype
+    
+    Co-authored-by: Michał Andryskowski <swetroniusz1@gmail.com>
+
+[33mcommit bf038e523c2050fe3298ce5c8c2da03efe37c3be[m
+Author: mandryskowski <nedesf@gmail.com>
+Date:   Fri Jun 24 00:24:10 2022 +0200
+
+    GIF preview of a pool game
+
+[33mcommit e6ff60b011a282782fdfcff3bf4da55c9f590ab3[m
+Author: mandryskowski <nedesf@gmail.com>
+Date:   Fri Jun 24 00:23:48 2022 +0200
+
+    GIF preview of a pool game
+
+[33mcommit f8876993714706cef2c0efe3a3ba8453b49bf2e8[m
+Author: mandryskowski <nedesf@gmail.com>
+Date:   Fri Jun 24 00:22:29 2022 +0200
+
+    Add files via upload
+
+[33mcommit 58dd0404049ef9390b71229bec0adb1b7b373872[m
+Author: swetroniusz <nedesf@gmail.com>
+Date:   Thu Dec 23 01:19:10 2021 +0100
+
+    Material instances ownership (#11)
+    
+    * -Soft shadows
+    
+    * -Shadow bias is now applied in the shadow map pass. Now we render both front and back faces and we apply shadow bias only to front faces. This is a good compromise between culling fronts (and losing shadows on one-sided meshes) and bias (which causes peter panning). This solution is less efficient since we have to render all faces, but there is no peter panning and one-sided meshes cast shadows.
+    
+    * -MaterialInstances now use shared pointers to materials to keep them alive on the heap without adding them to the Materials vector in RenderEngine
+    
+    * -Font styles support (bold, italic, bold+italic)
+    -Most editor icons were bundled into an atlas (work in progress)
+    -Text alignment rewritten; you don't have to use std::pairs of alignments anymore. Now there is a standalone class of 2D alignments as well as an enum class representing these alignments.
+    -Normal TextComponents can now be unstretched
+    -UIElementTemplates functions will now return description objects to allow easy access to the created elements
+
+[33mcommit 6f534e9ea12c9ad5bda4a7e6fcabe87d8bef80dd[m
+Author: swetroniusz <nedesf@gmail.com>
+Date:   Tue Dec 21 10:24:19 2021 +0100
+
+    -Fixed multiple errors in code which lead to runtime crashes. This was possible since I've finally realised that compiling in the Debug configuration disables optimisations which made my debugging attempts much harder (although still possible, that's why I didn't care) (#10)
+    
+    -Hierarchy trees loaded from external files cannot be modified anymore (which is how it should be). Make them a local resource by copying them and then you can edit the trees.
+    -Only local hierarchy trees are now saved (as it should be, since it avoids duplicates; external trees are loaded anyways)
+    -Refactored material shaders
+    
+    Co-authored-by: Michał Andryskowski <swetroniusz1@gmail.com>
+
+[33mcommit 3fb45977fec617d281a15184e986643802ffb86d[m
+Author: Michał Andryskowski <swetroniusz1@gmail.com>
+Date:   Sat Nov 27 22:45:26 2021 +0000
+
+    -Trying to fix errors that occur when I want to use a different project.
+
+[33mcommit 4d82aa903948dd6cfcf4659456064f426418db82[m
+Author: Michał Andryskowski <swetroniusz1@gmail.com>
+Date:   Thu Nov 25 15:39:38 2021 +0000
+
+    -Files completely reorganised
+    -Moving specific GameEngineEngineEditor methods to EditorActions. This should make it easier to call them in other methods/functions, especially for the new context menus and their buttons.
+
+[33mcommit 7edb6b1cec477e4f22d847b12a173066b3ae6b0a[m
+Merge: d284884 10e372e
+Author: Michał Andryskowski <swetroniusz1@gmail.com>
+Date:   Mon Nov 22 14:02:36 2021 +0000
+
+    -Profiling class
+    -Cleanup and file reorganisation will be done next
+
+[33mcommit 10e372e512d4536f26c3218a05ad759ed48db7ae[m[33m ([m[1;31morigin/popup_windows[m[33m)[m
+Author: Michał Andryskowski <swetroniusz1@gmail.com>
+Date:   Tue Nov 16 22:59:04 2021 +0000
+
+    -Fixed erroneous TextConstantSizeComponent scale ratio calculation. Now pretty much all text looks neat!
+    -Popup submenus now show up upon hovering mouse over the submenu button.
+
+[33mcommit 4cc1ca131f81d1e5dbcc6cef451ee9d5e9ee350f[m
+Author: Michał Andryskowski <swetroniusz1@gmail.com>
+Date:   Tue Nov 16 19:14:43 2021 +0000
+
+    -Popup options and submenus now work and are correctly positioned on the screen.
+    -You can now associate a GameScene with a SystemWindow, which allows the objects in the scene to use the respective window rather than just the main one, which didn't work for popups.
+
+[33mcommit 5e8c04157de031985c869b98801d73bfb1b9cd15[m
+Author: Michał Andryskowski <swetroniusz1@gmail.com>
+Date:   Sat Nov 6 23:06:15 2021 +0000
+
+    -First button rendered in a different window!
+    -Rendering context moved from Renderers to MatrixInfo
+
+[33mcommit c6a90594855548895a58cbeba06ce9c352cd5bfe[m
+Author: Michał Andryskowski <swetroniusz1@gmail.com>
+Date:   Thu Nov 4 20:02:30 2021 +0000
+
+    -Giving up on using threads for rendering multiple windows. It is hard to do it right and I do not think the benefit will be significant. It will be redone if it becomes a problem.
+    -The chosen approach is to just switch the context in the main thread and render each window in series.
+    -CMakeLists will be added in the future. The project files must be cleaned up but
+
+[33mcommit d284884c64989cf996bff7e17aa581fc3635f025[m
+Author: Michał Andryskowski <swetroniusz1@gmail.com>
+Date:   Thu Oct 14 15:04:44 2021 +0100
+
+    -Viewport maximising
+    -Changing FPS graph unit
+
+[33mcommit a8e5ceece6a2ac70ae296781a9e598d3c1fa2597[m
+Author: Michał Andryskowski <swetroniusz1@gmail.com>
+Date:   Thu Oct 14 10:25:26 2021 +0100
+
+    -Fixing light probes in progress
+
+[33mcommit be62417cc2236d81f682c312b221f1a7a0960e2f[m
+Author: Michał Andryskowski <swetroniusz1@gmail.com>
+Date:   Wed Oct 13 15:16:47 2021 +0100
+
+    ,
+
+[33mcommit fbc97a7f082153e4989bbb32dbfe71d369328bf9[m
+Author: Michał Andryskowski <swetroniusz1@gmail.com>
+Date:   Tue Oct 12 09:18:56 2021 +0100
+
+    -Total renderer refactor; RenderEngine methods are moved to separate Renderer classes.
+
+[33mcommit b2692929ed171899e7fee9df2b78cc01926a4972[m
+Author: Michał Andryskowski <swetroniusz1@gmail.com>
+Date:   Sat Oct 9 16:07:45 2021 +0100
+
+    -Cook-Torrance forward shading
+    -Comments
+
+[33mcommit a71f9fe954f1653632c083048f58dde1d5002f26[m
+Author: Michał Andryskowski <swetroniusz1@gmail.com>
+Date:   Wed Sep 29 22:08:15 2021 +0100
+
+    -Small fixes
+
+[33mcommit 11fc4053085dcb3fd9f02c91b3c00769bda06e39[m
+Author: Michał Andryskowski <swetroniusz1@gmail.com>
+Date:   Sun Sep 26 11:26:08 2021 +0100
+
+    -Finally fixed TextConstantSizeComponent. The text does not go out of the specified range anymore (which is exactly what this component was created for). The issue was that the height of the text was divided by two in UpdateSize(), so the text could extend as far as twice the range in the vertical axis, which obviously produced incorrect results.
+
+[33mcommit 17743ad72d5a11da00400f68a3333be1d6f1e4a7[m
+Author: Michał Andryskowski <swetroniusz1@gmail.com>
+Date:   Sat Sep 25 19:40:17 2021 +0100
+
+    -Application running time can now be retrieved by using GameHandle.
+    -Added extra functions to UIButtonActor. It can now run a function on double click and on being clicked.
+    -Removed unnecessary comments
+
+[33mcommit 20421585099c1cef1f0dc9cf1799c2a7bac6db6a[m
+Author: Michał Andryskowski <swetroniusz1@gmail.com>
+Date:   Tue Aug 31 21:54:26 2021 +0200
+
+    -UICanvas now does not contain all UICanvasElements that relate to it. Instead, we use a vector which contains the top level of elements, and then these elements contain their own elements and so on(like in a tree graph). Using this hierarchical structure instead of a vector with all elements allows UICanvasElements to influence their children, which is useful, e.g. for determining whether we want to specify a bounding box of children of a shrinked list.
+    -Created the GraphRenderingComponent class (a RenderableComponent) which produces a graph from markers passed by the user. The class provides an interface to manipulate the container containing normalized markers, add a "raw" marker and automatically normalize it based on the GraphView matrix, and change GraphView, transforming the markers to the new space.
+    -Added a GetActor method to Actor which works similarly to GetComponent from Component (you pass a name and the type  to be used in dynamic_cast
+    -Fixed a bug which caused animated material instances to lose their Interpolator when passed to AddMeshInst in ModelComponent. An overload of this method was added which can accept a MeshInstance&& to avoid copying the MeshInstance (and thus copying the MaterialInstance), which used to break the animation.
+    -Work in progress: fixing text alignment to work with multiple lines of text, as well as taking into account the size of particular characters in calculating text height (rather than just taking the maximum character size for each line).
+
+[33mcommit 3953d87bec05752bb8a231faa079f259d178e3a2[m
+Author: Michał Andryskowski <swetroniusz1@gmail.com>
+Date:   Fri Aug 27 20:00:56 2021 +0200
+
+    Core:
+    -Easier serializable type registration; now you use a GEE macro (which is more intuitive for a GEE user, if ever there is one) and you can also register a type along with its polymorphic relation in a single line of code
+    -Introduced asserts based on the assert system from Hazel https://github.com/TheCherno/Hazel
+    -You can now define a lambda to be called upon updating a material's data in shaders.
+    -Expanded the Controller class, which brings basic functionalities such as hiding the cursor or locking it in the middle of the window.
+    -Added a FreeRoamingController (which works similarly to free look in CS 1.6) and serialization functions to Controller classes.
+    -Fixed a bug in fragments shaders where fully black pixels(RGB 0, 0, 0) in the albedo texture were ignored and the material color, which might not necessarily be fully black was used. This resulted in materials which partly use the albedo texture and partly use the material color...
+    -CollisionShapes now have a pointer to their respective PxShapes. Shapes can be detached from CollisionObjects.
+    Editor:
+    -Confirmation windows
+    -Disabling/enabling controllers in the editor
+    -Fixed rendering silhouette outlines for meshes which have fully black pixels in their textures (RGB 0, 0, 0)
+    -Support for making a CollisionObject static/dynamic on runtime
+
+[33mcommit 4f85fa13c03ef4b50cd098b65e63ab748443bb2b[m
+Author: swetroniusz <nedesf@gmail.com>
+Date:   Thu Aug 5 10:21:20 2021 +0200
+
+    Framebuffers (#8)
+    
+    * -Refactored Vec types - it's essentialy a typedef of glm::vec<int, T> with a serialization function, so you can use it with many types AND have it serialized. I added the Quat and Mat types that work similarly.
+    -Made texture loading simpler to do - no unnecessary parameters are required anymore.
+    -Fixed unrealistic light probe rendering. Disabled bloom, tonemapping and set gamma to 1.0 so we get an image of the scene in linear space. Doing that practically eliminated the boundaries (that were very visible) between the global and local cubemaps.
+    -Combined (roughness&metallic) maps loaded from .glb are not treated as sRGB anymore. The models look much more realistic now!
+    -Added serialization of RoughnessColor, MetallicColor and AoColor of materials.
+    
+    * -Bloom does not mess up SMAAT2X anymore (yeah that was weird)
+    -You can now view a texture if you know its ID (for debugging)
+    -I didn't do much for the last 2 weeks because of mock exams
+    
+    * -Cleaned up velocity buffer calculation a bit
+    
+    * -Refactoring Framebuffer and Framebuffer attachments!
+    -Textures now have Vec2u Size field. This will be automatically set upon loading a Texture.
+    -You do not need to pass the size if you want to attach a texture to a Framebuffer. The AttachTextures (previously SetAttachments) function will check if all the textures have the same size before attaching them.
+    -NamedTextures can be attached as color textures without specifying the GL attachment enum value - this will be done automatically. Depth textures are required to be passed as FramebufferAttachments but this will change soon.
+    
+    * -Updated the assimp library which now handles PBR better and allows us to retrieve the roughness value of materials
+    -Refactored the Framebuffer class a bit - now you can attach textures without specifying the attachment type, which used to be very unintuitive.
+    -Fixed crashes that occured when you tried to add/delete textures of a Material in the editor. This happened because of two reasons: firstly, an UICanvasActor kept a pointer to its parent canvas even after it got destroyed. Secondly, removing a UICanvasElement from an UICanvas did not remove its children from the UICanvas. The fixes greatly improved the stability of the editor.
+    
+    * -Minimizing the window no longer causes any framebuffers to be resized (they used to be resized to 0, which caused errors)
+    -Completely removed reserveColorBuffer and reserveDepthBuffer functions
+    -Renamed TextureFormat and Min and MagTextureFilter classes
+    
+    * -Previous commit could not be compiled because i forgot to add a static_cast; this was fixed
+    -Global light probes are always rendered last. This makes it possible to exclude areas that are in range of local probes.
+    
+    * -Framebuffer refactor finished
+    -FramebufferAttachment class has been extended. Now you don't have to use OpenGL functions to attach a specific side of a cubemap texture, a layer of a texture array or a mipmap level.
+    -Framebuffer class has been adapted to the changed FramebufferAttachment. One method - Attach(const FramebufferAttachment&) - can be used with any attachment, no matter if it's a depth or a color attachment. But the AttachTextures method can be used if the target is a simple 2D or cubemap texture when no layers nor mipmap levels are used and we can use the default color slot that the method uses.
+    -Added comments to Texture and Framebuffer classes.
+    
+    * Refactoring rendering function in progress. They will be moved from RenderEngine into multiple classes to make them more organised.
+    
+    * -Mouse picking (gizmos to come)
+    -Object outlining - stencil or silhouette, does not work for all shaders yet
+    -Removed unnecessary #includes
+    -Cleaned up some code
+    
+    * Small changes
+    
+    * -Moved UICanvasField template functions to .h file
+    
+    //Work in progress:
+    -Adding scrolling text.
+    -Fixing UICanvas projection not being ortho(-1, 1, -1, 1) but rather using canvas view scale instead of 1s. The scale was applied twice, so we had to square root the zoom every time (which has been bothering me for an extremely long time)
+    
+    * -Fixed UICanvas projection matrix so canvas view scale is applied only once. Canvas zoom is now linear.
+    
+    * UICanvas elements changes
+    
+    * -Fixed ScrollingTextComponent bounding box
+    -Added a button that lets you see G-buffer textures
+    -Cleaned up some code
+    
+    Co-authored-by: Michał Andryskowski <swetroniusz1@gmail.com>
+
+[33mcommit ffdc82a8d0569e5fb5994a09c4c9f88071d6402f[m
+Author: swetroniusz <nedesf@gmail.com>
+Date:   Tue Jun 1 21:54:13 2021 +0200
+
+    Added logo
+
+[33mcommit b891ae87996bb73f7c6d55fbdfe2e7d86eb4daae[m
+Author: swetroniusz <nedesf@gmail.com>
+Date:   Tue Jun 1 16:54:07 2021 +0200
+
+    Delete Source/Release directory
+
+[33mcommit 140ffdfdb56ba1f4522db3e457faa969817dc569[m
+Author: swetroniusz <nedesf@gmail.com>
+Date:   Tue Jun 1 16:53:04 2021 +0200
+
+    Update .gitignore
+
+[33mcommit 6ef2a3e8ef7212ad524d3eefbc6d04f21bd55233[m
+Author: Michał Andryskowski <swetroniusz1@gmail.com>
+Date:   Tue Jun 1 15:47:11 2021 +0100
+
+    Revert "Version with less assets"
+    
+    This reverts commit 2eb2cb8bda39c7b099268f8e9db722b76ed1154e.
+
+[33mcommit d5979e04d81ed5e654dfa315cfc5f8d62800c502[m
+Merge: 9a1fafa 2eb2cb8
+Author: Michał Andryskowski <swetroniusz1@gmail.com>
+Date:   Tue Jun 1 15:37:51 2021 +0100
+
+    Merge branch 'without_assets'
+
+[33mcommit 9a1fafa9ab8200d8f90f1460ee86cbe3ba10368b[m
+Author: Michał Andryskowski <swetroniusz1@gmail.com>
+Date: 
