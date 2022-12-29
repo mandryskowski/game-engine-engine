@@ -106,10 +106,11 @@ void UIMultipleListActor::NestList(UIListActor& list)
 }*/
 
 
-	UICanvasField::UICanvasField(GameScene& scene, Actor* parentActor, const std::string& name) :
+	UICanvasField::UICanvasField(GameScene& scene, Actor* parentActor, const std::string& name, const BuilderStyle& defaultStyle) :
 		Actor(scene, parentActor, name),
 		UIActor(parentActor),
-		TitleComp(nullptr)
+		TitleComp(nullptr),
+		DefaultStyle(defaultStyle)
 	{
 	}
 
@@ -123,7 +124,7 @@ void UIMultipleListActor::NestList(UIListActor& list)
 
 	UIElementTemplates UICanvasField::GetTemplates()
 	{
-		return UIElementTemplates(*this);
+		return UIElementTemplates(*this, DefaultStyle);
 	}
 
 	TextComponent* UICanvasField::GetTitleComp()
@@ -131,11 +132,12 @@ void UIMultipleListActor::NestList(UIListActor& list)
 		return TitleComp;
 	}
 
-	UICanvasFieldCategory::UICanvasFieldCategory(GameScene& scene, Actor* parentActor, const std::string& name) :
+	UICanvasFieldCategory::UICanvasFieldCategory(GameScene& scene, Actor* parentActor, const std::string& name, const BuilderStyle& defaultStyle) :
 		UIAutomaticListActor(scene, parentActor, name),
 		OnExpansionFunc(nullptr),
 		ExpandButton(nullptr),
-		CategoryBackgroundQuad(nullptr)
+		CategoryBackgroundQuad(nullptr),
+		DefaultStyle(defaultStyle)
 	{
 		ExpandButton = &CreateChild<UIButtonActor>(name + "ExpandButton", [this]()
 			{
@@ -194,7 +196,7 @@ void UIMultipleListActor::NestList(UIListActor& list)
 
 	UIElementTemplates UICanvasFieldCategory::GetTemplates()
 	{
-		return UIElementTemplates(*this);
+		return UIElementTemplates(*this, DefaultStyle);
 	}
 
 	UICanvasField& UICanvasFieldCategory::AddField(const std::string& name, std::function<Vec3f()> getElementOffset)
@@ -248,10 +250,11 @@ void UIMultipleListActor::NestList(UIListActor& list)
 		UIAutomaticListActor::Refresh();
 	}
 
-	UIElementTemplates::UIElementTemplates(Actor& templateParent) :
+	UIElementTemplates::UIElementTemplates(Actor& templateParent, const BuilderStyle& style) :
 		TemplateParent(templateParent),
 		Scene(templateParent.GetScene()),
-		GameHandle(*templateParent.GetScene().GetGameHandle())
+		GameHandle(*templateParent.GetScene().GetGameHandle()),
+		Style(style)
 	{
 	}
 
@@ -265,7 +268,7 @@ void UIMultipleListActor::NestList(UIListActor& list)
 		SharedPtr<AtlasMaterial> tickMaterial = MakeShared<AtlasMaterial>("TickMaterial", glm::ivec2(3, 1));
 		tickMaterial->AddTexture(MakeShared<NamedTexture>(Texture::Loader<>::FromFile2D("Assets/Editor/tick_icon.png", Texture::Format::RGBA(), true), "albedo1"));
 
-		UIButtonActor& billboardTickBoxActor = TemplateParent.CreateChild<UIButtonActor>("BillboardTickBox");
+		UIButtonActor& billboardTickBoxActor = TemplateParent.CreateChild<UIButtonActor>("BillboardTickBox", nullptr, Style.GetNormalButtonT());
 
 		ModelComponent& billboardTickModel = billboardTickBoxActor.CreateComponent<ModelComponent>("TickModel");
 		billboardTickModel.AddMeshInst(GameHandle.GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::Quad));
@@ -284,7 +287,7 @@ void UIMultipleListActor::NestList(UIListActor& list)
 		auto tickMaterial = MakeShared<AtlasMaterial>("TickMaterial", glm::ivec2(3, 1));
 		tickMaterial->AddTexture(MakeShared<NamedTexture>(Texture::Loader<>::FromFile2D("Assets/Editor/tick_icon.png", Texture::Format::RGBA(), true), "albedo1"));
 
-		UIButtonActor& billboardTickBoxActor = TemplateParent.CreateChild<UIButtonActor>("BillboardTickBox");
+		UIButtonActor& billboardTickBoxActor = TemplateParent.CreateChild<UIButtonActor>("BillboardTickBox", nullptr, Style.GetNormalButtonT());
 
 		ModelComponent& billboardTickModel = billboardTickBoxActor.CreateComponent<ModelComponent>("TickModel");
 		billboardTickModel.AddMeshInst(GameHandle.GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::Quad));
@@ -313,6 +316,7 @@ void UIMultipleListActor::NestList(UIListActor& list)
 
 
 		auto& valueText = TemplateParent.CreateChild<UIActorDefault>("SliderValueTextActor").CreateComponent<TextComponent>("SliderValueText", Transform(), ToStringPrecision(defaultValue, 3), "", Alignment2D::Center());
+		valueText.SetMaxSize(Vec2f(0.8f));
 		auto& slider = TemplateParent.CreateChild<UIScrollBarActor>("Slider");
 		slider.GetTransform()->SetScale(Vec2f(0.1f, 1.0f));
 		float scaleX = slider.GetTransform()->GetScale().x;
@@ -369,10 +373,9 @@ void UIMultipleListActor::NestList(UIListActor& list)
 
 	void UIElementTemplates::PathInput(std::function<void(const std::string&)> setFunc, std::function<std::string()> getFunc, std::vector<const char*> extensions)
 	{
-		UIInputBoxActor& pathInputBox = TemplateParent.CreateChild<UIInputBoxActor>("PathInputBox");
-		pathInputBox.SetTransform(Transform(Vec2f(2.0f, 0.0f), Vec2f(3.0f, 1.0f)));
+		UIInputBoxActor& pathInputBox = TemplateParent.CreateChild<UIInputBoxActor>("PathInputBox", Style.GetLongButtonT());
 		pathInputBox.SetOnInputFunc(setFunc, getFunc);
-		pathInputBox.GetContentTextComp()->GetTransform().SetScale(Vec2f(0.5f / 3.0f, 0.5f));
+		pathInputBox.GetContentTextComp()->GetTransform().SetScale(0.5f / Style.LongButtonSize);
 		UIButtonActor& selectFileActor = TemplateParent.CreateChild<UIButtonActor>("SelectFileButton");
 		SharedPtr<AtlasMaterial> moreMat = GameHandle.GetRenderEngineHandle()->FindMaterial<AtlasMaterial>("GEE_E_More_Mat");
 
@@ -380,7 +383,7 @@ void UIMultipleListActor::NestList(UIListActor& list)
 		selectFileActor.SetMatHover(MaterialInstance(moreMat, moreMat->GetTextureIDInterpolatorTemplate(1.0f)));
 		selectFileActor.SetMatClick(MaterialInstance(moreMat, moreMat->GetTextureIDInterpolatorTemplate(2.0f)));
 
-		selectFileActor.SetTransform(Transform(Vec2f(6.0f, 0.0f), Vec2f(1.0f, 1.0f)));
+		selectFileActor.GetTransform()->SetPosition(Vec2f(Math::GetTransformExtent<Math::Extent::Right>(*pathInputBox.GetTransform()) + 1.0f, 0.0f));
 
 		//TextComponent& pathText = selectFileActor.NowyCreateComponent<TextComponent>("Text", Transform(), "", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
 		selectFileActor.SetOnClickFunc([&pathInputBox, extensions]() { const char* path = tinyfd_openFileDialog("Select file", "C:\\", extensions.size(), (extensions.empty()) ? (nullptr) : (&extensions[0]), nullptr, 0); if (path) pathInputBox.PutString(path); });
@@ -388,10 +391,10 @@ void UIMultipleListActor::NestList(UIListActor& list)
 
 	void UIElementTemplates::FolderInput(std::function<void(const std::string&)> setFunc, std::function<std::string()> getFunc, const std::string& defaultPath)
 	{
-		UIInputBoxActor& pathInputBox = TemplateParent.CreateChild<UIInputBoxActor>("PathInputBox");
-		pathInputBox.SetTransform(Transform(Vec2f(2.0f, 0.0f), Vec2f(3.0f, 1.0f)));
+		UIInputBoxActor& pathInputBox = TemplateParent.CreateChild<UIInputBoxActor>("PathInputBox", Style.GetLongButtonT());
 		pathInputBox.SetOnInputFunc(setFunc, getFunc);
-		pathInputBox.GetContentTextComp()->GetTransform().SetScale(Vec2f(0.5f / 3.0f, 0.5f));
+		pathInputBox.GetContentTextComp()->GetTransform().SetScale(0.5f / Style.LongButtonSize);
+
 		UIButtonActor& selectFileActor = TemplateParent.CreateChild<UIButtonActor>("SelectFolderButton");
 		SharedPtr<AtlasMaterial> moreMat = GameHandle.GetRenderEngineHandle()->FindMaterial<AtlasMaterial>("GEE_E_More_Mat");
 
@@ -399,7 +402,7 @@ void UIMultipleListActor::NestList(UIListActor& list)
 		selectFileActor.SetMatHover(MaterialInstance(moreMat, moreMat->GetTextureIDInterpolatorTemplate(1.0f)));
 		selectFileActor.SetMatClick(MaterialInstance(moreMat, moreMat->GetTextureIDInterpolatorTemplate(2.0f)));
 
-		selectFileActor.SetTransform(Transform(Vec2f(6.0f, 0.0f), Vec2f(1.0f, 1.0f)));
+		selectFileActor.GetTransform()->SetPosition(Vec2f(Math::GetTransformExtent<Math::Extent::Right>(*pathInputBox.GetTransform()) + 1.0f, 0.0f));
 		selectFileActor.SetOnClickFunc([&pathInputBox, defaultPath]() { const char* path = tinyfd_selectFolderDialog("Select folder", defaultPath.c_str()); if (path) pathInputBox.PutString(path); });
 	}
 
@@ -412,7 +415,7 @@ void UIMultipleListActor::NestList(UIListActor& list)
 		backgroundMaterial->SetColor(backgroundColor);
 		backgroundQuad.OverrideInstancesMaterial(backgroundMaterial);
 
-		actor.CreateComponent<TextComponent>("ElementText", Transform(Vec2f(-2.0f, pos.y), Vec2f(0.75f)), actor.GetName(), "", Alignment2D::RightCenter());
+		actor.CreateComponent<TextComponent>("ElementText", Transform(Vec2f(-2.0f, pos.y)), actor.GetName(), "", Alignment2D::RightCenter()).SetMaxSize(Vec2f(3.0f, 0.75f));
 		
 		auto& separatorLine = actor.CreateComponent<ModelComponent>("SeparatorLine", Transform(Vec2f(-1.5f, pos.y), Vec2f(0.08f, 0.8f)));
 		separatorLine.AddMeshInst(actor.GetGameHandle()->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::Quad));

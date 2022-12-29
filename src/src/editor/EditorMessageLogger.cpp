@@ -11,7 +11,7 @@ namespace GEE
 
 		EditorMessageLogger::EditorMessageLogger(EditorManager& editorHandle, GameScene& editorScene) :
 			EditorHandle(editorHandle),
-			EditorScene(editorScene),
+			EditorScene(editorScene), 
 			IconsMaterial(nullptr),
 			MessageSlots(4, nullptr),
 			QueuedMessagesText(nullptr)

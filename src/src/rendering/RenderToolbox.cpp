@@ -556,6 +556,7 @@ namespace GEE
 		return *FinalFramebuffer;
 	}
 
+
 	GEditorToolbox::GEditorToolbox(ShaderFromHintGetter& getter, const GameSettings::VideoSettings& settings) :
 		RenderToolbox(getter),
 		GridShader(nullptr)
@@ -567,7 +568,7 @@ namespace GEE
 	{
 		GridShader = AddShader(ShaderLoader::LoadShaders("GEditor_Grid", "Shaders/UI/grid.vs", "Shaders/UI/grid.fs"));
 	}
-
+  
 	/**
 	* @brief Constructor of RenderToolboxCollection.
 	* @param name: the name of this RenderToolboxCollection
@@ -627,7 +628,7 @@ namespace GEE
 		AddTb<ComposedImageStorageToolbox>();
 	}
 
-	const GameSettings::VideoSettings& RenderToolboxCollection::GetSettings() const
+	const GameSettings::VideoSettings& RenderToolboxCollection::GetVideoSettings() const
 	{
 		return Settings;
 	}

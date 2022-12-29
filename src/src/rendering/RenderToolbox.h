@@ -227,7 +227,7 @@ namespace GEE
 
 			return nullptr;
 		}
-		const GameSettings::VideoSettings& GetSettings() const;
+		const GameSettings::VideoSettings& GetVideoSettings() const;
 		void Dispose();
 
 		friend class RenderEngine;

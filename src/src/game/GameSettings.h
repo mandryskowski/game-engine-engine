@@ -78,11 +78,11 @@ namespace GEE
 		/////////////////////////////
 
 		GameSettings();
-		GameSettings(std::string path);
+		GameSettings(const std::string& path);
 
-		void LoadFromFile(std::string path);
+		void LoadFromFile(const std::string& path);
 
-		virtual bool LoadSetting(std::stringstream& filestr, std::string settingName);
+		virtual bool LoadSetting(std::stringstream& filestr, const std::string& settingName);
 
 
 		template <typename Archive> void Serialize(Archive& archive);
@@ -91,3 +91,5 @@ namespace GEE
 
 	template <class T> void LoadEnum(std::stringstream& filestr, T& var);
 }
+
+GEE_REGISTER_TYPE(GEE::GameSettings);

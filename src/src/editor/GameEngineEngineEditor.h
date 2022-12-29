@@ -6,7 +6,8 @@
 #include <editor/EditorMessageLogger.h>
 #include <unordered_map>
 #include <condition_variable>
-#include <utility/Profiling.h>
+#include <utility/Profiling.h>#
+#include <editor/GEditorSettings.h>
 
 namespace GEE
 {
@@ -14,12 +15,7 @@ namespace GEE
 	namespace Editor
 	{
 		class EditorActions;
-
-		class GameEngineEngineEditorSettings : public GameSettings
-		{
-		public:
-
-		};
+		class GEditorRenderToolboxCollection;
 
 		struct EditorEventProcessor
 		{
@@ -40,13 +36,11 @@ namespace GEE
 			virtual std::vector<GameScene*> GetScenes() override;
 			GameScene* GetEditorScene() { return EditorScene; }
 
-			GameSettings* GetEditorSettings() override;
+			virtual GEditorSettings* GetEditorSettings() override { return &EditorSettings; }
 			virtual AtlasMaterial* GetDefaultEditorMaterial(EditorDefaultMaterial) override;
 			virtual EditorActions& GetActions() override;
 			virtual EditorMessageLogger& GetEditorLogger(GameScene& scene) override;
 			virtual bool GetViewportMaximized() const override { return bViewportMaximized; }
-			virtual bool GetDebugRenderComponents() const override { return bDebugRenderComponents; }
-			virtual bool GetDebugRenderPhysicsMeshes() const override { return bDebugRenderPhysicsMeshes; }
 			Profiling& GetProfilerRef() { return Profiler; }
 			DefaultEditorController* GetEditorController() { return EditorController; }
 			virtual void GenerateActorList(PopupDescription, std::function<void(Actor&)>) override;
@@ -76,7 +70,6 @@ namespace GEE
 			void LoadProject(const std::string& filepath);
 			void SaveProject(std::string optionalFilepath = std::string());
 
-		virtual void SetDebugRenderComponents(bool) override;
 	protected:
 		virtual void StartProfiler();
 		virtual void StopProfiler();
@@ -102,8 +95,7 @@ namespace GEE
 		std::function<void()> LastRenderPopupRequest;
 
 
-		GameSettings EditorSettings;
-		bool bDebugRenderComponents, bDebugRenderPhysicsMeshes;
+		GEditorSettings EditorSettings;
 		bool bViewportMaximized;
 
 		Vec2f TestTranslateLastPos;
@@ -119,7 +111,8 @@ namespace GEE
 		UniquePtr<EditorActions> Actions;
 
 	protected:
-		RenderToolboxCollection* ViewportRenderCollection, * HUDRenderCollection;
+		RenderToolboxCollection* ViewportRenderCollection;
+		GEditorRenderToolboxCollection* HUDRenderCollection;
 		//std::vector<RenderToolboxCollection*>
 		};
 	}

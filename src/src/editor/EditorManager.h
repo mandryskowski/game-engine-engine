@@ -54,6 +54,9 @@ namespace GEE
 		class EditorActions;
 		class EditorMessageLogger;
 		class DefaultEditorController;
+
+		struct GEditorSettings;
+
 		struct EditorPopup;
 
 		class EditorManager
@@ -64,8 +67,7 @@ namespace GEE
 
 			virtual EditorMessageLogger& GetEditorLogger(GameScene& scene) = 0;
 			virtual bool GetViewportMaximized() const = 0;
-			virtual bool GetDebugRenderComponents() const = 0;
-			virtual bool GetDebugRenderPhysicsMeshes() const = 0;
+
 			virtual DefaultEditorController* GetEditorController() = 0;
 			virtual void GenerateActorList(PopupDescription, std::function<void(Actor&)>) = 0;
 
@@ -75,17 +77,13 @@ namespace GEE
 			virtual void UpdateEditorSettings() = 0;
 
 			virtual GameManager* GetGameHandle() = 0;
-			virtual GameSettings* GetEditorSettings() = 0;
+			virtual GEditorSettings* GetEditorSettings() = 0;
 
 			virtual AtlasMaterial* GetDefaultEditorMaterial(EditorDefaultMaterial) = 0;
 
 			virtual std::string ToRelativePath(const std::string&) = 0;
 
-			//virtual void PreviewHierarchyTree(Hierarchy::Tree& tree) = 0;
-
 			virtual ~EditorManager() = default;
-
-			virtual void SetDebugRenderComponents(bool) = 0;
 
 		private:
 			virtual const std::deque<EditorPopup>& GetPopupsForRendering() = 0;

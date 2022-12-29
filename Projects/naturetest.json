@@ -1,4 +1,26 @@
 {
+    "GEditorSettings": {
+        "bRenderGrid": false,
+        "bDebugRenderComponents": true,
+        "bDebugRenderPhysicsMeshes": true,
+        "GameSettings": {
+            "bWindowFullscreen": false,
+            "WindowTitle": "GEE Window",
+            "Video": {
+                "AmbientOcclusionSamples": 0,
+                "bVSync": false,
+                "bBloom": false,
+                "AAType": 1,
+                "AALevel": 0,
+                "MonitorGamma": 1.0,
+                "POMLevel": 0,
+                "ShadowLevel": 0,
+                "TMType": 0,
+                "Max2DShadows": 16,
+                "Max3DShadows": 16
+            }
+        }
+    },
     "SkeletonBatches": [],
     "HierarchyTrees": [],
     "Name": "SceneRoot",

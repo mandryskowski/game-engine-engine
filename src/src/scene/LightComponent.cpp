@@ -377,28 +377,17 @@ namespace GEE
 	}
 
 	LightVolume::LightVolume(const LightComponent& lightCompPtr) :
-		LightCompPtr(&lightCompPtr),
-		VolumeTransformTarget(nullptr)
+		LightCompPtr(&lightCompPtr)
 	{
-		if (LightCompPtr->GetActor().GetParentActor()->GetName().find("Castle") != std::string::npos)
-			VolumeTransformTarget = LightCompPtr->GetActor().GetParentActor()->GetRoot();
 	}
 
 	EngineBasicShape LightVolume::GetShape() const
 	{
-		if (VolumeTransformTarget)
-			return EngineBasicShape::Cube;
 		return LightCompPtr->GetVolumeType();
 	}
 
 	Transform LightVolume::GetRenderTransform() const
 	{
-		if (VolumeTransformTarget)
-		{
-			auto t = VolumeTransformTarget->GetTransform().GetWorldTransform();
-			t.SetScale(Vec3f(15.0f, 12.0f, 10.0f));
-			return t;
-		}
 		Transform lightTransform = LightCompPtr->GetTransform().GetWorldTransform();
 		lightTransform.SetScale(LightCompPtr->GetTransform().GetScale());
 

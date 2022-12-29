@@ -203,8 +203,6 @@ namespace GEE
 				const_cast<Actor*>(found)->MarkAsKilled();
 			}
 
-			if (!comp)
-				return;
 
 			if (Actor* foundActorCanvas = editorScene.GetRootActor()->FindActor("GEE_E_Actors_Components_Canvas"); !sameComp && foundActorCanvas)
 			{
@@ -212,13 +210,17 @@ namespace GEE
 					if (UIActivableButtonActor* foundButtonActor = foundActorCanvas->GetActor<UIActivableButtonActor>(prevSelectedComp->GetName()))
 						foundButtonActor->SetActive(false);
 
-				if (UIActivableButtonActor* foundButtonActor = foundActorCanvas->GetActor<UIActivableButtonActor>(comp->GetName()))
-					foundButtonActor->SetActive(true);
+				if (comp)
+					if (UIActivableButtonActor* foundButtonActor = foundActorCanvas->GetActor<UIActivableButtonActor>(comp->GetName()))
+						foundButtonActor->SetActive(true);
 			}
+
+			if (!comp)
+				return;
 
 			UICanvasActor& canvas = editorScene.CreateActorAtRoot<UICanvasActor>("GEE_E_Components_Info_Canvas");
 			canvas.KillResizeBars();
-			canvas.SetTransform(Transform(Vec2f(0.7f, -0.125f), Vec2f(0.3f, 0.375f)));
+			canvas.SetTransform(Transform(Vec2f(0.85f, 0.0f), Vec2f(0.15f, 0.5f)));
 			UIActorDefault* scaleActor = canvas.GetScaleActor();
 
 			comp->GetEditorDescription(ComponentDescriptionBuilder(EditorHandle, *scaleActor));
@@ -256,19 +258,21 @@ namespace GEE
 				const_cast<Actor*>(found)->MarkAsKilled();
 			}
 
-			if (!actor)
-				return;
-
 			if (Actor* foundSceneCanvas = editorScene.GetRootActor()->FindActor("GEE_E_Scene_Actors_Canvas"); !sameActor && foundSceneCanvas)
 			{
 				if (prevSelectedActor)
 					if (UIActivableButtonActor* foundButtonActor = foundSceneCanvas->GetActor<UIActivableButtonActor>(prevSelectedActor->GetName()))
 						foundButtonActor->SetActive(false);
 
-				if (UIActivableButtonActor* foundButtonActor = foundSceneCanvas->GetActor<UIActivableButtonActor>(actor->GetName()))
-					foundButtonActor->SetActive(true);
+				if (actor)
+					if (UIActivableButtonActor* foundButtonActor = foundSceneCanvas->GetActor<UIActivableButtonActor>(actor->GetName()))
+						foundButtonActor->SetActive(true);
 			}
-			UICanvasActor& canvas = editorScene.CreateActorAtRoot<UICanvasActor>("GEE_E_Actors_Components_Canvas", Transform(Vec2f(0.7f, 0.625f), Vec2f(0.3f, 0.375f)));
+
+			if (!actor)
+				return;
+
+			UICanvasActor& canvas = editorScene.CreateActorAtRoot<UICanvasActor>("GEE_E_Actors_Components_Canvas", Transform(Vec2f(-0.85f, -0.5f), Vec2f(0.15f, 0.375f)));
 			canvas.KillResizeBars();
 			//canvas.SetViewScale(Vec2f(1.0f, glm::sqrt(0.5f / 0.32f)));
 			canvas.SetPopupCreationFunc([&](PopupDescription desc)
@@ -284,17 +288,18 @@ namespace GEE
 							if (UIInputBoxActor* foundNameBoxActor = foundActorCanvas->GetActor<UIInputBoxActor>("ComponentsNameActor"))
 								foundNameBoxActor->SetActive(true);
 					});
-				});
+				}, IconData(renderHandle, "Assets/Editor/add_icon.png", Vec2i(3, 1), 0.0f));
 				desc.AddOption("Delete", nullptr);
 			});
 
 			UIActorDefault* scaleActor = canvas.GetScaleActor();
 
+			//auto& componentsListCat = canvas.AddCategory("List of components");
 			UICanvasField& componentsListField = canvas.AddField("List of components");
 			UIAutomaticListActor& listActor = componentsListField.CreateChild<UIAutomaticListActor>("ListActor");
 			canvas.FieldsList->SetListElementOffset(canvas.FieldsList->GetListElementCount() - 1, [&listActor, &componentsListField]() { return static_cast<Mat3f>(componentsListField.GetTransform()->GetMatrix()) * (listActor.GetListOffset()); });
 			canvas.FieldsList->SetListCenterOffset(canvas.FieldsList->GetListElementCount() - 1, [&componentsListField]() -> Vec3f { return Vec3f(0.0f, -componentsListField.GetTransform()->GetScale().y, 0.0f); });
-			listActor.GetTransform()->Move(Vec2f(0.5f, 0.0f));
+			listActor.GetTransform()->Move(Vec2f(2.0f, 0.0f));
 
 			AddActorToList<Component>(editorScene, *actor->GetRoot(), listActor, canvas);
 
@@ -306,49 +311,14 @@ namespace GEE
 			if (canvas.FieldsList)
 				canvas.FieldsList->Refresh();
 
-			UIButtonActor& refreshButton = scaleActor->CreateChild<UIButtonActor>("GEE_E_Scene_Refresh_Button", [this, actor, &editorScene]() { this->SelectActor(actor, editorScene); }, Transform(Vec2f(6.0f, 0.0f), Vec2f(0.5f)));
-			uiButtonActorUtil::ButtonMatsFromAtlas(refreshButton, gameHandle.GetRenderEngineHandle()->FindMaterial<AtlasMaterial>("GEE_E_Refresh_Icon_Mat"), 0.0f, 1.0f, 2.0f);
-
-			UIButtonActor& addActorButton = scaleActor->CreateChild<UIButtonActor>("GEE_E_Scene_Add_Actor_Button", [&, this, actor]() {
-				UIWindowActor& compSelectWindow = editorScene.CreateActorAtRoot<UIWindowActor>(&canvas, "GEE_E_Component_Selection_Window", Transform(Vec2f(0.0f, -0.5f), Vec2f(0.3f)));
-
-				auto createCompButton = [&, this, actor](int i, std::function<Component& ()> createCompFunc) {
-					UIButtonActor& compButton = compSelectWindow.CreateChild<UIButtonActor>("GEE_E_Scene_Add_Comp_Button", [this, &editorScene, &refreshButton, actor, createCompFunc]() {
-						createCompFunc();
-						SelectActor(actor, editorScene);
-						}, Transform(Vec2f(-0.7f + static_cast<float>(i) * 0.2f, 0.7f), Vec2f(0.1f)));
-
-					Component& exampleComponent = createCompFunc();
-
-
-					compButton.SetMatIdle(exampleComponent.GetDebugMatInst(ButtonMaterialType::Idle));
-					compButton.SetMatHover(exampleComponent.GetDebugMatInst(ButtonMaterialType::Hover));
-					compButton.SetMatClick(exampleComponent.GetDebugMatInst(ButtonMaterialType::BeingClicked));
-
-					actor->GetRoot()->DetachChild(exampleComponent);
-				};
-
-				std::function<Component& ()> getSelectedComp = [this, actor]() -> Component& { return ((SelectedComp) ? (*SelectedComp) : (*actor->GetRoot())); };
-
-				createCompButton(0, [this, &editorScene, getSelectedComp]() -> Component& { return getSelectedComp().CreateComponent<Component>("A Component", Transform()); });
-				createCompButton(1, [this, &editorScene, getSelectedComp, &gameHandle]() -> Component& { LightComponent& comp = getSelectedComp().CreateComponent<LightComponent>("A LightComponent", LightType::POINT, gameHandle.GetMainScene()->GetRenderData()->GetAvailableLightIndex(), gameHandle.GetMainScene()->GetRenderData()->GetAvailableLightIndex()); comp.CalculateLightRadius(); return comp;  });
-				createCompButton(2, [this, &editorScene, getSelectedComp]() -> Component& { return getSelectedComp().CreateComponent<Audio::SoundSourceComponent>("A SoundSourceComponent"); });
-				createCompButton(3, [this, &editorScene, getSelectedComp]() -> Component& { return getSelectedComp().CreateComponent<CameraComponent>("A CameraComponent"); });
-				createCompButton(4, [this, &editorScene, getSelectedComp]() -> Component& { return getSelectedComp().CreateComponent<TextComponent>("A TextComponent", Transform(), "", ""); });
-				createCompButton(5, [this, &editorScene, getSelectedComp]() -> Component& { return getSelectedComp().CreateComponent<LightProbeComponent>("A LightProbeComponent"); });
-
-				}, Transform(Vec2f(8.0f, 0.0f), Vec2f(0.5f)));
-
-			auto addIconMat = gameHandle.GetRenderEngineHandle()->FindMaterial<AtlasMaterial>("GEE_E_Add_Icon_Mat");
-			addIconMat->AddTexture(MakeShared<NamedTexture>(Texture::Loader<>::FromFile2D("Assets/Editor/add_icon.png", Texture::Format::RGBA(), false, Texture::MinFilter::NearestInterpolateMipmap()), "albedo1"));
-			uiButtonActorUtil::ButtonMatsFromAtlas(addActorButton, addIconMat, 0.0f, 1.0f, 2.0f);
+			canvas.GetTransform()->SetScale(Vec2f(0.15f, 0.3f));
 
 			if (!previousCanvasView.IsEmpty() && sameActor)
 				canvas.SetCanvasView(previousCanvasView);
 			else
 			{
 				canvas.AutoClampView();
-				//canvas.SetViewScale(static_cast<Vec2f>(canvas.CanvasView.GetScale()) * Vec2f(1.0f, glm::sqrt(0.5f / 0.32f)));
+				//canvas.SetViewScale(Vec2f(canvas.GetViewT().GetScale2D().x, listActor.GetListElementCount() + 1.0f));
 			}
 		}
 
@@ -366,19 +336,24 @@ namespace GEE
 				const_cast<Actor*>(found)->MarkAsKilled();
 				previousCanvasView = dynamic_cast<UICanvasActor*>(const_cast<Actor*>(found))->CanvasView;
 			}
+			else
+			{
+				previousCanvasView = Transform(Vec2f(0.0f), Vec2f(1.0f, 100.0f));
+			}
 
 			if (!selectedScene)
 				return;
 
-			auto& aaa = editorScene.CreateActorAtRoot<UIActorDefault>("AAAAA");
-			aaa.SetTransform(Transform(Vec2f(-0.68f, 0.1f), Vec2f(0.0272f, 0.0272f)));
-
-			auto& plswork = aaa.CreateChild<UIActorDefault>("eeafksnflak");
-
-			UICanvasActor& canvas = plswork.CreateChild<UICanvasActor>("GEE_E_Scene_Actors_Canvas", Transform(Vec2f(0.0f), Vec2f(10.0f)));
+			UICanvasActor& canvas = editorScene.CreateActorAtRoot<UICanvasActor>("GEE_E_Scene_Actors_Canvas", Transform(Vec2f(-0.85f, 0.0f), Vec2f(0.15f, 0.408f)));
+			auto& titleButton = canvas.CreateChild<UIButtonActor>("GEE_E_Scene_Title", "Main Scene", nullptr, Transform(Vec2f(0.0f, 1.1f), Vec2f(1.0f, 0.1f)));
+			titleButton.DetachFromCanvas();
+			titleButton.SetMatIdle(std::make_shared<Material>("SceneTitleMat", Vec4f(hsvToRgb(Vec3f(288.0f, 0.82f, 0.3f)), 1.0f)));
+			canvas.KillResizeBars();
+			canvas.CreateCanvasBackgroundModel(hsvToRgb(Vec3f(288.0f, 0.7f, 0.2f)));
 			if (!previousCanvasView.IsEmpty() && sameScene)
-				canvas.CanvasView = previousCanvasView;
+				canvas.SetCanvasView(previousCanvasView, false);
 	
+			// Popups
 			canvas.SetPopupCreationFunc([&](PopupDescription desc)
 			{
 				auto& refreshButton = desc.AddOption("Refresh", [&]() { SelectScene(GetSelectedScene(), editorScene); }, IconData(renderHandle, "Assets/Editor/refresh_icon.png", Vec2i(3, 1), 0.0f));
@@ -434,26 +409,36 @@ namespace GEE
 			auto addActorMat = MakeShared<AtlasMaterial>(Material("GEE_E_Add_Actor_Material"), glm::ivec2(3, 1));
 			addActorMat->AddTexture(MakeShared<NamedTexture>(Texture::Loader<>::FromFile2D("Assets/Editor/add_icon.png", Texture::Format::RGBA(), false, Texture::MinFilter::NearestInterpolateMipmap()), "albedo1"));
 			uiButtonActorUtil::ButtonMatsFromAtlas(addActorButton, addActorMat, 0.0f, 1.0f, 2.0f);
-
 			UIAutomaticListActor& listActor = canvas.CreateChild<UIAutomaticListActor>("ListActor");
 			AddActorToList<Actor>(editorScene, *selectedScene->GetRootActor(), listActor, canvas,
 			[this, &editorScene](PopupDescription desc, Actor& actor){
 				desc.AddOption("Copy", [](){  });
 				desc.AddOption("Delete", [this, &actor, &editorScene]() { actor.MarkAsKilled(); SelectScene(GetSelectedScene(), editorScene); });
 			});
+			
+			std::cout << "@@@List element count: " << listActor.GetListElementCount() << '\n';
+			std::cout << "@@@List offset: " << listActor.GetListOffset().y << '\n';
+			int totalActorCount = static_cast<int>(-listActor.GetListOffset().y / 2.0f);
+			totalActorCount = glm::clamp(totalActorCount, 0, 18);
+			{
+				canvas.GetTransform()->SetScale(Vec2f(0.15f, 0.02f * totalActorCount));
+				titleButton.GetTransform()->SetScale(Vec2f(1.0f, 3.0f / (totalActorCount)));
+				titleButton.GetTransform()->SetVecAxis<TVec::Position, VecAxis::Y>(1.0f + titleButton.GetTransform()->GetScale().y);
+			}
 
 			listActor.Refresh();
 
 			//editorScene.GetRootActor()->DebugActorHierarchy();
 
 			canvas.AutoClampView();
-			canvas.SetViewScale(static_cast<Vec2f>(canvas.CanvasView.GetScale()) * Vec2f(1.0f, glm::sqrt(0.32f / 0.32f)));
+			canvas.SetViewScale(Vec2f(canvas.GetViewT().GetScale2D().x, totalActorCount));
+
 		}
 
 		void EditorActions::PreviewHierarchyTree(Hierarchy::Tree& tree)
 		{
 			GameScene& editorScene = *EditorHandle.GetGameHandle()->GetScene("GEE_Editor");
-			UIWindowActor& previewWindow = editorScene.CreateActorAtRoot<UIWindowActor>("Mesh node preview window");
+			UIWindowActor& previewWindow = editorScene.CreateActorAtRoot<UIWindowActor>("HierarchyTreePreview");
 
 			previewWindow.AddField("Name").CreateChild<UIInputBoxActor>("NameInputBox", [&tree](const std::string& name) { tree.SetName(name); }, [&tree]() { return tree.GetName().GetPath(); }).SetDisableInput(!tree.GetName().IsALocalResource());
 			previewWindow.AddField("Tree origin").CreateChild<UIButtonActor>("OriginButton", (tree.GetName().IsALocalResource()) ? ("Local") : ("File")).SetDisableInput(true);
@@ -514,6 +499,10 @@ namespace GEE
 					desc.AddOption("Delete node", (&node == &tree.GetRoot() || !tree.GetName().IsALocalResource()) ? (std::function<void()>(nullptr)) : ([&]() { node.Delete(); }));
 				});
 
+				auto& nodeIcon = element.GetRoot()->CreateComponent<ModelComponent>("NodeIcon", Transform(Vec2f(-2.0f, 0.0f), Vec2f(1.0f / 3.0f, 1.0f)));
+				nodeIcon.AddMeshInst(editorScene.GetGameHandle()->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::Quad));
+				nodeIcon.OverrideInstancesMaterialInstances(MakeShared<MaterialInstance>(node.GetCompBaseType().GetDebugMatInst(ButtonMaterialType::Idle)));
+
 				for (int i = 0; i < static_cast<int>(node.GetChildCount()); i++)
 				{
 					Hierarchy::NodeBase& child = *node.GetChild(i);
@@ -524,7 +513,7 @@ namespace GEE
 
 			createNodeButtons(tree.GetRoot(), list);
 
-			UIButtonActor& instantiateButton = list.CreateChild<UIButtonActor>("InstantiateButton", "Instantiate", [this, &tree, &editorScene, buttons]() {
+			auto instantiateFunc = [this, &tree, &editorScene, buttons](bool bActor) {
 				// Get selected component to instantiate to
 				std::function<Component* ()> getSelectedComp = [this]() -> Component* { return ((GetSelectedComponent()) ? (GetSelectedComponent()) : ((GetSelectedActor()) ? (GetSelectedActor()->GetRoot()) : (nullptr))); };
 
@@ -535,18 +524,28 @@ namespace GEE
 						selectedNodes.push_back(&it.first);
 
 				// Instantiate
-				if (Component* selectedComp = getSelectedComp(); selectedComp && !selectedNodes.empty())
-					EngineDataLoader::InstantiateTree(*selectedComp, tree, selectedNodes);
+				if (!bActor)
+				{
+					if (Component* selectedComp = getSelectedComp(); selectedComp && !selectedNodes.empty())
+						Hierarchy::Instantiation::TreeInstantiation(tree, true).ToComponents(tree.GetRoot(), *selectedComp, selectedNodes);
+				}
+				else
+				{
+					if (Actor* selectedActor = GetSelectedActor(); selectedActor && !selectedNodes.empty())
+						Hierarchy::Instantiation::TreeInstantiation(tree, true).ToActors(tree.GetRoot(), *selectedActor, [](Actor& parent) -> Actor& { return parent.CreateChild<Actor>(""); }, selectedNodes);
+				}
 
 				// Refresh
 				SelectActor(GetSelectedActor(), editorScene);
-			});
+			};
 
-			instantiateButton.SetPopupCreationFunc([](PopupDescription desc)
+			UIButtonActor& instantiateButton = list.CreateChild<UIButtonActor>("InstantiateButton", "Instantiate", [instantiateFunc]() { instantiateFunc(false); });
+
+			instantiateButton.SetPopupCreationFunc([instantiateFunc](PopupDescription desc)
 			{
-				desc.AddSubmenu("Instantiate to Actors", [](PopupDescription submenuDesc)
+				desc.AddSubmenu("Instantiate to Actors", [instantiateFunc](PopupDescription submenuDesc)
 				{
-					submenuDesc.AddOption("Nodes as roots", []() {});
+					submenuDesc.AddOption("Nodes as roots", [instantiateFunc]() { instantiateFunc(true); });
 					submenuDesc.AddOption("Nodes as roots' children", []() {});
 				});
 			});

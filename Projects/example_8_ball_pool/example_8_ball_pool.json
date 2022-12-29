@@ -1,4 +1,26 @@
 {
+    "GEditorSettings": {
+        "bRenderGrid": false,
+        "bDebugRenderComponents": false,
+        "bDebugRenderPhysicsMeshes": true,
+        "GameSettings": {
+            "bWindowFullscreen": false,
+            "WindowTitle": "GEE Window",
+            "Video": {
+                "AmbientOcclusionSamples": 0,
+                "bVSync": false,
+                "bBloom": false,
+                "AAType": 1,
+                "AALevel": 0,
+                "MonitorGamma": 1.0,
+                "POMLevel": 0,
+                "ShadowLevel": 0,
+                "TMType": 0,
+                "Max2DShadows": 16,
+                "Max3DShadows": 16
+            }
+        }
+    },
     "SkeletonBatches": [
         {
             "ptr_wrapper": {
@@ -2135,7 +2157,7 @@
                                             "data": {
                                                 "Projection": {
                                                     "row0": {
-                                                        "x": 1.0,
+                                                        "x": 0.5296874642372131,
                                                         "y": 0.0,
                                                         "z": 0.0,
                                                         "w": 0.0
@@ -2149,13 +2171,13 @@
                                                     "row2": {
                                                         "x": 0.0,
                                                         "y": 0.0,
-                                                        "z": -1.0002000331878663,
+                                                        "z": -1.0020020008087159,
                                                         "w": -1.0
                                                     },
                                                     "row3": {
                                                         "x": 0.0,
                                                         "y": 0.0,
-                                                        "z": -0.020002000033855439,
+                                                        "z": -0.20020020008087159,
                                                         "w": 0.0
                                                     }
                                                 },
@@ -2254,7 +2276,7 @@
                                 "valid": 1,
                                 "data": {
                                     "Controller": {
-                                        "PossessedActorName": "",
+                                        "PossessedActorName": "Poolcue",
                                         "bHideCursor": false,
                                         "bLockMouseAtCenter": false,
                                         "Actor": {
@@ -2297,7 +2319,7 @@
                                             "Children": []
                                         }
                                     },
-                                    "WhiteBallActorName": "",
+                                    "WhiteBallActorName": "Whiteball",
                                     "CueHitPower": 0.20000000298023225
                                 }
                             }
@@ -2530,7 +2552,7 @@
                                                                         },
                                                                         {
                                                                             "ptr_wrapper": {
-                                                                                "id": 2147483668,
+                                                                                "id": 2147483671,
                                                                                 "data": {
                                                                                     "Type": 0,
                                                                                     "ShapeTransform": {
@@ -2559,7 +2581,7 @@
                                                                         },
                                                                         {
                                                                             "ptr_wrapper": {
-                                                                                "id": 2147483669,
+                                                                                "id": 2147483672,
                                                                                 "data": {
                                                                                     "Type": 0,
                                                                                     "ShapeTransform": {
@@ -2588,7 +2610,7 @@
                                                                         },
                                                                         {
                                                                             "ptr_wrapper": {
-                                                                                "id": 2147483670,
+                                                                                "id": 2147483673,
                                                                                 "data": {
                                                                                     "Type": 0,
                                                                                     "ShapeTransform": {
@@ -4160,15 +4182,15 @@
                                         "ComponentGEEID": 220,
                                         "ComponentTransform": {
                                             "Position": {
-                                                "x": -3.172393321990967,
-                                                "y": 0.973766028881073,
-                                                "z": -0.061712343245744708
+                                                "x": -3.1721925735473635,
+                                                "y": 1.0037660598754883,
+                                                "z": -0.06791241466999054
                                             },
                                             "Rotation": {
                                                 "x": 0.0,
-                                                "y": -0.015444725751876831,
+                                                "y": -0.016995370388031007,
                                                 "z": 0.0,
-                                                "w": 0.9998806715011597
+                                                "w": 0.9998555779457092
                                             },
                                             "Scale": {
                                                 "x": 2.3299999237060549,
@@ -4309,7 +4331,7 @@
                                                                 "MeshSpecificName": "Quad",
                                                                 "MaterialInst": {
                                                                     "ptr_wrapper": {
-                                                                        "id": 2147483671,
+                                                                        "id": 2147483674,
                                                                         "data": {
                                                                             "MaterialName": "Carpet",
                                                                             "MaterialOptionalPath": "",
@@ -4317,7 +4339,7 @@
                                                                                 "polymorphic_id": 2147483659,
                                                                                 "polymorphic_name": "GEE::AtlasMaterial",
                                                                                 "ptr_wrapper": {
-                                                                                    "id": 2147483672,
+                                                                                    "id": 2147483675,
                                                                                     "data": {
                                                                                         "AtlasSize": {
                                                                                             "x": 0.0,
@@ -4329,7 +4351,7 @@
                                                                                             "Textures": [
                                                                                                 {
                                                                                                     "ptr_wrapper": {
-                                                                                                        "id": 2147483673,
+                                                                                                        "id": 2147483676,
                                                                                                         "data": {
                                                                                                             "ShaderName": "albedo1",
                                                                                                             "Texture": {
@@ -4342,7 +4364,7 @@
                                                                                                 },
                                                                                                 {
                                                                                                     "ptr_wrapper": {
-                                                                                                        "id": 2147483674,
+                                                                                                        "id": 2147483677,
                                                                                                         "data": {
                                                                                                             "ShaderName": "normal1",
                                                                                                             "Texture": {
@@ -4355,7 +4377,7 @@
                                                                                                 },
                                                                                                 {
                                                                                                     "ptr_wrapper": {
-                                                                                                        "id": 2147483675,
+                                                                                                        "id": 2147483678,
                                                                                                         "data": {
                                                                                                             "ShaderName": "roughness1",
                                                                                                             "Texture": {
@@ -4456,7 +4478,6 @@
         "Max2DShadows": 16,
         "Max3DShadows": 16
     },
-    "bDebugRenderComponents": true,
     "value0": [],
     "value1": []
 }
