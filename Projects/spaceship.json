@@ -1,0 +1,871 @@
+{
+    "GEditorSettings": {
+        "bRenderGrid": false,
+        "bDebugRenderComponents": false,
+        "bDebugRenderPhysicsMeshes": true,
+        "GameSettings": {
+            "bWindowFullscreen": false,
+            "WindowTitle": "GEE Window",
+            "Video": {
+                "AmbientOcclusionSamples": 0,
+                "bVSync": false,
+                "bBloom": false,
+                "AAType": 1,
+                "AALevel": 0,
+                "MonitorGamma": 1.0,
+                "POMLevel": 0,
+                "ShadowLevel": 0,
+                "TMType": 0,
+                "Max2DShadows": 16,
+                "Max3DShadows": 16
+            }
+        }
+    },
+    "SkeletonBatches": [],
+    "HierarchyTrees": [],
+    "Name": "SceneRoot",
+    "ActorGEEID": 60,
+    "RootComponent": {
+        "polymorphic_id": 1073741824,
+        "ptr_wrapper": {
+            "valid": 1,
+            "data": {
+                "Name": "SceneRoot's root",
+                "ComponentGEEID": 150,
+                "ComponentTransform": {
+                    "Position": {
+                        "x": 0.0,
+                        "y": 0.0,
+                        "z": 0.0
+                    },
+                    "Rotation": {
+                        "x": 0.0,
+                        "y": 0.0,
+                        "z": 0.0,
+                        "w": 1.0
+                    },
+                    "Scale": {
+                        "x": 1.0,
+                        "y": 1.0,
+                        "z": 1.0
+                    }
+                },
+                "CollisionObj": {
+                    "ptr_wrapper": {
+                        "valid": 0
+                    }
+                },
+                "Children": [
+                    {
+                        "polymorphic_id": 2147483649,
+                        "polymorphic_name": "GEE::LightProbeComponent",
+                        "ptr_wrapper": {
+                            "valid": 1,
+                            "data": {
+                                "Shape": 0,
+                                "OptionalFilepath": "C:\\Users\\48511\\Desktop\\Milkyway\\Milkyway_small.hdr",
+                                "ProbeIntensity": 3.0,
+                                "Component": {
+                                    "Name": "A LightProbeComponent",
+                                    "ComponentGEEID": 1867,
+                                    "ComponentTransform": {
+                                        "Position": {
+                                            "x": 0.0,
+                                            "y": 0.0,
+                                            "z": 0.0
+                                        },
+                                        "Rotation": {
+                                            "x": 0.0,
+                                            "y": 0.0,
+                                            "z": 0.0,
+                                            "w": 1.0
+                                        },
+                                        "Scale": {
+                                            "x": 1.0,
+                                            "y": 1.0,
+                                            "z": 1.0
+                                        }
+                                    },
+                                    "CollisionObj": {
+                                        "ptr_wrapper": {
+                                            "valid": 0
+                                        }
+                                    },
+                                    "Children": []
+                                }
+                            }
+                        }
+                    }
+                ]
+            }
+        }
+    },
+    "Children": [
+        {
+            "polymorphic_id": 1073741824,
+            "ptr_wrapper": {
+                "valid": 1,
+                "data": {
+                    "Name": "A Camera",
+                    "ActorGEEID": 61,
+                    "RootComponent": {
+                        "polymorphic_id": 1073741824,
+                        "ptr_wrapper": {
+                            "valid": 1,
+                            "data": {
+                                "Name": "A Camera's root",
+                                "ComponentGEEID": 151,
+                                "ComponentTransform": {
+                                    "Position": {
+                                        "x": -4.9465742111206059,
+                                        "y": 5.433544635772705,
+                                        "z": -5.09110164642334
+                                    },
+                                    "Rotation": {
+                                        "x": -0.07535996288061142,
+                                        "y": -0.9238690137863159,
+                                        "z": -0.2449599802494049,
+                                        "w": 0.2842208445072174
+                                    },
+                                    "Scale": {
+                                        "x": 1.0,
+                                        "y": 1.0,
+                                        "z": 1.0
+                                    }
+                                },
+                                "CollisionObj": {
+                                    "ptr_wrapper": {
+                                        "valid": 0
+                                    }
+                                },
+                                "Children": [
+                                    {
+                                        "polymorphic_id": 2147483650,
+                                        "polymorphic_name": "GEE::CameraComponent",
+                                        "ptr_wrapper": {
+                                            "valid": 1,
+                                            "data": {
+                                                "Projection": {
+                                                    "row0": {
+                                                        "x": 0.5296874642372131,
+                                                        "y": 0.0,
+                                                        "z": 0.0,
+                                                        "w": 0.0
+                                                    },
+                                                    "row1": {
+                                                        "x": 0.0,
+                                                        "y": 1.0,
+                                                        "z": 0.0,
+                                                        "w": 0.0
+                                                    },
+                                                    "row2": {
+                                                        "x": 0.0,
+                                                        "y": 0.0,
+                                                        "z": -1.0020020008087159,
+                                                        "w": -1.0
+                                                    },
+                                                    "row3": {
+                                                        "x": 0.0,
+                                                        "y": 0.0,
+                                                        "z": -0.20020020008087159,
+                                                        "w": 0.0
+                                                    }
+                                                },
+                                                "Active": true,
+                                                "Component": {
+                                                    "Name": "A CameraComponent",
+                                                    "ComponentGEEID": 152,
+                                                    "ComponentTransform": {
+                                                        "Position": {
+                                                            "x": 0.0,
+                                                            "y": 0.0,
+                                                            "z": 0.0
+                                                        },
+                                                        "Rotation": {
+                                                            "x": 0.0,
+                                                            "y": 0.0,
+                                                            "z": 0.0,
+                                                            "w": 1.0
+                                                        },
+                                                        "Scale": {
+                                                            "x": 1.0,
+                                                            "y": 1.0,
+                                                            "z": 1.0
+                                                        }
+                                                    },
+                                                    "CollisionObj": {
+                                                        "ptr_wrapper": {
+                                                            "valid": 0
+                                                        }
+                                                    },
+                                                    "Children": []
+                                                }
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "Children": [
+                        {
+                            "polymorphic_id": 2147483651,
+                            "polymorphic_name": "GEE::FreeRoamingController",
+                            "ptr_wrapper": {
+                                "valid": 1,
+                                "data": {
+                                    "PossessedActorName": "A Camera",
+                                    "bHideCursor": true,
+                                    "bLockMouseAtCenter": true,
+                                    "Actor": {
+                                        "Name": "A FreeRoamingController",
+                                        "ActorGEEID": 62,
+                                        "RootComponent": {
+                                            "polymorphic_id": 1073741824,
+                                            "ptr_wrapper": {
+                                                "valid": 1,
+                                                "data": {
+                                                    "Name": "A FreeRoamingController's root",
+                                                    "ComponentGEEID": 153,
+                                                    "ComponentTransform": {
+                                                        "Position": {
+                                                            "x": 0.0,
+                                                            "y": 0.0,
+                                                            "z": 0.0
+                                                        },
+                                                        "Rotation": {
+                                                            "x": 0.0,
+                                                            "y": 0.0,
+                                                            "z": 0.0,
+                                                            "w": 1.0
+                                                        },
+                                                        "Scale": {
+                                                            "x": 1.0,
+                                                            "y": 1.0,
+                                                            "z": 1.0
+                                                        }
+                                                    },
+                                                    "CollisionObj": {
+                                                        "ptr_wrapper": {
+                                                            "valid": 0
+                                                        }
+                                                    },
+                                                    "Children": []
+                                                }
+                                            }
+                                        },
+                                        "Children": []
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "polymorphic_id": 1073741824,
+            "ptr_wrapper": {
+                "valid": 1,
+                "data": {
+                    "Name": "Default sphere",
+                    "ActorGEEID": 63,
+                    "RootComponent": {
+                        "polymorphic_id": 1073741824,
+                        "ptr_wrapper": {
+                            "valid": 1,
+                            "data": {
+                                "Name": "Default sphere's root",
+                                "ComponentGEEID": 154,
+                                "ComponentTransform": {
+                                    "Position": {
+                                        "x": 0.0,
+                                        "y": 0.0,
+                                        "z": -3.0
+                                    },
+                                    "Rotation": {
+                                        "x": 0.0,
+                                        "y": 0.0,
+                                        "z": 0.0,
+                                        "w": 1.0
+                                    },
+                                    "Scale": {
+                                        "x": 1.0,
+                                        "y": 1.0,
+                                        "z": 1.0
+                                    }
+                                },
+                                "CollisionObj": {
+                                    "ptr_wrapper": {
+                                        "valid": 0
+                                    }
+                                },
+                                "Children": [
+                                    {
+                                        "polymorphic_id": 2147483652,
+                                        "polymorphic_name": "GEE::ModelComponent",
+                                        "ptr_wrapper": {
+                                            "valid": 1,
+                                            "data": {
+                                                "RenderAsBillboard": false,
+                                                "MeshInstances": [
+                                                    {
+                                                        "ptr_wrapper": {
+                                                            "valid": 1,
+                                                            "data": {
+                                                                "MeshTreePath": "ENG_SPHERE",
+                                                                "MeshNodeName": "Sphere",
+                                                                "MeshSpecificName": "Sphere",
+                                                                "MaterialInst": {
+                                                                    "ptr_wrapper": {
+                                                                        "id": 0
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                ],
+                                                "SkelInfoBatchID": -1,
+                                                "SkelInfoID": -1,
+                                                "RenderableComponent": {
+                                                    "Hide": false,
+                                                    "CastsShadow": true,
+                                                    "Component": {
+                                                        "Name": "A ModelComponent",
+                                                        "ComponentGEEID": 155,
+                                                        "ComponentTransform": {
+                                                            "Position": {
+                                                                "x": 0.0,
+                                                                "y": 0.0,
+                                                                "z": 0.0
+                                                            },
+                                                            "Rotation": {
+                                                                "x": 0.0,
+                                                                "y": 0.0,
+                                                                "z": 0.0,
+                                                                "w": 1.0
+                                                            },
+                                                            "Scale": {
+                                                                "x": 1.0,
+                                                                "y": 1.0,
+                                                                "z": 1.0
+                                                            }
+                                                        },
+                                                        "CollisionObj": {
+                                                            "ptr_wrapper": {
+                                                                "valid": 0
+                                                            }
+                                                        },
+                                                        "Children": []
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "polymorphic_id": 2147483653,
+                                        "polymorphic_name": "GEE::LightComponent",
+                                        "ptr_wrapper": {
+                                            "valid": 1,
+                                            "data": {
+                                                "Lighttype": 1,
+                                                "Ambient": {
+                                                    "x": 0.0,
+                                                    "y": 0.0,
+                                                    "z": 0.0
+                                                },
+                                                "Diffuse": {
+                                                    "x": 1.0,
+                                                    "y": 1.0,
+                                                    "z": 1.0
+                                                },
+                                                "Specular": {
+                                                    "x": 0.5,
+                                                    "y": 0.5,
+                                                    "z": 0.5
+                                                },
+                                                "Attenuation": 1.0,
+                                                "CutOff": 1.0,
+                                                "OuterCutOff": 1.0,
+                                                "Far": 7.085196018218994,
+                                                "ShadowBias": 0.0010000000474974514,
+                                                "bShadowMapCullFronts": true,
+                                                "Component": {
+                                                    "Name": "A LightComponent",
+                                                    "ComponentGEEID": 156,
+                                                    "ComponentTransform": {
+                                                        "Position": {
+                                                            "x": 0.0,
+                                                            "y": 0.0,
+                                                            "z": 2.0
+                                                        },
+                                                        "Rotation": {
+                                                            "x": 0.0,
+                                                            "y": 0.0,
+                                                            "z": 0.0,
+                                                            "w": 1.0
+                                                        },
+                                                        "Scale": {
+                                                            "x": 7.085196018218994,
+                                                            "y": 7.085196018218994,
+                                                            "z": 7.085196018218994
+                                                        }
+                                                    },
+                                                    "CollisionObj": {
+                                                        "ptr_wrapper": {
+                                                            "valid": 0
+                                                        }
+                                                    },
+                                                    "Children": []
+                                                }
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "Children": []
+                }
+            }
+        },
+        {
+            "polymorphic_id": 1073741824,
+            "ptr_wrapper": {
+                "valid": 1,
+                "data": {
+                    "Name": "spaceship",
+                    "ActorGEEID": 150,
+                    "RootComponent": {
+                        "polymorphic_id": 1073741824,
+                        "ptr_wrapper": {
+                            "valid": 1,
+                            "data": {
+                                "Name": "An Actor's root",
+                                "ComponentGEEID": 366,
+                                "ComponentTransform": {
+                                    "Position": {
+                                        "x": 0.0,
+                                        "y": 2.0,
+                                        "z": 0.0
+                                    },
+                                    "Rotation": {
+                                        "x": 0.0,
+                                        "y": 0.0,
+                                        "z": 0.0,
+                                        "w": 1.0
+                                    },
+                                    "Scale": {
+                                        "x": 1.0,
+                                        "y": 1.0,
+                                        "z": 1.0
+                                    }
+                                },
+                                "CollisionObj": {
+                                    "ptr_wrapper": {
+                                        "valid": 0
+                                    }
+                                },
+                                "Children": [
+                                    {
+                                        "polymorphic_id": 1073741824,
+                                        "ptr_wrapper": {
+                                            "valid": 1,
+                                            "data": {
+                                                "Name": "C:\\Users\\48511\\Desktop\\spaceship\\scene.gltf",
+                                                "ComponentGEEID": 671,
+                                                "ComponentTransform": {
+                                                    "Position": {
+                                                        "x": 0.0,
+                                                        "y": 0.0,
+                                                        "z": 0.0
+                                                    },
+                                                    "Rotation": {
+                                                        "x": -0.7071067690849304,
+                                                        "y": 0.0,
+                                                        "z": 0.0,
+                                                        "w": 0.7071067690849304
+                                                    },
+                                                    "Scale": {
+                                                        "x": 1.0,
+                                                        "y": 1.0,
+                                                        "z": 1.0
+                                                    }
+                                                },
+                                                "CollisionObj": {
+                                                    "ptr_wrapper": {
+                                                        "valid": 0
+                                                    }
+                                                },
+                                                "Children": [
+                                                    {
+                                                        "polymorphic_id": 1073741824,
+                                                        "ptr_wrapper": {
+                                                            "valid": 1,
+                                                            "data": {
+                                                                "Name": "Spaceship.fbx",
+                                                                "ComponentGEEID": 673,
+                                                                "ComponentTransform": {
+                                                                    "Position": {
+                                                                        "x": 0.0,
+                                                                        "y": 0.0,
+                                                                        "z": 0.0
+                                                                    },
+                                                                    "Rotation": {
+                                                                        "x": 0.7071067690849304,
+                                                                        "y": 0.0,
+                                                                        "z": 0.0,
+                                                                        "w": 0.7071067690849304
+                                                                    },
+                                                                    "Scale": {
+                                                                        "x": 1.0,
+                                                                        "y": 1.0,
+                                                                        "z": 1.0
+                                                                    }
+                                                                },
+                                                                "CollisionObj": {
+                                                                    "ptr_wrapper": {
+                                                                        "valid": 0
+                                                                    }
+                                                                },
+                                                                "Children": [
+                                                                    {
+                                                                        "polymorphic_id": 1073741824,
+                                                                        "ptr_wrapper": {
+                                                                            "valid": 1,
+                                                                            "data": {
+                                                                                "Name": "RootNode",
+                                                                                "ComponentGEEID": 675,
+                                                                                "ComponentTransform": {
+                                                                                    "Position": {
+                                                                                        "x": 0.0,
+                                                                                        "y": 0.0,
+                                                                                        "z": 0.0
+                                                                                    },
+                                                                                    "Rotation": {
+                                                                                        "x": 0.0,
+                                                                                        "y": 0.0,
+                                                                                        "z": 0.0,
+                                                                                        "w": 1.0
+                                                                                    },
+                                                                                    "Scale": {
+                                                                                        "x": 1.0,
+                                                                                        "y": 1.0,
+                                                                                        "z": 1.0
+                                                                                    }
+                                                                                },
+                                                                                "CollisionObj": {
+                                                                                    "ptr_wrapper": {
+                                                                                        "valid": 0
+                                                                                    }
+                                                                                },
+                                                                                "Children": [
+                                                                                    {
+                                                                                        "polymorphic_id": 1073741824,
+                                                                                        "ptr_wrapper": {
+                                                                                            "valid": 1,
+                                                                                            "data": {
+                                                                                                "Name": "Spaceship",
+                                                                                                "ComponentGEEID": 677,
+                                                                                                "ComponentTransform": {
+                                                                                                    "Position": {
+                                                                                                        "x": 0.0,
+                                                                                                        "y": 0.0,
+                                                                                                        "z": 0.0
+                                                                                                    },
+                                                                                                    "Rotation": {
+                                                                                                        "x": -0.7071067690849304,
+                                                                                                        "y": 0.0,
+                                                                                                        "z": 0.0,
+                                                                                                        "w": 0.7071067690849304
+                                                                                                    },
+                                                                                                    "Scale": {
+                                                                                                        "x": 1.0,
+                                                                                                        "y": 1.0,
+                                                                                                        "z": 1.0
+                                                                                                    }
+                                                                                                },
+                                                                                                "CollisionObj": {
+                                                                                                    "ptr_wrapper": {
+                                                                                                        "valid": 0
+                                                                                                    }
+                                                                                                },
+                                                                                                "Children": [
+                                                                                                    {
+                                                                                                        "polymorphic_id": 4,
+                                                                                                        "ptr_wrapper": {
+                                                                                                            "valid": 1,
+                                                                                                            "data": {
+                                                                                                                "RenderAsBillboard": false,
+                                                                                                                "MeshInstances": [
+                                                                                                                    {
+                                                                                                                        "ptr_wrapper": {
+                                                                                                                            "valid": 1,
+                                                                                                                            "data": {
+                                                                                                                                "MeshTreePath": "C:\\Users\\48511\\Desktop\\spaceship\\scene.gltf",
+                                                                                                                                "MeshNodeName": "Spaceship_Osn_0",
+                                                                                                                                "MeshSpecificName": "Spaceship_Osn_0",
+                                                                                                                                "MaterialInst": {
+                                                                                                                                    "ptr_wrapper": {
+                                                                                                                                        "id": 0
+                                                                                                                                    }
+                                                                                                                                }
+                                                                                                                            }
+                                                                                                                        }
+                                                                                                                    }
+                                                                                                                ],
+                                                                                                                "SkelInfoBatchID": -1,
+                                                                                                                "SkelInfoID": -1,
+                                                                                                                "RenderableComponent": {
+                                                                                                                    "Hide": false,
+                                                                                                                    "CastsShadow": true,
+                                                                                                                    "Component": {
+                                                                                                                        "Name": "Spaceship_Osn_0",
+                                                                                                                        "ComponentGEEID": 679,
+                                                                                                                        "ComponentTransform": {
+                                                                                                                            "Position": {
+                                                                                                                                "x": 0.0,
+                                                                                                                                "y": 0.0,
+                                                                                                                                "z": 0.0
+                                                                                                                            },
+                                                                                                                            "Rotation": {
+                                                                                                                                "x": 0.0,
+                                                                                                                                "y": 0.0,
+                                                                                                                                "z": 0.0,
+                                                                                                                                "w": 1.0
+                                                                                                                            },
+                                                                                                                            "Scale": {
+                                                                                                                                "x": 1.0,
+                                                                                                                                "y": 1.0,
+                                                                                                                                "z": 1.0
+                                                                                                                            }
+                                                                                                                        },
+                                                                                                                        "CollisionObj": {
+                                                                                                                            "ptr_wrapper": {
+                                                                                                                                "valid": 0
+                                                                                                                            }
+                                                                                                                        },
+                                                                                                                        "Children": []
+                                                                                                                    }
+                                                                                                                }
+                                                                                                            }
+                                                                                                        }
+                                                                                                    },
+                                                                                                    {
+                                                                                                        "polymorphic_id": 4,
+                                                                                                        "ptr_wrapper": {
+                                                                                                            "valid": 1,
+                                                                                                            "data": {
+                                                                                                                "RenderAsBillboard": false,
+                                                                                                                "MeshInstances": [
+                                                                                                                    {
+                                                                                                                        "ptr_wrapper": {
+                                                                                                                            "valid": 1,
+                                                                                                                            "data": {
+                                                                                                                                "MeshTreePath": "C:\\Users\\48511\\Desktop\\spaceship\\scene.gltf",
+                                                                                                                                "MeshNodeName": "Spaceship_Turbine_0",
+                                                                                                                                "MeshSpecificName": "Spaceship_Turbine_0",
+                                                                                                                                "MaterialInst": {
+                                                                                                                                    "ptr_wrapper": {
+                                                                                                                                        "id": 0
+                                                                                                                                    }
+                                                                                                                                }
+                                                                                                                            }
+                                                                                                                        }
+                                                                                                                    }
+                                                                                                                ],
+                                                                                                                "SkelInfoBatchID": -1,
+                                                                                                                "SkelInfoID": -1,
+                                                                                                                "RenderableComponent": {
+                                                                                                                    "Hide": false,
+                                                                                                                    "CastsShadow": true,
+                                                                                                                    "Component": {
+                                                                                                                        "Name": "Spaceship_Turbine_0",
+                                                                                                                        "ComponentGEEID": 681,
+                                                                                                                        "ComponentTransform": {
+                                                                                                                            "Position": {
+                                                                                                                                "x": 0.0,
+                                                                                                                                "y": 0.0,
+                                                                                                                                "z": 0.0
+                                                                                                                            },
+                                                                                                                            "Rotation": {
+                                                                                                                                "x": 0.0,
+                                                                                                                                "y": 0.0,
+                                                                                                                                "z": 0.0,
+                                                                                                                                "w": 1.0
+                                                                                                                            },
+                                                                                                                            "Scale": {
+                                                                                                                                "x": 1.0,
+                                                                                                                                "y": 1.0,
+                                                                                                                                "z": 1.0
+                                                                                                                            }
+                                                                                                                        },
+                                                                                                                        "CollisionObj": {
+                                                                                                                            "ptr_wrapper": {
+                                                                                                                                "valid": 0
+                                                                                                                            }
+                                                                                                                        },
+                                                                                                                        "Children": [
+                                                                                                                            {
+                                                                                                                                "polymorphic_id": 5,
+                                                                                                                                "ptr_wrapper": {
+                                                                                                                                    "valid": 1,
+                                                                                                                                    "data": {
+                                                                                                                                        "Lighttype": 1,
+                                                                                                                                        "Ambient": {
+                                                                                                                                            "x": 0.0,
+                                                                                                                                            "y": 0.0,
+                                                                                                                                            "z": 0.0
+                                                                                                                                        },
+                                                                                                                                        "Diffuse": {
+                                                                                                                                            "x": 1.0,
+                                                                                                                                            "y": 1.0,
+                                                                                                                                            "z": 1.0
+                                                                                                                                        },
+                                                                                                                                        "Specular": {
+                                                                                                                                            "x": 0.5,
+                                                                                                                                            "y": 0.5,
+                                                                                                                                            "z": 0.5
+                                                                                                                                        },
+                                                                                                                                        "Attenuation": 0.20000000298023225,
+                                                                                                                                        "CutOff": 1.0,
+                                                                                                                                        "OuterCutOff": 1.0,
+                                                                                                                                        "Far": 15.842978477478028,
+                                                                                                                                        "ShadowBias": 0.0010000000474974514,
+                                                                                                                                        "bShadowMapCullFronts": true,
+                                                                                                                                        "Component": {
+                                                                                                                                            "Name": "A LightComponent",
+                                                                                                                                            "ComponentGEEID": 3919,
+                                                                                                                                            "ComponentTransform": {
+                                                                                                                                                "Position": {
+                                                                                                                                                    "x": -5.0,
+                                                                                                                                                    "y": 2.299999952316284,
+                                                                                                                                                    "z": 0.0
+                                                                                                                                                },
+                                                                                                                                                "Rotation": {
+                                                                                                                                                    "x": 0.0,
+                                                                                                                                                    "y": 0.0,
+                                                                                                                                                    "z": 0.0,
+                                                                                                                                                    "w": 1.0
+                                                                                                                                                },
+                                                                                                                                                "Scale": {
+                                                                                                                                                    "x": 15.842978477478028,
+                                                                                                                                                    "y": 15.842978477478028,
+                                                                                                                                                    "z": 15.842978477478028
+                                                                                                                                                }
+                                                                                                                                            },
+                                                                                                                                            "CollisionObj": {
+                                                                                                                                                "ptr_wrapper": {
+                                                                                                                                                    "valid": 0
+                                                                                                                                                }
+                                                                                                                                            },
+                                                                                                                                            "Children": []
+                                                                                                                                        }
+                                                                                                                                    }
+                                                                                                                                }
+                                                                                                                            }
+                                                                                                                        ]
+                                                                                                                    }
+                                                                                                                }
+                                                                                                            }
+                                                                                                        }
+                                                                                                    }
+                                                                                                ]
+                                                                                            }
+                                                                                        }
+                                                                                    }
+                                                                                ]
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            }
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "polymorphic_id": 5,
+                                        "ptr_wrapper": {
+                                            "valid": 1,
+                                            "data": {
+                                                "Lighttype": 1,
+                                                "Ambient": {
+                                                    "x": 0.0,
+                                                    "y": 0.0,
+                                                    "z": 0.0
+                                                },
+                                                "Diffuse": {
+                                                    "x": 1.0,
+                                                    "y": 1.0,
+                                                    "z": 1.0
+                                                },
+                                                "Specular": {
+                                                    "x": 0.5,
+                                                    "y": 0.5,
+                                                    "z": 0.5
+                                                },
+                                                "Attenuation": 0.009999999776482582,
+                                                "CutOff": 1.0,
+                                                "OuterCutOff": 1.0,
+                                                "Far": 50.0,
+                                                "ShadowBias": 0.0010000000474974514,
+                                                "bShadowMapCullFronts": true,
+                                                "Component": {
+                                                    "Name": "A LightComponent",
+                                                    "ComponentGEEID": 4861,
+                                                    "ComponentTransform": {
+                                                        "Position": {
+                                                            "x": 0.0,
+                                                            "y": 5.0,
+                                                            "z": -3.0
+                                                        },
+                                                        "Rotation": {
+                                                            "x": 0.0,
+                                                            "y": 0.0,
+                                                            "z": 0.0,
+                                                            "w": 1.0
+                                                        },
+                                                        "Scale": {
+                                                            "x": 50.0,
+                                                            "y": 50.0,
+                                                            "z": 50.0
+                                                        }
+                                                    },
+                                                    "CollisionObj": {
+                                                        "ptr_wrapper": {
+                                                            "valid": 0
+                                                        }
+                                                    },
+                                                    "Children": []
+                                                }
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "Children": []
+                }
+            }
+        }
+    ],
+    "bWindowFullscreen": false,
+    "WindowTitle": "game-engine-engine",
+    "Video": {
+        "AmbientOcclusionSamples": 64,
+        "bVSync": false,
+        "bBloom": true,
+        "AAType": 1,
+        "AALevel": 4,
+        "MonitorGamma": 2.200000047683716,
+        "POMLevel": 1,
+        "ShadowLevel": 3,
+        "TMType": 1,
+        "Max2DShadows": 16,
+        "Max3DShadows": 16
+    }
+}

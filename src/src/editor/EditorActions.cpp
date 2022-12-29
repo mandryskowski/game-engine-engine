@@ -384,23 +384,29 @@ namespace GEE
 				desc.AddOption("Delete", [this, &actor, &editorScene]() { actor.MarkAsKilled(); SelectScene(GetSelectedScene(), editorScene); });
 			});
 			
-			canvas.GetTransform()->SetScale(Vec2f(0.15f, 0.02f * (listActor.GetListElementCount() + 1)));
-			titleButton.GetTransform()->SetScale(Vec2f(1.0f, 3.0f / (listActor.GetListElementCount() + 1)));
-			titleButton.GetTransform()->SetVecAxis<TVec::Position, VecAxis::Y>(1.0f + titleButton.GetTransform()->GetScale().y);
+			std::cout << "@@@List element count: " << listActor.GetListElementCount() << '\n';
+			std::cout << "@@@List offset: " << listActor.GetListOffset().y << '\n';
+			int totalActorCount = static_cast<int>(-listActor.GetListOffset().y / 2.0f);
+			totalActorCount = glm::clamp(totalActorCount, 0, 18);
+			{
+				canvas.GetTransform()->SetScale(Vec2f(0.15f, 0.02f * totalActorCount));
+				titleButton.GetTransform()->SetScale(Vec2f(1.0f, 3.0f / (totalActorCount)));
+				titleButton.GetTransform()->SetVecAxis<TVec::Position, VecAxis::Y>(1.0f + titleButton.GetTransform()->GetScale().y);
+			}
 
 			listActor.Refresh();
 
 			//editorScene.GetRootActor()->DebugActorHierarchy();
 
 			canvas.AutoClampView();
-			canvas.SetViewScale(Vec2f(canvas.GetViewT().GetScale2D().x, listActor.GetListElementCount() + 1.0f));
+			canvas.SetViewScale(Vec2f(canvas.GetViewT().GetScale2D().x, totalActorCount));
 
 		}
 
 		void EditorActions::PreviewHierarchyTree(Hierarchy::Tree& tree)
 		{
 			GameScene& editorScene = *EditorHandle.GetGameHandle()->GetScene("GEE_Editor");
-			UIWindowActor& previewWindow = editorScene.CreateActorAtRoot<UIWindowActor>("Mesh node preview window");
+			UIWindowActor& previewWindow = editorScene.CreateActorAtRoot<UIWindowActor>("HierarchyTreePreview");
 
 			previewWindow.AddField("Name").CreateChild<UIInputBoxActor>("NameInputBox", [&tree](const std::string& name) { tree.SetName(name); }, [&tree]() { return tree.GetName().GetPath(); }).SetDisableInput(!tree.GetName().IsALocalResource());
 			previewWindow.AddField("Tree origin").CreateChild<UIButtonActor>("OriginButton", (tree.GetName().IsALocalResource()) ? ("Local") : ("File")).SetDisableInput(true);
@@ -461,6 +467,10 @@ namespace GEE
 					desc.AddOption("Delete node", (&node == &tree.GetRoot() || !tree.GetName().IsALocalResource()) ? (std::function<void()>(nullptr)) : ([&]() { node.Delete(); }));
 				});
 
+				auto& nodeIcon = element.GetRoot()->CreateComponent<ModelComponent>("NodeIcon", Transform(Vec2f(-2.0f, 0.0f), Vec2f(1.0f / 3.0f, 1.0f)));
+				nodeIcon.AddMeshInst(editorScene.GetGameHandle()->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::Quad));
+				nodeIcon.OverrideInstancesMaterialInstances(MakeShared<MaterialInstance>(node.GetCompBaseType().GetDebugMatInst(ButtonMaterialType::Idle)));
+
 				for (int i = 0; i < static_cast<int>(node.GetChildCount()); i++)
 				{
 					Hierarchy::NodeBase& child = *node.GetChild(i);
@@ -471,7 +481,7 @@ namespace GEE
 
 			createNodeButtons(tree.GetRoot(), list);
 
-			UIButtonActor& instantiateButton = list.CreateChild<UIButtonActor>("InstantiateButton", "Instantiate", [this, &tree, &editorScene, buttons]() {
+			auto instantiateFunc = [this, &tree, &editorScene, buttons](bool bActor) {
 				// Get selected component to instantiate to
 				std::function<Component* ()> getSelectedComp = [this]() -> Component* { return ((GetSelectedComponent()) ? (GetSelectedComponent()) : ((GetSelectedActor()) ? (GetSelectedActor()->GetRoot()) : (nullptr))); };
 
@@ -482,18 +492,28 @@ namespace GEE
 						selectedNodes.push_back(&it.first);
 
 				// Instantiate
-				if (Component* selectedComp = getSelectedComp(); selectedComp && !selectedNodes.empty())
-					EngineDataLoader::InstantiateTree(*selectedComp, tree, selectedNodes);
+				if (!bActor)
+				{
+					if (Component* selectedComp = getSelectedComp(); selectedComp && !selectedNodes.empty())
+						Hierarchy::Instantiation::TreeInstantiation(tree, true).ToComponents(tree.GetRoot(), *selectedComp, selectedNodes);
+				}
+				else
+				{
+					if (Actor* selectedActor = GetSelectedActor(); selectedActor && !selectedNodes.empty())
+						Hierarchy::Instantiation::TreeInstantiation(tree, true).ToActors(tree.GetRoot(), *selectedActor, [](Actor& parent) -> Actor& { return parent.CreateChild<Actor>(""); }, selectedNodes);
+				}
 
 				// Refresh
 				SelectActor(GetSelectedActor(), editorScene);
-			});
+			};
 
-			instantiateButton.SetPopupCreationFunc([](PopupDescription desc)
+			UIButtonActor& instantiateButton = list.CreateChild<UIButtonActor>("InstantiateButton", "Instantiate", [instantiateFunc]() { instantiateFunc(false); });
+
+			instantiateButton.SetPopupCreationFunc([instantiateFunc](PopupDescription desc)
 			{
-				desc.AddSubmenu("Instantiate to Actors", [](PopupDescription submenuDesc)
+				desc.AddSubmenu("Instantiate to Actors", [instantiateFunc](PopupDescription submenuDesc)
 				{
-					submenuDesc.AddOption("Nodes as roots", []() {});
+					submenuDesc.AddOption("Nodes as roots", [instantiateFunc]() { instantiateFunc(true); });
 					submenuDesc.AddOption("Nodes as roots' children", []() {});
 				});
 			});

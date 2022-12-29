@@ -145,6 +145,12 @@ namespace GEE
 			return *Actions;
 		}
 
+		template <typename T>
+		void AddActorOption(PopupDescription desc)
+		{
+			desc.AddOption(GEERegisteredActor<T>::GetName(), []() { GEERegisteredActor<T>::InstantiateDefault(); });
+		}
+
 		void GameEngineEngineEditor::GenerateActorList(PopupDescription desc, std::function<void(Actor&)> func)
 		{
 			auto& actor = *Actions->GetContextActor();
@@ -995,77 +1001,6 @@ namespace GEE
 				}
 			}
 		}
-
-		/*void GameEngineEngineEditor::PreviewHierarchyTree(Hierarchy::Tree& tree)
-		{
-			GameScene& editorScene = *EditorScene;
-			UIWindowActor& previewWindow = editorScene.CreateActorAtRoot<UIWindowActor>("Mesh node preview window");
-
-			previewWindow.AddField("Tree origin").CreateChild<UIButtonActor>("OriginButton", (tree.GetName().IsALocalResource()) ? ("Local") : ("File")).SetDisableInput(true);
-			previewWindow.AddField("Delete tree").CreateChild<UIButtonActor>("DeleteButton", "Delete").SetDisableInput(true);
-			auto& list = previewWindow.AddField("Mesh nodes list").CreateChild<UIAutomaticListActor>("MeshNodesList");
-
-			
-			std::vector<std::pair<Hierarchy::NodeBase&, UIActivableButtonActor*>> buttons;
-
-			std::function<void(Hierarchy::NodeBase&, UIAutomaticListActor&)> createNodeButtons = [&](Hierarchy::NodeBase& node, UIAutomaticListActor& listParent) {
-				auto& element = listParent.CreateChild<UIActivableButtonActor>("Button", node.GetCompBaseType().GetName(), nullptr);
-				buttons.push_back(std::pair<Hierarchy::NodeBase&, UIActivableButtonActor*>(node, & element));
-				element.SetDeactivateOnClickingAnywhere(false);
-				element.OnClick();
-				element.DeduceMaterial();
-				element.SetTransform(Transform(Vec2f(1.5f, 0.0f), Vec2f(3.0f, 1.0f)));
-				element.SetPopupCreationFunc([](PopupDescription desc) { desc.AddOption("It works", nullptr); desc.AddSubmenu("Add node", [](PopupDescription desc) { desc.AddOption("Component", nullptr); }); });
-				element.SetOnClickFunc(
-					[&]() {
-						auto& nodeWindow = editorScene.CreateActorAtRoot<UIWindowActor>("Node preview window");
-						node.GetCompBaseType().GetEditorDescription(EditorDescriptionBuilder(*this, nodeWindow, nodeWindow));
-
-						nodeWindow.RefreshFieldsList();
-						nodeWindow.AutoClampView();
-					});
-
-				for (int i = 0; i < static_cast<int>(node.GetChildCount()); i++)
-				{
-					Hierarchy::NodeBase& child = *node.GetChild(i);
-					UIAutomaticListActor& nestedList = listParent.CreateChild<UIAutomaticListActor>(child.GetCompBaseType().GetName() + "'s nestedlist");
-					createNodeButtons(child, nestedList);
-				}
-			};
-
-			createNodeButtons(tree.GetRoot(), list);
-
-			UIButtonActor& instantiateButton = list.CreateChild<UIButtonActor>("InstantiateButton", "Instantiate", [this, &tree, &editorScene, buttons]() {
-				std::function<Component* ()> getSelectedComp = [this]() -> Component* { return ((Actions->GetSelectedComponent()) ? (Actions->GetSelectedComponent()) : ((Actions->GetSelectedActor()) ? (Actions->GetSelectedActor()->GetRoot()) : (nullptr))); };
-
-				if (Component* selectedComp = getSelectedComp())
-					EngineDataLoader::InstantiateTree(*selectedComp, tree);
-
-				// Refresh
-				Actions->SelectActor(Actions->GetSelectedActor(), editorScene);
-			});
-
-			list.CreateChild<UIButtonActor>("SelectAllButton", "Select all", [this, buttons]() {
-				for (auto it : buttons)
-				{
-					it.second->OnClick();
-					it.second->DeduceMaterial();
-				}
-				
-			});
-
-			list.CreateChild<UIButtonActor>("DeselectAllButton", "Deselect all", [this, buttons]() {
-				for (auto it : buttons)
-				{
-					it.second->OnDeactivation();
-					it.second->DeduceMaterial();
-				}
-			});
-
-			previewWindow.RefreshFieldsList();
-			list.Refresh();
-			previewWindow.AutoClampView();
-		}*/
 
 		void GameEngineEngineEditor::PassMouseControl(Controller* controller)
 		{

@@ -97,7 +97,7 @@ namespace GEE
 	void UniformBuffer::Dispose()
 	{
 		if (HasBeenGenerated())
-			glDeleteBuffers(1, &UBO);
+			glDeleteBuffers(1, &UBO); 
 	}
 
 	std::string BoolToString(bool b)

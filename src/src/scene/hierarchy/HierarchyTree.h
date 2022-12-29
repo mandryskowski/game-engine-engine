@@ -19,7 +19,7 @@ namespace GEE
 	{
 		/*
 			Meshes loaded from files are placed in a tree structure - 1 tree per 1 file.
-			I made it this way because that's the way some file format store their meshes (Assimp, which we use in the project does too).
+			I made it this way because that's the way some file formats store their meshes (Assimp, which we use in the project does too).
 			Thanks to using the same structure we get an easy access to previously loaded meshes to reuse them (without name conflicts).
 
 			A MeshNode can be instantiated to ModelComponent.

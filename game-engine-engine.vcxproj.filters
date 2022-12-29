@@ -15,9 +15,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <None Include="ClassDiagram.cd" />
-  </ItemGroup>
-  <ItemGroup>
     <ResourceCompile Include="icon.rc">
       <Filter>Resource Files</Filter>
     </ResourceCompile>

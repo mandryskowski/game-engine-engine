@@ -215,7 +215,7 @@ namespace GEE
 					OnClick();
 			}
 			else if (StateBits & ButtonStateFlags::BeingClicked)
-				StateBits = 0;
+				StateBits &= ~ButtonStateFlags::BeingClicked;
 		}
 		else if (StateBits & ButtonStateFlags::Hover && ev.GetType() == EventType::MouseReleased && PopupCreationFunc && dynamic_cast<const MouseButtonEvent&>(ev).GetButton() == MouseButton::Right)
 			dynamic_cast<Editor::EditorManager*>(GameHandle)->RequestPopupMenu(Scene.GetUIData()->GetWindowData().GetMousePositionNDC(), *Scene.GetUIData()->GetWindow(), PopupCreationFunc);
@@ -238,7 +238,7 @@ namespace GEE
 	void UIButtonActor::OnUnhover()
 	{
 		//State = (State == EditorButtonState::BeingClickedInside) ? (EditorButtonState::BeingClickedOutside) : (EditorButtonState::Idle);
-		StateBits ^= ButtonStateFlags::Hover;
+		StateBits &= ~ButtonStateFlags::Hover;
 		if (OnUnhoverFunc)
 			OnUnhoverFunc();
 	}
@@ -246,7 +246,7 @@ namespace GEE
 	void UIButtonActor::OnClick()
 	{
 		std::cout << "Clicked " + Name + "!\n";
-		StateBits ^= ButtonStateFlags::BeingClicked;
+		StateBits &= ~ButtonStateFlags::BeingClicked;
 		PrevClickTime = GameHandle->GetProgramRuntime();
 		if (OnClickFunc)
 			OnClickFunc();
@@ -254,7 +254,7 @@ namespace GEE
 
 	void UIButtonActor::OnDoubleClick()
 	{
-		StateBits ^= ButtonStateFlags::BeingClicked;
+		StateBits &= ~ButtonStateFlags::BeingClicked;
 		PrevClickTime = GameHandle->GetProgramRuntime();
 		if (OnDoubleClickFunc)
 			OnDoubleClickFunc();
@@ -387,7 +387,7 @@ namespace GEE
 		if (active)
 			StateBits |= ButtonStateFlags::Active;
 		else if (StateBits & ButtonStateFlags::Active)
-			StateBits ^= ButtonStateFlags::Active;
+			StateBits &= ~ButtonStateFlags::Active;
 
 		DeduceMaterial();
 	}
@@ -396,11 +396,9 @@ namespace GEE
 	{
 		bool wasActive = StateBits & ButtonStateFlags::Active;
 
-		if (wasActive)
+		bool isActive = wasActive;
+		if (isActive)
 		{
-			bool isActive = wasActive;
-
-
 			const MouseButtonEvent* buttonEvCast = dynamic_cast<const MouseButtonEvent*>(&ev);	// todo: hide it inside an if so we dont use dynamic cast every time we handle an event
 
 			bool mouseInside = (Scene.GetUIData()->GetCurrentBlockingCanvas() && !Scene.GetUIData()->GetCurrentBlockingCanvas()->ShouldAcceptBlockedEvents(*this)) ? (false) : (ContainsMouse(Scene.GetUIData()->GetWindowData().GetMousePositionNDC()));
@@ -419,13 +417,15 @@ namespace GEE
 				if ((ev.GetType() == EventType::MouseReleased && buttonEvCast->GetButton() == MouseButton::Left) && mouseInside)
 					isActive = false;
 			}
-
-
-			if (!isActive && wasActive)
-				OnDeactivation();
 		}
 
 		UIButtonActor::HandleEvent(ev);	//If LMB is released while the mouse is hovering over the InputBox, OnClick() will be called and writing will be enabled.
+
+		if (!isActive && wasActive)
+		{
+			OnDeactivation();
+			DeduceMaterial();
+		}
 	}
 
 	void UIActivableButtonActor::OnClick()
@@ -438,7 +438,7 @@ namespace GEE
 	void UIActivableButtonActor::OnDeactivation()
 	{
 		std::cout << "Deactivating...\n";
-		StateBits ^= ButtonStateFlags::Active;
+		StateBits &= ~(ButtonStateFlags::Active);
 		if (OnDeactivationFunc)
 			OnDeactivationFunc();
 	}

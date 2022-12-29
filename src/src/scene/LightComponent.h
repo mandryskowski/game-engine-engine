@@ -117,7 +117,6 @@ namespace GEE
 	class LightVolume : public RenderableVolume
 	{
 		const LightComponent* LightCompPtr;
-		const Component* VolumeTransformTarget;
 	public:
 		LightVolume(const LightComponent&);
 		virtual EngineBasicShape GetShape() const override;

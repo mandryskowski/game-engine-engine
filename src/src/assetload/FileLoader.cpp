@@ -195,7 +195,8 @@ namespace GEE
 					LoadCustomHierarchyNode(scene, filestr, nullptr, tree);
 				}
 				std::cout << "tree loading ended\n";
-				InstantiateTree(model, *tree);
+				Hierarchy::Instantiation::TreeInstantiation(*tree, true).ToComponents(tree->GetRoot(), model, {});
+
 				model.SetName(name); //override the name, it is changed in InstantiateTree
 				std::cout << "instiantiating tree ended\n";
 			}
@@ -1006,7 +1007,8 @@ namespace GEE
 
 	void EngineDataLoader::LoadModel(std::string path, Component& comp, MeshTreeInstancingType type, Material* overrideMaterial)
 	{
-		InstantiateTree(comp, *LoadHierarchyTree(comp.GetScene(), path), {}, overrideMaterial);
+		auto& tree = *LoadHierarchyTree(comp.GetScene(), path);
+		Hierarchy::Instantiation::TreeInstantiation(tree, true).ToComponents(tree.GetRoot(), comp, {});
 	}
 
 
@@ -1090,11 +1092,6 @@ namespace GEE
 		return treePtr;
 	}
 
-	void EngineDataLoader::InstantiateTree(Component& comp, Hierarchy::Tree& tree, const std::vector<Hierarchy::NodeBase*>& selectedComponents, Material* overrideMaterial)
-	{
-		Hierarchy::Instantiation::TreeInstantiation(tree, true).ToComponents(tree.GetRoot(), comp, selectedComponents);
-	}
-
 	SharedPtr<Font> EngineDataLoader::LoadFont(GameManager& gameHandle, const std::string& regularPath, const std::string& boldPath, const std::string& italicPath, const std::string& boldItalicPath)
 	{
 		SharedPtr<Font> font = MakeShared<Font>(Font(regularPath, boldPath, italicPath, boldItalicPath));
@@ -1169,6 +1166,11 @@ namespace GEE
 		T settings = T();
 		std::fstream file;	//wczytaj plik inicjalizujacy
 		file.open(path);
+
+		if (!file.good())
+		{
+			std::cerr << "ERROR: Cannot open init file " << path << '\n';
+		}
 		std::stringstream filestr;
 		filestr << file.rdbuf();
 

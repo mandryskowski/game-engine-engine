@@ -10,6 +10,22 @@
 
 struct GLFWwindow;
 
+/*namespace GEE
+{
+	template <typename T>
+	struct GEERegisteredType
+	{
+		std::string GetName();
+	};
+
+	template <typename T>
+	struct GEERegisteredActor
+	{
+		static std::string GetName();
+		static UniquePtr<Actor> InstantiateDefault();
+	};
+}*/
+
 #define GEE_REGISTER_TYPE(Type) CEREAL_REGISTER_TYPE(Type)
 #define GEE_REGISTER_POLYMORPHIC_RELATION(Base, Derived) CEREAL_REGISTER_POLYMORPHIC_RELATION(Base, Derived)
 #define GEE_REGISTER_POLYMORPHIC_TYPE(Base, Derived) GEE_REGISTER_TYPE(Derived); \
