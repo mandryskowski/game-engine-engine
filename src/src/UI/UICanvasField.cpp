@@ -394,6 +394,7 @@ void UIMultipleListActor::NestList(UIListActor& list)
 		UIInputBoxActor& pathInputBox = TemplateParent.CreateChild<UIInputBoxActor>("PathInputBox", Style.GetLongButtonT());
 		pathInputBox.SetOnInputFunc(setFunc, getFunc);
 		pathInputBox.GetContentTextComp()->GetTransform().SetScale(0.5f / Style.LongButtonSize);
+
 		UIButtonActor& selectFileActor = TemplateParent.CreateChild<UIButtonActor>("SelectFolderButton");
 		SharedPtr<AtlasMaterial> moreMat = GameHandle.GetRenderEngineHandle()->FindMaterial<AtlasMaterial>("GEE_E_More_Mat");
 

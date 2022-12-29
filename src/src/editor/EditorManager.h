@@ -54,7 +54,9 @@ namespace GEE
 		class EditorActions;
 		class EditorMessageLogger;
 		class DefaultEditorController;
+
 		struct GEditorSettings;
+
 		struct EditorPopup;
 
 		class EditorManager
@@ -65,6 +67,7 @@ namespace GEE
 
 			virtual EditorMessageLogger& GetEditorLogger(GameScene& scene) = 0;
 			virtual bool GetViewportMaximized() const = 0;
+
 			virtual DefaultEditorController* GetEditorController() = 0;
 			virtual void GenerateActorList(PopupDescription, std::function<void(Actor&)>) = 0;
 

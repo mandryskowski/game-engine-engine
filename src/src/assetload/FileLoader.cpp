@@ -878,6 +878,7 @@ namespace GEE
 					std::cout << "ERROR: While loading skel batches and hierarchy trees: " << exception.what() << '\n';
 				}
 
+
 				try
 				{
 					scene.GetRootActor()->Load(archive);
