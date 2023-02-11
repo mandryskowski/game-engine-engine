@@ -34,9 +34,9 @@
 @{
 */
 
-#include "geometry/PxTriangleMesh.h"
-#include "cooking/PxBVH33MidphaseDesc.h"
-#include "cooking/PxBVH34MidphaseDesc.h"
+#include <PhysX/geometry/PxTriangleMesh.h>
+#include <PhysX/cooking/PxBVH33MidphaseDesc.h>
+#include <PhysX/cooking/PxBVH34MidphaseDesc.h>
 
 #if !PX_DOXYGEN
 namespace physx

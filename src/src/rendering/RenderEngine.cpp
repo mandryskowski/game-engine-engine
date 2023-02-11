@@ -78,7 +78,7 @@ namespace GEE
 	void RenderEngine::AddSceneRenderDataPtr(GameSceneRenderData& sceneRenderData)
 	{
 		ScenesRenderData.push_back(&sceneRenderData);
-		sceneRenderData.LightBlockBindingSlot = ScenesRenderData.size();
+		sceneRenderData.LightBlockBindingSlot = static_cast<int>(ScenesRenderData.size());
 		if (GameHandle->HasStarted() && sceneRenderData.LightProbes.empty() && !sceneRenderData.bIsAnUIScene && GameHandle->GetGameSettings()->Video.Shading == ShadingAlgorithm::SHADING_PBR_COOK_TORRANCE)
 		{
 			LightProbeLoader::LoadLightProbeTextureArrays(&sceneRenderData);
@@ -158,8 +158,8 @@ namespace GEE
 			Shaders.back()->SetExpectedMatrices(std::vector<MatrixType>{MatrixType::MODEL, MatrixType::MVP});
 			Shaders.back()->UniformBlockBinding("BoneMatrices", 10);
 			Shaders.back()->Use();
-			Shaders.back()->Uniform1i("shadowMaps", 10);
-			Shaders.back()->Uniform1i("shadowCubemaps", 11);
+			Shaders.back()->Uniform<int>("shadowMaps", 10);
+			Shaders.back()->Uniform<int>("shadowCubemaps", 11);
 		}
 
 		//load debug shaders

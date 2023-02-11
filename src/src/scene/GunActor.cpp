@@ -20,8 +20,8 @@ namespace GEE
 		GunLight(nullptr),
 		FireModel(nullptr),
 		BlastSound(nullptr),
-		FireCooldown(2.0f),
-		CooldownLeft(0.0f),
+		FireCooldown(2.0),
+		CooldownLeft(0.0),
 		BulletRadius(0.2f),
 		ImpulseFactor(0.25f)
 	{
@@ -35,7 +35,7 @@ namespace GEE
 			return;
 		}
 
-		std::string str;
+		String str;
 		(*SetupStream) >> str;
 
 		if (str == "FireMaterial")
@@ -52,16 +52,16 @@ namespace GEE
 		Actor::Setup();
 	}
 
-	void GunActor::Update(float deltaTime)
+	void GunActor::Update(Time dt)
 	{
 		if (BlastSound && BlastSound->IsBeingKilled())
 			BlastSound = nullptr;
 		if (FireModel && FireModel->IsBeingKilled())
 			SetFireModel(nullptr);
 
-		GetRoot()->GetTransform().Update(deltaTime);	//update for recoil animation
-		CooldownLeft -= deltaTime;
-		Actor::Update(deltaTime);
+		GetRoot()->GetTransform().Update(dt);	//update for recoil animation
+		CooldownLeft -= dt;
+		Actor::Update(dt);
 	}
 
 	void GunActor::HandleEvent(const Event& ev)
@@ -106,7 +106,7 @@ namespace GEE
 		if (GunLight)
 		{
 			Interpolation interp(0.0f, 0.25f);
-			interp.SetOnUpdateFunc([this](float T) mutable { GunLight->SetDiffuse(Vec3f(5.0f, 0.2f, 0.0f) * (1.0f - T)); return T == 1.0f; });
+			interp.SetOnUpdateFunc([this](double T) mutable { GunLight->SetDiffuse(Vec3f(5.0f, 0.2f, 0.0f) * static_cast<float>(1.0 - T)); return T == 1.0; });
 			GameHandle->AddInterpolation(interp);
 		}
 
@@ -131,7 +131,7 @@ namespace GEE
 
 			for (auto pawn : pawnActors)
 				if (auto foundHead = pawn->GetRoot()->GetComponent<Component>("Head"))
-					if (foundHead->CollisionObj && foundHead->CollisionObj->ActorPtr == hit.actor)
+					if (foundHead->GetCollisionObj() && foundHead->GetCollisionObj()->ActorPtr == hit.actor)
 					{
 						std::cout << "HEADSHOT!\n";
 						pawn->InflictDamage(100.0f, -Math::CutYAxis(GetTransform()->GetWorldTransform().GetPos() - pawn->GetTransform()->GetWorldTransform().GetPos()));
@@ -152,17 +152,17 @@ namespace GEE
 
 		// Gun recoil animation
 		{
-			Interpolation recoilUp(0.0f, 0.25f, InterpolationType::Quintic, true);
-			recoilUp.SetOnUpdateFunc([this](float T) mutable {
-				GetTransform()->SetVecAxis<TVec::RotationEuler, VecAxis::X>(30.0f * T);
-				return T == 1.0f;
+			Interpolation recoilUp(0.0, 0.25, InterpolationType::Quintic, true);
+			recoilUp.SetOnUpdateFunc([this](double T) mutable {
+				GetTransform()->SetVecAxis<TVec::RotationEuler, VecAxis::X>(static_cast<float>(30.0 * T));
+				return T == 1.0;
 			});
 			GameHandle->AddInterpolation(recoilUp);
 
-			Interpolation recoilDown(0.25f, 1.25f, InterpolationType::Quadratic, true);
-			recoilDown.SetOnUpdateFunc([this](float T) mutable {
-				GetTransform()->SetVecAxis<TVec::RotationEuler, VecAxis::X>(30.0f * (1.0f - T));
-				return T == 1.0f;
+			Interpolation recoilDown(0.25, 1.25, InterpolationType::Quadratic, true);
+			recoilDown.SetOnUpdateFunc([this](double T) mutable {
+				GetTransform()->SetVecAxis<TVec::RotationEuler, VecAxis::X>(static_cast<float>(30.0 * (1.0 - T)));
+				return T == 1.0;
 			});
 			GameHandle->AddInterpolation(recoilDown);
 

@@ -33,8 +33,8 @@
 /** \addtogroup pvd
 @{
 */
-#include "foundation/PxFlags.h"
-#include "foundation/PxProfiler.h"
+#include <PhysX/foundation/PxFlags.h>
+#include <PhysX/foundation/PxProfiler.h>
 
 #if !PX_DOXYGEN
 namespace physx

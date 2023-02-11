@@ -15,15 +15,21 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="EightBallMain.cpp">
+    <ClCompile Include="src\CueController.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="PoolBallActor.cpp">
+    <ClCompile Include="src\EightBallMain.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\PoolBallActor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="PoolBallActor.h">
+    <ClInclude Include="src\CueController.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\PoolBallActor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

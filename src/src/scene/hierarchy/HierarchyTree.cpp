@@ -72,7 +72,7 @@ namespace GEE
 
 	unsigned int Tree::GetAnimationCount() const
 	{
-		return TreeAnimations.size();
+		return static_cast<unsigned int>(TreeAnimations.size());
 	}
 
 	Actor& Hierarchy::Tree::GetTempActor()
@@ -164,7 +164,7 @@ namespace GEE
 		std::function<void(NodeBase&)> removeVertsFunc = [&removeVertsFunc](NodeBase& node) {
 			if (auto cast = dynamic_cast<Node<ModelComponent>*>(&node))
 			{
-				for (int i = 0; i < cast->GetCompT().GetMeshInstanceCount(); i++)
+				for (int i = 0; i < static_cast<int>(cast->GetCompT().GetMeshInstanceCount()); i++)
 					cast->GetCompT().GetMeshInstance(i).GetMesh().RemoveVertsAndIndicesData();
 			}
 
@@ -180,7 +180,7 @@ namespace GEE
 		std::function<void(NodeBase&, std::vector<Mesh>&)> getMeshesFunc = [&getMeshesFunc](NodeBase& node, std::vector<Mesh>& meshes) {
 			if (auto cast = dynamic_cast<Node<ModelComponent>*>(&node))
 			{
-				for (int i = 0; i < cast->GetCompT().GetMeshInstanceCount(); i++)
+				for (int i = 0; i < static_cast<int>(cast->GetCompT().GetMeshInstanceCount()); i++)
 					meshes.push_back(cast->GetCompT().GetMeshInstance(i).GetMesh());
 			}
 

@@ -34,31 +34,31 @@
   @{
 */
 
-#include "foundation/PxErrorCallback.h"
-#include "extensions/PxDefaultAllocator.h"
-#include "extensions/PxConstraintExt.h"
-#include "extensions/PxDistanceJoint.h"
-#include "extensions/PxContactJoint.h"
-#include "extensions/PxFixedJoint.h"
-#include "extensions/PxPrismaticJoint.h"
-#include "extensions/PxRevoluteJoint.h"
-#include "extensions/PxSphericalJoint.h"
-#include "extensions/PxD6Joint.h"
-#include "extensions/PxDefaultSimulationFilterShader.h"
-#include "extensions/PxDefaultErrorCallback.h"
-#include "extensions/PxDefaultStreams.h"
-#include "extensions/PxRigidActorExt.h"
-#include "extensions/PxRigidBodyExt.h"
-#include "extensions/PxShapeExt.h"
-#include "extensions/PxTriangleMeshExt.h"
-#include "extensions/PxSerialization.h"
-#include "extensions/PxDefaultCpuDispatcher.h"
-#include "extensions/PxSmoothNormals.h"
-#include "extensions/PxSimpleFactory.h"
-#include "extensions/PxStringTableExt.h"
-#include "extensions/PxBroadPhaseExt.h"
-#include "extensions/PxMassProperties.h"
-#include "extensions/PxSceneQueryExt.h"
+#include <PhysX/foundation/PxErrorCallback.h>
+#include <PhysX/extensions/PxDefaultAllocator.h>
+#include <PhysX/extensions/PxConstraintExt.h>
+#include <PhysX/extensions/PxDistanceJoint.h>
+#include <PhysX/extensions/PxContactJoint.h>
+#include <PhysX/extensions/PxFixedJoint.h>
+#include <PhysX/extensions/PxPrismaticJoint.h>
+#include <PhysX/extensions/PxRevoluteJoint.h>
+#include <PhysX/extensions/PxSphericalJoint.h>
+#include <PhysX/extensions/PxD6Joint.h>
+#include <PhysX/extensions/PxDefaultSimulationFilterShader.h>
+#include <PhysX/extensions/PxDefaultErrorCallback.h>
+#include <PhysX/extensions/PxDefaultStreams.h>
+#include <PhysX/extensions/PxRigidActorExt.h>
+#include <PhysX/extensions/PxRigidBodyExt.h>
+#include <PhysX/extensions/PxShapeExt.h>
+#include <PhysX/extensions/PxTriangleMeshExt.h>
+#include <PhysX/extensions/PxSerialization.h>
+#include <PhysX/extensions/PxDefaultCpuDispatcher.h>
+#include <PhysX/extensions/PxSmoothNormals.h>
+#include <PhysX/extensions/PxSimpleFactory.h>
+#include <PhysX/extensions/PxStringTableExt.h>
+#include <PhysX/extensions/PxBroadPhaseExt.h>
+#include <PhysX/extensions/PxMassProperties.h>
+#include <PhysX/extensions/PxSceneQueryExt.h>
 
 /** \brief Initialize the PhysXExtensions library. 
 

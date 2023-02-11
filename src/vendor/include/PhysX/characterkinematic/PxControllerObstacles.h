@@ -33,8 +33,8 @@
   @{
 */
 
-#include "characterkinematic/PxExtended.h"
-#include "geometry/PxGeometry.h"
+#include <PhysX/characterkinematic/PxExtended.h>
+#include <PhysX/geometry/PxGeometry.h>
 
 #if !PX_DOXYGEN
 namespace physx

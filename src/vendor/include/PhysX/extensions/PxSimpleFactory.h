@@ -34,9 +34,9 @@
   @{
 */
 
-#include "common/PxPhysXCommonConfig.h"
-#include "foundation/PxTransform.h"
-#include "foundation/PxPlane.h"
+#include <PhysX/common/PxPhysXCommonConfig.h>
+#include <PhysX/foundation/PxTransform.h>
+#include <PhysX/foundation/PxPlane.h>
 
 #if !PX_DOXYGEN
 namespace physx

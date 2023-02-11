@@ -1,4 +1,5 @@
 #pragma once
+#include <utility/CerealNames.h>
 #include <cereal/types/memory.hpp>
 #include <cereal/types/vector.hpp>
 #include <math/Transform.h>
@@ -45,7 +46,7 @@ namespace GEE
 	class Component : public ComponentBase
 	{
 	public:
-		Component(Actor&, Component* parentComp, const std::string& name = "A Component", const Transform& t = Transform());
+		Component(Actor&, Component* parentComp, const String& name = "A Component", const Transform& t = Transform());
 
 		Component(const Component&) = delete;
 		Component(Component&&);// = delete;
@@ -62,7 +63,7 @@ namespace GEE
 		virtual void OnStart();
 		virtual void OnStartAll();
 
-		std::string GetName() const { return Name; }
+		String GetName() const { return Name; }
 		GEEID GetGEEID() const { return ComponentGEEID; }
 
 		void DebugHierarchy(int nrTabs = 0);
@@ -70,10 +71,15 @@ namespace GEE
 		Actor& GetActor() const;
 		Transform& GetTransform();
 		const Transform& GetTransform() const;
+		Component* GetParent()
+		{
+			return ParentComponent;
+		}
 		std::vector<Component*> GetChildren();
 		GameScene& GetScene() const;
 		Physics::CollisionObject* GetCollisionObj() const;
 		MaterialInstance* GetDebugMatInst();
+		GameManager* GetGameHandle() const { return GameHandle; }
 
 		/**
 		 * @brief Find by name and get a pointer of type CompClass to a Component further in the hierarchy (kids, kids' kids, ...). Limit the use of this function at runtime, as dynamic_cast has a significant overhead.
@@ -81,7 +87,7 @@ namespace GEE
 		 * @param name: The name of the sought Component.
 		 * @return: A pointer to the sought Component.
 		*/
-		template <class CompClass = Component> CompClass* GetComponent(const std::string& name);
+		template <class CompClass = Component> CompClass* GetComponent(const String& name);
 
 		/**
 		 * @brief Find by GEEID and get a pointer of type CompClass to a Component further in the hierarchy (kids, kids' kids, ...). Limit the use of this function at runtime, as dynamic_cast has a significant overhead.
@@ -103,17 +109,17 @@ namespace GEE
 
 		bool IsBeingKilled() const;
 
-		void SetName(std::string name);
-		void SetTransform(Transform transform);
+		void SetName(const String& name);
+		virtual void SetTransform(const Transform& transform);
 		Physics::CollisionObject* SetCollisionObject(UniquePtr<Physics::CollisionObject>);
-		virtual Component& AddComponent(UniquePtr<Component> component) override;
+		Component& AddComponent(UniquePtr<Component> component) override;
 		void AddComponents(std::vector<UniquePtr<Component>> components);
 
 		template<typename ChildClass, typename... Args> ChildClass& CreateComponent(Args&&... args);
 
 
-		virtual void Update(float);
-		void UpdateAll(float dt);
+		virtual void Update(Time dt);
+		void UpdateAll(Time dt);
 
 		virtual void HandleEvent(const Event& ev) {}
 		void HandleEventAll(const Event& ev);
@@ -128,10 +134,11 @@ namespace GEE
 		void DebugRenderAll(SceneMatrixInfo info, Shader& shader) const;
 
 	protected:
-		virtual SharedPtr<AtlasMaterial> LoadDebugRenderMaterial(const std::string& materialName, const std::string& path);
+		virtual SharedPtr<AtlasMaterial> LoadDebugRenderMaterial(const String& materialName, const String& path);
 	public:
+		virtual	MaterialInstance GetDebugMatInst(ButtonMaterialType);
 
-		Component* SearchForComponent(std::string name);
+		Component* SearchForComponent(String name);
 
 		virtual void GetEditorDescription(ComponentDescriptionBuilder);
 
@@ -141,15 +148,13 @@ namespace GEE
 		template <typename Archive> void Load(Archive& archive);
 		virtual ~Component();
 
-	public:
+	private:
 		friend class Actor;
 		UniquePtr<Component> DetachChild(Component& soughtChild);	//Find child in hierarchy and detach it from its parent
 		void MoveChildren(Component& moveTo);
 		void Delete();
 
-		virtual	MaterialInstance GetDebugMatInst(ButtonMaterialType);
-
-		std::string Name;
+		String Name;
 		GEEID ComponentGEEID;
 
 		Transform ComponentTransform;
@@ -180,7 +185,7 @@ namespace GEE
 
 
 	template<typename ChildClass, typename... Args>
-	inline ChildClass& Component::CreateComponent(Args&&... args)
+	ChildClass& Component::CreateComponent(Args&&... args)
 	{
 		UniquePtr<ChildClass> createdChild = MakeUnique<ChildClass>(ActorRef, this, std::forward<Args>(args)...);
 		ChildClass& childRef = *createdChild;
@@ -190,7 +195,7 @@ namespace GEE
 	}
 
 	template<class CompClass>
-	inline CompClass* Component::GetComponent(const std::string& name)
+	CompClass* Component::GetComponent(const String& name)
 	{
 		if (Name == name)
 			return dynamic_cast<CompClass*>(this);
@@ -202,7 +207,7 @@ namespace GEE
 		return nullptr;
 	}
 	template<class CompClass>
-	inline CompClass* Component::GetComponent(GEEID geeid)
+	CompClass* Component::GetComponent(GEEID geeid)
 	{
 		if (ComponentGEEID == geeid)
 			return dynamic_cast<CompClass*>(this);
@@ -214,7 +219,7 @@ namespace GEE
 		return nullptr;
 	}
 	template<class CompClass>
-	inline void Component::GetAllComponents(std::vector<CompClass*>* comps)
+	void Component::GetAllComponents(std::vector<CompClass*>* comps)
 	{
 		if (!comps)
 			return;
@@ -231,7 +236,7 @@ namespace GEE
 			Children[i]->GetAllComponents<CompClass>(comps);	//do it reccurently in every child
 	}
 	template<class CastToClass, class CheckClass>
-	inline void Component::GetAllComponents(std::vector<CastToClass*>* comps) 
+	void Component::GetAllComponents(std::vector<CastToClass*>* comps) 
 	{																		
 		if (!comps)
 			return;
@@ -244,7 +249,7 @@ namespace GEE
 		for (unsigned int i = 0; i < Children.size(); i++)
 			Children[i]->GetAllComponents<CastToClass, CheckClass>(comps);	//robimy to samo we wszystkich "dzieciach"
 	}
-	void CollisionObjRendering(SceneMatrixInfo& info, GameManager& gameHandle, Physics::CollisionObject& obj, const Transform& t, const Vec3f& color = Vec3f(0.1f, 0.6f, 0.3f));
+	void CollisionObjRendering(const SceneMatrixInfo& info, GameManager& gameHandle, Physics::CollisionObject& obj, const Transform& t, const Vec3f& color = Vec3f(0.1f, 0.6f, 0.3f));
 }
 
  
@@ -260,12 +265,12 @@ namespace cereal																				 																	\
 				return;																																				\
 																																									\
 			/* We set the name to serialization-error since it will be replaced by its original name anyways. */													\
-			construct(*GEE::CerealComponentSerializationData::ActorRef, GEE::CerealComponentSerializationData::ParentComp, "serialization-error", __VA_ARGS__);		\
+			construct(*GEE::CerealComponentSerializationData::ActorRef, GEE::CerealComponentSerializationData::ParentComp, "serialization-error", ##__VA_ARGS__);		\
 			construct->Load(ar); 																																	\
 		}																						  																	\
 	};																							 													 				\
 }
-#define GEE_POLYMORPHIC_SERIALIZABLE_COMPONENT(Base, Derived, ...) GEE_SERIALIZABLE_COMPONENT(Derived, __VA_ARGS__); CEREAL_REGISTER_POLYMORPHIC_RELATION(Base, Derived);
+#define GEE_POLYMORPHIC_SERIALIZABLE_COMPONENT(Base, Derived, ...) GEE_SERIALIZABLE_COMPONENT(Derived, ##__VA_ARGS__); CEREAL_REGISTER_POLYMORPHIC_RELATION(Base, Derived);
 
 #define GEE_EDITOR_COMPONENT(Type) 
 

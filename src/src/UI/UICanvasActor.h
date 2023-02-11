@@ -23,40 +23,40 @@ namespace GEE
 		UICanvasActor(GameScene&, Actor* parentActor, const std::string& name, const Transform & = Transform());
 		UICanvasActor(UICanvasActor&&);
 
-		virtual void OnStart() override;
+		void OnStart() override;
 
 		UIActorDefault* GetScaleActor();
-		virtual Mat4f GetViewMatrix() const override;
-		virtual NDCViewport GetViewport() const override;
-		virtual const Transform* GetCanvasT() const override;
+		Mat4f GetViewMatrix() const override;
+		NDCViewport GetViewport() const override;
+		const Transform* GetCanvasT() const override;
 
-		virtual void Update(float deltaTime) override
+		void Update(Time dt) override
 		{
-			Actor::Update(deltaTime);
+			Actor::Update(dt);
 			if (CanvasParent && CanvasParent->IsBeingKilled())
 				CanvasParent = nullptr;
 		}
 
 		void SetPopupCreationFunc(std::function<void(PopupDescription)>);
-		virtual void SetCanvasView(const Transform&, bool clampView = true) override;
+		void SetCanvasView(const Transform&, bool clampView = true) override;
 		/**
 		 * @return The ModelComponent that is the canvas background. Can be nullptr.
 		*/
 		ModelComponent* GetCanvasBackground();
 
-		virtual Vec2f FromCanvasSpace(const Vec2f& canvasSpacePos) const override;
-		virtual Vec2f ScaleFromCanvasSpace(const Vec2f& canvasSpaceScale) const override;
-		virtual Mat4f FromCanvasSpace(const Mat4f& canvasSpaceMat) const override;
-		virtual Transform FromCanvasSpace(const Transform& canvasSpaceTransform) const override;
-		virtual Vec2f ToCanvasSpace(const Vec2f& worldPos) const override;
-		virtual Mat4f ToCanvasSpace(const Mat4f& worldMat) const override;
-		virtual Transform ToCanvasSpace(const Transform& worldTransform) const override;
+		Vec2f FromCanvasSpace(const Vec2f& canvasSpacePos) const override;
+		Vec2f ScaleFromCanvasSpace(const Vec2f& canvasSpaceScale) const override;
+		Mat4f FromCanvasSpace(const Mat4f& canvasSpaceMat) const override;
+		Transform FromCanvasSpace(const Transform& canvasSpaceTransform) const override;
+		Vec2f ToCanvasSpace(const Vec2f& worldPos) const override;
+		Mat4f ToCanvasSpace(const Mat4f& worldMat) const override;
+		Transform ToCanvasSpace(const Transform& worldTransform) const override;
 
 		void RefreshFieldsList();
 
 		void KillScrollBars();
 		void KillResizeBars();
-		virtual void ClampViewToElements() override;
+		void ClampViewToElements() override;
 
 		/**
 		 * @brief Create a quad model to distinguish between the canvas and other UI elements.
@@ -65,21 +65,21 @@ namespace GEE
 		void CreateCanvasBackgroundModel(const Vec3f& color = Vec3f(-1.0f));
 		template <typename ChildClass, typename... Args> ChildClass& CreateChildCanvas(Args&&...);
 
-		virtual Actor& AddChild(UniquePtr<Actor>) override;
-		virtual UICanvasFieldCategory& AddCategory(const std::string& name) override;
-		virtual UICanvasField& AddField(const std::string& name, std::function<Vec3f()> getElementOffset = nullptr) override;
+		Actor& AddChild(UniquePtr<Actor>) override;
+		UICanvasFieldCategory& AddCategory(const std::string& name) override;
+		UICanvasField& AddField(const std::string& name, std::function<Vec3f()> getElementOffset = nullptr) override;
 
-		virtual void HandleEvent(const Event& ev) override;
-		virtual void HandleEventAll(const Event& ev) override;
+		void HandleEvent(const Event& ev) override;
+		void HandleEventAll(const Event& ev) override;
 
-		virtual SceneMatrixInfo BindForRender(const SceneMatrixInfo&) override;
-		virtual void UnbindForRender() override;
+		SceneMatrixInfo BindForRender(const SceneMatrixInfo&) override;
+		void UnbindForRender() override;
 
 		~UICanvasActor();
 	protected:
-		virtual void GetExternalButtons(std::vector<UIButtonActor*>&) const override;
+		void GetExternalButtons(std::vector<UIButtonActor*>&) const override;
 		std::string GetFullCanvasName() const;
-		virtual void PushCanvasViewChangeEvent() override;
+		void PushCanvasViewChangeEvent() override;
 	private:
 
 		void CreateScrollBars();

@@ -31,12 +31,12 @@ namespace GEE
 	public:
 		RenderableComponent(Actor& actor, Component* parentComp, const std::string& name, const Transform& transform) :
 			Component(actor, parentComp, name, transform),
-			Renderable(Scene) {}
+			Renderable(GetScene()) {}
 		RenderableComponent(RenderableComponent&& comp) :
 			Component(std::move(comp)),
 			Renderable(std::move(comp)) {}
-		virtual void DebugRender(SceneMatrixInfo info, Shader& shader, const Vec3f& debugIconScale) const override {}
-		virtual void GetEditorDescription(ComponentDescriptionBuilder) override;
+		void DebugRender(SceneMatrixInfo info, Shader& shader, const Vec3f& debugIconScale) const override {}
+		void GetEditorDescription(ComponentDescriptionBuilder) override;
 		template <typename Archive>
 		void Save(Archive& archive) const
 		{

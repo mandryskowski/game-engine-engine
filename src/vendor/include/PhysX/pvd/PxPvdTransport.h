@@ -33,9 +33,9 @@
 /** \addtogroup pvd
 @{
 */
-#include "foundation/PxErrors.h"
-#include "foundation/PxFlags.h"
-#include "pvd/PxPvd.h"
+#include <PhysX/foundation/PxErrors.h>
+#include <PhysX/foundation/PxFlags.h>
+#include <PhysX/pvd/PxPvd.h>
 
 #if !PX_DOXYGEN
 namespace physx

@@ -33,10 +33,10 @@
 /** \addtogroup geomutils
 @{
 */
-#include "foundation/PxPlane.h"
-#include "foundation/PxTransform.h"
-#include "geometry/PxGeometry.h"
-#include "foundation/PxFoundationConfig.h"
+#include <PhysX/foundation/PxPlane.h>
+#include <PhysX/foundation/PxTransform.h>
+#include <PhysX/geometry/PxGeometry.h>
+#include <PhysX/foundation/PxFoundationConfig.h>
 
 #if !PX_DOXYGEN
 namespace physx

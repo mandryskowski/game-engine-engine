@@ -34,11 +34,11 @@
   @{
 */
 
-#include "PxPhysXConfig.h"
-#include "PxRigidBody.h"
-#include "PxQueryReport.h"
-#include "PxQueryFiltering.h"
-#include "extensions/PxMassProperties.h"
+#include <PhysX/PxPhysXConfig.h>
+#include <PhysX/PxRigidBody.h>
+#include <PhysX/PxQueryReport.h>
+#include <PhysX/PxQueryFiltering.h>
+#include <PhysX/extensions/PxMassProperties.h>
 
 #if !PX_DOXYGEN
 namespace physx

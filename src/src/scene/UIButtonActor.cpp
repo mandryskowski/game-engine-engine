@@ -14,7 +14,7 @@
 
 namespace GEE
 {
-	UIButtonActor::UIButtonActor(GameScene& scene, Actor* parentActor, const std::string& name, std::function<void()> onClickFunc, const Transform& t) :
+	UIButtonActor::UIButtonActor(GameScene& scene, Actor* parentActor, const String& name, std::function<void()> onClickFunc, const Transform& t) :
 		UIActorDefault(scene, parentActor, name, t),
 		OnClickFunc(onClickFunc),
 		OnDoubleClickFunc(nullptr),
@@ -77,7 +77,7 @@ namespace GEE
 		PopupCreationFunc = [this](PopupDescription desc) { desc.AddOption("Transform", [this]() { auto& window = Scene.CreateActorAtRoot<UIWindowActor>("Button transform"); ComponentDescriptionBuilder descBuilder(*dynamic_cast<Editor::EditorManager*>(GameHandle), window, window); GetRoot()->GetEditorDescription(descBuilder); window.AutoClampView(); window.RefreshFieldsList();  }); };
 	}
 
-	UIButtonActor::UIButtonActor(GameScene& scene, Actor* parentActor, const std::string& name, const std::string& buttonTextContent, std::function<void()> onClickFunc, const Transform& t) :
+	UIButtonActor::UIButtonActor(GameScene& scene, Actor* parentActor, const String& name, const String& buttonTextContent, std::function<void()> onClickFunc, const Transform& t) :
 		UIButtonActor(scene, parentActor, name, onClickFunc, t)
 	{
 		CreateButtonText(buttonTextContent);
@@ -168,6 +168,10 @@ namespace GEE
 	void UIButtonActor::SetPopupCreationFunc(std::function<void(PopupDescription)> popupCreationFunc)
 	{
 		PopupCreationFunc = popupCreationFunc;
+		if (popupCreationFunc)
+		{
+			PopupCreationFunc = [popupCreationFunc, this](PopupDescription desc) { popupCreationFunc(desc); desc.AddSubmenu("Canvas", dynamic_cast<UICanvasActor*>(CanvasPtr)->PopupCreationFunc); };
+		}
 	}
 
 	void UIButtonActor::CallOnClickFunc()
@@ -180,7 +184,7 @@ namespace GEE
 	{
 		if (ButtonModel)
 		{
-			RootComponent->DetachChild(*ButtonModel);
+			ButtonModel->MarkAsKilled();
 			ButtonModel = nullptr;
 		}
 	}
@@ -318,7 +322,7 @@ namespace GEE
 		}
 	}
 
-	void UIButtonActor::CreateButtonText(const std::string& content)
+	void UIButtonActor::CreateButtonText(const String& content)
 	{
 		auto& text = CreateComponent<TextComponent>("ButtonText", Transform(Vec2f(0.0f), Vec2f(1.0f)), content, "", Alignment2D::Center());
 		text.SetMaxSize(Vec2f(0.8f));
@@ -331,7 +335,7 @@ namespace GEE
 		return point == glm::min(glm::max(rectLeftBottom, point), rectLeftBottom + Vec2f(rect.GetScale()) * 2.0f);
 	}
 
-	UIActivableButtonActor::UIActivableButtonActor(GameScene& scene, Actor* parentActor, const std::string& name,  std::function<void()> onClickFunc, std::function<void()> onDeactivationFunc, const Transform& transform) :
+	UIActivableButtonActor::UIActivableButtonActor(GameScene& scene, Actor* parentActor, const String& name,  std::function<void()> onClickFunc, std::function<void()> onDeactivationFunc, const Transform& transform) :
 		UIButtonActor(scene, parentActor, name, onClickFunc, transform),
 		OnDeactivationFunc(onDeactivationFunc),
 		bActivateOnClicking(true),
@@ -349,7 +353,7 @@ namespace GEE
 
 		MatActive = MakeShared<MaterialInstance>(matActive);
 	}
-	UIActivableButtonActor::UIActivableButtonActor(GameScene& scene, Actor* parentActor, const std::string& name, const std::string& buttonTextContent, std::function<void()> onClickFunc, std::function<void()> onDeactivationFunc, const Transform& transform) :
+	UIActivableButtonActor::UIActivableButtonActor(GameScene& scene, Actor* parentActor, const String& name, const String& buttonTextContent, std::function<void()> onClickFunc, std::function<void()> onDeactivationFunc, const Transform& transform) :
 		UIActivableButtonActor(scene, parentActor, name, onClickFunc, onDeactivationFunc, transform)
 	{
 		CreateButtonText(buttonTextContent);
@@ -457,7 +461,7 @@ namespace GEE
 		}
 	}
 
-	UIScrollBarActor::UIScrollBarActor(GameScene& scene, Actor* parentActor, const std::string& name, std::function<void()> onClickFunc, std::function<void()> beingClickedFunc) :
+	UIScrollBarActor::UIScrollBarActor(GameScene& scene, Actor* parentActor, const String& name, std::function<void()> onClickFunc, std::function<void()> beingClickedFunc) :
 		UIButtonActor(scene, parentActor, name, onClickFunc),
 		ClickPosNDC(Vec2f(0.0f))
 	{

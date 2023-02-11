@@ -39,13 +39,13 @@ namespace GEE
 		return *this;
 	}
 
-	void BoneComponent::Update(float deltaTime)
+	void BoneComponent::Update(Time dt)
 	{
-		Mat4f globalMat = ComponentTransform.GetWorldTransformMatrix();
+		Mat4f globalMat = GetTransform().GetWorldTransformMatrix();
 		FinalMatrix = globalMat * BoneOffset;
 		//ComponentTransform.Print(Name);
 
-		ComponentTransform.Update(deltaTime);
+		GetTransform().Update(dt);
 	}
 
 	unsigned int BoneComponent::GetID() const
@@ -96,12 +96,12 @@ namespace GEE
 	}
 
 
-	unsigned int BoneMapping::GetBoneID(std::string name)
+	unsigned int BoneMapping::GetBoneID(const String& name)
 	{
 		auto it = Mapping.find(name);
 		if (it == Mapping.end())
 		{
-			unsigned int index = Mapping.size();
+			auto index = static_cast<unsigned>(Mapping.size());
 			Mapping[name] = index;
 			return index;
 		}
@@ -109,7 +109,7 @@ namespace GEE
 		return it->second;
 	}
 
-	unsigned int BoneMapping::GetBoneID(std::string name) const
+	unsigned int BoneMapping::GetBoneID(const String& name) const
 	{
 		auto it = Mapping.find(name);
 		if (it == Mapping.end())

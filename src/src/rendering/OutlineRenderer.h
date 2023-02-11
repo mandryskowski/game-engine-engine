@@ -71,7 +71,7 @@ namespace GEE
 			shader->Use();
 
 			// Our own material
-			shader->Uniform4fv("material.color", Vec4f(1.0f, 0.0f, 0.0f, 0.25f));	// Set color to red
+			shader->Uniform<Vec4f>("material.color", Vec4f(1.0f, 0.0f, 0.0f, 0.25f));	// Set color to red
 
 			renderFunc();
 
@@ -148,7 +148,7 @@ namespace GEE
 				}
 
 				shader->Use();
-				shader->Uniform4fv("material.color", Vec4f(1.0f, 1.0f, 0.0f, 1.0f));
+				shader->Uniform<Vec4f>("material.color", Vec4f(1.0f, 1.0f, 0.0f, 1.0f));
 
 				silhouetteTexture.Bind(0);
 

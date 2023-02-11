@@ -46,11 +46,11 @@ namespace GEE
 		if (PrimitiveDebugger::bDebugProbeLoading)
 			std::cout << "Prefiltering\n";
 		renderHandle->FindShader("CubemapToPrefilter")->Use();
-		renderHandle->FindShader("CubemapToPrefilter")->Uniform1f("cubemapNr", static_cast<float>(probe.GetProbeIndex()));
+		renderHandle->FindShader("CubemapToPrefilter")->Uniform<float>("cubemapNr", static_cast<float>(probe.GetProbeIndex()));
 		for (int mipmap = 0; mipmap < 5; mipmap++)
 		{
 			layer = probe.GetProbeIndex() * 6;
-			renderHandle->FindShader("CubemapToPrefilter")->Uniform1f("roughness", static_cast<float>(mipmap) / 5.0f);
+			renderHandle->FindShader("CubemapToPrefilter")->Uniform<float>("roughness", static_cast<float>(mipmap) / 5.0f);
 			CubemapRenderer(*renderHandle).FromTexture(probeTexArrays->PrefilterMapArr, envMap, Vec2f(256.0f) / std::pow(2.0f, static_cast<float>(mipmap)), *renderHandle->FindShader("CubemapToPrefilter"), &layer, mipmap);
 		}
 		if (PrimitiveDebugger::bDebugProbeLoading)
@@ -117,7 +117,7 @@ namespace GEE
 
 	void LightProbeVolume::SetupRenderUniforms(const Shader& shader) const
 	{
-		shader.Uniform1f("lightProbeNr", ProbePtr->GetProbeIndex());
+		shader.Uniform<float>("lightProbeNr", static_cast<float>(ProbePtr->GetProbeIndex()));
 	}
 
 	LightProbeTextureArrays::LightProbeTextureArrays() :

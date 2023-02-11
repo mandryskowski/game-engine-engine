@@ -11,11 +11,11 @@ namespace GEE
 		RenderableComponent(actor, parentComp, name, transform),
 		UIComponent(actor, parentComp)
 	{
-		if (SharedPtr<Material> foundMaterial = GameHandle->GetRenderEngineHandle()->FindMaterial("GEE_Default_Graph_Material"))
+		if (SharedPtr<Material> foundMaterial = GetGameHandle()->GetRenderEngineHandle()->FindMaterial("GEE_Default_Graph_Material"))
 			GraphMaterialInst = MakeShared<MaterialInstance>(foundMaterial);
 		else
 		{
-			auto material = GameHandle->GetRenderEngineHandle()->AddMaterial(MakeShared<Material>("GEE_Default_Graph_Material", *GameHandle->GetRenderEngineHandle()->FindShader("GraphShader")));
+			auto material = GetGameHandle()->GetRenderEngineHandle()->AddMaterial(MakeShared<Material>("GEE_Default_Graph_Material", *GetGameHandle()->GetRenderEngineHandle()->FindShader("GraphShader")));
 			GraphMaterialInst = MakeShared<MaterialInstance>(material);
 		}
 	}
@@ -94,13 +94,13 @@ namespace GEE
 		if (GetHide())
 			return;
 
-		if (info.GetRequiredShaderInfo().IsValid() && shader != GameHandle->GetRenderEngineHandle()->FindShader("GraphShader"))
+		if (info.GetRequiredShaderInfo().IsValid() && shader != GetGameHandle()->GetRenderEngineHandle()->FindShader("GraphShader"))
 			return;
 
 		UpdateMarkerUniformData(*shader);
 		
 		
-		Renderer(*GameHandle->GetRenderEngineHandle()).StaticMeshInstances((CanvasPtr) ? (MatrixInfoExt(info.GetContextID(), CanvasPtr->BindForRender(info))) : (info), { MeshInstance(GameHandle->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::Quad), GraphMaterialInst) }, GetTransform().GetWorldTransform(), *shader);
+		Renderer(*GetGameHandle()->GetRenderEngineHandle()).StaticMeshInstances((CanvasPtr) ? (MatrixInfoExt(info.GetContextID(), CanvasPtr->BindForRender(info))) : (static_cast<const MatrixInfoExt&>(info)), { MeshInstance(GetGameHandle()->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::Quad), GraphMaterialInst) }, GetTransform().GetWorldTransform(), *shader);
 
 		if (CanvasPtr)
 			CanvasPtr->UnbindForRender();
@@ -129,40 +129,40 @@ namespace GEE
 	{
 		shader.Uniform("dataPointsCount", static_cast<int>(GraphMarkersUnitInterval.size()));
 		if (!GraphMarkersUnitInterval.empty())
-			shader.UniformArray("dataPoints", &GraphMarkersUnitInterval[0], GraphMarkersUnitInterval.size());
+			shader.UniformArray("dataPoints", &GraphMarkersUnitInterval[0], static_cast<unsigned>(GraphMarkersUnitInterval.size()));
 		shader.Uniform("selectedRangeEndpoints", GetSelectedRange().GetRangeBeginEnd());
 	}
 
 	
 	FPSGraphRenderingComponent::FPSGraphRenderingComponent(Actor& actor, Component* parentComp, const std::string& name, const Transform& transform):
 		GraphRenderingComponent(actor, parentComp, name, transform),
-		PrevFPSUpdateTime(GameHandle->GetProgramRuntime()),
-		PrevFPSUpdateFrame(GameHandle->GetTotalFrameCount()),
+		PrevFPSUpdateTime(static_cast<float>(GetGameHandle()->GetProgramRuntime())),
+		PrevFPSUpdateFrame(GetGameHandle()->GetTotalFrameCount()),
 		MinFPSText(nullptr),
 		MaxFPSText(nullptr),
 		AvgFPSText(nullptr)
 	{
-		Shader* textShader = GameHandle->GetRenderEngineHandle()->FindShader("TextShader");
+		Shader* textShader = GetGameHandle()->GetRenderEngineHandle()->FindShader("TextShader");
 
 		MinFPSText = &CreateComponent<TextComponent>("MinFPSText", Transform(Vec2f(1.5f, -0.5f), Vec2f(0.1f)), "No data", "", Alignment2D::Center());
 		auto redMaterial = MakeShared<Material>("Red", Vec3f(1.0f, 0.155f, 0.25f), *textShader);
-		MinFPSText->SetMaterialInst(GameHandle->GetRenderEngineHandle()->AddMaterial(redMaterial));
+		MinFPSText->SetMaterialInst(GetGameHandle()->GetRenderEngineHandle()->AddMaterial(redMaterial));
 
 		MaxFPSText = &CreateComponent<TextComponent>("MaxFPSText", Transform(Vec2f(1.5f, 0.5f), Vec2f(0.1f)), "No data", "", Alignment2D::Center());
 		auto greenMaterial = MakeShared<Material>("Green", Vec3f(0.155f, 1.0f, 0.25f), *textShader);
-		MaxFPSText->SetMaterialInst(GameHandle->GetRenderEngineHandle()->AddMaterial(greenMaterial));
+		MaxFPSText->SetMaterialInst(GetGameHandle()->GetRenderEngineHandle()->AddMaterial(greenMaterial));
 
 		AvgFPSText = &CreateComponent<TextComponent>("AvgFPSText", Transform(Vec2f(1.5f, 0.0f), Vec2f(0.1f)), "No data", "", Alignment2D::Center());
 		auto coralMaterial = MakeShared<Material>("Coral", Vec3f(1.0f, 0.5f, 0.31f), *textShader);
-		AvgFPSText->SetMaterialInst(GameHandle->GetRenderEngineHandle()->AddMaterial(coralMaterial));
+		AvgFPSText->SetMaterialInst(GetGameHandle()->GetRenderEngineHandle()->AddMaterial(coralMaterial));
 	}
 
-	void FPSGraphRenderingComponent::Update(float deltaTime)
+	void FPSGraphRenderingComponent::Update(Time dt)
 	{
-		GraphRenderingComponent::Update(deltaTime);
+		GraphRenderingComponent::Update(dt);
 
-		unsigned int currentFrame = GameHandle->GetTotalFrameCount();
-		float time = GameHandle->GetProgramRuntime();
+		auto currentFrame = GetGameHandle()->GetTotalFrameCount();
+		auto time = static_cast<float>(GetGameHandle()->GetProgramRuntime());
 
 		// Every second update graph
 		if (time >= PrevFPSUpdateTime + 1.0f)

@@ -34,8 +34,8 @@
   @{
 */
 
-#include "foundation/Px.h"
-#include "common/PxBase.h"
+#include <PhysX/foundation/Px.h>
+#include <PhysX/common/PxBase.h>
 
 #if !PX_DOXYGEN
 namespace physx
@@ -171,7 +171,7 @@ public:
 	*/
 	PX_PHYSX_COMMON_API virtual	PxBounds3			getLocalBounds()	const	= 0;
 
-	PX_PHYSX_COMMON_API virtual	const char*			getConcreteTypeName() const	{ return "PxConvexMesh"; }
+	PX_PHYSX_COMMON_API virtual	const char*			getConcreteTypeName() const	{ return "PxConvexMe.h"; }
 
 	/**
 	\brief This method decides whether a convex mesh is gpu compatible. If the total number of vertices are more than 64 or any number of vertices in a polygon is more than 32, or
@@ -186,7 +186,7 @@ protected:
 						PX_INLINE					PxConvexMesh(PxType concreteType, PxBaseFlags baseFlags) : PxBase(concreteType, baseFlags) {}
 						PX_INLINE					PxConvexMesh(PxBaseFlags baseFlags) : PxBase(baseFlags) {}
 	PX_PHYSX_COMMON_API virtual						~PxConvexMesh() {}
-	PX_PHYSX_COMMON_API virtual	bool				isKindOf(const char* name) const { return !::strcmp("PxConvexMesh", name) || PxBase::isKindOf(name); }
+	PX_PHYSX_COMMON_API virtual	bool				isKindOf(const char* name) const { return !::strcmp("PxConvexMe.h", name) || PxBase::isKindOf(name); }
 };
 
 #if !PX_DOXYGEN

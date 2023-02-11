@@ -34,10 +34,10 @@
 @{
 */
 
-#include "foundation/PxVec3.h"
-#include "foundation/PxFlags.h"
-#include "common/PxCoreUtilityTypes.h"
-#include "geometry/PxConvexMesh.h"
+#include <PhysX/foundation/PxVec3.h>
+#include <PhysX/foundation/PxFlags.h>
+#include <PhysX/common/PxCoreUtilityTypes.h>
+#include <PhysX/geometry/PxConvexMesh.h>
 
 #if !PX_DOXYGEN
 namespace physx

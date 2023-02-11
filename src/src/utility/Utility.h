@@ -2,10 +2,11 @@
 #include <math/Vec.h>
 #include <vector>
 #include <memory>
+#include <sstream>
 #include <glad/glad.h>
 #include <utility/Asserts.h>
 #include <utility>
-#include <iostream>
+#include <utility/CerealNames.h>
 #include <cereal/types/polymorphic.hpp>
 
 struct GLFWwindow;
@@ -15,13 +16,13 @@ struct GLFWwindow;
 	template <typename T>
 	struct GEERegisteredType
 	{
-		std::string GetName();
+		String GetName();
 	};
 
 	template <typename T>
 	struct GEERegisteredActor
 	{
-		static std::string GetName();
+		static String GetName();
 		static UniquePtr<Actor> InstantiateDefault();
 	};
 }*/
@@ -44,6 +45,7 @@ namespace GEE
 
 namespace GEE
 {
+	using Time = double;
 
 	template <typename T> using UniquePtr = std::unique_ptr<T>;
 	template <typename T, typename... Args>
@@ -59,10 +61,14 @@ namespace GEE
 		return std::make_shared<T>(std::forward<Args>(args)...);
 	}
 
+	using String = std::string;
+	template <typename T> using Vector = std::vector<T>;
+	template <typename T1, typename T2> using Pair = std::pair<T1, T2>;
+
 	template <typename T> using WeakPtr = std::weak_ptr<T>;
 
 	template <typename T>
-	std::string ToStringPrecision(const T& val, const unsigned int precision = 6)
+	String ToStringPrecision(const T& val, const unsigned int precision = 6)
 	{
 		std::ostringstream str;
 		str.precision(precision);
@@ -70,17 +76,17 @@ namespace GEE
 		return str.str();
 	}
 
-	std::string BoolToString(bool b);
+	String BoolToString(bool b);
 
 	template <typename InputIt, typename UnaryFunction>
-	std::string GetUniqueName(InputIt first, InputIt last, UnaryFunction&& getNameOfObjectFunc, const std::string& name)
+	String GetUniqueName(InputIt first, InputIt last, UnaryFunction&& getNameOfObjectFunc, const String& name)
 	{
 		// If name is not repeated, return the name because it's unique.
 		if (std::find_if(first, last, [&](auto& obj) { return getNameOfObjectFunc(obj) == name; }) == last)
 			return name;
 
 		int addedIndex = 1;
-		std::string currentNameCandidate = name + std::to_string(addedIndex);
+		String currentNameCandidate = name + std::to_string(addedIndex);
 
 		while (std::find_if(first, last, [&](auto& obj) { return getNameOfObjectFunc(obj) == currentNameCandidate; }) != last)
 			currentNameCandidate = name + std::to_string(++addedIndex);
@@ -112,7 +118,13 @@ namespace GEE
 	{
 	public:
 		WindowData(SystemWindow&);
-		Vec2d GetMousePositionPx() const;
+		
+		/**
+		 * \param originBottomLeft If true, then coordinates are from the bottom-left corner. Otherwise, the more popular convention
+		 * of using the top-left corner as origin is used. When using GEE, always choose bottom-left as origin.
+		 * \return A 2D pixel coordinate of the current mouse position of this WindowData's window.
+		 */
+		Vec2d GetMousePositionPx(bool originBottomLeft = true) const;
 		Vec2d GetMousePositionNDC() const;
 
 		Vec2i GetWindowSize() const;
@@ -163,7 +175,7 @@ namespace GEE
 
 		void BindToSlot(unsigned int blockBindingSlot, bool isAlreadyBound);
 
-		bool HasBeenGenerated() const;
+		[[nodiscard]] bool HasBeenGenerated() const;
 
 		void SubData1i(int, size_t offset);
 		void SubData1f(float, size_t offset);
@@ -188,23 +200,23 @@ namespace GEE
 	==========================================
 	*/
 
-	std::string lookupNextWord(std::stringstream&);			//checks the next word in stream without moving the pointer
-	std::string multipleWordInput(std::stringstream&);
-	bool isNextWordEqual(std::stringstream&, std::string);	//works just like the previous one, but moves the pointer if the word is equal to a passed string
+	String lookupNextWord(std::stringstream&);			//checks the next word in stream without moving the pointer
+	String multipleWordInput(std::stringstream&);
+	bool isNextWordEqual(std::stringstream&, String);	//works just like the previous one, but moves the pointer if the word is equal to a passed string
 
-	bool toBool(std::string);
+	bool toBool(String);
 	Vec3f toEuler(const Quatf& quat);
 	Quatf toQuat(const Vec3f& euler);
 
-	std::string extractDirectory(std::string path);
-	void extractDirectoryAndFilename(const std::string& fullPath, std::string& filename, std::string& directory);
+	String extractDirectory(String path);
+	void extractDirectoryAndFilename(const String& fullPath, String* filenameGet = nullptr, String* directoryGet = nullptr);
 
-	void printVector(const Vec2f&, std::string title = std::string());
-	void printVector(const Vec3f&, std::string title = std::string());
-	void printVector(const Vec4f&, std::string title = std::string());
-	void printVector(const Quatf&, std::string title = std::string());
+	void printVector(const Vec2f&, String title = String());
+	void printVector(const Vec3f&, String title = String());
+	void printVector(const Vec4f&, String title = String());
+	void printVector(const Quatf&, String title = String());
 
-	void printMatrix(const Mat4f&, std::string title = std::string());
+	void printMatrix(const Mat4f&, String title = String());
 
 	template<typename To, typename From>
 	UniquePtr<To> static_unique_pointer_cast(UniquePtr<From>&& old) {
@@ -224,9 +236,9 @@ namespace GEE
 		return static_cast<int32_t>(num);
 	}
 
-	std::string toValidFilepath(std::string);
-	std::string getFilepathExtension(const std::string& filepath);
-	std::string getFileName(const std::string& filepath);
+	String toValidFilepath(String);
+	String getFilepathExtension(const String& filepath);
+	String getFileName(const String& filepath, bool keepExtension = true);
 
 	/**
 	* @brief Compares two numbers of type float while accounting for floating-point accuracy.
@@ -246,7 +258,7 @@ namespace GEE
 		}
 	}
 
-	void assertM(bool expression, const std::string& message)
+	void assertM(bool expression, const String& message)
 	{
 		assertFn(expression, [message]() { std::cout << "ERROR: ASSERTION FAILURE: " + message + '\n'; });
 	}*/

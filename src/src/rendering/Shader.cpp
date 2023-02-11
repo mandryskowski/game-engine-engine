@@ -7,7 +7,53 @@
 
 namespace GEE
 {
-	Shader::Shader(std::string name) :
+	template <> void Shader::Uniform<int>(const String& name, const int& val) const { glUniform1i(FindLocation(name), val); }
+	template <> void Shader::Uniform<bool>(const String& name, const bool& val) const { glUniform1i(FindLocation(name), val); }
+	template <> void Shader::Uniform<float>(const String& name, const float& val) const { glUniform1f(FindLocation(name), val); }
+
+	template <> void Shader::Uniform<Vec2f>(const String& name, const Vec2f& val) const { glUniform2fv(FindLocation(name), 1, Math::GetDataPtr(val)); }
+	template <> void Shader::Uniform<Vec3f>(const String& name, const Vec3f& val) const { glUniform3fv(FindLocation(name), 1, Math::GetDataPtr(val)); }
+	template <> void Shader::Uniform<Vec4f>(const String& name, const Vec4f& val) const { glUniform4fv(FindLocation(name), 1, Math::GetDataPtr(val)); }
+
+	template <> void Shader::Uniform<Vec2u>(const String& name, const Vec2u& val) const { glUniform2uiv(FindLocation(name), 1, Math::GetDataPtr(val)); }
+	template <> void Shader::Uniform<Vec3u>(const String& name, const Vec3u& val) const { glUniform3uiv(FindLocation(name), 1, Math::GetDataPtr(val)); }
+	template <> void Shader::Uniform<Vec4u>(const String& name, const Vec4u& val) const { glUniform4uiv(FindLocation(name), 1, Math::GetDataPtr(val)); }
+
+	template <> void Shader::Uniform<Vec2i>(const String& name, const Vec2i& val) const { glUniform2iv(FindLocation(name), 1, Math::GetDataPtr(val)); }
+	template <> void Shader::Uniform<Vec3i>(const String& name, const Vec3i& val) const { glUniform3iv(FindLocation(name), 1, Math::GetDataPtr(val)); }
+	template <> void Shader::Uniform<Vec4i>(const String& name, const Vec4i& val) const { glUniform4iv(FindLocation(name), 1, Math::GetDataPtr(val)); }
+
+	template <> void Shader::Uniform<Vec2b>(const String& name, const Vec2b& val) const { Uniform<Vec2i>(name, static_cast<const Vec2i>(val)); }
+	template <> void Shader::Uniform<Vec3b>(const String& name, const Vec3b& val) const { Uniform<Vec3i>(name, static_cast<const Vec3i>(val)); }
+	template <> void Shader::Uniform<Vec4b>(const String& name, const Vec4b& val) const { Uniform<Vec4i>(name, static_cast<const Vec4i>(val)); }
+
+	template <> void Shader::Uniform<Mat3f>(const String& name, const Mat3f& val) const { glUniformMatrix3fv(FindLocation(name), 1, GL_FALSE, Math::GetDataPtr(val)); }
+
+	template <> void Shader::Uniform<Mat4f>(const String& name, const Mat4f& val) const { glUniformMatrix4fv(FindLocation(name), 1, GL_FALSE, Math::GetDataPtr(val)); }
+
+
+
+	template <> void Shader::UniformArray<int>(const String& name, const int* val, unsigned int size) const { glUniform1iv(FindLocation(name), size, val); }
+	template <> void Shader::UniformArray<bool>(const String& name, const bool* val, unsigned int size) const { glUniform1iv(FindLocation(name), size, reinterpret_cast<const GLint*>(val)); }
+	template <> void Shader::UniformArray<float>(const String& name, const float* val, unsigned int size) const { glUniform1fv(FindLocation(name), size, val); }
+
+	template <> void Shader::UniformArray<Vec2f>(const String& name, const Vec2f* val, unsigned int size) const { glUniform2fv(FindLocation(name), size, &(*val)[0]); }
+	template <> void Shader::UniformArray<Vec3f>(const String& name, const Vec3f* val, unsigned int size) const { glUniform3fv(FindLocation(name), size, &(*val)[0]); }
+	template <> void Shader::UniformArray<Vec4f>(const String& name, const Vec4f* val, unsigned int size) const { glUniform4fv(FindLocation(name), size, &(*val)[0]); }
+
+	template <> void Shader::UniformArray<Vec2u>(const String& name, const Vec2u* val, unsigned int size) const { glUniform2uiv(FindLocation(name), size, &(*val)[0]); }
+	template <> void Shader::UniformArray<Vec3u>(const String& name, const Vec3u* val, unsigned int size) const { glUniform3uiv(FindLocation(name), size, &(*val)[0]); }
+	template <> void Shader::UniformArray<Vec4u>(const String& name, const Vec4u* val, unsigned int size) const { glUniform4uiv(FindLocation(name), size, &(*val)[0]); }
+
+	template <> void Shader::UniformArray<Vec2i>(const String& name, const Vec2i* val, unsigned int size) const { glUniform2iv(FindLocation(name), size, &(*val)[0]); }
+	template <> void Shader::UniformArray<Vec3i>(const String& name, const Vec3i* val, unsigned int size) const { glUniform3iv(FindLocation(name), size, &(*val)[0]); }
+	template <> void Shader::UniformArray<Vec4i>(const String& name, const Vec4i* val, unsigned int size) const { glUniform4iv(FindLocation(name), size, &(*val)[0]); }
+
+	template <> void Shader::UniformArray<Mat3f>(const String& name, const Mat3f* val, unsigned int size) const { glUniformMatrix3fv(FindLocation(name), size, GL_FALSE, &(*val)[0][0]); }
+
+	template <> void Shader::UniformArray<Mat4f>(const String& name, const Mat4f* val, unsigned int size) const { glUniformMatrix4fv(FindLocation(name), size, GL_FALSE, &(*val)[0][0]); }
+
+	Shader::Shader(const String& name) :
 		Program(0),
 		Name(name),
 		ExpectedMatrices{},
@@ -16,48 +62,48 @@ namespace GEE
 		ShadersSource = { "", "", "" };
 	}
 
-	std::string Shader::GetName()
+	String Shader::GetName()
 	{
 		return Name;
 	}
 
-	std::vector<std::pair<unsigned int, std::string>>* Shader::GetMaterialTextureUnits()
+	Vector<Pair<unsigned int, String>>* Shader::GetMaterialTextureUnits()
 	{
 		return &MaterialTextureUnits;
 	}
 
-	bool Shader::ExpectsMatrix(unsigned int index)
+	bool Shader::ExpectsMatrix(unsigned int index) const
 	{
 		return ExpectedMatrices[index];
 	}
 
-	void Shader::SetName(std::string name)
+	void Shader::SetName(const String& name)
 	{
 		Name = name;
 	}
 
-	void Shader::SetTextureUnitNames(std::vector <std::pair<unsigned int, std::string>> materialTexUnits)
+	void Shader::SetTextureUnitNames(Vector <Pair<unsigned int, String>> materialTexUnits)
 	{
 		Use();
 		MaterialTextureUnits = materialTexUnits;
-		for (unsigned int i = 0; i < MaterialTextureUnits.size(); i++)
-			Uniform1i("material." + MaterialTextureUnits[i].second, MaterialTextureUnits[i].first);
+		for (auto& MaterialTextureUnit : MaterialTextureUnits)
+			Uniform<int>("material." + MaterialTextureUnit.second, MaterialTextureUnit.first);
 	}
 
-	void Shader::AddTextureUnit(unsigned int unitIndex, std::string nameInShader)
+	void Shader::AddTextureUnit(unsigned int unitIndex, const String& nameInShader)
 	{
 		Use();
-		MaterialTextureUnits.push_back(std::pair<unsigned int, std::string>(unitIndex, nameInShader));
-		Uniform1i("material." + nameInShader, unitIndex);
+		MaterialTextureUnits.push_back(Pair<unsigned int, String>(unitIndex, nameInShader));
+		Uniform<int>("material." + nameInShader, unitIndex);
 	}
 
-	void Shader::SetExpectedMatrices(std::vector <MatrixType> matrices)
+	void Shader::SetExpectedMatrices(Vector <MatrixType> matrices)
 	{
 		for (unsigned int i = 0; i < matrices.size(); i++)
 			ExpectedMatrices[(unsigned int)matrices[i]] = true;
 	}
 
-	void Shader::AddExpectedMatrix(std::string matType)
+	void Shader::AddExpectedMatrix(const String& matType)
 	{
 		if (matType == "M")
 			ExpectedMatrices[MatrixType::MODEL] = true;
@@ -89,90 +135,8 @@ namespace GEE
 			OnMaterialWholeDataUpdateFunc(*this, mat);
 	}
 
-	void Shader::Uniform1i(std::string name, int val) const
-	{
-		glUniform1i(FindLocation(name), val);
-	}
 
-	void Shader::Uniform1f(std::string name, float val) const
-	{
-		glUniform1f(FindLocation(name), val);
-	}
-
-	void Shader::Uniform2fv(std::string name, Vec2f val) const
-	{
-		glUniform2fv(FindLocation(name), 1, Math::GetDataPtr(val));
-	}
-
-	void Shader::Uniform3fv(std::string name, Vec3f val) const
-	{
-		glUniform3fv(FindLocation(name), 1, Math::GetDataPtr(val));
-	}
-
-	void Shader::Uniform4fv(std::string name, Vec4f val) const
-	{
-		glUniform4fv(FindLocation(name), 1, Math::GetDataPtr(val));
-	}
-
-	void Shader::UniformMatrix3fv(std::string name, Mat3f val) const
-	{
-		glUniformMatrix3fv(FindLocation(name), 1, GL_FALSE, Math::GetDataPtr(val));
-	}
-
-	void Shader::UniformMatrix4fv(std::string name, const Mat4f& val) const
-	{
-		glUniformMatrix4fv(FindLocation(name), 1, GL_FALSE, Math::GetDataPtr(val));
-	}
-
-
-	template <> void Shader::Uniform<int>(const std::string& name, const int& val) { glUniform1i(FindLocation(name), val); }
-	template <> void Shader::Uniform<bool>(const std::string& name, const bool& val) { glUniform1i(FindLocation(name), val); }
-	template <> void Shader::Uniform<float>(const std::string& name, const float& val) { glUniform1f(FindLocation(name), val); }
-
-	template <> void Shader::Uniform<Vec2f>(const std::string& name, const Vec2f& val) { glUniform2fv(FindLocation(name), 1, Math::GetDataPtr(val)); }
-	template <> void Shader::Uniform<Vec3f>(const std::string& name, const Vec3f& val) { glUniform3fv(FindLocation(name), 1, Math::GetDataPtr(val)); }
-	template <> void Shader::Uniform<Vec4f>(const std::string& name, const Vec4f& val) { glUniform4fv(FindLocation(name), 1, Math::GetDataPtr(val)); }
-
-	template <> void Shader::Uniform<Vec2u>(const std::string& name, const Vec2u& val) { glUniform2uiv(FindLocation(name), 1, Math::GetDataPtr(val)); }
-	template <> void Shader::Uniform<Vec3u>(const std::string& name, const Vec3u& val) { glUniform3uiv(FindLocation(name), 1, Math::GetDataPtr(val)); }
-	template <> void Shader::Uniform<Vec4u>(const std::string& name, const Vec4u& val) { glUniform4uiv(FindLocation(name), 1, Math::GetDataPtr(val)); }
-
-	template <> void Shader::Uniform<Vec2i>(const std::string& name, const Vec2i& val) { glUniform2iv(FindLocation(name), 1, Math::GetDataPtr(val)); }
-	template <> void Shader::Uniform<Vec3i>(const std::string& name, const Vec3i& val) { glUniform3iv(FindLocation(name), 1, Math::GetDataPtr(val)); }
-	template <> void Shader::Uniform<Vec4i>(const std::string& name, const Vec4i& val) { glUniform4iv(FindLocation(name), 1, Math::GetDataPtr(val)); }
-
-	template <> void Shader::Uniform<Vec2b>(const std::string& name, const Vec2b& val) { Uniform<Vec2i>(name, static_cast<Vec2i>(val)); }
-	template <> void Shader::Uniform<Vec3b>(const std::string& name, const Vec3b& val) { Uniform<Vec3i>(name, static_cast<Vec3i>(val)); }
-	template <> void Shader::Uniform<Vec4b>(const std::string& name, const Vec4b& val) { Uniform<Vec4i>(name, static_cast<Vec4i>(val)); }
-
-	template <> void Shader::Uniform<Mat3f>(const std::string& name, const Mat3f& val) { glUniformMatrix3fv(FindLocation(name), 1, GL_FALSE, Math::GetDataPtr(val)); }
-
-	template <> void Shader::Uniform<Mat4f>(const std::string& name, const Mat4f& val) { glUniformMatrix4fv(FindLocation(name), 1, GL_FALSE, Math::GetDataPtr(val)); }
-
-
-
-	template <> void Shader::UniformArray<int>(const std::string& name, const int* val, unsigned int size) { glUniform1iv(FindLocation(name), size, val); }
-	template <> void Shader::UniformArray<bool>(const std::string& name, const bool* val, unsigned int size) { glUniform1iv(FindLocation(name), size, reinterpret_cast<const GLint*>(val)); }
-	template <> void Shader::UniformArray<float>(const std::string& name, const float* val, unsigned int size) { glUniform1fv(FindLocation(name), size, val); }
-									
-	template <> void Shader::UniformArray<Vec2f>(const std::string& name, const Vec2f* val, unsigned int size) { glUniform2fv(FindLocation(name), size, &(*val)[0]); }
-	template <> void Shader::UniformArray<Vec3f>(const std::string& name, const Vec3f* val, unsigned int size) { glUniform3fv(FindLocation(name), size, &(*val)[0]); }
-	template <> void Shader::UniformArray<Vec4f>(const std::string& name, const Vec4f* val, unsigned int size) { glUniform4fv(FindLocation(name), size, &(*val)[0]); }
-																					 
-	template <> void Shader::UniformArray<Vec2u>(const std::string& name, const Vec2u* val, unsigned int size) { glUniform2uiv(FindLocation(name), size, &(*val)[0]); }
-	template <> void Shader::UniformArray<Vec3u>(const std::string& name, const Vec3u* val, unsigned int size) { glUniform3uiv(FindLocation(name), size, &(*val)[0]); }
-	template <> void Shader::UniformArray<Vec4u>(const std::string& name, const Vec4u* val, unsigned int size) { glUniform4uiv(FindLocation(name), size, &(*val)[0]); }
-																					 
-	template <> void Shader::UniformArray<Vec2i>(const std::string& name, const Vec2i* val, unsigned int size) { glUniform2iv(FindLocation(name), size, &(*val)[0]); }
-	template <> void Shader::UniformArray<Vec3i>(const std::string& name, const Vec3i* val, unsigned int size) { glUniform3iv(FindLocation(name), size, &(*val)[0]); }
-	template <> void Shader::UniformArray<Vec4i>(const std::string& name, const Vec4i* val, unsigned int size) { glUniform4iv(FindLocation(name), size, &(*val)[0]); }
-																					 
-	template <> void Shader::UniformArray<Mat3f>(const std::string& name, const Mat3f* val, unsigned int size) { glUniformMatrix3fv(FindLocation(name), size, GL_FALSE, &(*val)[0][0]); }
-																					 
-	template <> void Shader::UniformArray<Mat4f>(const std::string& name, const Mat4f* val, unsigned int size) { glUniformMatrix4fv(FindLocation(name), size, GL_FALSE, &(*val)[0][0]); }
-
-
-	void Shader::UniformBlockBinding(std::string name, unsigned int binding) const
+	void Shader::UniformBlockBinding(const String& name, unsigned int binding) const
 	{
 		glUniformBlockBinding(Program, GetUniformBlockIndex(name), binding);
 	}
@@ -182,7 +146,7 @@ namespace GEE
 		glUniformBlockBinding(Program, blockID, binding);
 	}
 
-	unsigned int Shader::GetUniformBlockIndex(std::string name) const
+	unsigned int Shader::GetUniformBlockIndex(const String& name) const
 	{
 		return glGetUniformBlockIndex(Program, name.c_str());
 	}
@@ -207,7 +171,7 @@ namespace GEE
 		if (ExpectedMatrices[MatrixType::MVP])
 			Uniform("MVP", (*VP) * model);
 		if (ExpectedMatrices[MatrixType::NORMAL])
-			Uniform<Mat3f>("normalMat", ModelToNormal(model));
+			Uniform<Mat3f>("normalMat", Math::ModelToNormal(model));
 	}
 
 
@@ -222,7 +186,7 @@ namespace GEE
 		descBuilder.AddField("Shader name").CreateChild<UIButtonActor>("ShaderName", Name).SetDisableInput(true);
 		descBuilder.AddField("Program ID").CreateChild<UIButtonActor>("ProgramID", std::to_string(Program)).SetDisableInput(true);
 
-		descBuilder.AddField("Texture units").GetTemplates().ListSelection<std::pair<unsigned int, std::string>>(MaterialTextureUnits.begin(), MaterialTextureUnits.end(), [](UIAutomaticListActor& listActor, std::pair<unsigned int, std::string>& object) { listActor.CreateChild<UIButtonActor>(object.second, object.second + " - " + std::to_string(object.first)); });
+		descBuilder.AddField("Texture units").GetTemplates().ListSelection<std::pair<unsigned int, String>>(MaterialTextureUnits.begin(), MaterialTextureUnits.end(), [](UIAutomaticListActor& listActor, std::pair<unsigned int, String>& object) { listActor.CreateChild<UIButtonActor>(object.second, object.second + " - " + std::to_string(object.first)); });
 	}
 
 	void Shader::DebugShader(unsigned int shader)
@@ -237,7 +201,7 @@ namespace GEE
 		}
 	}
 
-	GLint Shader::FindLocation(std::string name) const
+	GLint Shader::FindLocation(const String& name) const
 	{
 		if (Locations[name] == 0)
 			Locations[name] = glGetUniformLocation(Program, name.c_str());
@@ -246,7 +210,7 @@ namespace GEE
 	}
 
 
-	unsigned int ShaderLoader::LoadShader(GLenum type, std::string shaderPath, std::string additionalData, std::string* shaderSourcePtr)
+	unsigned int ShaderLoader::LoadShader(GLenum type, const String& shaderPath, String additionalData, String* shaderSourcePtr)
 	{
 		additionalData = "#version 400 core\n" + additionalData;
 		std::fstream shaderFile(shaderPath);
@@ -260,7 +224,7 @@ namespace GEE
 		std::stringstream shaderStream;
 		shaderStream << shaderFile.rdbuf();
 
-		std::string shaderSourceStr = additionalData + shaderStream.str();
+		String shaderSourceStr = additionalData + shaderStream.str();
 		if (shaderSourcePtr)
 			*shaderSourcePtr = shaderSourceStr;
 
@@ -277,7 +241,7 @@ namespace GEE
 		return shader;
 	}
 
-	bool ShaderLoader::DebugShader(unsigned int shaderID, std::string path)
+	bool ShaderLoader::DebugShader(unsigned int shaderID, const String& path)
 	{
 		int result;
 		char data[512];
@@ -291,21 +255,21 @@ namespace GEE
 		return true;
 	}
 
-	SharedPtr<Shader> ShaderLoader::LoadShaders(std::string shaderName, std::string vShaderPath, std::string fShaderPath, std::string gShaderPath)
+	SharedPtr<Shader> ShaderLoader::LoadShaders(const String& shaderName, const String& vShaderPath, const String& fShaderPath, const String& gShaderPath)
 	{
 		return LoadShadersWithInclData(shaderName, "", vShaderPath, fShaderPath, gShaderPath);
 	}
 
-	SharedPtr<Shader> ShaderLoader::LoadShadersWithInclData(std::string shaderName, std::string data, std::string vShaderPath, std::string fShaderPath, std::string gShaderPath)
+	SharedPtr<Shader> ShaderLoader::LoadShadersWithInclData(const String& shaderName, const String& data, const String& vShaderPath, const String& fShaderPath, const String& gShaderPath)
 	{
-		return LoadShadersWithExclData(shaderName, data, vShaderPath, data, fShaderPath, (gShaderPath.empty()) ? (std::string()) : (data), gShaderPath);
+		return LoadShadersWithExclData(shaderName, data, vShaderPath, data, fShaderPath, (gShaderPath.empty()) ? (String()) : (data), gShaderPath);
 	}
 
-	SharedPtr<Shader> ShaderLoader::LoadShadersWithExclData(std::string shaderName, std::string vShaderData, std::string vShaderPath, std::string fShaderData, std::string fShaderPath, std::string gShaderData, std::string gShaderPath)
+	SharedPtr<Shader> ShaderLoader::LoadShadersWithExclData(const String& shaderName, const String& vShaderData, const String& vShaderPath, const String& fShaderData, const String& fShaderPath, const String& gShaderData, const String& gShaderPath)
 	{
 		SharedPtr<Shader> shaderObj = MakeShared<Shader>(shaderName);
 		unsigned int nrShaders = (gShaderPath.empty()) ? (2) : (3);
-		std::vector<unsigned int> shaders(nrShaders);
+		Vector<unsigned int> shaders(nrShaders);
 
 
 		shaders[0] = LoadShader(GL_VERTEX_SHADER, vShaderPath, vShaderData, &shaderObj->ShadersSource[0]);
@@ -325,11 +289,5 @@ namespace GEE
 		}
 
 		return shaderObj;
-	}
-
-
-	Mat3f ModelToNormal(Mat4f model)
-	{
-		return Mat3f(glm::transpose(glm::inverse(model)));
 	}
 }

@@ -19,7 +19,7 @@ namespace GEE
 
 		QuadShader = RenderHandle->AddShader(ShaderLoader::LoadShaders("Quad", "Shaders/quad.vs", "Shaders/quad.fs"));
 		QuadShader->Use();
-		QuadShader->Uniform1i("tex", 0);
+		QuadShader->Uniform<int>("tex", 0);
 	}
 
 	unsigned int Postprocess::GetFrameIndex()
@@ -78,7 +78,7 @@ namespace GEE
 				const Texture& bindTex = (i == 0) ? (tex) : static_cast<Texture>(tb.BlurFramebuffers[!horizontal]->GetColorTexture(0));
 				bindTex.Bind();
 			}
-			tb.GaussianBlurShader->Uniform1i("horizontal", horizontal);
+			tb.GaussianBlurShader->Uniform<int>("horizontal", horizontal);
 			ppTb.RenderFullscreenQuad(tb.GaussianBlurShader, false);
 
 			horizontal = !horizontal;
@@ -149,7 +149,7 @@ namespace GEE
 
 		tb.SMAAShaders[1]->Use();
 		if (bT2x)
-			tb.SMAAShaders[1]->Uniform4fv("ssIndices", (FrameIndex == 0) ? (Vec4f(1, 1, 1, 0)) : (Vec4f(2, 2, 2, 0)));
+			tb.SMAAShaders[1]->Uniform<Vec4f>("ssIndices", (FrameIndex == 0) ? (Vec4f(1, 1, 1, 0)) : (Vec4f(2, 2, 2, 0)));
 
 		tb.SMAAFb->GetColorTexture(0).Bind(0);	//bind edges texture to slot 0
 		tb.SMAAAreaTex->Bind(1);
@@ -221,7 +221,7 @@ namespace GEE
 		colorTex.Bind(0);
 		if (blurTex.HasBeenGenerated())
 			blurTex.Bind(1);
-		tb.GetTb().TonemapGammaShader->Uniform1i("HDRbuffer", 0);
+		tb.GetTb().TonemapGammaShader->Uniform<int>("HDRbuffer", 0);
 
 		tb.RenderFullscreenQuad(tb.GetTb().TonemapGammaShader);
 

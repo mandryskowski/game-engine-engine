@@ -35,9 +35,9 @@
 */
 
 #include <stdio.h>
-#include "common/PxPhysXCommonConfig.h"
-#include "foundation/PxIO.h"
-#include "PxFoundation.h"
+#include <PhysX/common/PxPhysXCommonConfig.h>
+#include <PhysX/foundation/PxIO.h>
+#include <PhysX/PxFoundation.h>
 
 typedef FILE* PxFileHandle;
 

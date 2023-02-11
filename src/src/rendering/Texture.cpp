@@ -1,5 +1,5 @@
 #include <rendering/Texture.h>
-#include <stb/stb_image.h>
+#include <stb_image.h>
 #include <iostream>
 #include <assimp/texture.h>
 
@@ -150,7 +150,7 @@ namespace GEE
 		if (flip)
 			stbi_set_flip_vertically_on_load(true);
 
-		int width, height, nrChannels;
+		int width = 0, height = 0, nrChannels = 0;
 		void* data = nullptr;
 		{
 			if (std::is_same<PixelChannelType, unsigned char>::value)
@@ -362,10 +362,10 @@ namespace GEE
 	}
 
 
-	template Texture::Loader<unsigned char>;
-	template Texture::Loader<unsigned int>;
-	template Texture::Loader<float>;
-	template Texture::Loader<Texture::LoaderArtificialType::Uint24_8>;
+	template struct Texture::Loader<unsigned char>;
+	template struct Texture::Loader<unsigned int>;
+	template struct Texture::Loader<float>;
+	template struct Texture::Loader<Texture::LoaderArtificialType::Uint24_8>;
 
 	NamedTexture::NamedTexture(const Texture& tex, const std::string& name) :
 		Texture(tex),

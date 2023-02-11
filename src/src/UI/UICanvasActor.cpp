@@ -199,7 +199,8 @@ namespace GEE
 
 		UICanvasFieldCategory& category = FieldsList->CreateChild<UICanvasFieldCategory>(name);
 		category.SetTransform(Transform(Vec2f(0.0f, -1.0f), Vec2f(FieldSize)));	//position doesn't matter if this is not the first field
-		FieldsList->AddElement(UIListElement(UIListElement::ReferenceToUIActor(&category), [&category]() { category.Refresh(); return category.GetListOffset(); }, [&category]() { return Vec3f(0.0f, -1.5f, 0.0f); }));
+		UIListElement::ReferenceToUIActor categoryRef(&category);
+		FieldsList->AddElement(UIListElement(categoryRef, [&category]() { category.Refresh(); return category.GetListOffset(); }, [&category]() { return Vec3f(0.0f, -1.5f, 0.0f); }));
 		category.SetOnExpansionFunc([this]() { RefreshFieldsList(); });
 
 		return category;
@@ -211,7 +212,8 @@ namespace GEE
 			FieldsList = &ScaleActor->CreateChild<UIListActor>(Name + "_Fields_List");
 
 		UICanvasField& field = FieldsList->CreateChild<UICanvasField>(name);
-		(getElementOffset) ? (FieldsList->AddElement(UIListElement(UIListElement::ReferenceToUIActor(&field), getElementOffset))) : (FieldsList->AddElement(UIListElement(UIListElement::ReferenceToUIActor(&field), Vec3f(0.0f, -FieldSize.y * 2.0f, 0.0f))));
+		UIListElement::ReferenceToUIActor fieldRef(&field);
+		(getElementOffset) ? (FieldsList->AddElement(UIListElement(fieldRef, getElementOffset))) : (FieldsList->AddElement(UIListElement(fieldRef, Vec3f(0.0f, -FieldSize.y * 2.0f, 0.0f))));
 
 		field.SetTransform(Transform(Vec2f(0.0f), Vec2f(FieldSize)));	//position doesn't matter if this is not the first field
 
@@ -381,8 +383,8 @@ namespace GEE
 		ResizeBarX->SetOnHoverFunc([this]() { GameHandle->SetCursorIcon(DefaultCursorIcon::VerticalResize); });
 		ResizeBarX->SetOnUnhoverFunc([this]() { GameHandle->SetCursorIcon(DefaultCursorIcon::Regular); });
 		ResizeBarX->SetWhileBeingClickedFunc([this]() {
-			float scale = ResizeBarX->GetClickPosNDC().y - Scene.GetUIData()->GetWindowData().GetMousePositionNDC().y;
-			this->GetTransform()->SetScale((Vec2f)this->GetTransform()->GetScale() * (1.0f + scale));
+			const auto scale = ResizeBarX->GetClickPosNDC().y - Scene.GetUIData()->GetWindowData().GetMousePositionNDC().y;
+			this->GetTransform()->SetScale((Vec2f)this->GetTransform()->GetScale() * static_cast<float>(1.0 + scale));
 			ResizeBarX->SetClickPosNDC(Scene.GetUIData()->GetWindowData().GetMousePositionNDC());
 			});
 
@@ -399,12 +401,12 @@ namespace GEE
 		unsigned int axisIndex = static_cast<unsigned int>(barAxis);
 		Boxf<Vec2f> canvasBBox = GetBoundingBox();
 
-		float barSize = glm::min(1.0f, CanvasView.GetScale()[axisIndex] / canvasBBox.Size[axisIndex]);
+		auto barSize = glm::min(1.0f, CanvasView.GetScale()[axisIndex] / canvasBBox.Size[axisIndex]);
 
-		float viewMovePos = CanvasView.GetPos()[axisIndex] - CanvasView.GetScale()[axisIndex] - ((barAxis == VecAxis::X) ? (canvasBBox.GetLeft()) : (canvasBBox.GetBottom()));
-		float viewMoveSize = (canvasBBox.Size[axisIndex] - CanvasView.GetScale()[axisIndex]) * 2.0f;
+		auto viewMovePos = CanvasView.GetPos()[axisIndex] - CanvasView.GetScale()[axisIndex] - ((barAxis == VecAxis::X) ? (canvasBBox.GetLeft()) : (canvasBBox.GetBottom()));
+		auto viewMoveSize = (canvasBBox.Size[axisIndex] - CanvasView.GetScale()[axisIndex]) * 2.0f;
 
-		float barPos = 0.0F;
+		auto barPos = 0.0F;
 		if (viewMoveSize > 0.0f)
 		{
 			barPos = (viewMoveSize > 0.0f) ? (viewMovePos / viewMoveSize) : (0.5f);	//0.0 -> 1.0

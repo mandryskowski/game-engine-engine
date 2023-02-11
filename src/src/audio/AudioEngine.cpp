@@ -14,6 +14,7 @@ namespace GEE
 		{
 			std::cout << "Opening audio device.\n";
 			Device = alcOpenDevice(nullptr);
+			
 		
 			if (!Device)
 			{

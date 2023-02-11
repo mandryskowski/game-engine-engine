@@ -1,0 +1,38 @@
+Info,  T14552: Load Assets/EngineObjects/quad.obj
+Info,  T14552: Found a matching importer for this file format: Wavefront Object Importer.
+Info,  T14552: Import root directory is 'Assets/EngineObjects\'
+Info,  T14552: Entering post processing pipeline
+Info,  T14552: GenVertexNormalsProcess finished. Vertex normals have been calculated
+Info,  T14552: CalcTangentsProcess finished. Tangents have been calculated
+Info,  T14552: JoinVerticesProcess finished | Verts in: 6 out: 4 | ~33.3333
+Info,  T14552: Leaving post processing pipeline
+Info,  T14552: Load Assets/EngineObjects/cube.obj
+Info,  T14552: Found a matching importer for this file format: Wavefront Object Importer.
+Info,  T14552: Import root directory is 'Assets/EngineObjects\'
+Error, T14552: OBJ: failed to locate material None, creating new material
+Info,  T14552: Entering post processing pipeline
+Info,  T14552: CalcTangentsProcess finished. Tangents have been calculated
+Info,  T14552: JoinVerticesProcess finished | Verts in: 36 out: 24 | ~33.3333
+Info,  T14552: Leaving post processing pipeline
+Info,  T14552: Load Assets/EngineObjects/sphere.obj
+Info,  T14552: Found a matching importer for this file format: Wavefront Object Importer.
+Info,  T14552: Import root directory is 'Assets/EngineObjects\'
+Error, T14552: OBJ: Unable to locate material file sphere.mtl
+Info,  T14552: OBJ: Opening fallback material file Assets/EngineObjects/sphere.mtl
+Error, T14552: OBJ: Unable to locate fallback material file Assets/EngineObjects/sphere.mtl
+Error, T14552: OBJ: failed to locate material None, creating new material
+Info,  T14552: Entering post processing pipeline
+Info,  T14552: CalcTangentsProcess finished. Tangents have been calculated
+Info,  T14552: JoinVerticesProcess finished | Verts in: 540 out: 378 | ~30
+Info,  T14552: Leaving post processing pipeline
+Info,  T14552: Load Assets/EngineObjects/cone.obj
+Info,  T14552: Found a matching importer for this file format: Wavefront Object Importer.
+Info,  T14552: Import root directory is 'Assets/EngineObjects\'
+Error, T14552: OBJ: Unable to locate material file cone3.mtl
+Info,  T14552: OBJ: Opening fallback material file Assets/EngineObjects/cone.mtl
+Error, T14552: OBJ: Unable to locate fallback material file Assets/EngineObjects/cone.mtl
+Error, T14552: OBJ: failed to locate material None, creating new material
+Info,  T14552: Entering post processing pipeline
+Info,  T14552: CalcTangentsProcess finished. Tangents have been calculated
+Info,  T14552: JoinVerticesProcess finished | Verts in: 192 out: 172 | ~10.4167
+Info,  T14552: Leaving post processing pipeline

@@ -34,6 +34,15 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\CueController.cpp" />
+    <ClCompile Include="src\EightBallMain.cpp" />
+    <ClCompile Include="src\PoolBallActor.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\CueController.h" />
+    <ClInclude Include="src\PoolBallActor.h" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
@@ -242,6 +251,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -305,13 +315,6 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <ClCompile Include="EightBallMain.cpp" />
-    <ClCompile Include="PoolBallActor.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="PoolBallActor.h" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

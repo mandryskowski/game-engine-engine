@@ -30,7 +30,7 @@
 #ifndef PX_FOUNDATION_PX_FOUNDATION_CONFIG_H
 #define PX_FOUNDATION_PX_FOUNDATION_CONFIG_H
 
-#include "foundation/PxPreprocessor.h"
+#include <PhysX/foundation/PxPreprocessor.h>
 
 /** \addtogroup foundation
   @{

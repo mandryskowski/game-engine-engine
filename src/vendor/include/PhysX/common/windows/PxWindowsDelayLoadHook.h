@@ -31,8 +31,8 @@
 #ifndef PX_PHYSICS_DELAY_LOAD_HOOK
 #define PX_PHYSICS_DELAY_LOAD_HOOK
 
-#include "foundation/PxPreprocessor.h"
-#include "common/PxPhysXCommonConfig.h"
+#include <PhysX/foundation/PxPreprocessor.h>
+#include <PhysX/common/PxPhysXCommonConfig.h>
 
 /** \addtogroup foundation
 @{

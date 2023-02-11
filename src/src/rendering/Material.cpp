@@ -61,7 +61,7 @@ namespace GEE
 
 	unsigned int Material::GetTextureCount() const
 	{
-		return Textures.size();
+		return static_cast<unsigned int>(Textures.size());
 	}
 
 	NamedTexture Material::GetTexture(unsigned int i) const
@@ -252,7 +252,12 @@ namespace GEE
 		}
 	}
 
-	void Material::UpdateWholeUBOData(Shader* shader, Texture& emptyTexture) const
+	void Material::UpdateInstanceUBOData(Shader* shader, bool setValuesToDefault) const
+	{
+		shader->Uniform<Vec2f>("atlasData", Vec2f(0.0f));
+	}
+
+	void Material::UpdateWholeUBOData(Shader* shader, const Texture& emptyTexture) const
 	{
 		shader->Uniform<float>("material.shininess", Shininess);
 		shader->Uniform<float>("material.depthScale", DepthScale);
@@ -286,7 +291,7 @@ namespace GEE
 
 	void Material::GetEditorDescription(EditorDescriptionBuilder descBuilder)
 	{
-		std::function<std::string()> getShaderName = [this]() -> std::string
+		auto getShaderName = [this]() -> String
 		{
 			ShaderInfo shaderInfo = GetShaderInfo();
 			if (shaderInfo.UsesShaderHint())
@@ -299,6 +304,8 @@ namespace GEE
 			}
 			if (Shader* customShader = shaderInfo.GetCustomShader())
 				return customShader->GetName();
+
+			return String();
 		};
 
 		descBuilder.AddField("Material name").CreateChild<UIInputBoxActor>("MaterialNameInputBox", [=](const std::string& materialName) { Localization.Name = materialName; }, [=]() { return GetName(); });
@@ -332,7 +339,7 @@ namespace GEE
 		UICanvasFieldCategory& texturesCat = descBuilder.AddCategory("Textures");
 		UIAutomaticListActor& list = texturesCat.CreateChild<UIAutomaticListActor>("TexturesList");
 
-		std::function<void(UIAutomaticListActor&, NamedTexture&)> addTextureButtonFunc = [this, &list, descBuilder](UIAutomaticListActor& list, NamedTexture& tex) mutable {
+		auto addTextureButtonFunc = [this, descBuilder](UIAutomaticListActor& list, NamedTexture& tex) mutable {
 			std::string texName = tex.GetPath();
 			auto dummyMaterial = MakeShared<Material>("dummy");
 			dummyMaterial->AddTexture(MakeShared<NamedTexture>(NamedTexture((Texture)tex, "albedo1")));
@@ -342,7 +349,7 @@ namespace GEE
 			texButton.CreateChild<UIButtonActor>("DeleteTexture", "Delete", [this, &list, &tex, &texButton, descBuilder]() mutable { texButton.MarkAsKilled(); RemoveTexture(tex); dynamic_cast<UICanvasActor*>(&descBuilder.GetCanvas())->RefreshFieldsList(); }).GetTransform()->Move(Vec2f(2.0f, 0.0f));
 
 			std::string textureName = tex.GetShaderName();
-			if (tex.IsSRGB()) textureName + " (sRGB texture)";
+			if (tex.IsSRGB()) textureName += " (sRGB texture)";
 			texButton.CreateComponent<TextComponent>("TexShaderNameButton", Transform(Vec2f(3.0f, 0.0f)), textureName, "");
 		};
 
@@ -431,15 +438,15 @@ namespace GEE
 	{
 		if (setValuesToDefault)
 			TextureID = 0.0f;
-		shader->Uniform2fv("atlasData", Vec2f(TextureID, AtlasSize.x));
+		shader->Uniform<Vec2f>("atlasData", Vec2f(TextureID, AtlasSize.x));
 	}
 
-	void AtlasMaterial::UpdateWholeUBOData(Shader* shader, Texture& emptyTexture) const
+	void AtlasMaterial::UpdateWholeUBOData(Shader* shader, const Texture& emptyTexture) const
 	{
 		UpdateInstanceUBOData(shader);
 		Material::UpdateWholeUBOData(shader, emptyTexture);
 
-		shader->Uniform2fv("atlasTexOffset", Vec2f(1.0f) / AtlasSize);
+		shader->Uniform<Vec2f>("atlasTexOffset", Vec2f(1.0f) / AtlasSize);
 	}
 
 	Interpolator<float>& AtlasMaterial::GetTextureIDInterpolatorTemplate(float constantTextureID)
@@ -461,7 +468,7 @@ namespace GEE
 		UICanvasFieldCategory& texturesCat = descBuilder.AddCategory("Textures");
 		UIAutomaticListActor& list = texturesCat.CreateChild<UIAutomaticListActor>("TexturesList");
 
-		std::function<void(UIAutomaticListActor&, NamedTexture&)> addTextureButtonFunc = [this, &list, descBuilder](UIAutomaticListActor& list, NamedTexture& tex) mutable {
+		std::function<void(UIAutomaticListActor&, NamedTexture&)> addTextureButtonFunc = [this, descBuilder](UIAutomaticListActor& list, NamedTexture& tex) mutable {
 			std::string texName = tex.GetPath();
 			auto dummyMaterial = MakeShared<Material>("dummy");
 			dummyMaterial->AddTexture(MakeShared<NamedTexture>(NamedTexture((Texture)tex, "albedo1")));
@@ -600,7 +607,7 @@ namespace GEE
 			std::cout << "ERROR: Cannot reset animation of MaterialInstance " + this->GetMaterialRef().GetName() << ". No AnimationInterp pointer detected.\n";
 	}
 
-	void MaterialInstance::Update(float deltaTime)
+	void MaterialInstance::Update(Time deltaTime)
 	{
 		if (!AnimationInterp)	//if not animated, return
 			return;
@@ -615,7 +622,7 @@ namespace GEE
 		MaterialPtr->UpdateInstanceUBOData(shader, AnimationInterp == nullptr);	//If no animation is present, just ask for setting the default material values.
 	}
 
-	void MaterialInstance::UpdateWholeUBOData(Shader* shader, Texture& emptyTexture) const
+	void MaterialInstance::UpdateWholeUBOData(Shader* shader, const Texture& emptyTexture) const
 	{
 		UpdateInstanceUBOData(shader);
 		MaterialPtr->UpdateWholeUBOData(shader, emptyTexture);
@@ -631,7 +638,7 @@ namespace GEE
 		return *this;
 	}
 
-	SharedPtr<NamedTexture> MaterialLoadingData::FindTexture(const std::string& path) const
+	SharedPtr<NamedTexture> MaterialLoadingData::FindTexture(const String& path) const
 	{
 		auto found = std::find_if(LoadedTextures.begin(), LoadedTextures.end(), [path](const SharedPtr<NamedTexture>& tex) { return tex->GetPath() == path; });
 		if (found != LoadedTextures.end())
@@ -650,6 +657,35 @@ namespace GEE
 			return CustomShader;
 
 		return tbCol.GetShaderFromHint(GetShaderHint());
+	}
+
+	// Should be constexpr but fmod isn't
+	Vec3f hsvToRgb(Vec3f hsvColor)
+	{
+		float C = hsvColor.z * hsvColor.y; //V * S
+		float X = C * (1.0f - glm::abs(glm::mod(hsvColor.x / 60.0f, 2.0f) - 1.0f)); // C * ( 1 - | (H / 60) % 2 - 1| )
+		float m = hsvColor.z - C; //V * C
+
+		Vec3f rgbPrime(0.0f);
+		int hueCirclePart = floorConstexpr(hsvColor.x / 60.0f); // floor( H / 60 )
+
+		switch (hueCirclePart)
+		{
+		case 0: rgbPrime = Vec3f(C, X, 0.0f);  // 0 <= H < 60
+			break;
+		case 1: rgbPrime = Vec3f(X, C, 0.0f); // 60 <= H < 120
+			break;
+		case 2: rgbPrime = Vec3f(0.0f, C, X); // 120 <= H < 180
+			break;
+		case 3: rgbPrime = Vec3f(0.0f, X, C); // 180 <= H < 240
+			break;
+		case 4: rgbPrime = Vec3f(X, 0.0f, C); // 240 <= H < 300
+			break;
+		case 5: rgbPrime = Vec3f(C, 0.0f, X); // 300 <= H < 360
+			break;
+		}
+
+		return rgbPrime + m;
 	}
 }
 

@@ -14,7 +14,7 @@ namespace GEE
 		UIButtonActor(GameScene&, Actor* parentActor, const std::string& name, const std::string& buttonTextContent, std::function<void()> onClickFunc = nullptr, const Transform & = Transform());
 
 		ModelComponent* GetButtonModel();
-		virtual Boxf<Vec2f> GetBoundingBox(bool world = true) const override;
+		Boxf<Vec2f> GetBoundingBox(bool world = true) const override;
 
 		void SetMatIdle(MaterialInstance&&);
 		void SetMatHover(MaterialInstance&&);
@@ -35,7 +35,7 @@ namespace GEE
 
 		void DeleteButtonModel();
 
-		virtual void HandleEvent(const Event& ev) override;
+		void HandleEvent(const Event& ev) override;
 
 		virtual void OnHover();
 		virtual void OnUnhover();
@@ -58,8 +58,8 @@ namespace GEE
 		std::function<void()> OnClickFunc, OnDoubleClickFunc, OnHoverFunc, OnUnhoverFunc, OnBeingClickedFunc, WhileBeingClickedFunc;
 		std::function<void(PopupDescription)> PopupCreationFunc;
 
-		const float MaxDoubleClickTime;
-		float PrevClickTime;
+		const Time MaxDoubleClickTime;
+		Time PrevClickTime;
 
 		ModelComponent* ButtonModel;
 		SharedPtr<MaterialInstance> MatIdle, MatHover, MatClick, MatActive, MatDisabled;

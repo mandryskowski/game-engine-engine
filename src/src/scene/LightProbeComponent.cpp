@@ -19,7 +19,7 @@ namespace GEE
 	{
 		EnvironmentMap = NamedTexture(Texture::Loader<float>::ReserveEmptyCubemap(Vec2u(1024), Texture::Format::Float16::RGB()), "Environment cubemap");
 		EnvironmentMap.SetMinFilter(Texture::MinFilter::Trilinear(), true, false);
-		Scene.GetRenderData()->AddLightProbe(*this);
+		GetScene().GetRenderData()->AddLightProbe(*this);
 	}
 
 	LightProbeComponent::LightProbeComponent(LightProbeComponent&& comp) :
@@ -30,7 +30,7 @@ namespace GEE
 		OptionalFilepath(comp.OptionalFilepath),
 		ProbeIntensity(comp.ProbeIntensity)
 	{
-		Scene.GetRenderData()->AddLightProbe(*this);
+		GetScene().GetRenderData()->AddLightProbe(*this);
 	}
 
 	EngineBasicShape LightProbeComponent::GetShape() const
@@ -82,13 +82,13 @@ namespace GEE
 		cat.AddField("Global cubemap filepath").GetTemplates().PathInput([this](const std::string& path) { LightProbeLoader::LoadLightProbeFromFile(*this, path); }, [this]() { return OptionalFilepath; }, { "*.hdr" });
 		cat.AddField("Probe intensity").CreateChild<UIInputBoxActor>("ProbeIntensityInputBox", [this](float value) { ProbeIntensity = value; }, [this]() { return ProbeIntensity; });
 
-		descBuilder.AddField("Dupa").CreateChild<UIButtonActor>("dupa1234");
-		descBuilder.AddField("Kupa").CreateChild<UIButtonActor>("dup31234");
+		descBuilder.AddField("Test").CreateChild<UIButtonActor>("test1234");
+		descBuilder.AddField("Test2").CreateChild<UIButtonActor>("t5678");
 	}
 
 	LightProbeComponent::~LightProbeComponent()
 	{
-		Scene.GetRenderData()->EraseLightProbe(*this);
+		GetScene().GetRenderData()->EraseLightProbe(*this);
 		EnvironmentMap.Dispose();
 	}
 

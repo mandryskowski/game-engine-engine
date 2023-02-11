@@ -34,8 +34,8 @@
 @{
 */
 
-#include "foundation/Px.h"
-#include "foundation/PxIO.h"
+#include <PhysX/foundation/Px.h>
+#include <PhysX/foundation/PxIO.h>
 #include "PxMetaDataFlags.h"
 
 

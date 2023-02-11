@@ -85,7 +85,7 @@ namespace GEE
 	public:
 		FPSGraphRenderingComponent(Actor& actor, Component* parentComp, const std::string& name, const Transform& transform = Transform());
 		
-		virtual void Update(float deltaTime) override;
+		virtual void Update(Time dt) override;
 		void UpdateFPSTextInfo();
 
 	private:

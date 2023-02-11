@@ -6,14 +6,14 @@
 #include <scene/TextComponent.h>
 #include <rendering/Texture.h>
 #include <scene/UIWindowActor.h>
-#include <scene/SoundSourceComponent.h>
 #include <animation/AnimationManagerComponent.h>
 #include <scene/GunActor.h>
 #include <input/InputDevicesStateRetriever.h>
 
 #include <tinyfiledialogs/tinyfiledialogs.h>
 #include <scene/hierarchy/HierarchyTree.h>
-#include <scene/LightComponent.h>
+
+#include <utility>
 
 
 namespace GEE
@@ -127,7 +127,7 @@ void UIMultipleListActor::NestList(UIListActor& list)
 		return UIElementTemplates(*this, DefaultStyle);
 	}
 
-	TextComponent* UICanvasField::GetTitleComp()
+	TextComponent* UICanvasField::GetTitleComp() const
 	{
 		return TitleComp;
 	}
@@ -189,7 +189,7 @@ void UIMultipleListActor::NestList(UIListActor& list)
 		//uiCanvasFieldUtil::SetupComponents(*this, Vec2f(0.0f, 2.0f), Vec4f(0.045f, 0.06f, 0.09f, 1.0f));
 	}
 
-	UIButtonActor* UICanvasFieldCategory::GetExpandButton()
+	UIButtonActor* UICanvasFieldCategory::GetExpandButton() const
 	{
 		return ExpandButton;
 	}
@@ -199,7 +199,8 @@ void UIMultipleListActor::NestList(UIListActor& list)
 		return UIElementTemplates(*this, DefaultStyle);
 	}
 
-	UICanvasField& UICanvasFieldCategory::AddField(const std::string& name, std::function<Vec3f()> getElementOffset)
+	UICanvasField& UICanvasFieldCategory::AddField(const std::string& name, const std::function<Vec3f()>&
+	                                               getElementOffset)
 	{
 		UICanvasField& field = CreateChild<UICanvasField>(name);
 		if (getElementOffset)
@@ -212,7 +213,8 @@ void UIMultipleListActor::NestList(UIListActor& list)
 	{
 		UICanvasFieldCategory& category = CreateChild<UICanvasFieldCategory>(name);
 		category.SetTransform(Transform(Vec2f(0.0f, 0.0f), Vec2f(1.0f)));	//position doesn't matter if this is not the first field
-		AddElement(UIListElement(UIListElement::ReferenceToUIActor(&category), [&category]() {/* category.Refresh(); */ return category.GetListOffset(); }, [&category]() { return Vec3f(0.0f, -2.0f, 0.0f); }));
+		const UIListElement::ReferenceToUIActor categoryRef(&category);
+		AddElement(UIListElement(categoryRef, [&category]() {/* category.Refresh(); */ return category.GetListOffset(); }, []() { return Vec3f(0.0f, -2.0f, 0.0f); }));
 		category.SetOnExpansionFunc([this]() { dynamic_cast<UICanvasActor*>(GetCanvasPtr())->RefreshFieldsList(); });
 
 		return category;
@@ -223,7 +225,7 @@ void UIMultipleListActor::NestList(UIListActor& list)
 		return (bExpanded) ? (UIAutomaticListActor::GetListOffset() + Vec3f(0.0f, -1.0f, 0.0f)) : (Vec3f(0.0f, -1.0f, 0.0f));
 	}
 
-	void UICanvasFieldCategory::SetOnExpansionFunc(std::function<void()> onExpansionFunc)
+	void UICanvasFieldCategory::SetOnExpansionFunc(const std::function<void()>& onExpansionFunc)
 	{
 		OnExpansionFunc = [this, onExpansionFunc]() { if (onExpansionFunc) onExpansionFunc(); for (auto& it : Children) it->HandleEventAll(CursorMoveEvent(EventType::MouseMoved, Scene.GetUIData()->GetWindowData().GetMousePositionNDC())); };
 	}
@@ -258,19 +260,19 @@ void UIMultipleListActor::NestList(UIListActor& list)
 	{
 	}
 
-	void UIElementTemplates::TickBox(bool& modifiedBool)
+	void UIElementTemplates::TickBox(bool& modifiedBool) const
 	{
 		TickBox([&modifiedBool]() { modifiedBool = !modifiedBool; return modifiedBool; });
 	}
 
-	void UIElementTemplates::TickBox(std::function<bool()> setFunc)
+	void UIElementTemplates::TickBox(const std::function<bool()>& setFunc) const
 	{
 		SharedPtr<AtlasMaterial> tickMaterial = MakeShared<AtlasMaterial>("TickMaterial", glm::ivec2(3, 1));
 		tickMaterial->AddTexture(MakeShared<NamedTexture>(Texture::Loader<>::FromFile2D("Assets/Editor/tick_icon.png", Texture::Format::RGBA(), true), "albedo1"));
 
-		UIButtonActor& billboardTickBoxActor = TemplateParent.CreateChild<UIButtonActor>("BillboardTickBox", nullptr, Style.GetNormalButtonT());
+		auto& billboardTickBoxActor = TemplateParent.CreateChild<UIButtonActor>("BillboardTickBox", nullptr, Style.GetNormalButtonT());
 
-		ModelComponent& billboardTickModel = billboardTickBoxActor.CreateComponent<ModelComponent>("TickModel");
+		auto& billboardTickModel = billboardTickBoxActor.CreateComponent<ModelComponent>("TickModel");
 		billboardTickModel.AddMeshInst(GameHandle.GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::Quad));
 		billboardTickModel.SetHide(true);
 		billboardTickModel.OverrideInstancesMaterialInstances(MakeShared<MaterialInstance>(tickMaterial, tickMaterial->GetTextureIDInterpolatorTemplate(0.0f)));
@@ -282,7 +284,7 @@ void UIMultipleListActor::NestList(UIListActor& list)
 		tickHideFunc();	//notice that we don't have any getFunc here, so the only way to show the tick correctly is to click this button twice here - it won't alter the boolean, but will repair our tick icon.																															
 	}
 
-	void UIElementTemplates::TickBox(std::function<void(bool)> setFunc, std::function<bool()> getFunc)
+	void UIElementTemplates::TickBox(const std::function<void(bool)>& setFunc, const std::function<bool()>& getFunc) const
 	{
 		auto tickMaterial = MakeShared<AtlasMaterial>("TickMaterial", glm::ivec2(3, 1));
 		tickMaterial->AddTexture(MakeShared<NamedTexture>(Texture::Loader<>::FromFile2D("Assets/Editor/tick_icon.png", Texture::Format::RGBA(), true), "albedo1"));
@@ -298,12 +300,13 @@ void UIMultipleListActor::NestList(UIListActor& list)
 		billboardTickBoxActor.SetOnClickFunc(clickFunc);
 	}
 
-	void UIElementTemplates::SliderUnitInterval(std::function<void(float)> processUnitValue, float defaultValue)
+	void UIElementTemplates::SliderUnitInterval(std::function<void(float)> processUnitValue, float defaultValue) const
 	{
-		SliderRawInterval(0.0f, 1.0f, processUnitValue, defaultValue);
+		SliderRawInterval(0.0f, 1.0f, std::move(processUnitValue), defaultValue);
 	}
 
-	void UIElementTemplates::SliderRawInterval(float begin, float end, std::function<void(float)> processRawValueFunc, float defaultValue)
+	void UIElementTemplates::SliderRawInterval(float begin, float end, const std::function<void(float)>&
+	                                           processRawValueFunc, float defaultValue) const
 	{
 		/*auto& sliderBackground = TemplateParent.CreateChild<UIButtonActor>("SliderBackground");
 		Material* sliderBackgroundMaterial;
@@ -345,24 +348,26 @@ void UIMultipleListActor::NestList(UIListActor& list)
 		//sliderBackground.SetOnClickFunc(sliderProcessClick);
 	}
 
-	void UIElementTemplates::HierarchyTreeInput(UIAutomaticListActor& list, GameScene& scene, std::function<void(Hierarchy::Tree&)> setFunc)
+	void UIElementTemplates::HierarchyTreeInput(UIAutomaticListActor& list, GameScene& scene, const std::function<void(Hierarchy::Tree&)>
+	                                            & setFunc) const
 	{
 		for (int i = 0; i < scene.GetHierarchyTreeCount(); i++)
 		{
 			Hierarchy::Tree* tree = scene.GetHierarchyTree(i);
-			UIButtonActor& treeButton = list.CreateChild<UIButtonActor>("TreeButton" + std::to_string(i), tree->GetName().GetPath(), [tree, setFunc]() { setFunc(*tree); });
+			list.CreateChild<UIButtonActor>("TreeButton" + std::to_string(i), tree->GetName().GetPath(), [tree, setFunc]() { setFunc(*tree); });
 		}
 
 	}
-	void UIElementTemplates::HierarchyTreeInput(GameScene& scene, std::function<void(Hierarchy::Tree&)> setFunc)
+	void UIElementTemplates::HierarchyTreeInput(GameScene& scene, std::function<void(Hierarchy::Tree&)> setFunc) const
 	{
 		UIAutomaticListActor& treesList = TemplateParent.CreateChild<UIAutomaticListActor>("HierarchyTreesList");
-		HierarchyTreeInput(treesList, scene, setFunc);
+		HierarchyTreeInput(treesList, scene, std::move(setFunc));
 
 		treesList.Refresh();
 	}
 
-	void UIElementTemplates::HierarchyTreeInput(GameManager& gameHandle, std::function<void(Hierarchy::Tree&)> setFunc)
+	void UIElementTemplates::HierarchyTreeInput(GameManager& gameHandle, const std::function<void(Hierarchy::Tree&)>&
+	                                            setFunc) const
 	{
 		UIAutomaticListActor& treesList = TemplateParent.CreateChild<UIAutomaticListActor>("HierarchyTreesList");
 		for (GameScene* scene : gameHandle.GetScenes())
@@ -371,10 +376,11 @@ void UIMultipleListActor::NestList(UIListActor& list)
 		treesList.Refresh();
 	}
 
-	void UIElementTemplates::PathInput(std::function<void(const std::string&)> setFunc, std::function<std::string()> getFunc, std::vector<const char*> extensions)
+	void UIElementTemplates::PathInput(std::function<void(const std::string&)> setFunc, std::function<std::string()> getFunc,
+	                                   const std::vector<const char*>& extensions) const
 	{
 		UIInputBoxActor& pathInputBox = TemplateParent.CreateChild<UIInputBoxActor>("PathInputBox", Style.GetLongButtonT());
-		pathInputBox.SetOnInputFunc(setFunc, getFunc);
+		pathInputBox.SetOnInputFunc(std::move(setFunc), std::move(getFunc));
 		pathInputBox.GetContentTextComp()->GetTransform().SetScale(0.5f / Style.LongButtonSize);
 		UIButtonActor& selectFileActor = TemplateParent.CreateChild<UIButtonActor>("SelectFileButton");
 		SharedPtr<AtlasMaterial> moreMat = GameHandle.GetRenderEngineHandle()->FindMaterial<AtlasMaterial>("GEE_E_More_Mat");
@@ -386,13 +392,13 @@ void UIMultipleListActor::NestList(UIListActor& list)
 		selectFileActor.GetTransform()->SetPosition(Vec2f(Math::GetTransformExtent<Math::Extent::Right>(*pathInputBox.GetTransform()) + 1.0f, 0.0f));
 
 		//TextComponent& pathText = selectFileActor.NowyCreateComponent<TextComponent>("Text", Transform(), "", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
-		selectFileActor.SetOnClickFunc([&pathInputBox, extensions]() { const char* path = tinyfd_openFileDialog("Select file", "C:\\", extensions.size(), (extensions.empty()) ? (nullptr) : (&extensions[0]), nullptr, 0); if (path) pathInputBox.PutString(path); });
+		selectFileActor.SetOnClickFunc([&pathInputBox, extensions]() { const char* path = tinyfd_openFileDialog("Select file", "C:\\", static_cast<int>(extensions.size()), (extensions.empty()) ? (nullptr) : (extensions.data()), nullptr, 0); if (path) pathInputBox.PutString(path); });
 	}
 
-	void UIElementTemplates::FolderInput(std::function<void(const std::string&)> setFunc, std::function<std::string()> getFunc, const std::string& defaultPath)
+	void UIElementTemplates::FolderInput(std::function<void(const std::string&)> setFunc, std::function<std::string()> getFunc, const std::string& defaultPath) const
 	{
 		UIInputBoxActor& pathInputBox = TemplateParent.CreateChild<UIInputBoxActor>("PathInputBox", Style.GetLongButtonT());
-		pathInputBox.SetOnInputFunc(setFunc, getFunc);
+		pathInputBox.SetOnInputFunc(std::move(setFunc), std::move(getFunc));
 		pathInputBox.GetContentTextComp()->GetTransform().SetScale(0.5f / Style.LongButtonSize);
 
 		UIButtonActor& selectFileActor = TemplateParent.CreateChild<UIButtonActor>("SelectFolderButton");

@@ -28,10 +28,10 @@
 #ifndef PXTASK_PXTASK_H
 #define PXTASK_PXTASK_H
 
-#include "task/PxTaskDefine.h"
-#include "task/PxTaskManager.h"
-#include "task/PxCpuDispatcher.h"
-#include "foundation/PxAssert.h"
+#include <PhysX/task/PxTaskDefine.h>
+#include <PhysX/task/PxTaskManager.h>
+#include <PhysX/task/PxCpuDispatcher.h>
+#include <PhysX/foundation/PxAssert.h>
 
 namespace physx
 {

@@ -126,7 +126,7 @@ namespace GEE
 
 	unsigned int Framebuffer::GetColorTextureCount() const
 	{
-		return Attachments.size();
+		return static_cast<unsigned int>(Attachments.size());
 	}
 
 	Vec2u GEE_FB::Framebuffer::GetSize() const
@@ -248,7 +248,7 @@ namespace GEE
 		{
 			std::vector<GLenum> attachmentsGL(index + 1, GL_NONE);
 			attachmentsGL[index] = GL_COLOR_ATTACHMENT0 + index;
-			glDrawBuffers(attachmentsGL.size(), &attachmentsGL[0]);
+			glDrawBuffers(static_cast<GLsizei>(attachmentsGL.size()), &attachmentsGL[0]);
 		}
 	}
 
@@ -282,7 +282,7 @@ namespace GEE
 			}
 
 			if (!attachmentsGL.empty())
-				glDrawBuffers(attachmentsGL.size(), &attachmentsGL[0]);
+				glDrawBuffers(static_cast<GLsizei>(attachmentsGL.size()), &attachmentsGL[0]);
 		}
 	}
 

@@ -34,8 +34,8 @@
 @{
 */
 
-#include "foundation/PxMath.h"
-#include "foundation/PxVec3.h"
+#include <PhysX/foundation/PxMath.h>
+#include <PhysX/foundation/PxVec3.h>
 
 #if !PX_DOXYGEN
 namespace physx

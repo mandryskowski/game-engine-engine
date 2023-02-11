@@ -24,7 +24,7 @@
 #include <UI/Font.h>
 #include <scene/Controller.h>
 #include <game/GameScene.h>
-#include <freetype/ft2build.h>
+#include <ft2build.h>
 #include FT_FREETYPE_H
 #include <functional>
 #include <fstream>
@@ -497,7 +497,7 @@ namespace GEE
 			if (mesh->HasBones())
 			{
 				std::cout << " (";
-				for (int i = 0; i < mesh->mNumBones; i++)
+				for (int i = 0; i < static_cast<int>(mesh->mNumBones); i++)
 					std::cout << mesh->mBones[i]->mName.C_Str() << (i == static_cast<int>(mesh->mNumBones) - 1) ? (")") : (", ");
 
 			}
@@ -668,7 +668,7 @@ namespace GEE
 			if (PrimitiveDebugger::bDebugMeshTrees)
 				std::cout << "Znalazlem node " << foundNode->GetCompBaseType().GetName() << ".\n";
 
-			Hierarchy::NodeBase& targetNode = (bCreateNodes) ? (parent->AddChild(foundNode->Copy(parent->GetCompBaseType().ActorRef))) : (*foundNode);
+			Hierarchy::NodeBase& targetNode = (bCreateNodes) ? (parent->AddChild(foundNode->Copy(parent->GetCompBaseType().GetActor()))) : (*foundNode);
 			Hierarchy::Node<ModelComponent>* modelNodeCast = dynamic_cast<Hierarchy::Node<ModelComponent>*>(&targetNode);
 
 			while (input != ":" && input != "," && input != "end")
@@ -693,7 +693,7 @@ namespace GEE
 							if (auto cast = dynamic_cast<Hierarchy::Node<ModelComponent>*>(&node))
 							{
 								std::cout << cast->GetCompT().GetName() << " lolxd " << cast->GetCompT().GetMeshInstanceCount() << "\n";
-								for (int i = 0; i < cast->GetCompT().GetMeshInstanceCount(); i++)
+								for (int i = 0; i < static_cast<int>(cast->GetCompT().GetMeshInstanceCount()); i++)
 								{
 									std::cout << "mat " << cast->GetCompT().GetMeshInstance(i).GetMaterialPtr() << '\n';
 									if (auto material = cast->GetCompT().GetMeshInstance(i).GetMaterialPtr())
@@ -798,7 +798,7 @@ namespace GEE
 	{
 		node.InstantiateToComp(MakeShared<Hierarchy::Instantiation::Data>(const_cast<Hierarchy::Tree&>(tree)), comp);
 
-		for (int i = 0; i < node.GetChildCount(); i++)
+		for (int i = 0; i < static_cast<int>(node.GetChildCount()); i++)
 		{
 			if (!selectedComponents.empty() && std::find(selectedComponents.begin(), selectedComponents.end(), node.GetChild(i)) == selectedComponents.end())
 				continue;
@@ -1165,7 +1165,7 @@ namespace GEE
 	template <class T> T EngineDataLoader::LoadSettingsFromFile(std::string path)
 	{
 		T settings = T();
-		std::fstream file;	//wczytaj plik inicjalizujacy
+		std::fstream file;
 		file.open(path);
 
 		if (!file.good())
@@ -1177,8 +1177,8 @@ namespace GEE
 
 		std::string settingName;
 
-		while (filestr >> settingName)	//wczytuj kolejne wyrazy w pliku inicjalzujacym
-		{								//jesli napotkasz na wyraz, ktory sygnalizuje rodzaj danych to wczytaj te dane (sposob jest rozny w przypadku roznych danych)
+		while (filestr >> settingName)	
+		{								
 			settings.LoadSetting(filestr, settingName);
 		}
 

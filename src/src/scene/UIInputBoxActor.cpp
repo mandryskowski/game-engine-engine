@@ -7,7 +7,7 @@
 
 namespace GEE
 {
-	UIInputBoxActor::UIInputBoxActor(GameScene& scene, Actor* parentActor, const std::string& name, const Transform& transform) :
+	UIInputBoxActor::UIInputBoxActor(GameScene& scene, Actor* parentActor, const String& name, const Transform& transform) :
 		UIActivableButtonActor(scene, parentActor, name, nullptr, nullptr, transform),
 		ValueGetter(nullptr),
 		ContentTextComp(nullptr),
@@ -34,19 +34,19 @@ namespace GEE
 		CaretComponent->OverrideInstancesMaterial(caretMaterial);
 		CaretComponent->SetHide(true);
 
-		CaretAnim.SetOnUpdateFunc([this](float CompType) { return CompType >= 1.0f; });
+		CaretAnim.SetOnUpdateFunc([this](double T) { return T >= 1.0; });
 
 		bDeactivateOnClickingAgain = false;
 		bDeactivateOnPressingEnter = true;
 	}
 
-	UIInputBoxActor::UIInputBoxActor(GameScene& scene, Actor* parentActor, const std::string& name, std::function<void(const std::string&)> inputFunc, std::function<std::string()> valueGetter, const Transform& transform) :
+	UIInputBoxActor::UIInputBoxActor(GameScene& scene, Actor* parentActor, const String& name, std::function<void(const String&)> inputFunc, std::function<String()> valueGetter, const Transform& transform) :
 		UIInputBoxActor(scene, parentActor, name, transform)
 	{
 		SetOnInputFunc(inputFunc, valueGetter);
 	}
 
-	UIInputBoxActor::UIInputBoxActor(GameScene& scene, Actor* parentActor, const std::string& name, std::function<void(float)> inputFunc, std::function<float()> valueGetter, bool fixNumberStr, const Transform& transform) :
+	UIInputBoxActor::UIInputBoxActor(GameScene& scene, Actor* parentActor, const String& name, std::function<void(float)> inputFunc, std::function<float()> valueGetter, bool fixNumberStr, const Transform& transform) :
 		UIInputBoxActor(scene, parentActor, name, transform)
 	{
 		SetOnInputFunc(inputFunc, valueGetter, fixNumberStr);
@@ -63,7 +63,7 @@ namespace GEE
 		CaretAnim(inputBox.CaretAnim),
 		CaretNDCWidth(inputBox.CaretNDCWidth)
 	{
-		CaretAnim.SetOnUpdateFunc([](float CompType) { return CompType >= 1.0f;  });
+		CaretAnim.SetOnUpdateFunc([](double T) { return T >= 1.0;  });
 	}
 
 	/*UIInputBoxActor::UIInputBoxActor(UIInputBoxActor&& inputBox):
@@ -84,10 +84,10 @@ namespace GEE
 		return ContentTextComp;
 	}
 
-	std::string UIInputBoxActor::GetContent()
+	String UIInputBoxActor::GetContent()
 	{
 		if (!ContentTextComp)
-			return std::string();
+			return String();
 
 		if (ValueGetter)
 			ValueGetter();
@@ -95,27 +95,30 @@ namespace GEE
 		return ContentTextComp->GetContent();
 	}
 
-	void UIInputBoxActor::PutString(const std::string& str)
+	void UIInputBoxActor::PutString(const String& str)
 	{
 		if (ContentTextComp)
 		{
 			ContentTextComp->SetContent(str);
-			CaretPosition = (ContentTextComp->GetContent().empty()) ? (0) : (ContentTextComp->GetContent().length());
+			CaretPosition = ContentTextComp->GetContent().empty() ? 0U : static_cast<unsigned int>(ContentTextComp->GetContent().length());
 		}
 		if (OnDeactivationFunc)
 			OnDeactivationFunc();
 	}
 
-	void UIInputBoxActor::SetOnInputFunc(std::function<void(const std::string&)> inputFunc, std::function<std::string()> valueGetter)
+	void UIInputBoxActor::SetOnInputFunc(std::function<void(const String&)> inputFunc, std::function<String()> valueGetter)
 	{
 		if (!ContentTextComp)
 			return;
 
-		SetOnDeactivationFunc([=]() { inputFunc(ContentTextComp->GetContent()); if (ValueGetter) ValueGetter();/*valuegetter*/ });
+		if (inputFunc)
+			SetOnDeactivationFunc([=]() { inputFunc(ContentTextComp->GetContent()); if (ValueGetter) ValueGetter(); });
+		else
+			SetOnDeactivationFunc([=]() { if (ValueGetter) ValueGetter(); });
 
+		auto textConstantSizeCast = dynamic_cast<TextComponent*>(ContentTextComp);
 		if (valueGetter)
 		{
-			auto textConstantSizeCast = dynamic_cast<TextComponent*>(ContentTextComp);
 			ValueGetter = [=]() {
 				ContentTextComp->SetContent(valueGetter());
 				if (textConstantSizeCast)
@@ -125,18 +128,22 @@ namespace GEE
 			ValueGetter();
 		}
 		else
+		{
 			ValueGetter = nullptr;
+			if (textConstantSizeCast)
+				textConstantSizeCast->Unstretch();
+		}
 	}
 
 	void UIInputBoxActor::SetOnInputFunc(std::function<void(float)> inputFunc, std::function<float()> valueGetter, bool fixNumberStr)
 	{
-		std::function<std::string()> valueGetterStr = nullptr;
+		std::function<String()> valueGetterStr = nullptr;
 		if (valueGetter) valueGetterStr = [=]() { return ToStringPrecision(valueGetter()); };
 		if (fixNumberStr && valueGetter)
 		{
 			valueGetterStr = [=]() {
-				std::string str = valueGetterStr();
-				str = str.erase(str.find_last_not_of('0') + 1, std::string::npos);
+				String str = valueGetterStr();
+				str = str.erase(str.find_last_not_of('0') + 1, String::npos);
 				if (str.back() == '.')
 					str = str.substr(0, str.length() - 1);
 
@@ -144,11 +151,11 @@ namespace GEE
 			};
 		}
 
-		std::function<void(const std::string&)> inputFuncStr;
-		if (inputFunc) inputFuncStr = [=](const std::string& content)
+		std::function<void(const String&)> inputFuncStr;
+		if (inputFunc) inputFuncStr = [=](const String& content)
 		{
-			if (content.empty()) return 0.0f;
-			try { float val = std::stof(content); inputFunc(val); }
+			if (content.empty()) return;
+			try { auto val = std::stof(content); inputFunc(val); }
 			catch (std::exception& exception) { std::cout << "ERROR: Std exception: " << exception.what() << '\n'; }
 		};
 
@@ -171,24 +178,14 @@ namespace GEE
 				ValueGetter();
 
 			if (ContentTextComp)
-				SetCaretPosAndUpdateModel(ContentTextComp->GetContent().length());
+				SetCaretPosAndUpdateModel(static_cast<unsigned>(ContentTextComp->GetContent().length()));
 		}
 	}
 
 	void UIInputBoxActor::SetCaretWidthPx(unsigned int pixelWidth)
 	{
 		auto windowData = Scene.GetUIData()->GetWindowData();
-		CaretNDCWidth = (static_cast<float>(pixelWidth) / static_cast<float>(windowData.GetWindowSize().x) / textUtil::ComputeScale(UISpace::Canvas, *GetTransform(), GetCanvasPtr(), &windowData).x);
-
-		/*std::cout << "POP| Calculating caret width.\n";
-		std::cout << "POP| NDC: " << CaretNDCWidth << "\n";
-		std::cout << "POP| NDCWORLD: " << GetTransform()->GetWorldTransform().GetScale2D().x * CaretNDCWidth << "\n";
-		std::cout << "POP| RES: " << Scene.GetUIData()->GetWindowData().GetWindowSize().x << "\n";
-		std::cout << "POP| COMPUTESCALE(WORLD): " << textUtil::ComputeScale(UISpace::World, *GetTransform(), GetCanvasPtr(), &windowData) << "\n";
-		std::cout << "POP| COMPUTESCALE(CANVAS): " << textUtil::ComputeScale(UISpace::Canvas, *GetTransform(), GetCanvasPtr(), &windowData) << "\n";
-		if (GetCanvasPtr()) std::cout << "POP| Canvas view scale: " << GetCanvasPtr()->GetViewT().GetScale2D() << "\n";
-		std::cout << "POP| COMPUTESCALE: " << textUtil::ComputeScale(UISpace::Window, *GetTransform(), GetCanvasPtr(), &windowData) << "\n";*/
-
+		CaretNDCWidth = (static_cast<float>(pixelWidth) / static_cast<float>(windowData.GetWindowSize().x) / TextUtil::ComputeScale(UISpace::Canvas, *GetTransform(), GetCanvasPtr(), &windowData).x);
 	}
 
 	void UIInputBoxActor::UpdateValue()
@@ -197,9 +194,9 @@ namespace GEE
 			ValueGetter();
 	}
 
-	void UIInputBoxActor::Update(float deltaTime)
+	void UIInputBoxActor::Update(Time dt)
 	{
-		UIActivableButtonActor::Update(deltaTime);
+		UIActivableButtonActor::Update(dt);
 
 		UpdateCaretModel(false);
 		// Caret anim
@@ -210,7 +207,7 @@ namespace GEE
 		{
 			if (GetRoot()->GetTransform().GetDirtyFlag(CaretDirtyFlag))
 				UpdateCaretModel(false);
-			if (CaretAnim.UpdateT(deltaTime))
+			if (CaretAnim.UpdateT(dt))
 			{
 				CaretAnim.Reset();
 
@@ -232,7 +229,7 @@ namespace GEE
 		if (!ContentTextComp || !(GetStateBits() & ButtonStateFlags::Active))
 			return;
 
-		std::string content = ContentTextComp->GetContent();
+		String content = ContentTextComp->GetContent();
 
 		NormalizeCaretPosition();
 
@@ -285,7 +282,7 @@ namespace GEE
 					* Even though CaretPosition doesn't change (as the nb of letters before the caret is the same), the actual caret model's position does since letters might have different widths.
 					*/
 
-					SetCaretPosAndUpdateModel((inputRetriever.IsKeyPressed(Key::LeftControl)) ? (GetContentTextComp()->GetContent().length()) : (CaretPosition));
+					SetCaretPosAndUpdateModel((inputRetriever.IsKeyPressed(Key::LeftControl)) ? (static_cast<unsigned>(GetContentTextComp()->GetContent().length())) : (CaretPosition));
 				}
 				break;
 
@@ -311,7 +308,7 @@ namespace GEE
 				if (keyEv.GetModifierBits() & KeyModifierFlags::Control && key == Key::RightArrow)
 				{
 					case Key::End:
-					SetCaretPosAndUpdateModel(GetContentTextComp()->GetContent().length());
+					SetCaretPosAndUpdateModel(static_cast<unsigned>(GetContentTextComp()->GetContent().length()));
 					break;
 				}
 				else if (CaretPosition != GetContentTextComp()->GetContent().length())
@@ -325,7 +322,7 @@ namespace GEE
 				{
 					auto clipboardContent = glfwGetClipboardString(Scene.GetUIData()->GetWindow());
 					ContentTextComp->SetContent(content.insert(CaretPosition, clipboardContent));
-					SetCaretPosAndUpdateModel(CaretPosition + strlen(clipboardContent));
+					SetCaretPosAndUpdateModel(CaretPosition + static_cast<unsigned>(strlen(clipboardContent)));
 				}
 				break;
 			};
@@ -348,10 +345,11 @@ namespace GEE
 
 		// Position the caret
 		Vec2f mousePos = static_cast<Vec2f>(Scene.GetUIData()->GetWindowData().GetMousePositionNDC());
-		mousePos = Vec2f(textUtil::OwnedToSpaceTransform(UISpace::Canvas, *GetTransform(), GetCanvasPtr(), &Scene.GetUIData()->GetWindowData()).GetInverse().GetMatrix() * Vec4f(mousePos, 0.0f, 1.0f));
+		auto windowData = Scene.GetUIData()->GetWindowData();
+		mousePos = Vec2f(TextUtil::OwnedToSpaceTransform(UISpace::Canvas, *GetTransform(), GetCanvasPtr(), &windowData).GetInverse().GetMatrix() * Vec4f(mousePos, 0.0f, 1.0f));
 
 		Transform contentTextT = GetContentTextComp()->GetCorrectedTransform(false);
-		auto textBB = textUtil::ComputeBBox(GetContentTextComp()->GetContent(), contentTextT, *GetContentTextComp()->GetFontVariation(), GetContentTextComp()->GetAlignment());
+		auto textBB = TextUtil::ComputeBBox(GetContentTextComp()->GetContent(), contentTextT, *GetContentTextComp()->GetFontVariation(), GetContentTextComp()->GetAlignment());
 		float currPos = textBB.Position.x - textBB.Size.x;
 		auto contentStr = ContentTextComp->GetContent();
 		auto ch = contentStr.begin();
@@ -363,7 +361,7 @@ namespace GEE
 			currPos += advance;
 		}
 
-		SetCaretPosAndUpdateModel(ch - contentStr.begin());
+		SetCaretPosAndUpdateModel(static_cast<unsigned int>(ch - contentStr.begin()));
 	}
 
 	void UIInputBoxActor::OnHover()
@@ -392,7 +390,7 @@ namespace GEE
 			ValueGetter();
 	}
 
-	void UIInputBoxActor::CreateButtonText(const std::string& content)
+	void UIInputBoxActor::CreateButtonText(const String& content)
 	{
 		ContentTextComp = &CreateComponent<ScrollingTextComponent>("ButtonText", Transform(Vec2f(0.0f), Vec2f(1.0f)), content, "", Alignment2D::Center());
 		ContentTextComp->Unstretch();
@@ -406,8 +404,8 @@ namespace GEE
 		NormalizeCaretPosition();
 
 		auto text = GetContentTextComp();
-		auto leftBB = textUtil::ComputeBBox(text->GetContent().substr(0, CaretPosition), text->GetCorrectedTransform(false), *text->GetFontVariation(), text->GetAlignment());
-		auto rightBB = textUtil::ComputeBBox(text->GetContent().substr(CaretPosition), text->GetCorrectedTransform(false), *text->GetFontVariation(), text->GetAlignment());
+		auto leftBB = TextUtil::ComputeBBox(text->GetContent().substr(0, CaretPosition), text->GetCorrectedTransform(false), *text->GetFontVariation(), text->GetAlignment());
+		auto rightBB = TextUtil::ComputeBBox(text->GetContent().substr(CaretPosition), text->GetCorrectedTransform(false), *text->GetFontVariation(), text->GetAlignment());
 
 
 		if (text->GetAlignment().GetHorizontal() == Alignment::Left)

@@ -34,9 +34,9 @@
 @{
 */
 
-#include "foundation/Px.h"
-#include "foundation/PxIntrinsics.h"
-#include "foundation/PxSimpleTypes.h"
+#include <PhysX/foundation/Px.h>
+#include <PhysX/foundation/PxIntrinsics.h>
+#include <PhysX/foundation/PxSimpleTypes.h>
 
 #if !PX_DOXYGEN
 namespace physx

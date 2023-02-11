@@ -16,7 +16,7 @@
 #include <scene/Controller.h>
 #include <input/InputDevicesStateRetriever.h>
 #include <math/Box.h>
-#include <whereami/whereami.h>
+#include <whereami.h>
 #include <sstream>
 #include <fstream>
 #include <thread>
@@ -35,9 +35,6 @@
 
 #include <rendering/Renderer.h>
 
-#ifdef GEE_OS_WINDOWS
-#include <Windows.h>
-#endif
 
 namespace GEE
 {
@@ -48,8 +45,8 @@ namespace GEE
 			if (count > 0)
 			{
 				std::cout << "Dropped " << paths[0] << '\n';
-				auto addTree = [](const std::string& path) { EditorHandle->GetActions().PreviewHierarchyTree(*EngineDataLoader::LoadHierarchyTree(*EditorHandle->GetGameHandle()->GetMainScene(), path)); };
-				std::string path = paths[0];
+				auto addTree = [](const String& path) { EditorHandle->GetActions().PreviewHierarchyTree(*EngineDataLoader::LoadHierarchyTree(*EditorHandle->GetGameHandle()->GetMainScene(), path)); };
+				String path = paths[0];
 				GenericUITemplates(*EditorHandle->GetGameHandle()->GetScene("GEE_Editor")).ConfirmationBox([=]() { addTree(EditorHandle->ToRelativePath(path)); }, [=]() {addTree(path); }, "Convert path to relative?");
 			}
 			
@@ -73,7 +70,11 @@ namespace GEE
 				EditorHandle->UpdateEditorSettings();
 			}
 
-			EditorHandle->GetGameHandle()->GetScene("GEE_Editor")->HandleEventAll(Event(EventType::WindowResized));
+			auto scene = EditorHandle->GetGameHandle()->GetScene("GEE_Editor");
+			if (!scene)
+				scene = EditorHandle->GetGameHandle()->GetActiveScene();
+
+			scene->HandleEventAll(Event(EventType::WindowResized));
 			std::cout << "New res " << EditorHandle->GetGameHandle()->GetGameSettings()->Video.Resolution << '\n';
 		}
 
@@ -90,7 +91,7 @@ namespace GEE
 		{
 			{
 				int length = wai_getExecutablePath(nullptr, 0, nullptr), dirnameLength = 0;
-				std::string path;
+				String path;
 				path.resize(length);
 				wai_getExecutablePath(&path[0], length, &dirnameLength);
 				ExecutableFolder = path.substr(0, dirnameLength);
@@ -106,7 +107,7 @@ namespace GEE
 			Init(window, windowSize);
 		}
 
-		bool GameEngineEngineEditor::GameLoopIteration(float timeStep, float deltaTime)
+		bool GameEngineEngineEditor::GameLoopIteration(Time timeStep, Time deltaTime)
 		{
 			bool returnVal = Game::GameLoopIteration(timeStep, deltaTime);
 
@@ -145,12 +146,6 @@ namespace GEE
 			return *Actions;
 		}
 
-		template <typename T>
-		void AddActorOption(PopupDescription desc)
-		{
-			desc.AddOption(GEERegisteredActor<T>::GetName(), []() { GEERegisteredActor<T>::InstantiateDefault(); });
-		}
-
 		void GameEngineEngineEditor::GenerateActorList(PopupDescription desc, std::function<void(Actor&)> func)
 		{
 			auto& actor = *Actions->GetContextActor();
@@ -160,7 +155,7 @@ namespace GEE
 			desc.AddOption("FPS Controller", [&, func]() { func(actor.CreateChild<FPSController>("A FPSController")); }, IconData(RenderEng, "Assets/Editor/component_icon.png", Vec2i(3, 1), 0.0f));
 			desc.AddOption("Shooting Controller", [&, func]() { func(actor.CreateChild<ShootingController>("A ShootingController")); }, IconData(RenderEng, "Assets/Editor/component_icon.png", Vec2i(3, 1), 0.0f));
 			desc.AddOption("Gun Actor", [&, func]() { func(actor.CreateChild<GunActor>("A GunActor")); }, IconData(RenderEng, "Assets/Editor/component_icon.png", Vec2i(3, 1), 0.0f));
-			desc.AddOption("Cue Controller", [&, func]() { func(actor.CreateChild<CueController>("A CueController")); }, IconData(RenderEng, "Assets/Editor/component_icon.png", Vec2i(3, 1), 0.0f));
+			//desc.AddOption("Cue Controller", [&, func]() { func(actor.CreateChild<CueController>("A CueController")); }, IconData(RenderEng, "Assets/Editor/component_icon.png", Vec2i(3, 1), 0.0f));
 		}
 
 		void GameEngineEngineEditor::RequestPopupMenu(const Vec2f& posWindowSpace, SystemWindow& relativeWindow, std::function<void(PopupDescription)> creationFunc)
@@ -173,10 +168,10 @@ namespace GEE
 			};
 		}
 
-		std::string GameEngineEngineEditor::ToRelativePath(const std::string& filepath)
+		String GameEngineEngineEditor::ToRelativePath(const String& filepath)
 		{
 			std::cout << "Executable folder: " << ExecutableFolder << '\n';
-			if (auto foundPos = filepath.find(ExecutableFolder); foundPos != std::string::npos)
+			if (auto foundPos = filepath.find(ExecutableFolder); foundPos != String::npos)
 				return filepath.substr(foundPos + ExecutableFolder.length() + 1);
 
 			if (EditorScene)
@@ -279,7 +274,7 @@ namespace GEE
 			glfwWindowHint(GLFW_RESIZABLE, false);
 			glfwWindowHint(GLFW_DECORATED, false);
 			SystemWindow* window = glfwCreateWindow(240, 30, "popup", nullptr, GameWindow);
-			glfwSetWindowPos(window, posScreenSpace.x, posScreenSpace.y);
+			glfwSetWindowPos(window, Math::Round(posScreenSpace.x), Math::Round(posScreenSpace.y));
 
 			glfwWindowHint(GLFW_RESIZABLE, true);
 			glfwWindowHint(GLFW_DECORATED, true);
@@ -300,7 +295,7 @@ namespace GEE
 			{
 				auto settings = MakeShared<GameSettings::VideoSettings>();
 				auto& tbCol = RenderEng.AddRenderTbCollection(MakeUnique<RenderToolboxCollection>("PopupTbCol", *settings, RenderEng), false);
-				OpenPopups.push_back(EditorPopup(IDSystem<EditorPopup>::GenerateID(), *window, popupScene, tbCol, settings));
+				OpenPopups.push_back(EditorPopup(static_cast<unsigned>(IDSystem<EditorPopup>::GenerateID()), *window, popupScene, tbCol, settings));
 
 			}
 			auto& editorPopup = OpenPopups.back();
@@ -455,7 +450,7 @@ namespace GEE
 				selectPreviewButton.SetOnClickFunc([&, selectPreviewButtonText]() {
 						PopupDescription desc = CreatePopupMenu(editorScene.GetUIData()->GetWindowData().GetMousePositionNDC(), *editorScene.GetUIData()->GetWindow());
 
-						auto addPreview = [&, selectPreviewButtonText](PopupDescription previewDesc, const std::string& name, std::function<Texture()> getTextureToPreview, float iconAtlasID) {
+						auto addPreview = [&, selectPreviewButtonText](PopupDescription previewDesc, const String& name, std::function<Texture()> getTextureToPreview, float iconAtlasID) {
 							previewDesc.AddOption(name, [&, getTextureToPreview, selectPreviewButtonText, name]() {
 								Material* previewMaterial = RenderEng.FindMaterial("GEE_3D_SCENE_PREVIEW_MATERIAL").get();
 								previewMaterial->Textures.clear();
@@ -551,7 +546,7 @@ namespace GEE
 
 					for (auto& it : RenderEng.Materials)
 					{
-						std::string name = (it) ? (it->GetLocalization().GetFullStr()) : ("NULLPTR???");
+						String name = (it) ? (it->GetLocalization().GetFullStr()) : ("NULLPTR???");
 						UIButtonActor& button = list.CreateChild<UIButtonActor>(name + "Button", name, [this, &window, &it, name]() { UIWindowActor& matWindow = window.CreateChildCanvas<UIWindowActor>(name + "MaterialWindow"); EditorDescriptionBuilder descBuilder(*this, matWindow, matWindow); it->GetEditorDescription(descBuilder); matWindow.AutoClampView(); matWindow.RefreshFieldsList(); });
 						std::cout << name << '\n';
 					}
@@ -582,7 +577,7 @@ namespace GEE
 						UIInputBoxActor& gammaInputBox = videoCat.AddField("Gamma").CreateChild<UIInputBoxActor>("GammaInputBox");
 						gammaInputBox.SetOnInputFunc([this](float val) { GetGameSettings()->Video.MonitorGamma = val; UpdateGameSettings(); }, [this]()->float { return GetGameSettings()->Video.MonitorGamma; });
 
-						videoCat.AddField("Default font").GetTemplates().PathInput([this](const std::string& path) { Fonts.push_back(MakeShared<Font>(*DefaultFont)); *DefaultFont = *EngineDataLoader::LoadFont(*this, path); }, [this]() {return GetDefaultFont()->GetVariation(FontStyle::Regular)->GetPath(); }, { "*.ttf", "*.otf" });
+						videoCat.AddField("Default font").GetTemplates().PathInput([this](const String& path) { Fonts.push_back(MakeShared<Font>(*DefaultFont)); *DefaultFont = *EngineDataLoader::LoadFont(*this, path); }, [this]() {return GetDefaultFont()->GetVariation(FontStyle::Regular)->GetPath(); }, { "*.ttf", "*.otf" });
 						videoCat.AddField("Rebuild light probes").CreateChild<UIButtonActor>("RebuildProbesButton", "Rebuild", [this]() { SceneRenderer(RenderEng, 0).PreRenderLoopPassStatic(0, GetSceneRenderDatas()); });
 
 						{
@@ -596,7 +591,7 @@ namespace GEE
 
 						{
 							auto& shadowSelectionList = videoCat.AddField("Shadow quality").CreateChild<UIAutomaticListActor>("ShadowSelectionList", Vec3f(2.0f, 0.0f, 0.0f));
-							std::function<void(SettingLevel, const std::string&)> addShadowButton = [this, &shadowSelectionList](SettingLevel setting, const std::string& caption)
+							std::function<void(SettingLevel, const String&)> addShadowButton = [this, &shadowSelectionList](SettingLevel setting, const String& caption)
 							{
 								shadowSelectionList.CreateChild<UIActivableButtonActor>("Button" + caption, caption,
 									[=]()
@@ -612,15 +607,15 @@ namespace GEE
 
 							shadowSelectionList.Refresh();
 
-							videoCat.AddField("Max 2D shadow lights").CreateChild<UIInputBoxActor>("Shadow2DCount", [this](float count) { GetGameSettings()->Video.Max2DShadows = count; UpdateGameSettings(); }, [this]() { return GetGameSettings()->Video.Max2DShadows; });
-							videoCat.AddField("Max 3D shadow lights").CreateChild<UIInputBoxActor>("Shadow3DCount", [this](float count) { GetGameSettings()->Video.Max3DShadows = count; UpdateGameSettings(); }, [this]() { return GetGameSettings()->Video.Max3DShadows; });
+							videoCat.AddField("Max 2D shadow lights").CreateChild<UIInputBoxActor>("Shadow2DCount", [this](float count) { GetGameSettings()->Video.Max2DShadows = static_cast<unsigned int>(count); UpdateGameSettings(); }, [this]() { return static_cast<float>(GetGameSettings()->Video.Max2DShadows); });
+							videoCat.AddField("Max 3D shadow lights").CreateChild<UIInputBoxActor>("Shadow3DCount", [this](float count) { GetGameSettings()->Video.Max3DShadows = static_cast<unsigned int>(count); UpdateGameSettings(); }, [this]() { return static_cast<float>(GetGameSettings()->Video.Max3DShadows); });
 						}
 
 						{
 							auto& viewTexField = videoCat.AddField("View texture");
 							SharedPtr<unsigned int> texID = MakeShared<unsigned int>(0);
 
-							viewTexField.CreateChild<UIInputBoxActor>("PreviewTexIDInputBox").SetOnInputFunc([texID](float val) { *texID = val; }, [texID]() { return *texID; });
+							viewTexField.CreateChild<UIInputBoxActor>("PreviewTexIDInputBox").SetOnInputFunc([texID](float val) { *texID = static_cast<unsigned int>(val); }, [texID]() { return static_cast<float>(*texID); });
 							viewTexField.CreateChild<UIButtonActor>("OKButton", "OK", [this, texID, &window]() {
 								if (!glIsTexture(*texID))
 									return;
@@ -636,7 +631,7 @@ namespace GEE
 						}
 
 						auto& ssaoSamplesIB = videoCat.AddField("SSAO Samples").CreateChild<UIInputBoxActor>("SSAOSamplesInputBox");
-						ssaoSamplesIB.SetOnInputFunc([this](float sampleCount) { GetGameSettings()->Video.AmbientOcclusionSamples = sampleCount; UpdateGameSettings(); }, [this]() { return GetGameSettings()->Video.AmbientOcclusionSamples; });
+						ssaoSamplesIB.SetOnInputFunc([this](float sampleCount) { GetGameSettings()->Video.AmbientOcclusionSamples = static_cast<unsigned int>(sampleCount); UpdateGameSettings(); }, [this]() { return static_cast<float>(GetGameSettings()->Video.AmbientOcclusionSamples); });
 
 						videoCat.AddField("Parallax Occlusion Mapping").GetTemplates().TickBox([this](bool val) { GetGameSettings()->Video.POMLevel = (val) ? (SettingLevel::SETTING_LOW) : (SettingLevel::SETTING_NONE); UpdateGameSettings(); }, [this]() { return GetGameSettings()->Video.POMLevel != SettingLevel::SETTING_NONE; });
 					}
@@ -644,6 +639,7 @@ namespace GEE
 					auto& physicsCat = window.AddCategory("Physics");
 					physicsCat.AddField("Connect to PVD").CreateChild<UIButtonActor>("PVDConnectButton", "Connect", [this]() { PhysicsEng.ConnectToPVD(); });
 					physicsCat.AddField("Bounce threshold").GetTemplates().SliderRawInterval(0.0f, 2.0f, [this](float threshold) { GetMainScene()->GetPhysicsData()->GetPxScene()->setBounceThresholdVelocity(threshold); }, GetMainScene()->GetPhysicsData()->GetPxScene()->getBounceThresholdVelocity());
+					physicsCat.AddField("Gravity").GetTemplates().SliderRawInterval(0.0f, 20.0f, [this](float threshold) { GetMainScene()->GetPhysicsData()->GetPxScene()->setGravity(physx::PxVec3(0, -threshold, 0)); }, -GetMainScene()->GetPhysicsData()->GetPxScene()->getGravity().y);
 
 					window.FieldsList->Refresh();
 					window.AutoClampView();
@@ -731,19 +727,19 @@ namespace GEE
 				editorScene.CreateActorAtRoot<UIButtonActor>("Save as button", "Save as",
 				[this, &editorScene]() {
 					UIWindowActor& window = editorScene.CreateActorAtRoot<UIWindowActor>("Save as window");
-					SharedPtr<std::string> folderpath = MakeUnique<std::string>(ExecutableFolder + "/");
-					if (auto foundSlash = GetProjectFilepath().find_last_of(static_cast<char>(92)); foundSlash != std::string::npos)
+					SharedPtr<String> folderpath = MakeUnique<String>(ExecutableFolder + "/");
+					if (auto foundSlash = GetProjectFilepath().find_last_of(static_cast<char>(92)); foundSlash != String::npos)
 						*folderpath = GetProjectFilepath().substr(0, foundSlash);
-					SharedPtr<std::string> projectName = MakeUnique<std::string>(ProjectName);
+					SharedPtr<String> projectName = MakeUnique<String>(ProjectName);
 
-					window.AddField("Project folder").GetTemplates().FolderInput([folderpath](const std::string& str) { *folderpath = str; }, [folderpath]() { return *folderpath; }, ExecutableFolder + std::string(1, char(92)) + *folderpath);
+					window.AddField("Project folder").GetTemplates().FolderInput([folderpath](const String& str) { *folderpath = str; }, [folderpath]() { return *folderpath; }, ExecutableFolder + String(1, char(92)) + *folderpath);
 
 					UIInputBoxActor& projectNameInputBox = window.AddField("Project name").CreateChild<UIInputBoxActor>("ProjectNameInputBox", Transform(Vec2f(2.0f, 0.0f), Vec2f(3.0f, 1.0f)));
 					//UIInputBoxActor& projectNameInputBox
 
-					projectNameInputBox.SetOnInputFunc([projectName](const std::string& input) { *projectName = input; }, [projectName]() { return *projectName; });
+					projectNameInputBox.SetOnInputFunc([projectName](const String& input) { *projectName = input; }, [projectName]() { return *projectName; });
 
-					UIButtonActor& okButton = window.AddField("").CreateChild<UIButtonActor>("OKButton", "OK", [this, folderpath, projectName, &window]() { window.MarkAsKilled(); std::string saveAsPath = *folderpath + "/" + *projectName + ".json"; SetProjectFilepath(saveAsPath); SaveProject(saveAsPath); });
+					UIButtonActor& okButton = window.AddField("").CreateChild<UIButtonActor>("OKButton", "OK", [this, folderpath, projectName, &window]() { window.MarkAsKilled(); String saveAsPath = *folderpath + "/" + *projectName + ".json"; SetProjectFilepath(saveAsPath); SaveProject(saveAsPath); });
 
 					window.RefreshFieldsList();
 					window.AutoClampView();
@@ -791,20 +787,22 @@ namespace GEE
 				TextComponent& engineTitleTextComp = engineTitleActor.CreateComponent<TextComponent>("EngineTitleTextComp", Transform(), "Game Engine Engine", "", Alignment2D::Center());
 				engineTitleTextComp.SetFontStyle(FontStyle::Bold);
 				engineTitleTextComp.SetTransform(Transform(Vec2f(0.0f), Vec2f(0.09f)));
+				std::cout << "title comp transform ptr: " << &engineTitleTextComp.GetTransform() << '\n';
 
 				SharedPtr<Material> titleMaterial = MakeShared<Material>("GEE_Engine_Title");
 				RenderEng.AddMaterial(titleMaterial);
 				titleMaterial->SetColor(hsvToRgb(Vec3f(300.0f, 1.0f, 1.0f)));
 
 				Interpolation titleColorInterpolation(0.0f, 10.0f, InterpolationType::Linear, false, AnimBehaviour::STOP, AnimBehaviour::REPEAT);
-				titleColorInterpolation.SetOnUpdateFunc([this, titleMaterial](float CompType) -> bool
+				titleColorInterpolation.SetOnUpdateFunc([this, titleMaterial](Time time) -> bool
 				{
-					titleMaterial->SetColor(hsvToRgb(Vec3f(CompType * 360.0f, 0.6f, 0.6f)));
+					titleMaterial->SetColor(hsvToRgb(Vec3f(static_cast<float>(time * 360.0), 0.6f, 0.6f)));
 
 					if (!GetScene("GEE_Main_Menu"))
 						return true;
 					return false;
 				});
+				AddInterpolation(titleColorInterpolation);
 
 				engineTitleTextComp.SetMaterialInst(MaterialInstance(titleMaterial));
 
@@ -822,13 +820,13 @@ namespace GEE
 
 				ProjectFilepath = "Projects/";
 				
-				window.AddField("Project folder").GetTemplates().FolderInput([this](const std::string& str) { ProjectFilepath = str + "/"; }, [this]() { return ProjectFilepath; }, ExecutableFolder);
+				window.AddField("Project folder").GetTemplates().FolderInput([this](const String& str) { ProjectFilepath = str + "/"; }, [this]() { return ProjectFilepath; }, ExecutableFolder);
 
 				UIInputBoxActor& projectNameInputBox = window.AddField("Project name").CreateChild<UIInputBoxActor>("ProjectNameInputBox", Transform(Vec2f(2.0f, 0.0f), Vec2f(3.0f, 1.0f)));
 				//UIInputBoxActor& projectNameInputBox
 
 				ProjectName = "Project1";
-				projectNameInputBox.SetOnInputFunc([this](const std::string& input) { ProjectName = input; }, [this]() { return ProjectName; });
+				projectNameInputBox.SetOnInputFunc([this](const String& input) { ProjectName = input; }, [this]() { return ProjectName; });
 
 				UIButtonActor& okButton = window.AddField("").CreateChild<UIButtonActor>("OKButton", "OK", [this, &window]() { window.MarkAsKilled(); NewProject(ProjectFilepath + ProjectName + ".json"); });
 
@@ -842,7 +840,7 @@ namespace GEE
 				window.SetTransform(Transform(Vec2f(0.0f), Vec2f(0.5f)));
 
 
-				window.AddField("Project filepath").GetTemplates().PathInput([this](const std::string& filepath) { ProjectFilepath = ToRelativePath(filepath);  extractDirectoryAndFilename(filepath, ProjectName, std::string()); }, [this]() { return ProjectFilepath; }, { "*.json", "*.geeproject", "*.geeprojectold" });
+				window.AddField("Project filepath").GetTemplates().PathInput([this](const String& filepath) { ProjectFilepath = ToRelativePath(filepath);  extractDirectoryAndFilename(filepath, &ProjectName); }, [this]() { return ProjectFilepath; }, { "*.json", "*.geeproject", "*.geeprojectold" });
 
 				UIButtonActor& okButton = window.AddField("").CreateChild<UIButtonActor>("OKButton", "OK", [this, &window]() { window.MarkAsKilled(); LoadProject(ProjectFilepath); });
 
@@ -853,8 +851,8 @@ namespace GEE
 
 			{
 				std::ifstream recentProjectsFile("recent.txt");
-				std::vector <std::string> filepaths;
-				std::string line;
+				std::vector <String> filepaths;
+				String line;
 				while (std::getline(recentProjectsFile, line))
 				{
 					if (!line.empty())
@@ -866,7 +864,7 @@ namespace GEE
 				{
 					UIActorDefault& recentProjectsActor = mainMenuScene.CreateActorAtRoot<UIActorDefault>("Recent", Transform(Vec2f(0.0f, -0.5f), Vec2f(0.1f)));
 					recentProjectsActor.CreateComponent<TextComponent>("RecentsText", Transform(Vec2f(0.0f, 1.6f), Vec2f(0.5f)), "Recent projects", "", Alignment2D::Center()).SetFontStyle(FontStyle::Bold);
-					UIElementTemplates(recentProjectsActor).ListSelection<std::string>(filepaths.begin(), filepaths.end(), [this](UIAutomaticListActor& listActor, std::string& filepath) { listActor.CreateChild<UIButtonActor>("RecentFilepathButton", getFileName(filepath), [this, filepath]() { LoadProject(filepath); }, Transform(Vec2f(0.0f), Vec2f(9.0f, 1.0f))).GetRoot(); });
+					UIElementTemplates(recentProjectsActor).ListSelection<String>(filepaths.begin(), filepaths.end(), [this](UIAutomaticListActor& listActor, String& filepath) { listActor.CreateChild<UIButtonActor>("RecentFilepathButton", getFileName(filepath, false), [this, filepath]() { LoadProject(filepath); }, Transform(Vec2f(0.0f), Vec2f(9.0f, 1.0f))).GetRoot(); });
 				}
 			}
 
@@ -878,7 +876,7 @@ namespace GEE
 			mainMenuScene.MarkAsStarted();
 		}
 
-		void GameEngineEngineEditor::Update(float deltaTime)
+		void GameEngineEngineEditor::Update(Time deltaTime)
 		{
 			if (GameController && GameController->IsBeingKilled())
 				GameController = nullptr;
@@ -1021,7 +1019,7 @@ namespace GEE
 			EditorRenderer(*this, EditorSettings, *ViewportRenderCollection, *HUDRenderCollection, *GameWindow).RenderPass(GetMainScene(), EditorScene, GetScene("GEE_Main_Menu"), GetScene("GEE_Mesh_Preview_Scene"));
 		}
 
-		void GameEngineEngineEditor::NewProject(const std::string& filepath)
+		void GameEngineEngineEditor::NewProject(const String& filepath)
 		{
 			LoadProject(filepath);
 
@@ -1037,7 +1035,7 @@ namespace GEE
 			startupInfo.cb = sizeof(startupInfo);
 			ZeroMemory(&processInformation, sizeof(processInformation));
 
-			std::string path;// = "C:/Program Files/Microsoft Visual Studio/2022/Community/Common7/IDE/devenv.exe";
+			String path;// = "C:/Program Files/Microsoft Visual Studio/2022/Community/Common7/IDE/devenv.exe";
 
 			if (!path.empty())
 				CreateProcess(path.c_str(), "", nullptr, nullptr, false, 0, nullptr, nullptr, &startupInfo, &processInformation);
@@ -1051,7 +1049,7 @@ namespace GEE
 			#endif	//GEE_OS_WINDOWS*/
 		}
 
-		void GameEngineEngineEditor::LoadProject(const std::string& filepath)
+		void GameEngineEngineEditor::LoadProject(const String& filepath)
 		{
 			SetProjectFilepath(filepath);
 
@@ -1091,7 +1089,7 @@ namespace GEE
 			glfwRequestWindowAttention(GameWindow);
 		}
 
-		void GameEngineEngineEditor::SaveProject(std::string filepath)
+		void GameEngineEngineEditor::SaveProject(String filepath)
 		{
 			if (filepath.empty())
 				filepath = ProjectFilepath;
@@ -1140,7 +1138,7 @@ namespace GEE
 			Profiler.StopAndSaveToFile(GetProgramRuntime());
 		}
 
-		void GameEngineEngineEditor::SetProjectFilepath(const std::string& filepath)
+		void GameEngineEngineEditor::SetProjectFilepath(const String& filepath)
 		{
 			ProjectFilepath = filepath;
 			glfwSetWindowTitle(GameWindow, filepath.c_str());
@@ -1153,11 +1151,11 @@ namespace GEE
 
 		void GameEngineEngineEditor::UpdateRecentProjects()
 		{
-			std::vector<std::string> filepaths;
+			std::vector<String> filepaths;
 			{
 				std::ifstream recentProjectsInput("recent.txt");
 
-				std::string line;
+				String line;
 				while (std::getline(recentProjectsInput, line) && filepaths.size() < 4)	//do not go past the limit of 4 filepaths
 					if (line != ProjectFilepath)
 						filepaths.push_back(line);

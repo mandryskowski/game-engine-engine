@@ -76,7 +76,7 @@ namespace GEE
 	template<typename CompType>
 	unsigned int Hierarchy::Node<CompType>::GetChildCount() const
 	{
-		return Children.size();
+		return static_cast<unsigned int>(Children.size());
 	}
 
 	template<typename CompType>

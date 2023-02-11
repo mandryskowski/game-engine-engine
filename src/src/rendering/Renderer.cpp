@@ -110,10 +110,11 @@ namespace GEE
 			return *RenderHandle.FindShader("Depth");
 		case RendererShaderHint::DepthOnlyLinearized:
 			return *RenderHandle.FindShader("DepthLinearize");
-		case RendererShaderHint::IBL:
-			return Shader();// *RenderHandle.FindShader("CookTorranceIBL");
+		//case RendererShaderHint::IBL:
+			//return *RenderHandle.FindShader("CookTorranceIBL");
+		default:
+			return *RenderHandle.GetSimpleShader();
 		}
-		return Shader();
 	}
 
 	void CubemapRenderer::FromTexture(RenderingContextID contextID, Texture targetTex, Texture tex, Vec2u size, Shader& shader, int* layer, int mipLevel)
@@ -270,7 +271,7 @@ namespace GEE
 			Shader* shader = volume->GetRenderShader(info.GetTbCollection());
 			shader->Use();
 			volume->SetupRenderUniforms(*shader);
-			Volume((volume->GetShape() == EngineBasicShape::Quad) ? (MatrixInfoExt()) : (info), volume->GetShape(), *shader, volume->GetRenderTransform());
+			Volume((volume->GetShape() == EngineBasicShape::Quad) ? (MatrixInfoExt()) : (static_cast<const MatrixInfoExt&>(info)), volume->GetShape(), *shader, volume->GetRenderTransform());
 		}
 
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -334,9 +335,9 @@ namespace GEE
 				Mat4f viewTranslation = glm::translate(Mat4f(1.0f), -lightPos);
 				Mat4f projection = light.GetProjection();
 
-				Impl.GetShader(RendererShaderHint::DepthOnlyLinearized).Uniform1f("far", light.GetFar());
+				Impl.GetShader(RendererShaderHint::DepthOnlyLinearized).Uniform<float>("far", light.GetFar());
 				Impl.GetShader(RendererShaderHint::DepthOnlyLinearized).Uniform<float>("lightBias", light.GetShadowBias());
-				Impl.GetShader(RendererShaderHint::DepthOnlyLinearized).Uniform3fv("lightPos", lightPos);
+				Impl.GetShader(RendererShaderHint::DepthOnlyLinearized).Uniform<Vec3f>("lightPos", lightPos);
 
 				int cubemapFirst = light.GetShadowMapNr() * 6;
 
@@ -386,7 +387,7 @@ namespace GEE
 		//std::cout << "Wyczyscilem sobie " << timeSum * 1000.0f << "ms.\n";
 	}
 
-	void SceneRenderer::PreRenderLoopPassStatic(RenderingContextID contextID, std::vector<GameSceneRenderData*>& renderDatas)
+	void SceneRenderer::PreRenderLoopPassStatic(RenderingContextID contextID, std::vector<GameSceneRenderData*> renderDatas)
 	{
 		std::cout << "(((((( scene render datas: " << renderDatas.size() << "\n";
 		for (int sceneIndex = 0; sceneIndex < static_cast<int>(renderDatas.size()); sceneIndex++)
@@ -454,7 +455,7 @@ namespace GEE
 
 				Shader* gShader = deferredTb->GeometryShader;
 				gShader->Use();
-				gShader->Uniform3fv("camPos", info.GetCamPosition());
+				gShader->Uniform<Vec3f>("camPos", info.GetCamPosition());
 
 				RawRender(info, *gShader);
 
@@ -499,12 +500,12 @@ namespace GEE
 				{
 					LightProbeComponent* probe = sceneRenderData.LightProbes[i];
 					Shader* shader = probe->GetRenderShader(tbCollection);
-					shader->Uniform1f("lightProbes[" + std::to_string(i) + "].intensity", probe->GetProbeIntensity());
+					shader->Uniform<float>("lightProbes[" + std::to_string(i) + "].intensity", probe->GetProbeIntensity());
 
 					if (probe->GetShape() == EngineBasicShape::Quad)
 						continue;
 
-					shader->Uniform3fv("lightProbes[" + std::to_string(i) + "].position", probe->GetTransform().GetWorldTransform().GetPos());
+					shader->Uniform<Vec3f>("lightProbes[" + std::to_string(i) + "].position", probe->GetTransform().GetWorldTransform().GetPos());
 				}
 				
 				auto probeVolumes = sceneRenderData.GetLightProbeVolumes();
@@ -567,7 +568,7 @@ namespace GEE
 			//sceneRenderData->ProbeTexArrays->PrefilterMapArr.Bind(0);
 			//LightProbes[1]->EnvironmentMap.Bind(0);
 			Impl.RenderHandle.FindShader("Cubemap")->Use();
-			Impl.RenderHandle.FindShader("Cubemap")->Uniform1f("mipLevel", (float)std::fmod(glfwGetTime(), 4.0));
+			Impl.RenderHandle.FindShader("Cubemap")->Uniform<float>("mipLevel", (float)std::fmod(glfwGetTime(), 4.0));
 
 
 			Renderer(Impl.RenderHandle, &MainFramebuffer).StaticMeshInstances(info, { Impl.GetBasicShapeMesh(EngineBasicShape::Cube) }, Transform(), *Impl.RenderHandle.FindShader("Cubemap"));
@@ -595,8 +596,8 @@ namespace GEE
 		
 		Shader& defaultForwardShader = Impl.GetShader(RendererShaderHint::DefaultForward);
 		defaultForwardShader.Use();
-		defaultForwardShader.Uniform2fv("atlasData", Vec2f(0.0f));
-		defaultForwardShader.Uniform2fv("atlasTexOffset", Vec2f(0.0f));
+		defaultForwardShader.Uniform<Vec2f>("atlasData", Vec2f(0.0f));
+		defaultForwardShader.Uniform<Vec2f>("atlasTexOffset", Vec2f(0.0f));
 
 
 		info.SetMainPass(false);
@@ -605,8 +606,8 @@ namespace GEE
 		glDisable(GL_DEPTH_TEST);
 		glDisable(GL_BLEND);
 
-		if (renderIconsFunc)
-			;// renderIconsFunc(MainFramebuffer);
+		//if (renderIconsFunc)
+			// renderIconsFunc(MainFramebuffer);
 
 		/*if (Component* selectedComponent = dynamic_cast<Editor::EditorManager*>()->GetSelectedComponent(); selectedComponent && selectedComponent->GetScene().GetRenderData() == sceneRenderData)
 			OutlineRenderer(Impl.RenderHandle, info.GetContextID()).RenderOutlineSilhouette(info, dynamic_cast<Editor::EditorManager*>(GameHandle)->GetSelectedComponent(), MainFramebuffer);
@@ -616,8 +617,8 @@ namespace GEE
 
 		////////////////////4. Postprocessing pass (Blur + Tonemapping & Gamma Correction)
 
-		PostprocessRenderer(Impl.RenderHandle, target).Render(info.GetContextID(), tbCollection, &viewport, MainFramebuffer.GetColorTexture(0), (settings.bBloom) ? (MainFramebuffer.GetColorTexture(1)) : (Texture()),
-			MainFramebuffer.GetAnyDepthAttachment(), (settings.IsVelocityBufferNeeded()) ? (MainFramebuffer.GetAttachment("velocityTex")) : (Texture()), renderIconsFunc);
+		PostprocessRenderer(Impl.RenderHandle, target).Render(info.GetContextID(), tbCollection, &viewport, MainFramebuffer.GetColorTexture(0), (settings.bBloom) ? (static_cast<Texture>(MainFramebuffer.GetColorTexture(1))) : (Texture()),
+			MainFramebuffer.GetAnyDepthAttachment(), (settings.IsVelocityBufferNeeded()) ? (static_cast<Texture>(MainFramebuffer.GetAttachment("velocityTex"))) : (Texture()), renderIconsFunc);
 
 	//	PreviousFrameView = currentFrameView;										AAAAAAAAAAA SMAA NAPRAW
 	}
@@ -703,7 +704,7 @@ namespace GEE
 				const Texture& bindTex = (i == 0) ? (tex) : static_cast<Texture>(tb.BlurFramebuffers[!horizontal]->GetColorTexture(0));
 				bindTex.Bind();
 			}
-			tb.GaussianBlurShader->Uniform1i("horizontal", horizontal);
+			tb.GaussianBlurShader->Uniform<int>("horizontal", horizontal);
 			ppTb.RenderFullscreenQuad(tb.GaussianBlurShader, false);
 
 			horizontal = !horizontal;
@@ -736,8 +737,8 @@ namespace GEE
 		tb->SSAONoiseTex->Bind(2);
 
 		tb->SSAOShader->Use();
-		tb->SSAOShader->UniformMatrix4fv("view", info.GetView());
-		tb->SSAOShader->UniformMatrix4fv("projection", info.GetProjection());
+		tb->SSAOShader->Uniform<Mat4f>("view", info.GetView());
+		tb->SSAOShader->Uniform<Mat4f>("projection", info.GetProjection());
 
 
 		RenderFullscreenQuad(TbInfo<MatrixInfoExt>(info.GetTbCollection(), info), tb->SSAOShader, false);
@@ -776,8 +777,8 @@ namespace GEE
 		glClear(GL_COLOR_BUFFER_BIT);
 
 		tb.SMAAShaders[1]->Use();
-		if (bT2x)
-			;////////////////////////////// tb.SMAAShaders[1]->Uniform4fv("ssIndices", (FrameIndex == 0) ? (Vec4f(1, 1, 1, 0)) : (Vec4f(2, 2, 2, 0))); QAAAAAAAAAAAAAAA NAPRAW TO
+		//if (bT2x)
+			////////////////////////////// tb.SMAAShaders[1]->Uniform<Vec4f>("ssIndices", (FrameIndex == 0) ? (Vec4f(1, 1, 1, 0)) : (Vec4f(2, 2, 2, 0))); QAAAAAAAAAAAAAAA NAPRAW TO
 
 		tb.SMAAFb->GetColorTexture(0).Bind(0);	//bind edges texture to slot 0
 		tb.SMAAAreaTex->Bind(1);
@@ -851,7 +852,7 @@ namespace GEE
 			blurTex.Bind(1);
 		else
 			Texture().Bind(1);
-		tb.GetTb().TonemapGammaShader->Uniform1i("HDRbuffer", 0);
+		tb.GetTb().TonemapGammaShader->Uniform<int>("HDRbuffer", 0);
 
 		tb.RenderFullscreenQuad(tb.GetTb().TonemapGammaShader);
 
@@ -906,7 +907,7 @@ namespace GEE
 	{
 		RenderFullscreenQuad(TbInfo<MatrixInfoExt>(tbCollection, MatrixInfoExt(contextID)), shader, useShader);
 	}
-	void PostprocessRenderer::RenderFullscreenQuad(TbInfo<MatrixInfoExt>& info, Shader* shader, bool useShader)
+	void PostprocessRenderer::RenderFullscreenQuad(const TbInfo<MatrixInfoExt>& info, Shader* shader, bool useShader)
 	{
 		if (!shader) shader = Impl.RenderHandle.FindShader("Quad");
 		if (useShader)	shader->Use();
@@ -1013,7 +1014,7 @@ namespace GEE
 			{
 				handledShader = true;
 
-				shader.Uniform1i("boneIDOffset", skelInfo.GetBoneIDOffset());
+				shader.Uniform<int>("boneIDOffset", skelInfo.GetBoneIDOffset());
 
 				Mat4f modelMat = transform.GetWorldTransformMatrix();	//the ComponentTransform's world transform is cached
 
@@ -1023,7 +1024,7 @@ namespace GEE
 			if (skelInfo.GetBatchPtr() !=  Impl.RenderHandle.GetBoundSkeletonBatch())
 				Impl.RenderHandle.BindSkeletonBatch(skelInfo.GetBatchPtr());
 
-			shader.Uniform1i("boneIDOffset", skelInfo.GetBoneIDOffset());
+			shader.Uniform<int>("boneIDOffset", skelInfo.GetBoneIDOffset());
 
 			//if (BindingsGL::BoundMesh != &mesh || i == 0)
 			{
@@ -1064,7 +1065,7 @@ namespace GEE
 	void PhysicsDebugRenderer::DebugRender(Physics::GameScenePhysicsData& scenePhysicsData, SceneMatrixInfo& info)
 	{
 		using namespace Physics::Util;
-		const physx::PxRenderBuffer& rb = scenePhysicsData.PhysXScene->getRenderBuffer();
+		const physx::PxRenderBuffer& rb = scenePhysicsData.GetPxScene()->getRenderBuffer();
 
 		std::vector<std::array<Vec3f, 2>> verts;
 		int sizeSum = rb.getNbPoints() + rb.getNbLines() * 2 + rb.getNbTriangles() * 3;
@@ -1123,8 +1124,8 @@ namespace GEE
 	{
 		Shader* debugShader = Impl.RenderHandle.FindShader("Debug");
 		debugShader->Use();
-		debugShader->UniformMatrix4fv("MVP", info.GetVP());
-		debugShader->Uniform3fv("color", color);
+		debugShader->Uniform<Mat4f>("MVP", info.GetVP());
+		debugShader->Uniform<Vec3f>("color", color);
 		glDrawArrays(mode, first, count);
 	}
 	void GameRenderer::PrepareFrame(GameScene* mainScene)
@@ -1147,8 +1148,9 @@ namespace GEE
 		if (sceneRenderData->ContainsLights() && (tbCollection.GetVideoSettings().ShadowLevel > SettingLevel::SETTING_MEDIUM || sceneRenderData->HasLightWithoutShadowMap()))
 			ShadowMapRenderer(Impl.RenderHandle).ShadowMaps(contextID, tbCollection, *sceneRenderData, sceneRenderData->Lights);
 	}
-	void TextRenderer::RenderText(const SceneMatrixInfo& infoPreConvert, const Font::Variation& fontVariation, std::string content, Transform t, Vec3f color, Shader* shader, bool convertFromPx, Alignment2D alignment)
+	void TextRenderer::RenderText(const SceneMatrixInfo& infoPreConvert, const Font::Variation& fontVariation, const std::string& content, const std::vector<Transform>& letterTransforms, const Vec3f& color, Shader* shader, bool convertFromPx, Alignment2D alignment)
 	{
+		GEE_CORE_ASSERT(letterTransforms.size() == content.size())
 		if (!Material::ShaderInfo(MaterialShaderHint::None).MatchesRequiredInfo(infoPreConvert.GetRequiredShaderInfo()) && shader && shader->GetName() != "TextShader")	///TODO: CHANGE IT SO TEXTS USE MATERIALS SO THEY CAN BE RENDERED USING DIFFERENT SHADERS!!!!
 			return;
 
@@ -1167,8 +1169,8 @@ namespace GEE
 		}
 
 
-		if (infoPreConvert.GetUseMaterials())	// TODO: Przetestuj - sprawdz czy nic nie zniknelo i czy moge usunac  info.UseMaterials = true;  z linijki 969
-			shader->Uniform4fv("material.color", Vec4f(color, 1.0f));
+		if (infoPreConvert.GetUseMaterials())
+			shader->Uniform<Vec4f>("material.color", Vec4f(color, 1.0f));
 		fontVariation.GetBitmapsArray().Bind(0);
 
 		SceneMatrixInfo info = infoPreConvert;
@@ -1182,59 +1184,26 @@ namespace GEE
 			info.SetVPArtificially(vp);
 		}
 
-		Vec2f halfExtent = t.GetScale();
-		float textHeight = t.GetScale().y;// textUtil::GetTextHeight(content, t.GetScale(), font);
-		//	halfExtent.y *= 1.0f - font.GetBaselineHeight() / 4.0f;	//Account for baseline height (we move the character quads by the height in the next line, so we have to shrink them a bit so that the text fits within halfExtent)
-		t.Move(Vec3f(0.0f, -t.GetScale().y * 2.0f + fontVariation.GetBaselineHeight() * t.GetScale().y * 2.0f, 0.0f));	//align to bottom (-t.ScaleRef.y), move down to the bottom of it (-t.ScaleRef.y), and then move up to baseline height (-t.ScaleRef.y * 2.0f + font.GetBaselineHeight() * halfExtent.y * 2.0f)
-
-		// Align horizontally
-		if (alignment.GetHorizontal() != Alignment::Left)
-		{
-			float textLength = textUtil::GetTextLength(content, t.GetScale(), fontVariation);
-
-			t.Move(t.GetRot() * Vec3f(-textLength / 2.0f * (static_cast<float>(alignment.GetHorizontal()) - static_cast<float>(Alignment::Left)), 0.0f, 0.0f));
-		}
-
-		// Align vertically
-		if (alignment.GetVertical() != Alignment::Bottom)
-			t.Move(t.GetRot() * Vec3f(0.0f, -textHeight * (static_cast<float>(alignment.GetVertical()) - static_cast<float>(Alignment::Bottom)), 0.0f));
-
-		// Account for multiple lines if the text is not aligned to TOP. Each line (excluding the first one, that's why we cancel out the first line) moves the text up by its scale if it is aligned to Bottom and by 1/2 of its scale if it is aligned to CENTER.
-		if (auto firstLineBreak = content.find_first_of('\n'); alignment.GetVertical() != Alignment::Top && firstLineBreak != std::string::npos)
-			;// t.Move(t.GetRot() * Vec3f(0.0f, (textHeight - textUtil::GetTextHeight(content.substr(0, firstLineBreak), t.GetScale(), font)) / 2.0f * (static_cast<float>(Alignment::Top) - static_cast<float>(alignment.GetVertical())), 0.0f));
-
-		//t.Move(Vec3f(0.0f, -64.0f, 0.0f));
-		//t.Move(Vec3f(0.0f, 11.0f, 0.0f) / scale);
-
-		const Mat3f& textRot = t.GetRotationMatrix();
 
 		auto textMaterial = MakeShared<Material>("TextMaterial", *shader);
-
-		Transform initialT = t;
 
 		info.SetUseMaterials(false);	// do not bind materials before rendering quads
 
 		for (int i = 0; i < static_cast<int>(content.length()); i++)
 		{
-			if (content[i] == '\n')
-			{
-				initialT.Move(Vec2f(0.0f, -halfExtent.y * 2.0f));
-				t = initialT;
-				continue;
-			}
-			shader->Uniform1i("material.glyphNr", content[i]);
+			shader->Uniform<int>("material.glyphNr", content[i]);
 			const Character& c = fontVariation.GetCharacter(content[i]);
 
-			t.Move(textRot * Vec3f(c.Bearing * halfExtent, 0.0f) * 2.0f);
-			t.SetScale(halfExtent);
-			//printVector(vp * t.GetWorldTransformMatrix() * Vec4f(0.0f, 0.0f, 0.0f, 1.0f), "Letter " + std::to_string(i));
-
-			Renderer(*this).StaticMeshInstances(info, { MeshInstance(Impl.GetBasicShapeMesh(EngineBasicShape::Quad), textMaterial) }, t, *shader);
-			t.Move(textRot * -Vec3f(c.Bearing * halfExtent, 0.0f) * 2.0f);
-
-			t.Move(textRot * Vec3f(c.Advance * halfExtent.x, 0.0f, 0.0f) * 2.0f);
+			Renderer(*this).StaticMeshInstances(info, { MeshInstance(Impl.GetBasicShapeMesh(EngineBasicShape::Quad), textMaterial) }, letterTransforms[i], *shader);
 		}
 
 		glDisable(GL_BLEND);
+	}
+
+	void TextRenderer::RenderText(const SceneMatrixInfo& info, const Font::Variation& fontVariation,
+		const std::string& content, const Transform& textTransform, const Vec3f& color, Shader* shader, bool convertFromPx,
+		Alignment2D alignment)
+	{
+		RenderText(info, fontVariation, content, TextUtil::ComputeLetterTransforms(content, textTransform, alignment, fontVariation), color, shader, convertFromPx, alignment);
 	}
 }

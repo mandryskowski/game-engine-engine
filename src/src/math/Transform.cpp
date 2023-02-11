@@ -19,8 +19,8 @@ namespace GEE
 		for (int i = 1; i < static_cast<int>(DirtyFlags.size()); i++)
 			DirtyFlags[i] = true;
 
-		for (int i = 0; i < static_cast<int>(Children.size()); i++)
-			Children[i]->FlagWorldDirtiness();
+		for (auto child : Children)
+			child->FlagWorldDirtiness();
 	}
 
 	Transform::Transform() :
@@ -46,7 +46,6 @@ namespace GEE
 	{
 		if (pos == Vec3f(0.0f) && rot == Quatf(Vec3f(0.0f)) && scale == Vec3f(1.0f))
 			Empty = true;
-		KUPA = false;
 	}
 
 	Transform::Transform(const Transform& t) :
@@ -219,16 +218,15 @@ namespace GEE
 	}
 
 	void Transform::SetScale(const Vec3f& scale)
-	{/*
-
-		CacheVariable<float, Transform> sX(ScaleRef.x, *this);
-		sX = scale.x;
-		CacheVariable<float, Transform> sY(ScaleRef.y, *this);
-		sY = scale.y;
-		CacheVariable<float, Transform> sZ(ScaleRef.z, *this);
-		sZ = scale.z;*/
+	{
 		Scale = scale;
 		FlagMyDirtiness();
+	}
+
+	void Transform::SetScaleWorld(const Vec3f& worldScale)
+	{
+		Vec3f localPos = (ParentTransform) ? ((1.0f / ParentTransform->GetWorldTransform().GetScale()) * worldScale) : (worldScale);
+		SetScale(localPos);
 	}
 
 	void Transform::ApplyScale(float scale)
@@ -307,7 +305,7 @@ namespace GEE
 		}
 	}
 
-	bool Transform::GetDirtyFlag(unsigned int index, bool reset)
+	bool Transform::GetDirtyFlag(unsigned int index, bool reset) const
 	{
 		if (index == std::numeric_limits<unsigned int>::max())
 			return true;
@@ -319,24 +317,24 @@ namespace GEE
 		return flag;
 	}
 
-	void Transform::SetDirtyFlag(unsigned int index, bool val)
+	void Transform::SetDirtyFlag(unsigned int index, bool val) const
 	{
 		DirtyFlags[index] = val;
 	}
 
-	void Transform::SetDirtyFlags(bool val)
+	void Transform::SetDirtyFlags(bool val) const
 	{
 		for (int i = 0; i < DirtyFlags.size(); i++)
 			DirtyFlags[i] = val;
 	}
 
-	unsigned int Transform::AddDirtyFlag()
+	unsigned int Transform::AddDirtyFlag() const
 	{
 		DirtyFlags.push_back(true);
-		return DirtyFlags.size() - 1;
+		return static_cast<unsigned int>(DirtyFlags.size()) - 1;
 	}
 
-	void Transform::AddInterpolator(std::string fieldName, SharedPtr<InterpolatorBase> interpolator, bool animateFromCurrent)
+	void Transform::AddInterpolator(const String& fieldName, SharedPtr<InterpolatorBase> interpolator, bool animateFromCurrent)
 	{
 		Interpolators.push_back(interpolator);
 		SharedPtr<InterpolatorBase> obj = Interpolators.back();
@@ -351,7 +349,7 @@ namespace GEE
 			vecCast->SetValPtr(&Scale);
 		else
 		{
-			std::string type = (vecCast) ? ("Vec3f") : ((quatCast) ? ("Quatf") : ("unknown"));
+			String type = (vecCast) ? ("Vec3f") : ((quatCast) ? ("Quatf") : ("unknown"));
 			std::cerr << "ERROR! Unrecognized interpolator " << fieldName << " of type " + type << ".\n";
 			return;
 		}
@@ -362,18 +360,18 @@ namespace GEE
 	}
 
 	template <class T>
-	void Transform::AddInterpolator(std::string fieldName, float begin, float end, T min, T max, InterpolationType interpType, bool fadeAway, AnimBehaviour before, AnimBehaviour after)
+	void Transform::AddInterpolator(const String& fieldName, Time begin, Time end, T min, T max, InterpolationType interpType, bool fadeAway, AnimBehaviour before, AnimBehaviour after)
 	{
 		AddInterpolator(fieldName, MakeUnique<Interpolator<T>>(Interpolator<T>(begin, end, min, max, interpType, fadeAway, before, after, false)), false);
 	}
 
 	template <class T>
-	void Transform::AddInterpolator(std::string fieldName, float begin, float end, T max, InterpolationType interpType, bool fadeAway, AnimBehaviour before, AnimBehaviour after)
+	void Transform::AddInterpolator(const String& fieldName, Time begin, Time end, T max, InterpolationType interpType, bool fadeAway, AnimBehaviour before, AnimBehaviour after)
 	{
 		AddInterpolator(fieldName, MakeUnique<Interpolator<T>>(Interpolator<T>(begin, end, T(), max, interpType, fadeAway, before, after, true)), true);
 	}
 
-	void Transform::Update(float deltaTime)
+	void Transform::Update(Time deltaTime)
 	{
 		if (Interpolators.empty())
 			return;
@@ -412,7 +410,7 @@ namespace GEE
 		descBuilder.AddField("Scale").GetTemplates().VecInput<3, float>([this](int axis, float val) {Vec3f scale = GetScale(); scale[axis] = val; SetScale(scale); }, [this](int axis) { return GetScale()[axis]; });
 	}
 
-	void Transform::Print(std::string name) const
+	void Transform::Print(String name) const
 	{
 		std::cout << "===Transform " + name + ", child of " << ParentTransform << "===\n";
 		printVector(Position, "Position");
@@ -504,11 +502,11 @@ namespace GEE
 		return Vec3f(vec.x, 0.0f, vec.z);
 	}
 
-	template void Transform::AddInterpolator<Vec3f>(std::string, float, float, Vec3f, Vec3f, InterpolationType, bool, AnimBehaviour, AnimBehaviour);
-	template void Transform::AddInterpolator<Vec3f>(std::string, float, float, Vec3f, InterpolationType, bool, AnimBehaviour, AnimBehaviour);
+	template void Transform::AddInterpolator<Vec3f>(const String&, Time, Time, Vec3f, Vec3f, InterpolationType, bool, AnimBehaviour, AnimBehaviour);
+	template void Transform::AddInterpolator<Vec3f>(const String&, Time, Time, Vec3f, InterpolationType, bool, AnimBehaviour, AnimBehaviour);
 
-	template void Transform::AddInterpolator<Quatf>(std::string, float, float, Quatf, Quatf, InterpolationType, bool, AnimBehaviour, AnimBehaviour);
-	template void Transform::AddInterpolator<Quatf>(std::string, float, float, Quatf, InterpolationType, bool, AnimBehaviour, AnimBehaviour);
+	template void Transform::AddInterpolator<Quatf>(const String&, Time, Time, Quatf, Quatf, InterpolationType, bool, AnimBehaviour, AnimBehaviour);
+	template void Transform::AddInterpolator<Quatf>(const String&, Time, Time, Quatf, InterpolationType, bool, AnimBehaviour, AnimBehaviour);
 
 	Quatf quatFromDirectionVec(const Vec3f& dirVec, Vec3f up)
 	{

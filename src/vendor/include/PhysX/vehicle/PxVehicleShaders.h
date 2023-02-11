@@ -33,7 +33,7 @@
   @{
 */
 
-#include "foundation/PxSimpleTypes.h"
+#include <PhysX/foundation/PxSimpleTypes.h>
 
 #if !PX_DOXYGEN
 namespace physx

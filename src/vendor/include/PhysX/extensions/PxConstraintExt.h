@@ -31,7 +31,7 @@
 #ifndef PX_PHYSICS_EXTENSIONS_CONSTRAINT_H
 #define PX_PHYSICS_EXTENSIONS_CONSTRAINT_H
 
-#include "foundation/PxPreprocessor.h"
+#include <PhysX/foundation/PxPreprocessor.h>
 
 /** \addtogroup extensions
   @{

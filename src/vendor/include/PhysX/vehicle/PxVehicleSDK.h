@@ -33,8 +33,8 @@
   @{
 */
 
-#include "foundation/Px.h"
-#include "common/PxTypeInfo.h"
+#include <PhysX/foundation/Px.h>
+#include <PhysX/common/PxTypeInfo.h>
 
 #if !PX_DOXYGEN
 namespace physx

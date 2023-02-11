@@ -100,14 +100,14 @@ namespace GEE
 			glDeleteBuffers(1, &UBO); 
 	}
 
-	std::string BoolToString(bool b)
+	String BoolToString(bool b)
 	{
 		return (b) ? ("true") : ("false");
 	}
 
-	std::string lookupNextWord(std::stringstream& str)
+	String lookupNextWord(std::stringstream& str)
 	{
-		std::string word;
+		String word;
 		size_t pos = str.tellg();
 		str >> word;
 		str.seekg(pos);
@@ -115,15 +115,15 @@ namespace GEE
 		return word;
 	}
 
-	std::string multipleWordInput(std::stringstream& str)
+	String multipleWordInput(std::stringstream& str)
 	{
-		std::string word;
+		String word;
 		str >> word;
 
 		if (word.empty() || word[0] != '"')
 			return word;
 
-		std::string input = word;
+		String input = word;
 		while (word.back() != '"')
 		{
 			str >> word;
@@ -133,9 +133,9 @@ namespace GEE
 		return input.substr(1, input.size() - 2); //return the input string without quotation marks
 	}
 
-	bool isNextWordEqual(std::stringstream& str, std::string equalTo)
+	bool isNextWordEqual(std::stringstream& str, String equalTo)
 	{
-		std::string word;
+		String word;
 		size_t pos = str.tellg();
 		str >> word;
 
@@ -146,7 +146,7 @@ namespace GEE
 		return false;
 	}
 
-	bool toBool(std::string str)
+	bool toBool(String str)
 	{
 		if (str == "false" || str == "0")
 			return false;
@@ -163,21 +163,22 @@ namespace GEE
 		return Quatf(glm::radians(euler));
 	}
 
-	std::string extractDirectory(std::string path)
+	String extractDirectory(String path)
 	{
 		size_t dirPos = path.find_last_of('/');
-		if (dirPos != std::string::npos)
+		if (dirPos != String::npos)
 			return path.substr(0, dirPos + 1);
 		dirPos = path.find_last_of(static_cast<char>(92)); //backslash
-		if (dirPos != std::string::npos)
+		if (dirPos != String::npos)
 			return path.substr(0, dirPos + 1);
 
-		return std::string();
+		return String();
 	}
 
-	void extractDirectoryAndFilename(const std::string& fullPath, std::string& filename, std::string& directory)
+	void extractDirectoryAndFilename(const String& fullPath, String* filenameGet, String* directoryGet)
 	{
 		size_t dirPos = fullPath.find_last_of('/');
+		std::string filename, directory;
 
 		std::function<void(size_t)> splitPath = [fullPath, &directory, &filename](size_t dirPos)
 		{
@@ -198,6 +199,11 @@ namespace GEE
 			directory.clear();
 			filename = fullPath;
 		}
+
+		if (filenameGet)
+			*filenameGet = filename;
+		if (directoryGet)
+			*directoryGet = directory;
 	}
 
 	void printVector(const Vec2f& vec, std::string title)
@@ -263,16 +269,20 @@ namespace GEE
 		return filepath.substr(dotPos);
 	}
 
-	std::string getFileName(const std::string& filepath)
+	std::string getFileName(const std::string& filepath, bool keepExtension)
 	{
-		size_t lastSlash = filepath.find_last_of('/');
+		auto lastSlash = filepath.find_last_of('/');
+		auto lastDot = filepath.find_last_of('.');
+
 		if (lastSlash == std::string::npos)
 			lastSlash = filepath.find_last_of(static_cast<char>(92)); //backslash
+		if (lastDot == String::npos)
+			lastDot = filepath.length();
 
-		if (lastSlash == std::string::npos)
-			return filepath; //filepath is the filename
+		if (lastSlash == String::npos)
+			return (keepExtension) ? (filepath) : (filepath.substr(0, lastDot)); //filepath is the filename
 
-		return filepath.substr(lastSlash + 1);
+		return (filepath.substr(lastSlash + 1, keepExtension ? (filepath.length() - lastSlash - 1) : (lastDot - lastSlash - 1)));
 	}
 
 	bool floatComparison(float a, float b, float epsilon)
@@ -285,11 +295,13 @@ namespace GEE
 	{
 	}
 
-	Vec2d WindowData::GetMousePositionPx() const
+	Vec2d WindowData::GetMousePositionPx(bool originBottomLeft) const
 	{
 		Vec2d mousePos;
 		glfwGetCursorPos(&WindowRef, &mousePos.x, &mousePos.y);
-		mousePos.y = GetWindowSize().y - mousePos.y;
+
+		if (originBottomLeft)
+			mousePos.y = GetWindowSize().y - mousePos.y;
 
 		return mousePos;
 	}

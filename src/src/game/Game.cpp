@@ -43,8 +43,8 @@ namespace GEE
 		glDebugMessageControlARB(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
 
 		DebugMode = true;
-		LoopBeginTime = 0.0f;
-		TimeAccumulator = 0.0f;
+		LoopBeginTime = 0.0;
+		TimeAccumulator = 0.0;
 
 		GEE_FB::Framebuffer DefaultFramebuffer;
 	}
@@ -89,7 +89,7 @@ namespace GEE
 		return EngineDataLoader::SetupSceneFromFile(this, path, name);
 	}
 
-	GameScene& Game::CreateScene(std::string name, bool disallowChangingNameIfTaken)
+	GameScene& Game::CreateScene(String name, bool disallowChangingNameIfTaken)
 	{
 		if (GetScene(name))
 		{
@@ -100,7 +100,7 @@ namespace GEE
 		return *Scenes.back();
 	}
 
-	GameScene& Game::CreateUIScene(std::string name, SystemWindow& associateWindow, bool disallowChangingNameIfTaken)
+	GameScene& Game::CreateUIScene(String name, SystemWindow& associateWindow, bool disallowChangingNameIfTaken)
 	{
 		if (GetScene(name))
 		{
@@ -160,7 +160,8 @@ namespace GEE
 				glfwSetInputMode(GameWindow, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 
 			Vec2i windowSize = WindowData(*GameWindow).GetWindowSize();
-			glfwSetCursorPos(GameWindow, (double)windowSize.x / 2.0, (double)windowSize.y / 2.0);
+			WindowEventProcessor::PrevCursorPositions[GameWindow] = WindowData(*GameWindow).GetMousePositionPx(false);
+			//glfwSetCursorPos(GameWindow, (double)windowSize.x / 2.0, (double)windowSize.y / 2.0);
 		}
 	}
 
@@ -297,31 +298,26 @@ namespace GEE
 		GameStarted = true;
 	}
 
-	bool Game::GameLoopIteration(float timeStep, float deltaTime)
+	bool Game::GameLoopIteration(Time timeStep, Time deltaTime)
 	{
 		if (bGameTerminated)
 			return true;
 
 		glfwPollEvents();
 
-		if (deltaTime > 0.25f)
-			deltaTime = 0.25f;
+		if (deltaTime > 0.25)
+			deltaTime = 0.25;
 
 		float fraction = fmod((float)glfwGetTime(), 1.0f);
-		if (fraction < 0.1f && !wasSecondFPS)
+		if (fraction < 0.1 && !wasSecondFPS)
 		{
 			std::cout << "******Frames per second: " << (float)ticks / (glfwGetTime() - LoopBeginTime) << "			Milliseconds per frame: " << (glfwGetTime() - LoopBeginTime) * 1000.0f / (float)ticks << '\n';
-			/*std::cout << "Update%: " << timeSum / (glfwGetTime() - LoopBeginTime) * 100.0f << "%\n";
-			std::cout << "Unstable ms/frame: " << deltaTime * 1000.0f << ".\n";
-			std::cout << "Renderable count: " << Scenes[0]->GetRenderData()->Renderables.size() << '\n';
-			std::cout << "Light probe count: " << Scenes[0]->GetRenderData()->LightProbes.size() << '\n';*/
-			//	std::cout << "Badany: " << Transform::test() / (glfwGetTime() - LoopBeginTime) * 100.0f << "%.\n";
 			wasSecondFPS = true;
 			ticks = 0;
-			timeSum = 0.0f;
+			timeSum = 0.0;
 			LoopBeginTime = glfwGetTime();
 		}
-		else if (fraction > 0.9f)
+		else if (fraction > 0.9)
 			wasSecondFPS = false;
 
 		if (GLenum error = glGetError())
@@ -362,7 +358,7 @@ namespace GEE
 		}
 	}
 
-	void Game::Update(float deltaTime)
+	void Game::Update(Time deltaTime)
 	{
 		DUPA::AnimTime += deltaTime;
 		PhysicsEng.Update(deltaTime);
@@ -421,11 +417,15 @@ namespace GEE
 		if (!mouseController || !TargetHolder)
 			return;
 
-		if (mouseController->GetLockMouseAtCenter())
-			glfwSetCursorPos(window, windowSize.x / 2, windowSize.y / 2);
 
-		mouseController->OnMouseMovement((mouseController->GetLockMouseAtCenter()) ? (static_cast<Vec2i>(static_cast<Vec2f>(windowSize) / 2.0f)) : (PrevCursorPositions[window]), Vec2f(xpos, ypos), windowSize); //Implement it as an Event instead! TODO
-		PrevCursorPositions[window] = static_cast<Vec2i>(Vec2d(xpos, ypos));
+		mouseController->OnMouseMovement(
+			Vec2i(PrevCursorPositions[window].x, windowSize.y - PrevCursorPositions[window].y),
+			Vec2f(xpos, ypos), windowSize); //Implement it as an Event instead! TODO
+
+		if (mouseController->GetLockMouseAtCenter())
+			glfwSetCursorPos(window, PrevCursorPositions[window].x,  PrevCursorPositions[window].y);
+		else
+			PrevCursorPositions[window] = static_cast<Vec2i>(Vec2d(xpos, windowSize.y - ypos));
 	}
 
 	void WindowEventProcessor::MouseButtonCallback(SystemWindow* window, int button, int action, int mods)
@@ -492,7 +492,7 @@ namespace GEE
 		const char* message,
 		const void* userParam)
 	{
-		// ignore non-significant error/warning codes
+		// ignore insignificant error/warning codes
 		if (id == 131169 || id == 131185 || id == 131218 || id == 131204) return;
 		if (type == GL_DEBUG_TYPE_PERFORMANCE_ARB)
 			return;

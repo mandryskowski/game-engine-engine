@@ -34,13 +34,13 @@
   @{
 */
 
-#include "PxPhysXConfig.h"
-#include "common/PxBase.h"
-#include "cooking/PxCooking.h"
-#include "foundation/PxIO.h"
-#include "common/PxTolerancesScale.h"
-#include "common/PxTypeInfo.h"
-#include "common/PxStringTable.h"
+#include <PhysX/PxPhysXConfig.h>
+#include <PhysX/common/PxBase.h>
+#include <PhysX/cooking/PxCooking.h>
+#include <PhysX/foundation/PxIO.h>
+#include <PhysX/common/PxTolerancesScale.h>
+#include <PhysX/common/PxTypeInfo.h>
+#include <PhysX/common/PxStringTable.h>
 
 /**
 PX_BINARY_SERIAL_VERSION is used to version the PhysX binary data and meta data. The global unique identifier of the PhysX SDK needs to match 

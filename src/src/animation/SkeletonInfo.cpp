@@ -12,17 +12,17 @@ namespace GEE
 	{
 	}
 
-	unsigned int SkeletonInfo::GetBoneCount()
+	unsigned int SkeletonInfo::GetBoneCount() const
 	{
-		return Bones.size();
+		return static_cast<unsigned int>(Bones.size());
 	}
 
-	SkeletonBatch* SkeletonInfo::GetBatchPtr()
+	SkeletonBatch* SkeletonInfo::GetBatchPtr() const
 	{
 		return BatchPtr;
 	}
 
-	unsigned int SkeletonInfo::GetBoneIDOffset()
+	unsigned int SkeletonInfo::GetBoneIDOffset() const
 	{
 		return BoneIDOffset;
 	}

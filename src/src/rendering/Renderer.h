@@ -127,7 +127,7 @@ namespace GEE
 		/**
 		 * @brief Called once before the render loop runs. Might be really expensive; this runs only once anyways.
 		*/
-		void PreRenderLoopPassStatic(RenderingContextID, std::vector<GameSceneRenderData*>& renderDatas);
+		void PreRenderLoopPassStatic(RenderingContextID, std::vector<GameSceneRenderData*> renderDatas);
 		/**
 		 * @brief Called per frame. Does the run-time operations required to render a single frame of a scene (e.g. render missing shadow maps).
 		 * @param renderingContext The OpenGL context to be used.
@@ -200,7 +200,7 @@ namespace GEE
 		void Render(RenderingContextID contextID, RenderToolboxCollection& tbCollection, const Viewport* viewport, const Texture& colorTex, Texture blurTex = Texture(), const Texture& depthTex = Texture(), const Texture& velocityTex = Texture(), std::function<void(GEE_FB::Framebuffer&)> renderIconsFunc = nullptr);
 
 		void RenderFullscreenQuad(RenderingContextID contextID, RenderToolboxCollection& tbCollection, Shader* shader = nullptr, bool useShader = true);
-		void RenderFullscreenQuad(TbInfo<MatrixInfoExt>& info, Shader* shader = nullptr, bool useShader = true);
+		void RenderFullscreenQuad(const TbInfo<MatrixInfoExt>& info, Shader* shader = nullptr, bool useShader = true);
 
 
 	private:
@@ -233,7 +233,8 @@ namespace GEE
 	public:
 		using Renderer::Renderer;
 
-		void RenderText(const SceneMatrixInfo& info, const Font::Variation&, std::string content, Transform t = Transform(), Vec3f color = Vec3f(1.0f), Shader* shader = nullptr, bool convertFromPx = false, Alignment2D = Alignment2D::LeftCenter()); //Pass a shader if you do not want the default shader to be used.
+		void RenderText(const SceneMatrixInfo& info, const Font::Variation&, const std::string& content, const std::vector<Transform>& letterTransforms, const Vec3f& color = Vec3f(1.0f), Shader* shader = nullptr, bool convertFromPx = false, Alignment2D = Alignment2D::LeftCenter()); //Pass a shader if you do not want the default shader to be used.
+		void RenderText(const SceneMatrixInfo& info, const Font::Variation&, const std::string& content, const Transform& textTransform = Transform(), const Vec3f& color = Vec3f(1.0f), Shader* shader = nullptr, bool convertFromPx = false, Alignment2D = Alignment2D::LeftCenter());
 	};
 
 	class GameRenderer : public Renderer

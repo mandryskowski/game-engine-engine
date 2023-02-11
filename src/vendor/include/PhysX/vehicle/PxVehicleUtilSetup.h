@@ -32,8 +32,8 @@
 /** \addtogroup vehicle
   @{
 */
-#include "foundation/PxSimpleTypes.h"
-#include "vehicle/PxVehicleSDK.h"
+#include <PhysX/foundation/PxSimpleTypes.h>
+#include <PhysX/vehicle/PxVehicleSDK.h>
 
 #if !PX_DOXYGEN
 namespace physx

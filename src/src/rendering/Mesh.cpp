@@ -119,8 +119,8 @@ namespace GEE
 			glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * indices.size(), &(indices)[0], GL_STATIC_DRAW);
 		}
 
-		VertexCount = vertices.size();
-		IndexCount = indices.size();
+		VertexCount = static_cast<unsigned int>(vertices.size());
+		IndexCount = static_cast<unsigned int>(indices.size());
 
 		if (keepVerts)
 		{

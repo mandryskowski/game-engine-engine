@@ -76,6 +76,7 @@ namespace GEE
 		ChildUIElements.push_back(&element);
 		if (GetCanvasPtr())
 			element.AttachToCanvas(*GetCanvasPtr());
+
 	}
 
 	void UICanvasElement::EraseChildElement(UICanvasElement& element)
@@ -95,18 +96,16 @@ namespace GEE
 		if (ParentElement)
 		{
 			auto& vec = ParentElement->ChildUIElements;
-			vec.erase(std::remove_if(vec.begin(), vec.end(), [this](UICanvasElement* elementVec) {return elementVec == this; }), vec.end());
+			vec.erase(std::remove(vec.begin(), vec.end(), this), vec.end());
 			ParentElement = nullptr;
 		}
 		else if (CanvasPtr)
 			CanvasPtr->EraseTopLevelUIElement(*this);
 
 
-		for (auto& it : ChildUIElements)
-			EraseChildElement(*it);
+		while (!ChildUIElements.empty())
+			EraseChildElement(*ChildUIElements.front());
 
-
-		ChildUIElements.clear();
 		CanvasPtr = nullptr;
 	}
 

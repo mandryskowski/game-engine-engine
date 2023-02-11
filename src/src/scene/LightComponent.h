@@ -4,7 +4,7 @@
 
 namespace GEE
 {
-	enum LightType
+	enum class LightType
 	{
 		DIRECTIONAL,
 		POINT,

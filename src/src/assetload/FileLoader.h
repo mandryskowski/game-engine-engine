@@ -1,7 +1,7 @@
 #pragma once
 #include <game/GameManager.h>
 #include <assimp/types.h>
-#include <freetype/ft2build.h>
+#include <ft2build.h>
 #include <math/Transform.h>
 #include FT_FREETYPE_H
 
@@ -12,7 +12,7 @@ struct aiBone;
 
 namespace GEE
 {
-	struct MaterialLoadingData;
+	struct MaterialLoadingDcereata;
 	struct Vertex;
 	class Mesh;
 	class Transform;

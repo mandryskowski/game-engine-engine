@@ -34,12 +34,12 @@
   @{
 */
 
-#include "common/PxPhysXCommonConfig.h"
+#include <PhysX/common/PxPhysXCommonConfig.h>
 
 /**
 \brief Builds smooth vertex normals over a mesh.
 
-- "smooth" because smoothing groups are not supported here
+- "smoo.h" because smoothing groups are not supported here
 - takes angles into account for correct cube normals computation
 
 To use 32bit indices pass a pointer in dFaces and set wFaces to zero. Alternatively pass a pointer to 

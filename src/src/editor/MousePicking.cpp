@@ -104,7 +104,7 @@ namespace GEE
 				if (it.first->GetDebugMatInst())
 					it.first->GetDebugMatInst()->UpdateWholeUBOData(debugShader, Impl.RenderHandle.GetEmptyTexture());
 
-				debugShader->Uniform4fv("material.color", Vec4f(it.second, 0, 0, 1));
+				debugShader->Uniform<Vec4f>("material.color", Vec4f(it.second, 0, 0, 1));
 				it.first->DebugRender(info, *debugShader);
 			}
 
@@ -112,8 +112,12 @@ namespace GEE
 		}
 
 		// Read one pixel at mousePos
-		Vec4f pickedPixelIndex(0);
-		glReadPixels(mousePos.x, mousePos.y, 1, 1, Texture::Format::RGBA().GetEnumGL(), GL_FLOAT, &pickedPixelIndex[0]);
+		Vec4i pickedPixelIndex(0);
+		{
+			Vec4f pickedPixelFloat(0.0f);
+			glReadPixels(mousePos.x, mousePos.y, 1, 1, Texture::Format::RGBA().GetEnumGL(), GL_FLOAT, &pickedPixelFloat[0]);
+			pickedPixelIndex = static_cast<Vec4i>(pickedPixelFloat);
+		}
 		std::cout << "#$# Picked pixel " << pickedPixelIndex << '\n';
 
 		// Clean up after everything
@@ -122,6 +126,6 @@ namespace GEE
 		glEnable(GL_DEPTH_TEST);
 		glEnable(GL_DITHER);
 
-		return (pickedPixelIndex.x > 0 && pickedPixelIndex.x <= components.size()) ? (components[pickedPixelIndex.x - 1]) : (nullptr);
+		return (pickedPixelIndex.x > 0.0f && pickedPixelIndex.x <= static_cast<int>(components.size())) ? (components[pickedPixelIndex.x - 1]) : (nullptr);
 	}
 }

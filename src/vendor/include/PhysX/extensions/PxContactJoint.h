@@ -30,7 +30,7 @@
 #ifndef PX_CONTACTJOINT_H
 #define PX_CONTACTJOINT_H
 
-#include "extensions/PxJoint.h"
+#include <PhysX/extensions/PxJoint.h>
 
 #if !PX_DOXYGEN
 namespace physx

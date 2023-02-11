@@ -68,11 +68,11 @@ namespace GEE
 			}
 
 			PxTriangleMeshDesc desc;
-			desc.points.count = colShape->VertData.size();
-			desc.points.stride = sizeof(Vec3f);
+			desc.points.count = static_cast<physx::PxU32>(colShape->VertData.size());
+			desc.points.stride = static_cast<physx::PxU32>(sizeof(Vec3f));
 			desc.points.data = &colShape->VertData[0];
 
-			desc.triangles.count = colShape->IndicesData.size() / 3;
+			desc.triangles.count = static_cast<physx::PxU32>(colShape->IndicesData.size() / 3);
 			desc.triangles.stride = sizeof(unsigned int) * 3;
 			desc.triangles.data = &colShape->IndicesData[0];
 
@@ -126,6 +126,17 @@ namespace GEE
 			//Scene->addActor(*object->ActorPtr);
 		}
 
+		void PhysicsEngine::AddScenePhysicsDataPtr(GameScenePhysicsData& scenePhysicsData)
+		{
+			ScenesPhysicsData.push_back(&scenePhysicsData);
+		}
+
+		void PhysicsEngine::RemoveScenePhysicsDataPtr(GameScenePhysicsData& scenePhysicsData)
+		{
+			ScenesPhysicsData.erase(std::remove_if(ScenesPhysicsData.begin(), ScenesPhysicsData.end(), [&scenePhysicsData](GameScenePhysicsData* scenePhysicsDataVec) { return scenePhysicsDataVec == &scenePhysicsData; }), ScenesPhysicsData.end());
+		}
+
+
 		void PhysicsEngine::CreatePxShape(CollisionShape& shape, CollisionObject& object)
 		{
 			Vec3f worldObjectScale = object.TransformPtr->GetWorldTransform().GetScale();
@@ -163,16 +174,6 @@ namespace GEE
 			}
 			else
 				object.ActorPtr->attachShape(*shape.ShapePtr);
-		}
-
-		void PhysicsEngine::AddScenePhysicsDataPtr(GameScenePhysicsData& scenePhysicsData)
-		{
-			ScenesPhysicsData.push_back(&scenePhysicsData);
-		}
-
-		void PhysicsEngine::RemoveScenePhysicsDataPtr(GameScenePhysicsData& scenePhysicsData)
-		{
-			ScenesPhysicsData.erase(std::remove_if(ScenesPhysicsData.begin(), ScenesPhysicsData.end(), [&scenePhysicsData](GameScenePhysicsData* scenePhysicsDataVec) { return scenePhysicsDataVec == &scenePhysicsData; }), ScenesPhysicsData.end());
 		}
 
 		PxController* PhysicsEngine::CreateController(GameScenePhysicsData& scenePhysicsData, const Transform& t)
@@ -259,13 +260,13 @@ namespace GEE
 			AddScenePhysicsDataPtr(scenePhysicsData);
 		}
 
-		void PhysicsEngine::Update(float deltaTime)
+		void PhysicsEngine::Update(Time deltaTime)
 		{
 			UpdatePxTransforms();
 
 			for (int i = 0; i < static_cast<int>(ScenesPhysicsData.size()); i++)
 			{
-				ScenesPhysicsData[i]->PhysXScene->simulate(deltaTime);
+				ScenesPhysicsData[i]->PhysXScene->simulate(static_cast<physx::PxReal>(deltaTime));
 				ScenesPhysicsData[i]->PhysXScene->fetchResults(true);
 			}
 
@@ -291,7 +292,7 @@ namespace GEE
 					// Make sure that we do not change the flag which corresponds to updating px transforms
 					bool flagBefore = obj->TransformPtr->GetDirtyFlag(obj->TransformDirtyFlag, false);
 
-					PxTransform& pxTransform = obj->ActorPtr->getGlobalPose();
+					PxTransform pxTransform = obj->ActorPtr->getGlobalPose();
 					obj->TransformPtr->SetPositionWorld(toGlm(pxTransform.p));
 					if (!obj->IgnoreRotation)
 						obj->TransformPtr->SetRotationWorld(toGlm(pxTransform.q));
@@ -324,7 +325,7 @@ namespace GEE
 					physx::PxShape** shapes = new physx::PxShape * [obj->ActorPtr->getNbShapes()];
 					obj->ActorPtr->getShapes(shapes, obj->ActorPtr->getNbShapes());
 
-					for (int j = 0; j < obj->ActorPtr->getNbShapes(); j++)
+					for (int j = 0; j < static_cast<int>(obj->ActorPtr->getNbShapes()); j++)
 					{
 						if (!shapes[j])
 							continue;

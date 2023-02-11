@@ -47,7 +47,7 @@ Thanks for contributions, bug corrections & thorough testing to:
 - Paul Rouget
 */
 
-
+#pragma warning( disable : 4133)
 #ifndef __sun
 #ifndef _POSIX_C_SOURCE
 #define _POSIX_C_SOURCE 2 /* to accept POSIX 2 in old ANSI C standards */

@@ -1,11 +1,12 @@
 #pragma once
 #include <animation/Animation.h>
 #include <game/GameManager.h>
-#include <stb/stb_image.h>
+#include <stb_image.h>
 #include <assimp/scene.h>
 #include <rendering/Texture.h>
 #include <rendering/Shader.h>
 
+#include <utility/CerealNames.h>
 #include <cereal/access.hpp>
 #include <cereal/archives/json.hpp>
 #include <cereal/types/polymorphic.hpp>
@@ -130,11 +131,8 @@ namespace GEE
 		{
 		}
 		//...and pass the interpolated values to shader in here. I separated these functions for flexibility - you don't always want to interpolate the values each time you use the material for rendering
-		virtual void UpdateInstanceUBOData(Shader* shader, bool setValuesToDefault = false) const
-		{
-			shader->Uniform2fv("atlasData", Vec2f(0.0f));
-		}
-		virtual void UpdateWholeUBOData(Shader*, Texture& emptyTexture) const;
+		virtual void UpdateInstanceUBOData(Shader* shader, bool setValuesToDefault = false) const;
+		virtual void UpdateWholeUBOData(Shader*, const Texture& emptyTexture) const;
 
 		template <typename Archive>
 		void Save(Archive& archive) const
@@ -190,7 +188,7 @@ namespace GEE
 		std::vector<aiMaterial*> LoadedAiMaterials;
 		std::vector<SharedPtr<NamedTexture>> LoadedTextures;
 
-		SharedPtr<NamedTexture> FindTexture(const std::string& path) const;
+		SharedPtr<NamedTexture> FindTexture(const String& path) const;
 		//Looks for a texture loaded from the given path.
 		void AddTexture(SharedPtr<NamedTexture>);
 		//Adds the given texture to the LoadedTextures vector. Doesn't check for duplicates - do it yourself using FindTexture()
@@ -212,8 +210,8 @@ namespace GEE
 		AtlasMaterial(Material&& mat, Vec2i atlasSize = Vec2i(0), ShaderInfo = MaterialShaderHint::Simple);
 		AtlasMaterial(MaterialLoc loc, Vec2i atlasSize = Vec2i(0), ShaderInfo = MaterialShaderHint::Simple);
 		float GetMaxTextureID() const;
-		virtual void UpdateInstanceUBOData(Shader* shader, bool setValuesToDefault = false) const override;
-		virtual void UpdateWholeUBOData(Shader* shader, Texture& emptyTexture) const override;
+		void UpdateInstanceUBOData(Shader* shader, bool setValuesToDefault = false) const override;
+		void UpdateWholeUBOData(Shader* shader, const Texture& emptyTexture) const override;
 
 		Interpolator<float>& GetTextureIDInterpolatorTemplate(float constantTextureID);
 		Interpolator<float>& GetTextureIDInterpolatorTemplate(const Interpolation&, float min = 0.0f, float max = 0.0f);
@@ -232,7 +230,7 @@ namespace GEE
 			construct->Serialize(archive);
 		}
 
-		virtual void GetEditorDescription(EditorDescriptionBuilder) override;
+		void GetEditorDescription(EditorDescriptionBuilder) override;
 	};
 
 	/*
@@ -263,9 +261,9 @@ namespace GEE
 		*/
 		void ResetAnimation();
 
-		void Update(float deltaTime);
+		void Update(Time deltaTime);
 		void UpdateInstanceUBOData(Shader* shader) const;
-		void UpdateWholeUBOData(Shader* shader, Texture& emptyTexture) const;
+		void UpdateWholeUBOData(Shader* shader, const Texture& emptyTexture) const;
 
 		MaterialInstance& operator=(const MaterialInstance&) = delete;
 		MaterialInstance& operator=(MaterialInstance&&);
@@ -320,33 +318,8 @@ namespace GEE
 		bool DrawBeforeAnim, DrawAfterAnim;
 	};
 
-	constexpr Vec3f hsvToRgb(Vec3f hsvColor)
-	{
-		float C = hsvColor.z * hsvColor.y; //V * S
-		float X = C * (1.0f - glm::abs(glm::mod(hsvColor.x / 60.0f, 2.0f) - 1.0f)); // C * ( 1 - | (H / 60) % 2 - 1| )
-		float m = hsvColor.z - C; //V * C
-
-		Vec3f rgbPrime(0.0f);
-		int hueCirclePart = floorConstexpr(hsvColor.x / 60.0f); // floor( H / 60 )
-
-		switch (hueCirclePart)
-		{
-		case 0: rgbPrime = Vec3f(C, X, 0.0f);  // 0 <= H < 60
-			break;
-		case 1: rgbPrime = Vec3f(X, C, 0.0f); // 60 <= H < 120
-			break;
-		case 2: rgbPrime = Vec3f(0.0f, C, X); // 120 <= H < 180
-			break; 
-		case 3: rgbPrime = Vec3f(0.0f, X, C); // 180 <= H < 240
-			break; 
-		case 4: rgbPrime = Vec3f(X, 0.0f, C); // 240 <= H < 300
-			break; 
-		case 5: rgbPrime = Vec3f(C, 0.0f, X); // 300 <= H < 360
-			break;
-		}
-
-		return rgbPrime + m;
-	}
+	// Should be constexpr but fmod isn't
+	Vec3f hsvToRgb(Vec3f hsvColor);
 }
 
 namespace cereal

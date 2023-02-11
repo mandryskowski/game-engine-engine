@@ -1,4 +1,5 @@
 #include "GEditorSettings.h"
+#include <utility/CerealNames.h>
 #include <cereal/archives/json.hpp>
 
 namespace GEE

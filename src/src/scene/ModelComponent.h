@@ -40,21 +40,21 @@ namespace GEE
 
 		void DRAWBATCH() const;
 
-		int GetMeshInstanceCount() const;
+		unsigned GetMeshInstanceCount() const;
 		const MeshInstance& GetMeshInstance(int index) const;
 		const Mat4f& GetLastFrameMVP() const;
 		SkeletonInfo* GetSkeletonInfo() const;
-		virtual std::vector<const Material*> GetMaterials() const override;
+		std::vector<const Material*> GetMaterials() const override;
 
 		MeshInstance* FindMeshInstance(const std::string& nodeName, const std::string& specificMeshName = std::string());
 		void AddMeshInst(const MeshInstance&);
 		void AddMeshInst(MeshInstance&&);
 
-		virtual void Update(float deltaTime) override;
+		void Update(Time dt) override;
 
-		virtual void Render(const SceneMatrixInfo&, Shader* shader) override;
+		void Render(const SceneMatrixInfo&, Shader* shader) override;
 
-		virtual void GetEditorDescription(ComponentDescriptionBuilder) override;
+		void GetEditorDescription(ComponentDescriptionBuilder) override;
 
 		/*virtual void DebugRender(RenderInfo info, Shader* shader) const override
 		{
@@ -78,7 +78,7 @@ namespace GEE
 
 		virtual ~ModelComponent();
 	protected:
-		virtual unsigned int GetUIDepth() const override;
+		unsigned int GetUIDepth() const override;
 		void SignalSkeletonInfoDeath();
 
 		friend class SkeletonInfo;

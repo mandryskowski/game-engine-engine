@@ -22,19 +22,19 @@ namespace GEE
 		ScaleKeysLeft.clear();
 
 		for (int i = 0; i < static_cast<int>(ChannelRef.PosKeys.size() - 1); i++)
-			PosKeysLeft.push_back(MakeUnique<Interpolator<Vec3f>>(Interpolator<Vec3f>(Interpolation((i == 0) ? (ChannelRef.PosKeys[0]->Time) : (0.0f), ChannelRef.PosKeys[i + 1]->Time - ChannelRef.PosKeys[i]->Time), ChannelRef.PosKeys[i]->Value, ChannelRef.PosKeys[i + 1]->Value)));
+			PosKeysLeft.push_back(MakeUnique<Interpolator<Vec3f>>(Interpolator<Vec3f>(Interpolation((i == 0) ? (ChannelRef.PosKeys[0]->KeyTime) : (0.0), ChannelRef.PosKeys[i + 1]->KeyTime - ChannelRef.PosKeys[i]->KeyTime), ChannelRef.PosKeys[i]->Value, ChannelRef.PosKeys[i + 1]->Value)));
 		if (!ChannelRef.PosKeys.empty())
-			PosKeysLeft.push_back(MakeUnique<Interpolator<Vec3f>>(Interpolator<Vec3f>(Interpolation(ChannelRef.PosKeys.back()->Time, 0.0f, InterpolationType::Constant, false, AnimBehaviour::STOP, AnimBehaviour::REPEAT), ChannelRef.PosKeys.back()->Value, ChannelRef.PosKeys.back()->Value)));
+			PosKeysLeft.push_back(MakeUnique<Interpolator<Vec3f>>(Interpolator<Vec3f>(Interpolation(ChannelRef.PosKeys.back()->KeyTime, 0.0, InterpolationType::Constant, false, AnimBehaviour::STOP, AnimBehaviour::REPEAT), ChannelRef.PosKeys.back()->Value, ChannelRef.PosKeys.back()->Value)));
 
 		for (int i = 0; i < static_cast<int>(ChannelRef.RotKeys.size() - 1); i++)
-			RotKeysLeft.push_back(MakeUnique<Interpolator<Quatf>>(Interpolator<Quatf>(Interpolation((i == 0) ? (ChannelRef.RotKeys[0]->Time) : (0.0f), ChannelRef.RotKeys[i + 1]->Time - ChannelRef.RotKeys[i]->Time), ChannelRef.RotKeys[i]->Value, ChannelRef.RotKeys[i + 1]->Value)));
+			RotKeysLeft.push_back(MakeUnique<Interpolator<Quatf>>(Interpolator<Quatf>(Interpolation((i == 0) ? (ChannelRef.RotKeys[0]->KeyTime) : (0.0), ChannelRef.RotKeys[i + 1]->KeyTime - ChannelRef.RotKeys[i]->KeyTime), ChannelRef.RotKeys[i]->Value, ChannelRef.RotKeys[i + 1]->Value)));
 		if (!ChannelRef.RotKeys.empty())
-			RotKeysLeft.push_back(MakeUnique<Interpolator<Quatf>>(Interpolator<Quatf>(Interpolation(ChannelRef.RotKeys.back()->Time, 0.0f, InterpolationType::Constant, false, AnimBehaviour::STOP, AnimBehaviour::REPEAT), ChannelRef.RotKeys.back()->Value, ChannelRef.RotKeys.back()->Value)));
+			RotKeysLeft.push_back(MakeUnique<Interpolator<Quatf>>(Interpolator<Quatf>(Interpolation(ChannelRef.RotKeys.back()->KeyTime, 0.0, InterpolationType::Constant, false, AnimBehaviour::STOP, AnimBehaviour::REPEAT), ChannelRef.RotKeys.back()->Value, ChannelRef.RotKeys.back()->Value)));
 
 		for (int i = 0; i < static_cast<int>(ChannelRef.ScaleKeys.size() - 1); i++)
-			ScaleKeysLeft.push_back(MakeUnique<Interpolator<Vec3f>>(Interpolator<Vec3f>(Interpolation((i == 0) ? (ChannelRef.ScaleKeys[0]->Time) : (0.0f), ChannelRef.ScaleKeys[i + 1]->Time - ChannelRef.ScaleKeys[i]->Time), ChannelRef.ScaleKeys[i]->Value, ChannelRef.ScaleKeys[i + 1]->Value)));
+			ScaleKeysLeft.push_back(MakeUnique<Interpolator<Vec3f>>(Interpolator<Vec3f>(Interpolation((i == 0) ? (ChannelRef.ScaleKeys[0]->KeyTime) : (0.0), ChannelRef.ScaleKeys[i + 1]->KeyTime - ChannelRef.ScaleKeys[i]->KeyTime), ChannelRef.ScaleKeys[i]->Value, ChannelRef.ScaleKeys[i + 1]->Value)));
 		if (!ChannelRef.ScaleKeys.empty())
-			ScaleKeysLeft.push_back(MakeUnique<Interpolator<Vec3f>>(Interpolator<Vec3f>(Interpolation(ChannelRef.ScaleKeys.back()->Time, 0.0f, InterpolationType::Constant, false, AnimBehaviour::STOP, AnimBehaviour::REPEAT), ChannelRef.ScaleKeys.back()->Value, ChannelRef.ScaleKeys.back()->Value)));
+			ScaleKeysLeft.push_back(MakeUnique<Interpolator<Vec3f>>(Interpolator<Vec3f>(Interpolation(ChannelRef.ScaleKeys.back()->KeyTime, 0.0, InterpolationType::Constant, false, AnimBehaviour::STOP, AnimBehaviour::REPEAT), ChannelRef.ScaleKeys.back()->Value, ChannelRef.ScaleKeys.back()->Value)));
 	}
 
 	void AnimationChannelInstance::Stop()
@@ -44,28 +44,27 @@ namespace GEE
 		ScaleKeysLeft.clear();
 	}
 
-	bool UpdateKey(InterpolatorBase& key, float& deltaTime)
+	bool UpdateKey(InterpolatorBase& key, Time& deltaTime)
 	{
-		//std::cout << "updating key\n";
-		float prevT = key.GetInterp()->GetT();
+		auto prevT = key.GetInterp()->GetT();
 		key.Update(deltaTime);
 		if (key.GetHasEnded())
 		{
-			if (key.GetInterp()->GetDuration() > 0.0f)
-				deltaTime -= (1.0f - prevT) * key.GetInterp()->GetDuration();	//subtract used time
+			if (key.GetInterp()->GetDuration() > 0.0)
+				deltaTime -= (1.0 - prevT) * key.GetInterp()->GetDuration();	//subtract used time
 			return true;
 		}
 
-		deltaTime = 0.0f;
+		deltaTime = 0.0;
 		return false;
 	}
 
-	template <typename T> void UpdateKeys(std::deque<UniquePtr<Interpolator<T>>>& keys, float deltaTime, std::function<void(const T&)> setValFunc)
+	template <typename T> void UpdateKeys(std::deque<UniquePtr<Interpolator<T>>>& keys, Time deltaTime, std::function<void(const T&)> setValFunc)
 	{
-		float timeLeft = deltaTime;
+		auto timeLeft = deltaTime;
 		while (!keys.empty())
 		{
-			float prevTimeLeft = timeLeft;
+			auto prevTimeLeft = timeLeft;
 			bool pop = UpdateKey(*keys.front(), timeLeft);
 			setValFunc(keys.front()->GetCurrentValue());
 
@@ -76,7 +75,7 @@ namespace GEE
 		}
 	}
 
-	bool AnimationChannelInstance::Update(float deltaTime)
+	bool AnimationChannelInstance::Update(Time deltaTime)
 	{
 		if (!IsValid)
 			return false;
@@ -190,7 +189,7 @@ namespace GEE
 		return TimePassed > GetAnimation().Duration;
 	}
 
-	void AnimationInstance::Update(float deltaTime)
+	void AnimationInstance::Update(Time deltaTime)
 	{
 		if (!IsValid)
 			return;
@@ -202,7 +201,6 @@ namespace GEE
 		}
 
 		bool finished = true;
-		float minT = 1.0f;
 
 		for (auto& it : ChannelInstances)
 			if (it->Update(deltaTime))
@@ -229,17 +227,17 @@ namespace GEE
 	{
 		for (auto& it : ChannelInstances)
 			it->Restart();
-		TimePassed = 0.0f;
+		TimePassed = 0.0;
 	}
 
 	template<typename Archive>
-	inline void AnimationInstance::Save(Archive& archive) const
+	void AnimationInstance::Save(Archive& archive) const
 	{
 		archive(cereal::make_nvp("AnimHierarchyTreePath", GetLocalization().GetTreeName()), cereal::make_nvp("AnimName", GetLocalization().Name), cereal::make_nvp("RootCompName", AnimRootComp.GetName()), cereal::make_nvp("RootCompActorName", AnimRootComp.GetActor().GetName()));
 	}
 
 	template<typename Archive>
-	inline void AnimationInstance::load_and_construct(Archive& archive, cereal::construct<AnimationInstance>& construct)
+	void AnimationInstance::load_and_construct(Archive& archive, cereal::construct<AnimationInstance>& construct)
 	{
 		std::cout << "a tera instancje animacji\n";
 		std::string animHierarchyTreePath, animName, rootCompName, rootCompActorName;
@@ -267,15 +265,15 @@ namespace GEE
 
 	AnimationInstance* AnimationManagerComponent::GetAnimInstance(int index)
 	{
-		if (index > GetAnimInstancesCount() - 1)
+		if (index > static_cast<int>(GetAnimInstancesCount()) - 1)
 			return nullptr;
 
 		return AnimInstances[index].get();
 	}
 
-	int AnimationManagerComponent::GetAnimInstancesCount() const
+	unsigned AnimationManagerComponent::GetAnimInstancesCount() const
 	{
-		return AnimInstances.size();
+		return static_cast<unsigned int>(AnimInstances.size());
 	}
 
 	AnimationInstance* AnimationManagerComponent::GetCurrentAnim()
@@ -288,13 +286,13 @@ namespace GEE
 		AnimInstances.push_back(MakeUnique<AnimationInstance>(std::move(animInstance)));
 	}
 
-	void AnimationManagerComponent::Update(float deltaTime)
+	void AnimationManagerComponent::Update(Time dt)
 	{
 		//for (UniquePtr<AnimationInstance>& it : AnimInstances)
 			//it->Update(deltaTime);
 		if (CurrentAnim)
 		{
-			CurrentAnim->Update(deltaTime);
+			CurrentAnim->Update(dt);
 			if (CurrentAnim->HasFinished())
 				SelectAnimation(nullptr);
 		}

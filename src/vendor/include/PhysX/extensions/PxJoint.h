@@ -33,10 +33,10 @@
   @{
 */
 
-#include "foundation/PxTransform.h"
-#include "PxRigidActor.h"
-#include "PxConstraint.h"
-#include "common/PxBase.h"
+#include <PhysX/foundation/PxTransform.h>
+#include <PhysX/PxRigidActor.h>
+#include <PhysX/PxConstraint.h>
+#include <PhysX/common/PxBase.h>
 
 #if !PX_DOXYGEN
 namespace physx

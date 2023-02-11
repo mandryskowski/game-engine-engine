@@ -1,5 +1,6 @@
 #pragma once
 #include <utility/Utility.h>
+#include <utility/CerealNames.h>
 #include <cereal/access.hpp>
 
 namespace GEE

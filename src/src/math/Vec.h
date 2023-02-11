@@ -2,11 +2,14 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <utility/CerealNames.h>
 #include <cereal/cereal.hpp>
 
 namespace GEE
 {
-	template <unsigned int length, typename T> using Vec = glm::vec<length, T>;
+	using MathContainerUnit = glm::length_t;
+
+	template <MathContainerUnit length, typename T, glm::qualifier Q = glm::packed_highp> using Vec = glm::vec<length, T, Q>;
 	using Vec2i = Vec<2, int>;
 	using Vec3i = Vec<3, int>;
 	using Vec4i = Vec<4, int>;
@@ -27,13 +30,13 @@ namespace GEE
 	using Vec3b = Vec<3, bool>;
 	using Vec4b = Vec<4, bool>;
 
-	template <typename T> using Quat = glm::qua<T>;
+	template <typename T, glm::qualifier Q = glm::packed_highp> using Quat = glm::qua<T, Q>;
 	using Quatf = Quat<float>;
 
-	template <unsigned int C, unsigned int R, typename T> using Mat = glm::mat<C, R, T>;
-	using Mat2f = Mat<2, 2, float>;
-	using Mat3f = Mat<3, 3, float>;
-	using Mat4f = Mat<4, 4, float>;
+	template <MathContainerUnit C, MathContainerUnit R, typename T, glm::qualifier Q = glm::packed_highp> using Mat = glm::mat<C, R, T, Q>;
+	using Mat2f = Mat<2, 2, glm::f32>;
+	using Mat3f = Mat<3, 3, glm::f32>;
+	using Mat4f = Mat<4, 4, glm::f32>;
 
 	namespace Math
 	{
@@ -47,36 +50,44 @@ namespace GEE
 		{
 			return glm::value_ptr(obj);
 		}
+
+		template <typename T>
+		int Round(T val)
+		{
+			return static_cast<int>(glm::round(val));
+		}
+		
 		
 		Vec2f GetRatioOfComponents(const Vec2f& vec);
+		Mat3f ModelToNormal(const Mat4f& model);
 	}
 }
 
 namespace cereal
 {
-	template <int length, typename T, typename Archive>
-	void Serialize(Archive& archive, GEE::Vec<length, T>& vec)
+	template <int length, typename T, glm::qualifier Q, typename Archive>
+	void Serialize(Archive& archive, GEE::Vec<length, T, Q>& vec)
 	{
 		const std::string axisNames[] = { "x", "y", "z", "w" };
 		for (int i = 0; i < length; i++)
 			archive(cereal::make_nvp(axisNames[i], vec[i]));
 	}
-	template <typename T, typename Archive>
-	void Serialize(Archive& archive, GEE::Quat<T>& q)
+	template <typename T, glm::qualifier Q, typename Archive>
+	void Serialize(Archive& archive, GEE::Quat<T, Q>& q)
 	{
 		archive(cereal::make_nvp("x", q.x), cereal::make_nvp("y", q.y), cereal::make_nvp("z", q.z), cereal::make_nvp("w", q.w));
 	}
 
-	template <unsigned int C, unsigned int R, typename T, typename Archive>
-	void Serialize(Archive& archive, GEE::Mat<C, R, T>& mat)
+	template <GEE::MathContainerUnit C, GEE::MathContainerUnit R, typename T, glm::qualifier Q, typename Archive>
+	void Serialize(Archive& archive, GEE::Mat<C, R, T, Q>& mat)
 	{
 		for (int i = 0; i < static_cast<int>(R); i++)
 			archive(cereal::make_nvp("row" + std::to_string(i), mat[i]));
 	}
 }
 
-template <unsigned int length, typename T>
-std::ostream& operator<<(std::ostream& os, const GEE::Vec<length, T>& vec)
+template <GEE::MathContainerUnit length, glm::qualifier Q, typename T>
+std::ostream& operator<<(std::ostream& os, const GEE::Vec<length, T, Q>& vec)
 {
 	for (int i = 0; i < length - 1; i++) //add commas after all components except the last one
 		os << vec[i] << ", ";
@@ -84,8 +95,8 @@ std::ostream& operator<<(std::ostream& os, const GEE::Vec<length, T>& vec)
 	return (os << vec[length - 1]);	//add the last component
 }
 
-template <typename T>
-std::ostream& operator<<(std::ostream& os, const GEE::Quat<T>& q)
+template <typename T, glm::qualifier Q>
+std::ostream& operator<<(std::ostream& os, const GEE::Quat<T, Q>& q)
 {
 	for (int i = 0; i < 3; i++) //add commas after all components except the last one
 		os << q[i] << ", ";
@@ -94,8 +105,8 @@ std::ostream& operator<<(std::ostream& os, const GEE::Quat<T>& q)
 	return (os << q[3]);	//add the last component
 }
 
-template <unsigned int C, unsigned int R, typename T>
-std::ostream& operator<<(std::ostream& os, const GEE::Mat<C, R, T>& mat)
+template <GEE::MathContainerUnit C, GEE::MathContainerUnit R, typename T, glm::qualifier Q>
+std::ostream& operator<<(std::ostream& os, const GEE::Mat<C, R, T, Q>& mat)
 {
 	auto prevPrecision = os.precision();
 	os.precision(3);

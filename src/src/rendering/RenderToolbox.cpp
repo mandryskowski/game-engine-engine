@@ -133,8 +133,8 @@ namespace GEE
 			Shaders.push_back(ShaderLoader::LoadShadersWithInclData(lightShadersNames[i], settingsDefines + lightShadersDefines[i], lightShadersPath.first, lightShadersPath.second));
 			Shaders.back()->Use();
 
-			Shaders.back()->Uniform1i("shadowMaps", 10);
-			Shaders.back()->Uniform1i("shadowCubemaps", 11);
+			Shaders.back()->Uniform<int>("shadowMaps", 10);
+			Shaders.back()->Uniform<int>("shadowCubemaps", 11);
 
 			Shaders.back()->UniformBlockBinding("BoneMatrices", 10);
 
@@ -223,20 +223,20 @@ namespace GEE
 		{
 			Shaders.push_back(ShaderLoader::LoadShadersWithInclData(lightShadersNames[i], settingsDefines + lightShadersDefines[i], lightShadersPath.first, lightShadersPath.second));
 			Shaders.back()->Use();
-			Shaders.back()->Uniform1i("gAlbedoSpec", 0);
-			Shaders.back()->Uniform1i("gPosition", 1);
-			Shaders.back()->Uniform1i("gNormal", 2);
-			Shaders.back()->Uniform1i("gAlphaMetalAo", 3);
+			Shaders.back()->Uniform<int>("gAlbedoSpec", 0);
+			Shaders.back()->Uniform<int>("gPosition", 1);
+			Shaders.back()->Uniform<int>("gNormal", 2);
+			Shaders.back()->Uniform<int>("gAlphaMetalAo", 3);
 			if (settings.AmbientOcclusionSamples > 0)
-				Shaders.back()->Uniform1i("ssaoTex", 4);
+				Shaders.back()->Uniform<int>("ssaoTex", 4);
 
-			Shaders.back()->Uniform1i("shadowMaps", 10);
-			Shaders.back()->Uniform1i("shadowCubemaps", 11);
-			Shaders.back()->Uniform1i("irradianceCubemaps", 12);
-			Shaders.back()->Uniform1i("prefilterCubemaps", 13);
-			Shaders.back()->Uniform1i("BRDFLutTex", 14);
+			Shaders.back()->Uniform<int>("shadowMaps", 10);
+			Shaders.back()->Uniform<int>("shadowCubemaps", 11);
+			Shaders.back()->Uniform<int>("irradianceCubemaps", 12);
+			Shaders.back()->Uniform<int>("prefilterCubemaps", 13);
+			Shaders.back()->Uniform<int>("BRDFLutTex", 14);
 
-			Shaders.back()->Uniform1f("lightProbeNr", 3.0f);
+			Shaders.back()->Uniform<float>("lightProbeNr", 3.0f);
 
 			if (i == (int)LightType::POINT || i == (int)LightType::SPOT || lightShadersNames[i] == "CookTorranceIBL")
 				Shaders.back()->SetExpectedMatrices(std::vector<MatrixType>{MatrixType::VIEW, MatrixType::MVP});
@@ -281,7 +281,7 @@ namespace GEE
 		}
 		if (settings.IsVelocityBufferNeeded())
 		{
-			NamedTexture velocityBuffer = ((deferredTb) ? (deferredTb->GFb->GetAttachment("velocityTex")) : (NamedTexture(Texture::Loader<float>::ReserveEmpty2D(settings.Resolution, Texture::Format::Float16::RGB()), "velocityTex")));
+			NamedTexture velocityBuffer = ((deferredTb) ? (static_cast<NamedTexture>(deferredTb->GFb->GetAttachment("velocityTex"))) : (NamedTexture(Texture::Loader<float>::ReserveEmpty2D(settings.Resolution, Texture::Format::Float16::RGB()), "velocityTex")));
 			colorBuffers.push_back(velocityBuffer);
 		}
 
@@ -315,10 +315,10 @@ namespace GEE
 
 		SSAOShader->SetExpectedMatrices(std::vector<MatrixType> {MatrixType::VIEW, MatrixType::PROJECTION});
 		SSAOShader->Use();
-		SSAOShader->Uniform1f("radius", 0.5f);
-		SSAOShader->Uniform1i("gPosition", 0);
-		SSAOShader->Uniform1i("gNormal", 1);
-		SSAOShader->Uniform1i("noiseTex", 2);
+		SSAOShader->Uniform<float>("radius", 0.5f);
+		SSAOShader->Uniform<int>("gPosition", 0);
+		SSAOShader->Uniform<int>("gNormal", 1);
+		SSAOShader->Uniform<int>("noiseTex", 2);
 
 		//////////////////////////////TEX GENERATION//////////////////////////////
 		std::uniform_real_distribution<float> randomFloats(0.0f, 1.0f);
@@ -346,7 +346,7 @@ namespace GEE
 			scale = glm::mix(0.1f, 1.0f, scale * scale);	// put more samples closer to the fragment
 			sample *= scale;
 
-			SSAOShader->Uniform3fv("samples[" + std::to_string(i) + "]", sample);
+			SSAOShader->Uniform<Vec3f>("samples[" + std::to_string(i) + "]", sample);
 			ssaoSamples.push_back(sample);
 		}
 
@@ -422,27 +422,27 @@ namespace GEE
 		SMAAShaders[3] = nullptr;
 
 		SMAAShaders[0]->Use();
-		SMAAShaders[0]->Uniform1i("colorTex", 0);
-		SMAAShaders[0]->Uniform1i("depthTex", 1);
+		SMAAShaders[0]->Uniform<int>("colorTex", 0);
+		SMAAShaders[0]->Uniform<int>("depthTex", 1);
 
 		SMAAShaders[1]->Use();
-		SMAAShaders[1]->Uniform1i("edgesTex", 0);
-		SMAAShaders[1]->Uniform1i("areaTex", 1);
-		SMAAShaders[1]->Uniform1i("searchTex", 2);
-		SMAAShaders[1]->Uniform4fv("ssIndices", Vec4f(0.0f));
+		SMAAShaders[1]->Uniform<int>("edgesTex", 0);
+		SMAAShaders[1]->Uniform<int>("areaTex", 1);
+		SMAAShaders[1]->Uniform<int>("searchTex", 2);
+		SMAAShaders[1]->Uniform<Vec4f>("ssIndices", Vec4f(0.0f));
 
 		SMAAShaders[2]->Use();
-		SMAAShaders[2]->Uniform1i("colorTex", 0);
-		SMAAShaders[2]->Uniform1i("blendTex", 1);
-		SMAAShaders[2]->Uniform1i("velocityTex", 2);
+		SMAAShaders[2]->Uniform<int>("colorTex", 0);
+		SMAAShaders[2]->Uniform<int>("blendTex", 1);
+		SMAAShaders[2]->Uniform<int>("velocityTex", 2);
 
 		if (settings.AAType == AntiAliasingType::AA_SMAAT2X)
 		{
 			SMAAShaders[3] = AddShader(ShaderLoader::LoadShadersWithInclData("SMAAReprojection", smaaDefines, "SMAA/reproject.vs", "SMAA/reproject.fs"));
 			SMAAShaders[3]->Use();
-			SMAAShaders[3]->Uniform1i("colorTex", 0);
-			SMAAShaders[3]->Uniform1i("prevColorTex", 1);
-			SMAAShaders[3]->Uniform1i("velocityTex", 2);
+			SMAAShaders[3]->Uniform<int>("colorTex", 0);
+			SMAAShaders[3]->Uniform<int>("prevColorTex", 1);
+			SMAAShaders[3]->Uniform<int>("velocityTex", 2);
 		}
 
 		//////////////////////////////TEX GENERATION//////////////////////////////
@@ -470,9 +470,9 @@ namespace GEE
 										// NamedTexture(Texture::Loader<>::ReserveEmpty2D(settings.Resolution, Texture::Format::RGB()), "composedImageBuffer2") });
 		TonemapGammaShader = AddShader(ShaderLoader::LoadShadersWithInclData("TonemapGamma", std::string((settings.TMType == ToneMappingType::TM_REINHARD) ? ("#define TM_REINHARD\n") : ("")) + settings.GetShaderDefines(settings.Resolution), "Shaders/tonemap_gamma.vs", "Shaders/tonemap_gamma.fs"));
 		TonemapGammaShader->Use();
-		TonemapGammaShader->Uniform1i("HDRbuffer", 0);
-		TonemapGammaShader->Uniform1i("brightnessBuffer", 1);
-		TonemapGammaShader->Uniform1f("gamma", settings.MonitorGamma);
+		TonemapGammaShader->Uniform<int>("HDRbuffer", 0);
+		TonemapGammaShader->Uniform<int>("brightnessBuffer", 1);
+		TonemapGammaShader->Uniform<float>("gamma", settings.MonitorGamma);
 	}
 
 	GaussianBlurToolbox::GaussianBlurToolbox(ShaderFromHintGetter& getter, const GameSettings::VideoSettings& settings) :
@@ -497,7 +497,7 @@ namespace GEE
 
 		GaussianBlurShader = AddShader(ShaderLoader::LoadShaders("GaussianBlur", "Shaders/gaussianblur.vs", "Shaders/gaussianblur.fs"));
 		GaussianBlurShader->Use();
-		GaussianBlurShader->Uniform1i("tex", 0);
+		GaussianBlurShader->Uniform<int>("tex", 0);
 	}
 
 	ShadowMappingToolbox::ShadowMappingToolbox(ShaderFromHintGetter& getter, const GameSettings::VideoSettings& settings) :
