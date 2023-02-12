@@ -1316,6 +1316,5 @@
         "TMType": 1,
         "Max2DShadows": 16,
         "Max3DShadows": 16
-    },
-    "bDebugRenderComponents": true
+    }
 }

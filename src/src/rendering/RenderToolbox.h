@@ -189,16 +189,6 @@ namespace GEE
 		GEE_FB::Framebuffer* FinalFramebuffer;
 	};
 
-	class GEditorToolbox : public RenderToolbox
-	{
-	public:
-		GEditorToolbox(ShaderFromHintGetter&, const GameSettings::VideoSettings& settings);
-		void Setup(const GameSettings::VideoSettings&);
-	private:
-		Shader* GridShader;
-		friend class Editor::EditorRenderer;
-	};
-
 	class RenderToolboxCollection
 	{
 	public:
@@ -242,17 +232,6 @@ namespace GEE
 
 		std::string Name;
 		const GameSettings::VideoSettings& Settings;
-	};
-
-	class GEditorRenderToolboxCollection : public RenderToolboxCollection
-	{
-	public:
-		using RenderToolboxCollection::RenderToolboxCollection;
-		virtual void AddTbsRequiredBySettings() override
-		{
-			RenderToolboxCollection::AddTbsRequiredBySettings();
-			AddTb<GEditorToolbox>();
-		}
 	};
 
 	template<typename T>

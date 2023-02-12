@@ -281,17 +281,7 @@ namespace GEE
 
 			UICanvasActor& canvas = editorScene.CreateActorAtRoot<UICanvasActor>("GEE_E_Components_Info_Canvas");
 			canvas.KillResizeBars();
-
-			// Position canvas and add title
-			{
-				canvas.GetTransform()->SetPosition(Vec2f(-0.85f, 0.0f));
-				canvas.GetTransform()->SetScale(Vec2f(0.15f, 0.2f));
-
-				auto foundTopElement = editorScene.GetRootActor()->FindActor("GEE_E_Actors_Components_Canvas");
-				GEE_CORE_ASSERT(foundTopElement);
-				addTitleAndPositionCanvas(canvas, *comp, Math::GetTransformExtent<Math::Extent::Bottom>(foundTopElement->GetTransform()->GetWorldTransform()));
-			}
-
+			canvas.SetTransform(Transform(Vec2f(0.7f, -0.125f), Vec2f(0.3f, 0.375f)));
 			UIActorDefault* scaleActor = canvas.GetScaleActor();
 
 			comp->GetEditorDescription(ComponentDescriptionBuilder(EditorHandle, *scaleActor));

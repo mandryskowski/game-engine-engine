@@ -146,6 +146,12 @@ namespace GEE
 			return *Actions;
 		}
 
+		template <typename T>
+		void AddActorOption(PopupDescription desc)
+		{
+			desc.AddOption(GEERegisteredActor<T>::GetName(), []() { GEERegisteredActor<T>::InstantiateDefault(); });
+		}
+
 		void GameEngineEngineEditor::GenerateActorList(PopupDescription desc, std::function<void(Actor&)> func)
 		{
 			auto& actor = *Actions->GetContextActor();
