@@ -132,7 +132,7 @@ namespace GEE
 				glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 				Impl.RenderHandle.GetSimpleShader()->Use();
-				Impl.RenderHandle.GetSimpleShader()->Uniform2fv("atlasData", Vec2f(0.0f));
+				Impl.RenderHandle.GetSimpleShader()->Uniform<Vec2f>("atlasData", Vec2f(0.0f));
 				Renderer(Impl.RenderHandle).StaticMeshInstances(MatrixInfoExt(), { MeshInstance(Impl.RenderHandle.GetBasicShapeMesh(EngineBasicShape::Quad), Impl.RenderHandle.FindMaterial("GEE_3D_SCENE_PREVIEW_MATERIAL")) }, editorScene->FindActor("SceneViewportActor")->GetTransform()->GetWorldTransform(), *Impl.RenderHandle.GetSimpleShader());
 			}
 			else
@@ -166,7 +166,7 @@ namespace GEE
 				glDisable(GL_CULL_FACE);
 				glBindFramebuffer(GL_FRAMEBUFFER, 0);
 				glDrawBuffer(GL_BACK);
-				glClearColor(glm::abs(glm::cos((EditorHandle.GetGameHandle()->GetProgramRuntime()))), 0.3f, 0.8f, 1.0f);
+				glClearColor(static_cast<GLfloat>(glm::abs(glm::cos(EditorHandle.GetGameHandle()->GetProgramRuntime()))), 0.3f, 0.8f, 1.0f);
 				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 				SceneMatrixInfo info(popup.ID, popup.TbCol, *popup.Scene.get().GetRenderData(), Mat4f(1.0f), glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, 1.0f, -2550.0f), Vec3f(0.0f));

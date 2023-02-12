@@ -29,15 +29,15 @@
 #ifndef PXCUDACONTEXTMANAGER_PXCUDACONTEXTMANAGER_H
 #define PXCUDACONTEXTMANAGER_PXCUDACONTEXTMANAGER_H
 
-#include "foundation/PxPreprocessor.h"
+#include <PhysX/foundation/PxPreprocessor.h>
 
 #if PX_SUPPORT_GPU_PHYSX
 
-#include "foundation/PxSimpleTypes.h"
-#include "foundation/PxErrorCallback.h"
-#include "foundation/PxFlags.h"
-#include "task/PxTaskDefine.h"
-#include "cudamanager/PxCudaMemoryManager.h"
+#include <PhysX/foundation/PxSimpleTypes.h>
+#include <PhysX/foundation/PxErrorCallback.h>
+#include <PhysX/foundation/PxFlags.h>
+#include <PhysX/task/PxTaskDefine.h>
+#include <PhysX/cudamanager/PxCudaMemoryManager.h>
 
 /* Forward decl to avoid inclusion of cuda.h */
 typedef struct CUctx_st *CUcontext;

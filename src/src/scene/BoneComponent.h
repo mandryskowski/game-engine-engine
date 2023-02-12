@@ -33,11 +33,11 @@ namespace GEE
 	public:
 		BoneComponent& operator=(BoneComponent&&) = delete;	//TODO: de-delete this, it should be written but i am too lazy
 
-		virtual void Update(float deltaTime) override;
+		void Update(Time dt) override;
 		unsigned int GetID() const;
 		const Mat4f& GetFinalMatrix();
 
-		virtual	MaterialInstance GetDebugMatInst(ButtonMaterialType) override;
+		MaterialInstance GetDebugMatInst(ButtonMaterialType) override;
 		 
 		void SetBoneOffset(const Mat4f&);
 		void SetID(unsigned int id);
@@ -57,12 +57,12 @@ namespace GEE
 
 	class BoneMapping
 	{
-		std::map<std::string, unsigned int> Mapping;	/*Maps bone name and index. It's a template object used for loading.
+		std::map<String, unsigned int> Mapping;	  /*Maps bone name and index. It's a template object used for loading.
 													When you load a mesh by moving recursively through the assimp hierarchy (as we do here) a mesh may reference a bone that is not converted to our structure.
 													So we assign a bone id to that not-created name and we use this mapping for assigning the bone ID of the actual BoneComponent.*/
 	public:
-		unsigned int GetBoneID(std::string name);
-		unsigned int GetBoneID(std::string name) const;
+		unsigned int GetBoneID(const String& name);
+		unsigned int GetBoneID(const String& name) const;
 	};
 
 	aiBone* FindAiBoneFromNode(const aiScene*, const aiNode*);

@@ -38,7 +38,7 @@ namespace GEE
 		CurrentUsageOfGPU = usage;
 	}
 
-	void Profiling::StopAndSaveToFile(Time currentTime, const std::string& filename)
+	void Profiling::StopAndSaveToFile(Time currentTime, const String& filename)
 	{
 		std::fstream file(filename, std::ios::app);
 
@@ -49,8 +49,14 @@ namespace GEE
 
 		std::time_t systemTime = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
 
-		// Change delimiter of ctime (\n) to end of const char delimiter (\0)
-		std::string systemTimeStr = std::ctime(&systemTime);
+		constexpr unsigned int bufferSize = 80;
+		tm newTime;
+		char buffer[bufferSize];
+
+		localtime_s(&newTime, &systemTime);
+
+		// Change delimiter of timeStr (\n) to end of const char delimiter (\0)
+		std::string systemTimeStr(buffer, std::strftime(buffer, bufferSize, "%Y-%m-%d-%H:%M:%S", &newTime));
 
 		file << systemTimeStr;
 		

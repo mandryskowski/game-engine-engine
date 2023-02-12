@@ -38,18 +38,18 @@ namespace GEE
 		Mat4f GetProjectionMat();		//returns the camera Projection matrix - i've decided that each camera should have their own Projection mat, because just as in the real world each cam has its own FoV and aspect ratio
 		SceneMatrixInfo GetRenderInfo(RenderingContextID, RenderToolboxCollection& renderCollection);
 
-		virtual void Update(float);		//controls the component
+		void Update(Time dt) override;		//controls the component
 
-		virtual	MaterialInstance GetDebugMatInst(ButtonMaterialType) override;
+		MaterialInstance GetDebugMatInst(ButtonMaterialType) override;
 
-		virtual void GetEditorDescription(ComponentDescriptionBuilder) override;
+		void GetEditorDescription(ComponentDescriptionBuilder) override;
 
 		void SetProjectionMat(const ProjectionMatData& projMat);
 		void SetProjectionMat(const Mat4f& projMat) { Projection = projMat; }
 
 		template <typename Archive> void Save(Archive& archive) const
 		{
-			archive(CEREAL_NVP(Projection), cereal::make_nvp("Active", Scene.GetActiveCamera() == this), cereal::make_nvp("Component", cereal::base_class<Component>(this)));
+			archive(CEREAL_NVP(Projection), cereal::make_nvp("Active", GetScene().GetActiveCamera() == this), cereal::make_nvp("Component", cereal::base_class<Component>(this)));
 		}
 		template <typename Archive> void Load(Archive& archive)
 		{
@@ -57,11 +57,11 @@ namespace GEE
 			archive(CEREAL_NVP(Projection), cereal::make_nvp("Active", active), cereal::make_nvp("Component", cereal::base_class<Component>(this)));
 			if (active)
 			{
-				Scene.BindActiveCamera(this);
-				GameHandle->BindAudioListenerTransformPtr(&GetTransform());
+				GetScene().BindActiveCamera(this);
+				GetGameHandle()->BindAudioListenerTransformPtr(&GetTransform());
 			}
 		}
-		~CameraComponent();
+		~CameraComponent() override;
 
 	private:
 		Mat4f Projection;

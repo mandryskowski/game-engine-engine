@@ -35,10 +35,10 @@
 @{
 */
 
-#include "foundation/PxFlags.h"
-#include "common/PxSerialFramework.h"
-#include "common/PxCollection.h"
-#include "common/PxTypeInfo.h"
+#include <PhysX/foundation/PxFlags.h>
+#include <PhysX/common/PxSerialFramework.h>
+#include <PhysX/common/PxCollection.h>
+#include <PhysX/common/PxTypeInfo.h>
 #include <string.h>	// For strcmp
 
 #if !PX_DOXYGEN

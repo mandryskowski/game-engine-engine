@@ -157,7 +157,7 @@ namespace GEE
 
 		}
 
-		CollisionObject::CollisionObject(CollisionObject&& obj) :
+		CollisionObject::CollisionObject(CollisionObject&& obj) noexcept :
 			CollisionObject(static_cast<const CollisionObject&>(obj))
 		{
 		}
@@ -181,6 +181,7 @@ namespace GEE
 			Shapes.erase(std::remove_if(Shapes.begin(), Shapes.end(), [&](SharedPtr<CollisionShape> shapeVec) {
 				if (shapeVec.get() != &shape) return false;
 				if (shapeVec->ShapePtr) ActorPtr->detachShape(*shapeVec->ShapePtr);
+				return true;
 			}), Shapes.end());
 		}
 

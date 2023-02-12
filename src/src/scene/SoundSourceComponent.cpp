@@ -71,8 +71,8 @@ namespace GEE
 			if (IsPlaying())
 				return;
 
-			std::cout << "Gram dzwiek " << Name << '\n';
-			GameHandle->GetAudioEngineHandle()->CheckError();
+			std::cout << "Playing sound " << GetName() << '\n';
+			GetGameHandle()->GetAudioEngineHandle()->CheckError();
 
 			alSourcePlay(ALIndex);
 		}
@@ -89,10 +89,10 @@ namespace GEE
 				alSourceStop(ALIndex);
 		}
 
-		void SoundSourceComponent::Update(float deltaTime)
+		void SoundSourceComponent::Update(Time dt)
 		{
 			if (ALIndex != 0)
-				alSourcefv(ALIndex, AL_POSITION, Math::GetDataPtr(ComponentTransform.GetWorldTransform().GetPos()));
+				alSourcefv(ALIndex, AL_POSITION, Math::GetDataPtr(GetTransform().GetWorldTransform().GetPos()));
 		}
 
 		MaterialInstance SoundSourceComponent::GetDebugMatInst(ButtonMaterialType type)
@@ -105,7 +105,7 @@ namespace GEE
 		{
 			Component::GetEditorDescription(descBuilder);
 
-			descBuilder.AddField("Path").GetTemplates().PathInput([this](const std::string& path) {GameHandle->GetAudioEngineHandle()->CheckError(); Audio::Loader::LoadSoundFromFile(path, *this); GameHandle->GetAudioEngineHandle()->CheckError(); }, [this]()->std::string { return SndBuffer.Path;; }, { "*.wav" });
+			descBuilder.AddField("Path").GetTemplates().PathInput([this](const std::string& path) {GetGameHandle()->GetAudioEngineHandle()->CheckError(); Audio::Loader::LoadSoundFromFile(path, *this); GetGameHandle()->GetAudioEngineHandle()->CheckError(); }, [this]()->std::string { return SndBuffer.Path;; }, { "*.wav" });
 			descBuilder.AddField("Play").CreateChild<UIButtonActor>("PlayButton", "Play", [this]() { Play(); });
 		}
 

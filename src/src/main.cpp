@@ -1,24 +1,16 @@
 #define STB_IMAGE_IMPLEMENTATION
-#define CEREAL_LOAD_FUNCTION_NAME Load
-#define CEREAL_LOAD_MINIMAL_FUNCTION_NAME LoadMinimal
-#define CEREAL_SAVE_FUNCTION_NAME Save
-#define CEREAL_SAVE_MINIMAL_FUNCTION_NAME SaveMinimal
-#define CEREAL_SERIALIZE_FUNCTION_NAME Serialize
 
 #include <editor/GameEngineEngineEditor.h>
-#include <scene/TextComponent.h>
-#include <scene/CameraComponent.h>
-#include <scene/ModelComponent.h>
 #include <scene/LightProbeComponent.h>
 #include <UI/UICanvasField.h>
 #include <scene/GunActor.h>
 #include <scene/Controller.h>
-#include <input/InputDevicesStateRetriever.h>
 #include <editor/EditorActions.h>
 
 
 using namespace GEE;
 
+#ifdef GEE_OS_WINDOWS
 extern "C"
 {
 	__declspec(dllexport) unsigned long NvOptimusEnablement = 0x00000001;
@@ -28,6 +20,7 @@ extern "C"
 {
 	__declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
 }
+#endif //GEE_OS_WINDOWS
 
 Editor::EditorManager* Editor::EditorEventProcessor::EditorHandle = nullptr;
 
@@ -45,32 +38,28 @@ int main(int argc, char** argv)
 		case 1: projectFilepathArgument = argv[i]; break;
 		}
 	}
+
 	glfwInit();
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, GEE_GL_VERSION_MAJOR);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, GEE_GL_VERSION_MINOR);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, true);
 	//glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-
-	Vec3d front(-0.80989, - 0.15385, - 0.56604);
-	Vec3d rotationVec = glm::cross(front, Vec3d(0.0f, 0.0f, -1.0f));
-	double angle = std::atan2(glm::dot(front, Vec3d(0.0f, 1.0f, 0.0f)), 0.0);
-	Quatf rot(glm::angleAxis(angle, rotationVec));
-	printVector(rot, "quick maths");
 
 	SystemWindow* programWindow = glfwCreateWindow(800, 600, "Game Engine Engine", nullptr, nullptr);
 
 	if (!programWindow)
 	{
-		std::cerr << "nie dziala glfw :('\n";
+		std::cerr << "CRITICAL ENGINE ERROR: Cannot create GLFW window. Please check that your system supports OpenGL " <<
+			GEE_GL_VERSION_MAJOR << "." << GEE_GL_VERSION_MINOR << ".\n";
 		return -1;
 	}
 	
 	glfwMakeContextCurrent(programWindow);
 	
-	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
+	if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress)))
 	{
-		std::cerr << "zjebalo sie.";
+		std::cerr << "CRITICAL ENGINE ERROR: Cannot load GL functions.";
 		return -1;
 	}
 
@@ -87,17 +76,16 @@ int main(int argc, char** argv)
 
 	editor.PreGameLoop();
 
-	float deltaTime = 0.0f;
-	float lastUpdateTime = glfwGetTime();
+	auto lastUpdateTime = glfwGetTime();
 	bool endGame = false;
 
-	do
+	while (!endGame)
 	{
-		deltaTime = glfwGetTime() - lastUpdateTime;
+		const Time deltaTime = glfwGetTime() - lastUpdateTime;
 		lastUpdateTime = glfwGetTime();
 
-		endGame = editor.GameLoopIteration(1.0f / 60.0f, deltaTime);
-	} while (!endGame);
+		endGame = editor.GameLoopIteration(1.0 / 60.0, deltaTime);
+	}
 
 	return 0;
 }

@@ -17,7 +17,7 @@ namespace GEE
 	public:
 		PawnActor(GameScene&, Actor* parentActor, const std::string& name);
 		virtual void OnStart() override;
-		virtual void Update(float deltaTime);
+		virtual void Update(Time dt);
 		virtual void GetEditorDescription(EditorDescriptionBuilder) override;
 
 		void InflictDamage(float damage, const Vec3f& optionalDirection = Vec3f(0.0f));
@@ -53,10 +53,10 @@ namespace GEE
 		PawnState State;
 
 		float Health;
-		float RespawnTime, DeathTime;
+		Time RespawnTime, DeathTime;
 
 		Audio::SoundSourceComponent* PawnSound;
-		float SoundCooldown, LastSoundTime;
+		Time SoundCooldown, LastSoundTime;
 
 		Vec3f CurrentTargetPos;
 		float SpeedPerSec;

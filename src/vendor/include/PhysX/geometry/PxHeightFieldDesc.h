@@ -34,9 +34,9 @@
 @{
 */
 
-#include "common/PxPhysXCommonConfig.h"
-#include "geometry/PxHeightFieldFlag.h"
-#include "common/PxCoreUtilityTypes.h"
+#include <PhysX/common/PxPhysXCommonConfig.h>
+#include <PhysX/geometry/PxHeightFieldFlag.h>
+#include <PhysX/common/PxCoreUtilityTypes.h>
 
 #if !PX_DOXYGEN
 namespace physx

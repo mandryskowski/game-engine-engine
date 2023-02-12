@@ -34,11 +34,11 @@
   @{
 */
 
-#include "PxPhysXConfig.h"
+#include <PhysX/PxPhysXConfig.h>
 
-#include "PxShape.h"
-#include "PxRigidActor.h"
-#include "geometry/PxGeometryQuery.h"
+#include <PhysX/PxShape.h>
+#include <PhysX/PxRigidActor.h>
+#include <PhysX/geometry/PxGeometryQuery.h>
 
 #if !PX_DOXYGEN
 namespace physx

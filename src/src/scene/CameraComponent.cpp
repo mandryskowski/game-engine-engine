@@ -33,12 +33,12 @@ namespace GEE
 
 	SceneMatrixInfo CameraComponent::GetRenderInfo(RenderingContextID contextID, RenderToolboxCollection& renderCollection)
 	{
-		return SceneMatrixInfo(contextID, renderCollection, *Scene.GetRenderData(), GetViewMat(), GetProjectionMat(), GetTransform().GetWorldTransform().GetPos());
+		return SceneMatrixInfo(contextID, renderCollection, *GetScene().GetRenderData(), GetViewMat(), GetProjectionMat(), GetTransform().GetWorldTransform().GetPos());
 	}
 
-	void CameraComponent::Update(float deltaTime)
+	void CameraComponent::Update(Time dt)
 	{
-		Component::Update(deltaTime);
+		Component::Update(dt);
 	}
 
 	MaterialInstance CameraComponent::GetDebugMatInst(ButtonMaterialType type)
@@ -52,27 +52,27 @@ namespace GEE
 		Component::GetEditorDescription(descBuilder);
 
 		UIInputBoxActor& fovInputBox = descBuilder.AddField("Field of view").CreateChild<UIInputBoxActor>("FovButton");
-		fovInputBox.SetOnInputFunc([this, descBuilder](float fov) mutable { Vec2f viewportSize = static_cast<Vec2f>(GameHandle->GetGameSettings()->Video.Resolution); Projection = glm::perspective(glm::radians(fov), viewportSize.x / viewportSize.y, 0.01f, 100.0f); }, []() { return 0.0f; });
+		fovInputBox.SetOnInputFunc([this, descBuilder](float fov) mutable { Vec2f viewportSize = static_cast<Vec2f>(GetGameHandle()->GetGameSettings()->Video.Resolution); Projection = glm::perspective(glm::radians(fov), viewportSize.x / viewportSize.y, 0.01f, 100.0f); }, []() { return 0.0f; });
 
 		UIInputBoxActor& renderDistBox = descBuilder.AddField("Render distance").CreateChild<UIInputBoxActor>("RenderDistanceButton");
-		renderDistBox.SetOnInputFunc([this, descBuilder](float dist) mutable { Vec2f viewportSize = static_cast<Vec2f>(GameHandle->GetGameSettings()->Video.Resolution); Projection = glm::perspective(glm::radians(90.0f), viewportSize.x / viewportSize.y, 0.01f, dist); }, []() { return 100.0f; });
+		renderDistBox.SetOnInputFunc([this, descBuilder](float dist) mutable { Vec2f viewportSize = static_cast<Vec2f>(GetGameHandle()->GetGameSettings()->Video.Resolution); Projection = glm::perspective(glm::radians(90.0f), viewportSize.x / viewportSize.y, 0.01f, dist); }, []() { return 100.0f; });
 
 		descBuilder.AddField("Active").GetTemplates().TickBox([this](bool val) {
 			if (val) {
-				Scene.BindActiveCamera(this);  GameHandle->BindAudioListenerTransformPtr(&GetTransform());
+				GetScene().BindActiveCamera(this);  GetGameHandle()->BindAudioListenerTransformPtr(&GetTransform());
 			}
 			else {
-				Scene.BindActiveCamera(nullptr); GameHandle->BindAudioListenerTransformPtr(nullptr);
+				GetScene().BindActiveCamera(nullptr); GetGameHandle()->BindAudioListenerTransformPtr(nullptr);
 			}
-			}, [this]() {return this == Scene.GetActiveCamera(); });
+			}, [this]() {return this == GetScene().GetActiveCamera(); });
 	}
 
 	CameraComponent::~CameraComponent()
 	{
-		if (Scene.GetActiveCamera() == this)
+		if (GetScene().GetActiveCamera() == this)
 		{
-			Scene.BindActiveCamera(nullptr);
-			GameHandle->UnbindAudioListenerTransformPtr(nullptr);	//TODO: Fix: deleting editor's camera will unbind listenertransformptr for the whole game.
+			GetScene().BindActiveCamera(nullptr);
+			GetGameHandle()->UnbindAudioListenerTransformPtr(nullptr);	//TODO: Fix: deleting editor's camera will unbind listenertransformptr for the whole game.
 		}
 	}
 

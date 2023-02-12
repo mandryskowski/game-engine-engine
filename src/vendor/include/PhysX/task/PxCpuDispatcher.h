@@ -28,8 +28,8 @@
 #ifndef PXTASK_PXCPUDISPATCHER_H
 #define PXTASK_PXCPUDISPATCHER_H
 
-#include "task/PxTaskDefine.h"
-#include "foundation/PxSimpleTypes.h"
+#include <PhysX/task/PxTaskDefine.h>
+#include <PhysX/foundation/PxSimpleTypes.h>
 
 namespace physx
 {

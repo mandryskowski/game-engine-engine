@@ -12,10 +12,8 @@
 #include <rendering/RenderToolbox.h>
 #include <scene/CameraComponent.h>
 #include <scene/Controller.h>
-#include <game/IDSystem.h>
 
 #include <editor/EditorActions.h>
-#include <scene/hierarchy/HierarchyTree.h>
 
 #include <rendering/Renderer.h>
 
@@ -48,7 +46,7 @@ namespace GEE
 	{
 		Component::operator=(compT);
 
-		for (int i = 0; i < compT.GetMeshInstanceCount(); i++)
+		for (int i = 0; i < static_cast<int>(compT.GetMeshInstanceCount()); i++)
 			AddMeshInst(MeshInstance(const_cast<Mesh&>(compT.GetMeshInstance(i).GetMesh()), compT.GetMeshInstance(i).GetMaterialPtr()));
 
 		/*if (overrideMaterial)
@@ -99,9 +97,9 @@ namespace GEE
 		}
 	}
 
-	int ModelComponent::GetMeshInstanceCount() const
+	unsigned ModelComponent::GetMeshInstanceCount() const
 	{
-		return MeshInstances.size();
+		return static_cast<unsigned>(MeshInstances.size());
 	}
 
 	const MeshInstance& ModelComponent::GetMeshInstance(int index) const
@@ -150,9 +148,9 @@ namespace GEE
 			if ((checkEqual(nodeName, it->GetMesh().GetLocalization().NodeName)) && checkEqual(specificMeshName, it->GetMesh().GetLocalization().SpecificName))
 				return it.get();
 
-		for (auto& it : Children)
+		for (auto& it : GetChildren())
 		{
-			ModelComponent* modelCast = dynamic_cast<ModelComponent*>(it.get());
+			ModelComponent* modelCast = dynamic_cast<ModelComponent*>(it);
 			MeshInstance* meshInst = modelCast->FindMeshInstance(nodeName, specificMeshName);
 			if (meshInst)
 				return meshInst;
@@ -172,14 +170,11 @@ namespace GEE
 		MeshInstances.push_back(MakeUnique<MeshInstance>(meshInst));
 	}
 
-	void ModelComponent::Update(float deltaTime)
+	void ModelComponent::Update(Time dt)
 	{
 		for (auto& it : MeshInstances)
 			if (it->GetMaterialInst())
-				it->GetMaterialInst()->Update(deltaTime);
-
-		if (Name == "MeshPreviewModel")
-			;// ComponentTransform.SetRotation(glm::rotate(Mat4f(1.0f), (float)glfwGetTime(), Vec3f(0.0f, 1.0f, 0.0f)));
+				it->GetMaterialInst()->Update(dt);
 	}
 
 	void ModelComponent::Render(const SceneMatrixInfo& info, Shader* shader)
@@ -199,10 +194,10 @@ namespace GEE
 		std::transform(MeshInstances.begin(), MeshInstances.end(), std::back_inserter(meshInstances), [](UniquePtr<MeshInstance>& instVec) { return *instVec; });
 
 		if (SkelInfo && SkelInfo->GetBoneCount() > 0)
-			SkeletalMeshRenderer(*GameHandle->GetRenderEngineHandle()).SkeletalMeshInstances(info, meshInstances, *SkelInfo, GetTransform().GetWorldTransform(), *shader);
+			SkeletalMeshRenderer(*GetGameHandle() ->GetRenderEngineHandle()).SkeletalMeshInstances(info, meshInstances, *SkelInfo, GetTransform().GetWorldTransform(), *shader);
 		else
 		{
-			Renderer(*GameHandle->GetRenderEngineHandle()).StaticMeshInstances((CanvasPtr) ? (CanvasPtr->BindForRender(info)) : (info), meshInstances, GetTransform().GetWorldTransform(), *shader, RenderAsBillboard);
+			Renderer(*GetGameHandle()->GetRenderEngineHandle()).StaticMeshInstances((CanvasPtr) ? (CanvasPtr->BindForRender(info)) : (info), meshInstances, GetTransform().GetWorldTransform(), *shader, RenderAsBillboard);
 			if (CanvasPtr)
 				CanvasPtr->UnbindForRender();
 		}
@@ -215,14 +210,14 @@ namespace GEE
 		descBuilder.AddField("Render as billboard").GetTemplates().TickBox(RenderAsBillboard);
 
 		UICanvasFieldCategory& cat = descBuilder.GetCanvas().AddCategory("Mesh instances (" + std::to_string(MeshInstances.size()) + ")");
-		cat.GetTemplates().ListSelection<UniquePtr<MeshInstance>>(MeshInstances.begin(), MeshInstances.end(), [this, descBuilder](UIAutomaticListActor& listActor, UniquePtr<MeshInstance>& meshInst)
+		cat.GetTemplates().ListSelection<UniquePtr<MeshInstance>>(MeshInstances.begin(), MeshInstances.end(), [this, descBuilder](UIAutomaticListActor& listActor, UniquePtr<MeshInstance>& meshInst) mutable
 			{
 				std::string name = meshInst->GetMesh().GetLocalization().NodeName + " (" + meshInst->GetMesh().GetLocalization().SpecificName + ")";
 				auto& meshButton = listActor.CreateChild<UIButtonActor>(name + "Button", name, [this, descBuilder, &meshInst]() mutable {
 					UIWindowActor& window = dynamic_cast<UICanvasActor*>(&descBuilder.GetCanvas())->CreateChildCanvas<UIWindowActor>("MeshViewport");
 					window.SetTransform(Transform(Vec2f(0.0f), Vec2f(0.5f)));
 
-					GameScene& meshPreviewScene = GameHandle->CreateScene("GEE_Mesh_Preview_Scene");
+					GameScene& meshPreviewScene = GetGameHandle()->CreateScene("GEE_Mesh_Preview_Scene");
 
 					LightProbeComponent& probe = meshPreviewScene.GetRootActor()->CreateComponent<LightProbeComponent>("PreviewLightProbe");
 					LightProbeLoader::LoadLightProbeFromFile(probe, "Assets/Editor/winter_lake_01_4k.hdr");
@@ -242,14 +237,14 @@ namespace GEE
 					auto& camController = camActor.CreateChild<FreeRoamingController>("MeshPreviewCameraController");
 					camController.SetPossessedActor(&camActor);
 
-					UIButtonActor& viewportButton = window.CreateChild<UIButtonActor>("MeshPreviewViewportActor", [this, &meshPreviewScene, &camController]() { std::cout << "VIEWPORT WCISIETY\n"; GameHandle->SetActiveScene(&meshPreviewScene); GameHandle->PassMouseControl(&camController); });
+					UIButtonActor& viewportButton = window.CreateChild<UIButtonActor>("MeshPreviewViewportActor", [this, &meshPreviewScene, &camController]() { std::cout << "VIEWPORT WCISIETY\n"; GetGameHandle()->SetActiveScene(&meshPreviewScene); GetGameHandle()->PassMouseControl(&camController); });
 
-					RenderEngineManager& renderHandle = *GameHandle->GetRenderEngineHandle();
+					RenderEngineManager& renderHandle = *GetGameHandle()->GetRenderEngineHandle();
 
-					GameSettings* settings = new GameSettings(*GameHandle->GetGameSettings());
+					GameSettings* settings = new GameSettings(*GetGameHandle()->GetGameSettings());
 
 					settings->Video.Resolution = Vec2u(1024);
-					RenderToolboxCollection& renderTbCollection = renderHandle.AddRenderTbCollection(MakeUnique<RenderToolboxCollection>("GEE_E_Mesh_Preview_Toolbox_Collection", settings->Video, *GameHandle->GetRenderEngineHandle()));
+					RenderToolboxCollection& renderTbCollection = renderHandle.AddRenderTbCollection(MakeUnique<RenderToolboxCollection>("GEE_E_Mesh_Preview_Toolbox_Collection", settings->Video, *GetGameHandle()->GetRenderEngineHandle()));
 
 					SharedPtr<Material> viewportMaterial = MakeShared<Material>("GEE_E_Mesh_Preview_Viewport");
 					renderHandle.AddMaterial(viewportMaterial);
@@ -267,7 +262,7 @@ namespace GEE
 					window.SetOnCloseFunc([&meshPreviewScene, &renderHandle, viewportMaterial, &renderTbCollection]() { meshPreviewScene.MarkAsKilled();  renderHandle.EraseMaterial(*viewportMaterial); renderHandle.EraseRenderTbCollection(renderTbCollection); });
 				});	//meshButton
 
-				meshButton.SetPopupCreationFunc([this, descBuilder, treePtr = GameHandle->FindHierarchyTree(meshInst->GetMesh().GetLocalization().GetTreeName())](PopupDescription popupDesc) { popupDesc.AddOption("Open hierarchy tree", [this, descBuilder, treePtr]() mutable { descBuilder.GetEditorHandle().GetActions().PreviewHierarchyTree(*treePtr); }); });
+				meshButton.SetPopupCreationFunc([this, descBuilder, treePtr = GetGameHandle()->FindHierarchyTree(meshInst->GetMesh().GetLocalization().GetTreeName())](PopupDescription popupDesc) mutable { popupDesc.AddOption("Open hierarchy tree", [this, descBuilder, treePtr]() mutable { descBuilder.GetEditorHandle().GetActions().PreviewHierarchyTree(*treePtr); }); });
 
 				// Create button that moves this mesh instance down in hierarchy
 				if (meshInst.get() != MeshInstances.front().get())
@@ -314,8 +309,8 @@ namespace GEE
 
 
 		descBuilder.AddField("Override materials").GetTemplates().ObjectInput<Material>(
-			[this]() {  auto materials = GameHandle->GetRenderEngineHandle()->GetMaterials(); std::vector<Material*> materialsPtr; materialsPtr.resize(materials.size()); std::transform(materials.begin(), materials.end(), materialsPtr.begin(), [](SharedPtr<Material> mat) { return mat.get(); }); return materialsPtr; },
-			[this](Material* material) {  auto materials = GameHandle->GetRenderEngineHandle()->GetMaterials(); auto found = std::find_if(materials.begin(), materials.end(), [material](SharedPtr<Material> matVec) { return matVec.get() == material; }); OverrideInstancesMaterial(*found); });
+			[this]() {  auto materials = GetGameHandle()->GetRenderEngineHandle()->GetMaterials(); std::vector<Material*> materialsPtr; materialsPtr.resize(materials.size()); std::transform(materials.begin(), materials.end(), materialsPtr.begin(), [](SharedPtr<Material> mat) { return mat.get(); }); return materialsPtr; },
+			[this](Material* material) {  auto materials = GetGameHandle()->GetRenderEngineHandle()->GetMaterials(); auto found = std::find_if(materials.begin(), materials.end(), [material](SharedPtr<Material> matVec) { return matVec.get() == material; }); OverrideInstancesMaterial(*found); });
 	}
 
 
@@ -332,10 +327,10 @@ namespace GEE
 		archive(CEREAL_NVP(RenderAsBillboard), CEREAL_NVP(MeshInstances), cereal::make_nvp("SkelInfoBatchID", skelInfoBatchID), cereal::make_nvp("SkelInfoID", skelInfoID), cereal::make_nvp("RenderableComponent", cereal::base_class<RenderableComponent>(this)));
 		if (skelInfoID >= 0)
 		{
-			std::cout << "!!!Name of scene: " << Scene.GetName() << "\n";
-			std::cout << "!!!Nr of batches: " << Scene.GetRenderData()->SkeletonBatches.size() << "\n";
-			SetSkeletonInfo(Scene.GetRenderData()->GetBatch(skelInfoBatchID)->GetInfo(skelInfoID));
-			std::cout << "Setting skelinfo of " << Name << " to " << skelInfoBatchID << ", " << skelInfoID << '\n';
+			std::cout << "!!!Name of scene: " << GetScene().GetName() << "\n";
+			std::cout << "!!!Nr of batches: " << GetScene().GetRenderData()->SkeletonBatches.size() << "\n";
+			SetSkeletonInfo(GetScene().GetRenderData()->GetBatch(skelInfoBatchID)->GetInfo(skelInfoID));
+			std::cout << "Setting skelinfo of " << GetName() << " to " << skelInfoBatchID << ", " << skelInfoID << '\n';
 		}
 	}
 

@@ -32,8 +32,8 @@
   @{
 */
 
-#include "common/PxBase.h"
-#include "extensions/PxRepXSimpleType.h"
+#include <PhysX/common/PxBase.h>
+#include <PhysX/extensions/PxRepXSimpleType.h>
 
 #if !PX_DOXYGEN
 namespace physx

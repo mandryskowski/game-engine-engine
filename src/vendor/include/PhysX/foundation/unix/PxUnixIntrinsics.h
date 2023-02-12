@@ -30,8 +30,8 @@
 #ifndef PXFOUNDATION_PXUNIXINTRINSICS_H
 #define PXFOUNDATION_PXUNIXINTRINSICS_H
 
-#include "foundation/Px.h"
-#include "foundation/PxSharedAssert.h"
+#include <PhysX/foundation/Px.h>
+#include <PhysX/foundation/PxSharedAssert.h>
 
 #if !(PX_LINUX || PX_ANDROID || PX_PS4 || PX_APPLE_FAMILY)
 #error "This file should only be included by Unix builds!!"

@@ -18,38 +18,24 @@ namespace GEE
 
 	struct DUPA
 	{
-		static float AnimTime;
+		static Time AnimTime;
 	};
-
-	typedef float Time;
 
 
 	class Interpolation
 	{
-		Time CurrentTime;
-		Time Begin;
-		Time End;
-		float TValue;
-
-		InterpolationType Type;
-		bool FadeAway;	//used to inverse the interpolation function
-
-		AnimBehaviour BeforeBehaviour, AfterBehaviour;
-
-		std::function<bool(float)> OnUpdateFunc;
-
 	public:
 		Interpolation(Time begin, Time end, InterpolationType type = InterpolationType::Linear, bool fadeAway = false, AnimBehaviour before = AnimBehaviour::STOP, AnimBehaviour after = AnimBehaviour::STOP);
-		bool IsChanging() const;
-		float GetT() const;
-		Time GetDuration() const;
+		[[nodiscard]] bool IsChanging() const;
+		[[nodiscard]] double GetT() const;
+		[[nodiscard]] Time GetDuration() const;
 
-		void SetOnUpdateFunc(std::function<bool(Time)> func)
+		void SetOnUpdateFunc(std::function<bool(double)> func)
 		{
 			OnUpdateFunc = std::move(func);
 		}
 
-		void SetT(float t);
+		void SetT(double t);
 
 		void Reset(Time begin = -1.0f, Time end = -1.0f);
 		void Inverse();	//this method essentially changes the direction of the interpolation. When you inverse an Interpolation, the interpolation function and time become inversed, so TValue increases at the same pace
@@ -61,6 +47,19 @@ namespace GEE
 		bool UpdateT(Time deltaTime);
 
 		template <class ValType> ValType InterpolateValues(ValType y1, ValType y2);
+
+	private:
+		Time CurrentTime;
+		Time Begin;
+		Time End;
+		double TValue;
+
+		InterpolationType Type;
+		bool FadeAway;	//used to inverse the interpolation function
+
+		AnimBehaviour BeforeBehaviour, AfterBehaviour;
+
+		std::function<bool(Time)> OnUpdateFunc;
 	};
 
 	class InterpolatorBase
@@ -69,14 +68,14 @@ namespace GEE
 		virtual bool GetHasEnded() = 0;
 		virtual SharedPtr<Interpolation> GetInterp() = 0;
 		virtual void ResetMinVal() = 0;
-		virtual void Update(float deltaTime) = 0;
+		virtual void Update(Time deltaTime) = 0;
 		virtual void UpdateInterpolatedValPtr() = 0;	//Call to update the interpolated value ptr (if passed)
+		virtual ~InterpolatorBase() = default;
 	};
 
 	template <class ValType>
 	class Interpolator : public InterpolatorBase
 	{
-	public: //TODO erase this
 		SharedPtr<Interpolation> Interp;
 		ValType MinVal;
 		ValType MaxVal;
@@ -88,31 +87,31 @@ namespace GEE
 		ValType* InterpolatedValPtr;	//optional pointer; if set, the Update method automatically updates the variable that this pointer points to
 
 	public:
-		Interpolator(float begin, float end, ValType min, ValType max, InterpolationType type, bool fadeAway = false, AnimBehaviour before = AnimBehaviour::STOP, AnimBehaviour after = AnimBehaviour::STOP, bool updateMinOnBegin = false, ValType* valPtr = nullptr);
+		Interpolator(Time begin, Time end, ValType min, ValType max, InterpolationType type, bool fadeAway = false, AnimBehaviour before = AnimBehaviour::STOP, AnimBehaviour after = AnimBehaviour::STOP, bool updateMinOnBegin = false, ValType* valPtr = nullptr);
 		Interpolator(Interpolation&& interp, ValType min, ValType max, bool updateMinOnBegin = true, ValType* valPtr = nullptr);
 		Interpolator(SharedPtr<Interpolation> interp, ValType min, ValType max, bool updateMinOnBegin = true, ValType* valPtr = nullptr);
 
-		virtual bool GetHasEnded() override;
-		virtual SharedPtr<Interpolation> GetInterp() override;
+		bool GetHasEnded() override;
+		SharedPtr<Interpolation> GetInterp() override;
 		ValType GetCurrentValue();
 		void SetValPtr(ValType* valPtr);
 
 		void SetMinVal(ValType val);	//these 3 methods are not recommended for use during actual interpolation
-		virtual void ResetMinVal() override;	//set MinVal to the current value
+		void ResetMinVal() override;	//set MinVal to the current value
 		void SetMaxVal(ValType val);
 
 		void Inverse();		//make the interpolator "go another way" (interpolate to the starting point). Useful for stuff like camera interpolation
 
-		void Update(float deltaTime) override;
-		virtual void UpdateInterpolatedValPtr() override;
+		void Update(Time deltaTime) override;
+		void UpdateInterpolatedValPtr() override;
 	};
 
 
 	struct AnimationKey
 	{
-		float Time;
-		AnimationKey(float time) :
-			Time(time)
+		Time KeyTime;
+		AnimationKey(Time time) :
+			KeyTime(time)
 		{
 		}
 	};
@@ -120,7 +119,7 @@ namespace GEE
 	struct AnimationVecKey : public AnimationKey
 	{
 		Vec3f Value;
-		AnimationVecKey(float time, Vec3f value) :
+		AnimationVecKey(Time time, Vec3f value) :
 			AnimationKey(time),
 			Value(value)
 		{
@@ -130,7 +129,7 @@ namespace GEE
 	struct AnimationQuatKey : public AnimationKey
 	{
 		Quatf Value;
-		AnimationQuatKey(float time, Quatf value) :
+		AnimationQuatKey(Time time, Quatf value) :
 			AnimationKey(time),
 			Value(value)
 		{
@@ -143,7 +142,7 @@ namespace GEE
 		std::vector<SharedPtr<AnimationVecKey>> PosKeys;
 		std::vector<SharedPtr<AnimationQuatKey>> RotKeys;
 		std::vector<SharedPtr<AnimationVecKey>> ScaleKeys;
-		AnimationChannel(aiNodeAnim*, float tickPerSecond);
+		AnimationChannel(aiNodeAnim*, double tickPerSecond);
 	};
 
 	struct Animation
@@ -152,9 +151,9 @@ namespace GEE
 		struct AnimationLoc : public HTreeObjectLoc	//exact localization of the animation
 		{
 			std::string Name;
-			AnimationLoc(HTreeObjectLoc treeObjectLoc, const std::string& name) : HTreeObjectLoc(treeObjectLoc), Name(name) {}
+			AnimationLoc(HTreeObjectLoc treeObjectLoc, const String& name) : HTreeObjectLoc(treeObjectLoc), Name(name) {}
 		} Localization;
-		float Duration;
+		Time Duration;
 
 		Animation(const Hierarchy::Tree& tree, aiAnimation*);
 	};

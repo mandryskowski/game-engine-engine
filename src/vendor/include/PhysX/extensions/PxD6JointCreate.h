@@ -30,7 +30,7 @@
 #ifndef PX_D6JOINT_CREATE_H
 #define PX_D6JOINT_CREATE_H
 
-#include "common/PxPhysXCommonConfig.h"
+#include <PhysX/common/PxPhysXCommonConfig.h>
 
 /** \addtogroup extensions
   @{

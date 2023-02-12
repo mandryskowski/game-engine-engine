@@ -22,8 +22,8 @@ namespace GEE
 		PhysicsData(MakeUnique<Physics::GameScenePhysicsData>(*this)),
 		AudioData(MakeUnique<Audio::GameSceneAudioData>(*this)),
 		UIData(nullptr),
-		ActiveCamera(nullptr),
 		Name(name),
+		ActiveCamera(nullptr),
 		GameHandle(&gameHandle),
 		KillingProcessFrame(0),
 		bHasStarted(false)
@@ -35,10 +35,11 @@ namespace GEE
 		PhysicsData(MakeUnique<Physics::GameScenePhysicsData>(*this)),
 		AudioData(MakeUnique<Audio::GameSceneAudioData>(*this)),
 		UIData(MakeUnique<GameSceneUIData>(*this, associatedWindow)),
-		ActiveCamera(nullptr),
 		Name(name),
+		ActiveCamera(nullptr),
 		GameHandle(&gameHandle),
-		KillingProcessFrame(0)
+		KillingProcessFrame(0),
+		bHasStarted(false)
 	{
 		RootActor = MakeUnique<Actor>(*this, nullptr, "SceneRoot");
 	}
@@ -48,10 +49,11 @@ namespace GEE
 		RenderData(std::move(scene.RenderData)),
 		PhysicsData(std::move(scene.PhysicsData)),
 		AudioData(std::move(scene.AudioData)),
-		ActiveCamera(scene.ActiveCamera),
 		Name(scene.Name),
+		ActiveCamera(scene.ActiveCamera),
 		GameHandle(scene.GameHandle),
-		KillingProcessFrame(scene.KillingProcessFrame)
+		KillingProcessFrame(scene.KillingProcessFrame),
+		bHasStarted(scene.bHasStarted)
 	{
 		RootActor = MakeUnique<Actor>(*this, nullptr, "SceneRoot");
 	}
@@ -183,7 +185,7 @@ namespace GEE
 		return nullptr;
 	}
 
-	void GameScene::HandleEventAll(Event& ev)
+	void GameScene::HandleEventAll(const Event& ev)
 	{
 		if (ev.GetEventRoot() && &ev.GetEventRoot()->GetScene() != this)
 			return;
@@ -192,12 +194,12 @@ namespace GEE
 			UIData->HandleEventAll(ev);
 
 		if (ev.GetEventRoot())
-			ev.GetEventRoot()->HandleEventAll(ev);
+			const_cast<Actor*>(ev.GetEventRoot())->HandleEventAll(ev);
 		else
 			RootActor->HandleEventAll(ev);
 	}
 
-	void GameScene::Update(float deltaTime)
+	void GameScene::Update(Time deltaTime)
 	{
 		if (IsBeingKilled())
 		{
@@ -333,19 +335,19 @@ namespace GEE
 		}
 	}
 
-	RenderEngineManager* GameSceneRenderData::GetRenderHandle()
+	RenderEngineManager* GameSceneRenderData::GetRenderHandle() const
 	{
 		return RenderHandle;
 	}
 
-	LightProbeTextureArrays* GameSceneRenderData::GetProbeTexArrays()
+	LightProbeTextureArrays* GameSceneRenderData::GetProbeTexArrays() const
 	{
 		return ProbeTexArrays.get();
 	}
 
-	int GameSceneRenderData::GetAvailableLightIndex()
+	int GameSceneRenderData::GetAvailableLightIndex() const
 	{
-		return Lights.size();
+		return static_cast<int>(Lights.size());
 	}
 
 	bool GameSceneRenderData::ContainsLights() const

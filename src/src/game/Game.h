@@ -22,29 +22,29 @@ namespace GEE
 		Game(const ShadingAlgorithm&, const GameSettings&);
 		virtual void Init(SystemWindow* window, const Vec2u& windowSize);
 
-		bool LoadSceneFromFile(const std::string& path, const std::string& name = std::string());
+		bool LoadSceneFromFile(const String& path, const String& name = String());
 
-		virtual GameScene& CreateScene(std::string name, bool disallowChangingNameIfTaken = true) override;
-		virtual GameScene& CreateUIScene(std::string name, SystemWindow& associateWindow, bool disallowChangingNameIfTaken = true) override;
+		GameScene& CreateScene(String name, bool disallowChangingNameIfTaken = true) override;
+		GameScene& CreateUIScene(String name, SystemWindow& associateWindow, bool disallowChangingNameIfTaken = true) override;
 		void AddScene(UniquePtr <GameScene> scene);
 		
 		/**
 		 * @brief Add an Interpolation to be Updated each frame. This Interpolation will be removed if its UpdateT function returns true.
 		 * @param: the Interpolation object.
 		*/
-		virtual void AddInterpolation(const Interpolation&) override;
-		virtual void BindAudioListenerTransformPtr(Transform*) override;
+		void AddInterpolation(const Interpolation&) override;
+		void BindAudioListenerTransformPtr(Transform*) override;
 
 		/**
 		 * @brief Checks if the passed transform is bound and unbinds it if that's the case.
 		 * @param a pointer to the Transform object to be checked (and potentially unbound)
 		*/
-		virtual void UnbindAudioListenerTransformPtr(Transform* transform) override;
+		void UnbindAudioListenerTransformPtr(Transform* transform) override;
 
-		virtual void PassMouseControl(Controller* controller) override; //pass nullptr to unbind the current controller.
-		virtual const Controller* GetCurrentMouseController() const override;
-		virtual SharedPtr<Font> GetDefaultFont() override;
-		virtual bool HasStarted() const override;
+		void PassMouseControl(Controller* controller) override; //pass nullptr to unbind the current controller.
+		const Controller* GetCurrentMouseController() const override;
+		SharedPtr<Font> GetDefaultFont() override;
+		bool HasStarted() const override;
 		/**
 		 * @return The default input retriever (for the default game window)
 		*/
@@ -52,41 +52,41 @@ namespace GEE
 		/**
 		 * @return Amount of time (in seconds) which passed since the start of the program.
 		*/
-		virtual double GetProgramRuntime() const override;
+		Time GetProgramRuntime() const override;
 
-		virtual Physics::PhysicsEngineManager* GetPhysicsHandle() override;
-		virtual RenderEngineManager* GetRenderEngineHandle() override;
-		virtual Audio::AudioEngineManager* GetAudioEngineHandle() override;
+		Physics::PhysicsEngineManager* GetPhysicsHandle() override;
+		RenderEngineManager* GetRenderEngineHandle() override;
+		Audio::AudioEngineManager* GetAudioEngineHandle() override;
 
-		virtual GameSettings* GetGameSettings() override;
-		virtual GameScene* GetScene(const std::string& name) override;
-		virtual GameScene* GetMainScene() override;
-		virtual Actor* GetRootActor(GameScene* scene = nullptr) override;
+		GameSettings* GetGameSettings() override;
+		GameScene* GetScene(const std::string& name) override;
+		GameScene* GetMainScene() override;
+		Actor* GetRootActor(GameScene* scene = nullptr) override;
 
-		virtual unsigned long long GetTotalTickCount() const override;
-		virtual unsigned long long GetTotalFrameCount() const override;
+		unsigned long long GetTotalTickCount() const override;
+		unsigned long long GetTotalFrameCount() const override;
 
-		virtual GameScene* GetActiveScene() override;
-		virtual void SetActiveScene(GameScene* scene) override;
+		GameScene* GetActiveScene() override;
+		void SetActiveScene(GameScene* scene) override;
 
-		virtual void SetCursorIcon(DefaultCursorIcon) override;
+		void SetCursorIcon(DefaultCursorIcon) override;
 
-		virtual Hierarchy::Tree* FindHierarchyTree(const std::string& name, Hierarchy::Tree* treeToIgnore = nullptr) override;
-		virtual SharedPtr<Font> FindFont(const std::string& path) override;
+		Hierarchy::Tree* FindHierarchyTree(const std::string& name, Hierarchy::Tree* treeToIgnore = nullptr) override;
+		SharedPtr<Font> FindFont(const std::string& path) override;
 
 		virtual void PreGameLoop();
-		virtual bool GameLoopIteration(float timeStep, float deltaTime);
+		virtual bool GameLoopIteration(Time timeStep, Time deltaTime);
 		virtual void HandleEvents();
 
-		virtual void Update(float deltaTime);
+		virtual void Update(Time deltaTime);
 
 		virtual void Render() = 0;
 
 	protected:
 		void TerminateGame();
 		void SetMainScene(GameScene*);
-		virtual EventPusher GetEventPusher(GameScene&) override;
-		virtual void DeleteScene(GameScene&) override;
+		EventPusher GetEventPusher(GameScene&) override;
+		void DeleteScene(GameScene&) override;
 		std::vector<GameSceneRenderData*> GetSceneRenderDatas();
 
 		// If bGameTerminated is true, no more GameLoopIterations will occur.
@@ -113,8 +113,8 @@ namespace GEE
 		const ShadingAlgorithm Shading;
 		bool GameStarted;
 		bool DebugMode;
-		float LoopBeginTime;
-		float TimeAccumulator;
+		Time LoopBeginTime;
+		Time TimeAccumulator;
 
 		unsigned long long TotalTickCount, TotalFrameCount;
 	};

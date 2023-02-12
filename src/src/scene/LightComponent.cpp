@@ -33,9 +33,9 @@ namespace GEE
 
 		std::cout << "WAZNE! ASSIGNING LIGHT INDEX " << index << "\n";
 
-		Scene.GetRenderData()->AddLight(*this);
+		GetScene().GetRenderData()->AddLight(*this);
 
-		TransformDirtyFlagIndex = ComponentTransform.AddDirtyFlag();
+		TransformDirtyFlagIndex = GetTransform().AddDirtyFlag();
 
 		CalculateLightRadius();
 	}
@@ -58,8 +58,8 @@ namespace GEE
 		ShadowMapNr(comp.ShadowMapNr),
 		bHasValidShadowMap(comp.bHasValidShadowMap)
 	{
-		TransformDirtyFlagIndex = ComponentTransform.AddDirtyFlag();
-		Scene.GetRenderData()->AddLight(*this);
+		TransformDirtyFlagIndex = GetTransform().AddDirtyFlag();
+		GetScene().GetRenderData()->AddLight(*this);
 	}
 
 	LightComponent& LightComponent::operator=(const LightComponent& light)
@@ -119,12 +119,12 @@ namespace GEE
 	{
 		switch (Type)
 		{
-		case SPOT:
+		case LightType::SPOT:
 			if (Ambient == Vec3f(0.0f))
 				return EngineBasicShape::Cone;
-		case POINT:
+		case LightType::POINT:
 			return EngineBasicShape::Sphere;
-		case DIRECTIONAL:
+		case LightType::DIRECTIONAL:
 			return EngineBasicShape::Quad;
 		default:
 			std::cerr << "ERROR! Unknown light type: " << (int)Type << ".\n";
@@ -134,7 +134,7 @@ namespace GEE
 
 	Shader* LightComponent::GetRenderShader(const RenderToolboxCollection& renderCol) const
 	{
-		return GameHandle->GetRenderEngineHandle()->GetLightShader(renderCol, Type);
+		return GetGameHandle()->GetRenderEngineHandle()->GetLightShader(renderCol, Type);
 	}
 
 	bool LightComponent::HasValidShadowMap() const
@@ -157,7 +157,7 @@ namespace GEE
 		if (includingShadowMap) std::cout << "Invalidating cache\n";
 		DirtyFlag = true;
 		if (includingShadowMap) bHasValidShadowMap = false;
-		ComponentTransform.FlagMyDirtiness();
+		GetTransform().FlagMyDirtiness();
 	}
 
 	void LightComponent::CalculateLightRadius()
@@ -184,7 +184,7 @@ namespace GEE
 		Far = radius;
 		Projection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, Far);
 
-		ComponentTransform.SetScale(Vec3f(radius));
+		GetTransform().SetScale(Vec3f(radius));
 
 		///////////////////////////////////////////////////////////////////////////////////
 		///////////////////////////////////////////////////////////////////////////////////
@@ -192,7 +192,7 @@ namespace GEE
 		if (Type == LightType::SPOT && Ambient == Vec3f(0.0f))	//If we are a spotlight and we don't emit any ambient light, we can set the light volume to a cone instead of a sphere - more sweet FPS
 		{
 			float scale = radius * glm::tan(glm::acos(OuterCutOff));	//radius == height in our code
-			ComponentTransform.SetScale(Vec3f(scale, scale, radius));
+			GetTransform().SetScale(Vec3f(scale, scale, radius));
 		}
 	}
 
@@ -267,8 +267,8 @@ namespace GEE
 		if (offset != -1)
 			lightsUBO->offsetCache = offset;
 
-		const Transform& worldTransform = ComponentTransform.GetWorldTransform();
-		bool transformDirtyFlag = ComponentTransform.GetDirtyFlag(TransformDirtyFlagIndex);
+		const Transform& worldTransform = GetTransform().GetWorldTransform();
+		bool transformDirtyFlag = GetTransform().GetDirtyFlag(TransformDirtyFlagIndex);
 
 		if (transformDirtyFlag)
 		{
@@ -293,8 +293,8 @@ namespace GEE
 			lightsUBO->SubData4fv(std::vector <Vec4f> {Vec4f(Ambient, ShadowBias), Vec4f(Diffuse, 0.0f), Vec4f(Specular, 0.0f)}, lightsUBO->offsetCache);
 			float additionalData[3] = { Attenuation, CutOff, OuterCutOff };
 			lightsUBO->SubData(12, additionalData, lightsUBO->offsetCache);
-			lightsUBO->SubData1f(Type, lightsUBO->offsetCache);
-			lightsUBO->SubData1f(ShadowMapNr, lightsUBO->offsetCache);
+			lightsUBO->SubData1f(static_cast<float>(Type), lightsUBO->offsetCache);
+			lightsUBO->SubData1f(static_cast<float>(ShadowMapNr), lightsUBO->offsetCache);
 			lightsUBO->SubData1f(Far, lightsUBO->offsetCache);
 
 			DirtyFlag = false;
@@ -349,7 +349,7 @@ namespace GEE
 		shadowBiasInputBox.SetOnInputFunc([this](float val) { SetShadowBias(val); }, [this]() -> float { return ShadowBias; });
 		descBuilder.AddField("Cull fronts in shadow maps").GetTemplates().TickBox(bShadowMapCullFronts);
 		descBuilder.AddField("Light index").CreateChild<UIButtonActor>("LightIndexInfo",
-			std::to_string(LightIndex) + "/" + std::to_string(Scene.GetRenderData()->GetMaxShadowedLightCount())).SetDisableInput(true);
+			std::to_string(LightIndex) + "/" + std::to_string(GetScene().GetRenderData()->GetMaxShadowedLightCount())).SetDisableInput(true);
 
 
 		UICanvasField& typeField = descBuilder.AddField("Type");
@@ -362,18 +362,18 @@ namespace GEE
 	{
 		Component::DebugRender(info, shader, debugIconScale);
 
-		if (auto editorCast = dynamic_cast<Editor::EditorManager*>(GameHandle); editorCast && editorCast->GetActions().GetSelectedComponent() != this)
+		if (auto editorCast = dynamic_cast<Editor::EditorManager*>(GetGameHandle()); editorCast && editorCast->GetActions().GetSelectedComponent() != this)
 			return;
 			
 
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-		Renderer(*GameHandle->GetRenderEngineHandle()).StaticMeshInstances(info, { GameHandle->GetRenderEngineHandle()->GetBasicShapeMesh(LightVolume(*this).GetShape()) }, LightVolume(*this).GetRenderTransform(), shader);
+		Renderer(*GetGameHandle()->GetRenderEngineHandle()).StaticMeshInstances(info, { GetGameHandle()->GetRenderEngineHandle()->GetBasicShapeMesh(LightVolume(*this).GetShape()) }, LightVolume(*this).GetRenderTransform(), shader);
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	}
 
 	LightComponent::~LightComponent()
 	{
-		Scene.GetRenderData()->EraseLight(*this);
+		GetScene().GetRenderData()->EraseLight(*this);
 	}
 
 	LightVolume::LightVolume(const LightComponent& lightCompPtr) :
@@ -401,7 +401,7 @@ namespace GEE
 
 	void LightVolume::SetupRenderUniforms(const Shader& shader) const
 	{
-		shader.Uniform1i("lightIndex", LightCompPtr->GetLightIndex());
+		shader.Uniform<int>("lightIndex", LightCompPtr->GetLightIndex());
 	}
 
 

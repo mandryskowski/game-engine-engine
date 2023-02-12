@@ -33,8 +33,8 @@
 /** \addtogroup geomutils 
 @{ */
 
-#include "common/PxPhysXCommonConfig.h"
-#include "foundation/PxBitAndData.h"
+#include <PhysX/common/PxPhysXCommonConfig.h>
+#include <PhysX/foundation/PxBitAndData.h>
 
 #if !PX_DOXYGEN
 namespace physx

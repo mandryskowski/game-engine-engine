@@ -6,12 +6,19 @@
 template <typename Arg,typename...	Args>
 void GEE_LOG(Arg&& arg, Args&&... args)
 {
-	std::time_t currentTime = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+	const std::time_t currentTime = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
 
-	// Change delimiter of ctime (\n) to end of const char delimiter (\0)
-	std::string timeStr = std::ctime(&currentTime);
+	constexpr unsigned int bufferSize = 80;
+	tm newTime;
+	char buffer[bufferSize];
+
+	localtime_s(&newTime, &currentTime);
+
+	// Change delimiter of timeStr (\n) to end of const char delimiter (\0)
+	std::string timeStr(buffer, std::strftime(buffer, bufferSize, "%Y-%m-%d-%H:%M:%S", &newTime));
 	timeStr.pop_back();
-	std::cout << timeStr << ">";
+
+	std::cout << timeStr << "> ";
 	std::cout << std::forward<Arg>(arg);
 	((std::cout << ' ' << std::forward<Args>(args)), ...);
 	std::cout << '\n';

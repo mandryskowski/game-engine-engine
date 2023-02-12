@@ -26,7 +26,7 @@ namespace GEE
 			virtual NodeBase* FindNode(const std::string& name) = 0;
 			template <typename CompType> Node<CompType>& CreateChild(const std::string& name)
 			{
-				UniquePtr<Node<CompType>> nodeSmartPtr = MakeUnique<Node<CompType>>(GetCompBaseType().ActorRef, name);
+				UniquePtr<Node<CompType>> nodeSmartPtr = MakeUnique<Node<CompType>>(GetCompBaseType().GetActor(), name);
 				Node<CompType>& nodeRef = *nodeSmartPtr;
 				AddChild(std::move(nodeSmartPtr));
 

@@ -34,19 +34,19 @@
   @{
 */
 
-#include "PxPhysXConfig.h"
-#include "foundation/PxMath.h"
-#include "foundation/PxMathUtils.h"
-#include "foundation/PxVec3.h"
-#include "foundation/PxMat33.h"
-#include "foundation/PxQuat.h"
-#include "foundation/PxTransform.h"
-#include "geometry/PxGeometry.h"
-#include "geometry/PxBoxGeometry.h"
-#include "geometry/PxSphereGeometry.h"
-#include "geometry/PxCapsuleGeometry.h"
-#include "geometry/PxConvexMeshGeometry.h"
-#include "geometry/PxConvexMesh.h"
+#include <PhysX/PxPhysXConfig.h>
+#include <PhysX/foundation/PxMath.h>
+#include <PhysX/foundation/PxMathUtils.h>
+#include <PhysX/foundation/PxVec3.h>
+#include <PhysX/foundation/PxMat33.h>
+#include <PhysX/foundation/PxQuat.h>
+#include <PhysX/foundation/PxTransform.h>
+#include <PhysX/geometry/PxGeometry.h>
+#include <PhysX/geometry/PxBoxGeometry.h>
+#include <PhysX/geometry/PxSphereGeometry.h>
+#include <PhysX/geometry/PxCapsuleGeometry.h>
+#include <PhysX/geometry/PxConvexMeshGeometry.h>
+#include <PhysX/geometry/PxConvexMesh.h>
 
 #if !PX_DOXYGEN
 namespace physx

@@ -17,7 +17,7 @@ namespace GEE
 		UICanvasField(GameScene&, Actor* parentActor, const std::string& name, const BuilderStyle& defaultStyle = BuilderStyle());
 		virtual void OnStart() override;
 		UIElementTemplates GetTemplates();
-		TextComponent* GetTitleComp();
+		TextComponent* GetTitleComp() const;
 
 	private:
 		TextComponent* TitleComp;
@@ -30,15 +30,15 @@ namespace GEE
 		UICanvasFieldCategory(GameScene& scene, Actor* parentActor, const std::string& name, const BuilderStyle& defaultStyle = BuilderStyle());
 
 		virtual void OnStart() override;
-		UIButtonActor* GetExpandButton();
+		UIButtonActor* GetExpandButton() const;
 
 		UIElementTemplates GetTemplates();
 
-		UICanvasField& AddField(const std::string& name, std::function<Vec3f()> getElementOffset = nullptr);
+		UICanvasField& AddField(const std::string& name, const std::function<Vec3f()>& getElementOffset = nullptr);
 		UICanvasFieldCategory& AddCategory(const std::string& name);
 
 		virtual Vec3f GetListOffset() override;
-		void SetOnExpansionFunc(std::function<void()> onExpansionFunc);
+		void SetOnExpansionFunc(const std::function<void()>& onExpansionFunc);
 
 		virtual void HandleEventAll(const Event& ev) override;
 
@@ -65,41 +65,52 @@ namespace GEE
 		UIElementTemplates(Actor&, const BuilderStyle& style = BuilderStyle());
 
 
-		void TickBox(bool& modifiedBool);
-		void TickBox(std::function<bool()> setFunc);
-		void TickBox(std::function<void(bool)> setFunc, std::function<bool()> getFunc);
+		void TickBox(bool& modifiedBool) const;
+		void TickBox(const std::function<bool()>& setFunc) const;
+		void TickBox(const std::function<void(bool)>& setFunc, const std::function<bool()>& getFunc) const;
 		
 		struct VecInputDescription
 		{
 			std::vector<UIInputBoxActor*> VecInputBoxes;
 		};
-		template <unsigned int length, typename T = float> VecInputDescription VecInput(std::function<void(int, T)> setFunc, std::function<T(int)> getFunc);	//encapsulated
-		template <unsigned int length, typename T> VecInputDescription VecInput(Vec<length, T>& modifiedVec);	//not encapsulated
+		template <MathContainerUnit length, typename T = float> VecInputDescription VecInput(std::function<void(int, T)> setFunc, std::function<T(int)> getFunc);	//encapsulated
+		template <MathContainerUnit length, typename T, glm::qualifier Q> VecInputDescription VecInput(Vec<length, T, Q>& modifiedVec);	//not encapsulated
 
 		/**
 		 * @brief Creates a slider which is a child of the actor tied to this UIElementTemplates object.
 		 * @param processUnitValue: the function used to process the selected value which is from 0 to 1 (unit interval).
+		 * @param defaultValue: initial value that the slider is set to.
 		*/
-		void SliderUnitInterval(std::function<void(float)> processUnitValue, float defaultValue = 0.5f);
-		void SliderRawInterval(float begin, float end, std::function<void(float)> processRawValue, float defaultValue = 0.5f);
+		void SliderUnitInterval(std::function<void(float)> processUnitValue, float defaultValue = 0.5f) const;
+		void SliderRawInterval(float begin, float end, const std::function<void(float)>& processRawValue, float defaultValue = 0.5f) const;
 
 		//
-		template <typename ObjectType> void ObjectInput(std::function<std::vector<ObjectType*>()> getObjectsFunc, std::function<void(ObjectType*)> setFunc, const std::string& currentObjName = std::string());	//encapsulated
-		template <typename ObjectBase, typename ObjectType> void ObjectInput(ObjectBase& hierarchyRoot, std::function<void(ObjectType*)> setFunc, const std::string& currentObjName = std::string());	//encapsulated
-		template <typename ObjectBase, typename ObjectType> void ObjectInput(ObjectBase& hierarchyRoot, ObjectType*& inputTo);	//not encapsulated
+		template <typename ObjectType> void ObjectInput(std::function<std::vector<ObjectType*>()> getObjectsFunc, std::function<void(ObjectType*)> setFunc, const std::string& currentObjName);					//encapsulated
+		template <typename ObjectType> void ObjectInput(std::function<std::vector<ObjectType*>()> getObjectsFunc, std::function<void(ObjectType*)> setFunc, const ObjectType* currentObjNameGetter = nullptr)	//encapsulated
+		{
+			ObjectInput<ObjectType>(getObjectsFunc, setFunc, (currentObjNameGetter) ? (currentObjNameGetter->GetName()) : ("<nothing>"));
+		}
+		template <typename ObjectBase, typename ObjectType> void ObjectInput(ObjectBase& hierarchyRoot, std::function<void(ObjectType*)> setFunc, const std::string& currentObjName);							//encapsulated
+		template <typename ObjectBase, typename ObjectType> void ObjectInput(ObjectBase& hierarchyRoot, std::function<void(ObjectType*)> setFunc, const ObjectType* currentObjNameGetter = nullptr)				//encapsulated
+		{
+			ObjectInput<ObjectBase, ObjectType>(hierarchyRoot, setFunc, (currentObjNameGetter) ? (currentObjNameGetter->GetName()) : ("<nothing>"));
+		}
+		template <typename ObjectBase, typename ObjectType> void ObjectInput(ObjectBase& hierarchyRoot, ObjectType*& inputTo);																					//not encapsulated
 
 		template <typename T, typename InputIt> void ListSelection(InputIt first, InputIt last, std::function<void(UIButtonActor&, T&)> buttonFunc);
 		template <typename T, typename InputIt> void ListSelection(InputIt first, InputIt last, std::function<void(UIAutomaticListActor&, T&)> buttonFunc);
 
 
 	private:
-		void HierarchyTreeInput(UIAutomaticListActor& list, GameScene&, std::function<void(Hierarchy::Tree&)> setFunc);
+		void HierarchyTreeInput(UIAutomaticListActor& list, GameScene&, const std::function<void(Hierarchy::Tree&)>&
+		                        setFunc) const;
 	public:
-		void HierarchyTreeInput(GameScene&, std::function<void(Hierarchy::Tree&)> setFunc);
-		void HierarchyTreeInput(GameManager&, std::function<void(Hierarchy::Tree&)> setFunc);
+		void HierarchyTreeInput(GameScene&, std::function<void(Hierarchy::Tree&)> setFunc) const;
+		void HierarchyTreeInput(GameManager&, const std::function<void(Hierarchy::Tree&)>& setFunc) const;
 
-		void PathInput(std::function<void(const std::string&)> setFunc, std::function<std::string()> getFunc, std::vector<const char*> extensions);	//encapsulated
-		void FolderInput(std::function<void(const std::string&)> setFunc, std::function<std::string()> getFunc, const std::string& defaultPath = "C:/");	//encapsulated
+		void PathInput(std::function<void(const std::string&)> setFunc, std::function<std::string()> getFunc, const std::vector<const char*>
+		               & extensions) const;	//encapsulated
+		void FolderInput(std::function<void(const std::string&)> setFunc, std::function<std::string()> getFunc, const std::string& defaultPath = "C:/") const;	//encapsulated
 
 	private:
 		Actor& TemplateParent;
@@ -130,8 +141,8 @@ namespace GEE
 	}
 
 	// UIElementTemplates template methods definitions
-	template <unsigned int length, typename T>
-	inline UIElementTemplates::VecInputDescription UIElementTemplates::VecInput(std::function<void(int, T)> setFunc, std::function<T(int)> getFunc)
+	template <MathContainerUnit length, typename T>
+	UIElementTemplates::VecInputDescription UIElementTemplates::VecInput(std::function<void(int, T)> setFunc, std::function<T(int)> getFunc)
 	{
 		const std::string materialNames[] = {
 			"GEE_Default_X_Axis", "GEE_Default_Y_Axis", "GEE_Default_Z_Axis", "GEE_Default_W_Axis"
@@ -178,15 +189,15 @@ namespace GEE
 		return desc;
 	}
 
-	template<unsigned int length, typename T>
-	inline UIElementTemplates::VecInputDescription UIElementTemplates::VecInput(Vec<length, T>& modifiedVec)
+	template<MathContainerUnit length, typename T, glm::qualifier Q>
+	UIElementTemplates::VecInputDescription UIElementTemplates::VecInput(Vec<length, T, Q>& modifiedVec)
 	{
-		return VecInput<length, T>([&](float x, T val) { modifiedVec[x] = val; }, [&](float x) -> T { return modifiedVec[x]; });
+		return VecInput<length, T>([&](int x, T val) { modifiedVec[static_cast<MathContainerUnit>(x)] = val; }, [&](int x) -> T { return modifiedVec[static_cast<MathContainerUnit>(x)]; });
 	}
 
 
 	template<typename ObjectType>
-	inline void UIElementTemplates::ObjectInput(std::function<std::vector<ObjectType*>()> getObjectsFunc, std::function<void(ObjectType*)> setFunc, const std::string& currentObjName)
+	void UIElementTemplates::ObjectInput(std::function<std::vector<ObjectType*>()> getObjectsFunc, std::function<void(ObjectType*)> setFunc, const std::string& currentObjName)
 	{
 		GameScene* scenePtr = &Scene;
 		auto& compNameButton = TemplateParent.CreateChild<UIButtonActor>("CompNameBox", currentObjName, nullptr, Style.GetLongButtonT());
@@ -220,7 +231,7 @@ namespace GEE
 			std::vector<ObjectType*> availableObjects = getObjectsFunc();
 
 			
-			auto& deleteMe123 = list.CreateChild<UIButtonActor>("Nullptr object button", "nullptr", [&window, setFunc, &compNameButton]() { setFunc(nullptr); window.MarkAsKilled(); if (auto buttonText = compNameButton.GetRoot()->GetComponent<TextComponent>("ButtonText")) buttonText->SetContent("nullptr"); });
+			auto& deleteMe123 = list.CreateChild<UIButtonActor>("Nullptr object button", "<nothing>", [&window, setFunc, &compNameButton]() { setFunc(nullptr); window.MarkAsKilled(); if (auto buttonText = compNameButton.GetRoot()->GetComponent<TextComponent>("ButtonText")) buttonText->SetContent("nullptr"); });
 			//deleteMe123.CreateComponent<ScrollingTextComponent>("ButtonText", Transform(Vec2f(0.0f), Vec2f(0.25f, 1.0f)), "Nullptr", "", Alignment2D::LeftCenter());
 			for (auto& it : availableObjects)
 			{
@@ -235,7 +246,7 @@ namespace GEE
 	}
 
 	template<typename ObjectBase, typename ObjectType>
-	inline void UIElementTemplates::ObjectInput(ObjectBase& hierarchyRoot, std::function<void(ObjectType*)> setFunc, const std::string& currentObjName)
+	void UIElementTemplates::ObjectInput(ObjectBase& hierarchyRoot, std::function<void(ObjectType*)> setFunc, const std::string& currentObjName)
 	{
 		ObjectInput<ObjectType>([&]() -> std::vector<ObjectType*> {
 			std::vector<ObjectType*> availableObjects;
@@ -249,18 +260,18 @@ namespace GEE
 	}
 
 	template<typename ObjectBase, typename ObjectType>
-	inline void UIElementTemplates::ObjectInput(ObjectBase& hierarchyRoot, ObjectType*& inputTo)
+	void UIElementTemplates::ObjectInput(ObjectBase& hierarchyRoot, ObjectType*& inputTo)
 	{
-		ObjectInput<ObjectBase, ObjectType>(hierarchyRoot, [&inputTo](ObjectType* comp) { inputTo = comp; }, (inputTo) ? (inputTo->GetName()) : (std::string()));
+		ObjectInput<ObjectBase, ObjectType>(hierarchyRoot, [&inputTo](ObjectType* comp) { inputTo = comp; }, (inputTo) ? (inputTo->GetName()) : ("<nothing>"));
 	}
 
 	template<typename T, typename InputIt>
-	inline void UIElementTemplates::ListSelection(InputIt first, InputIt last, std::function<void(UIButtonActor&, T&)> buttonFunc)
+	void UIElementTemplates::ListSelection(InputIt first, InputIt last, std::function<void(UIButtonActor&, T&)> buttonFunc)
 	{
 		ListSelection<T, InputIt>(first, last, [buttonFunc](UIAutomaticListActor& listActor, T& object) { buttonFunc(listActor.CreateChild<UIButtonActor>("ListElementActor"), object); });
 	}
 	template<typename T, typename InputIt>
-	inline void UIElementTemplates::ListSelection(InputIt first, InputIt last, std::function<void(UIAutomaticListActor&, T&)> buttonFunc)
+	void UIElementTemplates::ListSelection(InputIt first, InputIt last, std::function<void(UIAutomaticListActor&, T&)> buttonFunc)
 	{
 		UIAutomaticListActor& listActor = TemplateParent.CreateChild<UIAutomaticListActor>("ListSelectionActor");
 		std::for_each(first, last, [&listActor, buttonFunc](T& object) { buttonFunc(listActor, object); std::cout << " TWORZE PRZYCISKA"; });
@@ -269,7 +280,7 @@ namespace GEE
 
 	// Generic UI templates
 	template<typename FunctorConfirm, typename FunctorDeny>
-	inline void GenericUITemplates::ConfirmationBox(FunctorConfirm&& onConfirmation, FunctorDeny&& onDenial, const std::string& promptText)
+	void GenericUITemplates::ConfirmationBox(FunctorConfirm&& onConfirmation, FunctorDeny&& onDenial, const std::string& promptText)
 	{
 		auto& confirmationWindow = Scene.CreateActorAtRoot<UIWindowActor>("Confirmation window");
 		confirmationWindow.KillResizeBars();

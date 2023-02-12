@@ -33,7 +33,7 @@ namespace GEE
 					case Key::Z: AxisModeBits = (shiftPressed) ? (AxisBits::All - AxisBits::Z) : (AxisBits::Z); break;
 
 					case Key::Escape:
-						possessed->GetTransform() = TransformBeforeAction;
+						possessed->SetTransform(TransformBeforeAction);
 						State = ControllerState::Default;
 						AxisModeBits = AxisBits::All; break;
 				}
@@ -71,19 +71,25 @@ namespace GEE
 			switch (State)
 			{
 				case ControllerState::Grab:
+				{
 					auto v = (rightVector * translationVec.x + upVector * translationVec.y) * 0.4f;
 					std::cout << "% Translation: " << v << '\n';
 					possessed->GetTransform().Move(v);
 					break;
+				}
 				case ControllerState::Resize:
+				{
 					auto vec = (rightVector * translationVec.x + upVector * translationVec.y) * 0.4f;
 					std::cout << "% Scale: " << vec + Vec3f(1.0f) << '\n';
 					possessed->GetTransform().ApplyScale((vec + Vec3f(1.0f)));
 					break;
+				}
 				case ControllerState::Rotate:
+				{
 					auto vect = (rightVector * translationVec.x + upVector * translationVec.y) * 0.4f;
 					possessed->GetTransform().Rotate(vect * 100.0f);
 					break;
+				}
 			}
 		}
 		void DefaultEditorController::Reset(const Transform& t)

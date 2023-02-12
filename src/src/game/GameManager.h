@@ -77,8 +77,9 @@ namespace GEE
 	struct LightProbeTextureArrays;
 
 	class RenderEngine;
+	class GameRenderer;
 
-	enum LightType;
+	enum class LightType;
 	enum class EngineBasicShape;
 
 	class Font;
@@ -145,6 +146,8 @@ namespace GEE
 
 		class PhysicsEngineManager
 		{
+			friend class GEE::GameScene;
+			friend class GEE::GameRenderer;
 		public:
 			virtual void CreatePxShape(CollisionShape&, CollisionObject&) = 0;
 			virtual void AddCollisionObjectToPxPipeline(GameScenePhysicsData& scenePhysicsData, CollisionObject&) = 0;
@@ -155,8 +158,6 @@ namespace GEE
 			virtual ~PhysicsEngineManager() = default;
 		protected:
 			virtual void RemoveScenePhysicsDataPtr(GameScenePhysicsData& scenePhysicsData) = 0;
-			friend class GameScene;
-			friend class GameRenderer;
 		};
 	}
 
@@ -239,21 +240,21 @@ namespace GEE
 		static GameManager& Get();
 	public:
 		virtual void AddInterpolation(const Interpolation&) = 0;
-		virtual GameScene& CreateScene(std::string name, bool disallowChangingNameIfTaken = true) = 0;
-		virtual GameScene& CreateUIScene(std::string name, SystemWindow& associateWindow, bool disallowChangingNameIfTaken = true) = 0;
+		virtual GameScene& CreateScene(String name, bool disallowChangingNameIfTaken = true) = 0;
+		virtual GameScene& CreateUIScene(String name, SystemWindow& associateWindow, bool disallowChangingNameIfTaken = true) = 0;
 
 		virtual void BindAudioListenerTransformPtr(Transform*) = 0;
 		virtual void UnbindAudioListenerTransformPtr(Transform* transform) = 0;
 		virtual void PassMouseControl(Controller* controller) = 0;
 		virtual const Controller* GetCurrentMouseController() const = 0;
-		virtual double GetProgramRuntime() const = 0;
+		virtual Time GetProgramRuntime() const = 0;
 		virtual InputDevicesStateRetriever GetDefInputRetriever() = 0;
 		virtual SharedPtr<Font> GetDefaultFont() = 0;
 
 		virtual bool HasStarted() const = 0;
 
 		virtual Actor* GetRootActor(GameScene* = nullptr) = 0;
-		virtual GameScene* GetScene(const std::string& name) = 0;
+		virtual GameScene* GetScene(const String& name) = 0;
 		virtual GameScene* GetMainScene() = 0;
 		virtual std::vector<GameScene*> GetScenes() = 0;
 		
@@ -271,7 +272,7 @@ namespace GEE
 
 		virtual void SetCursorIcon(DefaultCursorIcon) = 0;
 
-		virtual Hierarchy::Tree* FindHierarchyTree(const std::string& name, Hierarchy::Tree* treeToIgnore = nullptr) = 0;
+		virtual Hierarchy::Tree* FindHierarchyTree(const String& name, Hierarchy::Tree* treeToIgnore = nullptr) = 0;
 		virtual SharedPtr<Font> FindFont(const std::string& path) = 0;
 
 		virtual ~GameManager() = default;
@@ -300,7 +301,7 @@ namespace GEE
 		HTreeObjectLoc() : TreePtr(nullptr) {}
 	public:
 		HTreeObjectLoc(const Hierarchy::Tree& tree) : TreePtr(&tree) {}
-		bool IsValidTreeElement() const;
-		std::string GetTreeName() const;	//get path
+		[[nodiscard]] bool IsValidTreeElement() const;
+		[[nodiscard]] String GetTreeName() const;	//get path
 	};
 }

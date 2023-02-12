@@ -478,3 +478,4 @@ recent.txt
 *.idb
 *.exp
 *.exe
+src/vendor/include/*IGNORE

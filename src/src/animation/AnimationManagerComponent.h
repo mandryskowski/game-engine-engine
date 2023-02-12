@@ -19,15 +19,15 @@ namespace GEE
 		AnimationChannelInstance(AnimationChannel&, Component&);
 		void Restart();
 		void Stop();
-		float GetTimeLeft()
+		Time GetTimeLeft()
 		{
-			float timeLeft = 0.0f;
+			auto timeLeft = 0.0;
 			for (auto& it : PosKeysLeft)
-				timeLeft += (1.0f - it->GetInterp()->GetT()) * it->GetInterp()->GetDuration();
+				timeLeft += (1.0 - it->GetInterp()->GetT()) * it->GetInterp()->GetDuration();
 
 			return timeLeft;
 		}
-		bool Update(float);	//Returns true if animation is taking place, false otherwise
+		bool Update(Time);	//Returns true if animation is taking place, false otherwise
 
 	};
 
@@ -50,7 +50,7 @@ namespace GEE
 		Animation& Anim;
 		Component& AnimRootComp;
 		std::vector<UniquePtr<AnimationChannelInstance>> ChannelInstances;
-		float TimePassed;
+		Time TimePassed;
 
 		bool IsValid;
 
@@ -60,7 +60,7 @@ namespace GEE
 		Animation::AnimationLoc GetLocalization() const;
 		Animation& GetAnimation() const;
 		bool HasFinished() const;
-		void Update(float);
+		void Update(Time);
 		void Stop();
 		void Restart();
 
@@ -77,15 +77,15 @@ namespace GEE
 		AnimationManagerComponent(Actor&, Component* parentComp, const std::string& name);
 
 		AnimationInstance* GetAnimInstance(int index);
-		int GetAnimInstancesCount() const;
+		unsigned GetAnimInstancesCount() const;
 		AnimationInstance* GetCurrentAnim();
 
 		void AddAnimationInstance(AnimationInstance&&);
 
-		virtual void Update(float) override;
+		void Update(Time dt) override;
 		void SelectAnimation(AnimationInstance*);
 
-		virtual void GetEditorDescription(ComponentDescriptionBuilder) override;
+		void GetEditorDescription(ComponentDescriptionBuilder) override;
 
 		template <typename Archive> void Save(Archive& archive) const
 		{
@@ -102,7 +102,7 @@ namespace GEE
 			archive(cereal::make_nvp("CurrentAnimName", currentAnimName), cereal::base_class<Component>(this));
 
 			// erase unloaded anim instances post load
-			Scene.AddPostLoadLambda([this]() mutable {	AnimInstances.erase(std::remove_if(AnimInstances.begin(), AnimInstances.end(), [](const UniquePtr<AnimationInstance>& animInstance)-> bool { return (animInstance.get() == nullptr); }), AnimInstances.end());	});
+			GetScene().AddPostLoadLambda([this]() mutable {	AnimInstances.erase(std::remove_if(AnimInstances.begin(), AnimInstances.end(), [](const UniquePtr<AnimationInstance>& animInstance)-> bool { return (animInstance.get() == nullptr); }), AnimInstances.end());	});
 
 			if (!currentAnimName.empty())
 				for (auto& it : AnimInstances)

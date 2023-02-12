@@ -3,9 +3,14 @@
 
 namespace GEE
 {
-	float DUPA::AnimTime = 9999.0f;
+	Time DUPA::AnimTime = 9999.0f;
 
-	Interpolation::Interpolation(Time begin, Time end, InterpolationType type, bool fadeAway, AnimBehaviour before, AnimBehaviour after):
+	Interpolation::Interpolation(Time begin, Time end, InterpolationType type, bool fadeAway, AnimBehaviour before,
+	                             AnimBehaviour after):
+		CurrentTime(0.0f),
+		Begin(0.0f),
+		End(0.0f),
+		TValue(0.0f),
 		OnUpdateFunc(nullptr)
 	{
 		Reset(begin, end);
@@ -25,7 +30,7 @@ namespace GEE
 		return true;
 	}
 
-	float Interpolation::GetT() const
+	double Interpolation::GetT() const
 	{
 		return TValue;
 	}
@@ -35,7 +40,7 @@ namespace GEE
 		return End;
 	}
 
-	void Interpolation::SetT(float t)
+	void Interpolation::SetT(double t)
 	{
 		TValue = t;
 		if (OnUpdateFunc)
@@ -76,7 +81,7 @@ namespace GEE
 			TValue = 1.0f;
 		else
 		{
-			float exponent = static_cast<float>(Type);	//Linear = 1, Quadratic = 2, Cubic = 3, etc.
+			float exponent = static_cast<float>(Type); //Linear = 1, Quadratic = 2, Cubic = 3, etc.
 			TValue = (FadeAway) ? (1.0f - pow(1.0f - CurrentTime / End, exponent)) : (pow(CurrentTime / End, exponent));
 		}
 
@@ -90,14 +95,16 @@ namespace GEE
 		return !IsChanging();
 	}
 
-	template<class ValType> ValType Interpolation::InterpolateValues(ValType y1, ValType y2)
+	template <class ValType>
+	ValType Interpolation::InterpolateValues(ValType y1, ValType y2)
 	{
 		return glm::mix(y1, y2, TValue);
 	}
 
-	template<> Quatf Interpolation::InterpolateValues<Quatf>(Quatf y1, Quatf y2)
+	template <>
+	Quatf Interpolation::InterpolateValues<Quatf>(Quatf y1, Quatf y2)
 	{
-		return glm::slerp(y1, y2, TValue);
+		return glm::slerp(y1, y2, static_cast<float>(TValue));
 	}
 
 	/*
@@ -106,18 +113,25 @@ namespace GEE
 		=========================================================
 	*/
 
-	template <class ValType> Interpolator<ValType>::Interpolator(float begin, float end, ValType min, ValType max, InterpolationType type, bool fadeAway, AnimBehaviour before, AnimBehaviour after, bool updateMinOnBegin, ValType* valPtr) :
-		Interpolator(MakeShared<Interpolation>(begin, end, type, fadeAway, before, after), min, max, updateMinOnBegin, valPtr)
+	template <class ValType>
+	Interpolator<ValType>::Interpolator(Time begin, Time end, ValType min, ValType max, InterpolationType type,
+	                                    bool fadeAway, AnimBehaviour before, AnimBehaviour after, bool updateMinOnBegin,
+	                                    ValType* valPtr) :
+		Interpolator(MakeShared<Interpolation>(begin, end, type, fadeAway, before, after), min, max, updateMinOnBegin,
+		             valPtr)
 	{
 	}
 
-	template<class ValType>
-	Interpolator<ValType>::Interpolator(Interpolation&& interp, ValType min, ValType max, bool updateMinOnBegin, ValType* valPtr) :
+	template <class ValType>
+	Interpolator<ValType>::Interpolator(Interpolation&& interp, ValType min, ValType max, bool updateMinOnBegin,
+	                                    ValType* valPtr) :
 		Interpolator(MakeShared<Interpolation>(interp), min, max, updateMinOnBegin, valPtr)
 	{
 	}
 
-	template <class ValType> Interpolator<ValType>::Interpolator(SharedPtr<Interpolation> interp, ValType min, ValType max, bool updateOnBegin, ValType* valPtr) :
+	template <class ValType>
+	Interpolator<ValType>::Interpolator(SharedPtr<Interpolation> interp, ValType min, ValType max, bool updateOnBegin,
+	                                    ValType* valPtr) :
 		Interp(interp),
 		MinVal(min),
 		MaxVal(max),
@@ -129,32 +143,38 @@ namespace GEE
 	{
 	}
 
-	template <class ValType> bool Interpolator<ValType>::GetHasEnded()
+	template <class ValType>
+	bool Interpolator<ValType>::GetHasEnded()
 	{
 		return HasEnded;
 	}
 
-	template <class ValType> SharedPtr<Interpolation> Interpolator<ValType>::GetInterp()
+	template <class ValType>
+	SharedPtr<Interpolation> Interpolator<ValType>::GetInterp()
 	{
 		return Interp;
 	}
 
-	template <class ValType> ValType Interpolator<ValType>::GetCurrentValue()
+	template <class ValType>
+	ValType Interpolator<ValType>::GetCurrentValue()
 	{
 		return LastInterpResult;
 	}
 
-	template <class ValType> void Interpolator<ValType>::SetValPtr(ValType* valPtr)
+	template <class ValType>
+	void Interpolator<ValType>::SetValPtr(ValType* valPtr)
 	{
 		InterpolatedValPtr = valPtr;
 	}
 
-	template <class ValType> void Interpolator<ValType>::SetMinVal(ValType val)
+	template <class ValType>
+	void Interpolator<ValType>::SetMinVal(ValType val)
 	{
 		MinVal = val;
 	}
 
-	template <class ValType> void Interpolator<ValType>::ResetMinVal()
+	template <class ValType>
+	void Interpolator<ValType>::ResetMinVal()
 	{
 		if (InterpolatedValPtr)
 			MinVal = *InterpolatedValPtr;
@@ -162,19 +182,24 @@ namespace GEE
 			MinVal = LastInterpResult;
 	}
 
-	template <class ValType> void Interpolator<ValType>::SetMaxVal(ValType val)
+	template <class ValType>
+	void Interpolator<ValType>::SetMaxVal(ValType val)
 	{
 		MaxVal = val;
 	}
 
-	template <class ValType> void Interpolator<ValType>::Inverse()
+	template <class ValType>
+	void Interpolator<ValType>::Inverse()
 	{
 		Interp->Inverse();
-		std::swap(MinVal, MaxVal);	//we swap the min and max values, because we're now interpolating in the other direction
+
+		// We swap the min and max values, because we're now interpolating in the other direction.
+		std::swap(MinVal, MaxVal);
 	}
 
 
-	template <class ValType> void Interpolator<ValType>::Update(float deltaTime)
+	template <class ValType>
+	void Interpolator<ValType>::Update(Time deltaTime)
 	{
 		if (!HasBegun && (Interp->IsChanging() || Interp->GetT() > 0.0f))
 		{
@@ -194,8 +219,6 @@ namespace GEE
 		ValType result = Interp->InterpolateValues(MinVal, MaxVal);
 		bool change = true;
 
-		if (auto cast = dynamic_cast<Interpolator<float>*>(this))
-			;// std::cout << "TVAL: " << Interp->GetT() << ", VAL: " << glm::mix(cast->MinVal, cast->MaxVal, Interp->GetT()) << ", MIN: " << cast->MinVal << ", MAX: " << cast->MaxVal << '\n';
 
 		if (!Interp->IsChanging())
 		{
@@ -209,36 +232,43 @@ namespace GEE
 		}
 
 
+		// Subtract the last result from the current result, because if two interpolations of the same variable happen at once, we can't just assign the result, we have to add delta
 		if (InterpolatedValPtr && change)
-			*InterpolatedValPtr += result - LastInterpResult;	//we subtract the last result from the current result, because if two interpolations of the same variable happen at once, we can't just assign the result, we have to add delta
+			*InterpolatedValPtr += result - LastInterpResult;
 
 		LastInterpResult = result;
 	}
 
-	template<class ValType> void Interpolator<ValType>::UpdateInterpolatedValPtr()
+	template <class ValType>
+	void Interpolator<ValType>::UpdateInterpolatedValPtr()
 	{
 		if (InterpolatedValPtr)
 			*InterpolatedValPtr = Interp->InterpolateValues(MinVal, MaxVal);
 	}
 
 	Animation::Animation(const Hierarchy::Tree& tree, aiAnimation* anim) :
-		Localization(tree, anim->mName.C_Str()), Duration(anim->mDuration / ((anim->mTicksPerSecond != 0.0f) ? (anim->mTicksPerSecond) : (1.0f)))
+		Localization(tree, anim->mName.C_Str()),
+		Duration(anim->mDuration / ((anim->mTicksPerSecond != 0.0) ? (anim->mTicksPerSecond) : (1.0)))
 	{
 		for (int i = 0; i < static_cast<int>(anim->mNumChannels); i++)
 		{
-			Channels.push_back(MakeShared<AnimationChannel>(AnimationChannel(anim->mChannels[i], anim->mTicksPerSecond)));
+			Channels.push_back(
+				MakeShared<AnimationChannel>(AnimationChannel(anim->mChannels[i], anim->mTicksPerSecond)));
 		}
 	}
 
-	AnimationChannel::AnimationChannel(aiNodeAnim* aiChannel, float ticksPerSecond) :
+	AnimationChannel::AnimationChannel(aiNodeAnim* aiChannel, double ticksPerSecond) :
 		Name(aiChannel->mNodeName.C_Str())
 	{
 		for (int i = 0; i < static_cast<int>(aiChannel->mNumPositionKeys); i++)
-			PosKeys.push_back(MakeShared<AnimationVecKey>(AnimationVecKey(aiChannel->mPositionKeys[i].mTime / ticksPerSecond, aiToGlm(aiChannel->mPositionKeys[i].mValue))));
+			PosKeys.push_back(MakeShared<AnimationVecKey>(AnimationVecKey(
+				static_cast<Time>(aiChannel->mPositionKeys[i].mTime / ticksPerSecond), aiToGlm(aiChannel->mPositionKeys[i].mValue))));
 		for (int i = 0; i < static_cast<int>(aiChannel->mNumRotationKeys); i++)
-			RotKeys.push_back(MakeShared<AnimationQuatKey>(AnimationQuatKey(aiChannel->mRotationKeys[i].mTime / ticksPerSecond, aiToGlm(aiChannel->mRotationKeys[i].mValue))));
+			RotKeys.push_back(MakeShared<AnimationQuatKey>(AnimationQuatKey(
+				static_cast<Time>(aiChannel->mRotationKeys[i].mTime / ticksPerSecond), aiToGlm(aiChannel->mRotationKeys[i].mValue))));
 		for (int i = 0; i < static_cast<int>(aiChannel->mNumScalingKeys); i++)
-			ScaleKeys.push_back(MakeShared<AnimationVecKey>(AnimationVecKey(aiChannel->mScalingKeys[i].mTime / ticksPerSecond, aiToGlm(aiChannel->mScalingKeys[i].mValue))));
+			ScaleKeys.push_back(MakeShared<AnimationVecKey>(AnimationVecKey(
+				static_cast<Time>(aiChannel->mScalingKeys[i].mTime / ticksPerSecond), aiToGlm(aiChannel->mScalingKeys[i].mValue))));
 	}
 
 

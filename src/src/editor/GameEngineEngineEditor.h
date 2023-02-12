@@ -6,7 +6,7 @@
 #include <editor/EditorMessageLogger.h>
 #include <unordered_map>
 #include <condition_variable>
-#include <utility/Profiling.h>#
+#include <utility/Profiling.h>
 #include <editor/GEditorSettings.h>
 
 namespace GEE
@@ -30,42 +30,41 @@ namespace GEE
 		public:
 			GameEngineEngineEditor(SystemWindow* window, const GameSettings& settings);
 
-			virtual bool GameLoopIteration(float timeStep, float deltaTime) override;
+			bool GameLoopIteration(Time timeStep, Time deltaTime) override;
 
-			virtual GameManager* GetGameHandle() override;
-			virtual std::vector<GameScene*> GetScenes() override;
+			GameManager* GetGameHandle() override;
+			std::vector<GameScene*> GetScenes() override;
 			GameScene* GetEditorScene() { return EditorScene; }
 
-			virtual GEditorSettings* GetEditorSettings() override { return &EditorSettings; }
-			virtual AtlasMaterial* GetDefaultEditorMaterial(EditorDefaultMaterial) override;
-			virtual EditorActions& GetActions() override;
-			virtual EditorMessageLogger& GetEditorLogger(GameScene& scene) override;
-			virtual bool GetViewportMaximized() const override { return bViewportMaximized; }
+			GEditorSettings* GetEditorSettings() override { return &EditorSettings; }
+			AtlasMaterial* GetDefaultEditorMaterial(EditorDefaultMaterial) override;
+			EditorActions& GetActions() override;
+			EditorMessageLogger& GetEditorLogger(GameScene& scene) override;
+			bool GetViewportMaximized() const override { return bViewportMaximized; }
 			Profiling& GetProfilerRef() { return Profiler; }
 			DefaultEditorController* GetEditorController() { return EditorController; }
-			virtual void GenerateActorList(PopupDescription, std::function<void(Actor&)>) override;
+			void GenerateActorList(PopupDescription, std::function<void(Actor&)>) override;
 
-			virtual void RequestPopupMenu(const Vec2f& posWindowSpace, SystemWindow& relativeWindow, std::function<void(PopupDescription)> popupCreation) override;
+			void RequestPopupMenu(const Vec2f& posWindowSpace, SystemWindow& relativeWindow, std::function<void(PopupDescription)> popupCreation) override;
 
-			virtual std::string ToRelativePath(const std::string&) override;
-			virtual void Init(SystemWindow* window, const Vec2u& windowSize) override;
+			std::string ToRelativePath(const std::string&) override;
+			void Init(SystemWindow* window, const Vec2u& windowSize) override;
 
-			virtual PopupDescription CreatePopupMenu(const Vec2f& posWindowSpace, SystemWindow& relativeWindow) override;
+			PopupDescription CreatePopupMenu(const Vec2f& posWindowSpace, SystemWindow& relativeWindow) override;
 
-			virtual void UpdateGameSettings() override;
-			virtual void UpdateEditorSettings() override;
+			void UpdateGameSettings() override;
+			void UpdateEditorSettings() override;
 
 			virtual void SetupEditorScene();
 			void SetupMainMenu();
-			virtual void Update(float deltaTime) override;
-			virtual void HandleEvents() override;
+			void Update(Time deltaTime) override;
+			void HandleEvents() override;
 
 			//virtual void PreviewHierarchyTree(Hierarchy::Tree& tree) override;
-			template <typename T> void AddActorToList(GameScene& editorScene, T& obj, UIAutomaticListActor& listParent, UICanvas& canvas);
 
-			virtual void PassMouseControl(Controller* controller) override;
+			void PassMouseControl(Controller* controller) override;
 
-			virtual void Render() override;
+			void Render() override;
 			void NewProject(const std::string& filepath);
 			void LoadProject(const std::string& filepath);
 			void SaveProject(std::string optionalFilepath = std::string());
@@ -76,7 +75,7 @@ namespace GEE
 		std::string GetProjectFilepath() { return ProjectFilepath; }
 		void SetProjectFilepath(const std::string& filepath);
 	private:
-		virtual const std::deque<EditorPopup>& GetPopupsForRendering() override;
+		const std::deque<EditorPopup>& GetPopupsForRendering() override;
 		void UpdateRecentProjects();
 		void MaximizeViewport();
 		void UpdateControllerCameraInfo();

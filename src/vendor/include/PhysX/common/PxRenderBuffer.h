@@ -35,10 +35,10 @@
 @{
 */
 
-#include "common/PxPhysXCommonConfig.h"
-#include "foundation/PxVec3.h"
-#include "foundation/PxMat33.h"
-#include "foundation/PxBounds3.h"
+#include <PhysX/common/PxPhysXCommonConfig.h>
+#include <PhysX/foundation/PxVec3.h>
+#include <PhysX/foundation/PxMat33.h>
+#include <PhysX/foundation/PxBounds3.h>
 
 #if !PX_DOXYGEN
 namespace physx

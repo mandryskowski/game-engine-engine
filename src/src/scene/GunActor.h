@@ -11,7 +11,7 @@ namespace GEE
 	public:
 		GunActor(GameScene& scene, Actor* parentActor, std::string name);
 		virtual void Setup() override;
-		virtual void Update(float) override;
+		virtual void Update(Time dt) override;
 		virtual void HandleEvent(const Event& ev) override;
 		void SetFireModel(ModelComponent*);
 		void FireWeapon();	//try to fire held weapon (if exists & it's not on cooldown)
@@ -27,8 +27,8 @@ namespace GEE
 
 		int FiredBullets;
 
-		float FireCooldown;	//in seconds
-		float CooldownLeft;	//also in seconds
+		Time FireCooldown;	//in seconds
+		Time CooldownLeft;	//also in seconds
 
 		float BulletRadius, ImpulseFactor;
 	};

@@ -3,8 +3,7 @@
 #include <game/GameManager.h>
 #include <math/Transform.h>
 #include <input/Event.h>
-#include <iostream>
-#include <map>
+#include <utility/CerealNames.h>
 #include <cereal/archives/json.hpp>
 #include <cereal/types/polymorphic.hpp>
 
@@ -78,7 +77,6 @@ namespace GEE
 		virtual Actor& AddChild(UniquePtr<Actor>);
 		template <typename ChildClass, typename... Args> ChildClass& CreateChild(Args&&...);
 		template <typename CompClass, typename... Args> CompClass& CreateComponent(Args&&...);	//Adds a new component that is a child of RootComponent.
-		template <typename CompClass, typename... Args> CompClass& CreateComponent(CompClass&&, Component* parent);	//Adds a new component that is a child of parent. Pass nullptr as the second argument to make this created component the new RootComponent.
 		void SetSetupStream(std::stringstream* stream);
 
 		virtual void Setup();
@@ -86,8 +84,8 @@ namespace GEE
 		virtual void HandleEvent(const Event& ev);
 		virtual void HandleEventAll(const Event& ev);
 
-		virtual void Update(float);
-		void UpdateAll(float);
+		virtual void Update(Time dt);
+		void UpdateAll(Time dt);
 
 		void MarkAsKilled();
 
@@ -117,20 +115,20 @@ namespace GEE
 		{
 			if (!comps)
 				return;
-			for (unsigned int i = 0; i < Children.size(); i++)
+			for (auto& i : Children)
 			{
-				ActorClass* c = dynamic_cast<ActorClass*>(Children[i].get());
+				ActorClass* c = dynamic_cast<ActorClass*>(i.get());
 				if (c)					//if dynamic cast was succesful - this children is of ActorClass type
 					comps->push_back(c);
 			}
-			for (unsigned int i = 0; i < Children.size(); i++)
-				Children[i]->GetAllActors<ActorClass>(comps);	//do it reccurently in every child
+			for (auto& i : Children)
+				i->GetAllActors<ActorClass>(comps);	//do it reccurently in every child
 		}
 
 		template <typename Archive> void Save(Archive& archive) const;
 		template <typename Archive> void Load(Archive& archive);
 
-		virtual ~Actor() {}
+		virtual ~Actor() = default;
 
 	protected:
 		std::string Name;
@@ -144,12 +142,12 @@ namespace GEE
 		GameManager* GameHandle;
 
 		// If it equals 0, killing process has not started.
-		unsigned int KillingProcessFrame;
+		unsigned long long KillingProcessFrame;
 	};
 
 
 	template <typename ChildClass, typename... Args>
-	inline ChildClass& Actor::CreateChild(Args&&... args)
+	ChildClass& Actor::CreateChild(Args&&... args)
 	{
 		UniquePtr<ChildClass> createdChild = MakeUnique<ChildClass>(Scene, this, std::forward<Args>(args)...);
 		ChildClass& childRef = *createdChild.get();
@@ -159,14 +157,14 @@ namespace GEE
 	}
 
 	template <typename CompClass, typename... Args>
-	inline CompClass& Actor::CreateComponent(Args&&... args)
+	CompClass& Actor::CreateComponent(Args&&... args)
 	{
 		CompClass& comp = RootComponent->CreateComponent<CompClass>(std::forward<Args>(args)...);
 		return comp;
 	}
 
 	template<class ActorClass>
-	inline ActorClass* Actor::GetActor(const std::string& name)
+	ActorClass* Actor::GetActor(const std::string& name)
 	{
 		if (Name == name)
 			return dynamic_cast<ActorClass*>(this);
@@ -208,12 +206,12 @@ namespace cereal																						  						 \
 				return;																											 \
 																																 \
 			/* We set the name to serialization-error since it will be replaced by its original name anyways. */				 \
-			construct(*GEE::CerealActorSerializationData::ScenePtr, nullptr, std::string("serialization-error"), __VA_ARGS__);	 \
+			construct(*GEE::CerealActorSerializationData::ScenePtr, nullptr, std::string("serialization-error"), ##__VA_ARGS__);	 \
 			construct->Load(ar);																					 			 \
 		}																								  			 			 \
 	};																									  						 \
 }
-#define GEE_POLYMORPHIC_SERIALIZABLE_ACTOR(Base, Derived, ...) GEE_SERIALIZABLE_ACTOR(Derived, __VA_ARGS__); CEREAL_REGISTER_POLYMORPHIC_RELATION(Base, Derived);
+#define GEE_POLYMORPHIC_SERIALIZABLE_ACTOR(Base, Derived, ...) GEE_SERIALIZABLE_ACTOR(Derived, ##__VA_ARGS__); CEREAL_REGISTER_POLYMORPHIC_RELATION(Base, Derived);
 
 #define GEE_EDITOR_ACTOR(Type) 
 

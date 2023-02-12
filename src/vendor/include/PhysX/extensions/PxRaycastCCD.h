@@ -33,8 +33,8 @@
 @{
 */
 
-#include "common/PxPhysXCommonConfig.h"
-#include "foundation/PxVec3.h"
+#include <PhysX/common/PxPhysXCommonConfig.h>
+#include <PhysX/foundation/PxVec3.h>
 
 #if !PX_DOXYGEN
 namespace physx

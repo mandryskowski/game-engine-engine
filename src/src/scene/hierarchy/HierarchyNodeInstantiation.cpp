@@ -52,7 +52,7 @@ namespace GEE
 					if (tree.GetAnimationCount() > 0)
 					{
 						AnimationManagerComponent& animManager = instantiationRoot.CreateComponent<AnimationManagerComponent>("An AnimationManagerComponent");
-						for (int i = 0; i < tree.GetAnimationCount(); i++)
+						for (int i = 0; i < static_cast<int>(tree.GetAnimationCount()); i++)
 							animManager.AddAnimationInstance(AnimationInstance(const_cast<Tree&>(tree).GetAnimation(i), instantiationRoot));
 					}
 

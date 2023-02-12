@@ -23,8 +23,8 @@ namespace GEE
 
 			friend class UIListElement;
 		};
-		UIListElement(ReferenceToUIActor& actorRef, std::function<Vec3f()> getElementOffset, std::function<Vec3f()> getCenterOffset = nullptr);
-		UIListElement(ReferenceToUIActor& actorRef, const Vec3f& constElementOffset);
+		UIListElement(ReferenceToUIActor actorRef, std::function<Vec3f()> getElementOffset, std::function<Vec3f()> getCenterOffset = nullptr);
+		UIListElement(ReferenceToUIActor actorRef, const Vec3f& constElementOffset);
 		bool IsBeingKilled() const;
 		Actor& GetActorRef();
 		const Actor& GetActorRef()const;

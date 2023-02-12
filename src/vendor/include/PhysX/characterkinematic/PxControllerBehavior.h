@@ -33,7 +33,7 @@
   @{
 */
 
-#include "PxFiltering.h"
+#include <PhysX/PxFiltering.h>
 
 #if !PX_DOXYGEN
 namespace physx

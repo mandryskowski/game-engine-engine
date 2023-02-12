@@ -36,10 +36,10 @@
   @{
 */
 
-#include "foundation/PxSimpleTypes.h"
-#include "cooking/PxCooking.h"
-#include "common/PxStringTable.h"
-#include "common/PxSerialFramework.h"
+#include <PhysX/foundation/PxSimpleTypes.h>
+#include <PhysX/cooking/PxCooking.h>
+#include <PhysX/common/PxStringTable.h>
+#include <PhysX/common/PxSerialFramework.h>
 
 #if !PX_DOXYGEN
 namespace physx

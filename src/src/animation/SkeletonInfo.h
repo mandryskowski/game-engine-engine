@@ -1,5 +1,6 @@
 #pragma once
 #include <game/GameManager.h>
+#include <utility/CerealNames.h>
 #include <cereal/types/memory.hpp>
 #include <cereal/access.hpp>
 
@@ -13,9 +14,9 @@ namespace GEE
 	{
 	public:
 		SkeletonInfo();
-		unsigned int GetBoneCount();
-		SkeletonBatch* GetBatchPtr();
-		unsigned int GetBoneIDOffset();
+		unsigned int GetBoneCount() const;
+		SkeletonBatch* GetBatchPtr() const;
+		unsigned int GetBoneIDOffset() const;
 		int GetInfoID();
 		void AddModelCompRef(ModelComponent&);
 		void EraseModelCompRef(ModelComponent&);

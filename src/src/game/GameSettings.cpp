@@ -1,6 +1,7 @@
 #include <game/GameSettings.h>
 #include <fstream>
 #include <sstream>
+#include <utility/CerealNames.h>
 #include <cereal/archives/json.hpp>
 
 namespace GEE

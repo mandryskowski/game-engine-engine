@@ -1,4 +1,6 @@
 #pragma once
+#define GEE_GL_VERSION_MAJOR 4
+#define GEE_GL_VERSION_MINOR 0
 // Based on Hazel platform detection
 // https://github.com/TheCherno/Hazel
 
@@ -25,7 +27,6 @@
 	#error "Android is not supported!"
 #elif defined(__linux__)
 	#define GEE_OS_LINUX
-	#error "Linux is not supported!"
 #else
 	#error "Unknown operating system!"
 #endif

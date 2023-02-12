@@ -30,7 +30,7 @@
 #ifndef PXFOUNDATION_PXUNIONCAST_H
 #define PXFOUNDATION_PXUNIONCAST_H
 
-#include "foundation/Px.h"
+#include <PhysX/foundation/Px.h>
 
 /** \addtogroup foundation
 @{

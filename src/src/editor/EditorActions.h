@@ -11,6 +11,7 @@ namespace GEE
 	class UIInputBoxActor;
 	class UIActivableButtonActor;
 	class UIAutomaticListActor;
+
 	namespace Editor
 	{
 		struct EditorPopup;
@@ -97,8 +98,6 @@ namespace GEE
 			void PreviewHierarchyTree(Hierarchy::Tree& tree);
 			void PreviewHierarchyNode(Hierarchy::NodeBase& node, GameScene& editorScene);
 
-			template <typename T> void AddActorToList(GameScene& editorScene, T& obj, UIAutomaticListActor& listParent, UICanvas& canvas, std::function<void(PopupDescription, T&)> createPopupFunc = nullptr, unsigned int elementDepth = 0);
-
 //		private:
 			Component* GetContextComp();
 			Actor* GetContextActor();
@@ -135,37 +134,5 @@ namespace GEE
 		private:
 			RenderEngineManager& RenderHandle;
 		};
-
-		template<typename T>
-		inline void EditorActions::AddActorToList(GameScene& editorScene, T& obj, UIAutomaticListActor& listParent, UICanvas& canvas, std::function<void(PopupDescription, T&)> createPopupFunc, unsigned int elementDepth)
-		{
-			if (obj.IsBeingKilled())	
-				return;
-
-			auto& element = listParent.CreateChild<UIActivableButtonActor>(obj.GetName(), [this, &obj, &editorScene]() {this->Select(&obj, editorScene); });//*this, obj, &EditorManager::Select<CompType>));
-			SharedPtr<Material> colorMat = MakeShared<Material>("ColorMat", Vec4f(hsvToRgb(Vec3f(288.0f, 0.82f, 0.49f + static_cast<float>(elementDepth) * 0.03f)), 1.0f));
-			element.SetMatIdle(MaterialInstance(colorMat));
-			element.SetActivateOnClicking(false);
-			element.SetDeactivateOnClickingAnywhere(false);
-			element.SetDeactivateOnClickingAgain(false);
-			element.SetTransform(Transform(Vec2f(0.0f, 0.0f), Vec2f(3.0f, 1.0f)));
-			TextComponent& elementText = element.CreateComponent<TextComponent>("ButtonText", Transform(Vec2f(-0.8f + static_cast<float>(elementDepth) * 0.05f, 0.0f), Vec2f(1.0f, 1.0f)), "", "", Alignment2D::Center());
-			elementText.SetFontStyle(FontStyle::Italic);
-			elementText.SetMaxSize(Vec2f(0.7f));
-			elementText.SetContent(obj.GetName());
-			elementText.SetHorizontalAlignment(Alignment::Left);
-			//elementText.Unstretch();
-			if (createPopupFunc)
-				element.SetPopupCreationFunc([&obj, createPopupFunc](PopupDescription desc) { createPopupFunc(desc, obj); });
-			//elementText.UpdateSize();
-
-			std::vector<T*> children = obj.GetChildren();
-			for (auto& child : children)
-			{
-				//AddActorToList(editorScene, *child, listParent.CreateChild(UIListActor(editorScene, "NextLevel")), canvas);
-				UIAutomaticListActor& nestedList = listParent.CreateChild<UIAutomaticListActor>(child->GetName() + "'s nestedlist");
-				AddActorToList(editorScene, *child, nestedList, canvas, createPopupFunc, elementDepth + 1);
-			}
-		}
 	}
 }

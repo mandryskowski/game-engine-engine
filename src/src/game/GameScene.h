@@ -87,8 +87,8 @@ namespace GEE
 		Hierarchy::Tree* FindHierarchyTree(const std::string& name,
 			Hierarchy::Tree* treeToIgnore = nullptr);
 
-		void HandleEventAll(Event&);
-		void Update(float deltaTime);
+		void HandleEventAll(const Event&);
+		void Update(Time deltaTime);
 
 		void BindActiveCamera(CameraComponent*);
 
@@ -207,9 +207,9 @@ namespace GEE
 	public:
 		GameSceneRenderData(GameScene&, bool isAnUIScene);
 
-		RenderEngineManager* GetRenderHandle();
-		LightProbeTextureArrays* GetProbeTexArrays();
-		int GetAvailableLightIndex();
+		RenderEngineManager* GetRenderHandle() const;
+		LightProbeTextureArrays* GetProbeTexArrays() const;
+		int GetAvailableLightIndex() const;
 		unsigned int GetMaxShadowedLightCount() const { return 16; }
 
 		bool ContainsLights() const;

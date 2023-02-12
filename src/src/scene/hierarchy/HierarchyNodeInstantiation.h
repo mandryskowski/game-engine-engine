@@ -19,7 +19,7 @@ namespace GEE
 				const Tree& _Tree;
 				SkeletonInfo* SkelInfo;
 
-				friend class TreeInstantiation;
+				friend struct TreeInstantiation;
 			};
 
 			/**

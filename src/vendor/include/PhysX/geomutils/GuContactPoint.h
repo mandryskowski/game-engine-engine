@@ -34,7 +34,7 @@
 @{
 */
 
-#include "foundation/PxVec3.h"
+#include <PhysX/foundation/PxVec3.h>
 
 namespace physx
 {

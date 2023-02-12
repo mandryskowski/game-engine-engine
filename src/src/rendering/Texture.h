@@ -2,8 +2,11 @@
 #include <string>
 #include <glad/glad.h>
 #include <math/Vec.h>
+#include <utility/CerealNames.h>
 #include <cereal/access.hpp>
 #include <array>
+
+#include "utility/Asserts.h"
 
 struct aiTexture;
 
@@ -88,7 +91,7 @@ namespace GEE
 		struct Loader
 		{
 			static Texture FromFile2D(const std::string&, Format internalFormat = Format::RGBA(), bool flip = false, MinFilter = MinFilter::Trilinear(), MagFilter = MagFilter::Bilinear());
-			static Texture FromFileEquirectangularCubemap(const std::string&);
+			//static Texture FromFileEquirectangularCubemap(const std::string&);
 
 			static Texture FromBuffer2D(unsigned int width, const void* buffer, Format internalFormat = Format::RGBA(), int desiredChannels = 0);
 			static Texture FromBuffer2D(const Vec2u& size, const void* buffer, Format internalFormat, int nrChannels);
@@ -171,6 +174,9 @@ namespace GEE
 				case 3: return RGB();
 				case 4: return RGBA();
 				}
+
+				GEE_CORE_ASSERT(true);
+				return None();
 			}
 			static Format FromGLConst(GLenum formatGlConst)
 			{

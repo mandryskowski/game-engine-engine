@@ -5,6 +5,7 @@
 #include <PhysX/PxPhysicsAPI.h>
 #include <math/Transform.h>
 #include <game/GameManager.h>
+#include <utility/CerealNames.h>
 #include <cereal/archives/json.hpp>
 
 #include <assetload/FileLoader.h>
@@ -71,7 +72,7 @@ namespace GEE
 			CollisionObject(bool isStatic = true);
 			CollisionObject(bool isStatic, CollisionShapeType type);
 			CollisionObject(const CollisionObject& obj);
-			CollisionObject(CollisionObject&& obj);
+			CollisionObject(CollisionObject&& obj) noexcept;
 
 			CollisionShape& AddShape(CollisionShapeType type);
 			CollisionShape& AddShape(SharedPtr<CollisionShape> shape);

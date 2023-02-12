@@ -13,7 +13,7 @@ namespace GEE
 		UIInputBoxActor(GameScene&, Actor* parentActor, const std::string& name, std::function<void(float)> inputFunc, std::function<float()> valueGetter, bool fixNumberStr = true, const Transform& transform = Transform());
 		UIInputBoxActor(UIInputBoxActor&&);
 
-		virtual void OnStart() override;
+		void OnStart() override;
 
 		ScrollingTextComponent* GetContentTextComp();
 		std::string GetContent();
@@ -22,20 +22,20 @@ namespace GEE
 		void SetOnInputFunc(std::function<void(const std::string&)> inputFunc, std::function<std::string()> valueGetter);
 		void SetOnInputFunc(std::function<void(float)> inputFunc, std::function<float()> valueGetter, bool fixNumberStr = true);
 		void SetRetrieveContentEachFrame(bool);
-		virtual void SetActive(bool active) override;
+		void SetActive(bool active) override;
 		void SetCaretWidthPx(unsigned int pixelWidth);
 
 		void UpdateValue();
 
-		virtual void Update(float deltaTime) override;
+		void Update(Time dt) override;
 
-		virtual void HandleEvent(const Event& ev) override;
-		virtual void OnClick() override;	//On activation
-		virtual void OnHover() override;
-		virtual void OnUnhover() override;
-		virtual void OnDeactivation() override;
+		void HandleEvent(const Event& ev) override;
+		void OnClick() override;	//On activation
+		void OnHover() override;
+		void OnUnhover() override;
+		void OnDeactivation() override;
 	protected:
-		virtual void CreateButtonText(const std::string& content) override;
+		void CreateButtonText(const std::string& content) override;
 	private:
 		void UpdateCaretModel(bool refreshAnim = true);
 		void SetCaretPosAndUpdateModel(unsigned int changeCaretPos);

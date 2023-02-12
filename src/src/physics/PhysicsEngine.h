@@ -2,7 +2,6 @@
 #include <PhysX/PxPhysicsAPI.h>
 
 #include <math/Vec.h>
-#include <glm/gtc/quaternion.hpp>
 
 #include <vector>
 #include <game/GameManager.h>
@@ -23,19 +22,20 @@ namespace GEE
 
 		private:
 			physx::PxShape* CreateTriangleMeshShape(CollisionShape*, Vec3f scale);
-			virtual void AddCollisionObjectToPxPipeline(GameScenePhysicsData& scenePhysicsData, CollisionObject&) override;
+			void AddCollisionObjectToPxPipeline(GameScenePhysicsData& scenePhysicsData, CollisionObject&) override;
+
+			void AddScenePhysicsDataPtr(GameScenePhysicsData& scenePhysicsData);
+			void RemoveScenePhysicsDataPtr(GameScenePhysicsData& scenePhysicsData) override;
 
 		public:
-			virtual void CreatePxShape(CollisionShape&, CollisionObject&) override;
-			void AddScenePhysicsDataPtr(GameScenePhysicsData& scenePhysicsData);
-			virtual void RemoveScenePhysicsDataPtr(GameScenePhysicsData& scenePhysicsData) override;
+			void CreatePxShape(CollisionShape&, CollisionObject&) override;
 
-			virtual physx::PxController* CreateController(GameScenePhysicsData& scenePhysicsData, const Transform& t) override;
-			virtual physx::PxMaterial* CreateMaterial(float staticFriction, float dynamicFriction, float restitutionCoeff) override;
+			physx::PxController* CreateController(GameScenePhysicsData& scenePhysicsData, const Transform& t) override;
+			physx::PxMaterial* CreateMaterial(float staticFriction, float dynamicFriction, float restitutionCoeff) override;
 
 			void SetupScene(GameScenePhysicsData& scenePhysicsData);
 
-			void Update(float deltaTime);
+			void Update(Time deltaTime);
 			void UpdateTransforms();
 			void UpdatePxTransforms();
 

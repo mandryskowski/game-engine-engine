@@ -99,7 +99,7 @@ namespace GEE
 	{
 		std::string tabs;
 		for (int i = 0; i < nrTabs; i++)	tabs += "	";
-		std::cout << tabs + "-" + Name + "\n";
+		std::cout << tabs + "-" + Name << " " << this << '\n';
 
 		for (int i = 0; i < static_cast<int>(Children.size()); i++)
 			Children[i]->DebugHierarchy(nrTabs + 1);
@@ -199,7 +199,7 @@ namespace GEE
 
 	UniquePtr<Component> Component::DetachChild(Component& soughtChild)
 	{
-		for (auto& it = Children.begin(); it != Children.end(); it++)
+		for (auto it = Children.begin(); it != Children.end(); it++)
 			if (it->get() == &soughtChild)
 			{
 				UniquePtr<Component> temp = std::move(*it);
@@ -229,11 +229,11 @@ namespace GEE
 			ParentComponent->Children.erase(std::remove_if(ParentComponent->Children.begin(), ParentComponent->Children.end(), [this](UniquePtr<Component>& child) { return child.get() == this; }), ParentComponent->Children.end());
 	}
 
-	void Component::SetName(std::string name)
+	void Component::SetName(const String& name)
 	{
 		Name = name;
 	}
-	void Component::SetTransform(Transform transform)
+	void Component::SetTransform(const Transform& transform)
 	{
 		//Note that operator= doesn't change the ParentTransform pointer; it's not needed in this case
 		ComponentTransform = transform;
@@ -268,12 +268,12 @@ namespace GEE
 		std::for_each(Children.begin(), Children.end(), [this](UniquePtr<Component>& comp) { comp->GetTransform().SetParentTransform(&this->ComponentTransform); });
 	}
 
-	void Component::Update(float deltaTime)
+	void Component::Update(Time dt)
 	{
-		ComponentTransform.Update(deltaTime);
+		ComponentTransform.Update(dt);
 	}
 
-	void Component::UpdateAll(float dt)
+	void Component::UpdateAll(Time dt)
 	{
 		Update(dt);
 		for (int i = 0; i < static_cast<int>(Children.size()); i++)
@@ -303,13 +303,13 @@ namespace GEE
 			AnimationChannel& channel = *animation->Channels[i];
 
 			for (int j = 0; j < static_cast<int>(channel.PosKeys.size() - 1); j++)
-				ComponentTransform.AddInterpolator<Vec3f>("position", channel.PosKeys[j]->Time, channel.PosKeys[j + 1]->Time - channel.PosKeys[j]->Time, channel.PosKeys[j]->Value, channel.PosKeys[j + 1]->Value);
+				ComponentTransform.AddInterpolator<Vec3f>("position", channel.PosKeys[j]->KeyTime, channel.PosKeys[j + 1]->KeyTime - channel.PosKeys[j]->KeyTime, channel.PosKeys[j]->Value, channel.PosKeys[j + 1]->Value);
 
 			for (int j = 0; j < static_cast<int>(channel.RotKeys.size() - 1); j++)
-				ComponentTransform.AddInterpolator<Quatf>("rotation", channel.RotKeys[j]->Time, channel.RotKeys[j + 1]->Time - channel.RotKeys[j]->Time, channel.RotKeys[j]->Value, channel.RotKeys[j + 1]->Value);
+				ComponentTransform.AddInterpolator<Quatf>("rotation", channel.RotKeys[j]->KeyTime, channel.RotKeys[j + 1]->KeyTime - channel.RotKeys[j]->KeyTime, channel.RotKeys[j]->Value, channel.RotKeys[j + 1]->Value);
 
 			for (int j = 0; j < static_cast<int>(channel.ScaleKeys.size() - 1); j++)
-				ComponentTransform.AddInterpolator<Vec3f>("scale", channel.ScaleKeys[j]->Time, channel.ScaleKeys[j + 1]->Time - channel.ScaleKeys[j]->Time, channel.ScaleKeys[j]->Value, channel.ScaleKeys[j + 1]->Value);
+				ComponentTransform.AddInterpolator<Vec3f>("scale", channel.ScaleKeys[j]->KeyTime, channel.ScaleKeys[j + 1]->KeyTime - channel.ScaleKeys[j]->KeyTime, channel.ScaleKeys[j]->Value, channel.ScaleKeys[j + 1]->Value);
 		}
 	}
 
@@ -323,20 +323,20 @@ namespace GEE
 	void Component::QueueKeyFrame(AnimationChannel& channel)
 	{
 		for (int j = 0; j < static_cast<int>(channel.PosKeys.size() - 1); j++)
-			ComponentTransform.AddInterpolator<Vec3f>("position", channel.PosKeys[j]->Time, channel.PosKeys[j + 1]->Time - channel.PosKeys[j]->Time, channel.PosKeys[j]->Value, channel.PosKeys[j + 1]->Value);
+			ComponentTransform.AddInterpolator<Vec3f>("position", channel.PosKeys[j]->KeyTime, channel.PosKeys[j + 1]->KeyTime - channel.PosKeys[j]->KeyTime, channel.PosKeys[j]->Value, channel.PosKeys[j + 1]->Value);
 
 		for (int j = 0; j < static_cast<int>(channel.RotKeys.size() - 1); j++)
-			ComponentTransform.AddInterpolator<Quatf>("rotation", channel.RotKeys[j]->Time, channel.RotKeys[j + 1]->Time - channel.RotKeys[j]->Time, channel.RotKeys[j]->Value, channel.RotKeys[j + 1]->Value);
+			ComponentTransform.AddInterpolator<Quatf>("rotation", channel.RotKeys[j]->KeyTime, channel.RotKeys[j + 1]->KeyTime - channel.RotKeys[j]->KeyTime, channel.RotKeys[j]->Value, channel.RotKeys[j + 1]->Value);
 
 		for (int j = 0; j < static_cast<int>(channel.ScaleKeys.size() - 1); j++)
-			ComponentTransform.AddInterpolator<Vec3f>("scale", channel.ScaleKeys[j]->Time, channel.ScaleKeys[j + 1]->Time - channel.ScaleKeys[j]->Time, channel.ScaleKeys[j]->Value, channel.ScaleKeys[j + 1]->Value);
+			ComponentTransform.AddInterpolator<Vec3f>("scale", channel.ScaleKeys[j]->KeyTime, channel.ScaleKeys[j + 1]->KeyTime - channel.ScaleKeys[j]->KeyTime, channel.ScaleKeys[j]->Value, channel.ScaleKeys[j + 1]->Value);
 	}
 
 	void Component::QueueKeyFrameAll(AnimationChannel&)
 	{
 	}
 
-	void CollisionObjRendering(SceneMatrixInfo& info, GameManager& gameHandle, Physics::CollisionObject& obj, const Transform& t, const Vec3f& color)
+	void CollisionObjRendering(const SceneMatrixInfo& info, GameManager& gameHandle, Physics::CollisionObject& obj, const Transform& t, const Vec3f& color)
 	{
 		if (!obj.ActorPtr)
 			return;
@@ -383,8 +383,8 @@ namespace GEE
 		if (!DebugRenderMatInst)
 			return;
 
-		if (CollisionObj)
-			;// CollisionObjRendering(info, *GameHandle, *CollisionObj, GetTransform().GetWorldTransform());
+		//if (CollisionObj)
+			// CollisionObjRendering(info, *GameHandle, *CollisionObj, GetTransform().GetWorldTransform());
 
 		Transform transform = GetTransform().GetWorldTransform();
 		transform.SetScale(debugIconScale);
@@ -435,7 +435,7 @@ namespace GEE
 
 	void Component::GetEditorDescription(ComponentDescriptionBuilder descBuilder)
 	{
-		UIInputBoxActor& textActor = descBuilder.CreateActor<UIInputBoxActor>("ComponentsNameActor");
+		/* UIInputBoxActor& textActor = descBuilder.CreateActor<UIInputBoxActor>("ComponentsNameActor");
 		textActor.SetTransform(Transform(Vec2f(0.0f, 1.5f), Vec2f(5.0f, 1.0f)));
 		textActor.GetButtonModel()->SetHide(true);
 		textActor.GetContentTextComp()->SetFontStyle(FontStyle::Bold);
@@ -459,7 +459,7 @@ namespace GEE
 
 		ModelComponent& prettyQuad = textActor.CreateComponent<ModelComponent>("PrettyQuad");
 		prettyQuad.AddMeshInst(MeshInstance(GameHandle->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::Quad), textActor.GetButtonModel()->GetMeshInstance(0).GetMaterialPtr()));
-		prettyQuad.SetTransform(Transform(Vec2f(0.0f, -0.21f), Vec2f(1.0f, 0.01f)));
+		prettyQuad.SetTransform(Transform(Vec2f(0.0f, -0.21f), Vec2f(1.0f, 0.01f))); */
 
 		//textActor.DeleteButtonModel();
 

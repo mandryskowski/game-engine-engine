@@ -13,8 +13,8 @@ namespace GEE
 			}
 	//	private:
 			unsigned int ALIndex;
-			std::string Path;	//used for optimization; we don't load a buffer from file if this file was already read before (there will never be two buffers that share the same path)
-			float Duration;
+			String Path;	//used for optimization; we don't load a buffer from file if this file was already read before (there will never be two buffers that share the same path)
+			Time Duration;
 		};
 
 		class SoundSourceComponent : public Component
@@ -34,11 +34,11 @@ namespace GEE
 			void Pause();
 			void Stop();
 
-			virtual void Update(float) override;
+			void Update(Time dt) override;
 
-			virtual	MaterialInstance GetDebugMatInst(ButtonMaterialType) override;
+			MaterialInstance GetDebugMatInst(ButtonMaterialType) override;
 
-			virtual void GetEditorDescription(ComponentDescriptionBuilder) override;
+			void GetEditorDescription(ComponentDescriptionBuilder) override;
 			template <typename Archive> void Save(Archive& archive) const;
 			template <typename Archive> void Load(Archive& archive);
 

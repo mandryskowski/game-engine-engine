@@ -129,14 +129,11 @@ namespace GEE
 	{
 		RootComponent->MoveChildren(*component);
 		component->GetTransform().SetParentTransform(RootComponent->GetTransform().GetParentTransform());
-		std::cout << "liczba dzieci: " << RootComponent->Children.size() << "\n";
 		RootComponent = std::move(component);
-		std::cout << RootComponent << "\n";
 	}
 
 	void Actor::MoveCompToRoot(Component& comp)
 	{
-		std::cout << "Moveuje compa " + comp.GetName() + " do roota. ActorRef do tej pory: " << &RootComponent->ActorRef << ". ActorRef teraz: " << &comp.ActorRef << '\n';
 		ReplaceRoot(std::move(RootComponent->DetachChild(comp)));
 		RootComponent->ParentComponent = nullptr;
 	}
@@ -185,7 +182,7 @@ namespace GEE
 	{
 		RootComponent->HandleEventAll(ev);
 	}
-
+	
 	void Actor::HandleEventAll(const Event& ev)
 	{
 		HandleEvent(ev);
@@ -195,12 +192,12 @@ namespace GEE
 			Children[i]->HandleEventAll(ev);
 	}
 
-	void Actor::Update(float deltaTime)
+	void Actor::Update(Time dt)
 	{
-		RootComponent->UpdateAll(deltaTime);
+		RootComponent->UpdateAll(dt);
 	}
 
-	void Actor::UpdateAll(float deltaTime)
+	void Actor::UpdateAll(Time dt)
 	{
 		if (IsBeingKilled() && GameHandle->GetTotalFrameCount() != KillingProcessFrame)
 		{
@@ -208,9 +205,9 @@ namespace GEE
 			return;
 		}
 
-		Update(deltaTime);
+		Update(dt);
 		for (unsigned int i = 0; i < Children.size(); i++)
-			Children[i]->UpdateAll(deltaTime);
+			Children[i]->UpdateAll(dt);
 	}
 
 	void Actor::MarkAsKilled()
@@ -280,6 +277,7 @@ namespace GEE
 
 	void Actor::GetEditorDescription(EditorDescriptionBuilder descBuilder)
 	{
+		/*
 		UIInputBoxActor& textActor = descBuilder.CreateActor<UIInputBoxActor>("ActorsNameActor");
 		textActor.SetTransform(Transform(Vec2f(0.0f, 1.5f), Vec2f(5.0f, 1.25f)));
 		textActor.SetOnInputFunc([this, descBuilder](const std::string& content) mutable
@@ -299,7 +297,7 @@ namespace GEE
 		}
 		, [this]() -> std::string { return GetName(); });
 		textActor.DeleteButtonModel();
-		textActor.GetContentTextComp()->SetFontStyle(FontStyle::Bold);
+		textActor.GetContentTextComp()->SetFontStyle(FontStyle::Bold); */
 
 
 		UICanvasField& deleteField = descBuilder.AddField("Delete");
@@ -311,7 +309,7 @@ namespace GEE
 		if (Scene.GetRootActor() == this)	//Disallow deleting the root of a scene
 			deleteButton.SetDisableInput(true);
 
-		descBuilder.AddField("Set parent to").GetTemplates().ObjectInput<Actor, Actor>(*Scene.GetRootActor(), [this](Actor* newParent) { if (newParent) PassToDifferentParent(*newParent); });
+		descBuilder.AddField("Set parent to").GetTemplates().ObjectInput<Actor, Actor>(*Scene.GetRootActor(), [this](Actor* newParent) { if (newParent) PassToDifferentParent(*newParent); }, ParentActor);
 	}
 
 	template <typename Archive> void Actor::Save(Archive& archive) const

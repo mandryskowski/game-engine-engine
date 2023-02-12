@@ -108,7 +108,7 @@ namespace GEE
 		{
 			if (element.GetActorRef().GetName() == "OGAR")
 				continue;
-			nextElementBegin = MoveElement(element, nextElementBegin, level);
+			nextElementBegin = MoveElement(element, nextElementBegin, static_cast<float>(level));
 		}
 
 		return nextElementBegin;
@@ -148,7 +148,7 @@ namespace GEE
 		return UIListActor::AddChild(std::move(actor));
 	}
 
-	UIListElement::UIListElement(ReferenceToUIActor& actorRef, std::function<Vec3f()> getElementOffset, std::function<Vec3f()> getCenterOffset) :
+	UIListElement::UIListElement(ReferenceToUIActor actorRef, std::function<Vec3f()> getElementOffset, std::function<Vec3f()> getCenterOffset) :
 		UIActorRef(actorRef),
 		GetElementOffsetFunc(getElementOffset),
 		GetCenterOffsetFunc(getCenterOffset)
@@ -157,7 +157,7 @@ namespace GEE
 			GetCenterOffsetFunc = [this]() -> Vec3f { return (GetElementOffsetFunc) ? (GetElementOffsetFunc() / 2.0f) : (Vec3f(0.0f)); };
 	}
 
-	UIListElement::UIListElement(ReferenceToUIActor& actorRef, const Vec3f& constElementOffset) :
+	UIListElement::UIListElement(ReferenceToUIActor actorRef, const Vec3f& constElementOffset) :
 		UIListElement(actorRef, [constElementOffset]() { return constElementOffset; }, [constElementOffset]() { return constElementOffset / 2.0f; })
 	{
 	}

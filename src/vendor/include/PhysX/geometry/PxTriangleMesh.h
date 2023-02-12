@@ -33,10 +33,10 @@
 /** \addtogroup geomutils 
 @{ */
 
-#include "foundation/PxVec3.h"
-#include "foundation/PxBounds3.h"
-#include "common/PxPhysXCommonConfig.h"
-#include "common/PxBase.h"
+#include <PhysX/foundation/PxVec3.h>
+#include <PhysX/foundation/PxBounds3.h>
+#include <PhysX/common/PxPhysXCommonConfig.h>
+#include <PhysX/common/PxBase.h>
 
 #if !PX_DOXYGEN
 namespace physx
@@ -274,7 +274,7 @@ protected:
 	PX_INLINE						PxTriangleMesh(PxBaseFlags baseFlags) : PxBase(baseFlags)										{}
 	virtual							~PxTriangleMesh() {}
 
-	virtual	bool					isKindOf(const char* name) const { return !::strcmp("PxTriangleMesh", name) || PxBase::isKindOf(name); }
+	virtual	bool					isKindOf(const char* name) const { return !::strcmp("PxTriangleMe.h", name) || PxBase::isKindOf(name); }
 };
 
 /**
@@ -290,7 +290,7 @@ protected:
 	PX_INLINE						PxBVH33TriangleMesh(PxType concreteType, PxBaseFlags baseFlags) : PxTriangleMesh(concreteType, baseFlags) {}
 	PX_INLINE						PxBVH33TriangleMesh(PxBaseFlags baseFlags) : PxTriangleMesh(baseFlags) {}
 	virtual							~PxBVH33TriangleMesh() {}
-	virtual	bool					isKindOf(const char* name) const { return !::strcmp("PxBVH33TriangleMesh", name) || PxTriangleMesh::isKindOf(name); }
+	virtual	bool					isKindOf(const char* name) const { return !::strcmp("PxBVH33TriangleMe.h", name) || PxTriangleMesh::isKindOf(name); }
 };
 
 /**
@@ -306,7 +306,7 @@ protected:
 	PX_INLINE						PxBVH34TriangleMesh(PxType concreteType, PxBaseFlags baseFlags) : PxTriangleMesh(concreteType, baseFlags) {}
 	PX_INLINE						PxBVH34TriangleMesh(PxBaseFlags baseFlags) : PxTriangleMesh(baseFlags) {}
 	virtual							~PxBVH34TriangleMesh() {}
-	virtual	bool					isKindOf(const char* name) const { return !::strcmp("PxBVH34TriangleMesh", name) || PxTriangleMesh::isKindOf(name); }
+	virtual	bool					isKindOf(const char* name) const { return !::strcmp("PxBVH34TriangleMe.h", name) || PxTriangleMesh::isKindOf(name); }
 };
 
 #if !PX_DOXYGEN

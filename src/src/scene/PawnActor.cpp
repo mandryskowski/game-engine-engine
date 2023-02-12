@@ -37,9 +37,9 @@ namespace GEE
 		Actor::OnStart();
 	}
 
-	void PawnActor::Update(float deltaTime)
+	void PawnActor::Update(Time dt)
 	{
-		Actor::Update(deltaTime);
+		Actor::Update(dt);
 
 		if (State == PawnState::Dying && GameHandle->GetProgramRuntime() - DeathTime >= RespawnTime)
 			Respawn();
@@ -118,7 +118,7 @@ namespace GEE
 
 			//GetTransform()->SetRotation(quatFromDirectionVec(posDir));
 
-			Vec3f velocity = GetTransform()->GetWorldTransform().GetRot() * Vec3f(0.0f, 0.0f, -1.0f * SpeedPerSec * deltaTime);
+			Vec3f velocity = GetTransform()->GetWorldTransform().GetRot() * Vec3f(0.0f, 0.0f, -1.0f * SpeedPerSec * dt);
 
 			GetTransform()->Move(velocity);
 		}
@@ -155,7 +155,7 @@ namespace GEE
 				it->MarkAsKilled();
 
 			if (animManager)
-				for (int i = 0; i < animManager->GetAnimInstancesCount(); i++)
+				for (int i = 0; i < static_cast<int>(animManager->GetAnimInstancesCount()); i++)
 					animList.CreateChild<UIButtonActor>("Anim button", animManager->GetAnimInstance(i)->GetAnimation().Localization.Name, [this, i, &indexRef]() { indexRef = i; });
 			animList.Refresh();
 		};

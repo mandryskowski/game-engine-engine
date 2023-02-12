@@ -34,8 +34,8 @@
 @{ */
 
 #include "PxArticulationBase.h"
-#include "foundation/PxVec3.h"
-#include "foundation/PxTransform.h"
+#include <PhysX/foundation/PxVec3.h>
+#include <PhysX/foundation/PxTransform.h>
 #include "solver/PxSolverDefs.h"
 
 #if !PX_DOXYGEN

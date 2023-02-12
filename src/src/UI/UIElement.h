@@ -30,9 +30,9 @@ namespace GEE
 		void DetachFromCanvas();
 
 		virtual ~UICanvasElement();
-	protected:
+	//protected:
 		void SetParentElement(UICanvasElement&);
-	protected:
+	//protected:
 		void AddChildElement(UICanvasElement&);
 		void EraseChildElement(UICanvasElement&);
 		virtual void AttachToCanvas(UICanvas& canvas);

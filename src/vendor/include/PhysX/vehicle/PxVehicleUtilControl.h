@@ -32,10 +32,10 @@
 /** \addtogroup vehicle
   @{
 */
-#include "vehicle/PxVehicleSDK.h"
-#include "vehicle/PxVehicleDrive4W.h"
-#include "vehicle/PxVehicleDriveNW.h"
-#include "vehicle/PxVehicleDriveTank.h"
+#include <PhysX/vehicle/PxVehicleSDK.h>
+#include <PhysX/vehicle/PxVehicleDrive4W.h>
+#include <PhysX/vehicle/PxVehicleDriveNW.h>
+#include <PhysX/vehicle/PxVehicleDriveTank.h>
 
 
 #if !PX_DOXYGEN

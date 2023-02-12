@@ -10,17 +10,63 @@ set(CMAKE_CONFIGURATION_TYPES
     CACHE STRING "" FORCE
 )
 
+set(CMAKE_BUILD_TYPE Debug)
+set(CMAKE_CONFIGURATION_TYPES Debug Release)
+
 if (MSVC)
   add_compile_options(/bigobj /MP )
+  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT")
+  set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd")
+  message(${CMAKE_CXX_FLAGS_DEBUG})
+  message(${CMAKE_CXX_FLAGS_RELEASE})
+  
+  set(CompilerFlags
+        CMAKE_CXX_FLAGS
+        CMAKE_CXX_FLAGS_DEBUG
+        CMAKE_CXX_FLAGS_RELEASE
+        CMAKE_C_FLAGS
+        CMAKE_C_FLAGS_DEBUG
+        CMAKE_C_FLAGS_RELEASE
+        )
+  foreach(CompilerFlag ${CompilerFlags})
+	  string(REPLACE "/MD" "/MT" ${CompilerFlag} "${${CompilerFlag}}")
+  endforeach()
 else ()
-  add_compile_options(-Wa,-mbig-obj)
+#  add_compile_options(-Wa,-mbig-obj)
 endif ()
 
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd")
+# Conan setup
+# Retrieve conan.cmake
+if (NOT EXISTS "${CMAKE_BINARY_DIR}/conan.cmake")
+    message(STATUS "Downloading conan.cmake from https://github.com/conan-io/cmake-conan")
+    file(DOWNLOAD "https://raw.githubusercontent.com/conan-io/cmake-conan/master/conan.cmake" "${CMAKE_BINARY_DIR}/conan.cmake")
+endif ()
+include("${CMAKE_BINARY_DIR}/conan.cmake")
 
-add_subdirectory(../rehab-game ${CMAKE_BINARY_DIR}/rehab-game)
-add_subdirectory(Projects/example_8_ball_pool/example_8_ball_pool)
+set(CONAN_PROFILE_NAME ${CMAKE_SYSTEM_NAME}-${CMAKE_GENERATOR})
+execute_process(COMMAND ${CONAN_CMD} profile new ${CONAN_PROFILE_NAME} --detect ERROR_QUIET)
+conan_cmake_autodetect(settings)
+
+conan_cmake_install(PATH_OR_REFERENCE ${CMAKE_CURRENT_SOURCE_DIR}
+                    BUILD missing
+                    REMOTE conancenter
+                    SETTINGS ${settings})
+conan_cmake_run(CONANFILE "conanfile.txt" BASIC_SETUP UPDATE BUILD missing)
+set(CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR})
+
+# NDEBUG, _DEBUG def
+if (NOT CMAKE_BUILD_TYPE MATCHES Debug)
+    add_definitions(-DNDEBUG)
+	set(GEE_DLL_PATH x64/Release/dll)
+	set(GEE_PHYSX_PATH x64/PhysX/checked/)
+else()
+    add_definitions(-D_DEBUG)
+	set(GEE_DLL_PATH x64/Debug/dll)
+	set(GEE_PHYSX_PATH x64/PhysX/debug/)
+endif()
+
+#add_subdirectory(../rehab-game ${CMAKE_BINARY_DIR}/rehab-game)
+#add_subdirectory(Projects/example_8_ball_pool/example_8_ball_pool)
 
 # GEE
 set(PROJECT_NAME game-engine-engine)
@@ -184,9 +230,8 @@ set(Source_Files
     "src/src/utility/Alignment.cpp"
     "src/src/utility/Profiling.cpp"
     "src/src/utility/Utility.cpp"
-    "src/vendor/source/glad/glad.c"
     "src/vendor/source/tinyfiledialogs/tinyfiledialogs.c"
-    "src/vendor/source/whereami/whereami.c"
+    #"src/vendor/source/whereami/whereami.c"
 )
 source_group("Source Files" FILES ${Source_Files})
 
@@ -196,26 +241,162 @@ set(ALL_FILES
 )
 
 set(LibrariesDebug
-    "x64/glfw/debug/glfw3;"
-    "x64/OpenAL/debug/OpenAL64;"
-    "x64/PhysX/debug/PhysX_64;"
-    "x64/PhysX/debug/PhysXCommon_64;"
-    "x64/PhysX/debug/PhysXFoundation_64;"
-    "x64/PhysX/debug/PhysXPvdSDK_static_64;"
-    "x64/PhysX/debug/PhysXExtensions_static_64;"
-    "x64/PhysX/debug/PhysXCharacterKinematic_static_64;"
-    "x64/PhysX/debug/PhysXCooking_64;"
-    "x64/assimp/debug/assimp-vc143-mtd;"
-    "x64/freetype/debug/freetyped"
-    "opengl32")
+    "x64/PhysX/checked/PhysX_64;"
+    "x64/PhysX/checked/PhysXCommon_64;"
+    "x64/PhysX/checked/PhysXFoundation_64;"
+    "x64/PhysX/checked/PhysXPvdSDK_static_64;"
+    "x64/PhysX/checked/PhysXExtensions_static_64;"
+    "x64/PhysX/checked/PhysXCharacterKinematic_static_64;"
+    "x64/PhysX/checked/PhysXCooking_64;"
+	)
 source_group("LibrariesDebug" FILES ${LibrariesDebug})
 
-add_executable(${PROJECT_NAME} ${ALL_FILES})
+add_library(${PROJECT_NAME} ${ALL_FILES})
 target_include_directories(${PROJECT_NAME} PUBLIC src/src)
 target_include_directories(${PROJECT_NAME} PUBLIC src/vendor/include)
-target_link_libraries(${PROJECT_NAME} PUBLIC ${LibrariesDebug})
+#target_link_libraries(${PROJECT_NAME} PUBLIC ${LibrariesDebug})
 target_link_directories(${PROJECT_NAME} PUBLIC src/vendor/lib)
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
-add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${PROJECT_NAME}> ${PROJECT_BINARY_DIR}/Settings.ini
+
+add_custom_command(TARGET ${PROJECT_NAME}  POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+                ${CMAKE_CURRENT_SOURCE_DIR}/Shaders
+                ${CMAKE_CURRENT_BINARY_DIR}/Shaders
+		COMMENT "Copied Shaders folder.")
+add_custom_command(TARGET ${PROJECT_NAME}  POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+                ${CMAKE_CURRENT_SOURCE_DIR}/Assets/EngineObjects
+                ${CMAKE_CURRENT_BINARY_DIR}/Assets/EngineObjects
+		COMMENT "Copied EngineObjects folder.")
+add_custom_command(TARGET ${PROJECT_NAME}  POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+                ${CMAKE_CURRENT_SOURCE_DIR}/Assets/Editor
+                ${CMAKE_CURRENT_BINARY_DIR}/Assets/Editor
+		COMMENT "Copied Editor folder.")
+add_custom_command(
+        TARGET ${PROJECT_NAME}  POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy
+                ${CMAKE_CURRENT_SOURCE_DIR}/Settings.ini
+                ${CMAKE_CURRENT_BINARY_DIR}/Settings.ini
+		COMMENT "Created Settings.ini.")
+add_custom_command(
+        TARGET ${PROJECT_NAME}  POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+                ${CMAKE_CURRENT_SOURCE_DIR}/${GEE_DLL_PATH}
+                ${CMAKE_CURRENT_BINARY_DIR}
+		COMMENT "Copied DLL files.")
+file(MAKE_DIRECTORY Projects)
+set_property(TARGET ${PROJECT_NAME} PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+
+find_package(glfw3 3.3.7 REQUIRED)
+find_package(glm REQUIRED)
+find_package(stb REQUIRED)
+find_package(assimp REQUIRED)
+find_package(OpenGL REQUIRED)
+find_package(glad REQUIRED)
+find_package(Freetype REQUIRED)
+find_package(OpenAL REQUIRED)
+find_package(whereami REQUIRED)
+find_package(cereal REQUIRED)
+
+set(CMAKE_CXX_INCLUDE_WHAT_YOU_USE 1)
+set(CMAKE_LINK_WHAT_YOU_USE 1)
+
+target_link_libraries(${PROJECT_NAME} 
+    ${opengl_LIBRARIES} 
+    ${glfw_LIBRARIES} 
+    ${glm_LIBRARIES} 
+	${glad_LIBRARIES}
+    ${assimp_LIBRARIES}
+	${Freetype_LIBRARIES}
+	${OpenAL_LIBRARIES}
+	stb::stb
+	whereami::whereami
+	cereal::cereal
+    ${GEE_PHYSX_PATH}PhysX_64;
+    ${GEE_PHYSX_PATH}PhysXCommon_64;
+    ${GEE_PHYSX_PATH}PhysXFoundation_64;
+    ${GEE_PHYSX_PATH}PhysXPvdSDK_static_64;
+    ${GEE_PHYSX_PATH}PhysXExtensions_static_64;
+    ${GEE_PHYSX_PATH}PhysXCharacterKinematic_static_64;
+    ${GEE_PHYSX_PATH}PhysXCooking_64;
 )
+get_target_property(OUT game-engine-engine INCLUDE_INTERNALS)
+message(STATUS ${OUT})
+
+set(CMAKE_BUILD_TYPE DEBUG)
+conan_cmake_autodetect(settings)
+
+conan_cmake_install(PATH_OR_REFERENCE ${CMAKE_CURRENT_SOURCE_DIR}
+                    BUILD missing
+                    REMOTE conancenter
+                    SETTINGS ${settings})
+conan_cmake_run(CONANFILE "conanfile.txt" BASIC_SETUP UPDATE BUILD missing)
+
+set(CMAKE_CXX_INCLUDE_WHAT_YOU_USE 1)
+set(CMAKE_LINK_WHAT_YOU_USE 1)
+unset(opengl_LIBRARIES)
+unset(glfw_LIBRARIES)
+unset(glm_LIBRARIES)
+unset(glad_LIBRARIES)
+unset(assimp_LIBRARIES)
+unset(Freetype_LIBRARIES)
+unset(OpenAL_LIBRARIES)
+
+find_package(glfw3 3.3.7 REQUIRED)
+find_package(glm REQUIRED)
+find_package(stb REQUIRED)
+find_package(assimp REQUIRED)
+find_package(OpenGL REQUIRED)
+find_package(glad REQUIRED)
+find_package(Freetype REQUIRED)
+find_package(OpenAL REQUIRED)
+find_package(whereami REQUIRED)
+find_package(cereal REQUIRED)
+
+
+
+set(ALL_EXTERNAL_LIBRARIES
+    ${opengl_LIBRARIES} 
+    ${glfw_LIBRARIES} 
+    ${glm_LIBRARIES} 
+	${glad_LIBRARIES}
+    ${assimp_LIBRARIES}
+	${Freetype_LIBRARIES}
+	${OpenAL_LIBRARIES}
+	stb::stb
+	whereami::whereami
+	cereal::cereal
+    ${GEE_PHYSX_PATH}PhysX_64;
+    ${GEE_PHYSX_PATH}PhysXCommon_64;
+    ${GEE_PHYSX_PATH}PhysXFoundation_64;
+    ${GEE_PHYSX_PATH}PhysXPvdSDK_static_64;
+    ${GEE_PHYSX_PATH}PhysXExtensions_static_64;
+    ${GEE_PHYSX_PATH}PhysXCharacterKinematic_static_64;
+    ${GEE_PHYSX_PATH}PhysXCooking_64;
+)
+target_link_libraries(${PROJECT_NAME} ${ALL_EXTERNAL_LIBRARIES})
+
+# 8 ball pool example
+set(GEE_EXAMPLE_8BALL_POOL_ENABLE True CACHE BOOL "Enable 8 ball pool example")
+
+if (GEE_EXAMPLE_8BALL_POOL_ENABLE)
+set(GEE_EXAMPLE_8BALL_NAME gee_example_8ball_pool)
+set(GEE_EXAMPLE_8BALL_POOL_PATH Projects/example_8_ball_pool/example_8_ball_pool)
+
+add_executable(${GEE_EXAMPLE_8BALL_NAME}
+			   ${GEE_EXAMPLE_8BALL_POOL_PATH}/src/EightBallMain.cpp
+			   ${GEE_EXAMPLE_8BALL_POOL_PATH}/src/PoolBallActor.h
+			   ${GEE_EXAMPLE_8BALL_POOL_PATH}/src/PoolBallActor.cpp
+			   ${GEE_EXAMPLE_8BALL_POOL_PATH}/src/CueController.h
+			   ${GEE_EXAMPLE_8BALL_POOL_PATH}/src/CueController.cpp)
+			   
+target_include_directories(${GEE_EXAMPLE_8BALL_NAME} PUBLIC src/src)
+target_include_directories(${GEE_EXAMPLE_8BALL_NAME} PUBLIC src/vendor/include)
+target_link_directories(${GEE_EXAMPLE_8BALL_NAME} PUBLIC src/vendor/lib)
+
+target_link_libraries(${GEE_EXAMPLE_8BALL_NAME} ${ALL_EXTERNAL_LIBRARIES} game-engine-engine)
+target_compile_features(${GEE_EXAMPLE_8BALL_NAME} PRIVATE cxx_std_17)
+endif () # GEE_EXAMPLE_8BALL_POOL_ENABLE
+# set_property(TARGET ${PROJECT_NAME} PROPERTY
+# MSVC_RUNTIME_LIBRARY "MultiThreadedDebug$<$<CONFIG:Debug>:Debug>")

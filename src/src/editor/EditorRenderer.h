@@ -7,13 +7,13 @@ namespace GEE
 	namespace Editor
 	{
 		class GEditorRenderToolboxCollection;
-		class GEditorSettings;
+		struct GEditorSettings;
 
 		class EditorRenderer : public GameRenderer
 		{
 		public:
 			EditorRenderer(EditorManager&, GEditorSettings& editorSettings, RenderToolboxCollection& mainSceneCol, GEditorRenderToolboxCollection& uiCol, SystemWindow& mainWindow);
-			virtual void RenderPass(GameScene* mainScene, GameScene* editorScene, GameScene* menuScene, GameScene* meshPreviewScene) override;
+			void RenderPass(GameScene* mainScene, GameScene* editorScene, GameScene* menuScene, GameScene* meshPreviewScene) override;
 
 			void RenderMainScene(GameScene*);
 			void RenderEditorScene(GameScene*);
@@ -21,6 +21,8 @@ namespace GEE
 			void RenderMeshPreview(GameScene*, RenderToolboxCollection&);
 			void RenderPopups();
 			void RenderGrid(const MatrixInfo&);
+
+			virtual ~EditorRenderer() = default;
 
 		private:
 			GEditorSettings& EditorSettings;

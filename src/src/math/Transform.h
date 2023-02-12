@@ -3,6 +3,7 @@
 #include <glfw/glfw3.h>
 #include <glm/gtx/euler_angles.hpp>
 #include <string>
+#include <utility/CerealNames.h>
 #include <cereal/archives/json.hpp>
 #include "Vec.h"
 
@@ -24,7 +25,6 @@ namespace GEE
 
 	class Transform
 	{
-		bool KUPA;
 		Transform* ParentTransform;
 		mutable UniquePtr<Transform> WorldTransformCache;
 		mutable Mat4f WorldTransformMatrixCache;
@@ -82,6 +82,11 @@ namespace GEE
 		void Rotate(const Quatf& quat);
 		void SetScale(const Vec2f&);
 		void SetScale(const Vec3f&);
+		void SetScaleWorld(const Vec2f& worldScale)
+		{
+			SetScaleWorld(Vec3f(worldScale, 1.0f));
+		}
+		void SetScaleWorld(const Vec3f&);
 		void ApplyScale(float);
 		void ApplyScale(const Vec2f&);
 		void ApplyScale(const Vec3f&);
@@ -93,10 +98,10 @@ namespace GEE
 
 			switch (vec)
 			{
-			case TVec::Position: Position[axisIndex] = val; break;
-			case TVec::Rotation: Rotation[axisIndex] = val; break;
-			case TVec::RotationEuler: Vec3f euler = toEuler(GetRot()); euler[axisIndex] = val; SetRotation(euler); break;
-			case TVec::Scale: Scale[axisIndex] = val; break;
+				case TVec::Position: { Position[axisIndex] = val; break; }
+				case TVec::Rotation: { Rotation[axisIndex] = val; break; }
+				case TVec::RotationEuler: { Vec3f euler = toEuler(GetRot()); euler[axisIndex] = val; SetRotation(euler); break; }
+				case TVec::Scale: { Scale[axisIndex] = val; break; }
 			}
 
 			FlagMyDirtiness();
@@ -106,15 +111,15 @@ namespace GEE
 		void AddChild(Transform*);
 		void RemoveChild(Transform*);
 
-		bool GetDirtyFlag(unsigned int index = 0, bool reset = true);
-		void SetDirtyFlag(unsigned int index = 0, bool val = true);
-		void SetDirtyFlags(bool val = true);
-		unsigned int AddDirtyFlag();
+		bool GetDirtyFlag(unsigned int index = 0, bool reset = true) const;
+		void SetDirtyFlag(unsigned int index = 0, bool val = true) const;
+		void SetDirtyFlags(bool val = true) const;
+		unsigned int AddDirtyFlag() const;
 
-		void AddInterpolator(std::string fieldName, SharedPtr<InterpolatorBase>, bool animateFromCurrent = true);	//if animateFromCurrent is true, the method automatically changes the minimum value of the interpolator to be the current value of the interpolated variable.
-		template <class T> void AddInterpolator(std::string fieldName, float begin, float end, T min, T max, InterpolationType interpType = InterpolationType::Linear, bool fadeAway = false, AnimBehaviour before = AnimBehaviour::STOP, AnimBehaviour after = AnimBehaviour::STOP);
-		template <class T> void AddInterpolator(std::string fieldName, float begin, float end, T max, InterpolationType interpType = InterpolationType::Linear, bool fadeAway = false, AnimBehaviour before = AnimBehaviour::STOP, AnimBehaviour after = AnimBehaviour::STOP);
-		void Update(float deltaTime);
+		void AddInterpolator(const String& fieldName, SharedPtr<InterpolatorBase>, bool animateFromCurrent = true);	//if animateFromCurrent is true, the method automatically changes the minimum value of the interpolator to be the current value of the interpolated variable.
+		template <class T> void AddInterpolator(const String& fieldName, Time begin, Time end, T min, T max, InterpolationType interpType = InterpolationType::Linear, bool fadeAway = false, AnimBehaviour before = AnimBehaviour::STOP, AnimBehaviour after = AnimBehaviour::STOP);
+		template <class T> void AddInterpolator(const String& fieldName, Time begin, Time end, T max, InterpolationType interpType = InterpolationType::Linear, bool fadeAway = false, AnimBehaviour before = AnimBehaviour::STOP, AnimBehaviour after = AnimBehaviour::STOP);
+		void Update(Time deltaTime);
 
 		template <typename Archive> void Serialize(Archive& archive)
 		{

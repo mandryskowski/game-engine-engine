@@ -33,11 +33,11 @@
   @{
 */
 
-#include "foundation/PxMemory.h"
-#include "foundation/PxVec3.h"
-#include "common/PxCoreUtilityTypes.h"
-#include "vehicle/PxVehicleSDK.h"
-#include "common/PxTypeInfo.h"
+#include <PhysX/foundation/PxMemory.h>
+#include <PhysX/foundation/PxVec3.h>
+#include <PhysX/common/PxCoreUtilityTypes.h>
+#include <PhysX/vehicle/PxVehicleSDK.h>
+#include <PhysX/common/PxTypeInfo.h>
 
 #if !PX_DOXYGEN
 namespace physx

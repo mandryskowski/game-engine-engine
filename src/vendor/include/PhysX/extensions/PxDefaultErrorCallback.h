@@ -30,8 +30,8 @@
 #ifndef PX_PHYSICS_EXTENSIONS_DEFAULT_ERROR_CALLBACK_H
 #define PX_PHYSICS_EXTENSIONS_DEFAULT_ERROR_CALLBACK_H
 
-#include "foundation/PxErrorCallback.h"
-#include "PxPhysXConfig.h"
+#include <PhysX/foundation/PxErrorCallback.h>
+#include <PhysX/PxPhysXConfig.h>
 
 #if !PX_DOXYGEN
 namespace physx

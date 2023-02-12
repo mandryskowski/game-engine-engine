@@ -31,7 +31,7 @@ namespace GEE
 
 			virtual void CheckError() override;
 
-			~AudioEngine();
+			virtual ~AudioEngine() override;
 		};
 	}
 }
