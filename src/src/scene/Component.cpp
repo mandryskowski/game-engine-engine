@@ -435,34 +435,6 @@ namespace GEE
 
 	void Component::GetEditorDescription(ComponentDescriptionBuilder descBuilder)
 	{
-		/* UIInputBoxActor& textActor = descBuilder.CreateActor<UIInputBoxActor>("ComponentsNameActor");
-		textActor.SetTransform(Transform(Vec2f(0.0f, 1.5f), Vec2f(5.0f, 1.0f)));
-		textActor.GetButtonModel()->SetHide(true);
-		textActor.GetContentTextComp()->SetFontStyle(FontStyle::Bold);
-
-		textActor.SetOnInputFunc([this, descBuilder](const std::string& content) mutable
-			{
-				auto prevName = GetName();
-
-				if (Scene.GetUniqueActorName(content) == content)
-					SetName(content);
-
-				if (Actor* foundActorCanvas = descBuilder.GetEditorScene().GetRootActor()->FindActor("GEE_E_Actors_Components_Canvas"))
-					if (UIActivableButtonActor* foundButtonActor = foundActorCanvas->GetActor<UIActivableButtonActor>(prevName))
-					{
-						foundButtonActor->SetName(GetName());
-						if (auto foundTextComp = foundButtonActor->GetRoot()->GetComponent<TextComponent>("ButtonText"))
-							foundTextComp->SetContent(GetName());
-					}
-			}
-		, [this]() -> std::string { return GetName(); });
-
-		ModelComponent& prettyQuad = textActor.CreateComponent<ModelComponent>("PrettyQuad");
-		prettyQuad.AddMeshInst(MeshInstance(GameHandle->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::Quad), textActor.GetButtonModel()->GetMeshInstance(0).GetMaterialPtr()));
-		prettyQuad.SetTransform(Transform(Vec2f(0.0f, -0.21f), Vec2f(1.0f, 0.01f))); */
-
-		//textActor.DeleteButtonModel();
-
 		auto& transformCategory = descBuilder.AddCategory("Transform");
 		ComponentTransform.GetEditorDescription(EditorDescriptionBuilder(descBuilder.GetEditorHandle(), transformCategory));
 
@@ -482,15 +454,15 @@ namespace GEE
 
 		// Collision object category
 		auto& shapesListCategory = descBuilder.AddCategory("Collision object");
-		Physics::CollisionObject* colObj = (descBuilder.IsNodeBeingBuilt()) ? (descBuilder.GetNodeBeingBuilt()->GetCollisionObject()) : (GetCollisionObj());;
-		UIButtonActor& colObjectPresenceButton = shapesListCategory.CreateChild<UIButtonActor>("CollisionObjectButton", (colObj) ? ("V") : ("X"));
+		Physics::CollisionObject* colObj = (descBuilder.IsNodeBeingBuilt()) ? (descBuilder.GetNodeBeingBuilt()->GetCollisionObject()) : (GetCollisionObj());
+		UIButtonActor& colObjectPresenceButton = shapesListCategory.AddField("Present").CreateChild<UIButtonActor>("CollisionObjectButton", (colObj) ? ("V") : ("X"));
 
 		colObjectPresenceButton.CreateChild<UIButtonActor>("AddColShape", "+", [this, colObj, descBuilder]() mutable {
 			UIWindowActor& shapeCreatorWindow = descBuilder.GetEditorScene().CreateActorAtRoot<UIWindowActor>("ShapeCreatorWindow");
 			shapeCreatorWindow.GetTransform()->SetScale(Vec2f(0.25f));
 			UIAutomaticListActor& buttonsList = shapeCreatorWindow.CreateChild<UIAutomaticListActor>("ButtonsList");
 
-			std::function <void(SharedPtr<Physics::CollisionShape>)> addShapeFunc = [this, colObj, descBuilder, &shapeCreatorWindow](SharedPtr<Physics::CollisionShape> shape) mutable {
+			std::function<void(SharedPtr<Physics::CollisionShape>)> addShapeFunc = [this, colObj, descBuilder, &shapeCreatorWindow](SharedPtr<Physics::CollisionShape> shape) mutable {
 				if (!colObj)
 				{
 					if (descBuilder.IsNodeBeingBuilt())
@@ -576,7 +548,7 @@ namespace GEE
 		UIAutomaticListActor& shapesList = shapesListField.CreateChild<UIAutomaticListActor>("ShapesList");
 
 		shapesListCategory.SetListElementOffset(shapesListCategory.GetListElementCount() - 1,
-			[descBuilder, &shapesListField, &shapesList, &shapesListCategory, defaultOffset = shapesListCategory.GetListElement(shapesListCategory.GetListElementCount() - 1).GetElementOffset()]() mutable -> Vec3f { return static_cast<Mat3f>(descBuilder.GetCanvas().ToCanvasSpace(shapesListField.GetTransform()->GetWorldTransform()).GetMatrix()) * (2.0f * shapesList.GetListOffset()); });
+			[descBuilder, &shapesListField, &shapesList]() mutable -> Vec3f { return shapesList.GetListElementCount() == 0 ? Vec3f(0.0f, -2.0f, 0.0f) :  static_cast<Mat3f>(descBuilder.GetCanvas().ToCanvasSpace(shapesListField.GetTransform()->GetWorldTransform()).GetMatrix()) * shapesList.GetListOffset(); });
 
 
 

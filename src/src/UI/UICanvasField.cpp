@@ -180,7 +180,9 @@ void UIMultipleListActor::NestList(UIListActor& list)
 		titleBackgroundQuad.AddMeshInst(GetGameHandle()->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::Quad));
 		titleBackgroundQuad.OverrideInstancesMaterial(titleBackgroundMaterial);
 
-		CreateComponent<TextComponent>("ElementText", Transform(Vec2f(0.0f, 2.0f), Vec2f(0.75f)), GetName(), "Assets/Editor/Fonts/Atkinson-Hyperlegible-Bold-102.otf", Alignment2D::Center()).Unstretch();
+		auto& catText = CreateComponent<TextComponent>("ElementText", Transform(Vec2f(0.0f, 2.0f), Vec2f(0.75f)), GetName(), "Assets/Editor/Fonts/Atkinson-Hyperlegible-Bold-102.otf", Alignment2D::Center());
+		catText.SetMaxSize(Vec2f(5.0f, 1.0f));
+		catText.Unstretch();
 
 		CategoryBackgroundQuad = &CreateComponent<ModelComponent>("BackgroundQuad", Transform(Vec2f(0.0f, 0.0f), Vec2f(30.0f, 0.0f)));
 		CategoryBackgroundQuad->AddMeshInst(GetGameHandle()->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::Quad));
@@ -222,14 +224,14 @@ void UIMultipleListActor::NestList(UIListActor& list)
 
 	Vec3f UICanvasFieldCategory::GetListOffset()
 	{
-		return (bExpanded) ? (UIAutomaticListActor::GetListOffset() + Vec3f(0.0f, -1.0f, 0.0f)) : (Vec3f(0.0f, -1.0f, 0.0f));
+		return (bExpanded) ? (UIAutomaticListActor::GetListOffset() + Vec3f(0.0f, -2.0f, 0.0f)) : (Vec3f(0.0f, -2.0f, 0.0f));
 	}
 
 	void UICanvasFieldCategory::SetOnExpansionFunc(const std::function<void()>& onExpansionFunc)
 	{
 		OnExpansionFunc = [this, onExpansionFunc]() { if (onExpansionFunc) onExpansionFunc(); for (auto& it : Children) it->HandleEventAll(CursorMoveEvent(EventType::MouseMoved, Scene.GetUIData()->GetWindowData().GetMousePositionNDC())); };
 	}
-
+		
 	void UICanvasFieldCategory::HandleEventAll(const Event& ev)
 	{
 		HandleEvent(ev);
@@ -245,8 +247,9 @@ void UIMultipleListActor::NestList(UIListActor& list)
 	{
 		if (CategoryBackgroundQuad)
 		{
-			CategoryBackgroundQuad->GetTransform().SetPosition(Vec2f(0.0f, static_cast<float>(1.0f + UIAutomaticListActor::GetListOffset().y)));
-			CategoryBackgroundQuad->GetTransform().SetVecAxis<TVec::Scale, VecAxis::Y>(static_cast<float>(-UIAutomaticListActor::GetListOffset().y));
+			CategoryBackgroundQuad->GetTransform().SetPosition(Vec2f(0.0f, static_cast<float>((UIAutomaticListActor::GetListOffset().y + 1) / 2.0f)));
+			CategoryBackgroundQuad->GetTransform().SetVecAxis<TVec::Scale, VecAxis::Y>(static_cast<float>(-(UIAutomaticListActor::GetListOffset().y + 1) / 2.0f));
+			std::cout << GetName() << " Background " << CategoryBackgroundQuad->GetTransform().GetPos().y << " ;;; " << CategoryBackgroundQuad->GetTransform().GetScale2D().y << '\n';
 		}
 
 		UIAutomaticListActor::Refresh();
@@ -421,7 +424,10 @@ void UIMultipleListActor::NestList(UIListActor& list)
 		backgroundMaterial->SetColor(backgroundColor);
 		backgroundQuad.OverrideInstancesMaterial(backgroundMaterial);
 
-		actor.CreateComponent<TextComponent>("ElementText", Transform(Vec2f(-2.0f, pos.y)), actor.GetName(), "", Alignment2D::RightCenter()).SetMaxSize(Vec2f(3.0f, 0.75f));
+		// We want everything constrained within the (-5, 5) range on the X so we set max size to 1.5 from -2.
+		// Note that, as this is right-aligned, the left extent will be twice the max size away from position.
+		// So left extent will be -2 - 2 * (1.5) = 5.
+		actor.CreateComponent<TextComponent>("ElementText", Transform(Vec2f(-2.0f, pos.y)), actor.GetName(), "", Alignment2D::RightCenter()).SetMaxSize(Vec2f(1.5f, 0.75f));
 		
 		auto& separatorLine = actor.CreateComponent<ModelComponent>("SeparatorLine", Transform(Vec2f(-1.5f, pos.y), Vec2f(0.08f, 0.8f)));
 		separatorLine.AddMeshInst(actor.GetGameHandle()->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::Quad));

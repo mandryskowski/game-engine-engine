@@ -42,7 +42,7 @@ namespace GEE
 			EditorMessageLogger& GetEditorLogger(GameScene& scene) override;
 			bool GetViewportMaximized() const override { return bViewportMaximized; }
 			Profiling& GetProfilerRef() { return Profiler; }
-			DefaultEditorController* GetEditorController() { return EditorController; }
+			DefaultEditorController* GetEditorController() override { return EditorController; }
 			void GenerateActorList(PopupDescription, std::function<void(Actor&)>) override;
 
 			void RequestPopupMenu(const Vec2f& posWindowSpace, SystemWindow& relativeWindow, std::function<void(PopupDescription)> popupCreation) override;

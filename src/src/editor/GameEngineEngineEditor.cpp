@@ -782,9 +782,23 @@ namespace GEE
 			{
 				auto& uifix = mainMenuScene.CreateActorAtRoot<UIActorDefault>("uifix", Transform(Vec2f(0.5f, 0.0f), Vec2f(0.1f)));
 				//UIElementTemplates(uifix).ObjectInput<Actor, Actor>(*mainMenuScene.GetRootActor(), aauifix);
-				uifix.CreateChild<UIButtonActor>("fixinput", [&mainMenuScene]() {
+				uifix.CreateChild<UIButtonActor>("fixinput", [this, &mainMenuScene]() {
 					auto& window = mainMenuScene.CreateActorAtRoot<UIWindowActor>("uifixwindow", Transform(Vec2f(0.0f), Vec2f(0.5f, 0.3f)));
-					window.CreateChild<UIInputBoxActor>("inputboxfix", Transform(Vec2f(0.0f), Vec2f(0.5f)));
+					auto& texts = window.CreateChild<UIActorDefault>("textsActor");
+					texts.CreateComponent<TextComponent>("LAlign", Transform(), "CAlignCAlignCAlignCAlignCAlignCAlignCAlignCAlignCAlignCAlignCAlignCAlignCAlignCAlign", "", Alignment2D::LeftCenter()).SetMaxSize(Vec2f(3.0f, 1.0f));
+					texts.CreateComponent<TextComponent>("CAlign", Transform(Vec2f(0.0f, -1.0f)), "CAlignCAlignCAlignCAlignCAlignCAlignCAlignCAlignCAlignCAlignCAlignCAlignCAlignCAlign", "", Alignment2D::Center()).SetMaxSize(Vec2f(3.0f, 1.0f));
+					texts.CreateComponent<TextComponent>("RAlign", Transform(Vec2f(0.0f, -2.0f)), "CAlignCAlignCAlignCAlignCAlignCAlignCAlignCAlignCAlignCAlignCAlignCAlignCAlignCAlign", "", Alignment2D::RightCenter()).SetMaxSize(Vec2f(3.0f, 1.0f));
+					window.SetPopupCreationFunc([this, &window, &mainMenuScene](PopupDescription desc) {
+						desc.AddOption("Canvas view", [this, &window, &mainMenuScene]()
+							{
+								auto& editWindow = mainMenuScene.CreateActorAtRoot<UIWindowActor>("Canvas view transform");
+								ComponentDescriptionBuilder descBuilder(*dynamic_cast<Editor::EditorManager*>(this),
+									editWindow, editWindow);
+								const_cast<Transform&>(window.GetViewT()).GetEditorDescription(descBuilder);
+								editWindow.AutoClampView();
+								editWindow.RefreshFieldsList();
+							});
+						});
 				}, Transform(Vec2f(0.0f, 3.0f), Vec2f(2.0f, 0.5f)));
 			}
 
@@ -1070,7 +1084,10 @@ namespace GEE
 
 				////
 				auto& cameraActor = scene->CreateActorAtRoot<Actor>("A Camera");
-				auto& camera = cameraActor.CreateComponent<CameraComponent>("A CameraComponent", glm::perspective(glm::radians(90.0f), 1.0f, 0.01f, 100.0f));
+				auto defaultRes = static_cast<Vec2f>(WindowData(*GameWindow).GetWindowSize());
+				GetGameSettings()->Video.Resolution = static_cast<Vec2i>(defaultRes * 0.7f);
+				std::cout << "Default res: " << defaultRes << '\n';
+				auto& camera = cameraActor.CreateComponent<CameraComponent>("A CameraComponent", glm::perspective(glm::radians(90.0f), defaultRes.x / defaultRes.y, 0.01f, 100.0f));
 				scene->BindActiveCamera(&camera);
 
 				cameraActor.CreateChild<FreeRoamingController>("A FreeRoamingController").SetPossessedActor(&cameraActor);
@@ -1182,8 +1199,7 @@ namespace GEE
 
 	void GameEngineEngineEditor::MaximizeViewport()
 	{
-		glm::ivec2 windowSize;
-		glfwGetWindowSize(GameWindow, &windowSize.x, &windowSize.y);
+		auto windowSize = WindowData(*GameWindow).GetWindowSize();
 		if (!bViewportMaximized)
 		{
 			GetGameSettings()->Video.Resolution = windowSize;

@@ -14,7 +14,7 @@ namespace GEE
 		Actor(scene, parentActor, name, t),
 		UICanvas((canvasParent) ? (canvasParent->GetCanvasDepth() + 1) : (1)),	//CanvasDepth starts at 1 (because it has to be higher than depth outside any canvas)
 		FieldsList(nullptr),
-		FieldSize(Vec3f(0.5f)),
+		FieldSize(Vec3f(1.0f)),
 		ScrollBarX(nullptr),
 		ScrollBarY(nullptr),
 		BothScrollBarsButton(nullptr),
@@ -200,7 +200,7 @@ namespace GEE
 		UICanvasFieldCategory& category = FieldsList->CreateChild<UICanvasFieldCategory>(name);
 		category.SetTransform(Transform(Vec2f(0.0f, -1.0f), Vec2f(FieldSize)));	//position doesn't matter if this is not the first field
 		UIListElement::ReferenceToUIActor categoryRef(&category);
-		FieldsList->AddElement(UIListElement(categoryRef, [&category]() { category.Refresh(); return category.GetListOffset(); }, [&category]() { return Vec3f(0.0f, -1.5f, 0.0f); }));
+		FieldsList->AddElement(UIListElement(categoryRef, [&category]() { category.Refresh(); return category.GetListOffset(); }, [this, &category]() { return Vec3f(0.0f, -FieldSize.y * 3.0f, 0.0f); }));
 		category.SetOnExpansionFunc([this]() { RefreshFieldsList(); });
 
 		return category;

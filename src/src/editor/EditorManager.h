@@ -68,8 +68,6 @@ namespace GEE
 			virtual EditorMessageLogger& GetEditorLogger(GameScene& scene) = 0;
 			virtual bool GetViewportMaximized() const = 0;
 
-			virtual bool GetDebugRenderPhysicsMeshes() const = 0;
-			virtual bool GetDebugRenderPhysicsMeshes() const = 0;
 			virtual DefaultEditorController* GetEditorController() = 0;
 			virtual void GenerateActorList(PopupDescription, std::function<void(Actor&)>) = 0;
 
