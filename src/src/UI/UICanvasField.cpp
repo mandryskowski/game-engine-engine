@@ -161,7 +161,7 @@ void UIMultipleListActor::NestList(UIListActor& list)
 				if (OnExpansionFunc)
 					OnExpansionFunc();
 			});
-		ExpandButton->SetTransform(Transform(Vec2f(0.0f, 2.0f), Vec2f(4.0f, 1.0f)));
+		ExpandButton->SetTransform(Transform(Vec2f(0.0f, 1.0f), Vec2f(4.0f, 1.0f)));
 
 		//We do not want the list element to be hidden after retracting
 		EraseListElement(*ExpandButton);
@@ -176,11 +176,11 @@ void UIMultipleListActor::NestList(UIListActor& list)
 		auto titleBackgroundMaterial = MakeShared<Material>("TitleBackgroundMaterial");
 		titleBackgroundMaterial->SetColor(titleBackgroundColor);
 
-		auto& titleBackgroundQuad = CreateComponent<ModelComponent>("BackgroundQuad", Transform(Vec2f(0.0f, 2.0f), Vec2f(30.0f, 1.0f)));
+		auto& titleBackgroundQuad = CreateComponent<ModelComponent>("BackgroundQuad", Transform(Vec2f(0.0f, 1.0f), Vec2f(30.0f, 1.0f)));
 		titleBackgroundQuad.AddMeshInst(GetGameHandle()->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::Quad));
 		titleBackgroundQuad.OverrideInstancesMaterial(titleBackgroundMaterial);
 
-		auto& catText = CreateComponent<TextComponent>("ElementText", Transform(Vec2f(0.0f, 2.0f), Vec2f(0.75f)), GetName(), "Assets/Editor/Fonts/Atkinson-Hyperlegible-Bold-102.otf", Alignment2D::Center());
+		auto& catText = CreateComponent<TextComponent>("ElementText", Transform(Vec2f(0.0f, 1.0f), Vec2f(0.75f)), GetName(), "Assets/Editor/Fonts/Atkinson-Hyperlegible-Bold-102.otf", Alignment2D::Center());
 		catText.SetMaxSize(Vec2f(5.0f, 1.0f));
 		catText.Unstretch();
 
@@ -214,9 +214,15 @@ void UIMultipleListActor::NestList(UIListActor& list)
 	UICanvasFieldCategory& UICanvasFieldCategory::AddCategory(const std::string& name)
 	{
 		UICanvasFieldCategory& category = CreateChild<UICanvasFieldCategory>(name);
+		SetListCenterOffset(-1, []() { return Vec3f(0.0f, -2.0f, 0.0f); });
 		category.SetTransform(Transform(Vec2f(0.0f, 0.0f), Vec2f(1.0f)));	//position doesn't matter if this is not the first field
 		const UIListElement::ReferenceToUIActor categoryRef(&category);
-		AddElement(UIListElement(categoryRef, [&category]() {/* category.Refresh(); */ return category.GetListOffset(); }, []() { return Vec3f(0.0f, -2.0f, 0.0f); }));
+		//AddElement(UIListElement(categoryRef, [&category]()
+		//                         {
+		//	                         /*category.Refresh(); */
+		//	                         return category.GetListOffset();
+		//                         }, [&category]() { return Vec3f(0.0f, -2.0f, 0.0f); }));
+
 		category.SetOnExpansionFunc([this]() { dynamic_cast<UICanvasActor*>(GetCanvasPtr())->RefreshFieldsList(); });
 
 		return category;
@@ -229,7 +235,7 @@ void UIMultipleListActor::NestList(UIListActor& list)
 
 	void UICanvasFieldCategory::SetOnExpansionFunc(const std::function<void()>& onExpansionFunc)
 	{
-		OnExpansionFunc = [this, onExpansionFunc]() { if (onExpansionFunc) onExpansionFunc(); for (auto& it : Children) it->HandleEventAll(CursorMoveEvent(EventType::MouseMoved, Scene.GetUIData()->GetWindowData().GetMousePositionNDC())); };
+		OnExpansionFunc = [this, onExpansionFunc]() { if (onExpansionFunc) onExpansionFunc(); for (auto& it : Children) it->HandleEventAll(CursorMoveEvent(Scene.GetUIData()->GetWindowData().GetMousePositionNDC())); };
 	}
 		
 	void UICanvasFieldCategory::HandleEventAll(const Event& ev)
@@ -247,9 +253,8 @@ void UIMultipleListActor::NestList(UIListActor& list)
 	{
 		if (CategoryBackgroundQuad)
 		{
-			CategoryBackgroundQuad->GetTransform().SetPosition(Vec2f(0.0f, static_cast<float>((UIAutomaticListActor::GetListOffset().y + 1) / 2.0f)));
-			CategoryBackgroundQuad->GetTransform().SetVecAxis<TVec::Scale, VecAxis::Y>(static_cast<float>(-(UIAutomaticListActor::GetListOffset().y + 1) / 2.0f));
-			std::cout << GetName() << " Background " << CategoryBackgroundQuad->GetTransform().GetPos().y << " ;;; " << CategoryBackgroundQuad->GetTransform().GetScale2D().y << '\n';
+			CategoryBackgroundQuad->GetTransform().SetPosition(Vec2f(0.0f, static_cast<float>((UIAutomaticListActor::GetListOffset().y) / 2.0f)));
+			CategoryBackgroundQuad->GetTransform().SetVecAxis<TVec::Scale, VecAxis::Y>(static_cast<float>(-(UIAutomaticListActor::GetListOffset().y) / 2.0f));
 		}
 
 		UIAutomaticListActor::Refresh();

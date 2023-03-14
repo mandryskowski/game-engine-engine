@@ -128,7 +128,7 @@ namespace GEE
 		glfwSetWindowSize(&Popup.Window.get(), windowSize.x, windowSize.y);
 		Popup.Settings->Resolution = windowSize;
 
-		DescriptionRoot->HandleEventAll(Event(EventType::WindowResized));
+		DescriptionRoot->HandleEventAll(WindowResizedEvent());
 	}
 	IconData::IconData(RenderEngineManager& renderHandle, const std::string& texFilepath, Vec2i iconAtlasSize, float iconAtlasID):
 		IconMaterial(nullptr),
@@ -199,7 +199,7 @@ namespace GEE
 		{
 			const auto canvasScaleY = canvas.GetTransform()->GetScale2D().y;
 			auto titleButtonScaleY = titleScaleWorldY / canvasScaleY;
-			canvas.GetTransform()->SetVecAxis<TVec::Position, VecAxis::Y>(endOfTopElementY - 2.0f * titleScaleWorldY - canvasScaleY);
+			//canvas.GetTransform()->SetVecAxis<TVec::Position, VecAxis::Y>(endOfTopElementY - 2.0f * titleScaleWorldY - canvasScaleY);
 
 			auto& titleButton = canvas.CreateChild<UIInputBoxActor>(canvas.GetName() + "_Title", setFunc, getFunc, Transform(Vec2f(0.0f, 1.0f + titleButtonScaleY), Vec2f(1.0f, titleButtonScaleY)));
 			titleButton.DetachFromCanvas();
@@ -249,18 +249,14 @@ namespace GEE
 			bool sameComp = SelectedComp == comp;
 			Component* prevSelectedComp = SelectedComp;
 			SelectedComp = comp;
-			std::cout << "Selected comp is now " << SelectedComp;
-			if (SelectedComp)
-				std::cout << "(" + SelectedComp->GetName() + ")\n";
-			else
-				std::cout << '\n';
+
 			Transform previousCanvasView;
 			if (const Actor* found = editorScene.GetRootActor()->FindActor("GEE_E_Components_Info_Canvas"))
 			{
 				previousCanvasView = dynamic_cast<UICanvasActor*>(const_cast<Actor*>(found))->CanvasView;
 				const_cast<Actor*>(found)->MarkAsKilled();
 			}
-
+			std::cout << "%LE: "<< dynamic_cast<UIListActor*>(editorScene.FindActor("GEE_E_Left_Canvas_List"))->GetListElementCount();
 
 			if (Actor* foundActorCanvas = editorScene.GetRootActor()->FindActor("GEE_E_Actors_Components_Canvas"); !sameComp && foundActorCanvas)
 			{
@@ -276,22 +272,23 @@ namespace GEE
 			if (!comp)
 				return;
 
-			UICanvasActor& canvas = editorScene.CreateActorAtRoot<UICanvasActor>("GEE_E_Components_Info_Canvas", Transform(Vec2f(-0.85f, -0.5f), Vec2f(0.15f, 0.375f)));
-			canvas.KillResizeBars();
-			// Position canvas and add title
-			{
-				canvas.GetTransform()->SetScale(Vec2f(0.15f, 0.3f));
 
-				auto foundTopElement = editorScene.GetRootActor()->FindActor("GEE_E_Actors_Components_Canvas");
-				GEE_CORE_ASSERT(foundTopElement);
-				addTitleAndPositionCanvas(canvas, *comp, Math::GetTransformExtent<Math::Extent::Bottom>(foundTopElement->GetTransform()->GetWorldTransform()));
-			}
+			auto& canvas = editorScene.FindActor("GEE_E_Left_Canvas_List")->CreateChild<UICanvasActor>("GEE_E_Components_Info_Canvas");
+			canvas.KillResizeBars();
 
 			comp->GetEditorDescription(ComponentDescriptionBuilder(EditorHandle, canvas, canvas));
 
 			canvas.RefreshFieldsList();
 
-			//Scenes.back()->RootActor->DebugHierarchy();
+			// Position canvas and add title
+			int totalActorCount = static_cast<int>(-canvas.GetFieldsListOffset().y / 2.0f);
+			totalActorCount = glm::clamp(totalActorCount, 0, 18);
+			{
+				auto foundTopElement = editorScene.GetRootActor()->FindActor("GEE_E_Actors_Components_Canvas");
+				GEE_CORE_ASSERT(foundTopElement);
+				canvas.GetTransform()->SetScale(Vec2f(1.0f, 0.02f * totalActorCount));
+				addTitleAndPositionCanvas(canvas, *comp, Math::GetTransformExtent<Math::Extent::Bottom>(foundTopElement->GetTransform()->GetWorldTransform()));
+			}
 
 			if (!previousCanvasView.IsEmpty() && sameComp)
 				canvas.SetCanvasView(previousCanvasView);
@@ -299,6 +296,17 @@ namespace GEE
 				canvas.AutoClampView();
 
 			EditorHandle.GetEditorController()->Reset((SelectedComp) ? (SelectedComp->GetTransform()) : (Transform()));
+			canvas.SetViewScale(Vec2f(canvas.GetViewT().GetScale2D().x, totalActorCount));
+
+			{
+				auto canvasList = dynamic_cast<UIListActor*>(editorScene.FindActor("GEE_E_Left_Canvas_List"));
+				canvasList->AddElement(UIListElement(&canvas,
+				 [&canvas]() -> Vec3f { return Vec3f(0.0f, -canvas.GetBoundingBox().Size.y * 2.0f - canvas.GetActor(canvas.GetName() + "_Title")->GetTransform()->GetWorldTransform().GetScale2D().y * 2.0f, 0.0f); },
+				[&canvas]() -> Vec3f { return Vec3f(0.0f, -canvas.GetBoundingBox().Size.y - canvas.GetActor(canvas.GetName() + "_Title")->GetTransform()->GetWorldTransform().GetScale2D().y * 2.0f, 0.0f); }));
+				canvasList->Refresh();
+				std::cout << "&^%: " << canvasList->GetListBegin().y << '\n';
+				std::cout << "&^%: " << canvasList->GetListElementCount() << '\n';
+			}
 		}
 
 		void EditorActions::SelectActor(Actor* actor, GameScene& editorScene)
@@ -336,10 +344,10 @@ namespace GEE
 			if (!actor)
 				return;
 
-			UICanvasActor& canvas = editorScene.CreateActorAtRoot<UICanvasActor>("GEE_E_Actors_Components_Canvas", Transform(Vec2f(-0.85f, -0.5f), Vec2f(0.15f, 0.375f)));
+			auto& canvas = editorScene.FindActor("GEE_E_Left_Canvas_List")->CreateChild<UICanvasActor>("GEE_E_Actors_Components_Canvas");
+			//UICanvasActor& canvas = editorScene.CreateActorAtRoot<UICanvasActor>("GEE_E_Actors_Components_Canvas", Transform(Vec2f(-0.85f, -0.5f), Vec2f(0.15f, 0.375f)));
 			canvas.KillResizeBars();
 			canvas.SetViewScale(Vec2f(5.0f, 15.0f));
-			//canvas.SetViewScale(Vec2f(1.0f, glm::sqrt(0.5f / 0.32f)));
 			canvas.SetPopupCreationFunc([&](PopupDescription desc)
 			{
 				auto& refreshButton = desc.AddOption("Refresh",[&]() { SelectActor(GetSelectedActor(), editorScene); }, IconData(renderHandle, "Assets/Editor/refresh_icon.png", Vec2i(3, 1), 0.0f));
@@ -364,19 +372,16 @@ namespace GEE
 
 			UIAutomaticListActor& listActor = componentsListCat.CreateChild<UIAutomaticListActor>("ListActor");
 			listActor.SetTransform(Transform(Vec2f(0.0f, 0.0f), Vec2f(1.66f, 1.0f)));
-			//canvas.FieldsList->SetListElementOffset(canvas.FieldsList->GetListElementCount() - 1, [&listActor, &componentsListCat]() { return static_cast<Mat3f>(componentsListCat.GetTransform()->GetMatrix()) * (listActor.GetListOffset()); });
-			//canvas.FieldsList->SetListCenterOffset(canvas.FieldsList->GetListElementCount() - 1, [&componentsListCat]() -> Vec3f { return Vec3f(0.0f, -componentsListCat.GetTransform()->GetScale().y, 0.0f); });
 
 			addActorToList<Component>(*this, editorScene, *actor->GetRoot(), listActor, canvas);
 
 			listActor.Refresh();
-			canvas.RefreshFieldsList();
 
 			actor->GetEditorDescription(EditorDescriptionBuilder(EditorHandle, canvas.AddCategory("Actor settings")));
 
-			if (canvas.FieldsList)
-				canvas.FieldsList->Refresh();
+			canvas.RefreshFieldsList();
 			
+			/*
 			// Position canvas and add title
 			{
 				canvas.GetTransform()->SetScale(Vec2f(0.15f, 0.3f)); 
@@ -393,6 +398,32 @@ namespace GEE
 				canvas.ClampViewToElements();
 				//canvas.SetViewScale(Vec2f(3.0f, 10.0f));
 				//canvas.SetViewScale(Vec2f(canvas.GetViewT().GetScale2D().x, listActor.GetListElementCount() + 1.0f));
+			} */
+
+
+			int totalActorCount = static_cast<int>(-canvas.GetFieldsListOffset().y / 2.0f);
+			totalActorCount = glm::clamp(totalActorCount, 0, 18);
+			{
+				auto foundTopElement = editorScene.GetRootActor()->FindActor("GEE_E_Scene_Actors_Canvas");
+				canvas.GetTransform()->SetScale(Vec2f(1.0f, 0.02f * totalActorCount));
+				addTitleAndPositionCanvas(canvas, *actor, Math::GetTransformExtent<Math::Extent::Bottom>(foundTopElement->GetTransform()->GetWorldTransform()));
+			}
+
+			canvas.AutoClampView();
+			canvas.SetViewScale(Vec2f(canvas.GetViewT().GetScale2D().x, totalActorCount));
+
+			{
+				auto canvasList = dynamic_cast<UIListActor*>(editorScene.FindActor("GEE_E_Left_Canvas_List"));
+				canvasList->AddElement(UIListElement(&canvas,
+					[&canvas]() -> Vec3f { return Vec3f(0.0f, -canvas.GetBoundingBox().Size.y * 2.0f - canvas.GetActor(canvas.GetName() + "_Title")->GetTransform()->GetWorldTransform().GetScale2D().y * 2.0f, 0.0f); },
+					[&canvas]() -> Vec3f { return Vec3f(0.0f, -canvas.GetBoundingBox().Size.y - canvas.GetActor(canvas.GetName() + "_Title")->GetTransform()->GetWorldTransform().GetScale2D().y * 2.0f, 0.0f); }));
+
+				std::cout << "&^%: " << canvasList->GetListBegin().y << '\n';
+				std::cout << "&^%: " << canvasList->GetListElement(canvasList->GetListElementCount() - 1).GetCenterOffset() << '\n';
+				std::cout << "&^%: " << canvasList->GetListElement(canvasList->GetListElementCount() - 1).GetElementOffset() << '\n';
+				std::cout << "&^%: " << canvasList->GetListElementCount() << '\n';
+				std::cout << "&^%: " << glm::cos(canvas.GetGameHandle()->GetProgramRuntime()) << '\n';
+				canvasList->Refresh();
 			}
 		}
 
@@ -418,7 +449,8 @@ namespace GEE
 			if (!selectedScene)
 				return;
 
-			UICanvasActor& canvas = editorScene.CreateActorAtRoot<UICanvasActor>("GEE_E_Scene_Actors_Canvas", Transform(Vec2f(-0.85f, 0.0f), Vec2f(0.15f, 0.408f)));
+			auto& canvas = editorScene.FindActor("GEE_E_Left_Canvas_List")->CreateChild<UICanvasActor>("GEE_E_Scene_Actors_Canvas");
+			//UICanvasActor& canvas = editorScene.CreateActorAtRoot<UICanvasActor>("GEE_E_Scene_Actors_Canvas", Transform(Vec2f(-0.85f, 0.0f), Vec2f(0.15f, 0.408f)));
 			canvas.KillResizeBars();
 			canvas.CreateCanvasBackgroundModel(hsvToRgb(Vec3f(288.0f, 0.7f, 0.2f)));
 			if (!previousCanvasView.IsEmpty() && sameScene)
@@ -436,7 +468,7 @@ namespace GEE
 						if (UIInputBoxActor* foundNameBoxActor = foundActorCanvas->GetActor<UIInputBoxActor>("ActorsNameActor"))
 							foundNameBoxActor->SetActive(true);
 				}; 
-				desc.AddOption("Transform", [this, &editorScene, &gameHandle, &canvas]() { auto& window = editorScene.CreateActorAtRoot<UIWindowActor>("Button transform"); ComponentDescriptionBuilder descBuilder(*dynamic_cast<Editor::EditorManager*>(&gameHandle), window, window); canvas.GetRoot()->GetEditorDescription(descBuilder); window.AutoClampView(); window.RefreshFieldsList(); });
+				desc.AddOption("Transform", [this, &editorScene, &gameHandle, &canvas]() { auto& window = editorScene.CreateActorAtRoot<UIWindowActor>("Button transform"); ComponentDescriptionBuilder descBuilder(*dynamic_cast<Editor::EditorManager*>(&gameHandle), window, window); canvas.GetParentActor()->GetRoot()->GetEditorDescription(descBuilder); window.AutoClampView(); window.RefreshFieldsList(); });
 				desc.AddSubmenu("Create actor", [this, func](PopupDescription desc)
 				{
 					EditorHandle.GenerateActorList(desc, func);
@@ -456,7 +488,7 @@ namespace GEE
 			int totalActorCount = static_cast<int>(-listActor.GetListOffset().y / 2.0f);
 			totalActorCount = glm::clamp(totalActorCount, 0, 18);
 			{
-				canvas.GetTransform()->SetScale(Vec2f(0.15f, 0.02f * totalActorCount));
+				canvas.GetTransform()->SetScale(Vec2f(1.0f, 0.02f * totalActorCount));
 				addTitleAndPositionCanvas(canvas, nullptr, [selectedScene]() { return selectedScene->GetName(); });
 
 				
@@ -466,10 +498,24 @@ namespace GEE
 
 			listActor.Refresh();
 
-			//editorScene.GetRootActor()->DebugActorHierarchy();
+			//editorScene.GetRootActor()->DebugActorHierarchy();	
 
 			canvas.AutoClampView();
 			canvas.SetViewScale(Vec2f(canvas.GetViewT().GetScale2D().x, totalActorCount));
+
+			{
+				auto canvasList = dynamic_cast<UIListActor*>(editorScene.FindActor("GEE_E_Left_Canvas_List"));
+				canvasList->AddElement(UIListElement(&canvas,
+					[&canvas]() -> Vec3f { return Vec3f(0.0f, -canvas.GetBoundingBox().Size.y * 2.0f - canvas.GetActor(canvas.GetName() + "_Title")->GetTransform()->GetWorldTransform().GetScale2D().y * 2.0f, 0.0f); },
+					[&canvas]() -> Vec3f { return Vec3f(0.0f, -canvas.GetBoundingBox().Size.y - canvas.GetActor(canvas.GetName() + "_Title")->GetTransform()->GetWorldTransform().GetScale2D().y * 2.0f, 0.0f); }));
+				
+				std::cout << "&^%: " << canvasList->GetListBegin().y << '\n';
+				std::cout << "&^%: " << canvasList->GetListElement(canvasList->GetListElementCount() - 1).GetCenterOffset() << '\n';
+				std::cout << "&^%: " << canvasList->GetListElement(canvasList->GetListElementCount() - 1).GetElementOffset() << '\n';
+				std::cout << "&^%: " << canvasList->GetListElementCount() << '\n';
+				std::cout << "&^%: " << glm::cos(canvas.GetGameHandle()->GetProgramRuntime()) << '\n';
+				canvasList->Refresh();	
+			}
 		}
 
 		void EditorActions::PreviewHierarchyTree(Hierarchy::Tree& tree)

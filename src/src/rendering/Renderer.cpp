@@ -1150,7 +1150,7 @@ namespace GEE
 	}
 	void TextRenderer::RenderText(const SceneMatrixInfo& infoPreConvert, const Font::Variation& fontVariation, const std::string& content, const std::vector<Transform>& letterTransforms, const Vec3f& color, Shader* shader, bool convertFromPx, Alignment2D alignment)
 	{
-		GEE_CORE_ASSERT(letterTransforms.size() == content.size())
+		GEE_CORE_ASSERT(letterTransforms.size() == content.length())
 		if (!Material::ShaderInfo(MaterialShaderHint::None).MatchesRequiredInfo(infoPreConvert.GetRequiredShaderInfo()) && shader && shader->GetName() != "TextShader")	///TODO: CHANGE IT SO TEXTS USE MATERIALS SO THEY CAN BE RENDERED USING DIFFERENT SHADERS!!!!
 			return;
 

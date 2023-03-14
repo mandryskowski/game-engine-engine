@@ -74,7 +74,7 @@ namespace GEE
 			if (!scene)
 				scene = EditorHandle->GetGameHandle()->GetActiveScene();
 
-			scene->HandleEventAll(Event(EventType::WindowResized));
+			scene->HandleEventAll(WindowResizedEvent());
 			std::cout << "New res " << EditorHandle->GetGameHandle()->GetGameSettings()->Video.Resolution << '\n';
 		}
 
@@ -490,11 +490,54 @@ namespace GEE
 
 			UIActorDefault& scaleActor = editorScene.CreateActorAtRoot<UIActorDefault>("TextTestButton", Transform(Vec2f(0.0f, 0.0f), Vec2f(0.1f, 0.1f)));
 
-			UIWindowActor& window1 = editorScene.CreateActorAtRoot<UIWindowActor>("MyTestWindow");
-			window1.SetTransform(Transform(Vec2f(0.0, -0.5f), Vec2f(0.2f)));
+			// Canvas lists
+			{
+				auto& leftList = editorScene.CreateActorAtRoot<UIListActor>("GEE_E_Left_Canvas_List");
+				leftList.SetTransform(Transform(Vec2f(-0.85f, 1.0f), Vec2f(0.15f, 1.0f)));
+				auto& addCanvasButton = leftList.CreateChild<UIButtonActor>("AddCanvas", "+", []()
+				{
 
-			UIButtonActor& bigButtonActor = window1.CreateChild<UIButtonActor>("MojTestowyButton", "big button");
-			bigButtonActor.SetTransform(Transform(Vec2f(0.0f, 1.5f), Vec2f(0.4f)));
+				}, Transform(Vec2f(), Vec2f(1.0f, 0.1f)));
+				addCanvasButton.SetPopupCreationFunc([this, &editorScene, &leftList](PopupDescription desc)
+				{
+					desc.AddOption("Materials", [this, &editorScene, &leftList]()
+					{
+						UICanvasActor& canvas = leftList.CreateChild<UICanvasActor>("MaterialsPreviewWindow", Transform(Vec2f(), Vec2f(1.0f,0.02f)));
+						leftList.AddElement(UIListElement(&canvas, [&canvas]() { return Vec3f(0.0f, -canvas.GetBoundingBox().Size.y * 2.0f, 0.0f); }, [&canvas]() { return Vec3f(0.0f, -canvas.GetBoundingBox().Size.y, 0.0f); }));
+						canvas.SetViewScale(Vec2f(1.0f, 6.0f));
+						UIAutomaticListActor& list = canvas.CreateChild<UIAutomaticListActor>("MaterialsList");
+
+						UIButtonActor& addMaterialButton = list.CreateChild<UIButtonActor>("CreateMaterialButton", [&]() {
+							const auto& view = canvas.GetViewT();
+						GetRenderEngineHandle()->AddMaterial(MakeShared<AtlasMaterial>("CreatedMaterial" + std::to_string(IDSystem<Material>::GenerateID())));
+						canvas.MarkAsKilled();
+						//materialsButton.OnClick();
+						if (auto newWindow = dynamic_cast<UICanvasActor*>(editorScene.FindActor("MaterialsPreviewWindow")))
+							newWindow->SetCanvasView(view);
+							});
+						uiButtonActorUtil::ButtonMatsFromAtlas(addMaterialButton, GetRenderEngineHandle()->FindMaterial<AtlasMaterial>("GEE_E_Add_Icon_Mat"), 0.0f, 1.0f, 2.0f);
+
+						for (auto& it : RenderEng.Materials)
+						{
+							String name = (it) ? (it->GetLocalization().GetFullStr()) : ("NULLPTR???");
+							UIButtonActor& button = list.CreateChild<UIButtonActor>(name + "Button", name, [this, &canvas, &it, name]() { UIWindowActor& matWindow = canvas.CreateChildCanvas<UIWindowActor>(name + "MaterialWindow"); EditorDescriptionBuilder descBuilder(*this, matWindow, matWindow); it->GetEditorDescription(descBuilder); matWindow.AutoClampView(); matWindow.RefreshFieldsList(); });
+							std::cout << name << '\n';
+						}
+
+						list.Refresh();
+						leftList.Refresh();
+						canvas.ClampViewToElements();
+				});
+					desc.AddOption("Trees", nullptr);
+					desc.AddOption("Settings", nullptr);
+				});
+
+				leftList.AddElement(UIListElement(&addCanvasButton,
+					[&addCanvasButton]() { return Vec3f(0.0f, -addCanvasButton.GetTransform()->GetScale2D().y * 2.0f, 0.0f); },
+					[&addCanvasButton]() { return Vec3f(0.0f, -addCanvasButton.GetTransform()->GetScale2D().y, 0.0f); }));
+				leftList.Refresh();
+			}
+
 
 			// Main buttons
 			{
@@ -588,6 +631,7 @@ namespace GEE
 
 						{
 							auto& aaSelectionList = videoCat.AddField("Anti-aliasing").CreateChild<UIAutomaticListActor>("AASelectionList", Vec3f(2.0f, 0.0f, 0.0f));
+							aaSelectionList.GetTransform()->Move(Vec2f(-1.0f, 0.0f));
 							std::function<void(AntiAliasingType)> setAAFunc = [this](AntiAliasingType type) { const_cast<GameSettings::VideoSettings&>(ViewportRenderCollection->GetVideoSettings()).AAType = type; UpdateGameSettings(); };
 							aaSelectionList.CreateChild<UIButtonActor>("NoAAButton", "None", [=]() { setAAFunc(AntiAliasingType::AA_NONE); });
 							aaSelectionList.CreateChild<UIButtonActor>("SMAA1XButton", "SMAA1X", [=]() { setAAFunc(AntiAliasingType::AA_SMAA1X); });
@@ -597,6 +641,7 @@ namespace GEE
 
 						{
 							auto& shadowSelectionList = videoCat.AddField("Shadow quality").CreateChild<UIAutomaticListActor>("ShadowSelectionList", Vec3f(2.0f, 0.0f, 0.0f));
+							shadowSelectionList.GetTransform()->Move(Vec2f(-1.0f, 0.0f));
 							std::function<void(SettingLevel, const String&)> addShadowButton = [this, &shadowSelectionList](SettingLevel setting, const String& caption)
 							{
 								shadowSelectionList.CreateChild<UIActivableButtonActor>("Button" + caption, caption,
@@ -647,7 +692,7 @@ namespace GEE
 					physicsCat.AddField("Bounce threshold").GetTemplates().SliderRawInterval(0.0f, 2.0f, [this](float threshold) { GetMainScene()->GetPhysicsData()->GetPxScene()->setBounceThresholdVelocity(threshold); }, GetMainScene()->GetPhysicsData()->GetPxScene()->getBounceThresholdVelocity());
 					physicsCat.AddField("Gravity").GetTemplates().SliderRawInterval(0.0f, 20.0f, [this](float threshold) { GetMainScene()->GetPhysicsData()->GetPxScene()->setGravity(physx::PxVec3(0, -threshold, 0)); }, -GetMainScene()->GetPhysicsData()->GetPxScene()->getGravity().y);
 
-					window.FieldsList->Refresh();
+					window.RefreshFieldsList();
 					window.AutoClampView();
 
 				}, Transform(Vec2f(-0.2f, -0.8f), Vec2f(0.1f)));
@@ -803,8 +848,8 @@ namespace GEE
 			}
 
 			{
-				Actor& engineTitleActor = mainMenuScene.CreateActorAtRoot<Actor>("EngineTitleActor", Transform(Vec2f(0.0f, 0.6f)));
-				TextComponent& engineTitleTextComp = engineTitleActor.CreateComponent<TextComponent>("EngineTitleTextComp", Transform(), "Game Engine Engine", "", Alignment2D::Center());
+				Actor& engineTitleActor = mainMenuScene.CreateActorAtRoot<Actor>("GEE_Engine_Title", Transform(Vec2f(0.0f, 0.6f)));
+				TextComponent& engineTitleTextComp = engineTitleActor.CreateComponent<TextComponent>("GEE_Engine_Title_Text", Transform(), "Game Engine Engine", "", Alignment2D::Center());
 				engineTitleTextComp.SetFontStyle(FontStyle::Bold);
 				engineTitleTextComp.SetTransform(Transform(Vec2f(0.0f), Vec2f(0.09f)));
 				std::cout << "title comp transform ptr: " << &engineTitleTextComp.GetTransform() << '\n';
@@ -947,7 +992,7 @@ namespace GEE
 											PassMouseControl(GameController);
 
 											for (auto& it : Scenes)	// Scene has changed; push this event to all scenes
-												it->RootActor->HandleEventAll(Event(EventType::FocusSwitched));
+												it->RootActor->HandleEventAll(FocusSwitchedEvent());
 										}
 									}
 
@@ -988,7 +1033,7 @@ namespace GEE
 									SetActiveScene(EditorScene);
 
 									for (auto& it : Scenes)
-										it->RootActor->HandleEventAll(Event(EventType::FocusSwitched));
+										it->RootActor->HandleEventAll(FocusSwitchedEvent());
 								}
 
 								UpdateControllerCameraInfo();

@@ -546,9 +546,11 @@ namespace GEE
 		// Collision shapes list
 		auto& shapesListField = shapesListCategory.AddField("List of shapes");
 		UIAutomaticListActor& shapesList = shapesListField.CreateChild<UIAutomaticListActor>("ShapesList");
+		shapesList.GetTransform()->Move(Vec2f(0.0f, 1.0f));
 
+		//shapesListCategory.SetListElementOffset(-1, [&shapesList]() -> Vec3f { return Vec3f(0.0f, glm::max(shapesList.GetListElementCount(), 1) * -2.0f, 0.0f); });
 		shapesListCategory.SetListElementOffset(shapesListCategory.GetListElementCount() - 1,
-			[descBuilder, &shapesListField, &shapesList]() mutable -> Vec3f { return shapesList.GetListElementCount() == 0 ? Vec3f(0.0f, -2.0f, 0.0f) :  static_cast<Mat3f>(descBuilder.GetCanvas().ToCanvasSpace(shapesListField.GetTransform()->GetWorldTransform()).GetMatrix()) * shapesList.GetListOffset(); });
+			[descBuilder, &shapesListField, &shapesList]() mutable -> Vec3f { auto ass = shapesList.GetListElementCount() == 0 ? Vec3f(0.0f, -2.0f, 0.0f) : static_cast<Mat3f>(descBuilder.GetCanvas().ToCanvasSpace(shapesListField.GetTransform()->GetWorldTransform()).GetMatrix()) * shapesList.GetListOffset(); std::cout << "ASS: " << ass << '\n'; return ass; });
 
 
 

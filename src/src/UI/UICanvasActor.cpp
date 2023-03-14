@@ -11,7 +11,7 @@
 namespace GEE
 {
 	UICanvasActor::UICanvasActor(GameScene& scene, Actor* parentActor, UICanvasActor* canvasParent, const std::string& name, const Transform& t) :
-		Actor(scene, parentActor, name, t),
+		UIActorDefault(scene, parentActor, name, t),
 		UICanvas((canvasParent) ? (canvasParent->GetCanvasDepth() + 1) : (1)),	//CanvasDepth starts at 1 (because it has to be higher than depth outside any canvas)
 		FieldsList(nullptr),
 		FieldSize(Vec3f(1.0f)),
@@ -33,7 +33,7 @@ namespace GEE
 	{}
 
 	UICanvasActor::UICanvasActor(UICanvasActor&& canvasActor) :
-		Actor(std::move(canvasActor)),
+		UIActorDefault(std::move(canvasActor)),
 		UICanvas(std::move(canvasActor)),
 		FieldsList(nullptr),
 		FieldSize(canvasActor.FieldSize),
@@ -74,6 +74,12 @@ namespace GEE
 	const Transform* UICanvasActor::GetCanvasT() const
 	{
 		return GetTransform();
+	}
+
+	Boxf<Vec2f> UICanvasActor::GetBoundingBox(bool world) const
+	{
+		Transform t = world ? GetTransform()->GetWorldTransform() : *GetTransform();
+		return Boxf<Vec2f>(t.GetPos2D(), t.GetScale2D());
 	}
 
 	void UICanvasActor::SetPopupCreationFunc(std::function<void(PopupDescription)> popupCreation)
@@ -150,7 +156,7 @@ namespace GEE
 	}
 
 	void UICanvasActor::KillResizeBars()
-	{
+	{	
 		if (ResizeBarX) ResizeBarX->MarkAsKilled();
 		if (ResizeBarY) ResizeBarY->MarkAsKilled();
 
@@ -198,9 +204,14 @@ namespace GEE
 			FieldsList = &ScaleActor->CreateChild<UIListActor>(Name + "_Fields_List");
 
 		UICanvasFieldCategory& category = FieldsList->CreateChild<UICanvasFieldCategory>(name);
-		category.SetTransform(Transform(Vec2f(0.0f, -1.0f), Vec2f(FieldSize)));	//position doesn't matter if this is not the first field
+		category.SetTransform(Transform(Vec2f(0.0f, 0.0f), Vec2f(FieldSize)));	//position doesn't matter if this is not the first field
 		UIListElement::ReferenceToUIActor categoryRef(&category);
-		FieldsList->AddElement(UIListElement(categoryRef, [&category]() { category.Refresh(); return category.GetListOffset(); }, [this, &category]() { return Vec3f(0.0f, -FieldSize.y * 3.0f, 0.0f); }));
+		FieldsList->AddElement(UIListElement(categoryRef, [&category]() { category.Refresh(); return category.GetListOffset(); }, 
+			[this, &category]() -> Vec3f { return Vec3f(0.0f, -FieldSize.y * 2.0f, 0.0f); }));
+
+		if (FieldsList->GetListElementCount() == 1)
+			;// FieldsList->SetListCenterOffset(0, []() -> Vec3f { return Vec3f(0.0f); });
+
 		category.SetOnExpansionFunc([this]() { RefreshFieldsList(); });
 
 		return category;
@@ -237,7 +248,6 @@ namespace GEE
 				if (GameHandle->GetDefInputRetriever().IsKeyPressed(Key::LeftControl))
 				{
 					Vec2f newScale = static_cast<Vec2f>(CanvasView.GetScale()) * glm::pow(Vec2f(0.5f), Vec2f(scrolledEv.GetOffset().y));
-					printVector(newScale, "new scale");
 					SetViewScale(newScale);
 				}
 				else
@@ -343,7 +353,7 @@ namespace GEE
 
 	void UICanvasActor::PushCanvasViewChangeEvent()
 	{
-		Scene.GetEventPusher().PushEvent(Event(EventType::CanvasViewChanged, this));
+		Scene.GetEventPusher().PushEvent(CanvasViewChangedEvent(this));
 	}
 
 	void UICanvasActor::CreateScrollBars()

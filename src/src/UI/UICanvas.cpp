@@ -44,7 +44,7 @@ namespace GEE
 		return glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, 1.0f, -2550.0f);
 	}
 
-	Boxf<Vec2f> UICanvas::GetBoundingBox() const
+	Boxf<Vec2f> UICanvas::GetCanvasSpaceBoundingBox() const
 	{
 		if (TopLevelUIElements.empty())
 			return Boxf<Vec2f>(Vec2f(0.0f), Vec2f(0.0f));
@@ -77,7 +77,7 @@ namespace GEE
 
 	void UICanvas::ClampViewToElements()
 	{
-		Boxf<Vec2f> bBox = GetBoundingBox();
+		Boxf<Vec2f> bBox = GetCanvasSpaceBoundingBox();
 		Vec2f canvasRightUp = bBox.Position + bBox.Size - static_cast<Vec2f>(CanvasView.GetScale());	//Canvas space
 		Vec2f canvasLeftDown = bBox.Position - bBox.Size + static_cast<Vec2f>(CanvasView.GetScale());	//Canvas space
 
@@ -95,13 +95,13 @@ namespace GEE
 	{
 		if (horizontal && vertical)
 		{
-			SetViewScale(glm::max(Vec2f(0.001f), GetBoundingBox().Size));
+			SetViewScale(glm::max(Vec2f(0.001f), GetCanvasSpaceBoundingBox().Size));
 			return;
 		}
 
 		float size;
-		if (horizontal) size = GetBoundingBox().Size.x;
-		else if (vertical) size = GetBoundingBox().Size.y;
+		if (horizontal) size = GetCanvasSpaceBoundingBox().Size.x;
+		else if (vertical) size = GetCanvasSpaceBoundingBox().Size.y;
 		else return;
 
 		SetViewScale(Vec2f(glm::max(0.001f, size)));

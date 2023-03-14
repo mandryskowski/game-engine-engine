@@ -34,7 +34,7 @@ namespace GEE
 
 		virtual Mat4f GetProjection() const;
 
-		Boxf<Vec2f> GetBoundingBox() const;	//Canvas space
+		Boxf<Vec2f> GetCanvasSpaceBoundingBox() const;	//Canvas space
 
 		unsigned int GetCanvasDepth() const;
 

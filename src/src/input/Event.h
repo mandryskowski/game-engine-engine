@@ -188,14 +188,13 @@ namespace GEE
 		 * @param type - an enum indicating the type of this Event. Should match the class of this Event.
 		 * @param eventRoot - an optional Actor that will be the first to receive this Event, if it is in the active Scene. If it's not, or if eventRoot is nullptr, active scene's root will be used.
 		*/
-		Event(EventType type, Actor* eventRoot = nullptr);
-		EventType GetType() const;
+		Event(Actor* eventRoot = nullptr);
+		virtual EventType GetType() const = 0;
 		Actor* GetEventRoot() { return EventRoot; }
 		const Actor* GetEventRoot() const { return EventRoot; }
 
 		virtual ~Event() {}
 	private:
-		EventType Type;
 		
 		// The actor which will be used as the first recipient of this Event, and which will pass this Event to its children. Can be used for optimisation.
 		Actor* EventRoot;
@@ -206,9 +205,10 @@ namespace GEE
 	class CursorMoveEvent : public Event
 	{
 	public:
-		CursorMoveEvent(EventType, Vec2f newPositionPx, Vec2u windowSizePx, Actor* eventRoot = nullptr);
-		CursorMoveEvent(EventType, Vec2f newPositionNDC, Actor* eventRoot = nullptr);
+		CursorMoveEvent(Vec2f newPositionPx, Vec2u windowSizePx, Actor* eventRoot = nullptr);
+		CursorMoveEvent(Vec2f newPositionNDC, Actor* eventRoot = nullptr);
 		Vec2f GetNewPositionNDC() const;
+		EventType GetType() const override { return EventType::MouseMoved; }
 
 	private:
 		Vec2f NewPositionNDC;
@@ -217,20 +217,23 @@ namespace GEE
 	class MouseButtonEvent : public Event
 	{
 	public:
-		MouseButtonEvent(EventType, MouseButton, int modifierBits, Actor* eventRoot = nullptr);
+		MouseButtonEvent(MouseButton, int modifierBits, bool released = false, Actor* eventRoot = nullptr);
 		MouseButton GetButton() const;
 		int GetModifierBits() const;
+		EventType GetType() const override { return bReleased ? EventType::MouseReleased : EventType::MousePressed; }
 
 	private:
-		MouseButton Button;
-		int ModifierBits;
+		const MouseButton Button;
+		const int ModifierBits;
+		const bool bReleased; // If true, then mouse button was released. Otherwise, it was pressed.
 	};
 
 	class MouseScrollEvent : public Event
 	{
 	public:
-		MouseScrollEvent(EventType, Vec2f offset, Actor* eventRoot = nullptr);
+		MouseScrollEvent(Vec2f offset, Actor* eventRoot = nullptr);
 		Vec2f GetOffset() const;
+		EventType GetType() const override { return EventType::MouseScrolled; }
 
 	private:
 		Vec2f Offset;
@@ -239,23 +242,69 @@ namespace GEE
 	class KeyEvent : public Event
 	{
 	public:
-		KeyEvent(EventType, Key, int modifierFlags, Actor* eventRoot = nullptr);
+		enum KeyAction
+		{
+			Pressed,
+			Released,
+			Repeated
+		};
+
+		KeyEvent(Key, int modifierFlags, KeyAction action, Actor* eventRoot = nullptr);
 		Key GetKeyCode() const;
 		int GetModifierBits() const;
+		EventType GetType() const override
+		{
+			switch (Action)
+			{
+			case Pressed: return EventType::KeyPressed;
+			case Released: return EventType::KeyReleased;
+			case Repeated: return EventType::KeyRepeated;
+			}
+		}
 
 	private:
 		Key KeyCode;
+		KeyAction Action;
 		int ModifierBits;
 	};
 
 	class CharEnteredEvent : public Event
 	{
 	public:
-		CharEnteredEvent(EventType, unsigned int unicode, Actor* eventRoot = nullptr);
+		CharEnteredEvent(unsigned int unicode, Actor* eventRoot = nullptr);
 		std::string GetUTF8() const;
+		EventType GetType() const override { return EventType::CharacterEntered; }
 
 	private:
 		unsigned int Unicode;
+	};
+
+	class WindowClosedEvent : public Event
+	{
+	public:
+		using Event::Event;
+		EventType GetType() const override { return EventType::WindowClosed; }
+	};
+
+	class WindowResizedEvent : public Event
+	{
+	public:
+		using Event::Event;
+		EventType GetType() const override { return EventType::WindowResized; }
+	};
+
+	class FocusSwitchedEvent : public Event
+	{
+	public:
+		using Event::Event;
+		EventType GetType() const override { return EventType::FocusSwitched; }
+	};
+
+	class CanvasViewChangedEvent : public Event
+	{
+	public:
+		using Event::Event;
+		EventType GetType() const override { return EventType::CanvasViewChanged; }
 	};
 
 	/**

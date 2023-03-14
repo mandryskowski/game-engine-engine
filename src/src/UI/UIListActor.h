@@ -69,6 +69,8 @@ namespace GEE
 
 
 	protected:
+		void CleanupDeadElements() const;
+
 		std::vector<UIListElement> ListElements;
 		bool bExpanded;
 	};

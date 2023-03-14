@@ -2,25 +2,19 @@
 
 namespace GEE
 {
-	Event::Event(EventType type, Actor* eventRoot) :
-		Type(type),
+	Event::Event(Actor* eventRoot) :
 		EventRoot(eventRoot)
 	{
 	}
 
-	EventType Event::GetType() const
-	{
-		return Type;
-	}
-
-	CursorMoveEvent::CursorMoveEvent(EventType type, Vec2f newPositionPx, Vec2u windowSizePx, Actor* eventRoot) :
-		CursorMoveEvent(type, newPositionPx / static_cast<Vec2f>(windowSizePx) * 2.0f - 1.0f, eventRoot)
+	CursorMoveEvent::CursorMoveEvent(Vec2f newPositionPx, Vec2u windowSizePx, Actor* eventRoot) :
+		CursorMoveEvent(newPositionPx / static_cast<Vec2f>(windowSizePx) * 2.0f - 1.0f, eventRoot)
 	{
 
 	}
 
-	CursorMoveEvent::CursorMoveEvent(EventType type, Vec2f newPositionNDC, Actor* eventRoot) :
-		Event(type, eventRoot),
+	CursorMoveEvent::CursorMoveEvent(Vec2f newPositionNDC, Actor* eventRoot) :
+		Event(eventRoot),
 		NewPositionNDC(newPositionNDC)
 	{
 	}
@@ -30,8 +24,10 @@ namespace GEE
 		return NewPositionNDC;
 	}
 
-	MouseButtonEvent::MouseButtonEvent(EventType type, MouseButton button, int modifierBits, Actor* eventRoot) :
-		Event(type), Button(button), ModifierBits(modifierBits)
+	MouseButtonEvent::MouseButtonEvent(MouseButton button, int modifierBits, bool released, Actor* eventRoot) :
+		Button(button),
+		ModifierBits(modifierBits),
+		bReleased(released)
 	{
 	}
 
@@ -45,8 +41,7 @@ namespace GEE
 		return ModifierBits;
 	}
 
-	MouseScrollEvent::MouseScrollEvent(EventType type, Vec2f offset, Actor* eventRoot) :
-		Event(type),
+	MouseScrollEvent::MouseScrollEvent(Vec2f offset, Actor* eventRoot) :
 		Offset(offset)
 	{
 	}
@@ -56,9 +51,10 @@ namespace GEE
 		return Offset;
 	}
 
-	KeyEvent::KeyEvent(EventType type, Key keyCode, int modifierBits, Actor* eventRoot) :
-		Event(type, eventRoot),
+	KeyEvent::KeyEvent(Key keyCode, int modifierBits, KeyAction action, Actor* eventRoot) :
+		Event(eventRoot),
 		KeyCode(keyCode),
+		Action(action),
 		ModifierBits(modifierBits)
 	{
 	}
@@ -73,8 +69,8 @@ namespace GEE
 		return ModifierBits;
 	}
 
-	CharEnteredEvent::CharEnteredEvent(EventType type, unsigned int unicode, Actor* eventRoot) :
-		Event(type, eventRoot),
+	CharEnteredEvent::CharEnteredEvent(unsigned int unicode, Actor* eventRoot) :
+		Event(eventRoot),
 		Unicode(unicode)
 	{
 	}

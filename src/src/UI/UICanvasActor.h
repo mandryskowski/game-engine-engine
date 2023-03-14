@@ -16,7 +16,7 @@ namespace GEE
 
 	class PopupDescription;
 
-	class UICanvasActor : public Actor, public UICanvas
+	class UICanvasActor : public UIActorDefault, public UICanvas
 	{
 	public:
 		UICanvasActor(GameScene&, Actor* parentActor, UICanvasActor* canvasParent, const std::string& name, const Transform & = Transform());
@@ -25,10 +25,20 @@ namespace GEE
 
 		void OnStart() override;
 
+		Vec3f GetFieldsListOffset() const
+		{
+			return FieldsList->GetListOffset();
+		}
+		std::function<void(PopupDescription)> GetPopupCreationFunc()
+		{
+			return PopupCreationFunc;
+		}
+
 		UIActorDefault* GetScaleActor();
 		Mat4f GetViewMatrix() const override;
 		NDCViewport GetViewport() const override;
 		const Transform* GetCanvasT() const override;
+		Boxf<Vec2f> GetBoundingBox(bool world = true) const override;
 
 		void Update(Time dt) override
 		{
@@ -84,7 +94,7 @@ namespace GEE
 
 		void CreateScrollBars();
 		template <VecAxis barAxis> void UpdateScrollBarT();
-	public:
+
 		UIActorDefault* ScaleActor;
 		UIListActor* FieldsList;
 		Vec3f FieldSize;

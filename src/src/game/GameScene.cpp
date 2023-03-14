@@ -558,7 +558,7 @@ namespace GEE
 			CollisionObjects.push_back(&object);
 			object.ScenePhysicsData = this;
 			object.TransformPtr = &t;
-			object.TransformDirtyFlag = t.AddDirtyFlag();
+			object.TransformDirtyFlag = t.AddWorldDirtyFlag();
 
 			if (WasSetup)
 				PhysicsHandle->AddCollisionObjectToPxPipeline(*this, object);

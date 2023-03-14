@@ -32,10 +32,10 @@ namespace GEE
 
 	Vec3f UIListActor::GetListBegin()
 	{
-		if (ListElements.empty())
+		//if (ListElements.empty())
 			return Vec3f(0.0f);
 
-		return ListElements.front().GetActorRef().GetTransform()->GetPos() - ListElements.front().GetCenterOffset();
+		//return ListElements.front().GetActorRef().GetTransform()->GetPos() - ListElements.front().GetCenterOffset();
 	}
 
 	const UIListElement UIListActor::GetListElement(unsigned int index) const
@@ -46,6 +46,7 @@ namespace GEE
 
 	int UIListActor::GetListElementCount() const
 	{
+		CleanupDeadElements();
 		return static_cast<int>(ListElements.size());
 	}
 
@@ -81,6 +82,9 @@ namespace GEE
 
 	void UIListActor::SetListCenterOffset(int index, std::function<Vec3f()> getCenterOffset)
 	{
+		if (index < 0)
+			index = GetListElementCount() + index;
+
 		if (index < 0 || index > ListElements.size() || !getCenterOffset)
 			return;
 
@@ -96,18 +100,18 @@ namespace GEE
 	{
 		const Vec3f& elementOffset = element.GetElementOffset();
 		element.GetActorRef().GetTransform()->SetPosition(nextElementBegin + element.GetCenterOffset());
+		std::cout << ": " << element.GetActorRef().GetTransform()->GetPos2D() << '\n';
 		return Vec3f(nextElementBegin + elementOffset);
 	}
 
 	Vec3f UIListActor::MoveElements(unsigned int level)
 	{
-		EraseListElement([](const UIListElement& element) { return element.IsBeingKilled(); });
+		CleanupDeadElements();
 		Vec3f nextElementBegin = GetListBegin();
 
 		for (auto& element : ListElements)
 		{
-			if (element.GetActorRef().GetName() == "OGAR")
-				continue;
+			std::cout << element.GetActorRef().GetName();
 			nextElementBegin = MoveElement(element, nextElementBegin, static_cast<float>(level));
 		}
 
@@ -122,6 +126,11 @@ namespace GEE
 	void UIListActor::EraseListElement(Actor& actor)
 	{
 		EraseListElement([&actor](const UIListElement& listElement) { return &listElement.GetActorRef() == &actor; });
+	}
+
+	void UIListActor::CleanupDeadElements() const
+	{
+		const_cast<UIListActor*>(this)->EraseListElement([](const UIListElement& element) { return element.IsBeingKilled(); });
 	}
 
 	UIAutomaticListActor::UIAutomaticListActor(GameScene& scene, Actor* parentActor, const std::string& name, Vec3f elementOffset) :
@@ -142,7 +151,10 @@ namespace GEE
 		{
 			AddElement(UIListElement(UIListElement::ReferenceToUIActor(*actor, *uiElementCast), ElementOffset));
 			if (UIListActor* listCast = dynamic_cast<UIListActor*>(actor.get()))
+			{
 				ListElements.back().SetGetElementOffsetFunc([listCast]() -> Vec3f { listCast->Refresh(); return listCast->GetListOffset(); });
+				ListElements.back().SetGetCenterOffsetFunc([listCast]() -> Vec3f { return Vec3f(0.0f); });
+			}
 		}
 
 		return UIListActor::AddChild(std::move(actor));

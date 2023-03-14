@@ -25,6 +25,8 @@ namespace GEE
 
 	class Transform
 	{
+		const unsigned int CORE_LOCAL_FLAGS = 1;
+		const unsigned int CORE_WORLD_FLAGS = 2;
 		Transform* ParentTransform;
 		mutable UniquePtr<Transform> WorldTransformCache;
 		mutable Mat4f WorldTransformMatrixCache;
@@ -36,7 +38,8 @@ namespace GEE
 		Quatf Rotation;
 		Vec3f Scale;
 
-		mutable std::vector <bool> DirtyFlags;
+		mutable std::vector <bool> LocalDirtyFlags;
+		mutable std::vector <bool> WorldDirtyFlags;
 		mutable bool Empty;	//true if the Transform object has never been changed. Allows for a simple optimization - we skip it during world transform calculation
 	public:
 		std::vector <SharedPtr<InterpolatorBase>> Interpolators;
@@ -111,10 +114,52 @@ namespace GEE
 		void AddChild(Transform*);
 		void RemoveChild(Transform*);
 
-		bool GetDirtyFlag(unsigned int index = 0, bool reset = true) const;
-		void SetDirtyFlag(unsigned int index = 0, bool val = true) const;
-		void SetDirtyFlags(bool val = true) const;
-		unsigned int AddDirtyFlag() const;
+
+		bool GetLocalDirtyFlag(unsigned int index, bool reset = true) const
+		{
+			GEE_CORE_ASSERT(index >= CORE_LOCAL_FLAGS);
+			bool flag = LocalDirtyFlags[index];
+
+			if (reset)
+				LocalDirtyFlags[index] = false;
+
+			return flag;
+		}
+
+		bool GetWorldDirtyFlag(unsigned int index, bool reset = true) const
+		{
+			GEE_CORE_ASSERT(index >= CORE_WORLD_FLAGS);
+			bool flag = WorldDirtyFlags[index];
+
+			if (reset)
+				WorldDirtyFlags[index] = false;
+
+			return flag;
+		}
+
+		void SetLocalDirtyFlag(unsigned int index) const
+		{
+			GEE_CORE_ASSERT(index >= CORE_LOCAL_FLAGS);
+			LocalDirtyFlags[index] = true;
+		}
+
+		void SetWorldDirtyFlag(unsigned int index) const
+		{
+			GEE_CORE_ASSERT(index >= CORE_WORLD_FLAGS);
+			WorldDirtyFlags[index] = true;
+		}
+
+		unsigned int AddLocalDirtyFlag() const
+		{
+			LocalDirtyFlags.push_back(true);
+			return static_cast<unsigned int>(LocalDirtyFlags.size()) - 1;
+		}
+
+		unsigned int AddWorldDirtyFlag() const
+		{
+			WorldDirtyFlags.push_back(true);
+			return static_cast<unsigned int>(WorldDirtyFlags.size()) - 1;
+		}
 
 		void AddInterpolator(const String& fieldName, SharedPtr<InterpolatorBase>, bool animateFromCurrent = true);	//if animateFromCurrent is true, the method automatically changes the minimum value of the interpolator to be the current value of the interpolated variable.
 		template <class T> void AddInterpolator(const String& fieldName, Time begin, Time end, T min, T max, InterpolationType interpType = InterpolationType::Linear, bool fadeAway = false, AnimBehaviour before = AnimBehaviour::STOP, AnimBehaviour after = AnimBehaviour::STOP);

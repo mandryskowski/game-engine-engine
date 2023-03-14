@@ -14,7 +14,7 @@ namespace GEE
 		RetrieveContentEachFrame(false),
 		CaretComponent(nullptr),
 		CaretPosition(0),
-		CaretDirtyFlag(GetTransform()->AddDirtyFlag()),
+		CaretDirtyFlag(GetTransform()->AddWorldDirtyFlag()),
 		CaretAnim(0.0f, 0.5f),
 		TextSelectionRange(-1),
 		CaretNDCWidth(0.0f)
@@ -59,7 +59,7 @@ namespace GEE
 		RetrieveContentEachFrame(inputBox.RetrieveContentEachFrame),
 		CaretComponent(nullptr),
 		CaretPosition(inputBox.CaretPosition),
-		CaretDirtyFlag(GetTransform()->AddDirtyFlag()),
+		CaretDirtyFlag(GetTransform()->AddWorldDirtyFlag()),
 		CaretAnim(inputBox.CaretAnim),
 		CaretNDCWidth(inputBox.CaretNDCWidth)
 	{
@@ -205,7 +205,7 @@ namespace GEE
 			CaretComponent->SetHide(true);
 		else
 		{
-			if (GetRoot()->GetTransform().GetDirtyFlag(CaretDirtyFlag))
+			if (GetRoot()->GetTransform().GetWorldDirtyFlag(CaretDirtyFlag))
 				UpdateCaretModel(false);
 			if (CaretAnim.UpdateT(dt))
 			{

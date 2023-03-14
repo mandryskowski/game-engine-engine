@@ -26,7 +26,7 @@ namespace GEE
 		void OnStart() override
 		{
 			RenderableComponent::OnStart();
-			TransformDirtyFlag = static_cast<int>(GetTransform().AddDirtyFlag());
+			TransformDirtyFlag = static_cast<int>(GetTransform().AddWorldDirtyFlag());
 		}
 
 		String GetContent() const;
@@ -35,6 +35,10 @@ namespace GEE
 		float GetTextHeight(bool world = true) const;
 		Vec2f GetTextMaxVerticalExtents(bool world = true) const;
 		std::vector<const Material*> GetMaterials() const override;
+		virtual Vec2f GetMaxSize() const
+		{
+			return MaxSize;
+		}
 
 		// Font getters
 		Font* GetFont()
@@ -69,9 +73,11 @@ namespace GEE
 			return _Alignment;
 		}
 
+		virtual bool IsScrollable() const
+		{
+			return false;
+		}
 
-
-		virtual bool IsScrollable() const;
 		Transform GetTransformCorrectedForSize(UISpace) const;
 		void SetMaxSize(const Vec2f& maxSize) { MaxSize = maxSize; Unstretch(); }
 
@@ -87,7 +93,7 @@ namespace GEE
 		void SetTransform(const Transform& transform) override
 		{
 			RenderableComponent::SetTransform(transform);
-			TransformDirtyFlag = static_cast<int>(GetTransform().AddDirtyFlag());
+			TransformDirtyFlag = static_cast<int>(GetTransform().AddWorldDirtyFlag());
 		}
 		void SetMaterialInst(MaterialInstance&&);
 
@@ -149,8 +155,10 @@ namespace GEE
 	protected:
 		void CheckTransformDirtiness() const
 		{
-			if (GetTransform().GetDirtyFlag(TransformDirtyFlag))
+			if (TransformDirtyFlag != 0 && GetTransform().GetWorldDirtyFlag(TransformDirtyFlag))
+			{
 				InvalidateCache();
+			}
 		}
 
 	private:
@@ -178,9 +186,10 @@ namespace GEE
 
 		Vec2f MinSize, MaxSize;
 		Vec2f ScaleRatio;
+		mutable Vec2f PreRatioScale, PostRatioScale;
 
 		FontStyle _FontStyle;
-		int TransformDirtyFlag;
+		int TransformDirtyFlag, ScaleDirtyFlag;
 	};
 
 	class ScrollingTextComponent : public TextComponent
@@ -188,6 +197,11 @@ namespace GEE
 	public:
 		ScrollingTextComponent(Actor&, Component* parentComp, const String& name = String(), const Transform& transform = Transform(), String content = String(), SharedPtr<Font> font = nullptr, Alignment2D = Alignment2D::LeftCenter());
 		ScrollingTextComponent(Actor&, Component* parentComp, const String& name = String(), const Transform& transform = Transform(), String content = String(), String fontPath = String(), Alignment2D = Alignment2D::LeftCenter());
+
+		//Vec2f GetMaxSize() const override
+		//{
+		//	return GetTransform().GetParentTransform()->GetScale2D();
+		//}
 
 		bool IsScrollable() const override;
 

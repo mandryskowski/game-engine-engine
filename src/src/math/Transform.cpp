@@ -10,14 +10,17 @@ namespace GEE
 	void Transform::FlagMyDirtiness() const
 	{
 		Empty = false;
-		DirtyFlags[0] = true;
+
+		for (auto& flag : LocalDirtyFlags)
+			flag = true;
+
 		FlagWorldDirtiness();
 	}
 
 	void Transform::FlagWorldDirtiness() const
 	{
-		for (int i = 1; i < static_cast<int>(DirtyFlags.size()); i++)
-			DirtyFlags[i] = true;
+		for (auto& flag : WorldDirtyFlags)
+			flag = true;
 
 		for (auto child : Children)
 			child->FlagWorldDirtiness();
@@ -41,7 +44,8 @@ namespace GEE
 		Position(pos),
 		Rotation(rot),
 		Scale(scale),
-		DirtyFlags(3, true),
+		LocalDirtyFlags(CORE_LOCAL_FLAGS, true),
+		WorldDirtyFlags(CORE_WORLD_FLAGS, true),
 		Empty(false)
 	{
 		if (pos == Vec3f(0.0f) && rot == Quatf(Vec3f(0.0f)) && scale == Vec3f(1.0f))
@@ -86,7 +90,7 @@ namespace GEE
 
 	Mat4f Transform::GetMatrix() const
 	{
-		if (!DirtyFlags[0])
+		if (!LocalDirtyFlags[0])
 			return MatrixCache;
 		if (Empty)
 			return Mat4f(1.0f);
@@ -95,7 +99,7 @@ namespace GEE
 		MatrixCache *= glm::mat4_cast(Rotation);
 		MatrixCache = glm::scale(MatrixCache, Scale);
 
-		DirtyFlags[0] = false;
+		LocalDirtyFlags[0] = false;
 
 		return MatrixCache;
 	}
@@ -107,31 +111,31 @@ namespace GEE
 
 	const Transform& Transform::GetWorldTransform() const
 	{
-		if (!DirtyFlags[1])
+		if (!WorldDirtyFlags[0])
 			return *WorldTransformCache;
 
 		if (!ParentTransform)
 		{
 			WorldTransformCache.reset(new Transform(Position, Rotation, Scale));
-			DirtyFlags[1] = false;
+			WorldDirtyFlags[0] = false;
 			return *WorldTransformCache;
 		}
 		else if (Empty)
 			return ParentTransform->GetWorldTransform();
 
 		WorldTransformCache.reset(new Transform(ParentTransform->GetWorldTransform() * (*this)));
-		DirtyFlags[1] = false;
+		WorldDirtyFlags[0] = false;
 
 		return *WorldTransformCache;
 	}
 
 	const Mat4f& Transform::GetWorldTransformMatrix() const
 	{
-		if (!DirtyFlags[2])
+		if (!WorldDirtyFlags[1])
 			return WorldTransformMatrixCache;
 
 		WorldTransformMatrixCache = GetWorldTransform().GetMatrix();
-		DirtyFlags[2] = false;
+		WorldDirtyFlags[1] = false;
 
 		return WorldTransformMatrixCache;
 	}
@@ -303,35 +307,6 @@ namespace GEE
 				break;
 			}
 		}
-	}
-
-	bool Transform::GetDirtyFlag(unsigned int index, bool reset) const
-	{
-		if (index == std::numeric_limits<unsigned int>::max())
-			return true;
-
-		bool flag = DirtyFlags[index];
-		if (reset)
-			SetDirtyFlag(index, false);
-
-		return flag;
-	}
-
-	void Transform::SetDirtyFlag(unsigned int index, bool val) const
-	{
-		DirtyFlags[index] = val;
-	}
-
-	void Transform::SetDirtyFlags(bool val) const
-	{
-		for (int i = 0; i < DirtyFlags.size(); i++)
-			DirtyFlags[i] = val;
-	}
-
-	unsigned int Transform::AddDirtyFlag() const
-	{
-		DirtyFlags.push_back(true);
-		return static_cast<unsigned int>(DirtyFlags.size()) - 1;
 	}
 
 	void Transform::AddInterpolator(const String& fieldName, SharedPtr<InterpolatorBase> interpolator, bool animateFromCurrent)

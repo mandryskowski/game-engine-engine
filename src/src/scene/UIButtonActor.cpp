@@ -170,7 +170,7 @@ namespace GEE
 		PopupCreationFunc = popupCreationFunc;
 		if (popupCreationFunc)
 		{
-			PopupCreationFunc = [popupCreationFunc, this](PopupDescription desc) { popupCreationFunc(desc); desc.AddSubmenu("Canvas", dynamic_cast<UICanvasActor*>(CanvasPtr)->PopupCreationFunc); };
+			PopupCreationFunc = [popupCreationFunc, this](PopupDescription desc) { popupCreationFunc(desc); if (CanvasPtr) desc.AddSubmenu("Canvas", dynamic_cast<UICanvasActor*>(CanvasPtr)->GetPopupCreationFunc()); };
 		}
 	}
 

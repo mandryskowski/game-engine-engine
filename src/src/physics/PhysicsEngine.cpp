@@ -170,7 +170,7 @@ namespace GEE
 				object.ActorPtr = (object.IsStatic) ?
 					(static_cast<PxRigidActor*>(PxCreateStatic(*Physics, toPx(*object.TransformPtr), *shape.ShapePtr))) :
 					(static_cast<PxRigidActor*>(PxCreateDynamic(*Physics, toPx(*object.TransformPtr), *shape.ShapePtr, 10.0f)));
-				object.TransformDirtyFlag = object.TransformPtr->AddDirtyFlag();
+				object.TransformDirtyFlag = object.TransformPtr->AddWorldDirtyFlag();
 			}
 			else
 				object.ActorPtr->attachShape(*shape.ShapePtr);
@@ -290,7 +290,7 @@ namespace GEE
 						continue;
 
 					// Make sure that we do not change the flag which corresponds to updating px transforms
-					bool flagBefore = obj->TransformPtr->GetDirtyFlag(obj->TransformDirtyFlag, false);
+					bool flagBefore = obj->TransformPtr->GetWorldDirtyFlag(obj->TransformDirtyFlag);
 
 					PxTransform pxTransform = obj->ActorPtr->getGlobalPose();
 					obj->TransformPtr->SetPositionWorld(toGlm(pxTransform.p));
@@ -298,7 +298,7 @@ namespace GEE
 						obj->TransformPtr->SetRotationWorld(toGlm(pxTransform.q));
 
 					if (!flagBefore)
-						obj->TransformPtr->SetDirtyFlag(obj->TransformDirtyFlag, false);
+						obj->TransformPtr->GetWorldDirtyFlag(obj->TransformDirtyFlag);
 
 					//obj->TransformPtr->SetMatrix(t.Matrix);
 				}
@@ -312,7 +312,7 @@ namespace GEE
 				for (int i = 0; i < static_cast<int>(ScenesPhysicsData[sceneIndex]->CollisionObjects.size()); i++)
 				{
 					CollisionObject* obj = ScenesPhysicsData[sceneIndex]->CollisionObjects[i];
-					if (!obj->ActorPtr || !obj->TransformPtr || !obj->TransformPtr->GetDirtyFlag(obj->TransformDirtyFlag))
+					if (!obj->ActorPtr || !obj->TransformPtr || !obj->TransformPtr->GetWorldDirtyFlag(obj->TransformDirtyFlag))
 						continue;
 
 					const Transform& worldTransform = obj->TransformPtr->GetWorldTransform();

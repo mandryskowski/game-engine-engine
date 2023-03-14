@@ -412,7 +412,7 @@ namespace GEE
 
 		GameScene& gameScene = *GetGameSceneFromWindow(*window);
 
-		TargetHolder->PushEvent(gameScene, CursorMoveEvent(EventType::MouseMoved, Vec2f(xpos, ypos), windowSize));
+		TargetHolder->PushEvent(gameScene, CursorMoveEvent(Vec2f(xpos, ypos), windowSize));
 
 		if (!mouseController || !TargetHolder)
 			return;
@@ -431,19 +431,19 @@ namespace GEE
 	void WindowEventProcessor::MouseButtonCallback(SystemWindow* window, int button, int action, int mods)
 	{
 		GameScene& gameScene = *GetGameSceneFromWindow(*window);
-		TargetHolder->PushEvent(gameScene, MouseButtonEvent((action == GLFW_PRESS) ? (EventType::MousePressed) : (EventType::MouseReleased), static_cast<MouseButton>(button), mods));
+		TargetHolder->PushEvent(gameScene, MouseButtonEvent(static_cast<MouseButton>(button), mods, action != GLFW_PRESS));
 	}
 
 	void WindowEventProcessor::KeyPressedCallback(SystemWindow* window, int key, int scancode, int action, int mods)
 	{
 		GameScene& gameScene = *GetGameSceneFromWindow(*window);
-		TargetHolder->PushEvent(gameScene, KeyEvent((action == GLFW_PRESS) ? (EventType::KeyPressed) : ((action == GLFW_REPEAT) ? (EventType::KeyRepeated) : (EventType::KeyReleased)), static_cast<Key>(key), mods));
+		TargetHolder->PushEvent(gameScene, KeyEvent(static_cast<Key>(key), mods, (action == GLFW_PRESS) ? (KeyEvent::KeyAction::Pressed) : ((action == GLFW_REPEAT) ? (KeyEvent::KeyAction::Repeated) : (KeyEvent::KeyAction::Released))));
 	}
 
 	void WindowEventProcessor::CharEnteredCallback(SystemWindow* window, unsigned int codepoint)
 	{
 		GameScene& gameScene = *GetGameSceneFromWindow(*window);
-		TargetHolder->PushEvent(gameScene, CharEnteredEvent(EventType::CharacterEntered, codepoint));
+		TargetHolder->PushEvent(gameScene, CharEnteredEvent(codepoint));
 	}
 
 	void WindowEventProcessor::ScrollCallback(SystemWindow* window, double offsetX, double offsetY)
@@ -455,8 +455,8 @@ namespace GEE
 		Vec2i windowSize(0);
 		glfwGetWindowSize(window, &windowSize.x, &windowSize.y);
 
-		TargetHolder->PushEvent(gameScene, MouseScrollEvent(EventType::MouseScrolled, Vec2f(static_cast<float>(-offsetX), static_cast<float>(offsetY))));
-		TargetHolder->PushEvent(gameScene, CursorMoveEvent(EventType::MouseMoved, static_cast<Vec2f>(cursorPos), windowSize));	//When we scroll (e.g. a canvas), it is possible that some buttons or other objects relying on cursor position might be scrolled (moved) as well, so we need to create a CursorMoveEvent.
+		TargetHolder->PushEvent(gameScene, MouseScrollEvent(Vec2f(static_cast<float>(-offsetX), static_cast<float>(offsetY))));
+		TargetHolder->PushEvent(gameScene, CursorMoveEvent(static_cast<Vec2f>(cursorPos), windowSize));	//When we scroll (e.g. a canvas), it is possible that some buttons or other objects relying on cursor position might be scrolled (moved) as well, so we need to create a CursorMoveEvent.
 	}
 
 	void WindowEventProcessor::FileDropCallback(SystemWindow* window, int count, const char** paths)

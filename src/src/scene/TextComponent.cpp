@@ -18,6 +18,9 @@
 
 namespace GEE
 {
+	Transform test(UICanvas* canvas, Transform& t) {
+		return canvas->FromCanvasSpace(canvas->GetViewT().GetInverse() * canvas->ToCanvasSpace(t.GetWorldTransform()));
+	}
 	TextComponent::TextComponent(Actor& actor, Component* parentComp, const String& name, const Transform& transform, const String& content, SharedPtr<Font> font, Alignment2D alignment) :
 		RenderableComponent(actor, parentComp, name, transform),
 		UIComponent(actor, parentComp),
@@ -28,7 +31,10 @@ namespace GEE
 		MinSize(Vec2f(0.0f)),
 		MaxSize(Vec2f(std::numeric_limits<float>::max())),
 		ScaleRatio(Vec2f(1.0f)),
-		TransformDirtyFlag(0)
+		PreRatioScale(transform.GetScale2D()),
+		PostRatioScale(transform.GetScale2D()),
+		TransformDirtyFlag(0),
+		ScaleDirtyFlag(0)
 	{
 		auto mat = GetGameHandle()->GetRenderEngineHandle()->FindMaterial("GEE_Default_Text_Material");
 
@@ -99,44 +105,57 @@ namespace GEE
 		return std::vector<const Material*>();
 	}
 
-
-	bool TextComponent::IsScrollable() const
-	{
-		return false;
-	}
-
 	Transform TextComponent::GetTransformCorrectedForSize(UISpace space) const
 	{
-		if (MaxSize == Vec2f(std::numeric_limits<float>::max()))
-			return (space != UISpace::Local) ? (GetTransform().GetWorldTransform()) : (GetTransform());
-
-		float textLength = glm::max(GetTextLength(false) / 2.0f, 0.001f);
-		Vec2f verticalExtents = GetTextMaxVerticalExtents(false);
-		float textHeight = glm::max(glm::max(glm::abs(verticalExtents.x), glm::abs(verticalExtents.y)), 0.001f) * 2.0f;
-		Vec2f scaleRatioInverse = 1.0f / ScaleRatio;
-		float scale = glm::min(scaleRatioInverse.x * MaxSize.x / textLength, scaleRatioInverse.y * MaxSize.y / textHeight);
-
-		Transform t = GetTransform();
-		t.SetScale(Vec2f(scale) * ScaleRatio * t.GetScale2D());
-
-		switch (space)
+		std::function<Transform(const Transform&)> convertSpaceFunc = [this, space](const Transform& t)
 		{
+			switch (space)
+			{
 			case UISpace::Local: return t;
-			case UISpace::World: return GetTransform().GetParentTransform()->GetWorldTransform() * t;
+			case UISpace::World: 
+			{
+				Transform copy = t;
+				return GetTransform().GetParentTransform()->GetWorldTransform() * copy;
+			}
 			case UISpace::Canvas:
 			{
 				auto worldT = GetTransform().GetParentTransform()->GetWorldTransform() * t;
 				return (CanvasPtr) ? (CanvasPtr->ToCanvasSpace(worldT)) : (worldT);
 			}
-		}
+			default: GEE_CORE_ASSERT(true);
+			}
+		};
 
-		GEE_CORE_ASSERT(true);
-		return Transform();
+		if (GetMaxSize() == Vec2f(std::numeric_limits<float>::max()))
+			return convertSpaceFunc(GetTransform());
+
+		float textLength = glm::max(GetTextLength(false) / 2.0f, 0.001f);
+		Vec2f verticalExtents = GetTextMaxVerticalExtents(false);
+		float textHeight = glm::max(glm::max(glm::abs(verticalExtents.x), glm::abs(verticalExtents.y)), 0.001f) * 2.0f;
+		Vec2f scaleRatioInverse = Vec2f(1.0f);// / ScaleRatio;
+		float scale = glm::min(scaleRatioInverse.x * GetMaxSize().x / textLength, scaleRatioInverse.y * GetMaxSize().y / textHeight);
+
+
+		Transform t = GetTransform();
+		t.SetScale(Vec2f(scale) /*ScaleRatio*/ * t.GetScale2D());
+			
+
+		return convertSpaceFunc(t);
 	}
 
 	void TextComponent::RecalculateScaleRatio(UISpace space)
 	{
 		const auto windowData = GetScene().GetUIData()->GetWindowData();
+		CheckTransformDirtiness();
+
+		if (GetTransform().GetScale2D() == PostRatioScale)
+			GetTransform().SetScale(PreRatioScale);
+		else
+		{
+			std::cout << "Unfo, " << GetTransform().GetScale2D() << " and " << PostRatioScale << '\n';
+			PreRatioScale = GetTransform().GetScale2D();
+		}
+
 		const auto newScaleRatio = TextUtil::ComputeScaleRatio(space, GetTransform(), GetCanvasPtr(),
 		                                         ((GetScene().GetUIData()) ? (&windowData) : (nullptr)), Vec3f(1.0f));
 		if (newScaleRatio != ScaleRatio)
@@ -184,20 +203,41 @@ namespace GEE
 		RenderableComponent::HandleEvent(ev);
 
 		if (ev.GetType() == EventType::WindowResized || ev.GetType() == EventType::CanvasViewChanged)
-			RecalculateScaleRatio();
+			Unstretch(UISpace::World);
+
+		if (ev.GetType() == EventType::KeyPressed && dynamic_cast<const KeyEvent&>(ev).GetKeyCode() == Key::P)
+			Unstretch();
 	}
 
 	void TextComponent::Unstretch(UISpace space)
 	{
 		auto windowData = GetScene().GetUIData()->GetWindowData();
 
-		auto scale = GetTransform().GetScale2D() * TextUtil::ComputeScaleRatio(
-			space, GetTransform(), GetCanvasPtr(), ((GetScene().GetUIData()) ? (&windowData) : (nullptr)));
+		if (GetName() == "GEE_Engine_Title_Text") {
+			std::cout << GetContent() << " Scale before: " << GetTransform().GetScale2D() << '\n';
+			std::cout << GetContent() << " PreRatio: " << PreRatioScale << '\n';
+		}
+		CheckTransformDirtiness();
+
+		RecalculateScaleRatio(space);
+
+		auto scale = PreRatioScale * ScaleRatio;
+
 
 		// We'd rather avoid calling SetScale if the scale didn't change, because that would flag the
 		// transform as dirty and lead to unnecessary (quite expensive) computation.
-		if (scale != GetTransform().GetScale2D())
+		//if (scale != GetTransform().GetScale2D())
+		{
 			GetTransform().SetScale(scale);
+			PostRatioScale = GetTransform().GetScale2D();
+		}
+		InvalidateCache();
+			
+		if (GetName() == "GEE_Engine_Title_Text") {
+			std::cout << GetContent() << " Scale post: " << scale << '\n';
+			std::cout << GetContent() << " PostRatio: " << PostRatioScale << '\n';
+			std::cout << GetContent() << " SR: " << ScaleRatio << '\n';
+		}
 	}
 
 	void TextComponent::GetEditorDescription(ComponentDescriptionBuilder descBuilder)
@@ -237,9 +277,13 @@ namespace GEE
 		if (!LetterTransformsCache.empty())
 			return LetterTransformsCache;
 
-		std::cout << "Recomputing letter transforms for " + GetContent() << '\n';
+		ScrollingTextComponent* dupa = dynamic_cast<ScrollingTextComponent*>(this);
+		dupa = nullptr;
+
+		std::cout << "Generating " << GetContent() << ": " << GetTransform().GetScale2D() << '\n';
+
 		return LetterTransformsCache = TextUtil::ComputeLetterTransforms(GetContent(),
-		                                                          GetTransformCorrectedForSize(UISpace::World),
+		                                                          dupa ? dupa->GetCorrectedTransform(true) : GetTransformCorrectedForSize(UISpace::World),
 		                                                          GetAlignment(), *GetFontVariation());
 	}
 
@@ -320,6 +364,7 @@ namespace GEE
 
 	Transform ScrollingTextComponent::GetCorrectedTransform(bool world)
 	{
+	
 		Transform renderTransform = (world) ? (GetTransform().GetWorldTransform()) : (GetTransform());
 		Transform parentRenderTransform = (world) ? (GetTransform().GetParentTransform()->GetWorldTransform()) : (Transform());
 
@@ -547,6 +592,8 @@ namespace GEE
 
 			const Character& c = fontVariation.GetCharacter(content[i]);
 
+			if (content == "-3")
+				std::cout << "%%%%%%: " << content[i] << ": " << t.GetScale() << '\n';
 			t.Move(textRot * Vec3f(c.Bearing * halfExtent, 0.0f) * 2.0f);
 			t.SetScale(halfExtent);
 

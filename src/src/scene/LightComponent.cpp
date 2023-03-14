@@ -35,7 +35,7 @@ namespace GEE
 
 		GetScene().GetRenderData()->AddLight(*this);
 
-		TransformDirtyFlagIndex = GetTransform().AddDirtyFlag();
+		TransformDirtyFlagIndex = GetTransform().AddWorldDirtyFlag();
 
 		CalculateLightRadius();
 	}
@@ -58,7 +58,7 @@ namespace GEE
 		ShadowMapNr(comp.ShadowMapNr),
 		bHasValidShadowMap(comp.bHasValidShadowMap)
 	{
-		TransformDirtyFlagIndex = GetTransform().AddDirtyFlag();
+		TransformDirtyFlagIndex = GetTransform().AddWorldDirtyFlag();
 		GetScene().GetRenderData()->AddLight(*this);
 	}
 
@@ -268,7 +268,7 @@ namespace GEE
 			lightsUBO->offsetCache = offset;
 
 		const Transform& worldTransform = GetTransform().GetWorldTransform();
-		bool transformDirtyFlag = GetTransform().GetDirtyFlag(TransformDirtyFlagIndex);
+		bool transformDirtyFlag = GetTransform().GetWorldDirtyFlag(TransformDirtyFlagIndex);
 
 		if (transformDirtyFlag)
 		{
