@@ -1,4 +1,4 @@
-#define CEREAL_LOAD_FUNCTION_NAME Load
+﻿#define CEREAL_LOAD_FUNCTION_NAME Load
 #define CEREAL_SAVE_FUNCTION_NAME Save
 #define CEREAL_SERIALIZE_FUNCTION_NAME Serialize
 #include <rendering/Mesh.h>
@@ -316,7 +316,7 @@ namespace GEE
 				filestr >> path;
 
 				//const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate);
-				std::cout << "PROBUJE ZALADOWAC STARY COLLISION OBJECT Z PATHA " + path << '\n';
+				std::cout << "LOADING OLD COLLISION OBJECT FROM " + path << '\n';
 				Hierarchy::Tree* tree = LoadHierarchyTree(scene, path, nullptr, true);
 
 				Transform shapesTransform;
@@ -906,10 +906,6 @@ namespace GEE
 				{
 					std::cout << "ERROR: While loading deferments: " << exception.what() << '\n';
 				}
-				catch (cereal::Exception& exception)
-				{
-					std::cout << "ERROR: While loading deferments: " << exception.what() << '\n';
-				}
 
 				scene.Load(archive);
 
@@ -1045,16 +1041,24 @@ namespace GEE
 		const aiScene* assimpScene;
 		MaterialLoadingData matLoadingData;
 
-		assimpScene = importer.ReadFile(path, aiProcess_GenUVCoords | aiProcess_TransformUVCoords | aiProcess_OptimizeMeshes | aiProcess_SplitLargeMeshes | aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_GenSmoothNormals | aiProcess_CalcTangentSpace | aiProcess_JoinIdenticalVertices | aiProcess_ValidateDataStructure);
-		if (!assimpScene || assimpScene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !assimpScene->mRootNode)
+		try
+		{
+			assimpScene = importer.ReadFile(
+				path, aiProcess_GenUVCoords | aiProcess_TransformUVCoords | aiProcess_OptimizeMeshes |
+				aiProcess_SplitLargeMeshes | aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_GenSmoothNormals |
+				aiProcess_CalcTangentSpace | aiProcess_JoinIdenticalVertices | aiProcess_ValidateDataStructure);
+			if (!assimpScene || assimpScene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !assimpScene->mRootNode)
+				throw Exception(importer.GetErrorString());
+		} catch (Exception& exception)
 		{
 			std::cerr << "Can't load mesh scene " << path << ".\n";
-			std::cerr << "Assimp error " << importer.GetErrorString() << '\n';
+			std::cerr << "Reason: " << exception.what() << '\n';
+			return nullptr;
+		} catch (...)
+		{
+			std::cerr << "Unknown importer excpetion " << typeid(std::current_exception()).name() << '\n';
 			return nullptr;
 		}
-
-		if (assimpScene->mFlags & AI_SCENE_FLAGS_VALIDATION_WARNING)
-			std::cout << "WARNING! A validation problem occured while loading MeshTree " + path + "\n";
 
 		 
 		std::string directory = extractDirectory(path);

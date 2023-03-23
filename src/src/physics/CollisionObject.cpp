@@ -21,15 +21,15 @@ namespace GEE
 		CollisionShape::CollisionShape(CollisionShapeType type) :
 			OptionalLocalization(nullptr),
 			Type(type),
-			ShapePtr(nullptr)
+			ShapePtr(nullptr),
+			TransformDirtyFlag(ShapeTransform.AddWorldDirtyFlag())
 		{
 		}
 
 		CollisionShape::CollisionShape(HTreeObjectLoc treeObjLoc, const std::string& meshName, CollisionShapeType type) :
-			OptionalLocalization(MakeUnique<ColShapeLoc>(Mesh::MeshLoc(treeObjLoc, meshName, meshName))),
-			Type(type),
-			ShapePtr(nullptr)
+			CollisionShape(type)
 		{
+			OptionalLocalization = MakeUnique<ColShapeLoc>(Mesh::MeshLoc(treeObjLoc, meshName, meshName));
 		}
 
 		CollisionShape::ColShapeLoc* CollisionShape::GetOptionalLocalization()

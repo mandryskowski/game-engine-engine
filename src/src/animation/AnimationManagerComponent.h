@@ -31,19 +31,7 @@ namespace GEE
 
 	};
 
-	class Exception
-	{
-	public:
-		explicit Exception(const std::string& msg) : Message(msg) {}
-
-		const char* what() const noexcept
-		{
-			return Message.c_str();
-		}
-
-	private:
-		std::string Message;
-	};
+	using Exception = std::exception;
 
 	class AnimationInstance
 	{

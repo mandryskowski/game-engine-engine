@@ -7,6 +7,7 @@ namespace GEE
 	{
 	public:
 		PoolBallActor(GEE::GameScene&, GEE::Actor* parentActor, const std::string& name, const GEE::Transform& t = GEE::Transform());
+		void Update(Time) override;
 	};
 }
 

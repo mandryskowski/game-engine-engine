@@ -161,7 +161,7 @@ namespace GEE
 		if (WhiteBallActor && WhiteBallActor->IsBeingKilled())
 			WhiteBallActor = nullptr;
 
-		if (WhiteBallActor && WhiteBallActor->GetRoot()->GetCollisionObj() && WhiteBallActor->GetTransform()->GetPos().y < 0.95f)
+		if (WhiteBallActor && WhiteBallActor->GetRoot()->GetCollisionObj() && WhiteBallActor->GetTransform()->GetWorldTransform().GetPos().y < 0.95f)
 		{
 			WhiteBallActor->SetTransform(Scene.FindHierarchyTree("Pooltable")->GetRoot().FindNode("PoolBall_White")->GetCompBaseType().GetTransform());
 			Physics::SetLinearVelocity(*WhiteBallActor->GetRoot()->GetCollisionObj(), Vec3f(0.0f));
@@ -173,9 +173,44 @@ namespace GEE
 			std::vector<Actor*> actors;
 			poolBallsActor->GetAllActors(&actors);
 
+
 			for (auto actor : actors)
-				if (actor->GetRoot()->GetCollisionObj() && actor->GetTransform()->GetWorldTransform().GetPos().y < 0.95f)
+			{
+				auto colObj = actor->GetRoot()->GetCollisionObj();
+				if (!colObj || !colObj->ActorPtr)
+					continue;
+
+				const auto absPos = glm::abs(actor->GetTransform()->GetWorldTransform().GetPos());
+
+				if (absPos.y < 0.95f)
 					actor->MarkAsKilled();
+				else if (absPos.x > 1.95f || absPos.z > 0.887f)
+				{
+					auto rigidDynamicPtr = colObj->ActorPtr->is<physx::PxRigidDynamic>();
+
+
+					if (rigidDynamicPtr)
+					{
+						rigidDynamicPtr->setRigidDynamicLockFlags(static_cast<physx::PxRigidDynamicLockFlag::Enum>(0));
+
+						physx::PxRaycastBuffer castBuffer;
+						physx::PxU32 maxHits = 1;
+						physx::PxHitFlags hitFlags = physx::PxHitFlag::ePOSITION | physx::PxHitFlag::eNORMAL | physx::PxHitFlag::eUV;
+						Transform possessedWorld = actor->GetTransform()->GetWorldTransform();
+
+						
+						auto frontVec = Vec3f(0.0f, -1.0f, 0.0f);
+						bool bHit = Scene.GetPhysicsData()->GetPxScene()->raycast(Physics::Util::toPx(possessedWorld.GetPos()), Physics::Util::toPx(frontVec), 0.08f, castBuffer,
+							physx::PxHitFlags(physx::PxHitFlag::eDEFAULT), physx::PxQueryFilterData(physx::PxQueryFlag::eSTATIC));
+						std::cout << "Hit" << actor->GetName() << "? " << bHit << '\n';
+						if (bHit)
+							std::cout << "hitowane: " << castBuffer.getAnyHit(0).distance << '\n';
+						else
+							std::cout << "z: " << absPos.z << '\n';
+
+					}
+				}
+			}
 
 			if (actors.empty())
 				ResetBalls();
@@ -267,7 +302,7 @@ namespace GEE
 					rigidDynamicPtr->getShapes(&shapePtr, 1);
 
 					rigidDynamicPtr->detachShape(*shapePtr);
-					shapePtr->setContactOffset(0.001f);
+					shapePtr->setContactOffset(0.00f);
 					shapePtr->setMaterials(&mat, 1);
 					rigidDynamicPtr->attachShape(*shapePtr);
 
@@ -277,6 +312,8 @@ namespace GEE
 
 					rigidDynamicPtr->setRigidBodyFlag(physx::PxRigidBodyFlag::eENABLE_CCD, true);
 					rigidDynamicPtr->setRigidDynamicLockFlags((ConstrainedBallMovement) ? (physx::PxRigidDynamicLockFlag::eLOCK_LINEAR_Y) : (static_cast<physx::PxRigidDynamicLockFlag::Enum>(0)));
+
+					
 				
 				}
 			}

@@ -247,9 +247,10 @@ namespace GEE
 		Component* comp = GameManager::DefaultScene->FindActor(rootCompActorName)->GetRoot()->GetComponent<Component>(rootCompName);
 
 		if (!anim)
-			throw(Exception("ERROR: Cannot find anim " + animName + " in hierarchy tree " + animHierarchyTreePath));
+			throw Exception(std::string("ERROR: Cannot find anim " + animName + " in hierarchy tree " + animHierarchyTreePath).c_str());
 		if (!comp)
-			throw(Exception("ERROR: Cannot find anim root component " + rootCompName + " in actor " + rootCompActorName));
+			throw Exception(std::string("ERROR: Cannot find anim root component " + rootCompName + " in actor " + rootCompActorName).c_str());
+		
 
 		construct(*anim, *comp);
 	}

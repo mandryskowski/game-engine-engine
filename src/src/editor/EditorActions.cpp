@@ -486,7 +486,7 @@ namespace GEE
 			std::cout << "@@@List element count: " << listActor.GetListElementCount() << '\n';
 			std::cout << "@@@List offset: " << listActor.GetListOffset().y << '\n';
 			int totalActorCount = static_cast<int>(-listActor.GetListOffset().y / 2.0f);
-			totalActorCount = glm::clamp(totalActorCount, 0, 18);
+			totalActorCount = glm::clamp(totalActorCount, 0, 8);
 			{
 				canvas.GetTransform()->SetScale(Vec2f(1.0f, 0.02f * totalActorCount));
 				addTitleAndPositionCanvas(canvas, nullptr, [selectedScene]() { return selectedScene->GetName(); });
@@ -527,6 +527,7 @@ namespace GEE
 			previewWindow.AddField("Tree origin").CreateChild<UIButtonActor>("OriginButton", (tree.GetName().IsALocalResource()) ? ("Local") : ("File")).SetDisableInput(true);
 			previewWindow.AddField("Delete tree").CreateChild<UIButtonActor>("DeleteButton", "Delete").SetDisableInput(true);
 			auto& list = previewWindow.AddField("Mesh nodes list").CreateChild<UIAutomaticListActor>("MeshNodesList");
+			list.GetTransform()->Move(Vec2f(2.0f, 1.0f));
 
 
 			std::vector<std::pair<Hierarchy::NodeBase&, UIActivableButtonActor*>> buttons;

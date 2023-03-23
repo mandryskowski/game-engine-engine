@@ -203,7 +203,7 @@ namespace GEE
 		RenderableComponent::HandleEvent(ev);
 
 		if (ev.GetType() == EventType::WindowResized || ev.GetType() == EventType::CanvasViewChanged)
-			Unstretch(UISpace::World);
+			Unstretch(UISpace::Window);
 
 		if (ev.GetType() == EventType::KeyPressed && dynamic_cast<const KeyEvent&>(ev).GetKeyCode() == Key::P)
 			Unstretch();
@@ -274,7 +274,7 @@ namespace GEE
 
 	const Vector<Transform>& TextComponent::GetLetterTransformsUnsafe()
 	{
-		if (!LetterTransformsCache.empty())
+		if (!LetterTransformsCache.empty() && !GetContent().empty())
 			return LetterTransformsCache;
 
 		ScrollingTextComponent* dupa = dynamic_cast<ScrollingTextComponent*>(this);

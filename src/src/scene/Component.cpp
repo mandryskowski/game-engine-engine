@@ -465,13 +465,15 @@ namespace GEE
 			std::function<void(SharedPtr<Physics::CollisionShape>)> addShapeFunc = [this, colObj, descBuilder, &shapeCreatorWindow](SharedPtr<Physics::CollisionShape> shape) mutable {
 				if (!colObj)
 				{
+					auto shapeAddedColObj = MakeUnique<Physics::CollisionObject>(true);
+					shapeAddedColObj->AddShape(shape);
+
 					if (descBuilder.IsNodeBeingBuilt())
-						colObj = descBuilder.GetNodeBeingBuilt()->SetCollisionObject(MakeUnique<Physics::CollisionObject>(true));
+						colObj = descBuilder.GetNodeBeingBuilt()->SetCollisionObject(std::move(shapeAddedColObj));
 					else
-						colObj = SetCollisionObject(MakeUnique<Physics::CollisionObject>(true));
+						colObj = SetCollisionObject(std::move(shapeAddedColObj));
 				}
-				
-				colObj->AddShape(shape);
+
 
 				shapeCreatorWindow.MarkAsKilled();
 				descBuilder.Refresh();

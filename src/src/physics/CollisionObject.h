@@ -44,6 +44,7 @@ namespace GEE
 			};
 			SharedPtr<ColShapeLoc> OptionalLocalization;
 			Transform ShapeTransform;
+			unsigned int TransformDirtyFlag;
 			std::vector<Vec3f> VertData;
 			std::vector<unsigned int> IndicesData;
 

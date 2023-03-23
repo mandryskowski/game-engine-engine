@@ -290,7 +290,7 @@ namespace GEE
 						continue;
 
 					// Make sure that we do not change the flag which corresponds to updating px transforms
-					bool flagBefore = obj->TransformPtr->GetWorldDirtyFlag(obj->TransformDirtyFlag);
+					bool flagBefore = obj->TransformPtr->GetWorldDirtyFlag(obj->TransformDirtyFlag, false);
 
 					PxTransform pxTransform = obj->ActorPtr->getGlobalPose();
 					obj->TransformPtr->SetPositionWorld(toGlm(pxTransform.p));
@@ -312,8 +312,27 @@ namespace GEE
 				for (int i = 0; i < static_cast<int>(ScenesPhysicsData[sceneIndex]->CollisionObjects.size()); i++)
 				{
 					CollisionObject* obj = ScenesPhysicsData[sceneIndex]->CollisionObjects[i];
-					if (!obj->ActorPtr || !obj->TransformPtr || !obj->TransformPtr->GetWorldDirtyFlag(obj->TransformDirtyFlag))
+					if (!obj->ActorPtr || !obj->TransformPtr)
 						continue;
+
+					// Check if dirty
+					{
+						if (!obj->TransformPtr->GetWorldDirtyFlag(obj->TransformDirtyFlag))
+						{
+							bool dirty = false;
+							for (const auto& shape : obj->Shapes)
+							{
+								if (shape->ShapeTransform.GetWorldDirtyFlag(shape->TransformDirtyFlag))
+								{
+									dirty = true;
+									break;
+								}
+							}
+
+							if (!dirty)
+								continue;
+						}
+					}
 
 					const Transform& worldTransform = obj->TransformPtr->GetWorldTransform();
 

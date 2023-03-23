@@ -174,7 +174,10 @@ namespace GEE
 	void UICanvasActor::CreateCanvasBackgroundModel(const Vec3f& color)
 	{
 		if (CanvasBackground)
+		{
 			CanvasBackground->MarkAsKilled();
+			EraseTopLevelUIElement(*CanvasBackground);
+		}
 		CanvasBackground = &CreateComponent<ModelComponent>("WindowBackground");
 		CanvasBackground->AddMeshInst(GameHandle->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::Quad));
 
@@ -361,7 +364,7 @@ namespace GEE
 		ScrollBarX = &CreateChild<UIScrollBarActor>("ScrollBarX");
 		ScrollBarX->SetTransform(Transform(Vec2f(0.0f, -1.10f), Vec2f(0.05f, 0.1f)));
 		ScrollBarX->SetWhileBeingClickedFunc([this]() {
-			ScrollView(Vec2f((glm::inverse(GetCanvasT()->GetWorldTransformMatrix()) * Vec4f(static_cast<float>(Scene.GetUIData()->GetWindowData().GetMousePositionNDC().x) - ScrollBarX->GetClickPosNDC().x, 0.0f, 0.0f, 0.0f)).x * GetBoundingBox().Size.x, 0.0f));
+			ScrollView(Vec2f((glm::inverse(GetCanvasT()->GetWorldTransformMatrix()) * Vec4f(static_cast<float>(Scene.GetUIData()->GetWindowData().GetMousePositionNDC().x) - ScrollBarX->GetClickPosNDC().x, 0.0f, 0.0f, 0.0f)).x * GetCanvasSpaceBoundingBox().Size.x, 0.0f));
 			UpdateScrollBarT<VecAxis::X>();
 			ScrollBarX->SetClickPosNDC(Scene.GetUIData()->GetWindowData().GetMousePositionNDC());
 			});
@@ -369,7 +372,7 @@ namespace GEE
 		ScrollBarY = &CreateChild<UIScrollBarActor>("ScrollBarY");
 		ScrollBarY->SetTransform(Transform(Vec2f(1.10f, 0.0f), Vec2f(0.1f, 0.05f)));
 		ScrollBarY->SetWhileBeingClickedFunc([this]() {
-			ScrollView(Vec2f(0.0f, (glm::inverse(GetCanvasT()->GetWorldTransformMatrix()) * Vec4f(0.0f, static_cast<float>(Scene.GetUIData()->GetWindowData().GetMousePositionNDC().y) - ScrollBarY->GetClickPosNDC().y, 0.0f, 0.0f)).y * GetBoundingBox().Size.y));
+			ScrollView(Vec2f(0.0f, (glm::inverse(GetCanvasT()->GetWorldTransformMatrix()) * Vec4f(0.0f, static_cast<float>(Scene.GetUIData()->GetWindowData().GetMousePositionNDC().y) - ScrollBarY->GetClickPosNDC().y, 0.0f, 0.0f)).y * GetCanvasSpaceBoundingBox().Size.y));
 			UpdateScrollBarT<VecAxis::Y>();
 			ScrollBarY->SetClickPosNDC(Scene.GetUIData()->GetWindowData().GetMousePositionNDC());
 			});
@@ -409,7 +412,7 @@ namespace GEE
 	inline void UICanvasActor::UpdateScrollBarT()
 	{
 		unsigned int axisIndex = static_cast<unsigned int>(barAxis);
-		Boxf<Vec2f> canvasBBox = GetBoundingBox();
+		Boxf<Vec2f> canvasBBox = GetCanvasSpaceBoundingBox();
 
 		auto barSize = glm::min(1.0f, CanvasView.GetScale()[axisIndex] / canvasBBox.Size[axisIndex]);
 
@@ -434,6 +437,7 @@ namespace GEE
 		scrollBar->GetTransform()->SetVecAxis<TVec::Position, barAxis>(barPos);
 		scrollBar->GetTransform()->SetVecAxis<TVec::Scale, barAxis>(barSize);
 
+		std::cout << "MEOW" << (int)barAxis << ": " << barSize << '\n';
 		bool hide = floatComparison(barSize, 1.0f, std::numeric_limits<float>().epsilon());	//hide if we can't scroll on this axis
 		scrollBar->GetButtonModel()->SetHide(hide);
 		scrollBar->SetDisableInput(hide);

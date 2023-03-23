@@ -7,4 +7,12 @@ namespace GEE
 		Actor(scene, parentActor, name, t)
 	{
 	}
+
+	void PoolBallActor::Update(Time time)
+	{
+		Actor::Update(time);
+
+
+		
+	}
 }
