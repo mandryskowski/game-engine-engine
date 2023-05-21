@@ -16,13 +16,14 @@ namespace GEE
 	class UICanvas
 	{
 	public:
-		UICanvas(unsigned int canvasDepth = 0) : bContainsMouse(false), CanvasDepth(canvasDepth) {}
+		UICanvas(unsigned int canvasDepth = 0) : bContainsMouse(false), CanvasDepth(canvasDepth), CanvasSpaceMinExtent(Vec2f(std::numeric_limits<float>::max())), CanvasSpaceMaxExtent(Vec2f(std::numeric_limits<float>::min())) {}
 		UICanvas(const UICanvas&);
 		UICanvas(UICanvas&&);
 		virtual NDCViewport GetViewport() const = 0;
 		virtual Mat4f GetViewMatrix() const = 0;
 		virtual const Transform& GetViewT() const;
 		virtual const Transform* GetCanvasT() const = 0;
+		const Transform GetCanvasView() const { return CanvasView; }
 
 		virtual Vec2f FromCanvasSpace(const Vec2f& canvasSpaceTransform) const = 0;
 		virtual Vec2f ScaleFromCanvasSpace(const Vec2f& canvasSpaceScale) const = 0;
@@ -38,7 +39,7 @@ namespace GEE
 
 		unsigned int GetCanvasDepth() const;
 
-		virtual void SetCanvasView(const Transform&, bool clampView = true);
+		virtual void SetCanvasView(const Transform&, bool clampView = false);
 
 		virtual void ClampViewToElements();
 		void AutoClampView(bool horizontal = true, bool vertical = false);	//Set to false to set view scale to 100% of vertical size, or leave it as it is to set it to 100% of horizontal size
@@ -70,16 +71,25 @@ namespace GEE
 		//protected:
 		bool ContainsMouseCheck(const Vec2f& mouseNDC) const;
 		virtual void GetExternalButtons(std::vector<UIButtonActor*>&) const = 0;
+
+		void SetCanvasSpaceExtents(const Vec2f& minExtent, const Vec2f& maxExtent)
+		{
+			CanvasSpaceMinExtent = minExtent;
+			CanvasSpaceMaxExtent = maxExtent;
+		}
 	protected:
 		virtual void PushCanvasViewChangeEvent() = 0;
-	public:
+	private:
 
 		std::vector<UICanvasElement*> TopLevelUIElements;
-		Transform CanvasView;
+		Vec2f CanvasSpaceMinExtent, CanvasSpaceMaxExtent;
 		mutable bool bContainsMouse;	//Cache variable
 		mutable bool bContainsMouseOutsideTrueCanvas;
 
 		const unsigned int CanvasDepth;
+
+	protected:
+		Transform CanvasView;
 	};
 
 	namespace uiCanvasUtil

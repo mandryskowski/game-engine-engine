@@ -7,8 +7,10 @@
 #include <cereal/archives/json.hpp>
 #include "Vec.h"
 
+
 namespace GEE
 {
+
 	enum class VecAxis	//VectorAxis
 	{
 		X, Y, Z, W
@@ -20,7 +22,7 @@ namespace GEE
 		Rotation,
 		Scale,
 		RotationEuler
-	};
+	}; 
 
 
 	class Transform

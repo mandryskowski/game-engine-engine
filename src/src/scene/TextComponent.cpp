@@ -148,13 +148,10 @@ namespace GEE
 		const auto windowData = GetScene().GetUIData()->GetWindowData();
 		CheckTransformDirtiness();
 
-		if (GetTransform().GetScale2D() == PostRatioScale)
+		if (GetTransform().GetScale2D() == PostRatioScale && GetTransform().GetScale2D() != PreRatioScale)
 			GetTransform().SetScale(PreRatioScale);
 		else
-		{
-			std::cout << "Unfo, " << GetTransform().GetScale2D() << " and " << PostRatioScale << '\n';
 			PreRatioScale = GetTransform().GetScale2D();
-		}
 
 		const auto newScaleRatio = TextUtil::ComputeScaleRatio(space, GetTransform(), GetCanvasPtr(),
 		                                         ((GetScene().GetUIData()) ? (&windowData) : (nullptr)), Vec3f(1.0f));

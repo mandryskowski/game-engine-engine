@@ -256,7 +256,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC src/src)
 target_include_directories(${PROJECT_NAME} PUBLIC src/vendor/include)
 #target_link_libraries(${PROJECT_NAME} PUBLIC ${LibrariesDebug})
 target_link_directories(${PROJECT_NAME} PUBLIC src/vendor/lib)
-target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
+target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_20)
 
 add_custom_command(TARGET ${PROJECT_NAME}  POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory

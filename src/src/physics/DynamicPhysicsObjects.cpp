@@ -10,12 +10,21 @@ namespace GEE
 {
 	namespace Physics
 	{
-		void ApplyForce(CollisionObject& obj, const Vec3f& force)
+		void ApplyForce(CollisionObject& obj, const Vec3f& force, ForceMode forceMode)
 		{
 			PxRigidDynamic* body = obj.ActorPtr->is<PxRigidDynamic>();
 
+			PxForceMode::Enum pxForceMode;
+			switch (forceMode)
+			{
+			default: case ForceMode::Impulse: pxForceMode = PxForceMode::eIMPULSE; break;
+			case ForceMode::VelocityChange: pxForceMode = PxForceMode::eVELOCITY_CHANGE; break;
+			case ForceMode::Acceleration: pxForceMode = PxForceMode::eACCELERATION; break;
+			case ForceMode::Force: pxForceMode = PxForceMode::eFORCE; break;
+			}
+
 			if (body)
-				body->addForce(toPx(force), PxForceMode::eIMPULSE);
+				body->addForce(toPx(force), pxForceMode);
 		}
 
 		void SetLinearVelocity(CollisionObject& obj, const Vec3f& velocity)

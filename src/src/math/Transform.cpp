@@ -11,7 +11,7 @@ namespace GEE
 	{
 		Empty = false;
 
-		for (auto& flag : LocalDirtyFlags)
+		for (auto&& flag : LocalDirtyFlags)
 			flag = true;
 
 		FlagWorldDirtiness();
@@ -19,7 +19,7 @@ namespace GEE
 
 	void Transform::FlagWorldDirtiness() const
 	{
-		for (auto& flag : WorldDirtyFlags)
+		for (auto&& flag : WorldDirtyFlags)
 			flag = true;
 
 		for (auto child : Children)

@@ -2320,7 +2320,7 @@
                                         }
                                     },
                                     "WhiteBallActorName": "Whiteball",
-                                    "CueHitPower": 0.20000000298023225
+                                    "CueMaxGivenSpeed": 0.20000000298023225
                                 }
                             }
                         }

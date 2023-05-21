@@ -198,6 +198,9 @@ namespace GEE
 	{
 		UIActivableButtonActor::Update(dt);
 
+		if (IsBeingKilled())
+			return;
+
 		UpdateCaretModel(false);
 		// Caret anim
 

@@ -65,6 +65,8 @@ namespace GEE
 			virtual PopupDescription CreatePopupMenu(const Vec2f& posWindowSpace, SystemWindow& relativeWindow) = 0;
 			virtual EditorActions& GetActions() = 0;
 
+			virtual GameScene* GetEditorScene() = 0;
+
 			virtual EditorMessageLogger& GetEditorLogger(GameScene& scene) = 0;
 			virtual bool GetViewportMaximized() const = 0;
 

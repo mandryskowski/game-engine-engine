@@ -137,12 +137,13 @@ namespace GEE
 		return GetCanvasT()->GetWorldTransform().GetInverse() * worldTransform;
 	}
 
-	void UICanvasActor::RefreshFieldsList()
+	void UICanvasActor::RefreshFieldsList(bool clampview)
 	{
 		if (FieldsList)
 		{
 			FieldsList->Refresh();
-			ClampViewToElements();
+			if (clampview)
+				ClampViewToElements();
 		}
 	}
 
@@ -302,22 +303,9 @@ namespace GEE
 	{
 		Actor::HandleEventAll(ev);
 
-		/*bool bContainsMouse = ContainsMouse(GameHandle->GetDefInputRetriever().GetMousePositionNDC());
-		bool focusedOnThis = bContainsMouse;
-		if (bContainsMouse)
-			Actor::HandleEventAll(ev);
-		else
-		{
-			std::vector<UIButtonActor*> buttons;
-			GetExternalButtons(buttons);
-			for (auto button : buttons)
-				if (button)
-				{
-					button->HandleEventAll(ev);
-					if (button->GetState() != EditorIconState::Idle)
-						focusedOnThis = true;
-				}
-		}*/
+		if (ev.GetType() == EventType::CanvasViewChanged && dynamic_cast<const CanvasViewChangedEvent*>(&ev)->ClampsViewToElements())
+			ClampViewToElements();
+
 	}
 
 	SceneMatrixInfo UICanvasActor::BindForRender(const SceneMatrixInfo& info)	//Note: RenderInfo is a relatively big object for real-time standards. HOPEFULLY the compiler will optimize here using NRVO and convertedInfo won't be copied D:
@@ -437,7 +425,6 @@ namespace GEE
 		scrollBar->GetTransform()->SetVecAxis<TVec::Position, barAxis>(barPos);
 		scrollBar->GetTransform()->SetVecAxis<TVec::Scale, barAxis>(barSize);
 
-		std::cout << "MEOW" << (int)barAxis << ": " << barSize << '\n';
 		bool hide = floatComparison(barSize, 1.0f, std::numeric_limits<float>().epsilon());	//hide if we can't scroll on this axis
 		scrollBar->GetButtonModel()->SetHide(hide);
 		scrollBar->SetDisableInput(hide);

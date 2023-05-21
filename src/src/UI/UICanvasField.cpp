@@ -161,7 +161,7 @@ void UIMultipleListActor::NestList(UIListActor& list)
 				if (OnExpansionFunc)
 					OnExpansionFunc();
 			});
-		ExpandButton->SetTransform(Transform(Vec2f(0.0f, 1.0f), Vec2f(4.0f, 1.0f)));
+		ExpandButton->SetTransform(Transform(Vec2f(0.0f, 1.0f), CanvasFieldStyle().GetBoundingBox().Size));
 
 		//We do not want the list element to be hidden after retracting
 		EraseListElement(*ExpandButton);
@@ -181,7 +181,7 @@ void UIMultipleListActor::NestList(UIListActor& list)
 		titleBackgroundQuad.OverrideInstancesMaterial(titleBackgroundMaterial);
 
 		auto& catText = CreateComponent<TextComponent>("ElementText", Transform(Vec2f(0.0f, 1.0f), Vec2f(0.75f)), GetName(), "Assets/Editor/Fonts/Atkinson-Hyperlegible-Bold-102.otf", Alignment2D::Center());
-		catText.SetMaxSize(Vec2f(5.0f, 1.0f));
+		catText.SetMaxSize(CanvasFieldStyle().GetBoundingBox().Size);
 		catText.Unstretch();
 
 		CategoryBackgroundQuad = &CreateComponent<ModelComponent>("BackgroundQuad", Transform(Vec2f(0.0f, 0.0f), Vec2f(30.0f, 0.0f)));
@@ -223,7 +223,7 @@ void UIMultipleListActor::NestList(UIListActor& list)
 		//	                         return category.GetListOffset();
 		//                         }, [&category]() { return Vec3f(0.0f, -2.0f, 0.0f); }));
 
-		category.SetOnExpansionFunc([this]() { dynamic_cast<UICanvasActor*>(GetCanvasPtr())->RefreshFieldsList(); });
+		category.SetOnExpansionFunc([this]() { dynamic_cast<UICanvasActor*>(GetCanvasPtr())->RefreshFieldsList(true); });
 
 		return category;
 	}
@@ -432,7 +432,7 @@ void UIMultipleListActor::NestList(UIListActor& list)
 		// We want everything constrained within the (-5, 5) range on the X so we set max size to 1.5 from -2.
 		// Note that, as this is right-aligned, the left extent will be twice the max size away from position.
 		// So left extent will be -2 - 2 * (1.5) = 5.
-		actor.CreateComponent<TextComponent>("ElementText", Transform(Vec2f(-2.0f, pos.y)), actor.GetName(), "", Alignment2D::RightCenter()).SetMaxSize(Vec2f(1.5f, 0.75f));
+		actor.CreateComponent<TextComponent>("ElementText", Transform(Vec2f(-2.0f, pos.y)), actor.GetName(), "", Alignment2D::RightCenter()).SetMaxSize(Vec2f(2.5f, 0.75f));
 		
 		auto& separatorLine = actor.CreateComponent<ModelComponent>("SeparatorLine", Transform(Vec2f(-1.5f, pos.y), Vec2f(0.08f, 0.8f)));
 		separatorLine.AddMeshInst(actor.GetGameHandle()->GetRenderEngineHandle()->GetBasicShapeMesh(EngineBasicShape::Quad));

@@ -11,6 +11,19 @@ namespace GEE
 	class UIElementTemplates;
 	class UIAutomaticListActor;
 
+	struct CanvasFieldStyle
+	{
+		Transform CaptionTextArea = Transform(Vec2f(-3.5f, 0.0f), Vec2f(3.5f, 1.0f));
+		Transform ContentArea = Transform(Vec2f(3.5f, 0.0f), Vec2f(3.5f, 1.0f));
+
+		Boxf<Vec2f> GetBoundingBox()
+		{
+			return Boxf<Vec2f>::FromMinMaxCorners(glm::min(CaptionTextArea.GetPos2D() - CaptionTextArea.GetScale2D(), ContentArea.GetPos2D() - ContentArea.GetScale2D()), 
+				glm::max(CaptionTextArea.GetPos2D() + CaptionTextArea.GetScale2D(), ContentArea.GetPos2D() + ContentArea.GetScale2D()));
+		}
+
+	}; 
+
 	class UICanvasField : public Actor, public UIActor
 	{
 	public:
@@ -218,7 +231,7 @@ namespace GEE
 			windowT.SetScale(Vec2f(optionalCanvasMatrix * Vec4f(windowT.GetScale(), 0.0f)) * Vec2f(1.0f, 3.0f));
 			
 			window.SetTransform(windowT);
-			window.SetCanvasView(Transform(Vec2f(0.0f), Vec2f(1.0f, 3.0f)));
+			window.SetCanvasView(Transform(Vec2f(0.0f), Vec2f(1.0f, 3.0f)), true);
 			window.SetCloseIfClickedOutside(true);
 			window.KillScrollBars();
 			window.KillResizeBars();

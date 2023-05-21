@@ -493,18 +493,25 @@ namespace GEE
 			// Canvas lists
 			{
 				auto& leftList = editorScene.CreateActorAtRoot<UIListActor>("GEE_E_Left_Canvas_List");
-				leftList.SetTransform(Transform(Vec2f(-0.85f, 1.0f), Vec2f(0.15f, 1.0f)));
+				leftList.SetTransform(Transform(Vec2f(-0.85f, 1.0f), Vec2f(0.15f, 0.02f)));
+				auto& rightList = editorScene.CreateActorAtRoot<UIListActor>("GEE_E_Right_Canvas_List");
+				rightList.SetTransform(Transform(Vec2f(0.85f, 1.0f), Vec2f(0.15f, 0.02f)));
+				auto& bottomList = editorScene.CreateActorAtRoot<UIListActor>("GEE_E_Bottom_Canvas_List");
+				bottomList.SetTransform(Transform(Vec2f(0.0f, -0.5f), Vec2f(0.15f, 0.02f)));
+
 				auto& addCanvasButton = leftList.CreateChild<UIButtonActor>("AddCanvas", "+", []()
 				{
 
-				}, Transform(Vec2f(), Vec2f(1.0f, 0.1f)));
+				}, Transform(Vec2f(), Vec2f(1.0f, 1.0f)));
 				addCanvasButton.SetPopupCreationFunc([this, &editorScene, &leftList](PopupDescription desc)
 				{
 					desc.AddOption("Materials", [this, &editorScene, &leftList]()
 					{
-						UICanvasActor& canvas = leftList.CreateChild<UICanvasActor>("MaterialsPreviewWindow", Transform(Vec2f(), Vec2f(1.0f,0.02f)));
-						leftList.AddElement(UIListElement(&canvas, [&canvas]() { return Vec3f(0.0f, -canvas.GetBoundingBox().Size.y * 2.0f, 0.0f); }, [&canvas]() { return Vec3f(0.0f, -canvas.GetBoundingBox().Size.y, 0.0f); }));
-						canvas.SetViewScale(Vec2f(1.0f, 6.0f));
+						auto canvasPair = Actions->AddToCanvasList("GEE_E_Materials_Preview");
+						auto& canvas = canvasPair.first;
+						auto& canvasList = canvasPair.second;
+
+
 						UIAutomaticListActor& list = canvas.CreateChild<UIAutomaticListActor>("MaterialsList");
 
 						UIButtonActor& addMaterialButton = list.CreateChild<UIButtonActor>("CreateMaterialButton", [&]() {
@@ -524,18 +531,60 @@ namespace GEE
 							std::cout << name << '\n';
 						}
 
+						const auto maxSize = 6.0f;
+						canvas.SetViewScale(Vec2f(1.0f, 6.0f));
+						canvas.GetTransform()->SetScale(Vec2f(1.0f, 6.0f));
+
+
 						list.Refresh();
-						leftList.Refresh();
+
+
+						Actions->PolishCanvasListElement(canvas, canvasList, "Materials", 6, false);
 						canvas.ClampViewToElements();
 				});
-					desc.AddOption("Trees", nullptr);
-					desc.AddOption("Settings", nullptr);
-				});
 
-				leftList.AddElement(UIListElement(&addCanvasButton,
-					[&addCanvasButton]() { return Vec3f(0.0f, -addCanvasButton.GetTransform()->GetScale2D().y * 2.0f, 0.0f); },
-					[&addCanvasButton]() { return Vec3f(0.0f, -addCanvasButton.GetTransform()->GetScale2D().y, 0.0f); }));
-				leftList.Refresh();
+
+
+				desc.AddOption("Trees", [this, &editorScene, &leftList]()
+					{
+						auto makeCanvasFunc = [this, &editorScene, &leftList](auto refreshFunc) mutable -> void
+						{
+							auto canvasPair = Actions->AddToCanvasList("GEE_E_Hierarchy_Trees_Preview");
+							auto& canvas = canvasPair.first;
+							auto& canvasList = canvasPair.second;
+
+							canvas.SetViewScale(Vec2f(1.0f, 6.0f));
+
+
+							UIAutomaticListActor& meshTreesList = canvas.CreateChild<UIAutomaticListActor>("HierarchyTreeList");
+							for (auto& scene : Scenes)
+								for (auto& tree : scene->HierarchyTrees)
+								{
+									auto& button = meshTreesList.CreateChild<UIButtonActor>("HierarchyTreeButton", tree->GetName().GetPath(), [this, &tree]() { Actions->PreviewHierarchyTree(*tree); });
+									button.SetPopupCreationFunc([scenePtr = scene.get(), treePtr = tree.get(), refreshFunc](PopupDescription desc)
+										{
+											desc.AddOption("Copy", [scenePtr, treePtr, refreshFunc]() mutable { scenePtr->CopyHierarchyTree(*treePtr); refreshFunc(refreshFunc); });
+									desc.AddOption("Delete", [scenePtr, treePtr, refreshFunc]() mutable { scenePtr->HierarchyTrees.erase(std::remove_if(scenePtr->HierarchyTrees.begin(), scenePtr->HierarchyTrees.end(), [treePtr](auto& treeVec) { return treePtr == treeVec.get(); }), scenePtr->HierarchyTrees.end()); refreshFunc(refreshFunc); });
+										});
+								}
+
+							auto& addTreeButton = meshTreesList.CreateChild<UIButtonActor>("AddHierarchyTreeButton", [this, refreshFunc]() mutable { /* set name to make the tree a local resource (this is a hack) */ GetScene("GEE_Main")->CreateHierarchyTree("").SetName("CreatedTree"); refreshFunc(refreshFunc); });
+							uiButtonActorUtil::ButtonMatsFromAtlas(addTreeButton, GetRenderEngineHandle()->FindMaterial<AtlasMaterial>("GEE_E_Add_Icon_Mat"), 0.0f, 1.0f, 2.0f);
+
+							meshTreesList.Refresh();
+							canvas.ClampViewToElements();
+							Actions->PolishCanvasListElement(canvas, canvasList, "Hierarchy Trees", 6, false);
+						};
+
+						makeCanvasFunc(makeCanvasFunc);
+					});
+						desc.AddOption("Settings", nullptr);
+					});
+
+					leftList.AddElement(UIListElement(&addCanvasButton,
+						[&addCanvasButton]() { return Vec3f(0.0f, -addCanvasButton.GetTransform()->GetScale2D().y * 2.0f, 0.0f); },
+						[&addCanvasButton]() { return Vec3f(0.0f, -addCanvasButton.GetTransform()->GetScale2D().y, 0.0f); }));
+					leftList.Refresh();
 			}
 
 

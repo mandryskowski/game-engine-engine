@@ -428,13 +428,14 @@ namespace GEE
 
 		glDepthFunc(GL_LEQUAL);
 
+		if (sceneRenderData.LightsBuffer.HasBeenGenerated())	// Update camera position
+			sceneRenderData.LightsBuffer.SubData4fv(info.GetCamPosition(), 16);
+
 		if (!settings.bForceForwardRendering)
 		{
 			////////////////////2. Deferred Shading
 			if (useLightingAlgorithms)
 			{
-				if (sceneRenderData.LightsBuffer.HasBeenGenerated())	// Update camera position
-					sceneRenderData.LightsBuffer.SubData4fv(info.GetCamPosition(), 16);
 				DeferredShadingToolbox* deferredTb = tbCollection.GetTb<DeferredShadingToolbox>();	//Get the required textures and shaders for Deferred Shading.
 				GEE_FB::Framebuffer& GFramebuffer = *deferredTb->GFb;
 

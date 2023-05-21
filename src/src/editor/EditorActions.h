@@ -4,7 +4,10 @@
 #include <editor/EditorManager.h>
 #include <UI/UIListActor.h>
 #include <scene/hierarchy/HierarchyNode.h>
-
+#include <scene/UIInputBoxActor.h>
+#include <UI/UICanvasActor.h>
+#include <scene/TextComponent.h>
+#include <utility/RenamableDetection.h>
 namespace GEE
 {
 	class UIButtonActor;
@@ -84,6 +87,13 @@ namespace GEE
 		class EditorActions
 		{
 		public:
+			enum class CanvasList
+			{
+				Left,
+				Bottom,
+				Right
+			};
+
 			EditorActions(EditorManager&);
 
 			Component* GetSelectedComponent();
@@ -102,14 +112,102 @@ namespace GEE
 			Component* GetContextComp();
 			Actor* GetContextActor();
 			void CreateComponentWindow(Actor&);
+
+			Pair<UICanvasActor&, CanvasList> AddToCanvasList(const String& name, bool copyPreviousView = true);
+			void PolishCanvasListElement(UICanvasActor& canvas, CanvasList canvasList, const String& titleStr, unsigned int fieldLength, bool autoClamp)
+			{
+				PolishCanvasListElement(canvas, canvasList,
+					nullptr,
+					[titleStr]() { return titleStr; }, fieldLength,
+					autoClamp);
+			}
+			template <typename Renamable, typename T = typename std::enable_if_t<is_renamable<Renamable>>>
+			void PolishCanvasListElement(UICanvasActor& canvas, CanvasList canvasList, T& titleRenamable, unsigned int fieldLength, bool autoClamp)
+			{
+				PolishCanvasListElement(canvas, canvasList,
+				                        [&titleRenamable](const String& str) { titleRenamable.SetName(str); },
+				                        [&titleRenamable]() { return titleRenamable.GetName(); }, fieldLength,
+				                        autoClamp);
+			}
+			template <typename SetNameFunc, typename GetNameFunc>
+			void PolishCanvasListElement(UICanvasActor& canvas, CanvasList canvasList, SetNameFunc setFunc, GetNameFunc getFunc, unsigned int fieldLength, bool autoClamp)
+			{
+				std::cout << "$*$ First canvas view " << canvas.GetViewT().GetPos2D() << '\n';
+				auto canvasListActor = GetCanvasListActor(canvasList);
+				GEE_CORE_ASSERT(canvasListActor);
+
+				bool viewWasSet = !canvas.GetViewT().IsEmpty();
+
+				canvas.GetTransform()->SetScale(Vec2f(1.0f, fieldLength));
+				canvas.SetCanvasView(Transform(canvas.GetViewT().GetPos(), Vec2f(canvas.GetViewT().GetScale2D().x, fieldLength)), false);
+				auto& titleActor = addTitleAndPositionCanvas(canvas, setFunc, getFunc);
+				std::cout << "$*$ Mid canvas view " << canvas.GetViewT().GetPos2D() << '\n';
+
+				canvas.RefreshFieldsList(false);
+				canvasListActor->AddElement(UIListElement(&canvas,
+					[&canvas, &titleActor]() -> Vec3f { return Vec3f(0.0f, -canvas.GetBoundingBox(false).Size.y * (2.0f + titleActor.GetTransform()->GetScale2D().y * 2.0f), 0.0f); },
+					[&canvas, &titleActor]() -> Vec3f { return Vec3f(0.0f, -canvas.GetBoundingBox(false).Size.y * (1.0f + titleActor.GetTransform()->GetScale2D().y * 2.0f), 0.0f); }));
+				canvasListActor->Refresh();
+
+				if (autoClamp)
+					canvas.AutoClampView();
+
+				canvas.ClampViewToElements();
+
+				std::cout << "$*$ Final canvas view " << canvas.GetViewT().GetPos2D() << '\n';
+			}
+			void RefreshCanvasLists()
+			{
+				InitCanvasListPointers();
+
+				LeftCanvasList->Refresh();
+				BottomCanvasList->Refresh();
+				RightCanvasList->Refresh();
+			}
+
 			friend class GameEngineEngineEditor;
 		private:
+			void InitCanvasListPointers();
+			UIListActor* GetCanvasListActor(CanvasList canvasList)
+			{
+				switch (canvasList)
+				{
+				case CanvasList::Left: return LeftCanvasList;
+				case CanvasList::Bottom: return BottomCanvasList;
+				case CanvasList::Right: return RightCanvasList;
+				}
+			}
+			template <typename SetNameFunc, typename GetNameFunc>
+			UIInputBoxActor& addTitleAndPositionCanvas(UICanvasActor& canvas, SetNameFunc setFunc, GetNameFunc getFunc, float titleScaleWorldY = 0.05f)
+			{
+				const auto canvasScaleY = canvas.GetTransform()->GetWorldTransform().GetScale2D().y;
+				auto titleButtonScaleY = titleScaleWorldY / canvasScaleY;
+
+				auto& titleButton = canvas.CreateChild<UIInputBoxActor>(canvas.GetName() + "_Title", setFunc, getFunc, Transform(Vec2f(0.0f, 1.0f + titleButtonScaleY), Vec2f(1.0f, titleButtonScaleY)));
+				titleButton.DetachFromCanvas();
+				titleButton.GetContentTextComp()->GetTransform().SetScale(Vec2f(0.3f, 0.3f));
+				titleButton.GetContentTextComp()->SetFontStyle(FontStyle::Bold);
+				titleButton.GetContentTextComp()->Unstretch();
+				titleButton.SetMatIdle(std::make_shared<Material>("SceneTitleMat", Vec4f(hsvToRgb(Vec3f(288.0f, 0.82f, 0.3f)), 1.0f)));
+				titleButton.SetPopupCreationFunc([](PopupDescription desc) { desc.AddOption("Rename", nullptr); });
+
+				return titleButton;
+			}
+
+			template <typename Renamable>
+			UIInputBoxActor& addTitleAndPositionCanvas(UICanvasActor& canvas, Renamable& renamable, float titleScaleWorldY = 0.05f)
+			{
+				return addTitleAndPositionCanvas(canvas, [&renamable](const std::string& str) { renamable.SetName(str); }, [&renamable]() { return renamable.GetName(); }, titleScaleWorldY);
+			}
+
 
 			EditorManager& EditorHandle;
 
 			Component* SelectedComp;
 			Actor* SelectedActor;
 			GameScene* SelectedScene;
+
+			UIListActor *LeftCanvasList, *BottomCanvasList, *RightCanvasList;
 		};
 
 		struct FunctorHierarchyNodeCreator

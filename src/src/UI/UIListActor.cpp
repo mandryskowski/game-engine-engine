@@ -18,6 +18,12 @@ namespace GEE
 
 	void UIListActor::Refresh()
 	{
+		for (auto& element: ListElements)
+		{
+			if (UIListActor* listCast = dynamic_cast<UIListActor*>(&element.GetActorRef()))
+				listCast->Refresh();
+		}
+
 		MoveElements();
 	}
 
@@ -152,7 +158,7 @@ namespace GEE
 			AddElement(UIListElement(UIListElement::ReferenceToUIActor(*actor, *uiElementCast), ElementOffset));
 			if (UIListActor* listCast = dynamic_cast<UIListActor*>(actor.get()))
 			{
-				ListElements.back().SetGetElementOffsetFunc([listCast]() -> Vec3f { listCast->Refresh(); return listCast->GetListOffset(); });
+				ListElements.back().SetGetElementOffsetFunc([listCast]() -> Vec3f { return listCast->GetListOffset(); });
 				ListElements.back().SetGetCenterOffsetFunc([listCast]() -> Vec3f { return Vec3f(0.0f); });
 			}
 		}

@@ -11,7 +11,9 @@ namespace GEE
 		CanvasView(canvas.CanvasView),
 		bContainsMouse(false),
 		bContainsMouseOutsideTrueCanvas(false),
-		CanvasDepth(canvas.CanvasDepth)
+		CanvasDepth(canvas.CanvasDepth),
+		CanvasSpaceMinExtent(canvas.CanvasSpaceMinExtent),
+		CanvasSpaceMaxExtent(canvas.CanvasSpaceMaxExtent)
 	{
 	}
 
@@ -47,21 +49,19 @@ namespace GEE
 	Boxf<Vec2f> UICanvas::GetCanvasSpaceBoundingBox() const
 	{
 		if (TopLevelUIElements.empty())
-			return Boxf<Vec2f>(Vec2f(0.0f), Vec2f(0.0f));
+			return Boxf<Vec2f>::FromMinMaxCorners(CanvasSpaceMinExtent, CanvasSpaceMaxExtent);
 
-		const Boxf<Vec2f> firstElementsBoundingBox = TopLevelUIElements.front()->GetBoundingBoxIncludingChildren();
-		Vec2f canvasLeftDownMin(firstElementsBoundingBox.Position - firstElementsBoundingBox.Size);
-		Vec2f canvasRightUpMax(firstElementsBoundingBox.Position + firstElementsBoundingBox.Size);
+		Vec2f runningMin = CanvasSpaceMinExtent, runningMax = CanvasSpaceMaxExtent;
 
-		for (auto it = TopLevelUIElements.begin() + 1; it != TopLevelUIElements.end(); it++)
+		for (auto it = TopLevelUIElements.begin(); it != TopLevelUIElements.end(); it++)
 		{
 			Boxf<Vec2f> bBox = (*it)->GetBoundingBoxIncludingChildren();
 
-			canvasLeftDownMin = glm::min(canvasLeftDownMin, bBox.Position - bBox.Size);
-			canvasRightUpMax = glm::max(canvasRightUpMax, bBox.Position + bBox.Size);
+			runningMin = glm::min(runningMin, bBox.Position - bBox.Size);
+			runningMax = glm::max(runningMax, bBox.Position + bBox.Size);
 		}
 
-		return Boxf<Vec2f>::FromMinMaxCorners(canvasLeftDownMin, canvasRightUpMax);
+		return Boxf<Vec2f>::FromMinMaxCorners(runningMin, runningMax);
 	}
 
 	unsigned int UICanvas::GetCanvasDepth() const

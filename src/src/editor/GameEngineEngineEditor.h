@@ -34,7 +34,7 @@ namespace GEE
 
 			GameManager* GetGameHandle() override;
 			std::vector<GameScene*> GetScenes() override;
-			GameScene* GetEditorScene() { return EditorScene; }
+			GameScene* GetEditorScene() override { return EditorScene; }
 
 			GEditorSettings* GetEditorSettings() override { return &EditorSettings; }
 			AtlasMaterial* GetDefaultEditorMaterial(EditorDefaultMaterial) override;

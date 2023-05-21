@@ -14,7 +14,7 @@ namespace GEE
 	CueController::CueController(GameScene& scene, Actor* parentActor, const std::string& name) :
 		Controller(scene, parentActor, name),
 		WhiteBallActor(nullptr),
-		CueHitPower(0.2f),
+		CueMaxGivenSpeed(12.0f),
 		ConstrainedBallMovement(false),
 		BallStaticFriction(1.0f),
 		BallDynamicFriction(0.5f),
@@ -47,31 +47,18 @@ namespace GEE
 				cueDir.y = 0.0f;
 				cueDir = glm::normalize(cueDir);
 
-				Vec3f force = (CueHitPower * static_cast<float>(CueDistanceAnim.GetT())) * -cueDir;
-				Vec3f torque = (CueHitPower * static_cast<float>(CueDistanceAnim.GetT())) * glm::cross(cueDir, -cueDir);
-				std::cout << "#POOL#> Launching cue ball with force " << force << " and torque" << torque << "\n";
+				const Vec3f velChange = (CueMaxGivenSpeed * static_cast<float>(CueDistanceAnim.GetT())) * -cueDir;
+				const Vec3f torque = (CueMaxGivenSpeed * static_cast<float>(CueDistanceAnim.GetT())) * glm::cross(cueDir, -cueDir);
+				std::cout << "#POOL#> Launching cue ball with vel change " << velChange << " and torque" << torque << "\n";
 
-				Physics::ApplyForce(*WhiteBallActor->GetRoot()->GetCollisionObj(), force);
+				Physics::ApplyForce(*WhiteBallActor->GetRoot()->GetCollisionObj(), velChange, Physics::ForceMode::VelocityChange);
 				//WhiteBallActor->GetRoot()->GetCollisionObj()->ActorPtr->is<physx::PxRigidDynamic>()->addTorque(Physics::Util::toPx(torque));
 
 				WhiteBallActor->GetRoot()->GetCollisionObj()->ActorPtr->is<physx::PxRigidDynamic>()->setStabilizationThreshold(0.0f);
 				WhiteBallActor->GetRoot()->GetCollisionObj()->ActorPtr->is<physx::PxRigidDynamic>()->setRigidBodyFlag(physx::PxRigidBodyFlag::eENABLE_CCD, true);
 				//WhiteBallActor->GetRoot()->GetCollisionObj()->ActorPtr->is<physx::PxRigidDynamic>()->setRigidDynamicLockFlags(physx::PxRigidDynamicLockFlag::eLOCK_LINEAR_Y);
 
-				if (auto poolBallsActor = Scene.FindActor("Poolballs"))
-				{
-					std::vector<Component*> components;
-					poolBallsActor->GetRoot()->GetAllComponents(&components);
-
-					for (auto comp : components)
-						if (comp->GetCollisionObj())
-						{
-							//	Physics::SetLinearDamping(*comp->GetCollisionObj(), 0.2f);
-							//	Physics::SetAngularDamping(*comp->GetCollisionObj(), 0.2f);
-							comp->GetCollisionObj()->ActorPtr->is<physx::PxRigidDynamic>()->setStabilizationThreshold(0.0f);
-							//comp->GetCollisionObj()->ActorPtr->is<physx::PxRigidDynamic>()->setRigidDynamicLockFlags(physx::PxRigidDynamicLockFlag::eLOCK_LINEAR_Y);
-						}
-				}
+				std::cout << "#POOL#> Mass: " << WhiteBallActor->GetRoot()->GetCollisionObj()->ActorPtr->is<physx::PxRigidDynamic>()->getMass() << "\n";
 
 				CueDistanceAnim.Reset();
 				dynamic_cast<ModelComponent*>(PossessedActor->GetRoot())->SetHide(true);
@@ -95,7 +82,7 @@ namespace GEE
 
 		descBuilder.AddField("White ball").GetTemplates().ObjectInput<Actor, Actor>(*Scene.GetRootActor(), WhiteBallActor);
 		descBuilder.AddField("Cue").GetTemplates().ObjectInput<Actor, Actor>(*Scene.GetRootActor(), [this](Actor* cue) { SetPossessedActor(cue); }, PossessedActor);
-		descBuilder.AddField("Cue hit power").CreateChild<UIInputBoxActor>("CueHitPowerInputBox", [this](float val) { CueHitPower = val; }, [this]() { return CueHitPower; });
+		descBuilder.AddField("Cue hit power").CreateChild<UIInputBoxActor>("CueHitPowerInputBox", [this](float val) { CueMaxGivenSpeed = val; }, [this]() { return CueMaxGivenSpeed; });
 		descBuilder.AddField("Reset balls").CreateChild<UIButtonActor>("ResetBallsButton", "Reset", [this]() { ResetBalls(); });
 		descBuilder.AddField("Constrain Y axis").GetTemplates().TickBox([this, forAllBallsFunc](bool val)
 			{
@@ -210,13 +197,23 @@ namespace GEE
 
 					}
 				}
+				else
+				{
+					auto rigidDynamicPtr = colObj->ActorPtr->is<physx::PxRigidDynamic>();
+
+
+					if (rigidDynamicPtr)
+					{
+						//rigidDynamicPtr->setRigidDynamicLockFlags(physx::PxRigidDynamicLockFlag::eLOCK_LINEAR_Y);
+					}
+				}
 			}
 
 			if (actors.empty())
 				ResetBalls();
 		}
 
-		if (GameHandle->GetCurrentMouseController() != this)
+		if (GameHandle->GetCurrentMouseController() != this || !WhiteBallActor)
 			return;
 
 		if (GameHandle->GetDefInputRetriever().IsMouseButtonPressed(MouseButton::Right))
@@ -313,7 +310,8 @@ namespace GEE
 					rigidDynamicPtr->setRigidBodyFlag(physx::PxRigidBodyFlag::eENABLE_CCD, true);
 					rigidDynamicPtr->setRigidDynamicLockFlags((ConstrainedBallMovement) ? (physx::PxRigidDynamicLockFlag::eLOCK_LINEAR_Y) : (static_cast<physx::PxRigidDynamicLockFlag::Enum>(0)));
 
-					
+					rigidDynamicPtr->setMass(0.19f);
+					physx::PxRigidBodyExt::updateMassAndInertia(*rigidDynamicPtr, 188.0f);
 				
 				}
 			}
@@ -325,9 +323,13 @@ namespace GEE
 
 				for (auto actor : actors)
 				{
-					std::string stringName = actor->GetName();
+					if (actor->IsBeingKilled())
+						continue;
+
+					auto stringName = actor->GetName();
 					std::transform(stringName.begin(), stringName.end(), stringName.begin(), [](unsigned char ch) { return std::tolower(ch); });
 
+					std::cout << "POOL>"<< stringName << '\n';
 					if (stringName.find("white") != std::string::npos)
 					{
 						WhiteBallActor = actor;

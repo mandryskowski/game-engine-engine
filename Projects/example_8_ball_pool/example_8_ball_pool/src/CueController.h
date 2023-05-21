@@ -19,12 +19,12 @@ namespace GEE
 		template <typename Archive> void Save(Archive& archive) const
 		{
 			std::string whiteBallActorName = (WhiteBallActor) ? (WhiteBallActor->GetName()) : ("");
-			archive(cereal::make_nvp("Controller", cereal::base_class<Controller>(this)), cereal::make_nvp("WhiteBallActorName", whiteBallActorName), CEREAL_NVP(CueHitPower));
+			archive(cereal::make_nvp("Controller", cereal::base_class<Controller>(this)), cereal::make_nvp("WhiteBallActorName", whiteBallActorName), CEREAL_NVP(CueMaxGivenSpeed));
 		}
 		template <typename Archive> void Load(Archive& archive)
 		{
 			std::string whiteBallActorName;
-			archive(cereal::make_nvp("Controller", cereal::base_class<Controller>(this)), cereal::make_nvp("WhiteBallActorName", whiteBallActorName), CEREAL_NVP(CueHitPower));
+			archive(cereal::make_nvp("Controller", cereal::base_class<Controller>(this)), cereal::make_nvp("WhiteBallActorName", whiteBallActorName), CEREAL_NVP(CueMaxGivenSpeed));
 			Scene.AddPostLoadLambda([this, whiteBallActorName]() { if (!whiteBallActorName.empty()) WhiteBallActor = Scene.FindActor(whiteBallActorName); });
 		}
 	private:
@@ -33,7 +33,7 @@ namespace GEE
 		void ResetCue(Quatf rotation = Quatf());
 
 		Actor* WhiteBallActor;
-		float CueHitPower, BallStaticFriction, BallDynamicFriction, BallRestitution, BallLinearDamping, BallAngularDamping;
+		float CueMaxGivenSpeed, BallStaticFriction, BallDynamicFriction, BallRestitution, BallLinearDamping, BallAngularDamping;
 		bool ConstrainedBallMovement;
 
 		float MinCueDistance, MaxCueDistance;

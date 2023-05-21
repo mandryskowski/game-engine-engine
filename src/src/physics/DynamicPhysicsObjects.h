@@ -6,7 +6,14 @@ namespace GEE
 	struct CollisionObject;
 	namespace Physics
 	{
-		void ApplyForce(CollisionObject&, const Vec3f& force);
+		enum class ForceMode
+		{
+			Impulse,
+			VelocityChange,
+			Acceleration,
+			Force
+		};
+		void ApplyForce(CollisionObject&, const Vec3f& force, ForceMode forceMode = ForceMode::Impulse);
 		void SetLinearVelocity(CollisionObject&, const Vec3f& velocity);
 		void SetAngularVelocity(CollisionObject&, const Vec3f& angularVelocity);
 		void SetLinearDamping(CollisionObject&, float damping);

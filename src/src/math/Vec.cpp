@@ -12,3 +12,4 @@ namespace GEE
 		return Mat3f(glm::transpose(glm::inverse(model)));
 	}
 }
+ 

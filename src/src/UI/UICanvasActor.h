@@ -48,7 +48,7 @@ namespace GEE
 		}
 
 		void SetPopupCreationFunc(std::function<void(PopupDescription)>);
-		void SetCanvasView(const Transform&, bool clampView = true) override;
+		void SetCanvasView(const Transform&, bool clampView = false) override;
 		/**
 		 * @return The ModelComponent that is the canvas background. Can be nullptr.
 		*/
@@ -62,7 +62,7 @@ namespace GEE
 		Mat4f ToCanvasSpace(const Mat4f& worldMat) const override;
 		Transform ToCanvasSpace(const Transform& worldTransform) const override;
 
-		void RefreshFieldsList();
+		void RefreshFieldsList(bool clampview = true);
 
 		void KillScrollBars();
 		void KillResizeBars();

@@ -194,6 +194,9 @@ namespace GEE
 
 	void Actor::Update(Time dt)
 	{
+		if (IsBeingKilled())
+			return;
+
 		RootComponent->UpdateAll(dt);
 	}
 
