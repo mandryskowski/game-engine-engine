@@ -6,31 +6,9 @@
 #include <glad/glad.h>
 #include <utility/Asserts.h>
 #include <utility>
-#include <utility/CerealNames.h>
-#include <cereal/types/polymorphic.hpp>
 
 struct GLFWwindow;
 
-/*namespace GEE
-{
-	template <typename T>
-	struct GEERegisteredType
-	{
-		String GetName();
-	};
-
-	template <typename T>
-	struct GEERegisteredActor
-	{
-		static String GetName();
-		static UniquePtr<Actor> InstantiateDefault();
-	};
-}*/
-
-#define GEE_REGISTER_TYPE(Type) CEREAL_REGISTER_TYPE(Type)
-#define GEE_REGISTER_POLYMORPHIC_RELATION(Base, Derived) CEREAL_REGISTER_POLYMORPHIC_RELATION(Base, Derived)
-#define GEE_REGISTER_POLYMORPHIC_TYPE(Base, Derived) GEE_REGISTER_TYPE(Derived); \
-													 CEREAL_REGISTER_POLYMORPHIC_RELATION(Base, Derived)
 
 namespace GEE
 {
@@ -47,7 +25,7 @@ namespace GEE
 {
 	using Time = double;
 
-	template <typename T> using UniquePtr = std::unique_ptr<T>;
+	template <typename T, typename Deleter = std::default_delete<T>> using UniquePtr = std::unique_ptr<T, Deleter>;
 	template <typename T, typename... Args>
 	constexpr UniquePtr<T> MakeUnique(Args&&... args)
 	{
@@ -182,7 +160,7 @@ namespace GEE
 		void SubData(size_t size, const float* data, size_t offset);
 		void SubData4fv(const Vec3f&, size_t offset);
 		void SubData4fv(std::vector<Vec3f>, size_t offset);
-		void SubData4fv(const Vec4f, size_t offset);
+		void SubData4fv(const Vec4f&, size_t offset);
 		void SubData4fv(std::vector<Vec4f>, size_t offset);
 		void SubDataMatrix4fv(const Mat4f&, size_t offset);
 		void PadOffset();
@@ -211,12 +189,6 @@ namespace GEE
 	String extractDirectory(String path);
 	void extractDirectoryAndFilename(const String& fullPath, String* filenameGet = nullptr, String* directoryGet = nullptr);
 
-	void printVector(const Vec2f&, String title = String());
-	void printVector(const Vec3f&, String title = String());
-	void printVector(const Vec4f&, String title = String());
-	void printVector(const Quatf&, String title = String());
-
-	void printMatrix(const Mat4f&, String title = String());
 
 	template<typename To, typename From>
 	UniquePtr<To> static_unique_pointer_cast(UniquePtr<From>&& old) {

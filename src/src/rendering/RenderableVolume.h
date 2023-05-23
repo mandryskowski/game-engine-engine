@@ -4,6 +4,10 @@
 
 namespace GEE
 {
+	class RenderToolboxCollection;
+	enum class EngineBasicShape;
+	class Shader;
+
 	class RenderableVolume
 	{
 	public:

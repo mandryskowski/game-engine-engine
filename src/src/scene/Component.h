@@ -1,15 +1,30 @@
 #pragma once
 #include <utility/CerealNames.h>
-#include <cereal/types/memory.hpp>
-#include <cereal/types/vector.hpp>
+#include <cereal/access.hpp>
+#include <cereal/types/polymorphic.hpp>
 #include <math/Transform.h>
 #include <game/GameManager.h>
-#include <editor/EditorManager.h>
-#include <physics/CollisionObject.h>
-#include <rendering/Material.h>
+
+#include "utility/SerialRegistry.h"
 
 namespace GEE
 {
+	class SceneMatrixInfo;
+	class AtlasMaterial;
+	class Shader;
+	class Event;
+	struct MaterialInstance;
+
+	namespace Physics
+	{
+		struct CollisionObject;
+		struct CollisionObjectDeleter
+		{
+			void operator()(CollisionObject*);
+		};
+	}
+
+	enum class ButtonMaterialType;
 
 	enum class EditorElementRepresentation
 	{
@@ -29,6 +44,7 @@ namespace GEE
 	class Killable
 	{
 	public:
+		virtual ~Killable() = default;
 		virtual bool IsBeingKilled();
 		template <typename FieldType> void AddReference(FieldType&);
 		template <typename FieldType> void RemoveReference(FieldType&);
@@ -40,6 +56,7 @@ namespace GEE
 	class ComponentBase
 	{
 	public:
+		virtual ~ComponentBase() = default;
 		virtual Component& AddComponent(UniquePtr<Component> component) = 0;
 	};
 
@@ -63,7 +80,7 @@ namespace GEE
 		virtual void OnStart();
 		virtual void OnStartAll();
 
-		String GetName() const { return Name; }
+		String GetName() const { return Name; }	
 		GEEID GetGEEID() const { return ComponentGEEID; }
 
 		void DebugHierarchy(int nrTabs = 0);
@@ -111,6 +128,7 @@ namespace GEE
 
 		void SetName(const String& name);
 		virtual void SetTransform(const Transform& transform);
+		Physics::CollisionObject* SetCollisionObjectCopy(const Physics::CollisionObject&);
 		Physics::CollisionObject* SetCollisionObject(UniquePtr<Physics::CollisionObject>);
 		Component& AddComponent(UniquePtr<Component> component) override;
 		void AddComponents(std::vector<UniquePtr<Component>> components);
@@ -146,7 +164,7 @@ namespace GEE
 
 		template <typename Archive> void Save(Archive& archive) const;
 		template <typename Archive> void Load(Archive& archive);
-		virtual ~Component();
+		virtual ~Component() override;
 
 	private:
 		friend class Actor;
@@ -159,7 +177,7 @@ namespace GEE
 
 		Transform ComponentTransform;
 		std::vector <UniquePtr<Component>> Children;
-		UniquePtr<Physics::CollisionObject> CollisionObj;
+		UniquePtr<Physics::CollisionObject, Physics::CollisionObjectDeleter> CollisionObj;
 
 		GameScene& Scene; //The scene that this Component is present in
 		Actor& ActorRef;
@@ -172,16 +190,6 @@ namespace GEE
 		SharedPtr<MaterialInstance> DebugRenderMatInst;
 		mutable Mat4f DebugRenderLastFrameMVP;
 	};
-
-	/*template<typename ChildClass>
-	inline ChildClass& Component::CreateComponent(ChildClass&& objectCRef)
-	{
-		UniquePtr<ChildClass> createdChild = MakeUnique<ChildClass>(std::move(objectCRef));
-		ChildClass& childRef = *createdChild;
-		AddComponent(std::move(createdChild));
-
-		return (ChildClass&)childRef;
-	}*/
 
 
 	template<typename ChildClass, typename... Args>

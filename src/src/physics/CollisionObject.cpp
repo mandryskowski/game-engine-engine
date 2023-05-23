@@ -6,6 +6,8 @@
 #include <UI/UICanvasActor.h>
 #include <UI/UICanvasField.h>
 
+#include "PhysicsEngineManager.h"
+
 using namespace physx;
 
 namespace GEE
@@ -19,9 +21,9 @@ namespace GEE
 		{}
 
 		CollisionShape::CollisionShape(CollisionShapeType type) :
-			OptionalLocalization(nullptr),
-			Type(type),
 			ShapePtr(nullptr),
+			Type(type),
+			OptionalLocalization(nullptr),
 			TransformDirtyFlag(ShapeTransform.AddWorldDirtyFlag())
 		{
 		}
@@ -133,9 +135,9 @@ namespace GEE
 			ScenePhysicsData(nullptr),
 			ActorPtr(nullptr),
 			TransformPtr(nullptr),
-			IsStatic(isStatic),
+			TransformDirtyFlag(std::numeric_limits<unsigned int>::max()),
 			IgnoreRotation(false),
-			TransformDirtyFlag(std::numeric_limits<unsigned int>::max())
+			IsStatic(isStatic)
 		{
 		}
 

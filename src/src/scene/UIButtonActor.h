@@ -5,6 +5,7 @@
 #include <functional>
 namespace GEE
 {
+	class ModelComponent;
 	class ScrollingTextComponent;
 
 	class UIButtonActor : public UIActorDefault

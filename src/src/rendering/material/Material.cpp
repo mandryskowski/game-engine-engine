@@ -1,4 +1,4 @@
-#include <rendering/Material.h>
+#include <rendering/material/Material.h>
 #include <rendering/Texture.h>
 #include <assimp/material.h>
 #include <assimp/pbrmaterial.h>
@@ -9,23 +9,24 @@
 #include <scene/UIInputBoxActor.h>
 #include <scene/TextComponent.h>
 
-#include <rendering/RenderToolbox.h>
-
 #include <game/IDSystem.h>
 
 #include <editor/EditorActions.h>
+
+#include "rendering/RenderEngineManager.h"
+#include "utility/Serialisation.h"
 
 namespace GEE
 {
 	Material::Material(MaterialLoc loc, ShaderInfo shaderInfo):
 		Localization(loc),
+		MatShaderInfo(shaderInfo),
+		Color(Vec4f(0.0f)),
 		Shininess(0.0f),
 		DepthScale(0.0f),
-		Color(Vec4f(0.0f)),
 		RoughnessColor(0.0f),
 		MetallicColor(0.0f),
-		AoColor(0.0f),
-		MatShaderInfo(shaderInfo)
+		AoColor(0.0f)
 	{
 	}
 
@@ -49,7 +50,7 @@ namespace GEE
 		return GetLocalization().GetFullStr();
 	}
 
-	Material::ShaderInfo Material::GetShaderInfo() const
+	ShaderInfo Material::GetShaderInfo() const
 	{
 		return MatShaderInfo;
 	}
@@ -638,6 +639,51 @@ namespace GEE
 		return *this;
 	}
 
+	template <typename Archive>
+	void MaterialInstance::Save(Archive& archive) const
+	{
+		SharedPtr<Material> mat = MaterialPtr;
+		if (!mat)
+			return;
+		std::string name = mat->Localization.Name, treeName = mat->Localization.GetTreeName();
+		archive(cereal::make_nvp("MaterialName", name), cereal::make_nvp("MaterialOptionalPath", treeName));
+		if (treeName.empty())
+			archive(cereal::make_nvp("ExternalMaterial", mat));
+		archive(CEREAL_NVP(DrawBeforeAnim), CEREAL_NVP(DrawAfterAnim));
+	}
+
+	template <typename Archive>
+	void MaterialInstance::load_and_construct(Archive& archive, cereal::construct<MaterialInstance>& construct)
+	{
+		std::string materialName, materialPath;
+		archive(cereal::make_nvp("MaterialName", materialName),
+			cereal::make_nvp("MaterialOptionalPath", materialPath));
+		SharedPtr<Material> mat = GameManager::Get().GetRenderEngineHandle()->FindMaterial(materialName);
+		if (!mat)
+		{
+			if (materialPath.empty())
+			{
+				archive(cereal::make_nvp("ExternalMaterial", mat));
+				GameManager::Get().GetRenderEngineHandle()->AddMaterial(mat);
+			}
+			else
+			{
+				std::cout << "ERROR: Could not find material " << materialName << " (path - " + materialPath +
+					")\n";
+				exit(42069);
+			}
+		}
+
+		bool drawBeforeAnim, drawAfterAnim;
+		archive(cereal::make_nvp("DrawBeforeAnim", drawBeforeAnim),
+			cereal::make_nvp("DrawAfterAnim", drawAfterAnim));
+
+
+		construct(mat); // , drawBeforeAnim, drawAfterAnim);
+
+		//GameManager::DefaultScene->AddPostLoadLambda([mat]() { std::cout << "uwaga robie " << mat << '\n'; GameManager::Get().GetRenderEngineHandle()->AddMaterial(mat); });
+	}
+
 	SharedPtr<NamedTexture> MaterialLoadingData::FindTexture(const String& path) const
 	{
 		auto found = std::find_if(LoadedTextures.begin(), LoadedTextures.end(), [path](const SharedPtr<NamedTexture>& tex) { return tex->GetPath() == path; });
@@ -650,13 +696,6 @@ namespace GEE
 	void MaterialLoadingData::AddTexture(SharedPtr<NamedTexture> tex)
 	{
 		LoadedTextures.push_back(tex);
-	}
-	Shader* Material::ShaderInfo::RetrieveShaderForRendering(RenderToolboxCollection& tbCol)
-	{
-		if (CustomShader)
-			return CustomShader;
-
-		return tbCol.GetShaderFromHint(GetShaderHint());
 	}
 
 	// Should be constexpr but fmod isn't
@@ -702,3 +741,6 @@ void GEE::MaterialUtil::DisableColorIfAlbedoTextureDetected(Shader& shader, cons
 	if (!foundAlbedo)
 		shader.Uniform<bool>("material.disableColor", false);
 }
+
+GEE_SERIALIZATION_INST_SAVE(GEE::MaterialInstance);
+GEE_SERIALIZATION_INST_LOAD_AND_CONSTRUCT(GEE::MaterialInstance);

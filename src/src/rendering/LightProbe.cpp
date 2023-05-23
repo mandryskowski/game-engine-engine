@@ -3,9 +3,11 @@
 #include <rendering/Framebuffer.h>
 #include <rendering/Shader.h>
 #include <rendering/RenderInfo.h>
-#include <rendering/RenderToolbox.h>
 #include <scene/LightProbeComponent.h>
 #include <rendering/Renderer.h>
+#include <rendering/Mesh.h>
+
+#include "RenderEngineManager.h"
 
 namespace GEE
 {

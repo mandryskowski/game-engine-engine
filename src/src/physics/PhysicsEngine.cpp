@@ -4,7 +4,6 @@
 #include <array>
 #include <rendering/RenderEngine.h>
 #include <physics/CollisionObject.h>
-#include <rendering/Mesh.h>
 #include <math/Transform.h>
 
 using namespace physx;

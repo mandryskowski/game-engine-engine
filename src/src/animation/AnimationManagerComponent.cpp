@@ -5,7 +5,9 @@
 
 #include <UI/UICanvasActor.h>
 #include <UI/UICanvasField.h>
-#include <scene/UIButtonActor.h> 
+#include <scene/UIButtonActor.h>
+
+#include "utility/Serialisation.h"
 
 
 namespace GEE
@@ -255,6 +257,32 @@ namespace GEE
 		construct(*anim, *comp);
 	}
 
+	template <typename Archive>
+	void AnimationManagerComponent::Save(Archive& archive) const
+	{
+		archive(cereal::make_nvp("AnimInstances", cereal::defer(AnimInstances)));
+		archive(cereal::make_nvp("CurrentAnimName", std::string((CurrentAnim) ? (CurrentAnim->GetLocalization().Name) : (""))), cereal::base_class<Component>(this));
+	}
+
+	template <typename Archive>
+	void AnimationManagerComponent::Load(Archive& archive)
+	{
+		std::cout << "loading animationmanagercomponent\n";
+		std::string currentAnimName;
+
+		archive(cereal::make_nvp("AnimInstances", cereal::defer(AnimInstances)));
+
+		archive(cereal::make_nvp("CurrentAnimName", currentAnimName), cereal::base_class<Component>(this));
+
+		// erase unloaded anim instances post load
+		GetScene().AddPostLoadLambda([this]() mutable {	AnimInstances.erase(std::remove_if(AnimInstances.begin(), AnimInstances.end(), [](const UniquePtr<AnimationInstance>& animInstance)-> bool { return (animInstance.get() == nullptr); }), AnimInstances.end());	});
+
+		if (!currentAnimName.empty())
+			for (auto& it : AnimInstances)
+				if (it->GetLocalization().Name == currentAnimName)
+					SelectAnimation(it.get());
+	}
+
 	template void AnimationInstance::Save<cereal::JSONOutputArchive>(cereal::JSONOutputArchive&) const;
 	template void AnimationInstance::load_and_construct<cereal::JSONInputArchive>(cereal::JSONInputArchive&, cereal::construct<AnimationInstance>&);
 
@@ -332,3 +360,4 @@ namespace GEE
 	}
 
 }
+GEE_SERIALIZATION_INST_DEFAULT(GEE::AnimationManagerComponent);

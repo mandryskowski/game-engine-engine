@@ -7,6 +7,10 @@
 #include <rendering/Shader.h>
 #include <random>
 
+#include "RenderEngineManager.h"
+#include "material/Material.h"
+#include "material/ShaderInfo.h"
+
 namespace GEE
 {
 	using namespace GEE_FB;
@@ -31,9 +35,9 @@ namespace GEE
 		return !(Shaders.empty() && Fbs.empty());
 	}
 
-	Shader* RenderToolbox::FindShader(std::string name)
+	Shader* RenderToolbox::FindShader(const String& name)
 	{
-		auto found = std::find_if(Shaders.begin(), Shaders.end(), [name](SharedPtr<Shader>& shader) { return shader->GetName() == name; });
+		const auto found = std::find_if(Shaders.begin(), Shaders.end(), [name](SharedPtr<Shader>& shader) { return shader->GetName() == name; });
 		if (found != Shaders.end())
 			return found->get();
 
@@ -546,7 +550,7 @@ namespace GEE
 
 		FinalFramebuffer = AddFramebuffer();
 		FinalFramebuffer->AttachTextures(NamedTexture(Texture::Loader<>::ReserveEmpty2D(settings.Resolution, Texture::Format::RGB()), "FinalColorBuffer"));
-		RenderTarget = FinalFramebuffer->GetColorTexture(0);
+		RenderTarget = MakeUnique<NamedTexture>(FinalFramebuffer->GetColorTexture(0));
 
 		FinalFramebuffer->Bind(false);
 	}
@@ -563,9 +567,9 @@ namespace GEE
 	*/
 
 	RenderToolboxCollection::RenderToolboxCollection(const std::string& name, const GameSettings::VideoSettings& settings, RenderEngineManager& renderHandle) :
+		ShaderGetter(MakeUnique<ShaderFromHintGetter>(renderHandle)),
 		Name(name),
-		Settings(settings),
-		ShaderGetter(MakeUnique<ShaderFromHintGetter>(renderHandle))
+		Settings(settings)
 	{
 
 	}

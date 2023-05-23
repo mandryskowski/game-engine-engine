@@ -1,19 +1,20 @@
 #include <rendering/Mesh.h>
 #include <assetload/FileLoader.h>
 #include <scene/hierarchy/HierarchyTree.h>
+#include <rendering/material/Material.h>
 
 namespace GEE
 {
 	Mesh::Mesh(const MeshLoc& name) :
+		Localization(name),
 		VBO(0),
 		EBO(0),
 		VertexCount(0),
+		DefaultMeshMaterial(nullptr),
 		VertsData(nullptr),
 		IndicesData(nullptr),
-		DefaultMeshMaterial(nullptr),
-		Localization(name),
-		CastsShadow(true),
-		BoundingBox(Vec3f(0.0f), Vec3f(0.0f))
+		BoundingBox(Vec3f(0.0f), Vec3f(0.0f)),
+		CastsShadow(true)
 	{
 		if (Localization.NodeName.find("_NoShadow") != std::string::npos || Localization.SpecificName.find("_NoShadow") != std::string::npos)
 			CastsShadow = false;
@@ -324,7 +325,7 @@ namespace GEE
 	}
 
 	VertexBoneData::VertexBoneData() :
-		BoneIDs(glm::ivec4(0)),
+		BoneIDs(Vec4i(0)),
 		BoneWeights(Vec4f(0.0f))
 	{
 	}

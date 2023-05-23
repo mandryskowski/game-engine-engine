@@ -43,10 +43,14 @@ if (NOT EXISTS "${CMAKE_BINARY_DIR}/conan.cmake")
 endif ()
 include("${CMAKE_BINARY_DIR}/conan.cmake")
 
-set(CONAN_PROFILE_NAME ${CMAKE_SYSTEM_NAME}-${CMAKE_GENERATOR})
+
+message("lol")
+set(CONAN_PROFILE_NAME ${CMAKE_SYSTEM_NAME}-${CMAKE_GENERATOR}2)
+message("lol")
 execute_process(COMMAND ${CONAN_CMD} profile new ${CONAN_PROFILE_NAME} --detect ERROR_QUIET)
 conan_cmake_autodetect(settings)
 
+message("lol")
 conan_cmake_install(PATH_OR_REFERENCE ${CMAKE_CURRENT_SOURCE_DIR}
                     BUILD missing
                     REMOTE conancenter
@@ -77,6 +81,7 @@ set(Header_Files
     "src/src/animation/SkeletonInfo.h"
     "src/src/assetload/FileLoader.h"
     "src/src/audio/AudioEngine.h"
+    "src/src/audio/AudioEngineManager.h"
     "src/src/audio/AudioFile.h"
     "src/src/editor/DefaultEditorController.h"
     "src/src/editor/EditorActions.h"
@@ -103,15 +108,17 @@ set(Header_Files
     "src/src/physics/CollisionObject.h"
     "src/src/physics/DynamicPhysicsObjects.h"
     "src/src/physics/PhysicsEngine.h"
+    "src/src/physics/PhysicsEngineManager.h"
     "src/src/physics/PhysicsObjects.h"
     "src/src/rendering/Framebuffer.h"
     "src/src/rendering/LightProbe.h"
-    "src/src/rendering/Material.h"
+    "src/src/rendering/material/Material.h"
+    "src/src/rendering/material/ShaderInfo.h"
     "src/src/rendering/Mesh.h"
     "src/src/rendering/OutlineRenderer.h"
-    "src/src/rendering/Postprocess.h"
     "src/src/rendering/RenderableVolume.h"
     "src/src/rendering/RenderEngine.h"
+    "src/src/rendering/RenderEngineManager.h"
     "src/src/rendering/Renderer.h"
     "src/src/rendering/RenderInfo.h"
     "src/src/rendering/RenderToolbox.h"
@@ -144,7 +151,7 @@ set(Header_Files
     "src/src/UI/UICanvas.h"
     "src/src/UI/UICanvasActor.h"
     "src/src/UI/UICanvasField.h"
-    "src/src/UI/UIComponent.h"
+    "src/src/UI/UIComponent.h" 
     "src/src/UI/UIElement.h"
     "src/src/UI/UIListActor.h"
     "src/src/utility/Alignment.h"
@@ -152,6 +159,8 @@ set(Header_Files
     "src/src/utility/Log.h"
     "src/src/utility/OperatingSystem.h"
     "src/src/utility/Profiling.h"
+    "src/src/utility/Serialisation.h"
+    "src/src/utility/SerialRegistry.h"
     "src/src/utility/Utility.h"
 )
 source_group("Header Files" FILES ${Header_Files})
@@ -175,7 +184,7 @@ set(Source_Files
     "src/src/game/Game.cpp"
     "src/src/game/GameManager.cpp"
     "src/src/game/GameScene.cpp"
-    "src/src/game/GameSettings.cpp"
+    "src/src/game/GameSettings.cpp" 
     "src/src/input/Event.cpp"
     "src/src/input/InputDevicesStateRetriever.cpp"
     "src/src/main.cpp"
@@ -188,9 +197,10 @@ set(Source_Files
     "src/src/physics/PhysicsObjects.cpp"
     "src/src/rendering/Framebuffer.cpp"
     "src/src/rendering/LightProbe.cpp"
-    "src/src/rendering/Material.cpp"
+    "src/src/rendering/material/Material.cpp"
+    "src/src/rendering/material/ShaderInfo.cpp"
     "src/src/rendering/Mesh.cpp"
-    "src/src/rendering/Postprocess.cpp"
+    "src/src/rendering/OutlineRenderer.cpp"
     "src/src/rendering/RenderableVolume.cpp"
     "src/src/rendering/RenderEngine.cpp"
     "src/src/rendering/Renderer.cpp"
@@ -256,7 +266,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC src/src)
 target_include_directories(${PROJECT_NAME} PUBLIC src/vendor/include)
 #target_link_libraries(${PROJECT_NAME} PUBLIC ${LibrariesDebug})
 target_link_directories(${PROJECT_NAME} PUBLIC src/vendor/lib)
-target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_20)
+target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
 
 add_custom_command(TARGET ${PROJECT_NAME}  POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory

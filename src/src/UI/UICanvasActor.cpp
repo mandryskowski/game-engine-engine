@@ -8,11 +8,14 @@
 #include <UI/UIListActor.h>
 #include <editor/EditorActions.h>
 
+#include "rendering/RenderEngineManager.h"
+
 namespace GEE
 {
 	UICanvasActor::UICanvasActor(GameScene& scene, Actor* parentActor, UICanvasActor* canvasParent, const std::string& name, const Transform& t) :
 		UIActorDefault(scene, parentActor, name, t),
 		UICanvas((canvasParent) ? (canvasParent->GetCanvasDepth() + 1) : (1)),	//CanvasDepth starts at 1 (because it has to be higher than depth outside any canvas)
+		ScaleActor(nullptr),
 		FieldsList(nullptr),
 		FieldSize(Vec3f(1.0f)),
 		ScrollBarX(nullptr),
@@ -20,7 +23,6 @@ namespace GEE
 		BothScrollBarsButton(nullptr),
 		ResizeBarX(nullptr),
 		ResizeBarY(nullptr),
-		ScaleActor(nullptr),
 		CanvasBackground(nullptr),
 		CanvasParent(canvasParent),
 		PopupCreationFunc(nullptr)
@@ -35,13 +37,13 @@ namespace GEE
 	UICanvasActor::UICanvasActor(UICanvasActor&& canvasActor) :
 		UIActorDefault(std::move(canvasActor)),
 		UICanvas(std::move(canvasActor)),
+		ScaleActor(nullptr),
 		FieldsList(nullptr),
 		FieldSize(canvasActor.FieldSize),
 		ScrollBarX(nullptr),
 		ScrollBarY(nullptr),
 		ResizeBarX(nullptr),
 		ResizeBarY(nullptr),
-		ScaleActor(nullptr),
 		CanvasParent(canvasActor.CanvasParent),
 		PopupCreationFunc(canvasActor.PopupCreationFunc)
 	{
@@ -476,6 +478,11 @@ namespace GEE
 	Actor& EditorDescriptionBuilder::GetDescriptionParent()
 	{
 		return DescriptionParent;
+	}
+
+	GameManager& EditorDescriptionBuilder::GetGameHandle()
+	{
+		return *EditorHandle.GetGameHandle();
 	}
 
 	Editor::EditorManager& EditorDescriptionBuilder::GetEditorHandle()

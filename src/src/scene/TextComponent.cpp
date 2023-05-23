@@ -2,12 +2,13 @@
 #include <game/GameScene.h>
 #include <assetload/FileLoader.h>
 #include <rendering/RenderInfo.h>
-#include <rendering/Material.h>
+#include <rendering/material/Material.h>
 #include <rendering/RenderToolbox.h>
 #include <UI/Font.h>
 #include <UI/UICanvas.h>
 #include <math/Transform.h>
 #include <rendering/Renderer.h>
+#include <utility/Serialisation.h>
 
 #include <scene/Actor.h>
 #include <UI/UICanvasActor.h>
@@ -15,6 +16,8 @@
 #include <scene/UIInputBoxActor.h>
 
 #include <input/InputDevicesStateRetriever.h>
+
+#include "rendering/RenderEngineManager.h"
 
 namespace GEE
 {
@@ -25,7 +28,6 @@ namespace GEE
 		RenderableComponent(actor, parentComp, name, transform),
 		UIComponent(actor, parentComp),
 		_Font(font),
-		_FontStyle(FontStyle::Regular),
 		TextMatInst(nullptr),
 		_Alignment(alignment),
 		MinSize(Vec2f(0.0f)),
@@ -33,6 +35,7 @@ namespace GEE
 		ScaleRatio(Vec2f(1.0f)),
 		PreRatioScale(transform.GetScale2D()),
 		PostRatioScale(transform.GetScale2D()),
+		_FontStyle(FontStyle::Regular),
 		TransformDirtyFlag(0),
 		ScaleDirtyFlag(0)
 	{
@@ -186,7 +189,7 @@ namespace GEE
 		if (!_Font || GetHide() || IsBeingKilled())
 			return;
 
-		if (!Material::ShaderInfo(MaterialShaderHint::None).MatchesRequiredInfo(info.GetRequiredShaderInfo()) && shader && shader->GetName() != "TextShader")
+		if (!ShaderInfo(MaterialShaderHint::None).MatchesRequiredInfo(info.GetRequiredShaderInfo()) && shader && shader->GetName() != "TextShader")
 			return;
 
 		CheckTransformDirtiness();
@@ -269,6 +272,27 @@ namespace GEE
 		return GetElementDepth();
 	}
 
+	template <typename Archive>
+	void TextComponent::Save(Archive& archive) const
+	{
+		String fontPath;
+		if (_Font)
+			fontPath = _Font->GetVariation(FontStyle::Regular)->GetPath();
+		archive(cereal::make_nvp("FontPath", fontPath), cereal::make_nvp("Content", Content), cereal::make_nvp("HAlignment", _Alignment.GetHorizontal()), cereal::make_nvp("VAlignment", _Alignment.GetVertical()), cereal::make_nvp("RenderableComponent", cereal::base_class<RenderableComponent>(this)));
+	}
+
+	template <typename Archive>
+	void TextComponent::Load(Archive& archive)
+	{
+		String fontPath;
+		Alignment alignmentH, alignmentV;
+		archive(cereal::make_nvp("FontPath", fontPath), cereal::make_nvp("Content", Content), cereal::make_nvp("HAlignment", alignmentH), cereal::make_nvp("VAlignment", alignmentV), cereal::make_nvp("RenderableComponent", cereal::base_class<RenderableComponent>(this)));
+		SetAlignment(Alignment2D(alignmentH, alignmentV));
+
+		if (!fontPath.empty())
+			_Font = EngineDataLoader::LoadFont(*GetGameHandle(), fontPath);
+	}
+
 	const Vector<Transform>& TextComponent::GetLetterTransformsUnsafe()
 	{
 		if (!LetterTransformsCache.empty() && !GetContent().empty())
@@ -286,10 +310,10 @@ namespace GEE
 
 	ScrollingTextComponent::ScrollingTextComponent(Actor& actorRef, Component* parentComp, const String& name, const Transform& transform, String content, SharedPtr<Font> font, Alignment2D alignment):
 		TextComponent(actorRef, parentComp, name, transform, content, font, alignment),
-		ScrollingInterp(0.0f, 5.0f),
 		TimeSinceScrollReset(0.0f),
 		ScrollResetTime(5.0f),
 		ScrollCooldownTime(1.0f),
+		ScrollingInterp(0.0f, 5.0f),
 		IsScrollableCache(false),
 		IsScrollableCacheDirty(true)
 	{
@@ -297,10 +321,10 @@ namespace GEE
 
 	ScrollingTextComponent::ScrollingTextComponent(Actor& actorRef, Component* parentComp, const String& name, const Transform& transform, String content, String fontPath, Alignment2D alignment):
 		TextComponent(actorRef, parentComp, name, transform, content, fontPath, alignment),
-		ScrollingInterp(0.0f, 5.0f),
 		TimeSinceScrollReset(0.0f),
 		ScrollResetTime(5.0f),
 		ScrollCooldownTime(1.0f),
+		ScrollingInterp(0.0f, 5.0f),
 		IsScrollableCache(false),
 		IsScrollableCacheDirty(true)
 	{
@@ -604,3 +628,4 @@ namespace GEE
 		return outTransforms;
 	}
 }
+GEE_SERIALIZATION_INST_DEFAULT(GEE::TextComponent);

@@ -10,15 +10,15 @@ namespace GEE
 {
 	UICanvasElement::UICanvasElement() :
 		CanvasPtr(nullptr),
-		ParentElement(nullptr),
-		ElementDepth(0)
+		ElementDepth(0),
+		ParentElement(nullptr)
 	{
 	}
 
 	UICanvasElement::UICanvasElement(UICanvasElement&& element) :
 		CanvasPtr(nullptr),
-		ParentElement(nullptr),
-		ElementDepth(element.ElementDepth)
+		ElementDepth(element.ElementDepth),
+		ParentElement(nullptr)
 	{
 		if (element.ParentElement)
 			SetParentElement(*element.ParentElement);

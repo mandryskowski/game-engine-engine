@@ -5,6 +5,7 @@
 
 namespace GEE
 {
+	class SceneMatrixInfo;
 	class UICanvasElement;
 	class Actor;
 	class UIActor;
@@ -16,7 +17,11 @@ namespace GEE
 	class UICanvas
 	{
 	public:
-		UICanvas(unsigned int canvasDepth = 0) : bContainsMouse(false), CanvasDepth(canvasDepth), CanvasSpaceMinExtent(Vec2f(std::numeric_limits<float>::max())), CanvasSpaceMaxExtent(Vec2f(std::numeric_limits<float>::min())) {}
+		UICanvas(unsigned int canvasDepth = 0) : CanvasSpaceMinExtent(Vec2f(std::numeric_limits<float>::max())),
+		                                         CanvasSpaceMaxExtent(Vec2f(std::numeric_limits<float>::min())),
+		                                         bContainsMouse(false), CanvasDepth(canvasDepth)
+		{
+		}
 		UICanvas(const UICanvas&);
 		UICanvas(UICanvas&&);
 		virtual NDCViewport GetViewport() const = 0;

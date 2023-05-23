@@ -21,6 +21,10 @@
 #include <editor/EditorManager.h>
 #include <editor/DefaultEditorController.h>
 
+#include "GameEngineEngineEditor.h"
+#include "rendering/RenderEngineManager.h"
+#include "rendering/Mesh.h"
+
 namespace GEE
 {
 
@@ -198,9 +202,9 @@ namespace GEE
 
 		EditorActions::EditorActions(EditorManager& editorManager) :
 			EditorHandle(editorManager),
-			SelectedScene(nullptr),
-			SelectedActor(nullptr),
 			SelectedComp(nullptr),
+			SelectedActor(nullptr),
+			SelectedScene(nullptr),
 			LeftCanvasList(nullptr),
 			BottomCanvasList(nullptr),
 			RightCanvasList(nullptr)
@@ -651,7 +655,7 @@ namespace GEE
 			RightCanvasList = dynamic_cast<UIListActor*>(editorScene.FindActor("GEE_E_Right_Canvas_List"));
 		}
 
-		template <typename T> void Select(T* newSelected, T& selectedCache, GameScene& editorScene)
+		/*template <typename T> void Select(T* newSelected, T& selectedCache, GameScene& editorScene)
 		{
 			GameManager& gameHandle = *editorScene.GetGameHandle();
 			RenderEngineManager& renderHandle = *gameHandle.GetRenderEngineHandle();
@@ -663,7 +667,7 @@ namespace GEE
 			if (const Actor* found = editorScene.GetRootActor()->FindActor("GEE_E_Scene_Actors_Canvas"))
 			{
 				const_cast<Actor*>(found)->MarkAsKilled();
-				previousCanvasView = dynamic_cast<UICanvasActor*>(const_cast<Actor*>(found))->CanvasView;
+				previousCanvasView = dynamic_cast<UICanvasActor*>(const_cast<Actor*>(found))->GetCanvasView();
 			}
 			else
 			{
@@ -693,7 +697,7 @@ namespace GEE
 			desc.AddOption("Transform", [this, &editorScene, &gameHandle, &canvas]() { auto& window = editorScene.CreateActorAtRoot<UIWindowActor>("Button transform"); ComponentDescriptionBuilder descBuilder(*dynamic_cast<Editor::EditorManager*>(&gameHandle), window, window); canvas.GetParentActor()->GetRoot()->GetEditorDescription(descBuilder); window.AutoClampView(); window.RefreshFieldsList(); });
 			desc.AddSubmenu("Create actor", [this, func](PopupDescription desc)
 				{
-					EditorHandle.GenerateActorList(desc, func);
+					EditorEventProcessor::EditorHandle.GenerateActorList(desc, func);
 				});
 			desc.AddOption("Delete", nullptr);
 				});
@@ -726,7 +730,7 @@ namespace GEE
 
 				canvasList->Refresh();
 			}
-		}
+		}*/
 
 		template <> void EditorActions::Select<Component>(Component* obj, GameScene& editorScene) { SelectComponent(obj, editorScene); }
 		template <> void EditorActions::Select<Actor>(Actor* obj, GameScene& editorScene) { SelectActor(obj, editorScene); }

@@ -1,13 +1,16 @@
 #pragma once
-#include "Material.h"
+#include <math/Vec.h>
 #include <math/Box.h>
-#include <assetload/FileLoader.h>
+#include "game/GameManager.h"
 
 namespace GEE
 {
+	struct MaterialInstance;
+	class Material;
+
 	struct VertexBoneData
 	{
-		glm::ivec4 BoneIDs;
+		Vec4i BoneIDs;
 		Vec4f BoneWeights;
 		VertexBoneData();
 		void AddWeight(unsigned int boneID, float boneWeight);

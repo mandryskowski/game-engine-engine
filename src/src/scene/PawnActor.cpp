@@ -12,23 +12,23 @@ namespace GEE
 {
 	PawnActor::PawnActor(GameScene& scene, Actor* parentActor, const std::string& name) :
 		Actor(scene, parentActor, name),
-		PreAnimBonePos(Vec3f(0.0f)),
-		//RootBone(nullptr),
 		AnimManager(nullptr),
-		PawnSound(nullptr),
-		LastSoundTime(0.0f),
-		SoundCooldown(10.0f),
+		//RootBone(nullptr),
 		WalkingAnimIndex(0),
 		IdleAnimIndex(0),
-		SpeedPerSec(1.0f),
-		CurrentTargetPos(Vec3f(0.0f)),
-		PathIndex(0),
-		Gun(nullptr),
-		PlayerTarget(nullptr),
+		PreAnimBonePos(Vec3f(0.0f)),
+		State(Idle),
 		Health(100.0f),
 		RespawnTime(5.0f),
 		DeathTime(0.0f),
-		State(PawnState::Idle)
+		PawnSound(nullptr),
+		SoundCooldown(10.0f),
+		LastSoundTime(0.0f),
+		CurrentTargetPos(Vec3f(0.0f)),
+		SpeedPerSec(1.0f),
+		PathIndex(0),
+		Gun(nullptr),
+		PlayerTarget(nullptr)
 	{
 	}
 

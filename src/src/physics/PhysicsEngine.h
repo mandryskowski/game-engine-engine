@@ -1,10 +1,25 @@
 #pragma once
-#include <PhysX/PxPhysicsAPI.h>
 
 #include <math/Vec.h>
-
+#include <physics/PhysicsEngineManager.h>
 #include <vector>
-#include <game/GameManager.h>
+#include <PhysX/extensions/PxDefaultAllocator.h>
+#include <PhysX/extensions/PxDefaultErrorCallback.h>
+
+#include "utility/Utility.h"
+
+
+namespace physx
+{
+	class PxFoundation;
+	class PxPhysics;
+	class PxDefaultCpuDispatcher;
+	class PxCooking;
+	class PxPvd;
+	class PxMaterial;
+	class PxController;
+	class PxShape;
+}
 
 namespace GEE
 {
@@ -14,6 +29,9 @@ namespace GEE
 
 	namespace Physics
 	{
+		struct CollisionObject;
+		class GameScenePhysicsData;
+
 		class PhysicsEngine : public PhysicsEngineManager
 		{
 		public:

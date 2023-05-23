@@ -388,9 +388,9 @@ namespace GEE
 	void Transform::Print(String name) const
 	{
 		std::cout << "===Transform " + name + ", child of " << ParentTransform << "===\n";
-		printVector(Position, "Position");
-		printVector(Rotation, "Rotation");
-		printVector(Scale, "Scale");
+		std::cout << "Position: " << Position << '\n';
+		std::cout << "Rotation: " << Rotation << '\n';
+		std::cout << "Scale: " << Scale << '\n';
 		std::cout << "VVVVVV\n";
 	}
 

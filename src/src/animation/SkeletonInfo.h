@@ -1,12 +1,10 @@
 #pragma once
 #include <game/GameManager.h>
 #include <utility/CerealNames.h>
-#include <cereal/types/memory.hpp>
-#include <cereal/access.hpp>
-
 
 namespace GEE
 {
+	class ModelComponent;
 	class SkeletonBatch;
 	class BoneComponent;
 

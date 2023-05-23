@@ -3,6 +3,8 @@
 #include <rendering/RenderInfo.h>
 namespace GEE
 {
+	class Material;
+
 	class Renderable
 	{
 	public:
@@ -38,18 +40,10 @@ namespace GEE
 		void DebugRender(SceneMatrixInfo info, Shader& shader, const Vec3f& debugIconScale) const override {}
 		void GetEditorDescription(ComponentDescriptionBuilder) override;
 		template <typename Archive>
-		void Save(Archive& archive) const
-		{
-			archive(cereal::make_nvp("Hide", GetHide()), cereal::make_nvp("CastsShadow", CastsShadow()), cereal::make_nvp("Component", cereal::base_class<Component>(this)));
-		}
+		void Save(Archive& archive) const;
+
 		template <typename Archive>
-		void Load(Archive& archive)
-		{
-			bool hide = false, castsShadow = true;
-			archive(cereal::make_nvp("Hide", hide), cereal::make_nvp("CastsShadow", castsShadow), cereal::make_nvp("Component", cereal::base_class<Component>(this)));
-			SetHide(hide);
-			SetCastsShadow(castsShadow);
-		}
+		void Load(Archive& archive);
 		virtual ~RenderableComponent() = default;
 	protected:
 	};

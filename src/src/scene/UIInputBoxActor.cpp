@@ -5,6 +5,8 @@
 #include <scene/ModelComponent.h>
 #include <input/InputDevicesStateRetriever.h>
 
+#include "rendering/RenderEngineManager.h"
+
 namespace GEE
 {
 	UIInputBoxActor::UIInputBoxActor(GameScene& scene, Actor* parentActor, const String& name, const Transform& transform) :
@@ -15,9 +17,9 @@ namespace GEE
 		CaretComponent(nullptr),
 		CaretPosition(0),
 		CaretDirtyFlag(GetTransform()->AddWorldDirtyFlag()),
+		CaretNDCWidth(0.0f),
 		CaretAnim(0.0f, 0.5f),
-		TextSelectionRange(-1),
-		CaretNDCWidth(0.0f)
+		TextSelectionRange(-1)
 	{
 		CreateButtonText("0");
 
@@ -60,8 +62,8 @@ namespace GEE
 		CaretComponent(nullptr),
 		CaretPosition(inputBox.CaretPosition),
 		CaretDirtyFlag(GetTransform()->AddWorldDirtyFlag()),
-		CaretAnim(inputBox.CaretAnim),
-		CaretNDCWidth(inputBox.CaretNDCWidth)
+		CaretNDCWidth(inputBox.CaretNDCWidth),
+		CaretAnim(inputBox.CaretAnim)
 	{
 		CaretAnim.SetOnUpdateFunc([](double T) { return T >= 1.0;  });
 	}

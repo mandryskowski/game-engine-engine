@@ -5,8 +5,20 @@
 #include <rendering/RenderToolbox.h>
 #include <UI/Font.h>
 
+#include "utility/Alignment.h"
+
 namespace GEE
 {
+	namespace Physics
+	{
+		class GameScenePhysicsData;
+	}
+
+	class SkeletonInfo;
+	class LightComponent;
+	class GameSceneRenderData;
+	class MeshInstance;
+	class Mesh;
 	class LightProbe;
 	struct LightProbeTextureArrays;
 	class LocalLightProbe;

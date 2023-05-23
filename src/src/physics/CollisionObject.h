@@ -19,9 +19,13 @@ namespace physx
 
 namespace GEE
 {
+	class EditorDescriptionBuilder;
 	class Transform;
 	namespace Physics
 	{
+		class GameScenePhysicsData;
+		struct CollisionObject;
+
 		enum CollisionShapeType
 		{
 			COLLISION_BOX,

@@ -35,6 +35,8 @@
 
 #include <rendering/Renderer.h>
 
+#include "rendering/Framebuffer.h"
+
 
 namespace GEE
 {
@@ -86,8 +88,8 @@ namespace GEE
 			EditorController(nullptr),
 			LastRenderPopupRequest(nullptr),
 			bViewportMaximized(false),
-			Actions(MakeUnique<EditorActions>(*this)),
-			TestTranslateLastPos(Vec2f(0.0f))
+			TestTranslateLastPos(Vec2f(0.0f)),
+			Actions(MakeUnique<EditorActions>(*this))
 		{
 			{
 				int length = wai_getExecutablePath(nullptr, 0, nullptr), dirnameLength = 0;

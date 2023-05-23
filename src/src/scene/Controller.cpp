@@ -2,7 +2,7 @@
 #include <game/GameScene.h>
 #include <scene/Component.h>
 #include <physics/CollisionObject.h>
-#include <physics/DynamicPhysicsObjects.h>
+#include <utility/Serialisation.h>
 #include <input/InputDevicesStateRetriever.h>
 #include <scene/TextComponent.h>
 #include <scene/GunActor.h>
@@ -13,6 +13,8 @@
 #include <input/Event.h>
 #include <UI/UICanvasActor.h>
 #include <UI/UICanvasField.h>
+
+#include "physics/PhysicsEngineManager.h"
 
 namespace GEE
 {
@@ -47,6 +49,20 @@ namespace GEE
 	void Controller::SetPossessedActor(Actor* actor)
 	{
 		PossessedActor = actor;
+	}
+
+	template <typename Archive>
+	void Controller::Save(Archive& archive) const
+	{
+		archive(cereal::make_nvp("PossessedActorName", (PossessedActor) ? (PossessedActor->GetName()) : (std::string())), CEREAL_NVP(bHideCursor), CEREAL_NVP(bLockMouseAtCenter), cereal::make_nvp("Actor", cereal::base_class<Actor>(this)));
+	}
+
+	template <typename Archive>
+	void Controller::Load(Archive& archive)
+	{
+		std::string possessedActorName;
+		archive(cereal::make_nvp("PossessedActorName", possessedActorName), CEREAL_NVP(bHideCursor), CEREAL_NVP(bLockMouseAtCenter), cereal::make_nvp("Actor", cereal::base_class<Actor>(this)));
+		Scene.AddPostLoadLambda([this, possessedActorName]() { SetPossessedActor(Scene.FindActor(possessedActorName)); });
 	}
 
 	void Controller::GetEditorDescription(EditorDescriptionBuilder descBuilder)
@@ -148,7 +164,7 @@ namespace GEE
 	void FPSController::SetPossessedActor(Actor* actor)
 	{
 		if (PossessedActor)
-			PossessedActor->GetRoot()->SetCollisionObject(nullptr);	//PxController will probably be released here, so we set it to Nullptr in the next line
+			PossessedActor->GetRoot()->SetCollisionObjectCopy(nullptr);	//PxController will probably be released here, so we set it to Nullptr in the next line
 
 		PxController = nullptr;
 		
@@ -271,16 +287,8 @@ namespace GEE
 			return;
 
 		const MouseButtonEvent& pressedEv = *dynamic_cast<const MouseButtonEvent*>(&ev);
-		if (pressedEv.GetButton() == MouseButton::Right)
-		{
-			printVector(PossessedGunActor->GetTransform()->GetRot(), "Prawdziwa rotacja");
-			printVector(PossessedGunActor->GetTransform()->GetWorldTransform().GetPos(), "Pozycja gracza");
-			printVector(PossessedGunActor->GetTransform()->GetWorldTransform().GetFrontVec(), "Front");
-		}
 		if (pressedEv.GetButton() == MouseButton::Left)
 		{
-
-			
 			PossessedGunActor->FireWeapon();
 		}
 	}
@@ -292,4 +300,25 @@ namespace GEE
 		descBuilder.AddField("PossessedGunActor").GetTemplates().ObjectInput<Actor, GunActor>(*Scene.GetRootActor(), PossessedGunActor);
 	}
 
+	template <typename Archive>
+	void ShootingController::Save(Archive& archive) const
+	{
+		std::string gunActorName = (PossessedGunActor) ? (PossessedGunActor->GetName()) : ("");
+		archive(cereal::make_nvp("Controller", cereal::base_class<Controller>(this)), cereal::make_nvp("PossesedGunActorName", gunActorName));
+	}
+
+	template <typename Archive>
+	void ShootingController::Load(Archive& archive)
+	{
+		std::string gunActorName;
+		archive(cereal::make_nvp("Controller", cereal::base_class<Controller>(this)), cereal::make_nvp("PossesedGunActorName", gunActorName));
+
+		Scene.AddPostLoadLambda([this, gunActorName]() {
+			if (!gunActorName.empty())
+				PossessedGunActor = dynamic_cast<GunActor*>(Scene.GetRootActor()->FindActor(gunActorName));
+			});
+	}
+
 }
+GEE_SERIALIZATION_INST_DEFAULT(GEE::Controller);
+GEE_SERIALIZATION_INST_DEFAULT(GEE::ShootingController);

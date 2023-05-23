@@ -3,11 +3,27 @@
 #include <scene/Actor.h>
 #include <utility/Utility.h>
 
+namespace physx
+{
+	class PxScene;
+	class PxControllerManager;
+}
+
 namespace GEE
 {
+	class CameraComponent;
+	class SkeletonBatch;
+	class SkeletonInfo;
+	class UICanvas;
 	class GameScene;
 	class Event;
 	class RenderableVolume;
+	class Renderable;
+	class LightComponent;
+	class LightProbeComponent;
+	class LightProbeTextureArrays;
+	class RenderEngineManager;
+	class Material;
 
 	class GameSceneRenderData;
 	class GameSceneUIData;
@@ -18,6 +34,7 @@ namespace GEE
 	namespace Audio
 	{
 		class GameSceneAudioData;
+		class SoundSourceComponent;
 	}
 
 	namespace Editor
@@ -301,6 +318,7 @@ namespace GEE
 
 	namespace Physics
 	{
+		class CollisionObject;
 		class GameScenePhysicsData : public GameSceneData
 		{
 		public:

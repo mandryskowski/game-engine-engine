@@ -70,7 +70,7 @@ namespace GEE
 			SubData4fv(vec, offsetCache);
 	}
 
-	void UniformBuffer::SubData4fv(Vec4f vec, size_t offset)
+	void UniformBuffer::SubData4fv(const Vec4f& vec, size_t offset)
 	{
 		SubData(sizeof(Vec4f), Math::GetDataPtr(vec), offset);
 	}
@@ -204,47 +204,6 @@ namespace GEE
 			*filenameGet = filename;
 		if (directoryGet)
 			*directoryGet = directory;
-	}
-
-	void printVector(const Vec2f& vec, std::string title)
-	{
-		if (!title.empty())
-			title.append(": "); //if we want to draw a title, add something after it
-
-		std::cout << title << vec.x << ", " << vec.y << '\n';
-	}
-
-	void printVector(const Vec3f& vec, std::string title)
-	{
-		if (!title.empty())
-			title.append(": "); //if we want to draw a title, add something after it
-
-		std::cout << title << vec.x << ", " << vec.y << ", " << vec.z << '\n';
-	}
-
-	void printVector(const Vec4f& vec, std::string title)
-	{
-		if (!title.empty())
-			title.append(": "); //if we want to draw a title, add something after it
-
-		std::cout << title << vec.x << ", " << vec.y << ", " << vec.z << ", " << vec.w << '\n';
-	}
-
-	void printVector(const Quatf& q, std::string title)
-	{
-		printVector(glm::degrees(glm::eulerAngles(q)), title);
-	}
-
-	void printMatrix(const Mat4f& mat, std::string title)
-	{
-		if (!title.empty())
-			std::cout << "===Matrix " + title + "===\n";
-		for (int y = 0; y < 4; y++)
-		{
-			for (int x = 0; x < 4; x++)
-				std::cout << mat[x][y] << "	";
-			std::cout << '\n';
-		}
 	}
 
 	std::string toValidFilepath(std::string str)

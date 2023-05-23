@@ -7,6 +7,12 @@
 
 namespace GEE
 {
+	namespace Editor
+	{
+		class EditorManager;
+	}
+
+	class ModelComponent;
 	class UIListActor;
 	class UICanvasField;
 	class UIButtonActor;
@@ -128,7 +134,7 @@ namespace GEE
 		GameScene& GetEditorScene();
 		UICanvas& GetCanvas();
 		Actor& GetDescriptionParent();
-		GameManager& GetGameHandle() { return *EditorHandle.GetGameHandle(); }
+		GameManager& GetGameHandle();
 		Editor::EditorManager& GetEditorHandle();
 		BuilderStyle GetStyle() const { return Style; }
 

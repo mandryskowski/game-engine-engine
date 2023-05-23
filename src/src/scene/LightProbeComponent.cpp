@@ -2,7 +2,7 @@
 #include <game/GameScene.h>
 #include <rendering/Framebuffer.h>
 #include <rendering/RenderToolbox.h>
-#include <rendering/Material.h>
+#include <rendering/material/Material.h>
 
 #include <UI/UICanvasActor.h>
 #include <UI/UICanvasField.h>

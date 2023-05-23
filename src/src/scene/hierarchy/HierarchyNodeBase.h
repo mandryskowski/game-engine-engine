@@ -4,6 +4,10 @@
 
 namespace GEE
 {
+	namespace Physics
+	{
+		struct CollisionObject;
+	}
 	namespace Hierarchy
 	{
 		template <typename CompType> class Node;
@@ -16,6 +20,7 @@ namespace GEE
 		class NodeBase	// Interface
 		{
 		public:
+			virtual ~NodeBase() = default;
 			virtual Component& GetCompBaseType() = 0;
 			virtual const Component& GetCompBaseType() const = 0;
 			virtual Physics::CollisionObject* GetCollisionObject() = 0;

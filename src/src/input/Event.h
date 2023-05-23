@@ -303,7 +303,10 @@ namespace GEE
 	class CanvasViewChangedEvent : public Event
 	{
 	public:
-		CanvasViewChangedEvent(Actor* eventRoot = nullptr, bool clampViewToElements = true) : ClampViewToElements(clampViewToElements), Event(eventRoot) {};
+		CanvasViewChangedEvent(Actor* eventRoot = nullptr, bool clampViewToElements = true) : Event(eventRoot),
+			ClampViewToElements(clampViewToElements)
+		{
+		};
 		bool ClampsViewToElements() const { return ClampViewToElements; }
 		EventType GetType() const override { return EventType::CanvasViewChanged; }
 

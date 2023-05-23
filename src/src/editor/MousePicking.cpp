@@ -2,8 +2,12 @@
 #include <rendering/RenderEngine.h>
 #include <rendering/Texture.h>
 #include <game/GameScene.h>
-#include <scene/Actor.h>
 #include <scene/RenderableComponent.h>
+
+#include "rendering/Framebuffer.h"
+#include "rendering/RenderEngineManager.h"
+#include "rendering/Shader.h"
+#include "rendering/material/Material.h"
 
 namespace GEE
 {

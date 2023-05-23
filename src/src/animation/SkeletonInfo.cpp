@@ -1,14 +1,16 @@
+#include <array>
 #include <animation/SkeletonInfo.h>
 #include <game/GameScene.h>
 #include <scene/BoneComponent.h>
 #include <scene/ModelComponent.h>
+#include <cereal/types/vector.hpp>
 
 namespace GEE
 {
 	SkeletonInfo::SkeletonInfo() :
 		GlobalInverseTransformCompPtr(nullptr),
-		BoneIDOffset(0),
-		BatchPtr(nullptr)
+		BatchPtr(nullptr),
+		BoneIDOffset(0)
 	{
 	}
 

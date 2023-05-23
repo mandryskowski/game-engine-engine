@@ -2,6 +2,7 @@
 #include <physics/DynamicPhysicsObjects.h>
 #include <game/GameScene.h>
 #include <input/InputDevicesStateRetriever.h>
+#include <PhysX/PxRigidDynamic.h>
 #include <scene/CameraComponent.h>
 #include "PoolBallActor.h"
 
@@ -9,22 +10,25 @@
 #include <UI/UICanvasActor.h>
 #include <UI/UICanvasField.h>
 
+#include "physics/CollisionObject.h"
+#include "physics/PhysicsEngineManager.h"
+
 namespace GEE
 {
 	CueController::CueController(GameScene& scene, Actor* parentActor, const std::string& name) :
 		Controller(scene, parentActor, name),
 		WhiteBallActor(nullptr),
 		CueMaxGivenSpeed(12.0f),
-		ConstrainedBallMovement(false),
 		BallStaticFriction(1.0f),
 		BallDynamicFriction(0.5f),
 		BallRestitution(1.0f),
 		BallLinearDamping(0.5f),
 		BallAngularDamping(0.5f),
+		ConstrainedBallMovement(false),
 		MinCueDistance(2.0f),
 		MaxCueDistance(2.4f),
-		CueDistanceAnim(0.0f, 1.0f),
-		PowerInverted(false)
+		PowerInverted(false),
+		CueDistanceAnim(0.0f, 1.0f)
 	{
 		CueDistanceAnim.SetOnUpdateFunc([](double T) { return T == 1.0;  });
 	}

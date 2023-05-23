@@ -3,6 +3,8 @@
 #include <game/GameScene.h>
 #include <scene/Actor.h>
 #include <scene/LightComponent.h>
+#include <cereal/types/memory.hpp>
+#include <cereal/types/vector.hpp>
 
 GEE::Actor* GEE::CerealNodeSerializationData::TempActor = nullptr;
 namespace GEE

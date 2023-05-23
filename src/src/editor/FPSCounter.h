@@ -5,7 +5,9 @@ namespace GEE
 	class FPSCounter
 	{
 	public:
-		FPSCounter() : PrevFPSUpdateTime(0.0f), FrameCount(0), LastFPSReading(0.0f) {}
+		FPSCounter() : PrevFPSUpdateTime(0.0f), LastFPSReading(0.0f), FrameCount(0)
+		{
+		}
 		void CountFrame() { FrameCount++; }
 		void Reset(float currTime)
 		{

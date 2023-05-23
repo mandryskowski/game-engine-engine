@@ -17,6 +17,9 @@
 
 #include <rendering/Renderer.h>
 
+#include "rendering/Framebuffer.h"
+#include "rendering/RenderEngineManager.h"
+
 namespace GEE
 {
 	using namespace MeshSystem;
@@ -24,9 +27,9 @@ namespace GEE
 	ModelComponent::ModelComponent(Actor& actor, Component* parentComp, const std::string& name, const Transform& transform, SkeletonInfo* info, Material* overrideMat) :
 		RenderableComponent(actor, parentComp, name, transform),
 		UIComponent(actor, parentComp),
-		LastFrameMVP(Mat4f(1.0f)),
 		SkelInfo(nullptr),
-		RenderAsBillboard(false)
+		RenderAsBillboard(false),
+		LastFrameMVP(Mat4f(1.0f))
 	{
 		SetSkeletonInfo(info);
 	}

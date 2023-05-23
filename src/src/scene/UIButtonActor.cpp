@@ -12,6 +12,8 @@
 
 #include <scene/UIWindowActor.h>
 
+#include "rendering/RenderEngineManager.h"
+
 namespace GEE
 {
 	UIButtonActor::UIButtonActor(GameScene& scene, Actor* parentActor, const String& name, std::function<void()> onClickFunc, const Transform& t) :
@@ -23,8 +25,8 @@ namespace GEE
 		OnBeingClickedFunc(nullptr),
 		WhileBeingClickedFunc(nullptr),
 		PopupCreationFunc(nullptr),
-		PrevClickTime(0.0f),
 		MaxDoubleClickTime(0.3f),
+		PrevClickTime(0.0f),
 		MatIdle(nullptr),
 		MatHover(nullptr),
 		MatClick(nullptr),  

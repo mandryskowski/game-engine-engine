@@ -11,8 +11,8 @@ namespace GEE
 	using namespace Hierarchy;
 
 	Tree::Tree(GameScene& scene, const HierarchyLocalization& name) :
-		Scene(scene),
 		Name(name),
+		Scene(scene),
 		Root(nullptr),
 		TempActor(MakeUnique<Actor>(scene, nullptr, name.GetPath() + "TempActor")),
 		TreeBoneMapping(nullptr)
@@ -21,8 +21,8 @@ namespace GEE
 	}
 
 	Tree::Tree(const Tree& tree) :
-		Scene(tree.Scene),
 		Name(HierarchyLocalization::LocalResourceName(tree.Name.GetPath() + "_Copy")),
+		Scene(tree.Scene),
 		Root(nullptr),
 		TempActor(MakeUnique<Actor>(tree.Scene, nullptr, tree.Name.GetPath() + "TempActor")),
 		TreeBoneMapping((tree.TreeBoneMapping) ? (MakeUnique<BoneMapping>(*tree.TreeBoneMapping)) : (nullptr))
@@ -37,12 +37,12 @@ namespace GEE
 	}
 
 	Tree::Tree(Tree&& tree) :
-		Scene(tree.Scene),
 		Name(tree.Name),
+		Scene(tree.Scene),
 		Root(std::move(tree.Root)),
 		TempActor(std::move(tree.TempActor)),
-		TreeBoneMapping((tree.TreeBoneMapping) ? (std::move(tree.TreeBoneMapping)) : (nullptr)),
-		TreeAnimations(std::move(tree.TreeAnimations))
+		TreeAnimations(std::move(tree.TreeAnimations)),
+		TreeBoneMapping((tree.TreeBoneMapping) ? (std::move(tree.TreeBoneMapping)) : (nullptr))
 	{
 		if (!Root)
 			Root = static_unique_pointer_cast<NodeBase>(MakeUnique<Node<Component>>(*TempActor, Name.GetPath()));	//root has the same name as the tree

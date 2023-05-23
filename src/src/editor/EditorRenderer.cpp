@@ -2,7 +2,7 @@
 #include <editor/EditorActions.h>
 #include <rendering/RenderToolbox.h>
 #include <rendering/RenderInfo.h>
-#include <rendering/Material.h>
+#include <rendering/material/Material.h>
 #include <rendering/OutlineRenderer.h>
 #include <game/GameScene.h>
 #include <scene/CameraComponent.h>
@@ -11,6 +11,8 @@
 #include <editor/DefaultEditorController.h>
 #include <editor/GEditorToolbox.h>
 #include <editor/GEditorSettings.h>
+
+#include "rendering/Framebuffer.h"
 
 
 namespace GEE

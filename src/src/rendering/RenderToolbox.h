@@ -1,11 +1,21 @@
 #pragma once
-#include <game/GameManager.h>
-#include <game/GameSettings.h>
-#include "Framebuffer.h"
 #include <map>
+#include <game/GameSettings.h>
 
 namespace GEE
 {
+	class NamedTexture;
+
+	namespace GEE_FB
+	{
+		class Framebuffer;
+	}
+
+	class Texture;
+	enum class MaterialShaderHint;
+	class Shader;
+	class RenderEngineManager;
+
 	namespace Editor
 	{
 		class EditorRenderer;
@@ -29,13 +39,13 @@ namespace GEE
 	public:
 		RenderToolbox(ShaderFromHintGetter& shaders) : ShaderGetter(&shaders) {}
 		virtual bool IsSetup();
-		Shader* FindShader(std::string name);
+		Shader* FindShader(const String& name);
 
 		void Dispose();
 	protected:
 		GEE_FB::Framebuffer* AddFramebuffer();
 		Shader* AddShader(const SharedPtr<Shader>& shader);
-		Texture* AddTexture(const Texture & = Texture());
+		Texture* AddTexture(const Texture&);
 		void SetShaderHint(MaterialShaderHint, Shader*);
 
 		std::vector<SharedPtr<GEE_FB::Framebuffer>> Fbs;
@@ -95,7 +105,6 @@ namespace GEE
 		SSAOToolbox(ShaderFromHintGetter&, const GameSettings::VideoSettings& settings);
 		void Setup(const GameSettings::VideoSettings& settings);
 
-		friend class Postprocess;
 		friend struct PostprocessRenderer;
 
 	private:
@@ -112,7 +121,6 @@ namespace GEE
 		PrevFrameStorageToolbox(ShaderFromHintGetter&, const GameSettings::VideoSettings& settings);
 		void Setup(const GameSettings::VideoSettings& settings);
 
-		friend class Postprocess;
 		friend struct PostprocessRenderer;
 	private:
 		GEE_FB::Framebuffer* StorageFb; //two color buffers; before rendering to FBO 0 we render to one of its color buffers (we switch them each frame) so as to gain access to the final color buffer in the next frame (for temporal AA)
@@ -124,7 +132,6 @@ namespace GEE
 		SMAAToolbox(ShaderFromHintGetter&, const GameSettings::VideoSettings& settings);
 		void Setup(const GameSettings::VideoSettings& settings);
 
-		friend class Postprocess;
 		friend struct PostprocessRenderer;
 	private:
 		GEE_FB::Framebuffer* SMAAFb; //three color buffers; we use the first two color buffers as edgeTex&blendTex in SMAA pass and optionally the last one to store the neighborhood blend result for reprojection
@@ -140,8 +147,7 @@ namespace GEE
 		ComposedImageStorageToolbox(ShaderFromHintGetter&, const GameSettings::VideoSettings& settings);
 		void Setup(const GameSettings::VideoSettings& settings);
 
-		friend class Postprocess;
-		friend struct PostprocessRenderer;
+				friend struct PostprocessRenderer;
 	private:
 		GEE_FB::Framebuffer* ComposedImageFb;	// Contains 2 color buffers on slot 0 and 1 so that you can render them ping-pong.
 
@@ -154,7 +160,6 @@ namespace GEE
 		GaussianBlurToolbox(ShaderFromHintGetter&, const GameSettings::VideoSettings& settings);
 		void Setup(const GameSettings::VideoSettings& settings);
 
-		friend class Postprocess;
 		friend struct PostprocessRenderer;
 	private:
 		GEE_FB::Framebuffer* BlurFramebuffers[2]; //only color buffer; we use them as ping pong framebuffers in gaussian blur pass.
@@ -185,7 +190,7 @@ namespace GEE
 		GEE_FB::Framebuffer& GetFinalFramebuffer();
 		friend class RenderEngine;
 	private:
-		NamedTexture RenderTarget;
+		UniquePtr<NamedTexture> RenderTarget;
 		GEE_FB::Framebuffer* FinalFramebuffer;
 	};
 

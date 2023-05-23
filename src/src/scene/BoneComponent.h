@@ -3,7 +3,6 @@
 #include <scene/Component.h>
 #include <scene/hierarchy/HierarchyNodeInstantiation.h>
 #include <animation/SkeletonInfo.h>
-#include <assimp/types.h>
 #include <map>
 
 struct aiScene;
@@ -52,7 +51,7 @@ namespace GEE
 			archive(CEREAL_NVP(BoneID), CEREAL_NVP(BoneOffset), CEREAL_NVP(FinalMatrix), cereal::make_nvp("Component", cereal::base_class<Component>(this)));
 		}
 
-		virtual ~BoneComponent();
+		virtual ~BoneComponent() override;
 	};
 
 	class BoneMapping

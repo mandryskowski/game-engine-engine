@@ -36,16 +36,9 @@ namespace GEE
 		virtual void SetPossessedActor(Actor*);
 		virtual void OnMouseMovement(const Vec2f& previousPosPx, const Vec2f& currentPosPx, const Vec2u& windowSize) {}
 
-		template <typename Archive> void Save(Archive& archive) const
-		{
-			archive(cereal::make_nvp("PossessedActorName", (PossessedActor) ? (PossessedActor->GetName()) : (std::string())), CEREAL_NVP(bHideCursor), CEREAL_NVP(bLockMouseAtCenter), cereal::make_nvp("Actor", cereal::base_class<Actor>(this)));
-		}
-		template <typename Archive> void Load(Archive& archive)
-		{
-			std::string possessedActorName;
-			archive(cereal::make_nvp("PossessedActorName", possessedActorName), CEREAL_NVP(bHideCursor), CEREAL_NVP(bLockMouseAtCenter), cereal::make_nvp("Actor", cereal::base_class<Actor>(this)));
-			Scene.AddPostLoadLambda([this, possessedActorName]() { SetPossessedActor(Scene.FindActor(possessedActorName)); });
-		}
+		template <typename Archive> void Save(Archive& archive) const;
+
+		template <typename Archive> void Load(Archive& archive);
 
 		virtual void GetEditorDescription(EditorDescriptionBuilder) override;
 	protected:
@@ -92,21 +85,9 @@ namespace GEE
 	public:
 		ShootingController(GameScene& scene, Actor* parentActor, const std::string& name);
 		virtual void HandleEvent(const Event& ev) override;
-		template <typename Archive> void Save(Archive& archive) const
-		{
-			std::string gunActorName = (PossessedGunActor) ? (PossessedGunActor->GetName()) : ("");
-			archive(cereal::make_nvp("Controller", cereal::base_class<Controller>(this)), cereal::make_nvp("PossesedGunActorName", gunActorName));
-		}
-		template <typename Archive> void Load(Archive& archive)
-		{
-			std::string gunActorName;
-			archive(cereal::make_nvp("Controller", cereal::base_class<Controller>(this)), cereal::make_nvp("PossesedGunActorName", gunActorName));
+		template <typename Archive> void Save(Archive& archive) const;
 
-			Scene.AddPostLoadLambda([this, gunActorName]() {
-				if (!gunActorName.empty())
-					PossessedGunActor = dynamic_cast<GunActor*>(Scene.GetRootActor()->FindActor(gunActorName));
-				});
-		}
+		template <typename Archive> void Load(Archive& archive);
 		virtual void GetEditorDescription(EditorDescriptionBuilder) override;
 
 	private:

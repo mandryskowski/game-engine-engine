@@ -5,8 +5,8 @@
 namespace GEE
 {
 	Font::Variation::Variation(const std::string& path):
-		Path(path),
-		BaselineHeight(0.0f)
+		BaselineHeight(0.0f),
+		Path(path)
 	{
 		BitmapsArray = Texture::Loader<>::ReserveEmpty2DArray(Vec3u(64, 64, 128), Texture::Format::Red());
 		BitmapsArray.SetMinFilter(Texture::MinFilter::Trilinear());

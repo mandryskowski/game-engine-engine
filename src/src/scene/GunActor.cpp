@@ -5,6 +5,7 @@
 #include <scene/LightComponent.h>
 #include <assetload/FileLoader.h>
 #include <input/Event.h>
+#include <PhysX/PxQueryReport.h>
 #include <scene/PawnActor.h>
 
 #include <UI/UICanvasActor.h>
@@ -12,14 +13,17 @@
 #include <UI/UICanvasField.h>
 #include <scene/UIButtonActor.h>
 
+#include "physics/CollisionObject.h"
+#include "rendering/RenderEngineManager.h"
+
 namespace GEE
 {
 	GunActor::GunActor(GameScene& scene, Actor* parentActor, std::string name) :
 		Actor(scene, parentActor, name),
 		ParticleMeshInst(nullptr),
-		GunLight(nullptr),
 		FireModel(nullptr),
 		BlastSound(nullptr),
+		GunLight(nullptr),
 		FireCooldown(2.0),
 		CooldownLeft(0.0),
 		BulletRadius(0.2f),

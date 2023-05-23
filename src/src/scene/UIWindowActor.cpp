@@ -1,7 +1,7 @@
 #include "UIWindowActor.h"
 #include <game/GameScene.h>
 #include <scene/UIButtonActor.h>
-#include <rendering/Material.h>
+#include <rendering/material/Material.h>
 #include <rendering/Texture.h>
 #include <input/InputDevicesStateRetriever.h>
 #include <scene/TextComponent.h>

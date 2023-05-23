@@ -15,45 +15,52 @@
 #include <UI/UICanvasActor.h>
 #include <editor/EditorMessageLogger.h>
 
+#include "editor/EditorManager.h"
+#include "physics/PhysicsEngineManager.h"
+#include "rendering/RenderEngineManager.h"
+
+#include <cereal/types/vector.hpp>
+#include <cereal/types/memory.hpp>
+
 namespace GEE
 {
 	GameScene::GameScene(GameManager& gameHandle, const std::string& name):
+		Name(name),
+		GameHandle(&gameHandle),
 		RenderData(MakeUnique<GameSceneRenderData>(*this, false)),
 		PhysicsData(MakeUnique<Physics::GameScenePhysicsData>(*this)),
 		AudioData(MakeUnique<Audio::GameSceneAudioData>(*this)),
 		UIData(nullptr),
-		Name(name),
+		bHasStarted(false),
 		ActiveCamera(nullptr),
-		GameHandle(&gameHandle),
-		KillingProcessFrame(0),
-		bHasStarted(false)
+		KillingProcessFrame(0)
 	{
 		RootActor = MakeUnique<Actor>(*this, nullptr, "SceneRoot");
 	}
 	GameScene::GameScene(GameManager& gameHandle, const std::string& name, bool isAnUIScene, SystemWindow& associatedWindow) :
+		Name(name),
+		GameHandle(&gameHandle),
 		RenderData(MakeUnique<GameSceneRenderData>(*this, isAnUIScene)),
 		PhysicsData(MakeUnique<Physics::GameScenePhysicsData>(*this)),
 		AudioData(MakeUnique<Audio::GameSceneAudioData>(*this)),
 		UIData(MakeUnique<GameSceneUIData>(*this, associatedWindow)),
-		Name(name),
+		bHasStarted(false),
 		ActiveCamera(nullptr),
-		GameHandle(&gameHandle),
-		KillingProcessFrame(0),
-		bHasStarted(false)
+		KillingProcessFrame(0)
 	{
 		RootActor = MakeUnique<Actor>(*this, nullptr, "SceneRoot");
 	}
 
 	GameScene::GameScene(GameScene&& scene) :
+		Name(scene.Name),
+		GameHandle(scene.GameHandle),
 		RootActor(nullptr),
 		RenderData(std::move(scene.RenderData)),
 		PhysicsData(std::move(scene.PhysicsData)),
 		AudioData(std::move(scene.AudioData)),
-		Name(scene.Name),
+		bHasStarted(scene.bHasStarted),
 		ActiveCamera(scene.ActiveCamera),
-		GameHandle(scene.GameHandle),
-		KillingProcessFrame(scene.KillingProcessFrame),
-		bHasStarted(scene.bHasStarted)
+		KillingProcessFrame(scene.KillingProcessFrame)
 	{
 		RootActor = MakeUnique<Actor>(*this, nullptr, "SceneRoot");
 	}
@@ -318,12 +325,12 @@ namespace GEE
 	GameSceneRenderData::GameSceneRenderData(GameScene& scene, bool isAnUIScene) :
 		GameSceneData(scene),
 		RenderHandle(scene.GetGameHandle()->GetRenderEngineHandle()),
-		ProbeTexArrays(MakeShared<LightProbeTextureArrays>(LightProbeTextureArrays())),
-		LightBlockBindingSlot(-1),
-		ProbesLoaded(false),
 		bIsAnUIScene(isAnUIScene),
 		bUIRenderableDepthsSortedDirtyFlag(false),
-		bLightProbesSortedDirtyFlag(false)
+		bLightProbesSortedDirtyFlag(false),
+		LightBlockBindingSlot(-1),
+		ProbesLoaded(false),
+		ProbeTexArrays(MakeShared<LightProbeTextureArrays>(LightProbeTextureArrays()))
 	{
 		if (LightProbes.empty() && RenderHandle->GetShadingModel() == ShadingAlgorithm::SHADING_PBR_COOK_TORRANCE)
 		{

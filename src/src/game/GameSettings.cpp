@@ -74,6 +74,7 @@ namespace GEE
 
 	GameSettings::VideoSettings::VideoSettings():
 		Resolution(0.0f),
+		Shading(SHADING_FULL_LIT),
 		AmbientOcclusionSamples(0),
 		bVSync(false),
 		bBloom(true),
@@ -82,13 +83,12 @@ namespace GEE
 		bDrawToWindowFBO(false),
 		AAType(AntiAliasingType::AA_NONE),
 		AALevel(SettingLevel::SETTING_NONE),
-		MonitorGamma(2.2f),
-		POMLevel(SettingLevel::SETTING_NONE),
+		POMLevel(SETTING_NONE),
 		ShadowLevel(SettingLevel::SETTING_LOW),
 		Max2DShadows(16),
 		Max3DShadows(16),
-		Shading(ShadingAlgorithm::SHADING_FULL_LIT),
-		TMType(ToneMappingType::TM_REINHARD)
+		TMType(TM_REINHARD),
+		MonitorGamma(2.2f)
 	{
 
 	}

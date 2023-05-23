@@ -1,6 +1,6 @@
 #include <scene/LightComponent.h>
 #include <game/GameScene.h>
-#include <rendering/Material.h>
+#include <rendering/material/Material.h>
 #include <scene/UIInputBoxActor.h>
 #include <UI/UICanvasActor.h>
 
@@ -9,6 +9,8 @@
 #include <rendering/Renderer.h>
 
 #include <editor/EditorActions.h>
+
+#include "rendering/RenderEngineManager.h"
 
 namespace GEE
 {
@@ -47,15 +49,15 @@ namespace GEE
 		Diffuse(comp.Diffuse),
 		Specular(comp.Specular),
 		Attenuation(comp.Attenuation),
-		ShadowBias(comp.ShadowBias),
-		bShadowMapCullFronts(comp.bShadowMapCullFronts),
 		CutOff(comp.CutOff),
 		OuterCutOff(comp.OuterCutOff),
+		ShadowBias(comp.ShadowBias),
+		bShadowMapCullFronts(comp.bShadowMapCullFronts),
 		LightIndex(comp.LightIndex),
+		ShadowMapNr(comp.ShadowMapNr),
 		Far(comp.Far),
 		Projection(comp.Projection),
 		DirtyFlag(comp.DirtyFlag),
-		ShadowMapNr(comp.ShadowMapNr),
 		bHasValidShadowMap(comp.bHasValidShadowMap)
 	{
 		TransformDirtyFlagIndex = GetTransform().AddWorldDirtyFlag();

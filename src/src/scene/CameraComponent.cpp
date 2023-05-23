@@ -1,11 +1,13 @@
 #include <scene/CameraComponent.h>
 #include <game/GameScene.h>
 #include <rendering/RenderInfo.h>
-#include <rendering/Material.h>
+#include <rendering/material/Material.h>
 
 #include <UI/UICanvasActor.h>
 #include <UI/UICanvasField.h>
 #include <scene/UIInputBoxActor.h>
+
+#include <utility/Serialisation.h>
 
 namespace GEE
 {
@@ -67,6 +69,22 @@ namespace GEE
 			}, [this]() {return this == GetScene().GetActiveCamera(); });
 	}
 
+
+	template <typename Archive> void CameraComponent::Save(Archive& archive) const
+	{
+		archive(CEREAL_NVP(Projection), cereal::make_nvp("Active", GetScene().GetActiveCamera() == this), cereal::make_nvp("Component", cereal::base_class<Component>(this)));
+	}
+	template <typename Archive> void CameraComponent::Load(Archive& archive)
+	{
+		bool active;
+		archive(CEREAL_NVP(Projection), cereal::make_nvp("Active", active), cereal::make_nvp("Component", cereal::base_class<Component>(this)));
+		if (active)
+		{
+			GetScene().BindActiveCamera(this);
+			GetGameHandle()->BindAudioListenerTransformPtr(&GetTransform());
+		}
+	}
+
 	CameraComponent::~CameraComponent()
 	{
 		if (GetScene().GetActiveCamera() == this)
@@ -77,3 +95,4 @@ namespace GEE
 	}
 
 }
+GEE_SERIALIZATION_INST_DEFAULT(GEE::CameraComponent);

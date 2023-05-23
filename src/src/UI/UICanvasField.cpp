@@ -15,6 +15,8 @@
 
 #include <utility>
 
+#include "rendering/RenderEngineManager.h"
+
 
 namespace GEE
 {
@@ -399,8 +401,13 @@ void UIMultipleListActor::NestList(UIListActor& list)
 
 		selectFileActor.GetTransform()->SetPosition(Vec2f(Math::GetTransformExtent<Math::Extent::Right>(*pathInputBox.GetTransform()) + 1.0f, 0.0f));
 
-		//TextComponent& pathText = selectFileActor.NowyCreateComponent<TextComponent>("Text", Transform(), "", "", std::pair<TextAlignment, TextAlignment>(TextAlignment::CENTER, TextAlignment::CENTER));
-		selectFileActor.SetOnClickFunc([&pathInputBox, extensions]() { const char* path = tinyfd_openFileDialog("Select file", "C:\\", static_cast<int>(extensions.size()), (extensions.empty()) ? (nullptr) : (extensions.data()), nullptr, 0); if (path) pathInputBox.PutString(path); });
+		selectFileActor.SetOnClickFunc([&pathInputBox, extensions]()
+		{
+			const char* path = tinyfd_openFileDialog("Select file", "C:\\", static_cast<int>(extensions.size()),
+			                                         (extensions.empty()) ? (nullptr) : (extensions.data()), nullptr,
+			                                         0);
+			if (path) pathInputBox.PutString(path);
+		});
 	}
 
 	void UIElementTemplates::FolderInput(std::function<void(const std::string&)> setFunc, std::function<std::string()> getFunc, const std::string& defaultPath) const

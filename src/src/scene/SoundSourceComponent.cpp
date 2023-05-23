@@ -1,6 +1,6 @@
 #include <scene/SoundSourceComponent.h>
 #include <game/GameScene.h>
-#include <rendering/Material.h>
+#include <rendering/material/Material.h>
 #include <iostream>
 #include <math/Transform.h>
 #include <audio/AudioFile.h>
@@ -8,6 +8,8 @@
 #include <UI/UICanvasActor.h>
 #include <UI/UICanvasField.h>
 #include <scene/UIButtonActor.h>
+
+#include "audio/AudioEngineManager.h"
 
 namespace GEE
 {

@@ -1,6 +1,6 @@
 #pragma once
 #include <scene/RenderableComponent.h>
-#include <rendering/Material.h>
+#include <rendering/material/Material.h>
 #include <UI/UIComponent.h>
 #include <UI/Font.h>
 #include <utility/Alignment.h>
@@ -134,23 +134,11 @@ namespace GEE
 		unsigned int GetUIDepth() const override;
 
 		// Serialization methods
-		template <typename Archive> void Save(Archive& archive) const
-		{
-			String fontPath;
-			if (_Font)
-				fontPath = _Font->GetVariation(FontStyle::Regular)->GetPath();
-			archive(cereal::make_nvp("FontPath", fontPath), cereal::make_nvp("Content", Content), cereal::make_nvp("HAlignment", _Alignment.GetHorizontal()), cereal::make_nvp("VAlignment", _Alignment.GetVertical()), cereal::make_nvp("RenderableComponent", cereal::base_class<RenderableComponent>(this)));
-		}
-		template <typename Archive> void Load(Archive& archive)
-		{
-			String fontPath;
-			Alignment alignmentH, alignmentV;
-			archive(cereal::make_nvp("FontPath", fontPath), cereal::make_nvp("Content", Content), cereal::make_nvp("HAlignment", alignmentH), cereal::make_nvp("VAlignment", alignmentV), cereal::make_nvp("RenderableComponent", cereal::base_class<RenderableComponent>(this)));
-			SetAlignment(Alignment2D(alignmentH, alignmentV));
+		template <typename Archive> void Save(Archive& archive) const;
 
-			if (!fontPath.empty())
-				_Font = EngineDataLoader::LoadFont(*GetGameHandle(), fontPath);
-		}
+		template <typename Archive> void Load(Archive& archive);
+
+		virtual ~TextComponent() override = default;
 
 	protected:
 		void CheckTransformDirtiness() const
@@ -220,6 +208,8 @@ namespace GEE
 			TextComponent::InvalidateCache();
 			IsScrollableCacheDirty = true;
 		}
+
+		virtual ~ScrollingTextComponent() override = default;
 
 	private:
 

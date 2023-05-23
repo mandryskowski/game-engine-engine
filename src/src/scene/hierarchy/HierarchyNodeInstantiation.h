@@ -5,6 +5,11 @@
 
 namespace GEE
 {
+	class SkeletonInfo;
+}
+
+namespace GEE
+{
 	namespace Hierarchy
 	{
 		namespace Instantiation
@@ -57,7 +62,7 @@ namespace GEE
 				static void InstantiateToComp(SharedPtr<Instantiation::Data> data, const NodeBase& instantiatedNode, CompType& targetComp)
 				{
 					if (instantiatedNode.GetCollisionObject())
-						targetComp.SetCollisionObject(MakeUnique<Physics::CollisionObject>(*instantiatedNode.GetCollisionObject()));
+						targetComp.SetCollisionObjectCopy(*instantiatedNode.GetCollisionObject());
 				}
 
 			

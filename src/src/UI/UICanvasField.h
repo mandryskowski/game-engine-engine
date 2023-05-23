@@ -6,6 +6,8 @@
 #include <scene/TextComponent.h>
 #include <input/InputDevicesStateRetriever.h>
 
+#include "rendering/RenderEngineManager.h"
+
 namespace GEE
 {
 	class UIElementTemplates;
@@ -164,7 +166,7 @@ namespace GEE
 		GEE_CORE_ASSERT(length <= 4);
 
 		VecInputDescription desc;
-		char axisChar[] = {'x', 'y', 'z', 'w'};
+		const char axisChar[] = {'x', 'y', 'z', 'w'};
 		auto vecButtonT = Style.GetVecButtonT();
 		for (int axis = 0; axis < length; axis++)
 		{
@@ -184,7 +186,7 @@ namespace GEE
 			auto& axisText = inputBoxActor.GetRoot()->CreateComponent<TextComponent>("AxisText", Transform(Vec2f(0.0f, -1.0f), Vec2f(0.35f)), std::string(1, axisChar[axis]), "", Alignment2D::Top());
 			axisText.Unstretch();
 
-			if (auto found = GameHandle.GetRenderEngineHandle()->FindMaterial(materialNames[axis]))
+			if (const auto found = GameHandle.GetRenderEngineHandle()->FindMaterial(materialNames[axis]))
 			{
 				inputBoxActor.SetMatIdle(found);
 				axisText.SetMaterialInst(found);

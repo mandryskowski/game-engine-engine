@@ -21,23 +21,30 @@
 
 #include <input/InputDevicesStateRetriever.h>
 
+#include "rendering/RenderEngineManager.h"
+
 GEE::Actor* GEE::CerealComponentSerializationData::ActorRef = nullptr;
 GEE::Component* GEE::CerealComponentSerializationData::ParentComp = nullptr;
 namespace GEE
 {
+	void Physics::CollisionObjectDeleter::operator()(CollisionObject *obj)
+	{
+		delete obj;
+	}
+
 	Component::Component(Actor& actor, Component* parentComp, const std::string& name, const Transform& t) :
 		Name(name),
 		ComponentGEEID(IDSystem<Component>::GenerateID()),
 		ComponentTransform(t),
+		CollisionObj(nullptr),
 		Scene(actor.GetScene()),
 		ActorRef(actor),
 		ParentComponent(parentComp),
 		GameHandle(actor.GetScene().GetGameHandle()),
-		CollisionObj(nullptr),
+		KillingProcessFrame(0),
 		DebugRenderMat(nullptr),
 		DebugRenderMatInst(nullptr),
-		DebugRenderLastFrameMVP(Mat4f(1.0f)),
-		KillingProcessFrame(0)
+		DebugRenderLastFrameMVP(Mat4f(1.0f))
 	{
 	}
 
@@ -51,9 +58,9 @@ namespace GEE
 		ActorRef(comp.ActorRef),
 		ParentComponent(comp.ParentComponent),
 		GameHandle(comp.GameHandle),
+		KillingProcessFrame(comp.KillingProcessFrame),
 		DebugRenderMat(comp.DebugRenderMat),
-		DebugRenderLastFrameMVP(comp.DebugRenderLastFrameMVP),
-		KillingProcessFrame(comp.KillingProcessFrame)
+		DebugRenderLastFrameMVP(comp.DebugRenderLastFrameMVP)
 	{
 		std::cout << "Komponentowy move...\n";
 	}
@@ -239,10 +246,15 @@ namespace GEE
 		ComponentTransform = transform;
 	}
 
+	Physics::CollisionObject* Component::SetCollisionObjectCopy(const Physics::CollisionObject& obj)
+	{
+		return SetCollisionObject(MakeUnique<Physics::CollisionObject>(std::move(obj)));
+	}
+
 
 	Physics::CollisionObject* Component::SetCollisionObject(UniquePtr<Physics::CollisionObject> obj)
 	{
-		CollisionObj = std::move(obj);
+		CollisionObj = UniquePtr<Physics::CollisionObject, Physics::CollisionObjectDeleter>(obj.release());
 		if (CollisionObj)
 			Scene.GetPhysicsData()->AddCollisionObject(*CollisionObj, ComponentTransform);
 
@@ -515,7 +527,7 @@ namespace GEE
 			buttonsList.Refresh();
 			}).SetTransform(Transform(Vec2f(4.0f, 0.0f), Vec2f(0.5f)));
 
-		colObjectPresenceButton.CreateChild<UIButtonActor>("RemoveColObject", "-", [&]() { SetCollisionObject(nullptr); }, Transform(Vec2f(5.0f, 0.0f), Vec2f(0.5f)));
+		colObjectPresenceButton.CreateChild<UIButtonActor>("RemoveColObject", "-", [&]() { SetCollisionObjectCopy(nullptr); }, Transform(Vec2f(5.0f, 0.0f), Vec2f(0.5f)));
 
 		// Is static button
 		shapesListCategory.AddField("Is static").GetTemplates().TickBox([this, colObj, descBuilder](bool makeStatic) {

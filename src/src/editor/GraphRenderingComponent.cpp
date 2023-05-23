@@ -5,6 +5,9 @@
 
 #include <rendering/Renderer.h>
 
+#include "rendering/Mesh.h"
+#include "rendering/RenderEngineManager.h"
+
 namespace GEE
 {
 	GraphRenderingComponent::GraphRenderingComponent(Actor& actor, Component* parentComp, const std::string& name, const Transform& transform):

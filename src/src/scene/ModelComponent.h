@@ -1,13 +1,14 @@
 #pragma once
 #include <scene/RenderableComponent.h>
 #include <rendering/Mesh.h>
-#include "physics/CollisionObject.h"
 #include <UI/UIComponent.h>
-#include <animation/SkeletonInfo.h>
-#include <scene/hierarchy/HierarchyNodeInstantiation.h>
+
+#include "hierarchy/HierarchyNodeInstantiation.h"
 
 namespace GEE
 {
+	class SkeletonInfo;
+
 	namespace MeshSystem
 	{
 		class MeshNodeInstance;
@@ -76,7 +77,7 @@ namespace GEE
 		template <typename Archive> void Save(Archive& archive) const;
 		template <typename Archive> void Load(Archive& archive);
 
-		virtual ~ModelComponent();
+		virtual ~ModelComponent() override;
 	protected:
 		unsigned int GetUIDepth() const override;
 		void SignalSkeletonInfoDeath();

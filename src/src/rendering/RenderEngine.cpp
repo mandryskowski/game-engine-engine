@@ -1,6 +1,5 @@
 #include <rendering/RenderEngine.h>
 #include <game/GameScene.h>
-#include <rendering/Postprocess.h>
 #include <assetload/FileLoader.h>
 #include <scene/LightComponent.h>
 #include <scene/ModelComponent.h>
@@ -16,16 +15,17 @@
 
 #include <rendering/OutlineRenderer.h>
 
+#include "animation/SkeletonInfo.h"
+
 namespace GEE
 {
 	RenderEngine::RenderEngine(GameManager* gameHandle) :
 		GameHandle(gameHandle),
 		Resolution(),
-		PreviousFrameView(Mat4f(1.0f)),
-		CubemapData(),
+		SimpleShader(nullptr),
 		BoundSkeletonBatch(nullptr),
 		CurrentTbCollection(nullptr),
-		SimpleShader(nullptr)
+		PreviousFrameView(Mat4f(1.0f))
 	{
 		//configure some openGL settings 
 		glEnable(GL_DEPTH_TEST);
@@ -35,10 +35,10 @@ namespace GEE
 		glCullFace(GL_BACK);
 
 		//generate engine's empty texture
-		EmptyTexture = Texture::Loader<>::FromBuffer2D(Vec2u(1, 1), Math::GetDataPtr(Vec3f(0.5f, 0.5f, 1.0f)),
-		                                               Texture::Format::RGBA(), 3);
-		EmptyTexture.SetMinFilter(Texture::MinFilter::Nearest(), true, true);
-		EmptyTexture.SetMagFilter(Texture::MagFilter::Nearest(), true);
+		EmptyTexture = MakeUnique<Texture>(Texture::Loader<>::FromBuffer2D(Vec2u(1, 1), Math::GetDataPtr(Vec3f(0.5f, 0.5f, 1.0f)),
+		                                               Texture::Format::RGBA(), 3));
+		EmptyTexture->SetMinFilter(Texture::MinFilter::Nearest(), true, true);
+		EmptyTexture->SetMagFilter(Texture::MagFilter::Nearest(), true);
 	}
 
 	void RenderEngine::Init(Vec2u resolution) 
@@ -47,20 +47,6 @@ namespace GEE
 
 		LoadInternalShaders();
 		GenerateEngineObjects();
-
-		Postprocessing.Init(GameHandle, Resolution);
-
-		CubemapData.DefaultV[0] = glm::lookAt(Vec3f(0.0f), Vec3f(1.0f, 0.0f, 0.0f), Vec3f(0.0f, -1.0f, 0.0f));
-		CubemapData.DefaultV[1] = glm::lookAt(Vec3f(0.0f), Vec3f(-1.0f, 0.0f, 0.0f), Vec3f(0.0f, -1.0f, 0.0f));
-		CubemapData.DefaultV[2] = glm::lookAt(Vec3f(0.0f), Vec3f(0.0f, 1.0f, 0.0f), Vec3f(0.0f, 0.0f, 1.0f));
-		CubemapData.DefaultV[3] = glm::lookAt(Vec3f(0.0f), Vec3f(0.0f, -1.0f, 0.0f), Vec3f(0.0f, 0.0f, -1.0f));
-		CubemapData.DefaultV[4] = glm::lookAt(Vec3f(0.0f), Vec3f(0.0f, 0.0f, 1.0f), Vec3f(0.0f, -1.0f, 0.0f));
-		CubemapData.DefaultV[5] = glm::lookAt(Vec3f(0.0f), Vec3f(0.0f, 0.0f, -1.0f), Vec3f(0.0f, -1.0f, 0.0f));
-
-		Mat4f cubemapProj = glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, 0.0f, 2.0f);
-
-		for (int i = 0; i < 6; i++)
-			CubemapData.DefaultVP[i] = cubemapProj * CubemapData.DefaultV[i];
 
 		for (auto sceneRenderData : ScenesRenderData)
 		{
@@ -194,7 +180,7 @@ namespace GEE
 
 	Texture RenderEngine::GetEmptyTexture()
 	{
-		return EmptyTexture;
+		return *EmptyTexture;
 	}
 
 	SkeletonBatch* RenderEngine::GetBoundSkeletonBatch()
@@ -312,9 +298,6 @@ namespace GEE
 	void RenderEngine::Dispose()
 	{
 		RenderTbCollections.clear();
-		CubemapData.DefaultFramebuffer.Dispose(false);
-
-		Postprocessing.Dispose();
 
 		for (auto i = Shaders.begin(); i != Shaders.end(); i++)
 			if (std::find_if(CustomShaders.begin(), CustomShaders.end(), [&](SharedPtr<Shader>& forwardShader) { return forwardShader.get() == i->get(); }) == CustomShaders.end())

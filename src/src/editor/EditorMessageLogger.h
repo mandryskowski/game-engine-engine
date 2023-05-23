@@ -1,11 +1,20 @@
 #pragma once
-#include <scene/UIWindowActor.h>
-#include <editor/EditorManager.h>
+#include <queue>
+#include <utility/Utility.h>
+
+namespace GEE
+{
+	class AtlasMaterial;
+	class UIWindowActor;
+	class TextComponent;
+}
 
 namespace GEE
 {
 	namespace Editor
 	{
+		class EditorManager;
+
 		class EditorMessageLogger
 		{
 		public:

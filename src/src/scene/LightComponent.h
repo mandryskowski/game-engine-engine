@@ -4,6 +4,9 @@
 
 namespace GEE
 {
+	class RenderToolboxCollection;
+	class Shader;
+
 	enum class LightType
 	{
 		DIRECTIONAL,

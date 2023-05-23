@@ -59,7 +59,12 @@ namespace GEE
 	{
 		struct EditorPopup
 		{
-			EditorPopup(unsigned int id, SystemWindow& window, GameScene& scene, RenderToolboxCollection& tbCol, SharedPtr<GameSettings::VideoSettings> settings) : Window(window), Scene(scene), ID(id), TbCol(tbCol), Settings(std::move(settings)) { std::cout << "tb collll adress: " << &TbCol.get() << '\n'; }
+			EditorPopup(unsigned int id, SystemWindow& window, GameScene& scene, RenderToolboxCollection& tbCol,
+			            SharedPtr<GameSettings::VideoSettings> settings) : Window(window), Scene(scene), TbCol(tbCol),
+			                                                               Settings(std::move(settings)), ID(id)
+			{
+				std::cout << "tb collll adress: " << &TbCol.get() << '\n';
+			}
 			EditorPopup(EditorPopup&& rhs) :
 				Window(rhs.Window),
 				Scene(rhs.Scene),

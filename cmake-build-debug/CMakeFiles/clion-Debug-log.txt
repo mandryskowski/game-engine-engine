@@ -1,0 +1,91 @@
+"C:\Program Files\JetBrains\CLion 2023.1.3\bin\cmake\win\x64\bin\cmake.exe" -DCMAKE_BUILD_TYPE=Debug "-DCMAKE_MAKE_PROGRAM=C:/Program Files/JetBrains/CLion 2023.1.3/bin/ninja/win/x64/ninja.exe" -G Ninja -S C:\Users\48511\source\repos\swetroniusz\game-engine-engine -B C:\Users\48511\source\repos\swetroniusz\game-engine-engine\cmake-build-debug
+-- Conan: checking conan executable
+-- Conan: Found program C:/Program Files/Conan/conan/conan.exe
+-- Conan: Version found Conan version 1.56.0
+-- Conan executing: C:/Program Files/Conan/conan/conan.exe install C:/Users/48511/source/repos/swetroniusz/game-engine-engine --remote conancenter --build missing --settings build_type=Debug --settings compiler=gcc --settings compiler.version=11 --settings compiler.libcxx=libstdc++11
+Configuration:
+[settings]
+arch=x86_64
+arch_build=x86_64
+build_type=Debug
+compiler=gcc
+compiler.libcxx=libstdc++11
+compiler.version=11
+os=Windows
+os_build=Windows
+[options]
+[build_requires]
+[env]
+
+openal-soft/1.22.2: Retrieving from server 'conancenter' 
+openal-soft/1.22.2: Trying with 'conancenter'...
+Downloading conanmanifest.txt
+Downloading conanfile.py
+Downloading conan_export.tgz
+openal-soft/1.22.2: Downloaded recipe revision 0
+conanfile.txt: Installing package
+Requirements
+    assimp/5.2.2 from 'conancenter' - Cache
+    brotli/1.0.9 from 'conancenter' - Cache
+    bzip2/1.0.8 from 'conancenter' - Cache
+    cereal/1.3.2 from 'conancenter' - Cache
+    draco/1.5.5 from 'conancenter' - Cache
+    freetype/2.12.1 from 'conancenter' - Cache
+    glad/0.1.35 from 'conancenter' - Cache
+    glfw/3.3.7 from 'conancenter' - Cache
+    glm/0.9.9.8 from 'conancenter' - Cache
+    libpng/1.6.39 from 'conancenter' - Cache
+    minizip/1.2.13 from 'conancenter' - Cache
+    openal-soft/1.22.2 from 'conancenter' - Downloaded
+    opengl/system from 'conancenter' - Cache
+    poly2tri/cci.20130502 from 'conancenter' - Cache
+    pugixml/1.13 from 'conancenter' - Cache
+    rapidjson/cci.20220822 from 'conancenter' - Cache
+    stb/cci.20220909 from 'conancenter' - Cache
+    utfcpp/3.2.3 from 'conancenter' - Cache
+    whereami/cci.20220112 from 'conancenter' - Cache
+    zlib/1.2.13 from 'conancenter' - Cache
+Packages
+    assimp/5.2.2:c4354230487ef80c47f8f5171e43be542b3083e1 - Build
+    brotli/1.0.9:50998fe31d96f16c54dce30d9860ab916e86dfe8 - Cache
+    bzip2/1.0.8:afe2ddf847ed9b40cba062f2102b7d2359792b34 - Cache
+    cereal/1.3.2:5ab84d6acfe1f23c4fae0ab88f26e3a396351ac9 - Cache
+    draco/1.5.5:82a7f5f119c483f76caa5f540e36c93e90fa1135 - Cache
+    freetype/2.12.1:4f8d7cda4210f473ce4b4665d9bf3b3f73dc36fc - Build
+    glad/0.1.35:7d4f340a44fa9e2afac427b17da8172b7752d632 - Cache
+    glfw/3.3.7:059dcc1542eff14d863b01bf0061cf0809c9b9de - Build
+    glm/0.9.9.8:5ab84d6acfe1f23c4fae0ab88f26e3a396351ac9 - Cache
+    libpng/1.6.39:6f0a9f37aac8c5d4b31272506f30759c809c9a32 - Build
+    minizip/1.2.13:47e88b9a686984fe05349d59295f44470c7fdd72 - Build
+    openal-soft/1.22.2:aabc306f42d6689e92221fcf2a02af9fbca3525f - Build
+    opengl/system:5ab84d6acfe1f23c4fae0ab88f26e3a396351ac9 - Cache
+    poly2tri/cci.20130502:aabc306f42d6689e92221fcf2a02af9fbca3525f - Build
+    pugixml/1.13:aabc306f42d6689e92221fcf2a02af9fbca3525f - Build
+    rapidjson/cci.20220822:5ab84d6acfe1f23c4fae0ab88f26e3a396351ac9 - Cache
+    stb/cci.20220909:5ab84d6acfe1f23c4fae0ab88f26e3a396351ac9 - Cache
+    utfcpp/3.2.3:5ab84d6acfe1f23c4fae0ab88f26e3a396351ac9 - Cache
+    whereami/cci.20220112:6f8ee7161267ee70ac7525aaadfdb774110e53a2 - Build
+    zlib/1.2.13:6f8ee7161267ee70ac7525aaadfdb774110e53a2 - Build
+
+Installing (downloading, building) binaries...
+brotli/1.0.9: Already installed!
+bzip2/1.0.8: Already installed!
+cereal/1.3.2: Already installed!
+draco/1.5.5: Already installed!
+glad/0.1.35: Already installed!
+glm/0.9.9.8: Already installed!
+Downloading conan_sources.tgz
+openal-soft/1.22.2: Configuring sources in C:\Users\48511\.conan\data\openal-soft\1.22.2\_\_\source\src
+openal-soft/1.22.2: Waiting 5 seconds to retry...
+openal-soft/1.22.2: ERROR: Error downloading file https://openal-soft.org/openal-releases/openal-soft-1.22.2.tar.bz2: 'HTTPSConnectionPool(host='openal-soft.org', port=443): Max retries exceeded with url: /openal-releases/openal-soft-1.22.2.tar.bz2 (Caused by NewConnectionError('<urllib3.connection.HTTPSConnection object at 0x0000024D592D9358>: Failed to establish a new connection: [WinError 10060] A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond',))'
+ERROR: openal-soft/1.22.2: Error in source() method, line 92
+	get(self, **self.conan_data["sources"][self.version], strip_root=True)
+	ConanException: Error downloading file https://openal-soft.org/openal-releases/openal-soft-1.22.2.tar.bz2: 'HTTPSConnectionPool(host='openal-soft.org', port=443): Max retries exceeded with url: /openal-releases/openal-soft-1.22.2.tar.bz2 (Caused by NewConnectionError('<urllib3.connection.HTTPSConnection object at 0x0000024D592D99E8>: Failed to establish a new connection: [WinError 10060] A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond',))'
+CMake Error at cmake-build-debug/conan.cmake:651 (message):
+  Conan install failed='1'
+Call Stack (most recent call first):
+  CMakeLists.txt:50 (conan_cmake_install)
+
+
+-- Configuring incomplete, errors occurred!
+See also "C:/Users/48511/source/repos/swetroniusz/game-engine-engine/cmake-build-debug/CMakeFiles/CMakeOutput.log".

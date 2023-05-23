@@ -13,8 +13,11 @@
 #include <cereal/types/memory.hpp>
 #include <cereal/types/vector.hpp>
 
+#include "ShaderInfo.h"
+
 namespace GEE
 {
+	struct ShaderInfo;
 	struct MaterialLoadingData;
 
 	class Material
@@ -31,71 +34,17 @@ namespace GEE
 
 			MaterialLoc(const char* name) : HTreeObjectLoc(), Name(name) //allows implicit conversion from const char*
 			{
-			} 
-			MaterialLoc(const std::string& name) : HTreeObjectLoc(), Name(name) //allows implicit conversion from const std::string&
+			}
+
+			MaterialLoc(const std::string& name) : HTreeObjectLoc(), Name(name)
+			//allows implicit conversion from const std::string&
 			{
 			}
+
 			std::string GetFullStr() const
 			{
 				return (!GetTreeName().empty()) ? (GetTreeName() + ":" + Name) : (Name);
 			}
-		};
-
-		struct ShaderInfo
-		{
-			ShaderInfo(MaterialShaderHint hint) : ShaderHint(hint), CustomShader(nullptr) {}
-			ShaderInfo(Shader& customShader) : ShaderHint(MaterialShaderHint::None), CustomShader(&customShader) {}
-
-			bool IsValid() const { return UsesShaderHint() || CustomShader; }
-			bool UsesShaderHint() const { return ShaderHint != MaterialShaderHint::None; }
-			bool MatchesRequiredInfo(const ShaderInfo& requiredInfo)
-			{
-				if (requiredInfo.UsesShaderHint())
-					return requiredInfo.GetShaderHint() == GetShaderHint();
-
-				return (!requiredInfo.GetCustomShader() || requiredInfo.GetCustomShader() == GetCustomShader());
-			}
-
-			MaterialShaderHint GetShaderHint() const { return ShaderHint; }
-			Shader* GetCustomShader() { return CustomShader; }
-			const Shader* GetCustomShader() const { return CustomShader; }
-
-			/**
-			 * @brief If this ShaderInfo refers to a custom shader, the shader will be returned. If this ShaderInfo contains a hint, the correct shader will be retrieved from the render toolbox collection.
-			 * @return a pointer to a Shader useful in rendering. Can be nullptr if this Shader info is not valid.
-			*/
-			Shader* RetrieveShaderForRendering(RenderToolboxCollection&);
-
-			template <typename Archive>
-			void Save(Archive& archive) const
-			{
-				archive(CEREAL_NVP(ShaderHint), cereal::make_nvp("CustomShaderName", (CustomShader) ? (CustomShader->GetName()) : (std::string())));
-			}
-
-			template <typename Archive>
-			void Load(Archive& archive)
-			{
-				std::string customShaderName;
-				archive(CEREAL_NVP(ShaderHint), customShaderName);
-
-				if (!customShaderName.empty())
-					CustomShader = GameManager::Get().GetRenderEngineHandle()->FindShader(customShaderName);
-			}
-
-			template <typename Archive>
-			static void load_and_construct(Archive& archive, cereal::construct<ShaderInfo>& construct)
-			{
-				construct(MaterialShaderHint::None);
-				construct->Load(archive);
-			}
-
-		private:
-			/*
-			*	Shader hints are useful if our material dose not use a specific type of shader
-			*	If they do, use the optional pointer
-			*/
-			MaterialShaderHint ShaderHint;
-			Shader* CustomShader;
 		};
 
 	public:
@@ -118,7 +67,7 @@ namespace GEE
 		void SetRoughnessColor(float roughness);
 		void SetMetallicColor(float metallic);
 		void SetAoColor(float ao);
-		
+
 		void AddTexture(const NamedTexture& tex);
 		void AddTexture(SharedPtr<NamedTexture> tex);
 		void RemoveTexture(NamedTexture&);
@@ -127,9 +76,11 @@ namespace GEE
 		void LoadAiTexturesOfType(const aiScene* scene, aiMaterial*, const std::string&, aiTextureType, std::string,
 		                          MaterialLoadingData*);
 
-		virtual void InterpolateInAnimation(InterpolatorBase*) const //some Materials can be animated. That's why we declare these two virtual methods - objects of some child classes interpolate their animated values in here...
+		virtual void InterpolateInAnimation(InterpolatorBase*) const
+		//some Materials can be animated. That's why we declare these two virtual methods - objects of some child classes interpolate their animated values in here...
 		{
 		}
+
 		//...and pass the interpolated values to shader in here. I separated these functions for flexibility - you don't always want to interpolate the values each time you use the material for rendering
 		virtual void UpdateInstanceUBOData(Shader* shader, bool setValuesToDefault = false) const;
 		virtual void UpdateWholeUBOData(Shader*, const Texture& emptyTexture) const;
@@ -149,18 +100,16 @@ namespace GEE
 			        cereal::make_nvp("Color", Color), cereal::make_nvp("Shininess", Shininess),
 			        CEREAL_NVP(RoughnessColor), CEREAL_NVP(MetallicColor), CEREAL_NVP(AoColor),
 			        cereal::make_nvp("DepthScale", DepthScale), CEREAL_NVP(MatShaderInfo));
-
 		}
 
 		template <typename Archive>
-		static void load_and_construct(Archive& archive, cereal::construct<GEE::Material>& construct)
+		static void load_and_construct(Archive& archive, cereal::construct<Material>& construct)
 		{
 			construct("if_you_see_this_serializing_error_ocurred");
 			construct->Load(archive);
 		}
 
 		virtual void GetEditorDescription(EditorDescriptionBuilder);
-
 
 	public:
 		MaterialLoc Localization;
@@ -175,6 +124,7 @@ namespace GEE
 
 		float RoughnessColor, MetallicColor, AoColor;
 	};
+
 
 	namespace MaterialUtil
 	{
@@ -220,7 +170,7 @@ namespace GEE
 		void Serialize(Archive& archive)
 		{
 			archive(CEREAL_NVP(AtlasSize), CEREAL_NVP(TextureID),
-			        cereal::make_nvp("Material", cereal::base_class<Material>(this)));
+			        make_nvp("Material", cereal::base_class<Material>(this)));
 		}
 
 		template <typename Archive>
@@ -269,54 +219,18 @@ namespace GEE
 		MaterialInstance& operator=(MaterialInstance&&);
 
 		template <typename Archive>
-		void Save(Archive& archive) const
-		{
-			SharedPtr<Material> mat = MaterialPtr;
-			if (!mat)
-				return;
-			std::string name = mat->Localization.Name, treeName = mat->Localization.GetTreeName();
-			archive(cereal::make_nvp("MaterialName", name), cereal::make_nvp("MaterialOptionalPath", treeName));
-			if (treeName.empty())
-				archive(cereal::make_nvp("ExternalMaterial", mat));
-			archive(CEREAL_NVP(DrawBeforeAnim), CEREAL_NVP(DrawAfterAnim));
-		}
+		void Save(Archive& archive) const;
 
 		template <typename Archive>
-		static void load_and_construct(Archive& archive, cereal::construct<MaterialInstance>& construct)
-		{
-			std::string materialName, materialPath;
-			archive(cereal::make_nvp("MaterialName", materialName),
-			        cereal::make_nvp("MaterialOptionalPath", materialPath));
-			SharedPtr<Material> mat = GameManager::Get().GetRenderEngineHandle()->FindMaterial(materialName);
-			if (!mat)
-			{
-				if (materialPath.empty())
-				{
-					archive(cereal::make_nvp("ExternalMaterial", mat));
-					GameManager::Get().GetRenderEngineHandle()->AddMaterial(mat);
-				}
-				else
-				{
-					std::cout << "ERROR: Could not find material " << materialName << " (path - " + materialPath +
-						")\n";
-					exit(42069);
-				}
-			}
+		static void load_and_construct(Archive& archive, cereal::construct<MaterialInstance>& construct);
 
-			bool drawBeforeAnim, drawAfterAnim;
-			archive(cereal::make_nvp("DrawBeforeAnim", drawBeforeAnim),
-			        cereal::make_nvp("DrawAfterAnim", drawAfterAnim));
-
-
-			construct(mat); // , drawBeforeAnim, drawAfterAnim);
-
-			//GameManager::DefaultScene->AddPostLoadLambda([mat]() { std::cout << "uwaga robie " << mat << '\n'; GameManager::Get().GetRenderEngineHandle()->AddMaterial(mat); });
-		}
 	private:
 		SharedPtr<Material> MaterialPtr;
 		InterpolatorBase* AnimationInterp; //optional; use if you animate the material
 		bool DrawBeforeAnim, DrawAfterAnim;
 	};
+
+	
 
 	// Should be constexpr but fmod isn't
 	Vec3f hsvToRgb(Vec3f hsvColor);
@@ -325,7 +239,7 @@ namespace GEE
 namespace cereal
 {
 	template <class Archive>
-	struct specialize<Archive, GEE::AtlasMaterial, cereal::specialization::member_serialize>
+	struct specialize<Archive, GEE::AtlasMaterial, specialization::member_serialize>
 	{
 	};
 }

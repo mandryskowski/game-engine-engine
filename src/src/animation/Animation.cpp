@@ -3,7 +3,6 @@
 
 namespace GEE
 {
-	Time DUPA::AnimTime = 9999.0f;
 
 	Interpolation::Interpolation(Time begin, Time end, InterpolationType type, bool fadeAway, AnimBehaviour before,
 	                             AnimBehaviour after):

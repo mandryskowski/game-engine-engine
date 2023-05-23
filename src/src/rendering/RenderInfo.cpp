@@ -1,5 +1,5 @@
 #include <rendering/RenderInfo.h>
-#include <rendering/Material.h>
+#include <rendering/material/Material.h>
 
 namespace GEE
 {
@@ -9,5 +9,16 @@ namespace GEE
 		bOnlyShadowCasters = false;
 		bMainPass = false;
 		bAllowBlending = true;
+	}
+
+	void MatrixInfoExt::SetRequiredShaderInfo(ShaderInfo info)
+	{
+		RequiredShaderInfo = info;
+	}
+
+	void MatrixInfoExt::StopRequiringShaderInfo()
+	{
+		SetRequiredShaderInfo
+			(ShaderInfo(MaterialShaderHint::None));
 	}
 }

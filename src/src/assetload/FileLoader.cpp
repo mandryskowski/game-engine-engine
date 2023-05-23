@@ -33,6 +33,8 @@
 #include <editor/GEditorSettings.h>
 #include <animation/AnimationManagerComponent.h>
 
+#include "rendering/RenderEngineManager.h"
+
 namespace GEE
 {
 	FT_Library* EngineDataLoader::FTLib = nullptr;

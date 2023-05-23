@@ -75,28 +75,9 @@ namespace GEE
 
 		void GetEditorDescription(ComponentDescriptionBuilder) override;
 
-		template <typename Archive> void Save(Archive& archive) const
-		{
-			archive(cereal::make_nvp("AnimInstances", cereal::defer(AnimInstances)));
-			archive(cereal::make_nvp("CurrentAnimName", std::string((CurrentAnim) ? (CurrentAnim->GetLocalization().Name) : (""))), cereal::base_class<Component>(this));
-		}
-		template <typename Archive> void Load(Archive& archive)
-		{
-			std::cout << "robie animationmanagercomponent\n";
-			std::string currentAnimName;
+		template <typename Archive> void Save(Archive& archive) const;
 
-			archive(cereal::make_nvp("AnimInstances", cereal::defer(AnimInstances)));
-				
-			archive(cereal::make_nvp("CurrentAnimName", currentAnimName), cereal::base_class<Component>(this));
-
-			// erase unloaded anim instances post load
-			GetScene().AddPostLoadLambda([this]() mutable {	AnimInstances.erase(std::remove_if(AnimInstances.begin(), AnimInstances.end(), [](const UniquePtr<AnimationInstance>& animInstance)-> bool { return (animInstance.get() == nullptr); }), AnimInstances.end());	});
-
-			if (!currentAnimName.empty())
-				for (auto& it : AnimInstances)
-					if (it->GetLocalization().Name == currentAnimName)
-						SelectAnimation(it.get());
-		}
+		template <typename Archive> void Load(Archive& archive);
 	};
 }
 

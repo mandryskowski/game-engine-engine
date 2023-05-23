@@ -4,6 +4,11 @@
 #include <scene/ModelComponent.h>
 #include <utility/Log.h>
 
+#include "EditorManager.h"
+#include "rendering/RenderEngineManager.h"
+#include "scene/UIWindowActor.h"
+#include "UI/UIActor.h"
+
 namespace GEE
 {
 	namespace Editor

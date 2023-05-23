@@ -1,11 +1,14 @@
 #pragma once
-#include "Postprocess.h"
-#include <rendering/Renderer.h>
 #include "RenderToolbox.h"
 #include <input/Event.h>
+#include <rendering/RenderEngineManager.h>
 
 namespace GEE
 {
+	class Material;
+	class GameSceneRenderData;
+	enum class LightType;
+	class Mesh;
 	class LightProbe;
 	struct LightProbeTextureArrays;
 	class LocalLightProbe;
@@ -13,6 +16,7 @@ namespace GEE
 	class BoneComponent;
 	class TextComponent;
 	class SkeletonBatch;
+	class Texture;
 
 	class RenderEngine : public RenderEngineManager
 	{
@@ -69,7 +73,6 @@ namespace GEE
 		GameManager* GameHandle;
 		Vec2u Resolution;
 
-		Postprocess Postprocessing;
 
 		std::vector <GameSceneRenderData*> ScenesRenderData;
 	public:
@@ -81,7 +84,7 @@ namespace GEE
 		//std::vector <SharedPtr <Shader>> SettingIndependentShaders;		//TODO: Put setting independent shaders here. When the user asks for a shader, search in CurrentTbCollection first. Then check here.
 		std::vector <Shader*> LightShaders;		//Same with light shaders
 		Shader* SimpleShader;
-		Texture EmptyTexture;
+		UniquePtr<Texture> EmptyTexture;
 
 		SkeletonBatch* BoundSkeletonBatch;
 
@@ -89,13 +92,6 @@ namespace GEE
 		RenderToolboxCollection* CurrentTbCollection;
 
 		Mat4f PreviousFrameView;
-
-		struct CubemapRenderData
-		{
-			GEE_FB::Framebuffer DefaultFramebuffer;
-			Mat4f DefaultV[6];
-			Mat4f DefaultVP[6];
-		} CubemapData;
 	};
 
 	Vec3f GetCubemapFront(unsigned int);

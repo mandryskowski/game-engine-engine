@@ -3,6 +3,8 @@
 #include <scene/CameraComponent.h>
 #include <editor/EditorActions.h>
 
+#include "input/Event.h"
+
 namespace GEE
 {
 	namespace Editor

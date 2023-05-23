@@ -1,8 +1,8 @@
 #include <physics/PhysicsObjects.h>
 #include <physics/CollisionObject.h>
-#include <game/GameManager.h>
-#include <PhysX/PxRigidDynamic.h>
 #include <utility/Asserts.h>
+
+#include "PhysicsEngineManager.h"
 
 using namespace physx;
 using namespace GEE::Physics::Util;

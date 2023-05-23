@@ -3,6 +3,8 @@
 #include <scene/SoundSourceComponent.h>
 #include <AL/alc.h>
 
+#include "AudioEngineManager.h"
+
 namespace GEE
 {
 	namespace Audio

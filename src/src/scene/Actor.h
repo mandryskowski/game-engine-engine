@@ -1,17 +1,22 @@
 #pragma once
-#include <scene/Component.h>
 #include <game/GameManager.h>
 #include <math/Transform.h>
-#include <input/Event.h>
 #include <utility/CerealNames.h>
-#include <cereal/archives/json.hpp>
-#include <cereal/types/polymorphic.hpp>
+#include <cereal/access.hpp>
 
 namespace GEE
 {
+	class Shader;
+	class SceneMatrixInfo;
+	class Event;
 	class EditorDescriptionBuilder;
 	class FPSController;
 	class CueController;
+
+	struct ComponentDefaultDeleter
+	{
+		void operator()(Component*);
+	};
 
 	class Actor
 	{
@@ -134,7 +139,7 @@ namespace GEE
 		std::string Name;
 		GEEID ActorGEEID;
 
-		UniquePtr<Component> RootComponent;
+		UniquePtr<Component, ComponentDefaultDeleter> RootComponent;
 		std::vector<UniquePtr<Actor>> Children;
 		Actor* ParentActor;
 		std::stringstream* SetupStream;

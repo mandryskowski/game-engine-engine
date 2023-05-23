@@ -8,12 +8,12 @@ namespace GEE
 {
 	UICanvas::UICanvas(const UICanvas& canvas) :
 		TopLevelUIElements(canvas.TopLevelUIElements),
-		CanvasView(canvas.CanvasView),
+		CanvasSpaceMinExtent(canvas.CanvasSpaceMinExtent),
+		CanvasSpaceMaxExtent(canvas.CanvasSpaceMaxExtent),
 		bContainsMouse(false),
 		bContainsMouseOutsideTrueCanvas(false),
 		CanvasDepth(canvas.CanvasDepth),
-		CanvasSpaceMinExtent(canvas.CanvasSpaceMinExtent),
-		CanvasSpaceMaxExtent(canvas.CanvasSpaceMaxExtent)
+		CanvasView(canvas.CanvasView)
 	{
 	}
 

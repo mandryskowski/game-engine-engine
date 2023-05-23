@@ -1,6 +1,6 @@
 #include <scene/BoneComponent.h>
 #include <assimp/scene.h>
-#include <rendering/Material.h>
+#include <rendering/material/Material.h>
 #include <animation/SkeletonInfo.h>
 
 namespace GEE
@@ -8,9 +8,9 @@ namespace GEE
 	BoneComponent::BoneComponent(Actor& actor, Component* parentComp, std::string name, Transform transform, unsigned int boneID) :
 		Component(actor, parentComp, name, transform),
 		BoneID(boneID),
+		InfoPtr(nullptr),
 		BoneOffset(Mat4f(1.0f)),
-		FinalMatrix(Mat4f(1.0f)),
-		InfoPtr(nullptr)
+		FinalMatrix(Mat4f(1.0f))
 	{
 		std::cout << "BON| Setting boneid of " << GetName() << " to " << BoneID << '\n';
 	}
@@ -18,9 +18,9 @@ namespace GEE
 	BoneComponent::BoneComponent(BoneComponent&& bone) :
 		Component(std::move(bone)),
 		BoneID(bone.BoneID),
+		InfoPtr(bone.InfoPtr),
 		BoneOffset(bone.BoneOffset),
-		FinalMatrix(bone.FinalMatrix),
-		InfoPtr(bone.InfoPtr)
+		FinalMatrix(bone.FinalMatrix)
 	{
 		std::cout << "BON| Setting boneid of " << GetName() << " to " << BoneID << '\n';
 	}

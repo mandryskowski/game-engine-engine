@@ -3,6 +3,8 @@
 #include <utility/CerealNames.h>
 #include <cereal/access.hpp>
 
+#include "utility/SerialRegistry.h"
+
 namespace GEE
 {
 	enum ShadingAlgorithm

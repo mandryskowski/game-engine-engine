@@ -12,7 +12,8 @@ struct aiBone;
 
 namespace GEE
 {
-	struct MaterialLoadingDcereata;
+	class Material;
+	struct MaterialLoadingData;
 	struct Vertex;
 	class Mesh;
 	class Transform;
@@ -22,6 +23,7 @@ namespace GEE
 	namespace Physics
 	{
 		struct CollisionShape;
+		struct CollisionObject;
 	}
 	class Font;
 

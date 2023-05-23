@@ -7,6 +7,7 @@
 #include <input/InputDevicesStateRetriever.h>
 #include <thread>
 
+
 namespace GEE
 {
 	bool PrimitiveDebugger::bDebugMeshTrees = false;
@@ -22,15 +23,15 @@ namespace GEE
 
 	Game::Game(const ShadingAlgorithm& shading, const GameSettings& settings) :
 		bGameTerminated(false),
-		AudioEng(static_cast<GameManager*>(this)),
-		RenderEng(static_cast<GameManager*>(this)),
-		PhysicsEng(&DebugMode),
-		Shading(shading),
-		Settings(nullptr),
-		GameStarted(false),
-		DefaultFont(nullptr),
 		MainScene(nullptr),
 		ActiveScene(nullptr),
+		Settings(nullptr),
+		DefaultFont(nullptr),
+		RenderEng(static_cast<GameManager*>(this)),
+		PhysicsEng(&DebugMode),
+		AudioEng(static_cast<GameManager*>(this)),
+		Shading(shading),
+		GameStarted(false),
 		TotalTickCount(0),
 		TotalFrameCount(0)
 	{
@@ -45,8 +46,6 @@ namespace GEE
 		DebugMode = true;
 		LoopBeginTime = 0.0;
 		TimeAccumulator = 0.0;
-
-		GEE_FB::Framebuffer DefaultFramebuffer;
 	}
 
 	void Game::Init(SystemWindow* window, const Vec2u& windowSize)
@@ -360,7 +359,6 @@ namespace GEE
 
 	void Game::Update(Time deltaTime)
 	{
-		DUPA::AnimTime += deltaTime;
 		PhysicsEng.Update(deltaTime);
 
 		for (int i = 0; i < static_cast<int>(Scenes.size()); i++)

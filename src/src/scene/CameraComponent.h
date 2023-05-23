@@ -4,6 +4,7 @@
 
 namespace GEE
 {
+	class RenderToolboxCollection;
 	typedef unsigned int RenderingContextID;
 
 	struct Angle
@@ -47,20 +48,8 @@ namespace GEE
 		void SetProjectionMat(const ProjectionMatData& projMat);
 		void SetProjectionMat(const Mat4f& projMat) { Projection = projMat; }
 
-		template <typename Archive> void Save(Archive& archive) const
-		{
-			archive(CEREAL_NVP(Projection), cereal::make_nvp("Active", GetScene().GetActiveCamera() == this), cereal::make_nvp("Component", cereal::base_class<Component>(this)));
-		}
-		template <typename Archive> void Load(Archive& archive)
-		{
-			bool active;
-			archive(CEREAL_NVP(Projection), cereal::make_nvp("Active", active), cereal::make_nvp("Component", cereal::base_class<Component>(this)));
-			if (active)
-			{
-				GetScene().BindActiveCamera(this);
-				GetGameHandle()->BindAudioListenerTransformPtr(&GetTransform());
-			}
-		}
+		template <typename Archive> void Save(Archive& archive) const;
+		template <typename Archive> void Load(Archive& archive);
 		~CameraComponent() override;
 
 	private:

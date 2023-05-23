@@ -16,10 +16,6 @@ namespace GEE
 		REPEAT
 	};
 
-	struct DUPA
-	{
-		static Time AnimTime;
-	};
 
 
 	class Interpolation
@@ -100,7 +96,7 @@ namespace GEE
 		void ResetMinVal() override;	//set MinVal to the current value
 		void SetMaxVal(ValType val);
 
-		void Inverse();		//make the interpolator "go another way" (interpolate to the starting point). Useful for stuff like camera interpolation
+		void Inverse();		//make the interpolator "go the other way" (interpolate to the starting point). Useful for stuff like camera interpolation
 
 		void Update(Time deltaTime) override;
 		void UpdateInterpolatedValPtr() override;
@@ -148,10 +144,10 @@ namespace GEE
 	struct Animation
 	{
 		std::vector<SharedPtr<AnimationChannel>> Channels;
-		struct AnimationLoc : public HTreeObjectLoc	//exact localization of the animation
+		struct AnimationLoc : public HTreeObjectLoc	//exact location of the animation
 		{
-			std::string Name;
-			AnimationLoc(HTreeObjectLoc treeObjectLoc, const String& name) : HTreeObjectLoc(treeObjectLoc), Name(name) {}
+			String Name;
+			AnimationLoc(HTreeObjectLoc treeObjectLoc, String name) : HTreeObjectLoc(treeObjectLoc), Name(std::move(name)) {}
 		} Localization;
 		Time Duration;
 

@@ -10,6 +10,7 @@
 
 namespace GEE
 {
+	class EditorDescriptionBuilder;
 
 	enum class VecAxis	//VectorAxis
 	{
@@ -22,7 +23,7 @@ namespace GEE
 		Rotation,
 		Scale,
 		RotationEuler
-	}; 
+	};
 
 
 	class Transform

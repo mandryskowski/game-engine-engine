@@ -4,6 +4,8 @@
 
 namespace GEE
 {
+	class TextComponent;
+	class Material;
 	/**
 	 * @brief Used to store graph data and render it on a screen.
 	 * @note Unit interval value - A value between 0 and 1.

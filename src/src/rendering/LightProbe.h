@@ -5,6 +5,11 @@
 #include "RenderableVolume.h"
 namespace GEE
 {
+	class Shader;
+	class RenderToolboxCollection;
+	class GameSceneRenderData;
+	class LightProbeComponent;
+
 	struct LightProbeTextureArrays
 	{
 		Texture IrradianceMapArr;
